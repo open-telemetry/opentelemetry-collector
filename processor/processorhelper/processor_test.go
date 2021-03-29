@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -33,7 +33,7 @@ import (
 
 const testFullName = "testFullName"
 
-var testCfg = &configmodels.ProcessorSettings{
+var testCfg = &config.ProcessorSettings{
 	TypeVal: testFullName,
 	NameVal: testFullName,
 }

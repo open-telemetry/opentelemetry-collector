@@ -18,30 +18,29 @@ import (
 	"strings"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-// OCToTraceData converts OC data format to Traces.
-// Deprecated: use pdata.Traces instead. OCToTraceData may be used only by OpenCensus
-// receiver and exporter implementations.
-func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
+// OCToTraces  may be used only by OpenCensus receiver and exporter implementations.
+// Deprecated: use pdata.Traces instead.
+func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*octrace.Span) pdata.Traces {
 	traceData := pdata.NewTraces()
-	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
+	if node == nil && resource == nil && len(spans) == 0 {
 		return traceData
 	}
 
-	if len(td.Spans) == 0 {
+	if len(spans) == 0 {
 		// At least one of the td.Node or td.Resource is not nil. Set the resource and return.
 		rss := traceData.ResourceSpans()
 		rss.Resize(1)
-		ocNodeResourceToInternal(td.Node, td.Resource, rss.At(0).Resource())
+		ocNodeResourceToInternal(node, resource, rss.At(0).Resource())
 		return traceData
 	}
 
@@ -67,7 +66,7 @@ func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
 	// in one slice.
 	combinedSpanCount := 0
 	distinctResourceCount := 0
-	for _, ocSpan := range td.Spans {
+	for _, ocSpan := range spans {
 		if ocSpan == nil {
 			// Skip nil spans.
 			continue
@@ -84,7 +83,7 @@ func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
 	rss := traceData.ResourceSpans()
 	rss.Resize(distinctResourceCount + 1)
 	rs0 := rss.At(0)
-	ocNodeResourceToInternal(td.Node, td.Resource, rs0.Resource())
+	ocNodeResourceToInternal(node, resource, rs0.Resource())
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
 	ilss := rs0.InstrumentationLibrarySpans()
@@ -100,7 +99,7 @@ func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
 	combinedSpanIdx := 0
 	// First ResourceSpans is used for the default resource, so start with 1.
 	resourceSpanIdx := 1
-	for _, ocSpan := range td.Spans {
+	for _, ocSpan := range spans {
 		if ocSpan == nil {
 			// Skip nil spans.
 			continue
@@ -115,7 +114,7 @@ func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
 		} else {
 			// This span has a different Resource and must be placed in a different
 			// ResourceSpans instance. Create a separate ResourceSpans item just for this span.
-			ocSpanToResourceSpans(ocSpan, td.Node, traceData.ResourceSpans().At(resourceSpanIdx))
+			ocSpanToResourceSpans(ocSpan, node, traceData.ResourceSpans().At(resourceSpanIdx))
 			resourceSpanIdx++
 		}
 	}
@@ -145,8 +144,8 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
-	dest.SetStartTime(pdata.TimestampToUnixNano(src.StartTime))
-	dest.SetEndTime(pdata.TimestampToUnixNano(src.EndTime))
+	dest.SetStartTime(pdata.TimestampFromTime(src.StartTime.AsTime()))
+	dest.SetEndTime(pdata.TimestampFromTime(src.EndTime.AsTime()))
 
 	ocStatusToInternal(src.Status, src.Attributes, dest.Status())
 
@@ -318,7 +317,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 		event := events.At(i)
 		i++
 
-		event.SetTimestamp(pdata.TimestampToUnixNano(ocEvent.Time))
+		event.SetTimestamp(pdata.TimestampFromTime(ocEvent.Time.AsTime()))
 
 		switch teValue := ocEvent.Value.(type) {
 		case *octrace.Span_TimeEvent_Annotation_:
@@ -329,6 +328,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 			}
 
 		case *octrace.Span_TimeEvent_MessageEvent_:
+			event.SetName("message")
 			ocMessageEventToInternalAttrs(teValue.MessageEvent, event.Attributes())
 			// No dropped attributes for this case.
 			event.SetDroppedAttributesCount(0)
@@ -381,10 +381,10 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		return
 	}
 
-	dest.UpsertString(conventions.OCTimeEventMessageEventType, msgEvent.Type.String())
-	dest.UpsertInt(conventions.OCTimeEventMessageEventID, int64(msgEvent.Id))
-	dest.UpsertInt(conventions.OCTimeEventMessageEventUSize, int64(msgEvent.UncompressedSize))
-	dest.UpsertInt(conventions.OCTimeEventMessageEventCSize, int64(msgEvent.CompressedSize))
+	dest.UpsertString(conventions.AttributeMessageType, msgEvent.Type.String())
+	dest.UpsertInt(conventions.AttributeMessageID, int64(msgEvent.Id))
+	dest.UpsertInt(conventions.AttributeMessageUncompressedSize, int64(msgEvent.UncompressedSize))
+	dest.UpsertInt(conventions.AttributeMessageCompressedSize, int64(msgEvent.CompressedSize))
 }
 
 func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata.Span) {

@@ -33,6 +33,8 @@ The following settings can be optionally configured:
 - `key_file` path to the TLS key to use for TLS required connections. Should
   only be used if `insecure` is set to false.
 
+- `compression` (default = none): Compression type to use (only gzip is supported today)
+
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.

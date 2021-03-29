@@ -18,7 +18,6 @@ GOTEST=go test
 ADDLICENCESE=addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
-STATIC_CHECK=staticcheck
 LINT=golangci-lint
 IMPI=impi
 
@@ -27,7 +26,6 @@ all-license-srcs:
 
 .PHONY: test
 test:
-	@echo "running go unit test ./... in `pwd`"
 	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
 
 .PHONY: benchmark
@@ -62,19 +60,8 @@ fmt:
 	gofmt -w -s ./
 	goimports -w  -local go.opentelemetry.io/collector ./
 
-.PHONY: lint-static-check
-lint-static-check:
-	@STATIC_CHECK_OUT=`$(STATIC_CHECK) $(ALL_PKGS) 2>&1`; \
-		if [ "$$STATIC_CHECK_OUT" ]; then \
-			echo "$(STATIC_CHECK) FAILED => static check errors:\n"; \
-			echo "$$STATIC_CHECK_OUT\n"; \
-			exit 1; \
-		else \
-			echo "Static check finished successfully"; \
-		fi
-
 .PHONY: lint
-lint: lint-static-check
+lint:
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: misspell

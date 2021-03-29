@@ -34,8 +34,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	config2 "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -76,7 +76,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &zipkinreceiver.Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config2.ReceiverSettings{
 			NameVal: "zipkin_receiver",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -325,7 +325,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	port := testutil.GetAvailablePort(t)
 	cfg := &zipkinreceiver.Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config2.ReceiverSettings{
 			NameVal: "zipkin_receiver",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{

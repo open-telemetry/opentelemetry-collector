@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -35,19 +35,19 @@ type Processor interface {
 // TracesProcessor is a processor that can consume traces.
 type TracesProcessor interface {
 	Processor
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // MetricsProcessor is a processor that can consume metrics.
 type MetricsProcessor interface {
 	Processor
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // LogsProcessor is a processor that can consume logs.
 type LogsProcessor interface {
 	Processor
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 // ProcessorCapabilities describes the capabilities of a Processor.
@@ -82,7 +82,7 @@ type ProcessorFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Processor
+	CreateDefaultConfig() config.Processor
 
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
@@ -90,8 +90,8 @@ type ProcessorFactory interface {
 	CreateTracesProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
-		nextConsumer consumer.TracesConsumer,
+		cfg config.Processor,
+		nextConsumer consumer.Traces,
 	) (TracesProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
@@ -100,8 +100,8 @@ type ProcessorFactory interface {
 	CreateMetricsProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
-		nextConsumer consumer.MetricsConsumer,
+		cfg config.Processor,
+		nextConsumer consumer.Metrics,
 	) (MetricsProcessor, error)
 
 	// CreateLogsProcessor creates a processor based on the config.
@@ -110,7 +110,7 @@ type ProcessorFactory interface {
 	CreateLogsProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
-		nextConsumer consumer.LogsConsumer,
+		cfg config.Processor,
+		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
 }

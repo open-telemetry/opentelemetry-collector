@@ -27,7 +27,7 @@ import (
 // scraper for Processes Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime pdata.Timestamp
 
 	// for mocking gopsutil load.Misc
 	misc getMiscStats
@@ -46,7 +46,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = pdata.Timestamp(bootTime)
 	return nil
 }
 

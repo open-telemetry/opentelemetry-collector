@@ -12,7 +12,7 @@ Prometheus can be integrated with remote storage systems that supports its remot
 
 The following diagram shows an example of Prometheus remote write API usage, with Cortex,n open source, horizontally scalable, highly available, multi-tenant, long term storage, as a remote storage backend.
 
-![Cortex Archietecture](./img/cortex.png)
+![Cortex Architecture](./img/cortex.png)
 
 Our project is focused on developing an exporter for the OpenTelemetry Collector to any Prometheus remote storage backend.
 
@@ -280,7 +280,7 @@ We will follow test-driven development practices while completing this project. 
 
 
 ## **Request for Feedback**
-We'd like to get some feedback on whether we made the appropriate assumptions in [this](#1.2-gaps-and-ssumptions) section, and appreciate more comments, updates , and suggestions on the topic.
+We'd like to get some feedback on whether we made the appropriate assumptions in [this](#1.2-gaps-and-assumptions) section, and appreciate more comments, updates , and suggestions on the topic.
 
 Please let us know if there are any revisions, technical or informational, necessary for this document. Thank you!
 

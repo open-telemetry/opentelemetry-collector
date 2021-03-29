@@ -1,20 +1,20 @@
 extensions:
   health_check:
   health_check/1:
-    port: 13
+    endpoint: "localhost:13"
 
 service:
   extensions: [health_check/1]
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
 
 # Data pipeline is required to load the config.
 receivers:
-  examplereceiver:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
 exporters:
-  exampleexporter:
+  nop:

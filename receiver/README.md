@@ -23,7 +23,6 @@ Available metric receivers (sorted alphabetically):
 
 Available log receivers (sorted alphabetically):
 
-- [Fluent Forward Receiver](fluentforwardreceiver/README.md)
 - [OTLP Receiver](otlpreceiver/README.md)
 
 The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)

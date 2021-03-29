@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
@@ -123,7 +124,7 @@ func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
 
 func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata.Traces) {
 	for _, td := range tracesList {
-		resourceSpansList := pdata.TracesToOtlp(td)
+		resourceSpansList := internal.TracesToOtlp(td.InternalRep()).ResourceSpans
 		for _, rs := range resourceSpansList {
 			for _, ils := range rs.InstrumentationLibrarySpans {
 				for _, recdSpan := range ils.Spans {

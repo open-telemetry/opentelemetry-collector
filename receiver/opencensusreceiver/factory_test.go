@@ -25,9 +25,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
@@ -56,7 +56,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
-	defaultReceiverSettings := configmodels.ReceiverSettings{
+	defaultReceiverSettings := config.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
@@ -82,7 +82,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "invalid_port",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -125,7 +125,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 }
 
 func TestCreateMetricReceiver(t *testing.T) {
-	defaultReceiverSettings := configmodels.ReceiverSettings{
+	defaultReceiverSettings := config.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
@@ -152,7 +152,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},

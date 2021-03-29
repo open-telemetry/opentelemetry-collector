@@ -24,10 +24,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
-var defaultExporterCfg = &configmodels.ExporterSettings{
+var okStatus = trace.Status{Code: trace.StatusCodeOK}
+
+var defaultExporterCfg = &config.ExporterSettings{
 	TypeVal: "test",
 	NameVal: "test",
 }

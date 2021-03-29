@@ -1,13 +1,15 @@
 include ./Makefile.Common
 
-# This is the code that we want to run checklicense, staticcheck, etc.
+# This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/issuegenerator/*' \
 							-not -path './cmd/mdatagen/*' \
 							-not -path './cmd/schemagen/*' \
+							-not -path './cmd/checkdoc/*' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
 							-not -path './internal/data/protogen/*' \
+							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
@@ -40,6 +42,9 @@ RUN_CONFIG?=examples/local/otel-config.yaml
 
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 
+COMP_REL_PATH=service/defaultcomponents/defaults.go
+MOD_NAME=go.opentelemetry.io/collector
+
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
 # Accepts command to execute as first parameter.
@@ -51,7 +56,7 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: gochecklicense goimpi golint gomisspell gotest otelcol
+all: gochecklicense checkdoc goimpi golint gomisspell gotest otelcol
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -79,6 +84,14 @@ testbed-list-correctness-metrics:
 .PHONY: testbed-correctness-metrics
 testbed-correctness-metrics: otelcol
 	cd ./testbed/correctness/metrics && ./runtests.sh
+
+.PHONY: gomoddownload
+gomoddownload:
+	@$(MAKE) for-all CMD="go mod download"
+
+.PHONY: gotestinstall
+gotestinstall:
+	@$(MAKE) for-all CMD="make test GOTEST_OPT=\"-i\""
 
 .PHONY: gotest
 gotest:
@@ -139,13 +152,13 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
 	cd cmd/mdatagen && go install ./
+	cd cmd/checkdoc && go install ./
 
 .PHONY: otelcol
 otelcol:
 	go generate ./...
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+	$(MAKE) build-binary-internal
 
 .PHONY: run
 run:
@@ -213,19 +226,24 @@ binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm6
 
 .PHONY: binaries-darwin_amd64
 binaries-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) otelcol
+	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-linux_amd64
 binaries-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) otelcol
+	GOOS=linux   GOARCH=amd64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-linux_arm64
 binaries-linux_arm64:
-	GOOS=linux   GOARCH=arm64 $(MAKE) otelcol
+	GOOS=linux   GOARCH=arm64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-windows_amd64
 binaries-windows_amd64:
-	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) otelcol
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) build-binary-internal
+
+.PHONY: build-binary-internal
+build-binary-internal:
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
@@ -343,3 +361,8 @@ certs:
 .PHONY: certs-dryrun
 certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
+
+# Verify existence of READMEs for components specified as default components in the collector.
+.PHONY: checkdoc
+checkdoc:
+	go run cmd/checkdoc/main.go cmd/checkdoc/docs.go --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)

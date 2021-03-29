@@ -189,13 +189,13 @@ func (tc *TestCase) StartAgent(args ...string) {
 	}()
 
 	endpoint := tc.LoadGenerator.sender.GetEndpoint()
-	if endpoint != "" {
+	if endpoint != nil {
 		// Wait for agent to start. We consider the agent started when we can
 		// connect to the port to which we intend to send load. We only do this
 		// if the endpoint is not-empty, i.e. the sender does use network (some senders
 		// like text log writers don't).
 		tc.WaitFor(func() bool {
-			_, err := net.Dial("tcp", tc.LoadGenerator.sender.GetEndpoint())
+			_, err := net.Dial(tc.LoadGenerator.sender.GetEndpoint().Network(), tc.LoadGenerator.sender.GetEndpoint().String())
 			return err == nil
 		})
 	}

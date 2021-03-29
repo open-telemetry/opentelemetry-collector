@@ -17,17 +17,18 @@ package prometheusexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -43,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["prometheus/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: config.ExporterSettings{
 				NameVal: "prometheus/2",
 				TypeVal: "prometheus",
 			},
@@ -53,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 				"label1":        "value1",
 				"another label": "spaced value",
 			},
-			SendTimestamps: true,
+			SendTimestamps:   true,
+			MetricExpiration: 60 * time.Minute,
 		})
 }

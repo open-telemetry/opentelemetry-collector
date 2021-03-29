@@ -19,11 +19,21 @@ import (
 
 	"github.com/spf13/viper"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Component is either a receiver, exporter, processor or extension.
 type Component interface {
+	// Components lifecycle goes through the following phases:
+	//
+	// 1. Creation. The component is created using the factory, via Create* call.
+	// 2. Start. The component's Start() method is called.
+	// 3. Running. The component is up and running.
+	// 4. Shutdown. The component's Shutdown() method is called, the lifecycle is complete.
+	//
+	// Once the lifecycle is complete it may be repeated, in which case a new component
+	// is created and goes through the lifecycle.
+
 	// Start tells the component to start. Host parameter can be used for communicating
 	// with the host after Start() has already returned. If error is returned by
 	// Start() then the collector startup will be aborted.
@@ -37,12 +47,18 @@ type Component interface {
 	// Create a new context from the context.Background() for long-running operations.
 	Start(ctx context.Context, host Host) error
 
-	// Shutdown is invoked during service shutdown.
+	// Shutdown is invoked during service shutdown. After Shutdown() is called, if the component accept data in
+	// any way, it should not accept it anymore.
 	//
 	// If there are any background operations running by the component they must be aborted as soon as possible.
 	// Remember that if you started any long-running background operation from the Start() method that operation
 	// must be also cancelled. If there are any buffer in the component, it should be cleared and the data sent
 	// immediately to the next component.
+	//
+	// Once the Shutdown() method returns the component's lifecycle is completed. No other
+	// methods of the component are called after that. If necessary a new component with
+	// the same or different configuration may be created and started (this may happen
+	// for example if we want to restart the component).
 	Shutdown(ctx context.Context) error
 }
 
@@ -57,47 +73,10 @@ const (
 	KindExtension
 )
 
-// Host represents the entity that is hosting a Component. It is used to allow communication
-// between the Component and its host (normally the service.Application is the host).
-type Host interface {
-	// ReportFatalError is used to report to the host that the extension
-	// encountered a fatal error (i.e.: an error that the instance can't recover
-	// from) after its start function had already returned.
-	ReportFatalError(err error)
-
-	// GetFactory of the specified kind. Returns the factory for a component type.
-	// This allows components to create other components. For example:
-	//   func (r MyReceiver) Start(host component.Host) error {
-	//     apacheFactory := host.GetFactory(KindReceiver,"apache").(component.ReceiverFactory)
-	//     receiver, err := apacheFactory.CreateMetricsReceiver(...)
-	//     ...
-	//   }
-	// GetFactory can be called by the component anytime after Start() begins and
-	// until Shutdown() is called. Note that the component is responsible for destroying
-	// other components that it creates.
-	GetFactory(kind Kind, componentType configmodels.Type) Factory
-
-	// Return map of extensions. Only enabled and created extensions will be returned.
-	// Typically is used to find an extension by type or by full config name. Both cases
-	// can be done by iterating the returned map. There are typically very few extensions
-	// so there there is no performance implications due to iteration.
-	GetExtensions() map[configmodels.Extension]ServiceExtension
-
-	// Return map of exporters. Only enabled and created exporters will be returned.
-	// Typically is used to find exporters by type or by full config name. Both cases
-	// can be done by iterating the returned map. There are typically very few exporters
-	// so there there is no performance implications due to iteration.
-	// This returns a map by DataType of maps by exporter configs to the exporter instance.
-	// Note that an exporter with the same name may be attached to multiple pipelines and
-	// thus we may have an instance of the exporter for multiple data types.
-	// This is an experimental function that may change or even be removed completely.
-	GetExporters() map[configmodels.DataType]map[configmodels.Exporter]Exporter
-}
-
 // Factory interface must be implemented by all component factories.
 type Factory interface {
 	// Type gets the type of the component created by this factory.
-	Type() configmodels.Type
+	Type() config.Type
 }
 
 // ConfigUnmarshaler interface is an optional interface that if implemented by a Factory,
@@ -118,19 +97,3 @@ type ConfigUnmarshaler interface {
 // intoCfg interface{}
 //   An empty interface wrapping a pointer to the config struct to unmarshal into.
 type CustomUnmarshaler func(componentViperSection *viper.Viper, intoCfg interface{}) error
-
-// ApplicationStartInfo is the information that is logged at the application start and
-// passed into each component. This information can be overridden in custom builds.
-type ApplicationStartInfo struct {
-	// Executable file name, e.g. "otelcol".
-	ExeName string
-
-	// Long name, used e.g. in the logs.
-	LongName string
-
-	// Version string.
-	Version string
-
-	// Git hash of the source code.
-	GitHash string
-}

@@ -26,13 +26,6 @@ import (
 
 // Some of the keys used to represent OTLP constructs as tags or annotations in other formats.
 const (
-	AnnotationDescriptionKey = "description"
-
-	MessageEventIDKey               = "message.id"
-	MessageEventTypeKey             = "message.type"
-	MessageEventCompressedSizeKey   = "message.compressed_size"
-	MessageEventUncompressedSizeKey = "message.uncompressed_size"
-
 	TagMessage = "message"
 
 	TagSpanKind = "span.kind"
@@ -46,10 +39,8 @@ const (
 	TagZipkinCensusMsg     = "census.status_description"
 	TagZipkinOpenCensusMsg = "opencensus.status_description"
 
-	TagW3CTraceState          = "w3c.tracestate"
-	TagServiceNameSource      = "otlp.service.name.source"
-	TagInstrumentationName    = "otlp.instrumentation.library.name"
-	TagInstrumentationVersion = "otlp.instrumentation.library.version"
+	TagW3CTraceState     = "w3c.tracestate"
+	TagServiceNameSource = "otlp.service.name.source"
 )
 
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required

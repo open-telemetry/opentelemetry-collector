@@ -28,11 +28,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -60,14 +60,13 @@ func TestScrape(t *testing.T) {
 	// a) read native system processes on Windows (e.g. Registry process)
 	// b) read info on processes that have just terminated
 	//
-	// so validate that we have less processes that were failed to be scraped
-	// than processes that were successfully scraped & some valid data is
-	// returned
+	// so validate that we have at some errors & some valid data
 	if err != nil {
-		require.True(t, consumererror.IsPartialScrapeError(err))
+		require.True(t, scrapererror.IsPartialScrapeError(err))
 		noProcessesScraped := resourceMetrics.Len()
-		noProcessesErrored := err.(consumererror.PartialScrapeError).Failed
-		require.Lessf(t, noProcessesErrored, noProcessesScraped, "Failed to scrape metrics - more processes failed to be scraped than were successfully scraped: %v", err)
+		noProcessesErrored := err.(scrapererror.PartialScrapeError).Failed
+		require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
+		require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
 	}
 
 	require.Greater(t, resourceMetrics.Len(), 1)
@@ -91,7 +90,7 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 	}
 }
 
-func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
 	cpuTimeMetric := getMetric(t, metadata.Metrics.ProcessCPUTime.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessCPUTime.New(), cpuTimeMetric)
 	if startTime != 0 {
@@ -109,7 +108,7 @@ func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.Metric, resourc
 	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric)
 }
 
-func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
 	diskIOMetric := getMetric(t, metadata.Metrics.ProcessDiskIo.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessDiskIo.New(), diskIOMetric)
 	if startTime != 0 {
@@ -175,14 +174,14 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	metrics, err := scraper.scrape(context.Background())
 	assert.EqualError(t, err, "err1")
 	assert.Equal(t, 0, metrics.Len())
-	assert.False(t, consumererror.IsPartialScrapeError(err))
+	assert.False(t, scrapererror.IsPartialScrapeError(err))
 }
 
 type processHandlesMock struct {
 	handles []*processHandleMock
 }
 
-func (p *processHandlesMock) Pid(index int) int32 {
+func (p *processHandlesMock) Pid(int) int32 {
 	return 1
 }
 
@@ -448,11 +447,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
 			assert.EqualError(t, err, test.expectedError)
-			isPartial := consumererror.IsPartialScrapeError(err)
+			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
 				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
-				assert.Equal(t, expectedFailures, err.(consumererror.PartialScrapeError).Failed)
+				assert.Equal(t, expectedFailures, err.(scrapererror.PartialScrapeError).Failed)
 			}
 		})
 	}

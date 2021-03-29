@@ -23,14 +23,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func generateOCTestDataNoMetrics() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+func generateOCTestDataNoMetrics() MetricsData {
+	return MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -38,8 +37,8 @@ func generateOCTestDataNoMetrics() consumerdata.MetricsData {
 	}
 }
 
-func generateOCTestDataNoPoints() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+func generateOCTestDataNoPoints() MetricsData {
+	return MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -105,12 +104,12 @@ func generateOCTestDataNoPoints() consumerdata.MetricsData {
 	}
 }
 
-func generateOCTestDataNoLabels() consumerdata.MetricsData {
+func generateOCTestDataNoLabels() MetricsData {
 	m := generateOCTestMetricInt()
 	m.MetricDescriptor.LabelKeys = nil
 	m.Timeseries[0].LabelValues = nil
 	m.Timeseries[1].LabelValues = nil
-	return consumerdata.MetricsData{
+	return MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -119,8 +118,8 @@ func generateOCTestDataNoLabels() consumerdata.MetricsData {
 	}
 }
 
-func generateOCTestDataMetricsOneMetric() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+func generateOCTestDataMetricsOneMetric() MetricsData {
+	return MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -129,8 +128,8 @@ func generateOCTestDataMetricsOneMetric() consumerdata.MetricsData {
 	}
 }
 
-func generateOCTestDataMetricsOneMetricOneNil() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+func generateOCTestDataMetricsOneMetricOneNil() MetricsData {
+	return MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -139,10 +138,10 @@ func generateOCTestDataMetricsOneMetricOneNil() consumerdata.MetricsData {
 	}
 }
 
-func generateOCTestDataMetricsOneMetricOneNilTimeseries() consumerdata.MetricsData {
+func generateOCTestDataMetricsOneMetricOneNilTimeseries() MetricsData {
 	m := generateOCTestMetricInt()
 	m.Timeseries = append(m.Timeseries, nil)
-	return consumerdata.MetricsData{
+	return MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -151,10 +150,10 @@ func generateOCTestDataMetricsOneMetricOneNilTimeseries() consumerdata.MetricsDa
 	}
 }
 
-func generateOCTestDataMetricsOneMetricOneNilPoint() consumerdata.MetricsData {
+func generateOCTestDataMetricsOneMetricOneNilPoint() MetricsData {
 	m := generateOCTestMetricInt()
 	m.Timeseries[0].Points = append(m.Timeseries[0].Points, nil)
-	return consumerdata.MetricsData{
+	return MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -499,7 +498,7 @@ func generateResourceWithOcNodeAndResource() pdata.Resource {
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.OCAttributeProcessStartTime:   pdata.NewAttributeValueString("2020-02-11T20:26:00Z"),
 		conventions.AttributeHostName:             pdata.NewAttributeValueString("host1"),
-		conventions.OCAttributeProcessID:          pdata.NewAttributeValueInt(123),
+		conventions.AttributeProcessID:            pdata.NewAttributeValueInt(123),
 		conventions.AttributeTelemetrySDKVersion:  pdata.NewAttributeValueString("v2.0.1"),
 		conventions.OCAttributeExporterVersion:    pdata.NewAttributeValueString("v1.2.0"),
 		conventions.AttributeTelemetrySDKLanguage: pdata.NewAttributeValueString("cpp"),

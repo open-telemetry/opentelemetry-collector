@@ -24,26 +24,26 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const typeStr = "test"
 
 var (
-	defaultCfg = &configmodels.ExporterSettings{
+	defaultCfg = &config.ExporterSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
-	nopTracesExporter, _ = NewTraceExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error) {
-		return 0, nil
+	nopTracesExporter, _ = NewTraceExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
+		return nil
 	})
-	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
-		return 0, nil
+	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) error {
+		return nil
 	})
-	nopLogsExporter, _ = NewLogsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error) {
-		return 0, nil
+	nopLogsExporter, _ = NewLogsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Logs) error {
+		return nil
 	})
 )
 
@@ -91,19 +91,19 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.Same(t, nopLogsExporter, le)
 }
 
-func defaultConfig() configmodels.Exporter {
+func defaultConfig() config.Exporter {
 	return defaultCfg
 }
 
-func createTraceExporter(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.TracesExporter, error) {
 	return nopTracesExporter, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.MetricsExporter, error) {
 	return nopMetricsExporter, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.LogsExporter, error) {
 	return nopLogsExporter, nil
 }
 

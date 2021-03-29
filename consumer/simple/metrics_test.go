@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 )
 
@@ -270,7 +271,7 @@ func TestMetrics(t *testing.T) {
 		AddDSumDataPoint("disk.time_awake", 100.6)
 
 	intHisto := pdata.NewIntHistogramDataPoint()
-	doubleHisto := pdata.NewDoubleHistogramDataPoint()
+	doubleHisto := pdata.NewHistogramDataPoint()
 
 	mb.WithLabels(map[string]string{
 		"partition": "1",
@@ -283,7 +284,8 @@ func TestMetrics(t *testing.T) {
 	mCount, dpCount := metrics.MetricAndDataPointCount()
 	require.Equal(t, 7, mCount)
 	require.Equal(t, 8, dpCount)
-	asJSON, _ := json.MarshalIndent(pdata.MetricsToOtlp(metricstestutil.SortedMetrics(metrics)), "", "  ")
+	req := internal.MetricsToOtlp(metricstestutil.SortedMetrics(metrics).InternalRep())
+	asJSON, _ := json.MarshalIndent(req.ResourceMetrics, "", "  ")
 	require.Equal(t, expected, string(asJSON))
 }
 
@@ -416,7 +418,7 @@ func TestSafeMetrics(t *testing.T) {
 				AddDSumDataPoint("disk.time_awake"+idx, 100.6)
 
 			intHisto := pdata.NewIntHistogramDataPoint()
-			doubleHisto := pdata.NewDoubleHistogramDataPoint()
+			doubleHisto := pdata.NewHistogramDataPoint()
 
 			for j := 0; j < 5; j++ {
 				mb.WithLabels(map[string]string{
@@ -467,7 +469,7 @@ func BenchmarkSimpleMetrics(b *testing.B) {
 
 func BenchmarkPdataMetrics(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		tsNano := pdata.TimestampUnixNano(time.Now().UnixNano())
+		tsNano := pdata.TimestampFromTime(time.Now())
 
 		m := pdata.NewMetrics()
 

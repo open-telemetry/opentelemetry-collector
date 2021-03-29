@@ -281,7 +281,7 @@ func generateThriftFollowerSpan() *jaeger.Span {
 	}
 }
 
-func unixNanoToMicroseconds(ns pdata.TimestampUnixNano) int64 {
+func unixNanoToMicroseconds(ns pdata.Timestamp) int64 {
 	return int64(ns / 1000)
 }
 

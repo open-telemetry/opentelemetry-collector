@@ -73,7 +73,7 @@ func TestWithUnmarshallers(t *testing.T) {
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = new(otlpProtoUnmarshaller).Encoding()
+		cfg.Encoding = new(otlpTracesPbUnmarshaller).Encoding()
 		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
@@ -85,7 +85,7 @@ type customUnamarshaller struct {
 
 var _ Unmarshaller = (*customUnamarshaller)(nil)
 
-func (c customUnamarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (c customUnamarshaller) Unmarshal([]byte) (pdata.Traces, error) {
 	panic("implement me")
 }
 

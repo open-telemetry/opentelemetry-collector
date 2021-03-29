@@ -30,7 +30,7 @@ import (
 // tests with the prefix "TestHarness_" get run in the "correctness-metrics" ci job
 func TestHarness_MetricsGoldenData(t *testing.T) {
 	tests, err := correctness.LoadPictOutputPipelineDefs(
-		"../testdata/generated_pict_pairs_metrics_pipeline.txt",
+		"testdata/generated_pict_pairs_metrics_pipeline.txt",
 	)
 	require.NoError(t, err)
 

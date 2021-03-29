@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -66,7 +66,7 @@ func TestTrace10kSPS(t *testing.T) {
 			},
 		},
 		{
-			"OTLP",
+			"OTLP-gRPC",
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
@@ -75,11 +75,29 @@ func TestTrace10kSPS(t *testing.T) {
 			},
 		},
 		{
+			"OTLP-gRPC-gzip",
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 100,
+			},
+		},
+		{
 			"OTLP-HTTP",
 			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
+				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			"OTLP-HTTP-gzip",
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 25,
 				ExpectedMaxRAM: 100,
 			},
 		},
@@ -131,7 +149,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
-			ExpectedMaxRAM:      150,
+			ExpectedMaxRAM:      170,
 			ExpectedMinFinalRAM: 100,
 		},
 		{
@@ -464,7 +482,7 @@ func TestMetricsFromFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use metrics previously recorded using "file" exporter and "k8scluster" receiver.
-	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.json", configmodels.MetricsDataType)
+	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.json", config.MetricsDataType)
 	assert.NoError(t, err)
 
 	options := testbed.LoadOptions{

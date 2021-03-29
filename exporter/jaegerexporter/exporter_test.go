@@ -36,8 +36,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
-	tracev1 "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
@@ -234,12 +232,18 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	defer exporter.Shutdown(context.Background())
 
-	traceID := data.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := data.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
-	traces := pdata.TracesFromOtlp([]*tracev1.ResourceSpans{
-		{InstrumentationLibrarySpans: []*tracev1.InstrumentationLibrarySpans{{Spans: []*tracev1.Span{{TraceId: traceID, SpanId: spanID}}}}},
-	})
-	err = exporter.ConsumeTraces(context.Background(), traces)
+	traceID := pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+
+	err = exporter.ConsumeTraces(context.Background(), td)
 	require.NoError(t, err)
 	requestes := spanHandler.getRequests()
 	assert.Equal(t, 1, len(requestes))

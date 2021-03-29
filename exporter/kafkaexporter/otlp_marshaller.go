@@ -16,8 +16,6 @@ package kafkaexporter
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpmetric "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 var _ TracesMarshaller = (*otlpTracesPbMarshaller)(nil)
@@ -30,11 +28,8 @@ func (m *otlpTracesPbMarshaller) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpTracesPbMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
-	request := otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(traces),
-	}
-	bts, err := request.Marshal()
+func (m *otlpTracesPbMarshaller) Marshal(td pdata.Traces) ([]Message, error) {
+	bts, err := td.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +43,8 @@ func (m *otlpMetricsPbMarshaller) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpMetricsPbMarshaller) Marshal(metrics pdata.Metrics) ([]Message, error) {
-	request := otlpmetric.ExportMetricsServiceRequest{
-		ResourceMetrics: pdata.MetricsToOtlp(metrics),
-	}
-	bts, err := request.Marshal()
+func (m *otlpMetricsPbMarshaller) Marshal(md pdata.Metrics) ([]Message, error) {
+	bts, err := md.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
 	}

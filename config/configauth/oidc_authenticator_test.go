@@ -192,7 +192,8 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	file, err := ioutil.TempFile(os.TempDir(), "cert")
 	require.NoError(t, err)
 	defer os.Remove(file.Name())
-	file.Write([]byte("foobar"))
+	_, err = file.Write([]byte("foobar"))
+	require.NoError(t, err)
 
 	config := OIDC{
 		IssuerCAPath: file.Name(),

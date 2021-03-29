@@ -25,9 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
-	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
@@ -41,24 +38,16 @@ type fileExporter struct {
 }
 
 func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	request := otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
-	}
-	return exportMessageAsLine(e, &request)
+	return exportMessageAsLine(e, internal.TracesToOtlp(td.InternalRep()))
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
-	request := otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: pdata.MetricsToOtlp(md),
-	}
-	return exportMessageAsLine(e, &request)
+	return exportMessageAsLine(e, internal.MetricsToOtlp(md.InternalRep()))
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	request := otlplogs.ExportLogsServiceRequest{
-		ResourceLogs: internal.LogsToOtlp(ld.InternalRep()),
-	}
-	return exportMessageAsLine(e, &request)
+	request := internal.LogsToOtlp(ld.InternalRep())
+	return exportMessageAsLine(e, request)
 }
 
 func exportMessageAsLine(e *fileExporter, message proto.Message) error {
@@ -74,7 +63,7 @@ func exportMessageAsLine(e *fileExporter, message proto.Message) error {
 	return nil
 }
 
-func (e *fileExporter) Start(ctx context.Context, host component.Host) error {
+func (e *fileExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 

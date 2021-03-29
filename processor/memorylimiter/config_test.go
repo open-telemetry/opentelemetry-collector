@@ -23,12 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	p0 := cfg.Processors["memory_limiter"]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "memory_limiter",
 				NameVal: "memory_limiter",
 			},
@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 	p1 := cfg.Processors["memory_limiter/with-settings"]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "memory_limiter",
 				NameVal: "memory_limiter/with-settings",
 			},

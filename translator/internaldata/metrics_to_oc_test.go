@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -34,7 +33,7 @@ func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.Upsert(conventions.AttributeHostName, pdata.NewAttributeValueString("host1"))
-	attrs.Upsert(conventions.OCAttributeProcessID, pdata.NewAttributeValueInt(123))
+	attrs.Upsert(conventions.AttributeProcessID, pdata.NewAttributeValueInt(123))
 	attrs.Upsert(conventions.OCAttributeProcessStartTime, pdata.NewAttributeValueString("2020-02-11T20:26:00Z"))
 	attrs.Upsert(conventions.AttributeTelemetrySDKLanguage, pdata.NewAttributeValueString("cpp"))
 	attrs.Upsert(conventions.AttributeTelemetrySDKVersion, pdata.NewAttributeValueString("v2.0.1"))
@@ -43,18 +42,18 @@ func TestMetricsToOC(t *testing.T) {
 	tests := []struct {
 		name     string
 		internal pdata.Metrics
-		oc       []consumerdata.MetricsData
+		oc       []MetricsData
 	}{
 		{
 			name:     "empty",
 			internal: testdata.GenerateMetricsEmpty(),
-			oc:       []consumerdata.MetricsData(nil),
+			oc:       []MetricsData(nil),
 		},
 
 		{
 			name:     "one-empty-resource-metrics",
 			internal: testdata.GenerateMetricsOneEmptyResourceMetrics(),
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				{},
 			},
 		},
@@ -62,7 +61,7 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "no-libraries",
 			internal: testdata.GenerateMetricsNoLibraries(),
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
 		},
@@ -70,7 +69,7 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "one-empty-instrumentation-library",
 			internal: testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
 		},
@@ -78,7 +77,7 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "one-metric-no-resource",
 			internal: testdata.GenerateMetricsOneMetricNoResource(),
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				{
 					Metrics: []*ocmetrics.Metric{
 						generateOCTestMetricInt(),
@@ -90,7 +89,7 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "one-metric",
 			internal: testdata.GenerateMetricsOneMetric(),
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				generateOCTestDataMetricsOneMetric(),
 			},
 		},
@@ -98,7 +97,7 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "one-metric-no-labels",
 			internal: testdata.GenerateMetricsOneMetricNoLabels(),
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				generateOCTestDataNoLabels(),
 			},
 		},
@@ -106,7 +105,7 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "all-types-no-data-points",
 			internal: testdata.GenerateMetricsAllTypesNoDataPoints(),
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				generateOCTestDataNoPoints(),
 			},
 		},
@@ -114,7 +113,7 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "sample-metric",
 			internal: sampleMetricData,
-			oc: []consumerdata.MetricsData{
+			oc: []MetricsData{
 				generateOCTestData(),
 			},
 		},
@@ -130,7 +129,7 @@ func TestMetricsToOC(t *testing.T) {
 
 func TestMetricsToOC_InvalidDataType(t *testing.T) {
 	internal := testdata.GenerateMetricsMetricTypeInvalid()
-	want := []consumerdata.MetricsData{
+	want := []MetricsData{
 		{
 			Node: &occommon.Node{},
 			Resource: &ocresource.Resource{
@@ -152,10 +151,10 @@ func TestMetricsToOC_InvalidDataType(t *testing.T) {
 	assert.EqualValues(t, want, got)
 }
 
-func generateOCTestData() consumerdata.MetricsData {
+func generateOCTestData() MetricsData {
 	ts := timestamppb.New(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 
-	return consumerdata.MetricsData{
+	return MetricsData{
 		Node: &occommon.Node{
 			Identifier: &occommon.ProcessIdentifier{
 				HostName:       "host1",

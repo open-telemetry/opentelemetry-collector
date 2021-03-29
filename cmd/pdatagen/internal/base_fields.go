@@ -20,8 +20,6 @@ import (
 )
 
 const accessorSliceTemplate = `// ${fieldName} returns the ${originFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return new${returnType}(&(*ms.orig).${originFieldName})
 }`
@@ -35,8 +33,6 @@ const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testi
 }`
 
 const accessorsMessageValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return new${returnType}(&(*ms.orig).${originFieldName})
 }`
@@ -48,15 +44,11 @@ const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t
 }`
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return (*ms.orig).${originFieldName}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v
 }`
@@ -70,22 +62,16 @@ const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *t
 }`
 
 const accessorsPrimitiveTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ${returnType}((*ms.orig).${originFieldName})
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = ${rawType}(v)
 }`
 
 const accessorsPrimitiveWithoutSetterTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ${returnType}((*ms.orig).${originFieldName})
 }`
@@ -254,7 +240,7 @@ func (pf *primitiveField) generateCopyToValue(sb *strings.Builder) {
 
 var _ baseField = (*primitiveField)(nil)
 
-// Types that has defined a custom type (e.g. "type TimestampUnixNano uint64")
+// Types that has defined a custom type (e.g. "type Timestamp uint64")
 type primitiveTypedField struct {
 	fieldName       string
 	originFieldName string

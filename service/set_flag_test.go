@@ -18,9 +18,10 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestSetFlags(t *testing.T) {
@@ -35,30 +36,28 @@ func TestSetFlags(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	v := viper.New()
-	err = AddSetFlagProperties(v, cmd)
+	cp := config.NewParser()
+	err = AddSetFlagProperties(cp, cmd)
 	require.NoError(t, err)
 
-	settings := v.AllSettings()
-	assert.Equal(t, 4, len(settings))
-	assert.Equal(t, "2s", v.Get("processors::batch::timeout"))
-	assert.Equal(t, "3s", v.Get("processors::batch/foo::timeout"))
-	assert.Equal(t, "foo:9200,foo2:9200", v.Get("exporters::kafka::brokers"))
-	assert.Equal(t, "localhost:1818", v.Get("receivers::otlp::protocols::grpc::endpoint"))
+	keys := cp.AllKeys()
+	assert.Len(t, keys, 4)
+	assert.Equal(t, "2s", cp.Get("processors::batch::timeout"))
+	assert.Equal(t, "3s", cp.Get("processors::batch/foo::timeout"))
+	assert.Equal(t, "foo:9200,foo2:9200", cp.Get("exporters::kafka::brokers"))
+	assert.Equal(t, "localhost:1818", cp.Get("receivers::otlp::protocols::grpc::endpoint"))
 }
 
 func TestSetFlags_err_set_flag(t *testing.T) {
 	cmd := &cobra.Command{}
-	v := viper.New()
-	err := AddSetFlagProperties(v, cmd)
-	require.Error(t, err)
+	require.Error(t, AddSetFlagProperties(config.NewParser(), cmd))
 }
 
 func TestSetFlags_empty(t *testing.T) {
 	cmd := &cobra.Command{}
 	addSetFlag(cmd.Flags())
-	v := viper.New()
-	err := AddSetFlagProperties(v, cmd)
+	cp := config.NewParser()
+	err := AddSetFlagProperties(cp, cmd)
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(v.AllSettings()))
+	assert.Equal(t, 0, len(cp.AllKeys()))
 }

@@ -24,11 +24,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 func TestScrape(t *testing.T) {
@@ -39,7 +39,7 @@ func TestScrape(t *testing.T) {
 		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
 		connectionsFunc      func(string) ([]net.ConnectionStat, error)
 		expectNetworkMetrics bool
-		expectedStartTime    pdata.TimestampUnixNano
+		expectedStartTime    pdata.Timestamp
 		newErrRegex          string
 		initializationErr    string
 		expectedErr          string
@@ -122,10 +122,10 @@ func TestScrape(t *testing.T) {
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
-				isPartial := consumererror.IsPartialScrapeError(err)
+				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, test.expectedErrCount, err.(consumererror.PartialScrapeError).Failed)
+					assert.Equal(t, test.expectedErrCount, err.(scrapererror.PartialScrapeError).Failed)
 				}
 
 				return
@@ -154,7 +154,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)

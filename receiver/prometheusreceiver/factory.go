@@ -20,11 +20,12 @@ import (
 	"fmt"
 
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -52,22 +53,23 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	if componentViperSection == nil {
+	componentParser := config.ParserFromViper(componentViperSection)
+	if componentParser == nil {
 		return nil
 	}
 	// We need custom unmarshaling because prometheus "config" subkey defines its own
 	// YAML unmarshaling routines so we need to do it explicitly.
 
-	err := componentViperSection.UnmarshalExact(intoCfg)
+	err := componentParser.UnmarshalExact(intoCfg)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to parse config: %s", err)
 	}
 
 	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
-	if !componentViperSection.IsSet(prometheusConfigKey) {
+	promCfgMap := cast.ToStringMap(componentParser.Get(prometheusConfigKey))
+	if len(promCfgMap) == 0 {
 		return nil
 	}
-	promCfgMap := componentViperSection.Sub(prometheusConfigKey).AllSettings()
 	out, err := yaml.Marshal(promCfgMap)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
@@ -84,9 +86,9 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 	return nil
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -96,8 +98,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Sample contains a program that exports to the OpenCensus service.
+// Sample contains a program that exports to the OpenTelemetry service.
 package main
 
 import (
@@ -24,11 +24,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
-	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -46,7 +47,7 @@ func initProvider() func() {
 
 	otelAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
 	if !ok {
-		otelAgentAddr = "0.0.0.0:55680"
+		otelAgentAddr = "0.0.0.0:4317"
 	}
 
 	exp, err := otlp.NewExporter(ctx, otlpgrpc.NewDriver(
@@ -66,7 +67,7 @@ func initProvider() func() {
 
 	bsp := sdktrace.NewBatchSpanProcessor(exp)
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
@@ -77,18 +78,18 @@ func initProvider() func() {
 			exp,
 		),
 		controller.WithCollectPeriod(7*time.Second),
-		controller.WithPusher(exp),
+		controller.WithExporter(exp),
 	)
 
 	// set global propagator to tracecontext (the default is no-op).
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 	otel.SetTracerProvider(tracerProvider)
-	otel.SetMeterProvider(cont.MeterProvider())
-	cont.Start(context.Background())
+	global.SetMeterProvider(cont.MeterProvider())
+	handleErr(cont.Start(context.Background()), "failed to start metric controller")
 
 	return func() {
 		handleErr(tracerProvider.Shutdown(ctx), "failed to shutdown provider")
-		cont.Stop(context.Background()) // pushes any last exports to the receiver
+		handleErr(cont.Stop(context.Background()), "failed to stop metrics controller") // pushes any last exports to the receiver
 		handleErr(exp.Shutdown(ctx), "failed to stop exporter")
 	}
 }
@@ -104,14 +105,14 @@ func main() {
 	defer shutdown()
 
 	tracer := otel.Tracer("test-tracer")
-	meter := otel.Meter("test-meter")
+	meter := global.Meter("test-meter")
 
 	// labels represent additional key-value descriptors that can be bound to a
 	// metric observer or recorder.
 	// TODO: Use baggage when supported to extact labels from baggage.
-	commonLabels := []label.KeyValue{
-		label.String("method", "repl"),
-		label.String("client", "cli"),
+	commonLabels := []attribute.KeyValue{
+		attribute.String("method", "repl"),
+		attribute.String("client", "cli"),
 	}
 
 	// Recorder metric example

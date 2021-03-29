@@ -17,35 +17,22 @@ package configtest
 import (
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
-// NewViperFromYamlFile creates a viper instance that reads the given fileName as yaml config
-// and can then be used to unmarshal the file contents to objects.
-// Example usage for testing can be found in configtest_test.go
-func NewViperFromYamlFile(t *testing.T, fileName string) *viper.Viper {
-	// Read yaml config from file
-	v := config.NewViper()
-	v.SetConfigFile(fileName)
-	require.NoErrorf(t, v.ReadInConfig(), "unable to read the file %v", fileName)
-
-	return v
-}
-
 // LoadConfigFile loads a config from file.
-func LoadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
-	v := NewViperFromYamlFile(t, fileName)
-
+func LoadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
+	// Read yaml config from file
+	cp, err := config.NewParserFromFile(fileName)
+	require.NoError(t, err)
 	// Load the config from viper using the given factories.
-	cfg, err := config.Load(v, factories)
+	cfg, err := configparser.Load(cp, factories)
 	if err != nil {
 		return nil, err
 	}
-	return cfg, config.ValidateConfig(cfg, zap.NewNop())
+	return cfg, cfg.Validate()
 }

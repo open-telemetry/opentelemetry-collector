@@ -26,6 +26,8 @@ Consider submitting different PRs for (more details about adding new components
   binary by updating the `components.go` file. The component must be enabled
   only after sufficient testing, and there is enough confidence in the
   stability and quality of the component.
+* Once a new component has been added to the executable, please add the component 
+  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Refactoring Work
 
@@ -105,7 +107,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.14 and up)
+2. [go](https://golang.org/) (version 1.15 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 

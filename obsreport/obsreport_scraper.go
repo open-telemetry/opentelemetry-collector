@@ -21,9 +21,9 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -100,7 +100,7 @@ func EndMetricsScrapeOp(
 ) {
 	numErroredMetrics := 0
 	if err != nil {
-		if partialErr, isPartial := err.(consumererror.PartialScrapeError); isPartial {
+		if partialErr, isPartial := err.(scrapererror.PartialScrapeError); isPartial {
 			numErroredMetrics = partialErr.Failed
 		} else {
 			numErroredMetrics = numScrapedMetrics
@@ -120,7 +120,7 @@ func EndMetricsScrapeOp(
 	// end span according to errors
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
-			trace.StringAttribute(FormatKey, string(configmodels.MetricsDataType)),
+			trace.StringAttribute(FormatKey, string(config.MetricsDataType)),
 			trace.Int64Attribute(ScrapedMetricPointsKey, int64(numScrapedMetrics)),
 			trace.Int64Attribute(ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)

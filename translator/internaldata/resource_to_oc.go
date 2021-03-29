@@ -91,6 +91,8 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		val := tracetranslator.AttributeValueToString(v, false)
 
 		switch k {
+		case conventions.AttributeCloudAvailabilityZone:
+			labels[resourcekeys.CloudKeyZone] = val
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
@@ -104,7 +106,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			getProcessIdentifier(ocNode).StartTimestamp = ts
 		case conventions.AttributeHostName:
 			getProcessIdentifier(ocNode).HostName = val
-		case conventions.OCAttributeProcessID:
+		case conventions.AttributeProcessID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {
 				pid = defaultProcessID

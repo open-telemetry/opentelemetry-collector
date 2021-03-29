@@ -15,17 +15,14 @@
 package goldendataset
 
 import (
-	"io"
-	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateTraces(t *testing.T) {
-	random := io.Reader(rand.New(rand.NewSource(42)))
-	rscSpans, err := GenerateResourceSpans("testdata/generated_pict_pairs_traces.txt",
-		"testdata/generated_pict_pairs_spans.txt", random)
+	rscSpans, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt",
+		"testdata/generated_pict_pairs_spans.txt")
 	assert.Nil(t, err)
 	assert.Equal(t, 32, len(rscSpans))
 }

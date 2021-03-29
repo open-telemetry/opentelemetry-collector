@@ -44,8 +44,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -122,38 +122,33 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
-	gotOc := internaldata.TraceDataToOC(got[0])
-	require.Len(t, gotOc, 1)
+	require.Equal(t, 1, got[0].ResourceSpans().Len())
+	gotNode, gotResource, gotSpans := internaldata.ResourceSpansToOC(got[0].ResourceSpans().At(0))
 
-	want := consumerdata.TraceData{
-		Node: &commonpb.Node{
-			Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"},
-		},
-		Resource: &resourcepb.Resource{},
-		Spans: []*tracepb.Span{
-			{
-				TraceId:   []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
-				SpanId:    []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
-				Name:      &tracepb.TruncatableString{Value: "testSpan"},
-				StartTime: timestamppb.New(time.Unix(1544712660, 0).UTC()),
-				EndTime:   timestamppb.New(time.Unix(1544712661, 0).UTC()),
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"attr1": {
-							Value: &tracepb.AttributeValue_IntValue{IntValue: 55},
-						},
+	wantNode := &commonpb.Node{Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"}}
+	wantResource := &resourcepb.Resource{}
+	wantSpans := []*tracepb.Span{
+		{
+			TraceId:   []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
+			SpanId:    []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
+			Name:      &tracepb.TruncatableString{Value: "testSpan"},
+			StartTime: timestamppb.New(time.Unix(1544712660, 0).UTC()),
+			EndTime:   timestamppb.New(time.Unix(1544712661, 0).UTC()),
+			Attributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{
+					"attr1": {
+						Value: &tracepb.AttributeValue_IntValue{IntValue: 55},
 					},
 				},
-				Status: &tracepb.Status{},
 			},
+			Status: &tracepb.Status{},
 		},
-		SourceFormat: "oc_trace",
 	}
-	assert.True(t, proto.Equal(want.Node, gotOc[0].Node))
-	assert.True(t, proto.Equal(want.Resource, gotOc[0].Resource))
-	require.Len(t, want.Spans, 1)
-	require.Len(t, gotOc[0].Spans, 1)
-	assert.EqualValues(t, want.Spans[0], gotOc[0].Spans[0])
+	assert.True(t, proto.Equal(wantNode, gotNode))
+	assert.True(t, proto.Equal(wantResource, gotResource))
+	require.Len(t, wantSpans, 1)
+	require.Len(t, gotSpans, 1)
+	assert.EqualValues(t, wantSpans[0], gotSpans[0])
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
@@ -432,7 +427,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(consumertest.TracesSink)
+				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
@@ -581,7 +576,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(consumertest.MetricsSink)
+				sink := &internalconsumertest.ErrOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)

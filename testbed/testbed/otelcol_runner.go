@@ -20,13 +20,12 @@ import (
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
 )
@@ -59,7 +58,7 @@ type OtelcolRunner interface {
 type InProcessCollector struct {
 	logger    *zap.Logger
 	factories component.Factories
-	config    *configmodels.Config
+	config    *config.Config
 	svc       *service.Application
 	appDone   chan struct{}
 	stopped   bool
@@ -85,11 +84,11 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
-	cfg, err := config.Load(v, ipp.factories)
+	cfg, err := configparser.Load(config.ParserFromViper(v), ipp.factories)
 	if err != nil {
 		return configCleanup, err
 	}
-	err = config.ValidateConfig(cfg, zap.NewNop())
+	err = cfg.Validate()
 	if err != nil {
 		return configCleanup, err
 	}
@@ -105,7 +104,7 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},
-		ConfigFactory: func(_ *viper.Viper, _ *cobra.Command, _ component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(_ *cobra.Command, _ component.Factories) (*config.Config, error) {
 			return ipp.config, nil
 		},
 		Factories: ipp.factories,

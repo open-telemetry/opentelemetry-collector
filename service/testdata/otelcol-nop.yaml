@@ -1,0 +1,27 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+extensions:
+  nop:
+
+service:
+  extensions: [nop]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

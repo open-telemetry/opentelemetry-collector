@@ -52,7 +52,8 @@ port is `55681`.
 
 The HTTP/JSON endpoint can also optionally configure
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
-specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
+specifying a list of allowed CORS origins in the `cors_allowed_origins`
+and optionally headers in `cors_allowed_headers`:
 
 ```yaml
 receivers:
@@ -64,4 +65,6 @@ receivers:
         - http://test.com
         # Origins can have wildcards with *, use * by itself to match any origin.
         - https://*.example.com
+        cors_allowed_headers:
+        - TestHeader
 ```

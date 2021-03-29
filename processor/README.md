@@ -47,9 +47,10 @@ processor documentation for more information.
 
 ## <a name="data-ownership"></a>Data Ownership
 
-The ownership of the `TraceData` and `MetricsData` in a pipeline is passed as the data travels
-through the pipeline. The data is created by the receiver and then the ownership is passed
-to the first processor when `ConsumeTraceData`/`ConsumeMetricsData` function is called.
+The ownership of the `pdata.Traces`, `pdata.Metrics` and `pdata.Logs` data in a pipeline
+is passed as the data travels through the pipeline. The data is created by the receiver
+and then the ownership is passed to the first processor when `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs`
+function is called.
 
 Note: the receiver may be attached to multiple pipelines, in which case the same data
 will be passed to all attached pipelines via a data fan-out connector.
@@ -79,8 +80,8 @@ data and the data can be safely modified in the pipeline.
 
 The exclusive ownership of data allows processors to freely modify the data while
 they own it (e.g. see `attributesprocessor`). The duration of ownership of the data
-by processor is from the beginning of `ConsumeTraceData`/`ConsumeMetricsData` call
-until the processor calls the next processor's `ConsumeTraceData`/`ConsumeMetricsData`
+by processor is from the beginning of `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs` 
+call until the processor calls the next processor's `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs`
 function, which passes the ownership to the next processor. After that the processor
 must no longer read or write the data since it may be concurrently modified by the
 new owner.
@@ -97,17 +98,16 @@ In this mode no cloning is performed at the fan-out connector of receivers that
 are attached to multiple pipelines. In this case all such pipelines will see
 the same single shared copy of the data. Processors in pipelines operating in shared
 ownership mode are prohibited from modifying the original data that they receive
-via `ConsumeTraceData`/`ConsumeMetricsData` call. Processors may only read the data but
-must not modify the data.
+via `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs` call. Processors may only read
+the data but must not modify the data.
 
 If the processor needs to modify the data while performing the processing but
 does not want to incur the cost of data cloning that Exclusive mode brings then
 the processor can declare that it does not modify the data and use any
 different technique that ensures original data is not modified. For example,
 the processor can implement copy-on-write approach for individual sub-parts of
-`TraceData`/`MetricsData` argument. Any approach that does not mutate the
-original `TraceData`/`MetricsData` argument (including referenced data, such as
-`Node`, `Resource`, `Spans`, etc) is allowed.
+`pdata.Traces`/`pdata.Metrics`/`pdata.Logs` argument. Any approach that does not
+mutate the original `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` is allowed.
 
 If the processor uses such technique it should declare that it does not intend
 to modify the original data by setting `MutatesConsumedData=false` in its capabilities

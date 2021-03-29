@@ -22,9 +22,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -52,7 +52,7 @@ func Test_createMetricsExporter(t *testing.T) {
 	}
 	tests := []struct {
 		name        string
-		cfg         configmodels.Exporter
+		cfg         config.Exporter
 		params      component.ExporterCreateParams
 		returnError bool
 	}{

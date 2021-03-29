@@ -30,6 +30,25 @@ func TestAuthentication(t *testing.T) {
 	saramaPlaintext.Net.SASL.User = "jdoe"
 	saramaPlaintext.Net.SASL.Password = "pass"
 
+	saramaSASLSCRAM256Config := &sarama.Config{}
+	saramaSASLSCRAM256Config.Net.SASL.Enable = true
+	saramaSASLSCRAM256Config.Net.SASL.User = "jdoe"
+	saramaSASLSCRAM256Config.Net.SASL.Password = "pass"
+	saramaSASLSCRAM256Config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
+
+	saramaSASLSCRAM512Config := &sarama.Config{}
+	saramaSASLSCRAM512Config.Net.SASL.Enable = true
+	saramaSASLSCRAM512Config.Net.SASL.User = "jdoe"
+	saramaSASLSCRAM512Config.Net.SASL.Password = "pass"
+	saramaSASLSCRAM512Config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+
+	saramaSASLPLAINConfig := &sarama.Config{}
+	saramaSASLPLAINConfig.Net.SASL.Enable = true
+	saramaSASLPLAINConfig.Net.SASL.User = "jdoe"
+	saramaSASLPLAINConfig.Net.SASL.Password = "pass"
+
+	saramaSASLPLAINConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+
 	saramaTLSCfg := &sarama.Config{}
 	saramaTLSCfg.Net.TLS.Enable = true
 	tlsClient := configtls.TLSClientSetting{}
@@ -77,6 +96,34 @@ func TestAuthentication(t *testing.T) {
 			auth:         Authentication{Kerberos: &KerberosConfig{UseKeyTab: true, KeyTabPath: "/path"}},
 			saramaConfig: saramaKerberosKeyTabCfg,
 		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-256"}},
+			saramaConfig: saramaSASLSCRAM256Config,
+		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512"}},
+			saramaConfig: saramaSASLSCRAM512Config,
+		},
+
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "PLAIN"}},
+			saramaConfig: saramaSASLPLAINConfig,
+		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-222"}},
+			saramaConfig: saramaSASLSCRAM512Config,
+			err:          "invalid SASL Mechanism",
+		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "", Password: "pass", Mechanism: "SCRAM-SHA-512"}},
+			saramaConfig: saramaSASLSCRAM512Config,
+			err:          "username have to be provided",
+		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "", Mechanism: "SCRAM-SHA-512"}},
+			saramaConfig: saramaSASLSCRAM512Config,
+			err:          "password have to be provided",
+		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
@@ -86,6 +133,8 @@ func TestAuthentication(t *testing.T) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), test.err)
 			} else {
+				// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
+				config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc
 				assert.Equal(t, test.saramaConfig, config)
 			}
 		})

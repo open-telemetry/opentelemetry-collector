@@ -28,8 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
@@ -307,7 +306,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -333,9 +332,9 @@ func TestFilterMetricProcessor(t *testing.T) {
 			ctx := context.Background()
 			assert.NoError(t, fmp.Start(ctx, nil))
 
-			mds := make([]consumerdata.MetricsData, len(test.inMN))
+			mds := make([]internaldata.MetricsData, len(test.inMN))
 			for i, metrics := range test.inMN {
-				mds[i] = consumerdata.MetricsData{
+				mds[i] = internaldata.MetricsData{
 					Metrics: metrics,
 				}
 			}
@@ -488,7 +487,7 @@ func pdm(prefix string, size int) pdata.Metrics {
 		NumResourceAttrs:     size,
 		NumResourceMetrics:   size,
 	}
-	return goldendataset.MetricDataFromCfg(c)
+	return goldendataset.MetricsFromCfg(c)
 }
 
 func TestMetricIndexSingle(t *testing.T) {

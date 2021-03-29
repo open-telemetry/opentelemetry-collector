@@ -15,11 +15,68 @@
 package middleware
 
 import (
+	"bytes"
 	"compress/gzip"
 	"compress/zlib"
 	"io"
 	"net/http"
 )
+
+const (
+	headerContentEncoding = "Content-Encoding"
+	headerValueGZIP       = "gzip"
+)
+
+type CompressRoundTripper struct {
+	http.RoundTripper
+}
+
+func NewCompressRoundTripper(rt http.RoundTripper) *CompressRoundTripper {
+	return &CompressRoundTripper{
+		RoundTripper: rt,
+	}
+}
+
+func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+
+	if req.Header.Get(headerContentEncoding) != "" {
+		// If the header already specifies a content encoding then skip compression
+		// since we don't want to compress it again. This is a safeguard that normally
+		// should not happen since CompressRoundTripper is not intended to be used
+		// with http clients which already do their own compression.
+		return r.RoundTripper.RoundTrip(req)
+	}
+
+	// Gzip the body.
+	buf := bytes.NewBuffer([]byte{})
+	gzipWriter := gzip.NewWriter(buf)
+	_, copyErr := io.Copy(gzipWriter, req.Body)
+	closeErr := req.Body.Close()
+
+	if err := gzipWriter.Close(); err != nil {
+		return nil, err
+	}
+
+	if copyErr != nil {
+		return nil, copyErr
+	}
+	if closeErr != nil {
+		return nil, closeErr
+	}
+
+	// Create a new request since the docs say that we cannot modify the "req"
+	// (see https://golang.org/pkg/net/http/#RoundTripper).
+	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clone the headers and add gzip encoding header.
+	cReq.Header = req.Header.Clone()
+	cReq.Header.Add(headerContentEncoding, headerValueGZIP)
+
+	return r.RoundTripper.RoundTrip(cReq)
+}
 
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
 

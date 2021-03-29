@@ -21,32 +21,32 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 const (
-	// Key used to identify receivers in metrics and traces.
+	// ReceiverKey used to identify receivers in metrics and traces.
 	ReceiverKey = "receiver"
-	// Key used to identify the transport used to received the data.
+	// TransportKey used to identify the transport used to received the data.
 	TransportKey = "transport"
-	// Key used to identify the format of the data received.
+	// FormatKey used to identify the format of the data received.
 	FormatKey = "format"
 
-	// Key used to identify spans accepted by the Collector.
+	// AcceptedSpansKey used to identify spans accepted by the Collector.
 	AcceptedSpansKey = "accepted_spans"
-	// Key used to identify spans refused (ie.: not ingested) by the Collector.
+	// RefusedSpansKey used to identify spans refused (ie.: not ingested) by the Collector.
 	RefusedSpansKey = "refused_spans"
 
-	// Key used to identify metric points accepted by the Collector.
+	// AcceptedMetricPointsKey used to identify metric points accepted by the Collector.
 	AcceptedMetricPointsKey = "accepted_metric_points"
-	// Key used to identify metric points refused (ie.: not ingested) by the
+	// RefusedMetricPointsKey used to identify metric points refused (ie.: not ingested) by the
 	// Collector.
 	RefusedMetricPointsKey = "refused_metric_points"
 
-	// Key used to identify log records accepted by the Collector.
+	// AcceptedLogRecordsKey used to identify log records accepted by the Collector.
 	AcceptedLogRecordsKey = "accepted_log_records"
-	// Key used to identify log records refused (ie.: not ingested) by the
+	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
 )
@@ -110,7 +110,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 //
 // Example:
 //
-//    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan consumerdata.TraceData) {
+//    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan pdata.Traces) {
 //        longLivedCtx := obsreport.ReceiverContext(ctx, r.config.Name(), r.transport, "")
 //        for {
 //            // Since the context outlives the individual receive operations call obsreport using
@@ -124,7 +124,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 //            td, ok := <-rcvChan
 //            var err error
 //            if ok {
-//                err = r.nextConsumer.ConsumeTraceData(ctx, td)
+//                err = r.nextConsumer.ConsumeTraces(ctx, td)
 //            }
 //            obsreport.EndTraceDataReceiveOp(
 //                ctx,
@@ -173,7 +173,7 @@ func EndTraceDataReceiveOp(
 		format,
 		numReceivedSpans,
 		err,
-		configmodels.TracesDataType,
+		config.TracesDataType,
 	)
 }
 
@@ -207,7 +207,7 @@ func EndLogsReceiveOp(
 		format,
 		numReceivedLogRecords,
 		err,
-		configmodels.LogsDataType,
+		config.LogsDataType,
 	)
 }
 
@@ -241,7 +241,7 @@ func EndMetricsReceiveOp(
 		format,
 		numReceivedPoints,
 		err,
-		configmodels.MetricsDataType,
+		config.MetricsDataType,
 	)
 }
 
@@ -304,7 +304,7 @@ func endReceiveOp(
 	format string,
 	numReceivedItems int,
 	err error,
-	dataType configmodels.DataType,
+	dataType config.DataType,
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
@@ -318,13 +318,13 @@ func endReceiveOp(
 	if gLevel != configtelemetry.LevelNone {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
 		switch dataType {
-		case configmodels.TracesDataType:
+		case config.TracesDataType:
 			acceptedMeasure = mReceiverAcceptedSpans
 			refusedMeasure = mReceiverRefusedSpans
-		case configmodels.MetricsDataType:
+		case config.MetricsDataType:
 			acceptedMeasure = mReceiverAcceptedMetricPoints
 			refusedMeasure = mReceiverRefusedMetricPoints
-		case configmodels.LogsDataType:
+		case config.LogsDataType:
 			acceptedMeasure = mReceiverAcceptedLogRecords
 			refusedMeasure = mReceiverRefusedLogRecords
 		}
@@ -339,13 +339,13 @@ func endReceiveOp(
 	if span.IsRecordingEvents() {
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
-		case configmodels.TracesDataType:
+		case config.TracesDataType:
 			acceptedItemsKey = AcceptedSpansKey
 			refusedItemsKey = RefusedSpansKey
-		case configmodels.MetricsDataType:
+		case config.MetricsDataType:
 			acceptedItemsKey = AcceptedMetricPointsKey
 			refusedItemsKey = RefusedMetricPointsKey
-		case configmodels.LogsDataType:
+		case config.LogsDataType:
 			acceptedItemsKey = AcceptedLogRecordsKey
 			refusedItemsKey = RefusedLogRecordsKey
 		}

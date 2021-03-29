@@ -44,29 +44,21 @@ func NewInstrumentationLibrary() InstrumentationLibrary {
 }
 
 // Name returns the name associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Name() string {
 	return (*ms.orig).Name
 }
 
 // SetName replaces the name associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetName(v string) {
 	(*ms.orig).Name = v
 }
 
 // Version returns the version associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Version() string {
 	return (*ms.orig).Version
 }
 
 // SetVersion replaces the version associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetVersion(v string) {
 	(*ms.orig).Version = v
 }

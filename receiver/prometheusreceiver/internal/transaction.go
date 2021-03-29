@@ -31,7 +31,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -59,7 +58,7 @@ type transaction struct {
 	id                   int64
 	ctx                  context.Context
 	isNew                bool
-	sink                 consumer.MetricsConsumer
+	sink                 consumer.Metrics
 	job                  string
 	instance             string
 	jobsMap              *JobsMap
@@ -73,7 +72,7 @@ type transaction struct {
 	logger               *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms *metadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms *metadataService, sink consumer.Metrics, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -170,13 +169,13 @@ func (tr *transaction) Commit() error {
 		adjustStartTime(tr.metricBuilder.startTime, metrics)
 	} else {
 		// AdjustMetrics - jobsMap has to be non-nil in this case.
-		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
+		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetrics()
 		metrics, _ = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 	}
 
 	numPoints := 0
 	if len(metrics) > 0 {
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{
+		md := internaldata.OCToMetrics(internaldata.MetricsData{
 			Node:     tr.node,
 			Resource: tr.resource,
 			Metrics:  metrics,

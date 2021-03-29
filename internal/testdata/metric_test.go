@@ -20,13 +20,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 )
 
 type traceMetricsCase struct {
 	name string
 	td   pdata.Metrics
-	otlp []*otlpmetrics.ResourceMetrics
+	otlp *otlpcollectormetrics.ExportMetricsServiceRequest
 }
 
 func generateAllMetricsTestCases() []traceMetricsCase {
@@ -64,7 +65,7 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 		{
 			name: "two-metrics",
 			td:   GenerateMetricsTwoMetrics(),
-			otlp: GenerateMetricsOtlpTwoMetrics(),
+			otlp: generateMetricsOtlpTwoMetrics(),
 		},
 		{
 			name: "one-metric-no-labels",
@@ -90,9 +91,9 @@ func TestToFromOtlpMetrics(t *testing.T) {
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
-			td := pdata.MetricsFromOtlp(test.otlp)
+			td := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(test.otlp))
 			assert.EqualValues(t, test.td, td)
-			otlp := pdata.MetricsToOtlp(td)
+			otlp := internal.MetricsToOtlp(td.InternalRep())
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}

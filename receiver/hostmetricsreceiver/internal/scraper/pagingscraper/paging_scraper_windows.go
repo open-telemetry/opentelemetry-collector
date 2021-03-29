@@ -24,12 +24,10 @@ import (
 	"github.com/shirou/gopsutil/host"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -45,7 +43,7 @@ const (
 // scraper for Paging Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime pdata.Timestamp
 
 	pageSize uint64
 
@@ -74,7 +72,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 
 	return s.perfCounterScraper.Initialize(memory)
 }
@@ -82,26 +80,26 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	var errors []error
+	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapeAndAppendPagingUsageMetric(metrics)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(pagingUsageMetricsLen, err)
 	}
 
 	err = s.scrapeAndAppendPagingOperationsMetric(metrics)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	return metrics, scraperhelper.CombineScrapeErrors(errors)
+	return metrics, errors.Combine()
 }
 
 func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) error {
-	now := internal.TimeToUnixNano(time.Now())
+	now := pdata.TimestampFromTime(time.Now())
 	pageFiles, err := s.pageFileStats()
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, pagingUsageMetricsLen)
+		return err
 	}
 
 	idx := metrics.Len()
@@ -110,7 +108,7 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 	return nil
 }
 
-func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, pageFiles []*pageFileData) {
+func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageFiles []*pageFileData) {
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -124,7 +122,7 @@ func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Tim
 	}
 }
 
-func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
+func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingDevice, deviceLabel)
 	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
@@ -133,21 +131,21 @@ func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Time
 }
 
 func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlice) error {
-	now := internal.TimeToUnixNano(time.Now())
+	now := pdata.TimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
+		return err
 	}
 
 	memoryObject, err := counters.GetObject(memory)
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
+		return err
 	}
 
 	memoryCounterValues, err := memoryObject.GetValues(pageReadsPerSec, pageWritesPerSec)
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
+		return err
 	}
 
 	if len(memoryCounterValues) > 0 {
@@ -159,7 +157,7 @@ func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlic
 	return nil
 }
 
-func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, memoryCounterValues *perfcounters.CounterValues) {
+func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
 	metadata.Metrics.SystemPagingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -168,7 +166,7 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 	initializePagingOperationsDataPoint(idps.At(1), startTime, now, metadata.LabelPagingDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
 }
 
-func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, directionLabel string, value int64) {
+func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingType, metadata.LabelPagingType.Major)
 	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
