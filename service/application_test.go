@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -368,6 +369,7 @@ func TestApplication_updateService(t *testing.T) {
 		name          string
 		configFactory ConfigFactory
 		service       *service
+		skip          bool
 	}{
 		{
 			name:          "first_load_err",
@@ -394,10 +396,16 @@ func TestApplication_updateService(t *testing.T) {
 				builtReceivers:  builder.Receivers{},
 				builtExtensions: builder.Extensions{},
 			},
+			skip: runtime.GOOS == "darwin",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.skip {
+				t.Log("Skipping test", tt.name)
+				return
+			}
+
 			app := Application{
 				logger:        zap.NewNop(),
 				configFactory: tt.configFactory,
