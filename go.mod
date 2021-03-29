@@ -32,13 +32,12 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210217141258-a6be548dbc17
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v3.21.2+incompatible
-	github.com/soheilhy/cmux v0.1.4
+	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tinylib/msgp v1.1.5
 	github.com/tklauser/go-sysconf v0.3.4 // indirect
 	github.com/uber/jaeger-lib v2.4.0+incompatible
 	github.com/xdg-go/scram v0.0.0-20180814205039-7eeb5667e42c
@@ -49,7 +48,6 @@ require (
 	golang.org/x/text v0.3.5
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.36.0
-	google.golang.org/grpc/examples v0.0.0-20210309220351-d5b628860d4e // indirect
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
