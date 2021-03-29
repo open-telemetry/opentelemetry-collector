@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 
 	"go.uber.org/zap"
 
@@ -45,8 +46,8 @@ type DataSender interface {
 	// Send any accumulated data.
 	Flush()
 
-	// Return the port to which this sender will send data.
-	GetEndpoint() string
+	// Return the address to which this sender will send data.
+	GetEndpoint() net.Addr
 
 	// Generate a config string to place in receiver part of collector config
 	// so that it can receive data from this sender.
@@ -82,8 +83,9 @@ type DataSenderBase struct {
 	Host string
 }
 
-func (dsb *DataSenderBase) GetEndpoint() string {
-	return fmt.Sprintf("%s:%d", dsb.Host, dsb.Port)
+func (dsb *DataSenderBase) GetEndpoint() net.Addr {
+	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", dsb.Host, dsb.Port))
+	return addr
 }
 
 func (dsb *DataSenderBase) ReportFatalError(err error) {
@@ -132,7 +134,7 @@ func (je *JaegerGRPCDataSender) Start() error {
 	cfg.RetrySettings.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings.Enabled = false
-	cfg.Endpoint = je.GetEndpoint()
+	cfg.Endpoint = je.GetEndpoint().String()
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
@@ -163,7 +165,7 @@ type ocDataSender struct {
 }
 
 func (ods *ocDataSender) fillConfig(cfg *opencensusexporter.Config) *opencensusexporter.Config {
-	cfg.Endpoint = ods.GetEndpoint()
+	cfg.Endpoint = ods.GetEndpoint().String()
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
@@ -384,7 +386,7 @@ type otlpDataSender struct {
 }
 
 func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
-	cfg.Endpoint = ods.GetEndpoint()
+	cfg.Endpoint = ods.GetEndpoint().String()
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetrySettings.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
@@ -579,7 +581,7 @@ func NewPrometheusDataSender(host string, port int) *PrometheusDataSender {
 func (pds *PrometheusDataSender) Start() error {
 	factory := prometheusexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
-	cfg.Endpoint = pds.GetEndpoint()
+	cfg.Endpoint = pds.GetEndpoint().String()
 	cfg.Namespace = pds.namespace
 
 	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
