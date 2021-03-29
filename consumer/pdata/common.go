@@ -266,6 +266,7 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 	}
 }
 
+// CopyTo copies the attribute to a destination.
 func (a AttributeValue) CopyTo(dest AttributeValue) {
 	a.copyTo(dest.orig)
 }

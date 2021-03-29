@@ -99,6 +99,7 @@ func (ld Logs) OtlpProtoSize() int {
 	return ld.orig.Size()
 }
 
+// ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
