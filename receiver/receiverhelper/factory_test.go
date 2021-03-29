@@ -23,15 +23,18 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 const typeStr = "test"
 
-var defaultCfg = &config.ReceiverSettings{
-	TypeVal: typeStr,
-	NameVal: typeStr,
+var defaultCfg = &componenttest.NopConfig{
+	ReceiverSettings: config.ReceiverSettings{
+		TypeVal: typeStr,
+		NameVal: typeStr,
+	},
 }
 
 func TestNewFactory(t *testing.T) {

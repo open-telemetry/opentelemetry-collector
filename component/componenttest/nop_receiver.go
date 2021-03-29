@@ -16,6 +16,7 @@ package componenttest
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
@@ -38,10 +39,23 @@ func (f *nopReceiverFactory) Type() config.Type {
 	return "nop"
 }
 
+type NopConfig struct {
+	config.ReceiverSettings
+}
+
+func (nc *NopConfig) Validate() error {
+	if nc.TypeVal != "nop" {
+		return fmt.Errorf("invalid receiver config")
+	}
+	return nil
+}
+
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *nopReceiverFactory) CreateDefaultConfig() config.Receiver {
-	return &config.ReceiverSettings{
-		TypeVal: f.Type(),
+	return &NopConfig{
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: f.Type(),
+		},
 	}
 }
 

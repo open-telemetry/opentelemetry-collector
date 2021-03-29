@@ -32,3 +32,10 @@ type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
 }
+
+var _ config.CustomConfigOptions = (*Config)(nil)
+
+// Validate checks the receiver configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

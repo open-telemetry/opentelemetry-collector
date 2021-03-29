@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -261,7 +260,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 func TestBuildReceivers_StartAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &config.ReceiverSettings{}
+	rcvCfg := &componenttest.NopConfig{}
 
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
@@ -280,7 +279,7 @@ func TestBuildReceivers_StartAll(t *testing.T) {
 
 func TestBuildReceivers_StopAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &config.ReceiverSettings{}
+	rcvCfg := &componenttest.NopConfig{}
 
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
@@ -337,7 +336,7 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 		t.Run(test.configFile, func(t *testing.T) {
 
 			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
-			require.Nil(t, err)
+			assert.Error(t, err)
 
 			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
 			assert.NoError(t, err)

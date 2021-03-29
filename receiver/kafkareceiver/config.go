@@ -41,3 +41,10 @@ type Config struct {
 
 	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
 }
+
+var _ config.CustomConfigOptions = (*Config)(nil)
+
+// Validate checks the receiver configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

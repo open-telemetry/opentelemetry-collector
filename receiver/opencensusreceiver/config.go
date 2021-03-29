@@ -33,13 +33,13 @@ type Config struct {
 	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
 }
 
-func (rOpts *Config) buildOptions() ([]ocOption, error) {
+func (cfg *Config) buildOptions() ([]ocOption, error) {
 	var opts []ocOption
-	if len(rOpts.CorsOrigins) > 0 {
-		opts = append(opts, withCorsOrigins(rOpts.CorsOrigins))
+	if len(cfg.CorsOrigins) > 0 {
+		opts = append(opts, withCorsOrigins(cfg.CorsOrigins))
 	}
 
-	grpcServerOptions, err := rOpts.GRPCServerSettings.ToServerOption()
+	grpcServerOptions, err := cfg.GRPCServerSettings.ToServerOption()
 	if err != nil {
 		return nil, err
 	}
@@ -48,4 +48,11 @@ func (rOpts *Config) buildOptions() ([]ocOption, error) {
 	}
 
 	return opts, nil
+}
+
+var _ config.CustomConfigOptions = (*Config)(nil)
+
+// Validate checks the receiver configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

@@ -102,8 +102,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
-	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {
-		return nil, errNilScrapeConfig
-	}
 	return newPrometheusReceiver(params.Logger, config, nextConsumer), nil
 }
