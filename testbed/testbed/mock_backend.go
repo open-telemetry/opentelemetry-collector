@@ -68,10 +68,6 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 	return mb
 }
 
-func (mb *MockBackend) ReportFatalError(err error) {
-	log.Printf("Fatal error reported: %v", err)
-}
-
 // Start a backend.
 func (mb *MockBackend) Start() error {
 	log.Printf("Starting mock backend...")
