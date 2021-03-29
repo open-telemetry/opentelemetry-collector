@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package config implements the configuration Parser.
+// Package config implements the configuration Parser.
 package config
 
 import (
@@ -58,6 +58,7 @@ func ParserFromViper(v *viper.Viper) *Parser {
 	return &Parser{v: v}
 }
 
+// NewParserFromStringMap creates a parser from a map[string]interface{}.
 func NewParserFromStringMap(data map[string]interface{}) *Parser {
 	v := NewViper()
 	// Cannot return error because the subv is empty.
