@@ -273,7 +273,7 @@ func loadService(rawService serviceSettings) (config.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *config.Parser, typeStr config.Type, fullName string, factory component.ReceiverFactory) (config.Receiver, error) {
+func LoadReceiver(componentConfig *config.Parser, fullName string, factory component.ReceiverFactory) (config.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetName(fullName)
@@ -310,7 +310,7 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 			return nil, errorUnknownType(receiversKeyName, typeStr, fullName)
 		}
 
-		receiverCfg, err := LoadReceiver(componentConfig, typeStr, fullName, factory)
+		receiverCfg, err := LoadReceiver(componentConfig, fullName, factory)
 
 		if err != nil {
 			// LoadReceiver already wraps the error.

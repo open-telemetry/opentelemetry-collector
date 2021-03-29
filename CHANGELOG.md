@@ -18,6 +18,7 @@
 - Move `config.Load` to use `configparser.Load` (#2796)
 - Remove `configtest.NewViperFromYamlFile()`, use `config.Parser.NewParserFromFile()` (#2806)
 - Move `config.ViperSubExact()` to use `config.Parser.Sub()` (#2806)
+- Update LoadReceiver signature to remove unused params (#2823)
 
 ## 💡 Enhancements 💡
 
