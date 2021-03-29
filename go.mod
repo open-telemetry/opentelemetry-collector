@@ -44,12 +44,8 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-<<<<<<< HEAD
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
-	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e
-=======
 	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2
->>>>>>> master
 	golang.org/x/text v0.3.5
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.36.1
