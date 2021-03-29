@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove legacy internal metrics for memorylimiter processor, `spans_dropped` and `trace_batches_dropped` (#2841)
+  - For `spans_dropped` use `processor/refused_spans` with `processor=memorylimiter`
 - Rename pdata.*.[Start|End]Time to pdata.*.[Start|End]Timestamp (#2847)
 - Rename pdata.DoubleExemplar to pdata.Exemplar (#2804)
 - Rename pdata.DoubleHistogram to pdata.Histogram (#2797)
