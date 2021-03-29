@@ -54,7 +54,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "pprof",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
-				cfg.Endpoint = endpoint
+				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
 			},
 		},
@@ -62,7 +62,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "zpages",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
-				cfg.Endpoint = endpoint
+				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
 			},
 		},

@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -47,7 +48,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "zpages",
 				NameVal: "zpages/1",
 			},
-			Endpoint: "localhost:56888",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:56888",
+			},
 		},
 		ext1)
 

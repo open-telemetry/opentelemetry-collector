@@ -23,6 +23,7 @@
 
 - `batch` processor: - Support max batch size for logs (#2736)
 - Use `Endpoint` for health check extension (#2782)
+- Use `confignet.TCPAddr` for `pprof` and `zpages` extensions (#2829)
 
 ## 🧰 Bug fixes 🧰
 

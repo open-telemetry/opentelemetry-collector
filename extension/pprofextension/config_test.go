@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -47,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "pprof",
 				NameVal: "pprof/1",
 			},
-			Endpoint:             "0.0.0.0:1777",
+			TCPAddr:              confignet.TCPAddr{Endpoint: "0.0.0.0:1777"},
 			BlockProfileFraction: 3,
 			MutexProfileFraction: 5,
 		},
