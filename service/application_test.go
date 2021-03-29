@@ -17,6 +17,7 @@ package service
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -92,6 +93,10 @@ func TestApplication_Start(t *testing.T) {
 		"service_instance_id",
 	}
 	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
+
+	// Trigger another configuration load.
+	require.NoError(t, app.updateService(context.Background()))
+	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
 
 	app.signalsChannel <- syscall.SIGTERM
 	<-appDone
@@ -346,4 +351,69 @@ service:
 	err = cfg.Validate()
 	assert.NoError(t, err)
 	return cfg
+}
+
+func TestApplication_updateService(t *testing.T) {
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+	ctx := context.Background()
+	sentinelError := errors.New("sentinel error")
+	returnConfigFactoryFn := func(cfg *config.Config, err error) ConfigFactory {
+		return func(*cobra.Command, component.Factories) (*config.Config, error) {
+			return cfg, err
+		}
+	}
+
+	tests := []struct {
+		name          string
+		configFactory ConfigFactory
+		service       *service
+	}{
+		{
+			name:          "first_load_err",
+			configFactory: returnConfigFactoryFn(nil, sentinelError),
+		},
+		{
+			name:          "retire_service_ok_load_err",
+			configFactory: returnConfigFactoryFn(nil, sentinelError),
+			service: &service{
+				logger:          zap.NewNop(),
+				builtExporters:  builder.Exporters{},
+				builtPipelines:  builder.BuiltPipelines{},
+				builtReceivers:  builder.Receivers{},
+				builtExtensions: builder.Extensions{},
+			},
+		},
+		{
+			name:          "retire_service_ok_load_ok",
+			configFactory: returnConfigFactoryFn(constructMimumalOpConfig(t, factories), nil),
+			service: &service{
+				logger:          zap.NewNop(),
+				builtExporters:  builder.Exporters{},
+				builtPipelines:  builder.BuiltPipelines{},
+				builtReceivers:  builder.Receivers{},
+				builtExtensions: builder.Extensions{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := Application{
+				logger:        zap.NewNop(),
+				configFactory: tt.configFactory,
+				factories:     factories,
+				service:       tt.service,
+			}
+
+			err := app.updateService(ctx)
+
+			if err != nil {
+				assert.ErrorIs(t, err, sentinelError)
+				return
+			}
+
+			// If successful need to shutdown active service.
+			assert.NoError(t, app.service.Shutdown(ctx))
+		})
+	}
 }
