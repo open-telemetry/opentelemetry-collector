@@ -28,7 +28,7 @@ require (
 	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.19.0
+	github.com/prometheus/common v0.20.0
 	github.com/prometheus/prometheus v1.8.2-0.20210217141258-a6be548dbc17
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v3.21.2+incompatible
@@ -38,7 +38,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tinylib/msgp v1.1.5
 	github.com/tklauser/go-sysconf v0.3.4 // indirect
 	github.com/uber/jaeger-lib v2.4.0+incompatible
 	github.com/xdg-go/scram v0.0.0-20180814205039-7eeb5667e42c
