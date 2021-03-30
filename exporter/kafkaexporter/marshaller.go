@@ -39,6 +39,7 @@ type MetricsMarshaller interface {
 // Message encapsulates Kafka's message payload.
 type Message struct {
 	Value []byte
+	Key   []byte
 }
 
 // tracesMarshallers returns map of supported encodings with TracesMarshaller.
