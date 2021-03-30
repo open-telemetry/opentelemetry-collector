@@ -16,10 +16,22 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type NopConfig struct {
+	ReceiverSettings
+}
+
+func (nc *NopConfig) Validate() error {
+	if nc.TypeVal != "nop" {
+		return fmt.Errorf("invalid receiver config")
+	}
+	return nil
+}
 
 func TestConfigValidate(t *testing.T) {
 	var testCases = []struct {
@@ -118,6 +130,19 @@ func TestConfigValidate(t *testing.T) {
 			},
 			expected: errMissingServicePipelines,
 		},
+		{
+			name: "invalid-receiver-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Receivers["nop"] = &NopConfig{
+					ReceiverSettings: ReceiverSettings{
+						TypeVal: "invalid_rec_type",
+					},
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`pipeline "traces" references receiver "nop" which has invalid configuration with error: invalid receiver config`),
+		},
 	}
 
 	for _, test := range testCases {
@@ -131,7 +156,11 @@ func TestConfigValidate(t *testing.T) {
 func generateConfig() *Config {
 	return &Config{
 		Receivers: map[string]Receiver{
-			"nop": &ReceiverSettings{TypeVal: "nop"},
+			"nop": &NopConfig{
+				ReceiverSettings: ReceiverSettings{
+					TypeVal: "nop",
+				},
+			},
 		},
 		Exporters: map[string]Exporter{
 			"nop": &ExporterSettings{TypeVal: "nop"},

@@ -36,3 +36,10 @@ type Config struct {
 	// structure, ie.: it will error if an unknown key is present.
 	ConfigPlaceholder interface{} `mapstructure:"config"`
 }
+
+var _ config2.CustomConfigOptions = (*Config)(nil)
+
+// Validate checks the receiver configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

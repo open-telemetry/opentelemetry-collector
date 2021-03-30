@@ -108,6 +108,13 @@ func (cfg *Config) validateServicePipelines() error {
 			if cfg.Receivers[ref] == nil {
 				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipeline.Name, ref)
 			}
+
+			// Validate the receiver configuration by the custom configuration validator
+			recCfg := cfg.Receivers[ref]
+			if err := recCfg.Validate(); err != nil {
+				return fmt.Errorf("pipeline %q references receiver %q which has invalid configuration with error: %v", pipeline.Name, ref, err)
+			}
+
 		}
 
 		// Validate pipeline processor name references

@@ -36,6 +36,10 @@ type ExampleReceiver struct {
 	ExtraListSetting []string          `mapstructure:"extra_list"`
 }
 
+func (ecfg *ExampleReceiver) Validate() error {
+	return nil
+}
+
 const recvType = "examplereceiver"
 
 // ExampleReceiverFactory is factory for ExampleReceiver.

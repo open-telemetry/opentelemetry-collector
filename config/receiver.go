@@ -16,9 +16,26 @@ package config
 
 // Receiver is the configuration of a receiver. Specific receivers must implement this
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
+// Embedded CustomConfigOptions will force each receiver to implement Validate() function
 type Receiver interface {
 	NamedEntity
+	CustomConfigOptions
 }
+
+// CustomConfigOptions defines the interfaces for configuration customization options
+// Different custom interfaces can be added like CustomConfigValidator and any other interface.
+type CustomConfigOptions interface {
+	CustomConfigValidator
+}
+
+// CustomConfigValidator defines the interface for the custom configuration validation on each component
+type CustomConfigValidator interface {
+	Validate() error
+}
+
+// CustomValidator is a function that runs the customized validation
+// on component level configuration.
+type CustomValidator func() error
 
 // Receivers is a map of names to Receivers.
 type Receivers map[string]Receiver
@@ -30,7 +47,7 @@ type ReceiverSettings struct {
 	NameVal string `mapstructure:"-"`
 }
 
-var _ Receiver = (*ReceiverSettings)(nil)
+var _ NamedEntity = (*ReceiverSettings)(nil)
 
 // Name gets the receiver name.
 func (rs *ReceiverSettings) Name() string {
