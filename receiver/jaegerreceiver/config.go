@@ -73,7 +73,7 @@ type Config struct {
 	RemoteSampling          *RemoteSamplingConfig `mapstructure:"remote_sampling"`
 }
 
-var _ config.CustomConfigOptions = (*Config)(nil)
+var _ config.Receiver = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

@@ -50,7 +50,7 @@ func (cfg *Config) buildOptions() ([]ocOption, error) {
 	return opts, nil
 }
 
-var _ config.CustomConfigOptions = (*Config)(nil)
+var _ config.Receiver = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

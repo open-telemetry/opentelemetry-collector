@@ -22,13 +22,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type NopConfig struct {
+var errInvalidConfig = errors.New("invalid receiver config")
+
+type nopConfig struct {
 	ReceiverSettings
 }
 
-func (nc *NopConfig) Validate() error {
+func (nc *nopConfig) Validate() error {
 	if nc.TypeVal != "nop" {
-		return fmt.Errorf("invalid receiver config")
+		return errInvalidConfig
 	}
 	return nil
 }
@@ -134,14 +136,14 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Receivers["nop"] = &NopConfig{
+				cfg.Receivers["nop"] = &nopConfig{
 					ReceiverSettings: ReceiverSettings{
 						TypeVal: "invalid_rec_type",
 					},
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`pipeline "traces" references receiver "nop" which has invalid configuration with error: invalid receiver config`),
+			expected: fmt.Errorf(`receiver "nop" has invalid configuration: %w`, errInvalidConfig),
 		},
 	}
 
@@ -156,7 +158,7 @@ func TestConfigValidate(t *testing.T) {
 func generateConfig() *Config {
 	return &Config{
 		Receivers: map[string]Receiver{
-			"nop": &NopConfig{
+			"nop": &nopConfig{
 				ReceiverSettings: ReceiverSettings{
 					TypeVal: "nop",
 				},

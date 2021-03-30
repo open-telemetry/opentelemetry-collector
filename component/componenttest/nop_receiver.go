@@ -16,7 +16,7 @@ package componenttest
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
@@ -39,13 +39,14 @@ func (f *nopReceiverFactory) Type() config.Type {
 	return "nop"
 }
 
+// TODO: Consider to remove this or move it to configtest.
 type NopConfig struct {
 	config.ReceiverSettings
 }
 
 func (nc *NopConfig) Validate() error {
 	if nc.TypeVal != "nop" {
-		return fmt.Errorf("invalid receiver config")
+		return errors.New("invalid receiver config")
 	}
 	return nil
 }

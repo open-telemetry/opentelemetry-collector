@@ -17,19 +17,19 @@ package prometheusreceiver
 import (
 	"time"
 
-	"github.com/prometheus/prometheus/config"
+	promconfig "github.com/prometheus/prometheus/config"
 
-	config2 "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for Prometheus receiver.
 type Config struct {
-	config2.ReceiverSettings `mapstructure:",squash"`
-	PrometheusConfig         *config.Config `mapstructure:"-"`
-	BufferPeriod             time.Duration  `mapstructure:"buffer_period"`
-	BufferCount              int            `mapstructure:"buffer_count"`
-	UseStartTimeMetric       bool           `mapstructure:"use_start_time_metric"`
-	StartTimeMetricRegex     string         `mapstructure:"start_time_metric_regex"`
+	config.ReceiverSettings `mapstructure:",squash"`
+	PrometheusConfig        *promconfig.Config `mapstructure:"-"`
+	BufferPeriod            time.Duration      `mapstructure:"buffer_period"`
+	BufferCount             int                `mapstructure:"buffer_count"`
+	UseStartTimeMetric      bool               `mapstructure:"use_start_time_metric"`
+	StartTimeMetricRegex    string             `mapstructure:"start_time_metric_regex"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
@@ -37,7 +37,7 @@ type Config struct {
 	ConfigPlaceholder interface{} `mapstructure:"config"`
 }
 
-var _ config2.CustomConfigOptions = (*Config)(nil)
+var _ config.Receiver = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
