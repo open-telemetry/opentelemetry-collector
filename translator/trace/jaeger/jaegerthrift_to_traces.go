@@ -65,10 +65,10 @@ func jThriftProcessToInternalResource(process *jaeger.Process, dest pdata.Resour
 
 	attrs := dest.Attributes()
 	if serviceName != "" {
-		attrs.InitEmptyWithCapacity(len(tags) + 1)
+		attrs.EnsureCapacity(len(tags) + 1)
 		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
 	} else {
-		attrs.InitEmptyWithCapacity(len(tags))
+		attrs.EnsureCapacity(len(tags))
 	}
 	jThriftTagsToInternalAttributes(tags, attrs)
 
@@ -110,7 +110,7 @@ func jThriftSpanToInternal(span *jaeger.Span, dest pdata.Span) {
 	}
 
 	attrs := dest.Attributes()
-	attrs.InitEmptyWithCapacity(len(span.Tags))
+	attrs.EnsureCapacity(len(span.Tags))
 	jThriftTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
@@ -163,7 +163,7 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest pdata.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.InitEmptyWithCapacity(len(log.Fields))
+		attrs.EnsureCapacity(len(log.Fields))
 		jThriftTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
 			event.SetName(name.StringVal())

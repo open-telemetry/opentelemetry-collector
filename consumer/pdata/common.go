@@ -392,13 +392,20 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 	return am
 }
 
-// InitEmptyWithCapacity constructs an empty AttributeMap with predefined slice capacity.
-func (am AttributeMap) InitEmptyWithCapacity(cap int) {
-	if cap == 0 {
-		*am.orig = []otlpcommon.KeyValue(nil)
+// Clear erases any existing entries in this AttributeMap instance.
+func (am AttributeMap) Clear() {
+	*am.orig = nil
+}
+
+// EnsureCapacity increases the capacity of this AttributeMap instance, if necessary,
+// to ensure that it can hold at least the number of elements specified by the capacity argument.
+func (am AttributeMap) EnsureCapacity(capacity int) {
+	if capacity <= cap(*am.orig) {
 		return
 	}
-	*am.orig = make([]otlpcommon.KeyValue, 0, cap)
+	oldOrig := *am.orig
+	*am.orig = make([]otlpcommon.KeyValue, 0, capacity)
+	copy(*am.orig, oldOrig)
 }
 
 // Get returns the AttributeValue associated with the key and true. Returned
@@ -685,13 +692,20 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	return sm
 }
 
-// InitEmptyWithCapacity constructs an empty StringMap with predefined slice capacity.
-func (sm StringMap) InitEmptyWithCapacity(cap int) {
-	if cap == 0 {
-		*sm.orig = []otlpcommon.StringKeyValue(nil)
+// Clear erases any existing entries in this StringMap instance.
+func (sm StringMap) Clear() {
+	*sm.orig = nil
+}
+
+// EnsureCapacity increases the capacity of this StringMap instance, if necessary,
+// to ensure that it can hold at least the number of elements specified by the capacity argument.
+func (sm StringMap) EnsureCapacity(capacity int) {
+	if capacity <= cap(*sm.orig) {
 		return
 	}
-	*sm.orig = make([]otlpcommon.StringKeyValue, 0, cap)
+	oldOrig := *sm.orig
+	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity)
+	copy(*sm.orig, oldOrig)
 }
 
 // Get returns the StringValue associated with the key and true,

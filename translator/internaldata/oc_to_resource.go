@@ -80,7 +80,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	attrs := dest.Attributes()
-	attrs.InitEmptyWithCapacity(maxTotalAttrCount)
+	attrs.EnsureCapacity(maxTotalAttrCount)
 
 	if ocNode != nil {
 		// Copy all Attributes.

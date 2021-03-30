@@ -231,21 +231,17 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.Attribu
 	}
 
 	if len(ocAttrs.AttributeMap) > 0 {
-		dest.InitEmptyWithCapacity(len(ocAttrs.AttributeMap))
+		dest.EnsureCapacity(len(ocAttrs.AttributeMap))
 		for key, ocAttr := range ocAttrs.AttributeMap {
 			switch attribValue := ocAttr.Value.(type) {
 			case *octrace.AttributeValue_StringValue:
 				dest.UpsertString(key, attribValue.StringValue.GetValue())
-
 			case *octrace.AttributeValue_IntValue:
 				dest.UpsertInt(key, attribValue.IntValue)
-
 			case *octrace.AttributeValue_BoolValue:
 				dest.UpsertBool(key, attribValue.BoolValue)
-
 			case *octrace.AttributeValue_DoubleValue:
 				dest.UpsertDouble(key, attribValue.DoubleValue)
-
 			default:
 				dest.UpsertString(key, "<Unknown OpenCensus attribute value type>")
 			}

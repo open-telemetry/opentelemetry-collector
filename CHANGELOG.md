@@ -15,6 +15,7 @@
 - Remove testutil.WaitForPort, users can use testify.Eventually (#2926)
 - Rename `processorhelper.NewTraceProcessor` to `processorhelper.NewTracesProcessor` (#2935)
 - Rename `exporterhelper.NewTraceExporter` to `exporterhelper.NewTracesExporter` (#2937)
+- Remove InitEmptyWithCapacity, add EnsureCapacity and Clear (#2845)
 
 ## 💡 Enhancements 💡
 
