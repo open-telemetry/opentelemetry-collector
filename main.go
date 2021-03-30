@@ -15,9 +15,15 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/open-telemetry/opentelemetry-collector-builder/cmd"
 )
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 }

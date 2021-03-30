@@ -42,7 +42,7 @@ var (
 )
 
 // Execute is the main entrypoint for this application
-func Execute() {
+func Execute() error {
 	cobra.OnInitialize(initConfig)
 
 	cmd := &cobra.Command{
@@ -52,12 +52,12 @@ func Execute() {
 
 			if err := cfg.Validate(); err != nil {
 				cfg.Logger.Error(err, "invalid configuration")
-				return nil
+				return err
 			}
 
 			if err := cfg.ParseModules(); err != nil {
 				cfg.Logger.Error(err, "invalid module configuration")
-				return nil
+				return err
 			}
 
 			return builder.GenerateAndCompile(cfg)
@@ -83,11 +83,15 @@ func Execute() {
 	// tie Viper to flags
 	if err := viper.BindPFlags(cmd.Flags()); err != nil {
 		cfg.Logger.Error(err, "failed to bind flags")
+		return err
 	}
 
 	if err := cmd.Execute(); err != nil {
 		cfg.Logger.Error(err, "failed to run")
+		return err
 	}
+
+	return nil
 }
 
 func initConfig() {
@@ -113,6 +117,7 @@ func initConfig() {
 	// convert Viper's internal state into our configuration object
 	if err := viper.Unmarshal(&cfg); err != nil {
 		cfg.Logger.Error(err, "failed to parse the config")
+		cobra.CheckErr(err)
 		return
 	}
 }
