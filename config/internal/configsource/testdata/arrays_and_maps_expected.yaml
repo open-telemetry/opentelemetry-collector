@@ -1,0 +1,12 @@
+top0:
+  array0:
+    - elem0_value
+    - elem1_value
+  array1:
+    - entry:
+        str: elem0_value
+    - entry:
+        str: elem1_value
+  map0:
+    k0: k0_value
+    k1: k1_value
