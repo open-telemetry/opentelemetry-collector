@@ -461,20 +461,20 @@ func TestSpan_Kind(t *testing.T) {
 	assert.EqualValues(t, testValKind, ms.Kind())
 }
 
-func TestSpan_StartTime(t *testing.T) {
+func TestSpan_StartTimestamp(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, Timestamp(0), ms.StartTime())
-	testValStartTime := Timestamp(1234567890)
-	ms.SetStartTime(testValStartTime)
-	assert.EqualValues(t, testValStartTime, ms.StartTime())
+	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
+	testValStartTimestamp := Timestamp(1234567890)
+	ms.SetStartTimestamp(testValStartTimestamp)
+	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
 }
 
-func TestSpan_EndTime(t *testing.T) {
+func TestSpan_EndTimestamp(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, Timestamp(0), ms.EndTime())
-	testValEndTime := Timestamp(1234567890)
-	ms.SetEndTime(testValEndTime)
-	assert.EqualValues(t, testValEndTime, ms.EndTime())
+	assert.EqualValues(t, Timestamp(0), ms.EndTimestamp())
+	testValEndTimestamp := Timestamp(1234567890)
+	ms.SetEndTimestamp(testValEndTimestamp)
+	assert.EqualValues(t, testValEndTimestamp, ms.EndTimestamp())
 }
 
 func TestSpan_Attributes(t *testing.T) {
@@ -939,8 +939,8 @@ func fillTestSpan(tv Span) {
 	tv.SetParentSpanID(NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetName("test_name")
 	tv.SetKind(SpanKindSERVER)
-	tv.SetStartTime(Timestamp(1234567890))
-	tv.SetEndTime(Timestamp(1234567890))
+	tv.SetStartTimestamp(Timestamp(1234567890))
+	tv.SetEndTimestamp(Timestamp(1234567890))
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 	fillTestSpanEventSlice(tv.Events())

@@ -100,8 +100,8 @@ func jThriftSpanToInternal(span *jaeger.Span, dest pdata.Span) {
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(uint64(span.TraceIdHigh), uint64(span.TraceIdLow)))
 	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(span.SpanId)))
 	dest.SetName(span.OperationName)
-	dest.SetStartTime(microsecondsToUnixNano(span.StartTime))
-	dest.SetEndTime(microsecondsToUnixNano(span.StartTime + span.Duration))
+	dest.SetStartTimestamp(microsecondsToUnixNano(span.StartTime))
+	dest.SetEndTimestamp(microsecondsToUnixNano(span.StartTime + span.Duration))
 
 	parentSpanID := span.ParentSpanId
 	if parentSpanID != 0 {

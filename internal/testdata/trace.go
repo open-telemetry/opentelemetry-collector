@@ -232,8 +232,8 @@ func generateTraceOtlpTwoSpansSameResourceOneDifferent() *otlpcollectortrace.Exp
 
 func fillSpanOne(span pdata.Span) {
 	span.SetName("operationA")
-	span.SetStartTime(TestSpanStartTimestamp)
-	span.SetEndTime(TestSpanEndTimestamp)
+	span.SetStartTimestamp(TestSpanStartTimestamp)
+	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	evs := span.Events()
 	evs.Resize(2)
@@ -282,8 +282,8 @@ func generateOtlpSpanOne() *otlptrace.Span {
 
 func fillSpanTwo(span pdata.Span) {
 	span.SetName("operationB")
-	span.SetStartTime(TestSpanStartTimestamp)
-	span.SetEndTime(TestSpanEndTimestamp)
+	span.SetStartTimestamp(TestSpanStartTimestamp)
+	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.Links().Resize(2)
 	initSpanLinkAttributes(span.Links().At(0).Attributes())
 	span.Links().At(0).SetDroppedAttributesCount(4)
@@ -311,8 +311,8 @@ func generateOtlpSpanTwo() *otlptrace.Span {
 
 func fillSpanThree(span pdata.Span) {
 	span.SetName("operationC")
-	span.SetStartTime(TestSpanStartTimestamp)
-	span.SetEndTime(TestSpanEndTimestamp)
+	span.SetStartTimestamp(TestSpanStartTimestamp)
+	span.SetEndTimestamp(TestSpanEndTimestamp)
 	initSpanAttributes(span.Attributes())
 	span.SetDroppedAttributesCount(5)
 }
