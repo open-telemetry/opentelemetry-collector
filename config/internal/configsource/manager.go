@@ -38,6 +38,35 @@ import (
 // 4. WaitForWatcher to wait until the watchers are in place;
 // 5. Close to close the instance;
 //
+// The current syntax to reference a config source in a YAML is provisional. Currently
+// only now-wrapped single line is supported:
+//
+//    $<cfgSrcName>:<selector>[?<params>]
+//
+// The <cfgSrcName> is a name string used to indentify the config source instance to be used
+// to retrieve the value.
+//
+// The <selector> is the mandatory parameter required when retrieving data from a config source.
+//
+// <params> is an optional parameter in syntax similar to single line YAML but removing the spaces
+// to ensure that it is a string value. Not all config sources need these params, they are used to
+// provide extra control when retrieving the data.
+//
+// Assuming a config source named "env" that retrieve environment variables and one named "file" that
+// retrieves contents from individual files, here are some examples:
+//
+//    component:
+//      # Retrieves the value of the environment variable LOGS_DIR.
+//      logs_dir: $env:LOGS_DIR
+//
+//      # Retrieves the value from the file /etc/secret.bin and injects its contents as a []byte.
+//      bytes_from_file: $file:/etc/secret.bin?{binary:true}
+//
+//      # Retrieves the value from the file /etc/text.txt and injects its contents as a string.
+//      # Hypothetically the "file" config source by default tries to inject the file contents
+//      # as a string if params doesn't specify that "binary" is true.
+//      text_from_file: $file:/etc/text.txt
+//
 type Manager struct {
 	// configSources is map from ConfigSource names (as defined in the configuration)
 	// and the respective instances.
