@@ -186,8 +186,7 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// If no error then start the queuedRetrySender.
-	be.qrSender.start()
-	return nil
+	return be.qrSender.start()
 }
 
 // Shutdown all senders and exporter and is invoked during service shutdown.
