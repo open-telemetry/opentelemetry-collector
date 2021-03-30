@@ -49,6 +49,8 @@ type Config struct {
 	Service
 }
 
+var _ validatable = (*Config)(nil)
+
 // Validate returns an error if the config is invalid.
 //
 // This function performs basic validation of configuration. There may be more subtle
@@ -59,6 +61,13 @@ func (cfg *Config) Validate() error {
 	// The configuration must specify at least one receiver to be valid.
 	if len(cfg.Receivers) == 0 {
 		return errMissingReceivers
+	}
+
+	// Validate the receiver configuration.
+	for recv, recvCfg := range cfg.Receivers {
+		if err := recvCfg.Validate(); err != nil {
+			return fmt.Errorf("receiver \"%s\" has invalid configuration: %w", recv, err)
+		}
 	}
 
 	// Currently there is no default exporter enabled.
@@ -108,13 +117,6 @@ func (cfg *Config) validateServicePipelines() error {
 			if cfg.Receivers[ref] == nil {
 				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipeline.Name, ref)
 			}
-
-			// Validate the receiver configuration by the custom configuration validator
-			recCfg := cfg.Receivers[ref]
-			if err := recCfg.Validate(); err != nil {
-				return fmt.Errorf("pipeline %q references receiver %q which has invalid configuration with error: %v", pipeline.Name, ref, err)
-			}
-
 		}
 
 		// Validate pipeline processor name references
@@ -158,6 +160,12 @@ type NamedEntity interface {
 	Type() Type
 	Name() string
 	SetName(name string)
+}
+
+// validatable defines the interface for the configuration validation.
+type validatable interface {
+	// Validate validates the configuration and returns an error if invalid.
+	Validate() error
 }
 
 // DataType is the data type that is supported for collection. We currently support

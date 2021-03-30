@@ -26,7 +26,7 @@ type Config struct {
 	Scrapers                                map[string]internal.Config `mapstructure:"-"`
 }
 
-var _ config.CustomConfigOptions = (*Config)(nil)
+var _ config.Receiver = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

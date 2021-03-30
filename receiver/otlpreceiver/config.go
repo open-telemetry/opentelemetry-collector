@@ -33,7 +33,7 @@ type Config struct {
 	Protocols `mapstructure:"protocols"`
 }
 
-var _ config.CustomConfigOptions = (*Config)(nil)
+var _ config.Receiver = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

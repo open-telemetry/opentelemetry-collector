@@ -45,11 +45,11 @@ func TestNewFactory(t *testing.T) {
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
 	_, ok := factory.(component.ConfigUnmarshaler)
 	assert.False(t, ok)
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
 }
 
@@ -68,13 +68,13 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, errors.New("my error"), fu.Unmarshal(nil, nil))
 
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 }
 

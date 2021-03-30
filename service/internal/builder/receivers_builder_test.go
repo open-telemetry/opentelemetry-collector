@@ -260,8 +260,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 func TestBuildReceivers_StartAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &componenttest.NopConfig{}
-
+	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
@@ -279,8 +278,7 @@ func TestBuildReceivers_StartAll(t *testing.T) {
 
 func TestBuildReceivers_StopAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &componenttest.NopConfig{}
-
+	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{

@@ -29,11 +29,9 @@ type Config struct {
 	// If enabled the zipkin receiver will attempt to parse string tags/binary annotations into int/bool/float.
 	// Disabled by default
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
-
-	config.CustomConfigOptions
 }
 
-var _ config.CustomConfigOptions = (*Config)(nil)
+var _ config.Receiver = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
