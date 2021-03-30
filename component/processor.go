@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -82,7 +82,7 @@ type ProcessorFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Processor
+	CreateDefaultConfig() config.Processor
 
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
@@ -90,7 +90,7 @@ type ProcessorFactory interface {
 	CreateTracesProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
+		cfg config.Processor,
 		nextConsumer consumer.Traces,
 	) (TracesProcessor, error)
 
@@ -100,7 +100,7 @@ type ProcessorFactory interface {
 	CreateMetricsProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
+		cfg config.Processor,
 		nextConsumer consumer.Metrics,
 	) (MetricsProcessor, error)
 
@@ -110,7 +110,7 @@ type ProcessorFactory interface {
 	CreateLogsProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
+		cfg config.Processor,
 		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
 }

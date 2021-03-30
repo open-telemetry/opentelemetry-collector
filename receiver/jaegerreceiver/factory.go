@@ -22,12 +22,13 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -61,22 +62,21 @@ func NewFactory() component.ReceiverFactory {
 
 // customUnmarshaler is used to add defaults for named but empty protocols
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
+	componentParser := config.ParserFromViper(componentViperSection)
+	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
 		return fmt.Errorf("empty config for Jaeger receiver")
 	}
 
-	componentViperSection.SetConfigType("yaml")
-
 	// UnmarshalExact will not set struct properties to nil even if no key is provided,
 	// so set the protocol structs to nil where the keys were omitted.
-	err := componentViperSection.UnmarshalExact(intoCfg)
+	err := componentParser.UnmarshalExact(intoCfg)
 	if err != nil {
 		return err
 	}
 
 	receiverCfg := intoCfg.(*Config)
 
-	protocols := componentViperSection.GetStringMap(protocolsFieldName)
+	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
 	if len(protocols) == 0 {
 		return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
 	}
@@ -112,9 +112,9 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -144,7 +144,7 @@ func createDefaultConfig() configmodels.Receiver {
 func createTraceReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 

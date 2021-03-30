@@ -31,8 +31,8 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -55,7 +55,7 @@ const (
 )
 
 // Crete new exporter.
-func newExporter(cfg configmodels.Exporter, logger *zap.Logger) (*exporterImp, error) {
+func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporterImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {

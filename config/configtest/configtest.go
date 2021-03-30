@@ -21,12 +21,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 )
 
 // LoadConfigFile loads a config from file.
-func LoadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
+func LoadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
 	cp, err := config.NewParserFromFile(fileName)
 	require.NoError(t, err)

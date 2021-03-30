@@ -19,17 +19,17 @@ import (
 
 	"github.com/prometheus/prometheus/config"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	config2 "go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for Prometheus receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	PrometheusConfig              *config.Config `mapstructure:"-"`
-	BufferPeriod                  time.Duration  `mapstructure:"buffer_period"`
-	BufferCount                   int            `mapstructure:"buffer_count"`
-	UseStartTimeMetric            bool           `mapstructure:"use_start_time_metric"`
-	StartTimeMetricRegex          string         `mapstructure:"start_time_metric_regex"`
+	config2.ReceiverSettings `mapstructure:",squash"`
+	PrometheusConfig         *config.Config `mapstructure:"-"`
+	BufferPeriod             time.Duration  `mapstructure:"buffer_period"`
+	BufferCount              int            `mapstructure:"buffer_count"`
+	UseStartTimeMetric       bool           `mapstructure:"use_start_time_metric"`
+	StartTimeMetricRegex     string         `mapstructure:"start_time_metric_regex"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the

@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -406,7 +406,7 @@ func (s *loggingExporter) pushMetricsData(
 
 // newTraceExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
+func newTraceExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
@@ -426,7 +426,7 @@ func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
+func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
@@ -446,7 +446,7 @@ func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
+func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,

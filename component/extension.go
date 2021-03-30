@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -67,8 +67,8 @@ type ExtensionFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Extension
+	CreateDefaultConfig() config.Extension
 
 	// CreateExtension creates a service extension based on the given config.
-	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg configmodels.Extension) (Extension, error)
+	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg config.Extension) (Extension, error)
 }

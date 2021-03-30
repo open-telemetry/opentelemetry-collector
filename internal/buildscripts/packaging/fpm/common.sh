@@ -29,6 +29,7 @@ SERVICE_NAME="otel-collector"
 PROCESS_NAME="otelcol"
 
 SERVICE_PATH="$FPM_DIR/$SERVICE_NAME.service"
+ENVFILE_PATH="$FPM_DIR/$SERVICE_NAME.conf"
 PREINSTALL_PATH="$FPM_DIR/preinstall.sh"
 POSTINSTALL_PATH="$FPM_DIR/postinstall.sh"
 PREUNINSTALL_PATH="$FPM_DIR/preuninstall.sh"

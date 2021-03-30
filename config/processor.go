@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmodels
+package config
 
 // Processor is the configuration of a processor. Specific processors must implement this
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.

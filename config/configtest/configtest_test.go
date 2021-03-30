@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestLoadConfigFile(t *testing.T) {
@@ -56,9 +56,9 @@ func TestLoadConfigFile(t *testing.T) {
 	assert.Contains(t, cfg.Service.Extensions, "nop")
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
-		&configmodels.Pipeline{
+		&config.Pipeline{
 			Name:       "traces",
-			InputType:  configmodels.TracesDataType,
+			InputType:  config.TracesDataType,
 			Receivers:  []string{"nop"},
 			Processors: []string{"nop"},
 			Exporters:  []string{"nop"},

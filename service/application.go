@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -67,6 +66,8 @@ type Application struct {
 
 	factories component.Factories
 
+	configFactory ConfigFactory
+
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
 
@@ -96,11 +97,11 @@ type Parameters struct {
 // The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
 // Viper and command instances are passed from the Application.
 // The factories also belong to the Application and are equal to the factories passed via Parameters.
-type ConfigFactory func(cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
+type ConfigFactory func(cmd *cobra.Command, factories component.Factories) (*config.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file
 // and from --set command line flag (if the flag is present).
-func FileLoaderConfigFactory(cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+func FileLoaderConfigFactory(cmd *cobra.Command, factories component.Factories) (*config.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
 		return nil, errors.New("config file not specified")
@@ -120,16 +121,21 @@ func FileLoaderConfigFactory(cmd *cobra.Command, factories component.Factories) 
 
 // New creates and returns a new instance of Application.
 func New(params Parameters) (*Application, error) {
-	app := &Application{
-		info:         params.ApplicationStartInfo,
-		factories:    params.Factories,
-		stateChannel: make(chan State, Closed+1),
+	if err := configcheck.ValidateConfigFromFactories(params.Factories); err != nil {
+		return nil, err
 	}
 
-	factory := params.ConfigFactory
-	if factory == nil {
+	configFactory := params.ConfigFactory
+	if configFactory == nil {
 		// use default factory that loads the configuration file
-		factory = FileLoaderConfigFactory
+		configFactory = FileLoaderConfigFactory
+	}
+
+	app := &Application{
+		info:          params.ApplicationStartInfo,
+		factories:     params.Factories,
+		stateChannel:  make(chan State, Closed+1),
+		configFactory: configFactory,
 	}
 
 	rootCmd := &cobra.Command{
@@ -141,7 +147,7 @@ func New(params Parameters) (*Application, error) {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
-			if err := app.execute(context.Background(), factory); err != nil {
+			if err := app.execute(context.Background()); err != nil {
 				return err
 			}
 
@@ -166,6 +172,15 @@ func New(params Parameters) (*Application, error) {
 	app.rootCmd = rootCmd
 
 	return app, nil
+}
+
+// Run starts the collector according to the command and configuration
+// given by the user, and waits for it to complete.
+func (app *Application) Run() error {
+	// From this point on do not show usage in case of error.
+	app.rootCmd.SilenceUsage = true
+
+	return app.rootCmd.Execute()
 }
 
 // GetStateChannel returns state channel of the application.
@@ -228,21 +243,19 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	app.stateChannel <- Closing
 }
 
-func (app *Application) setupConfigurationComponents(ctx context.Context, factory ConfigFactory) error {
-	if err := configcheck.ValidateConfigFromFactories(app.factories); err != nil {
-		return err
-	}
-
+// setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
+// sets the app.service with the service currently running.
+func (app *Application) setupConfigurationComponents(ctx context.Context) error {
 	app.logger.Info("Loading configuration...")
 
-	cfg, err := factory(app.rootCmd, app.factories)
+	cfg, err := app.configFactory(app.rootCmd, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
 
 	app.logger.Info("Applying configuration...")
 
-	app.service, err = newService(&settings{
+	service, err := newService(&settings{
 		Factories:         app.factories,
 		StartInfo:         app.info,
 		Config:            cfg,
@@ -253,10 +266,16 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 		return err
 	}
 
-	return app.service.Start(ctx)
+	err = service.Start(ctx)
+	if err != nil {
+		return err
+	}
+
+	app.service = service
+	return nil
 }
 
-func (app *Application) execute(ctx context.Context, factory ConfigFactory) error {
+func (app *Application) execute(ctx context.Context) error {
 	app.logger.Info("Starting "+app.info.LongName+"...",
 		zap.String("Version", app.info.Version),
 		zap.String("GitHash", app.info.GitHash),
@@ -275,7 +294,7 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		return err
 	}
 
-	err = app.setupConfigurationComponents(ctx, factory)
+	err = app.setupConfigurationComponents(ctx)
 	if err != nil {
 		return err
 	}
@@ -290,8 +309,10 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
-	if err := app.service.Shutdown(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
+	if app.service != nil {
+		if err := app.service.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
+		}
 	}
 
 	if err := applicationTelemetry.shutdown(); err != nil {
@@ -305,15 +326,6 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	return consumererror.Combine(errs)
 }
 
-// Run starts the collector according to the command and configuration
-// given by the user, and waits for it to complete.
-func (app *Application) Run() error {
-	// From this point on do not show usage in case of error.
-	app.rootCmd.SilenceUsage = true
-
-	return app.rootCmd.Execute()
-}
-
 func (app *Application) createMemoryBallast() ([]byte, uint64) {
 	ballastSizeMiB := builder.MemBallastSize()
 	if ballastSizeMiB > 0 {
@@ -323,4 +335,23 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 		return ballast, ballastSizeBytes
 	}
 	return nil, 0
+}
+
+// updateService shutdowns the current app.service and setups a new one according
+// to the latest configuration. It requires that app.configFactory and app.factories
+// are properly populated to finish successfully.
+func (app *Application) updateService(ctx context.Context) error {
+	if app.service != nil {
+		retiringService := app.service
+		app.service = nil
+		if err := retiringService.Shutdown(ctx); err != nil {
+			return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+		}
+	}
+
+	if err := app.setupConfigurationComponents(ctx); err != nil {
+		return fmt.Errorf("failed to setup configuration components: %w", err)
+	}
+
+	return nil
 }

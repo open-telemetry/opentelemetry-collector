@@ -15,7 +15,7 @@
 package spanprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 )
 
@@ -24,7 +24,7 @@ import (
 // the include properties and then the exclude properties if they are specified.
 // This determines if a span is to be processed or not.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	filterconfig.MatchConfig `mapstructure:",squash"`
 

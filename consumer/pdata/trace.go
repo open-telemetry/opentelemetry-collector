@@ -92,6 +92,7 @@ func (td Traces) OtlpProtoSize() int {
 	return td.orig.Size()
 }
 
+// ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&td.orig.ResourceSpans)
 }
@@ -100,20 +101,38 @@ func (td Traces) ResourceSpans() ResourceSpansSlice {
 type TraceState string
 
 const (
+	// TraceStateEmpty represents the empty TraceState.
 	TraceStateEmpty TraceState = ""
 )
 
+// SpanKind is the type of span. Can be used to specify additional relationships between spans
+// in addition to a parent/child relationship.
 type SpanKind int32
 
+// String returns the string representation of the SpanKind.
 func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
 
 const (
+	// SpanKindUNSPECIFIED represents that the SpanKind is unspecified, it MUST NOT be used.
 	SpanKindUNSPECIFIED = SpanKind(0)
-	SpanKindINTERNAL    = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)
-	SpanKindSERVER      = SpanKind(otlptrace.Span_SPAN_KIND_SERVER)
-	SpanKindCLIENT      = SpanKind(otlptrace.Span_SPAN_KIND_CLIENT)
-	SpanKindPRODUCER    = SpanKind(otlptrace.Span_SPAN_KIND_PRODUCER)
-	SpanKindCONSUMER    = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
+	// SpanKindINTERNAL indicates that the span represents an internal operation within an application,
+	// as opposed to an operation happening at the boundaries. Default value.
+	SpanKindINTERNAL = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)
+	// SpanKindSERVER indicates that the span covers server-side handling of an RPC or other
+	// remote network request.
+	SpanKindSERVER = SpanKind(otlptrace.Span_SPAN_KIND_SERVER)
+	// SpanKindCLIENT indicates that the span describes a request to some remote service.
+	SpanKindCLIENT = SpanKind(otlptrace.Span_SPAN_KIND_CLIENT)
+	// SpanKindPRODUCER indicates that the span describes a producer sending a message to a broker.
+	// Unlike CLIENT and SERVER, there is often no direct critical path latency relationship
+	// between producer and consumer spans.
+	// A PRODUCER span ends when the message was accepted by the broker while the logical processing of
+	// the message might span a much longer time.
+	SpanKindPRODUCER = SpanKind(otlptrace.Span_SPAN_KIND_PRODUCER)
+	// SpanKindCONSUMER indicates that the span describes consumer receiving a message from a broker.
+	// Like the PRODUCER kind, there is often no direct critical path latency relationship between
+	// producer and consumer spans.
+	SpanKindCONSUMER = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
 )
 
 // StatusCode mirrors the codes defined at

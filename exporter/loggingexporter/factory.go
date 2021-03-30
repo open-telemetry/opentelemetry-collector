@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -42,9 +42,9 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -54,7 +54,7 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -65,7 +65,7 @@ func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, co
 	return newTraceExporter(config, cfg.LogLevel, exporterLogger)
 }
 
-func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -76,7 +76,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 	return newMetricsExporter(config, cfg.LogLevel, exporterLogger)
 }
 
-func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)

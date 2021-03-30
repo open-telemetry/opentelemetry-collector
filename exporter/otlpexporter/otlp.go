@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -44,7 +44,7 @@ type exporterImp struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg configmodels.Exporter) (*exporterImp, error) {
+func newExporter(cfg config.Exporter) (*exporterImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {

@@ -15,9 +15,16 @@
   - Rename `NewComponent()` to `New()`
 - obsReport.NewExporter accepts a settings struct (#2668)
 - Remove ErrorWaitingHost from `componenttest` (#2582)
+- Move `config.Load` to use `configparser.Load` (#2796)
+- Remove `configtest.NewViperFromYamlFile()`, use `config.Parser.NewParserFromFile()` (#2806)
+- Move `config.ViperSubExact()` to use `config.Parser.Sub()` (#2806)
+- Update LoadReceiver signature to remove unused params (#2823)
 
 ## 💡 Enhancements 💡
+
 - `batch` processor: - Support max batch size for logs (#2736)
+- Use `Endpoint` for health check extension (#2782)
+- Use `confignet.TCPAddr` for `pprof` and `zpages` extensions (#2829)
 
 ## 🧰 Bug fixes 🧰
 

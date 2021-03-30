@@ -20,12 +20,12 @@ package memorylimiter
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for memory memoryLimiter processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	// CheckInterval is the time between measurements of memory usage for the
 	// purposes of avoiding going over the limits. Defaults to zero, so no

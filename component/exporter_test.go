@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 type TestExporterFactory struct {
@@ -29,34 +29,34 @@ type TestExporterFactory struct {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *TestExporterFactory) Type() configmodels.Type {
-	return configmodels.Type(f.name)
+func (f *TestExporterFactory) Type() config.Type {
+	return config.Type(f.name)
 }
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *TestExporterFactory) CreateDefaultConfig() configmodels.Exporter {
+func (f *TestExporterFactory) CreateDefaultConfig() config.Exporter {
 	return nil
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (TracesExporter, error) {
+func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, config.Exporter) (TracesExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (MetricsExporter, error) {
+func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateParams, config.Exporter) (MetricsExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a logs exporter based on this config.
-func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (LogsExporter, error) {
+func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, config.Exporter) (LogsExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func TestBuildExporters(t *testing.T) {
 	type testCase struct {
 		in  []ExporterFactory
-		out map[configmodels.Type]ExporterFactory
+		out map[config.Type]ExporterFactory
 	}
 
 	testCases := []testCase{
@@ -65,7 +65,7 @@ func TestBuildExporters(t *testing.T) {
 				&TestExporterFactory{"exp1"},
 				&TestExporterFactory{"exp2"},
 			},
-			out: map[configmodels.Type]ExporterFactory{
+			out: map[config.Type]ExporterFactory{
 				"exp1": &TestExporterFactory{"exp1"},
 				"exp2": &TestExporterFactory{"exp2"},
 			},

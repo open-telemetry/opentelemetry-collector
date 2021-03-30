@@ -19,13 +19,16 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "zpages"
+
+	defaultEndpoint = "localhost:55679"
 )
 
 // NewFactory creates a factory for Z-Pages extension.
@@ -36,20 +39,22 @@ func NewFactory() component.ExtensionFactory {
 		createExtension)
 }
 
-func createDefaultConfig() configmodels.Extension {
+func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ExtensionSettings: config.ExtensionSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint: "localhost:55679",
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: defaultEndpoint,
+		},
 	}
 }
 
 // createExtension creates the extension based on this config.
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
-	if config.Endpoint == "" {
+	if config.TCPAddr.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"zpages\" extension")
 	}
 

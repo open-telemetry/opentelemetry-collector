@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -41,9 +41,9 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -77,7 +77,7 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg, params.Logger)
 	if err != nil {
@@ -103,7 +103,7 @@ func createTraceExporter(
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	oce, err := newExporter(cfg, params.Logger)
 	if err != nil {
@@ -129,7 +129,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oce, err := newExporter(cfg, params.Logger)
 	if err != nil {

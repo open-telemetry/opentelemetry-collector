@@ -86,6 +86,7 @@ func NewAttributeValueNull() AttributeValue {
 	return AttributeValue{orig: orig}
 }
 
+// NewAttributeValue is deprecated.
 // Deprecated: Use NewAttributeValueNull()
 func NewAttributeValue() AttributeValue {
 	return NewAttributeValueNull()

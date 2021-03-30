@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -261,7 +261,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 func TestBuildReceivers_StartAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &configmodels.ReceiverSettings{}
+	rcvCfg := &config.ReceiverSettings{}
 
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
@@ -280,7 +280,7 @@ func TestBuildReceivers_StartAll(t *testing.T) {
 
 func TestBuildReceivers_StopAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &configmodels.ReceiverSettings{}
+	rcvCfg := &config.ReceiverSettings{}
 
 	receiver := &testcomponents.ExampleReceiverProducer{}
 

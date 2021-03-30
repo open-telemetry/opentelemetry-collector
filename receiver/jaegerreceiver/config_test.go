@@ -22,9 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["jaeger/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "jaeger/customname",
 			},
@@ -91,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "jaeger/defaults",
 			},
@@ -119,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 	rMixed := cfg.Receivers["jaeger/mixed"].(*Config)
 	assert.Equal(t, rMixed,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "jaeger/mixed",
 			},
@@ -141,7 +141,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, tlsConfig,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "jaeger/tls",
 			},

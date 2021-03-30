@@ -15,15 +15,15 @@
 package prometheusremotewriteexporter
 
 import (
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	configmodels.ExporterSettings  `mapstructure:",squash"`
+	config.ExporterSettings        `mapstructure:",squash"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`

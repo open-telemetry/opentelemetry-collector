@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -67,9 +67,9 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 		receiverhelper.WithTraces(f.createTraceReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -95,7 +95,7 @@ type kafkaReceiverFactory struct {
 func (f *kafkaReceiverFactory) createTraceReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)

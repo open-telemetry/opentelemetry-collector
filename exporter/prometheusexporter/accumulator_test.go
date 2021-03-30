@@ -29,7 +29,7 @@ func TestInvalidDataType(t *testing.T) {
 	a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 	metric := pdata.NewMetric()
 	metric.SetDataType(-100)
-	n := a.addMetric(metric, pdata.NewInstrumentationLibrary())
+	n := a.addMetric(metric, pdata.NewInstrumentationLibrary(), time.Now())
 	require.Zero(t, n)
 }
 
@@ -351,7 +351,7 @@ func TestAccumulateMetrics(t *testing.T) {
 			require.Equal(t, m2Labels.Len(), vLabels.Len())
 			require.Equal(t, m2Value, vValue)
 			require.Equal(t, ts2.Unix(), vTS.Unix())
-			require.Greater(t, v.stored.Unix(), vTS.Unix())
+			require.Greater(t, v.updated.Unix(), vTS.Unix())
 			require.Equal(t, m2Temporality, vTemporality)
 			require.Equal(t, m2IsMonotonic, vIsMonotonic)
 

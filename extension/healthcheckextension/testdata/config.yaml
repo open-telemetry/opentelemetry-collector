@@ -1,7 +1,7 @@
 extensions:
   health_check:
   health_check/1:
-    port: 13
+    endpoint: "localhost:13"
 
 service:
   extensions: [health_check/1]

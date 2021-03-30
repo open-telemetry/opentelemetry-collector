@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmodels
+package config
 
 // Extension is the configuration of a service extension. Specific extensions
 // must implement this interface and will typically embed ExtensionSettings

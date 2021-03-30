@@ -18,13 +18,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -55,9 +56,9 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -79,18 +80,19 @@ func createDefaultConfig() configmodels.Receiver {
 
 // customUnmarshaler is used to add defaults for named but empty protocols
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
+	componentParser := config.ParserFromViper(componentViperSection)
+	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
 		return fmt.Errorf("empty config for OTLP receiver")
 	}
 	// first load the config normally
-	err := componentViperSection.UnmarshalExact(intoCfg)
+	err := componentParser.UnmarshalExact(intoCfg)
 	if err != nil {
 		return err
 	}
 
 	receiverCfg := intoCfg.(*Config)
 	// next manually search for protocols in viper, if a protocol is not present it means it is disable.
-	protocols := componentViperSection.GetStringMap(protocolsFieldName)
+	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
 
 	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
 	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
@@ -123,7 +125,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -140,7 +142,7 @@ func createTraceReceiver(
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -157,7 +159,7 @@ func createMetricsReceiver(
 func createLogReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -170,7 +172,7 @@ func createLogReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
+func createReceiver(cfg config.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of

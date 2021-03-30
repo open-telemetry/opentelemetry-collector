@@ -25,8 +25,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -35,14 +35,14 @@ func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
 
-	assert.Equal(t, pType, configmodels.Type("filter"))
+	assert.Equal(t, pType, config.Type("filter"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},
