@@ -1,7 +1,7 @@
-FROM alpine:latest as certs
+FROM alpine:3.13 as certs
 RUN apk --update add ca-certificates
 
-FROM alpine:latest AS otelcol
+FROM alpine:3.13 AS otelcol
 COPY otelcol /
 # Note that this shouldn't be necessary, but in some cases the file seems to be
 # copied with the execute bit lost (see #1317)
