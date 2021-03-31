@@ -24,13 +24,12 @@ const (
 	configCfg      = "config"
 	memBallastFlag = "mem-ballast-size-mib"
 
-	kindLogKey        = "component_kind"
-	kindLogsReceiver  = "receiver"
-	kindLogsProcessor = "processor"
-	kindLogsExporter  = "exporter"
-	kindLogExtension  = "extension"
-	typeLogKey        = "component_type"
-	nameLogKey        = "component_name"
+	zapKindKey         = "kind"
+	zapKindReceiver    = "receiver"
+	zapKindProcessor   = "processor"
+	zapKindLogExporter = "exporter"
+	zapKindExtension   = "extension"
+	zapNameKey         = "name"
 )
 
 var (
