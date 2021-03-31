@@ -58,7 +58,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		{
 			filterName: "filter/empty",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/empty",
 					TypeVal: typeStr,
 				},
@@ -71,7 +71,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			filterName: "filter/include",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
@@ -82,7 +82,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			filterName: "filter/exclude",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
@@ -93,7 +93,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			filterName: "filter/includeexclude",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/includeexclude",
 					TypeVal: typeStr,
 				},
@@ -152,7 +152,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		{
 			filterName: "filter/include",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
@@ -163,7 +163,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			filterName: "filter/exclude",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
@@ -174,7 +174,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			filterName: "filter/unlimitedcache",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/unlimitedcache",
 					TypeVal: typeStr,
 				},
@@ -191,7 +191,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			filterName: "filter/limitedcache",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/limitedcache",
 					TypeVal: typeStr,
 				},
@@ -233,7 +233,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			filterName: "filter/empty",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/empty",
 					TypeVal: typeStr,
 				},
@@ -247,7 +247,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			filterName: "filter/include",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
@@ -265,7 +265,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			filterName: "filter/exclude",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
@@ -283,7 +283,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			filterName: "filter/includeexclude",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					NameVal: "filter/includeexclude",
 					TypeVal: typeStr,
 				},

@@ -31,6 +31,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -42,7 +43,8 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				Namespace: "test",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Namespace:        "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
 					"code0": "one0",
@@ -54,12 +56,15 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				Endpoint: ":88999",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Endpoint:         ":88999",
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
-			config:  &Config{},
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+			},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
@@ -95,8 +100,9 @@ func TestPrometheusExporter(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
-	config := &Config{
-		Namespace: "test",
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
@@ -107,7 +113,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, config)
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -170,8 +176,9 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
-	config := &Config{
-		Namespace: "test",
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
@@ -183,7 +190,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, config)
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {

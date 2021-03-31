@@ -28,6 +28,7 @@ type Receivers map[string]Receiver
 // ReceiverSettings defines common settings for a receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 // It is highly recommended to "override" the Validate() function.
+// When embedded in the processor config it must be with `mapstructure:"-"` tag.
 type ReceiverSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`

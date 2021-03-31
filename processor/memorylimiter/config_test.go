@@ -45,16 +45,13 @@ func TestLoadConfig(t *testing.T) {
 	p0 := cfg.Processors["memory_limiter"]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: "memory_limiter",
-				NameVal: "memory_limiter",
-			},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		})
 
 	p1 := cfg.Processors["memory_limiter/with-settings"]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
+			ProcessorSettings: &config.ProcessorSettings{
 				TypeVal: "memory_limiter",
 				NameVal: "memory_limiter/with-settings",
 			},

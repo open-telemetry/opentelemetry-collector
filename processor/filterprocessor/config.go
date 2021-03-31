@@ -21,8 +21,8 @@ import (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
-	Metrics                  MetricFilters `mapstructure:"metrics"`
+	*config.ProcessorSettings `mapstructure:"-"`
+	Metrics                   MetricFilters `mapstructure:"metrics"`
 }
 
 // MetricFilters filters by Metric properties.

@@ -43,7 +43,7 @@ import (
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPrwExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings:   config.ExporterSettings{},
+		ExporterSettings:   config.NewExporterSettings(typeStr),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
@@ -685,11 +685,8 @@ func Test_PushMetrics(t *testing.T) {
 			assert.NoError(t, uErr)
 
 			config := &Config{
-				ExporterSettings: config.ExporterSettings{
-					TypeVal: "prometheusremotewrite",
-					NameVal: "prometheusremotewrite",
-				},
-				Namespace: "",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Namespace:        "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://some.url:9411/api/prom/push",
 					// We almost read 0 bytes, so no need to tune ReadBufferSize.

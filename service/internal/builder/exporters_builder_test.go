@@ -41,10 +41,7 @@ func TestBuildExporters(t *testing.T) {
 	cfg := &config.Config{
 		Exporters: map[string]config.Exporter{
 			"opencensus": &opencensusexporter.Config{
-				ExporterSettings: config.ExporterSettings{
-					NameVal: "opencensus",
-					TypeVal: "opencensus",
-				},
+				ExporterSettings: config.NewExporterSettings("opencensus"),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "0.0.0.0:12345",
 				},
