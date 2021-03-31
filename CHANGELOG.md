@@ -16,10 +16,11 @@
   - Rename `NewComponent()` to `New()`
 - obsReport.NewExporter accepts a settings struct (#2668)
 - Remove ErrorWaitingHost from `componenttest` (#2582)
-- Move `config.Load` to use `configparser.Load` (#2796)
+- Move `config.Load` to `configparser.Load` (#2796)
 - Remove `configtest.NewViperFromYamlFile()`, use `config.Parser.NewParserFromFile()` (#2806)
-- Move `config.ViperSubExact()` to use `config.Parser.Sub()` (#2806)
+- Remove `config.ViperSubExact()`, use `config.Parser.Sub()` (#2806)
 - Update LoadReceiver signature to remove unused params (#2823)
+- Remove `config.DecodeTypeAndName`, use `config.IDFromString` (#2869)
 
 ## 💡 Enhancements 💡
 
