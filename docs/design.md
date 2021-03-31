@@ -63,7 +63,6 @@ In the above example “opencensus” receiver will send the same data to pipeli
 
 When the Collector loads this config the result will look like this (part of processors and exporters are omitted from the diagram for brevity):
 
-**TODO** Update picture and replace `"tags" processor` with `"memory_limiter" processor`
 
 ![Receivers](images/design-receivers.png)
 
@@ -106,7 +105,6 @@ service:
 
 In the above example “jaeger” exporter will get data from pipeline “traces” and from pipeline “traces/2”. When the Collector loads this config the result will look like this (part of processors and receivers are omitted from the diagram for brevity):
 
-**TODO** Update picture and replace `"queued-retry" processor` with `"memory_limiter" processor`
 
 ![Exporters](images/design-exporters.png)
 
@@ -138,7 +136,6 @@ service:
 
 When the Collector loads this config the result will look like this:
 
-**TODO** Update picture and replace `"queued-retry" processor` with `"batch" processor`
 
 ![Processors](images/design-processors.png)
 
@@ -174,9 +171,8 @@ give Agent the ability to push configurations (e.g sampling probability) to
 Library. For those languages that cannot do stats aggregation in process, they
 should also be able to send raw measurements and have Agent do the aggregation.
 
-TODO: update the diagram below.
 
-![agent-architecture](https://user-images.githubusercontent.com/10536136/48792454-2a69b900-eca9-11e8-96eb-c65b2b1e4e83.png)
+![agent-architecture](images/design-collector-agent.png)
 
 For developers/maintainers of other libraries: Agent can also
 accept spans/stats/metrics from other tracing/monitoring libraries, such as
@@ -191,9 +187,8 @@ tasks/agents that emit in one of the supported protocols. The Collector is
 configured to send data to the configured exporter(s). The following figure
 summarizes the deployment architecture:
 
-**TODO:** update the diagram below.
 
-![OpenTelemetry Collector Architecture](https://user-images.githubusercontent.com/10536136/46637070-65f05f80-cb0f-11e8-96e6-bc56468486b3.png "OpenTelemetry Collector Architecture")
+![OpenTelemetry Collector Architecture](images/design-collector-service.png "OpenTelemetry Collector Architecture")
 
 The OpenTelemetry Collector can also be deployed in other configurations, such
 as receiving data from other agents or clients in one of the formats supported
