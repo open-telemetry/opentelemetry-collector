@@ -25,22 +25,22 @@ import (
 )
 
 const (
-	// Key used to identify exporters in metrics and traces.
+	// ExporterKey used to identify exporters in metrics and traces.
 	ExporterKey = "exporter"
 
-	// Key used to track spans sent by exporters.
+	// SentSpansKey used to track spans sent by exporters.
 	SentSpansKey = "sent_spans"
-	// Key used to track spans that failed to be sent by exporters.
+	// FailedToSendSpansKey used to track spans that failed to be sent by exporters.
 	FailedToSendSpansKey = "send_failed_spans"
 
-	// Key used to track metric points sent by exporters.
+	// SentMetricPointsKey used to track metric points sent by exporters.
 	SentMetricPointsKey = "sent_metric_points"
-	// Key used to track metric points that failed to be sent by exporters.
+	// FailedToSendMetricPointsKey used to track metric points that failed to be sent by exporters.
 	FailedToSendMetricPointsKey = "send_failed_metric_points"
 
-	// Key used to track logs sent by exporters.
+	// SentLogRecordsKey used to track logs sent by exporters.
 	SentLogRecordsKey = "sent_log_records"
-	// Key used to track logs that failed to be sent by exporters.
+	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
 )
 
@@ -83,17 +83,20 @@ var (
 		stats.UnitDimensionless)
 )
 
+// Exporter is a helper to add observability to a component.Exporter.
 type Exporter struct {
 	level        configtelemetry.Level
 	exporterName string
 	mutators     []tag.Mutator
 }
 
+// ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
 	Level        configtelemetry.Level
 	ExporterName string
 }
 
+// NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) *Exporter {
 	level, exporterName := cfg.Level, cfg.ExporterName
 	return &Exporter{

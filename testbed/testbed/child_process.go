@@ -236,6 +236,7 @@ func (cp *ChildProcess) Start(params StartParams) error {
 		args = append(args, "--config")
 		args = append(args, cp.configFileName)
 	}
+	// #nosec
 	cp.cmd = exec.Command(exePath, args...)
 
 	// Capture standard output and standard error.

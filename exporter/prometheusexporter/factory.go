@@ -28,6 +28,7 @@ const (
 	typeStr = "prometheus"
 )
 
+// NewFactory creates a new Prometheus exporter factory.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,

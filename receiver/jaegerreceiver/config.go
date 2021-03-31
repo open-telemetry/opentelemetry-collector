@@ -38,6 +38,7 @@ type RemoteSamplingConfig struct {
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 }
 
+// Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC          *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
 	ThriftHTTP    *confighttp.HTTPServerSettings `mapstructure:"thrift_http"`
@@ -45,11 +46,13 @@ type Protocols struct {
 	ThriftCompact *ProtocolUDP                   `mapstructure:"thrift_compact"`
 }
 
+// ProtocolUDP is the configuration for a UDP protocol.
 type ProtocolUDP struct {
 	Endpoint        string `mapstructure:"endpoint"`
 	ServerConfigUDP `mapstructure:",squash"`
 }
 
+// ServerConfigUDP is the server configuration for a UDP protocol.
 type ServerConfigUDP struct {
 	QueueSize        int `mapstructure:"queue_size"`
 	MaxPacketSize    int `mapstructure:"max_packet_size"`
@@ -57,6 +60,7 @@ type ServerConfigUDP struct {
 	SocketBufferSize int `mapstructure:"socket_buffer_size"`
 }
 
+// DefaultServerConfigUDP creates the default ServerConfigUDP.
 func DefaultServerConfigUDP() ServerConfigUDP {
 	return ServerConfigUDP{
 		QueueSize:        defaultQueueSize,

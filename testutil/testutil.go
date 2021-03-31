@@ -54,6 +54,7 @@ func GenerateNormalizedJSON(t *testing.T, jsonStr string) string {
 	return string(n)
 }
 
+// TempSocketName provides a temporary Unix socket name for testing.
 func TempSocketName(t *testing.T) string {
 	tmpfile, err := ioutil.TempFile("", "sock")
 	require.NoError(t, err)
@@ -223,6 +224,7 @@ type LimitedWriter struct {
 
 var _ io.Writer = new(LimitedWriter)
 
+// Write writes bytes to the underlying buffer until reaching the maximum length.
 func (lw *LimitedWriter) Write(p []byte) (n int, err error) {
 	if lw.MaxLen != 0 && len(p)+lw.Len() > lw.MaxLen {
 		return 0, io.EOF
@@ -230,6 +232,7 @@ func (lw *LimitedWriter) Write(p []byte) (n int, err error) {
 	return lw.Buffer.Write(p)
 }
 
+// Close closes the writer.
 func (lw *LimitedWriter) Close() error {
 	return nil
 }

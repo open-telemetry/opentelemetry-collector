@@ -181,6 +181,7 @@ type throttleRetry struct {
 	delay time.Duration
 }
 
+// NewThrottleRetry creates a new throttle retry error.
 func NewThrottleRetry(err error, delay time.Duration) error {
 	return &throttleRetry{
 		error: err,

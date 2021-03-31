@@ -26,6 +26,7 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
+// ThriftBatchToInternalTraces transforms a Thrift trace batch into pdata.Traces.
 func ThriftBatchToInternalTraces(batch *jaeger.Batch) pdata.Traces {
 	traceData := pdata.NewTraces()
 	jProcess := batch.GetProcess()

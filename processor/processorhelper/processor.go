@@ -74,7 +74,7 @@ func WithShutdown(shutdown componenthelper.Shutdown) Option {
 	}
 }
 
-// WithShutdown overrides the default GetCapabilities function for an processor.
+// WithCapabilities overrides the default GetCapabilities function for an processor.
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
 	return func(o *baseSettings) {

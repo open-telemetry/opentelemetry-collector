@@ -29,6 +29,7 @@ const (
 	typeStr = "prometheusremotewrite"
 )
 
+// NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,

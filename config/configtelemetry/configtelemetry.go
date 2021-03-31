@@ -69,6 +69,7 @@ func (l *Level) String() string {
 	return "unknown"
 }
 
+// Set sets the telemetry level.
 func (l *Level) Set(s string) error {
 	lvl, err := parseLevel(s)
 	if err != nil {

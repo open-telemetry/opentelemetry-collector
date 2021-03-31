@@ -132,6 +132,15 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    # Exclude internal and testbed packages for now.
+    - path: ".*internal.*|.*testbed.*"
+      text: "should have comment|should be of the form"
+      linters:
+        - golint
+    # Exclude documenting constant blocks.
+    - text: "or a comment on this block"
+      linters:
+        - golint
 
   # The list of ids of default excludes to include or disable. By default it's empty.
   # See the list of default excludes here https://golangci-lint.run/usage/configuration.
@@ -142,7 +151,7 @@ issues:
     - EXC0004
     - EXC0005
     - EXC0006
-    # - EXC0007 - TODO: Enable this
+    - EXC0007
     # - EXC0008 - Duplicated errcheck checks
     - EXC0009
     - EXC0010
