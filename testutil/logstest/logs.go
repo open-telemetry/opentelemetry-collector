@@ -18,13 +18,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// Log is a convenience struct for constructing logs for tests.
+// See Logs for rationale.
 type Log struct {
 	Timestamp  int64
 	Body       pdata.AttributeValue
 	Attributes map[string]pdata.AttributeValue
 }
 
-// A convenience function for constructing logs for tests in a way that is
+// Logs is a convenience function for constructing logs for tests in a way that is
 // relatively easy to read and write declaratively compared to the highly
 // imperative and verbose method of using pdata directly.
 // Attributes are sorted by key name.
