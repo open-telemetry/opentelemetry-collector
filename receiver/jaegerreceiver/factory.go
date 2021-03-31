@@ -52,6 +52,7 @@ const (
 	defaultAgentRemoteSamplingHTTPPort = 5778
 )
 
+// NewFactory creates a new Jaeger receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,

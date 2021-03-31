@@ -45,6 +45,7 @@ const (
 	legacyGRPCEndpoint  = "0.0.0.0:55680"
 )
 
+// NewFactory creates a new OTLP receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
