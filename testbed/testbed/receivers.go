@@ -21,12 +21,12 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	config2 "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -67,16 +67,16 @@ func (mb *DataReceiverBase) ReportFatalError(err error) {
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ config2.Type) component.Factory {
+func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ config.Type) component.Factory {
 	return nil
 }
 
 // Return map of extensions. Only enabled and created extensions will be returned.
-func (mb *DataReceiverBase) GetExtensions() map[config2.NamedEntity]component.Extension {
+func (mb *DataReceiverBase) GetExtensions() map[config.NamedEntity]component.Extension {
 	return nil
 }
 
-func (mb *DataReceiverBase) GetExporters() map[config2.DataType]map[config2.NamedEntity]component.Exporter {
+func (mb *DataReceiverBase) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
 	return nil
 }
 
@@ -349,8 +349,8 @@ func (dr *PrometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
-	cfg.PrometheusConfig = &config.Config{
-		ScrapeConfigs: []*config.ScrapeConfig{{
+	cfg.PrometheusConfig = &promconfig.Config{
+		ScrapeConfigs: []*promconfig.ScrapeConfig{{
 			JobName:        "testbed-job",
 			ScrapeInterval: model.Duration(100 * time.Millisecond),
 			ScrapeTimeout:  model.Duration(time.Second),

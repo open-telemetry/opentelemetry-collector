@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	config2 "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	fsregexp "go.opentelemetry.io/collector/internal/processor/filterset/regexp"
@@ -45,11 +45,11 @@ func TestLoadingConfigStrict(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Processors[config2.Type(typeStr)] = factory
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_strict.yaml"), factories)
+	factories.Processors[config.Type(typeStr)] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_strict.yaml"), factories)
 
 	assert.Nil(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
 	tests := []struct {
 		filterName string
@@ -58,7 +58,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		{
 			filterName: "filter/empty",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/empty",
 					TypeVal: typeStr,
 				},
@@ -71,7 +71,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			filterName: "filter/include",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
@@ -82,7 +82,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			filterName: "filter/exclude",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
@@ -93,7 +93,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			filterName: "filter/includeexclude",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/includeexclude",
 					TypeVal: typeStr,
 				},
@@ -110,7 +110,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {
-			cfg := config.Processors[test.filterName]
+			cfg := cfg.Processors[test.filterName]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}
@@ -140,10 +140,10 @@ func TestLoadingConfigRegexp(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_regexp.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_regexp.yaml"), factories)
 
 	assert.Nil(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
 	tests := []struct {
 		filterName string
@@ -152,7 +152,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		{
 			filterName: "filter/include",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
@@ -163,7 +163,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			filterName: "filter/exclude",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
@@ -174,7 +174,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			filterName: "filter/unlimitedcache",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/unlimitedcache",
 					TypeVal: typeStr,
 				},
@@ -191,7 +191,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			filterName: "filter/limitedcache",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/limitedcache",
 					TypeVal: typeStr,
 				},
@@ -211,7 +211,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {
-			cfg := config.Processors[test.filterName]
+			cfg := cfg.Processors[test.filterName]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}
@@ -221,19 +221,19 @@ func TestLoadingConfigExpr(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Processors[config2.Type(typeStr)] = factory
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_expr.yaml"), factories)
+	factories.Processors[config.Type(typeStr)] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_expr.yaml"), factories)
 	require.NoError(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
 	tests := []struct {
 		filterName string
-		expCfg     config2.Processor
+		expCfg     config.Processor
 	}{
 		{
 			filterName: "filter/empty",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/empty",
 					TypeVal: typeStr,
 				},
@@ -247,7 +247,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			filterName: "filter/include",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
@@ -265,7 +265,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			filterName: "filter/exclude",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
@@ -283,7 +283,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			filterName: "filter/includeexclude",
 			expCfg: &Config{
-				ProcessorSettings: config2.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "filter/includeexclude",
 					TypeVal: typeStr,
 				},
@@ -306,7 +306,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {
-			cfg := config.Processors[test.filterName]
+			cfg := cfg.Processors[test.filterName]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}
