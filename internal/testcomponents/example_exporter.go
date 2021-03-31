@@ -37,6 +37,7 @@ type ExampleExporter struct {
 	ExtraListSetting        []string                 `mapstructure:"extra_list"`
 }
 
+// Unmarshal a viper data into the config struct
 func (cfg *ExampleExporter) Unmarshal(componentViperSection *viper.Viper) error {
 	return componentViperSection.UnmarshalExact(cfg)
 }

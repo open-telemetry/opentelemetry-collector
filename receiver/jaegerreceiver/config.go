@@ -83,6 +83,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// Unmarshal a viper data into the config struct
 func (cfg *Config) Unmarshal(componentViperSection *viper.Viper) error {
 	return customUnmarshaler(componentViperSection, cfg)
 }
