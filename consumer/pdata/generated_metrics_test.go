@@ -711,12 +711,12 @@ func TestIntDataPoint_LabelsMap(t *testing.T) {
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
-func TestIntDataPoint_StartTime(t *testing.T) {
+func TestIntDataPoint_StartTimestamp(t *testing.T) {
 	ms := NewIntDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.StartTime())
-	testValStartTime := Timestamp(1234567890)
-	ms.SetStartTime(testValStartTime)
-	assert.EqualValues(t, testValStartTime, ms.StartTime())
+	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
+	testValStartTimestamp := Timestamp(1234567890)
+	ms.SetStartTimestamp(testValStartTimestamp)
+	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
 }
 
 func TestIntDataPoint_Timestamp(t *testing.T) {
@@ -871,12 +871,12 @@ func TestDoubleDataPoint_LabelsMap(t *testing.T) {
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
-func TestDoubleDataPoint_StartTime(t *testing.T) {
+func TestDoubleDataPoint_StartTimestamp(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.StartTime())
-	testValStartTime := Timestamp(1234567890)
-	ms.SetStartTime(testValStartTime)
-	assert.EqualValues(t, testValStartTime, ms.StartTime())
+	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
+	testValStartTimestamp := Timestamp(1234567890)
+	ms.SetStartTimestamp(testValStartTimestamp)
+	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
 }
 
 func TestDoubleDataPoint_Timestamp(t *testing.T) {
@@ -1031,12 +1031,12 @@ func TestIntHistogramDataPoint_LabelsMap(t *testing.T) {
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
-func TestIntHistogramDataPoint_StartTime(t *testing.T) {
+func TestIntHistogramDataPoint_StartTimestamp(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.StartTime())
-	testValStartTime := Timestamp(1234567890)
-	ms.SetStartTime(testValStartTime)
-	assert.EqualValues(t, testValStartTime, ms.StartTime())
+	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
+	testValStartTimestamp := Timestamp(1234567890)
+	ms.SetStartTimestamp(testValStartTimestamp)
+	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
 }
 
 func TestIntHistogramDataPoint_Timestamp(t *testing.T) {
@@ -1215,12 +1215,12 @@ func TestHistogramDataPoint_LabelsMap(t *testing.T) {
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
-func TestHistogramDataPoint_StartTime(t *testing.T) {
+func TestHistogramDataPoint_StartTimestamp(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.StartTime())
-	testValStartTime := Timestamp(1234567890)
-	ms.SetStartTime(testValStartTime)
-	assert.EqualValues(t, testValStartTime, ms.StartTime())
+	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
+	testValStartTimestamp := Timestamp(1234567890)
+	ms.SetStartTimestamp(testValStartTimestamp)
+	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
 }
 
 func TestHistogramDataPoint_Timestamp(t *testing.T) {
@@ -1399,12 +1399,12 @@ func TestSummaryDataPoint_LabelsMap(t *testing.T) {
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
-func TestSummaryDataPoint_StartTime(t *testing.T) {
+func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.StartTime())
-	testValStartTime := Timestamp(1234567890)
-	ms.SetStartTime(testValStartTime)
-	assert.EqualValues(t, testValStartTime, ms.StartTime())
+	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
+	testValStartTimestamp := Timestamp(1234567890)
+	ms.SetStartTimestamp(testValStartTimestamp)
+	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
 }
 
 func TestSummaryDataPoint_Timestamp(t *testing.T) {
@@ -2035,7 +2035,7 @@ func generateTestIntDataPoint() IntDataPoint {
 
 func fillTestIntDataPoint(tv IntDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
-	tv.SetStartTime(Timestamp(1234567890))
+	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetValue(int64(-17))
 	fillTestIntExemplarSlice(tv.Exemplars())
@@ -2062,7 +2062,7 @@ func generateTestDoubleDataPoint() DoubleDataPoint {
 
 func fillTestDoubleDataPoint(tv DoubleDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
-	tv.SetStartTime(Timestamp(1234567890))
+	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetValue(float64(17.13))
 	fillTestExemplarSlice(tv.Exemplars())
@@ -2089,7 +2089,7 @@ func generateTestIntHistogramDataPoint() IntHistogramDataPoint {
 
 func fillTestIntHistogramDataPoint(tv IntHistogramDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
-	tv.SetStartTime(Timestamp(1234567890))
+	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
 	tv.SetSum(int64(1713))
@@ -2119,7 +2119,7 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
-	tv.SetStartTime(Timestamp(1234567890))
+	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
@@ -2149,7 +2149,7 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
-	tv.SetStartTime(Timestamp(1234567890))
+	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))

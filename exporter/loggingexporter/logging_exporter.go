@@ -119,7 +119,7 @@ func (b *logDataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
 		b.logEntry("IntDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Value: %d", p.Value())
 	}
@@ -131,7 +131,7 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 		b.logEntry("DoubleDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Value: %f", p.Value())
 	}
@@ -143,7 +143,7 @@ func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPoint
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
@@ -170,7 +170,7 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %d", p.Sum())
@@ -197,7 +197,7 @@ func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlic
 		b.logEntry("SummaryDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
@@ -351,8 +351,8 @@ func (s *loggingExporter) pushTraceData(
 				buf.logAttr("ID", span.SpanID().HexString())
 				buf.logAttr("Name", span.Name())
 				buf.logAttr("Kind", span.Kind().String())
-				buf.logAttr("Start time", span.StartTime().String())
-				buf.logAttr("End time", span.EndTime().String())
+				buf.logAttr("Start time", span.StartTimestamp().String())
+				buf.logAttr("End time", span.EndTimestamp().String())
 
 				buf.logAttr("Status code", span.Status().Code().String())
 				buf.logAttr("Status message", span.Status().Message())

@@ -180,7 +180,7 @@ func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata
 	if directionLabel != "" {
 		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
 	}
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
@@ -191,7 +191,7 @@ func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now p
 	if directionLabel != "" {
 		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
 	}
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

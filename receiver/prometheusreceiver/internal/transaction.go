@@ -166,7 +166,7 @@ func (tr *transaction) Commit() error {
 			return err
 		}
 
-		adjustStartTime(tr.metricBuilder.startTime, metrics)
+		adjustStartTimestamp(tr.metricBuilder.startTime, metrics)
 	} else {
 		// AdjustMetrics - jobsMap has to be non-nil in this case.
 		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetrics()
@@ -191,7 +191,7 @@ func (tr *transaction) Rollback() error {
 	return nil
 }
 
-func adjustStartTime(startTime float64, metrics []*metricspb.Metric) {
+func adjustStartTimestamp(startTime float64, metrics []*metricspb.Metric) {
 	startTimeTs := timestampFromFloat64(startTime)
 	for _, metric := range metrics {
 		switch metric.GetMetricDescriptor().GetType() {
