@@ -334,7 +334,8 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 		t.Run(test.configFile, func(t *testing.T) {
 
 			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
-			assert.Error(t, err)
+			assert.NoError(t, err)
+			require.NotNil(t, cfg)
 
 			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
 			assert.NoError(t, err)

@@ -27,12 +27,13 @@ type Receivers map[string]Receiver
 
 // ReceiverSettings defines common settings for a receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
+// It is highly recommended to "override" the Validate() function.
 type ReceiverSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
 }
 
-var _ NamedEntity = (*ReceiverSettings)(nil)
+var _ Receiver = (*ReceiverSettings)(nil)
 
 // Name gets the receiver name.
 func (rs *ReceiverSettings) Name() string {
@@ -47,4 +48,9 @@ func (rs *ReceiverSettings) SetName(name string) {
 // Type sets the receiver type.
 func (rs *ReceiverSettings) Type() Type {
 	return rs.TypeVal
+}
+
+// Validate validates the configuration and returns an error if invalid.
+func (rs *ReceiverSettings) Validate() error {
+	return nil
 }
