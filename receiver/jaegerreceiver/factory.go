@@ -121,6 +121,11 @@ func createTraceReceiver(
 		if err != nil {
 			return nil, fmt.Errorf("unable to extract port for ThriftHTTP: %w", err)
 		}
+
+		if rCfg.ThriftHTTP.TLSSetting != nil {
+			config.CollectorHTTPTLSEnabled = true
+			config.CollectorHTTPTLSSettings = *rCfg.ThriftHTTP.TLSSetting
+		}
 	}
 
 	if rCfg.Protocols.ThriftBinary != nil {

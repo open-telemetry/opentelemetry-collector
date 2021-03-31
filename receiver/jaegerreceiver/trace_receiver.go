@@ -16,6 +16,7 @@ package jaegerreceiver
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"html"
 	"io/ioutil"
@@ -49,6 +50,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
@@ -58,10 +60,12 @@ import (
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type configuration struct {
-	CollectorThriftPort  int
-	CollectorHTTPPort    int
-	CollectorGRPCPort    int
-	CollectorGRPCOptions []grpc.ServerOption
+	CollectorThriftPort      int
+	CollectorHTTPPort        int
+	CollectorHTTPTLSEnabled  bool
+	CollectorHTTPTLSSettings configtls.TLSServerSetting
+	CollectorGRPCPort        int
+	CollectorGRPCOptions     []grpc.ServerOption
 
 	AgentCompactThriftPort       int
 	AgentCompactThriftConfig     ServerConfigUDP
@@ -464,7 +468,24 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	if jr.collectorHTTPEnabled() {
 		// Now the collector that runs over HTTP
 		caddr := jr.collectorHTTPAddr()
-		cln, cerr := net.Listen("tcp", caddr)
+
+		var (
+			cln  net.Listener
+			cerr error
+		)
+
+		// Load TLS config if HTTPS is enabled otherwise use HTTP
+		if jr.config.CollectorHTTPTLSEnabled {
+			tlsCfg, err := jr.config.CollectorHTTPTLSSettings.LoadTLSConfig()
+			if err != nil {
+				return err
+			}
+
+			cln, cerr = tls.Listen("tcp", caddr, tlsCfg)
+		} else {
+			cln, cerr = net.Listen("tcp", caddr)
+		}
+
 		if cerr != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
 		}
