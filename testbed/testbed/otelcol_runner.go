@@ -19,15 +19,13 @@ import (
 	"strings"
 
 	"github.com/shirou/gopsutil/process"
-	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // OtelcolRunner defines the interface for configuring, starting and stopping one or more instances of
@@ -58,7 +56,7 @@ type OtelcolRunner interface {
 type InProcessCollector struct {
 	logger    *zap.Logger
 	factories component.Factories
-	config    *config.Config
+	configStr string
 	svc       *service.Application
 	appDone   chan struct{}
 	stopped   bool
@@ -81,18 +79,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 		return configCleanup, err
 	}
 	ipp.logger = logger
-	v := config.NewViper()
-	v.SetConfigType("yaml")
-	v.ReadConfig(strings.NewReader(configStr))
-	cfg, err := configparser.Load(config.ParserFromViper(v), ipp.factories)
-	if err != nil {
-		return configCleanup, err
-	}
-	err = cfg.Validate()
-	if err != nil {
-		return configCleanup, err
-	}
-	ipp.config = cfg
+	ipp.configStr = configStr
 	return configCleanup, err
 }
 
@@ -104,10 +91,8 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},
-		ConfigFactory: func(_ *cobra.Command, _ component.Factories) (*config.Config, error) {
-			return ipp.config, nil
-		},
-		Factories: ipp.factories,
+		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
+		Factories:      ipp.factories,
 	}
 	var err error
 	ipp.svc, err = service.New(params)

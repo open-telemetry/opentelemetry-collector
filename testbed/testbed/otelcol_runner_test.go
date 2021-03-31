@@ -57,7 +57,7 @@ service:
 	defer configCleanup()
 	assert.NoError(t, cfgErr)
 	assert.NotNil(t, configCleanup)
-	assert.NotNil(t, runner.config)
+	assert.NotEmpty(t, runner.configStr)
 	args := StartParams{}
 	defer runner.Stop()
 	assert.NoError(t, runner.Start(args))

@@ -18,7 +18,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -30,13 +29,13 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 const (
@@ -66,7 +65,7 @@ type Application struct {
 
 	factories component.Factories
 
-	configFactory ConfigFactory
+	parserProvider parserprovider.ParserProvider
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -84,39 +83,13 @@ type Parameters struct {
 	Factories component.Factories
 	// ApplicationStartInfo provides application start information.
 	ApplicationStartInfo component.ApplicationStartInfo
-	// ConfigFactory that creates the configuration.
-	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
-	// The default factory loads the configuration file and overrides component's configuration
+	// ParserProvider provides the configuration's Parser.
+	// If it is not provided a default provider is used. The default provider loads the configuration
+	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
-	ConfigFactory ConfigFactory
+	ParserProvider parserprovider.ParserProvider
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
-}
-
-// ConfigFactory creates config.
-// The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
-// Viper and command instances are passed from the Application.
-// The factories also belong to the Application and are equal to the factories passed via Parameters.
-type ConfigFactory func(cmd *cobra.Command, factories component.Factories) (*config.Config, error)
-
-// FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file
-// and from --set command line flag (if the flag is present).
-func FileLoaderConfigFactory(cmd *cobra.Command, factories component.Factories) (*config.Config, error) {
-	file := builder.GetConfigFile()
-	if file == "" {
-		return nil, errors.New("config file not specified")
-	}
-
-	cp, err := config.NewParserFromFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
-	}
-
-	// next overlay the config file with --set flags
-	if err := AddSetFlagProperties(cp, cmd); err != nil {
-		return nil, fmt.Errorf("failed to process set flag: %v", err)
-	}
-	return configparser.Load(cp, factories)
 }
 
 // New creates and returns a new instance of Application.
@@ -125,17 +98,10 @@ func New(params Parameters) (*Application, error) {
 		return nil, err
 	}
 
-	configFactory := params.ConfigFactory
-	if configFactory == nil {
-		// use default factory that loads the configuration file
-		configFactory = FileLoaderConfigFactory
-	}
-
 	app := &Application{
-		info:          params.ApplicationStartInfo,
-		factories:     params.Factories,
-		stateChannel:  make(chan State, Closed+1),
-		configFactory: configFactory,
+		info:         params.ApplicationStartInfo,
+		factories:    params.Factories,
+		stateChannel: make(chan State, Closed+1),
 	}
 
 	rootCmd := &cobra.Command{
@@ -159,6 +125,7 @@ func New(params Parameters) (*Application, error) {
 	flagSet := new(flag.FlagSet)
 	addFlagsFns := []func(*flag.FlagSet){
 		configtelemetry.Flags,
+		parserprovider.Flags,
 		telemetry.Flags,
 		builder.Flags,
 		loggerFlags,
@@ -167,9 +134,14 @@ func New(params Parameters) (*Application, error) {
 		addFlags(flagSet)
 	}
 	rootCmd.Flags().AddGoFlagSet(flagSet)
-	addSetFlag(rootCmd.Flags())
-
 	app.rootCmd = rootCmd
+
+	parserProvider := params.ParserProvider
+	if parserProvider == nil {
+		// use default provider.
+		parserProvider = parserprovider.Default()
+	}
+	app.parserProvider = parserProvider
 
 	return app, nil
 }
@@ -249,9 +221,18 @@ func (app *Application) runAndWaitForShutdownEvent() {
 func (app *Application) setupConfigurationComponents(ctx context.Context) error {
 	app.logger.Info("Loading configuration...")
 
-	cfg, err := app.configFactory(app.rootCmd, app.factories)
+	cp, err := app.parserProvider.Get()
+	if err != nil {
+		return fmt.Errorf("cannot load configuration's parser: %w", err)
+	}
+
+	cfg, err := configparser.Load(cp, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
+	}
+
+	if err = cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	app.logger.Info("Applying configuration...")
@@ -339,7 +320,7 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 }
 
 // updateService shutdowns the current app.service and setups a new one according
-// to the latest configuration. It requires that app.configFactory and app.factories
+// to the latest configuration. It requires that app.parserProvider and app.factories
 // are properly populated to finish successfully.
 func (app *Application) updateService(ctx context.Context) error {
 	if app.service != nil {
