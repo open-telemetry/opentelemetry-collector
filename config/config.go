@@ -32,6 +32,8 @@ package config
 import (
 	"errors"
 	"fmt"
+
+	"github.com/spf13/viper"
 )
 
 var (
@@ -166,6 +168,14 @@ type NamedEntity interface {
 type validatable interface {
 	// Validate validates the configuration and returns an error if invalid.
 	Validate() error
+}
+
+// Unmarshable defines the interface for the configuration unmarshaling.
+type Unmarshable interface {
+	// Unmarshal is a function that un-marshals a viper data into the Unmarshable struct in a custom way.
+	// componentViperSection *viper.Viper
+	//   The config for this specific component. May be nil or empty if no config available.
+	Unmarshal(componentViperSection *viper.Viper) error
 }
 
 // DataType is the data type that is supported for collection. We currently support

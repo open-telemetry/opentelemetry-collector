@@ -48,8 +48,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {

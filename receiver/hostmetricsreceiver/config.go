@@ -15,6 +15,8 @@
 package hostmetricsreceiver
 
 import (
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -31,4 +33,8 @@ var _ config.Receiver = (*Config)(nil)
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
 	return nil
+}
+
+func (cfg *Config) Unmarshal(componentViperSection *viper.Viper) error {
+	return customUnmarshaler(componentViperSection, cfg)
 }

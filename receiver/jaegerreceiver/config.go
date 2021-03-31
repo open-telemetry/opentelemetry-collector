@@ -15,6 +15,8 @@
 package jaegerreceiver
 
 import (
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -78,4 +80,8 @@ var _ config.Receiver = (*Config)(nil)
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
 	return nil
+}
+
+func (cfg *Config) Unmarshal(componentViperSection *viper.Viper) error {
+	return customUnmarshaler(componentViperSection, cfg)
 }

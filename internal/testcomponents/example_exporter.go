@@ -35,13 +35,16 @@ type ExampleExporter struct {
 	ExtraListSetting        []string                 `mapstructure:"extra_list"`
 }
 
+func (cfg *ExampleExporter) Unmarshal(componentViperSection *viper.Viper) error {
+	return componentViperSection.UnmarshalExact(cfg)
+}
+
 const expType = "exampleexporter"
 
 // ExampleExporterFactory is factory for ExampleExporter.
 var ExampleExporterFactory = exporterhelper.NewFactory(
 	expType,
 	createExporterDefaultConfig,
-	exporterhelper.WithCustomUnmarshaler(customUnmarshal),
 	exporterhelper.WithTraces(createTracesExporter),
 	exporterhelper.WithMetrics(createMetricsExporter),
 	exporterhelper.WithLogs(createLogsExporter))
@@ -57,10 +60,6 @@ func createExporterDefaultConfig() config.Exporter {
 		ExtraMapSetting:  nil,
 		ExtraListSetting: nil,
 	}
-}
-
-func customUnmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
 func createTracesExporter(

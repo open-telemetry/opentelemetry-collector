@@ -18,6 +18,7 @@ import (
 	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -42,4 +43,8 @@ var _ config.Receiver = (*Config)(nil)
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
 	return nil
+}
+
+func (cfg *Config) Unmarshal(componentViperSection *viper.Viper) error {
+	return customUnmarshaler(componentViperSection, cfg)
 }
