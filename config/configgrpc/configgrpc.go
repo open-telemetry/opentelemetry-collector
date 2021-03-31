@@ -76,7 +76,7 @@ type GRPCClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The compression key for supported compression types within
-	// collector. Currently the only supported mode is `gzip`.
+	// collector.
 	Compression string `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.

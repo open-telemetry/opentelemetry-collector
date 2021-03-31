@@ -62,7 +62,6 @@ fields:
     https://github.com/grpc/grpc/blob/master/doc/naming.md.
 - name: compression
   kind: string
-  default: gzip
   doc: |
     The compression key for supported compression types within
     collector.
