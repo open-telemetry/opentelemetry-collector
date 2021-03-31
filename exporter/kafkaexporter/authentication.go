@@ -15,6 +15,8 @@
 package kafkaexporter
 
 import (
+	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
 
 	"github.com/Shopify/sarama"
@@ -25,6 +27,7 @@ import (
 // Authentication defines authentication.
 type Authentication struct {
 	PlainText *PlainTextConfig            `mapstructure:"plain_text"`
+	SASL      *SASLConfig                 `mapstructure:"sasl"`
 	TLS       *configtls.TLSClientSetting `mapstructure:"tls"`
 	Kerberos  *KerberosConfig             `mapstructure:"kerberos"`
 }
@@ -33,6 +36,16 @@ type Authentication struct {
 type PlainTextConfig struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+}
+
+// SASLConfig defines the configuration for the SASL authentication.
+type SASLConfig struct {
+	// Username to be used on authentication
+	Username string `mapstructure:"username"`
+	// Password to be used on authentication
+	Password string `mapstructure:"password"`
+	// SASL Mechanism to be used, possible values are: (PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512).
+	Mechanism string `mapstructure:"mechanism"`
 }
 
 // KerberosConfig defines kereros configuration.
@@ -56,6 +69,12 @@ func ConfigureAuthentication(config Authentication, saramaConfig *sarama.Config)
 			return err
 		}
 	}
+	if config.SASL != nil {
+		if err := configureSASL(*config.SASL, saramaConfig); err != nil {
+			return err
+		}
+	}
+
 	if config.Kerberos != nil {
 		configureKerberos(*config.Kerberos, saramaConfig)
 	}
@@ -66,6 +85,36 @@ func configurePlaintext(config PlainTextConfig, saramaConfig *sarama.Config) {
 	saramaConfig.Net.SASL.Enable = true
 	saramaConfig.Net.SASL.User = config.Username
 	saramaConfig.Net.SASL.Password = config.Password
+}
+
+func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
+
+	if config.Username == "" {
+		return fmt.Errorf("username have to be provided")
+	}
+
+	if config.Password == "" {
+		return fmt.Errorf("password have to be provided")
+	}
+
+	saramaConfig.Net.SASL.Enable = true
+	saramaConfig.Net.SASL.User = config.Username
+	saramaConfig.Net.SASL.Password = config.Password
+
+	switch config.Mechanism {
+	case "SCRAM-SHA-512":
+		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: sha512.New} }
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+	case "SCRAM-SHA-256":
+		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: sha256.New} }
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
+	case "PLAIN":
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+	default:
+		return fmt.Errorf("invalid SASL Mechanism %q: can be either \"PLAIN\" , \"SCRAM-SHA-256\" or \"SCRAM-SHA-512\"", config.Mechanism)
+	}
+
+	return nil
 }
 
 func configureTLS(config configtls.TLSClientSetting, saramaConfig *sarama.Config) error {

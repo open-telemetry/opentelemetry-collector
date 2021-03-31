@@ -24,14 +24,14 @@ exporters:
       max_elapsed_time: 10m
 
 processors:
-  exampleprocessor:
+  nop:
 
 receivers:
-  examplereceiver:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [kafka]

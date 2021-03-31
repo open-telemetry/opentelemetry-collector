@@ -39,23 +39,23 @@ type ocInferredResourceType struct {
 // NOTE: defined in the priority order (first match wins)
 var labelPresenceToResourceType = []ocInferredResourceType{
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/container.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/container.md
 		labelKeyPresent: conventions.AttributeContainerName,
 		resourceType:    resourcekeys.ContainerType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/k8s.md#pod
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#pod
 		labelKeyPresent: conventions.AttributeK8sPod,
 		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
 		resourceType: resourcekeys.K8SType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/host.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/host.md
 		labelKeyPresent: conventions.AttributeHostName,
 		resourceType:    resourcekeys.HostType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
 		labelKeyPresent: conventions.AttributeCloudProvider,
 		resourceType:    resourcekeys.CloudType,
 	},
@@ -91,6 +91,8 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		val := tracetranslator.AttributeValueToString(v, false)
 
 		switch k {
+		case conventions.AttributeCloudAvailabilityZone:
+			labels[resourcekeys.CloudKeyZone] = val
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
@@ -104,16 +106,13 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			getProcessIdentifier(ocNode).StartTimestamp = ts
 		case conventions.AttributeHostName:
 			getProcessIdentifier(ocNode).HostName = val
-		case conventions.OCAttributeProcessID:
+		case conventions.AttributeProcessID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {
 				pid = defaultProcessID
 			}
 			getProcessIdentifier(ocNode).Pid = uint32(pid)
 		case conventions.AttributeTelemetrySDKVersion:
-			if ocNode.LibraryInfo == nil {
-				ocNode.LibraryInfo = &occommon.LibraryInfo{}
-			}
 			getLibraryInfo(ocNode).CoreLibraryVersion = val
 		case conventions.OCAttributeExporterVersion:
 			getLibraryInfo(ocNode).ExporterVersion = val

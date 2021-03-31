@@ -27,13 +27,13 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 type testInitialize struct {
@@ -201,7 +201,7 @@ func TestScrapeController(t *testing.T) {
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
 
-			var nextConsumer consumer.MetricsConsumer
+			var nextConsumer consumer.Metrics
 			sink := new(consumertest.MetricsSink)
 			if !test.nilNextConsumer {
 				nextConsumer = sink
@@ -327,7 +327,7 @@ func getExpectedShutdownErr(test metricsTestCase) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {
@@ -388,7 +388,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 	expectedScraped := int64(sink.MetricsCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
-		if partialError, isPartial := expectedErr.(consumererror.PartialScrapeError); isPartial {
+		if partialError, isPartial := expectedErr.(scrapererror.PartialScrapeError); isPartial {
 			expectedErrored = int64(partialError.Failed)
 		} else {
 			expectedScraped = int64(0)

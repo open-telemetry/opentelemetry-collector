@@ -26,21 +26,21 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	common "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
 
 const (
-	nameStr     = "__name__"
-	sumStr      = "_sum"
-	countStr    = "_count"
-	bucketStr   = "_bucket"
-	leStr       = "le"
-	quantileStr = "quantile"
-	pInfStr     = "+Inf"
-	totalStr    = "total"
-	delimeter   = "_"
-	keyStr      = "key"
+	nameStr       = "__name__"
+	sumStr        = "_sum"
+	countStr      = "_count"
+	bucketStr     = "_bucket"
+	leStr         = "le"
+	quantileStr   = "quantile"
+	pInfStr       = "+Inf"
+	counterSuffix = "_total"
+	delimiter     = "_"
+	keyStr        = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -126,7 +126,6 @@ func timeSeriesSignature(metric *otlp.Metric, labels *[]prompb.Label) string {
 // Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
 // logged. Resultant label names are sanitized.
 func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]string, extras ...string) []prompb.Label {
-
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
@@ -165,7 +164,6 @@ func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]st
 	}
 
 	s := make([]prompb.Label, 0, len(l))
-
 	for _, lb := range l {
 		s = append(s, lb)
 	}
@@ -176,7 +174,6 @@ func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]st
 // getPromMetricName creates a Prometheus metric name by attaching namespace prefix, and _total suffix for Monotonic
 // metrics.
 func getPromMetricName(metric *otlp.Metric, ns string) string {
-
 	if metric == nil {
 		return ""
 	}
@@ -191,13 +188,10 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 	b.WriteString(ns)
 
 	if b.Len() > 0 {
-		b.WriteString(delimeter)
+		b.WriteString(delimiter)
 	}
 	name := metric.GetName()
 	b.WriteString(name)
-
-	// do not add the total suffix if the metric name already ends in "total"
-	isCounter = isCounter && name[len(name)-len(totalStr):] != totalStr
 
 	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
 	// units are different.
@@ -208,28 +202,43 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 		}
 	*/
 
-	if b.Len() > 0 && isCounter {
-		b.WriteString(delimeter)
-		b.WriteString(totalStr)
+	if b.Len() > 0 && isCounter && !strings.HasSuffix(name, counterSuffix) {
+		b.WriteString(counterSuffix)
 	}
 	return sanitize(b.String())
 }
 
-// Simple helper function that takes the <Signature String - *TimeSeries> map
-// and creates a WriteRequest from the struct -- can move to the helper.go file
-func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
+// batchTimeSeries splits series into multiple batch write requests.
+func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
+
+	var requests []*prompb.WriteRequest
 	var tsArray []prompb.TimeSeries
+	sizeOfCurrentBatch := 0
+
 	for _, v := range tsMap {
+		sizeOfSeries := v.Size()
+
+		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
+			wrapped := convertTimeseriesToRequest(tsArray)
+			requests = append(requests, wrapped)
+
+			tsArray = make([]prompb.TimeSeries, 0)
+			sizeOfCurrentBatch = 0
+		}
+
 		tsArray = append(tsArray, *v)
+		sizeOfCurrentBatch += sizeOfSeries
 	}
-	wrapped := prompb.WriteRequest{
-		Timeseries: tsArray,
-		// Other parameters of the WriteRequest are unnecessary for our Export
+
+	if len(tsArray) != 0 {
+		wrapped := convertTimeseriesToRequest(tsArray)
+		requests = append(requests, wrapped)
 	}
-	return &wrapped, nil
+
+	return requests, nil
 }
 
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
@@ -249,7 +258,7 @@ func sanitize(s string) string {
 	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
 	s = strings.Map(sanitizeRune, s)
 	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + delimeter + s
+		s = keyStr + delimiter + s
 	}
 	if s[0] == '_' {
 		s = keyStr + s
@@ -278,7 +287,7 @@ func getTypeString(metric *otlp.Metric) string {
 	case *otlp.Metric_IntSum:
 		return strconv.Itoa(int(pdata.MetricDataTypeIntSum))
 	case *otlp.Metric_DoubleHistogram:
-		return strconv.Itoa(int(pdata.MetricDataTypeDoubleHistogram))
+		return strconv.Itoa(int(pdata.MetricDataTypeHistogram))
 	case *otlp.Metric_IntHistogram:
 		return strconv.Itoa(int(pdata.MetricDataTypeIntHistogram))
 	}
@@ -464,5 +473,13 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		percentileStr := strconv.FormatFloat(qt.GetQuantile(), 'f', -1, 64)
 		qtlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric)
+	}
+}
+
+func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
+	// the remote_write endpoint only requires the timeseries.
+	// otlp defines it's own way to handle metric metadata
+	return &prompb.WriteRequest{
+		Timeseries: tsArray,
 	}
 }

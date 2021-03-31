@@ -167,8 +167,8 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
-	dest.SetStartTime(pdata.TimeToUnixNano(span.StartTime))
-	dest.SetEndTime(pdata.TimeToUnixNano(span.StartTime.Add(span.Duration)))
+	dest.SetStartTime(pdata.TimestampFromTime(span.StartTime))
+	dest.SetEndTime(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
@@ -185,12 +185,12 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	}
 
 	il := instrumentationLibrary{}
-	if libraryName, ok := attrs.Get(tracetranslator.TagInstrumentationName); ok {
+	if libraryName, ok := attrs.Get(conventions.InstrumentationLibraryName); ok {
 		il.name = libraryName.StringVal()
-		attrs.Delete(tracetranslator.TagInstrumentationName)
-		if libraryVersion, ok := attrs.Get(tracetranslator.TagInstrumentationVersion); ok {
+		attrs.Delete(conventions.InstrumentationLibraryName)
+		if libraryVersion, ok := attrs.Get(conventions.InstrumentationLibraryVersion); ok {
 			il.version = libraryVersion.StringVal()
-			attrs.Delete(tracetranslator.TagInstrumentationVersion)
+			attrs.Delete(conventions.InstrumentationLibraryVersion)
 		}
 	}
 
@@ -326,7 +326,7 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 	for i, log := range logs {
 		event := dest.At(i)
 
-		event.SetTimestamp(pdata.TimestampUnixNano(uint64(log.Timestamp.UnixNano())))
+		event.SetTimestamp(pdata.TimestampFromTime(log.Timestamp))
 		if len(log.Fields) == 0 {
 			continue
 		}
@@ -356,7 +356,7 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 		}
 
 		link.SetTraceID(tracetranslator.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
-		link.SetSpanID(pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(ref.SpanID))))
+		link.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(ref.SpanID)))
 		i++
 	}
 

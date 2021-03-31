@@ -84,10 +84,10 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 
 func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, zTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
-		zTags[tracetranslator.TagInstrumentationName] = ilName
+		zTags[conventions.InstrumentationLibraryName] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[tracetranslator.TagInstrumentationVersion] = ilVer
+		zTags[conventions.InstrumentationLibraryVersion] = ilVer
 	}
 }
 
@@ -101,11 +101,11 @@ func spanToZipkinSpan(
 
 	zs := &zipkinmodel.SpanModel{}
 
-	if !span.TraceID().IsValid() {
+	if span.TraceID().IsEmpty() {
 		return zs, errors.New("TraceID is invalid")
 	}
 	zs.TraceID = convertTraceID(span.TraceID())
-	if !span.SpanID().IsValid() {
+	if span.SpanID().IsEmpty() {
 		return zs, errors.New("SpanID is invalid")
 	}
 	zs.ID = convertSpanID(span.SpanID())
@@ -114,14 +114,14 @@ func spanToZipkinSpan(
 		tags[tracetranslator.TagW3CTraceState] = string(span.TraceState())
 	}
 
-	if span.ParentSpanID().IsValid() {
+	if !span.ParentSpanID().IsEmpty() {
 		id := convertSpanID(span.ParentSpanID())
 		zs.ParentID = &id
 	}
 
 	zs.Sampled = &sampled
 	zs.Name = span.Name()
-	zs.Timestamp = pdata.UnixNanoToTime(span.StartTime())
+	zs.Timestamp = span.StartTime().AsTime()
 	if span.EndTime() != 0 {
 		zs.Duration = time.Duration(span.EndTime() - span.StartTime())
 	}
@@ -176,7 +176,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 			event := events.At(i)
 			if event.Attributes().Len() == 0 && event.DroppedAttributesCount() == 0 {
 				zAnnos[i] = zipkinmodel.Annotation{
-					Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
+					Timestamp: event.Timestamp().AsTime(),
 					Value:     event.Name(),
 				}
 			} else {
@@ -185,7 +185,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					return err
 				}
 				zAnnos[i] = zipkinmodel.Annotation{
-					Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
+					Timestamp: event.Timestamp().AsTime(),
 					Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
 						event.DroppedAttributesCount()),
 				}
@@ -347,5 +347,5 @@ func convertTraceID(t pdata.TraceID) zipkinmodel.TraceID {
 }
 
 func convertSpanID(s pdata.SpanID) zipkinmodel.ID {
-	return zipkinmodel.ID(tracetranslator.BytesToUInt64SpanID(s.Bytes()))
+	return zipkinmodel.ID(tracetranslator.SpanIDToUInt64(s))
 }

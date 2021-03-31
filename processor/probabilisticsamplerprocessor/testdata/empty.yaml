@@ -1,0 +1,16 @@
+receivers:
+  nop:
+
+processors:
+  probabilistic_sampler:
+
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [probabilistic_sampler]
+      exporters: [nop]

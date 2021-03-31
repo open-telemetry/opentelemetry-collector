@@ -20,21 +20,39 @@ import (
 	"github.com/shirou/gopsutil/disk"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
-const systemSpecificMetricsLen = 1
+const systemSpecificMetricsLen = 2
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
-	metric := metrics.At(startIdx)
-	diskMergedDescriptor.CopyTo(metric)
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	initializeDiskWeightedIOTimeMetric(metrics.At(startIdx+0), startTime, now, ioCounters)
+	initializeDiskMergedMetric(metrics.At(startIdx+1), startTime, now, ioCounters)
+}
+
+func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	metadata.Metrics.SystemDiskWeightedIoTime.Init(metric)
+
+	ddps := metric.DoubleSum().DataPoints()
+	ddps.Resize(len(ioCounters))
+
+	idx := 0
+	for device, ioCounter := range ioCounters {
+		initializeDoubleDataPoint(ddps.At(idx+0), startTime, now, device, "", float64(ioCounter.WeightedIO)/1e3)
+		idx++
+	}
+}
+
+func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	metadata.Metrics.SystemDiskMerged.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCounters))
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, readDirectionLabelValue, int64(ioCounter.MergedReadCount))
-		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, writeDirectionLabelValue, int64(ioCounter.MergedWriteCount))
+		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.MergedReadCount))
+		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.MergedWriteCount))
 		idx += 2
 	}
 }

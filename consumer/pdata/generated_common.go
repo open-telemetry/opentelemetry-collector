@@ -18,7 +18,7 @@
 package pdata
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
 
 // InstrumentationLibrary is a message representing the instrumentation library information.
@@ -43,35 +43,22 @@ func NewInstrumentationLibrary() InstrumentationLibrary {
 	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms InstrumentationLibrary) InitEmpty() {
-	*ms.orig = otlpcommon.InstrumentationLibrary{}
-}
-
 // Name returns the name associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Name() string {
 	return (*ms.orig).Name
 }
 
 // SetName replaces the name associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetName(v string) {
 	(*ms.orig).Name = v
 }
 
 // Version returns the version associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Version() string {
 	return (*ms.orig).Version
 }
 
 // SetVersion replaces the version associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetVersion(v string) {
 	(*ms.orig).Version = v
 }

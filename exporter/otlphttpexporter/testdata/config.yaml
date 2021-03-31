@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   otlphttp:
@@ -28,10 +28,11 @@ exporters:
       "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
       header1: 234
       another: "somevalue"
+    compression: gzip
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [otlphttp]

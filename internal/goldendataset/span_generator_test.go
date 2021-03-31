@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal/data"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 func TestGenerateParentSpan(t *testing.T) {
@@ -38,7 +38,7 @@ func TestGenerateParentSpan(t *testing.T) {
 	}
 	span := GenerateSpan(traceID, data.NewSpanID([8]byte{}), "/gotest-parent", spanInputs, random)
 	assert.Equal(t, traceID, span.TraceId)
-	assert.False(t, span.ParentSpanId.IsValid())
+	assert.True(t, span.ParentSpanId.IsEmpty())
 	assert.Equal(t, 11, len(span.Attributes))
 	assert.Equal(t, otlptrace.Status_STATUS_CODE_OK, span.Status.Code)
 }

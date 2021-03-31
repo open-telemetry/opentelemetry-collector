@@ -33,7 +33,7 @@ import (
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
 //
-// batch_processor implements consumer.TracesConsumer and consumer.MetricsConsumer
+// batch_processor implements consumer.Traces and consumer.Metrics
 //
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.SendBatchSize
@@ -77,9 +77,9 @@ type batch interface {
 	add(item interface{})
 }
 
-var _ consumer.TracesConsumer = (*batchProcessor)(nil)
-var _ consumer.MetricsConsumer = (*batchProcessor)(nil)
-var _ consumer.LogsConsumer = (*batchProcessor)(nil)
+var _ consumer.Traces = (*batchProcessor)(nil)
+var _ consumer.Metrics = (*batchProcessor)(nil)
+var _ consumer.Logs = (*batchProcessor)(nil)
 
 func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) *batchProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -112,6 +112,8 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 // Shutdown is invoked during service shutdown.
 func (bp *batchProcessor) Shutdown(context.Context) error {
 	bp.cancel()
+
+	// Wait until current batch is drained.
 	<-bp.done
 	return nil
 }
@@ -136,6 +138,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 				// make it cancellable using the context that Shutdown gets as a parameter
 				bp.sendItems(statTimeoutTriggerSend)
 			}
+			// Indicate that we finished draining.
 			close(bp.done)
 			return
 		case item := <-bp.newItem:
@@ -158,6 +161,26 @@ func (bp *batchProcessor) processItem(item interface{}) {
 			itemCount := bp.batch.itemCount()
 			if itemCount+uint32(td.SpanCount()) > bp.sendBatchMaxSize {
 				tdRemainSize := splitTrace(int(bp.sendBatchSize-itemCount), td)
+				item = tdRemainSize
+				go func() {
+					bp.newItem <- td
+				}()
+			}
+		}
+		if td, ok := item.(pdata.Metrics); ok {
+			itemCount := bp.batch.itemCount()
+			if itemCount+uint32(td.MetricCount()) > bp.sendBatchMaxSize {
+				tdRemainSize := splitMetrics(int(bp.sendBatchSize-itemCount), td)
+				item = tdRemainSize
+				go func() {
+					bp.newItem <- td
+				}()
+			}
+		}
+		if td, ok := item.(pdata.Logs); ok {
+			itemCount := bp.batch.itemCount()
+			if itemCount+uint32(td.LogRecordCount()) > bp.sendBatchMaxSize {
+				tdRemainSize := splitLogs(int(bp.sendBatchSize-itemCount), td)
 				item = tdRemainSize
 				go func() {
 					bp.newItem <- td
@@ -216,28 +239,28 @@ func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TracesConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
+func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.Traces, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchTraces(trace), telemetryLevel)
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.MetricsConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
+func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.Metrics, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchMetrics(metrics), telemetryLevel)
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(params component.ProcessorCreateParams, logs consumer.LogsConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
+func newBatchLogsProcessor(params component.ProcessorCreateParams, logs consumer.Logs, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchLogs(logs), telemetryLevel)
 }
 
 type batchTraces struct {
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	traceData    pdata.Traces
 	spanCount    uint32
 	exportReady  chan struct{}
 }
 
-func newBatchTraces(nextConsumer consumer.TracesConsumer) *batchTraces {
+func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
 	b := &batchTraces{nextConsumer: nextConsumer, exportReady: make(chan struct{}, 1)}
 	b.reset()
 	return b
@@ -270,7 +293,7 @@ func (bt *batchTraces) itemCount() uint32 {
 }
 
 func (bt *batchTraces) size() int {
-	return bt.traceData.Size()
+	return bt.traceData.OtlpProtoSize()
 }
 
 // resets the current batchTraces structure with zero values
@@ -280,13 +303,13 @@ func (bt *batchTraces) reset() {
 }
 
 type batchMetrics struct {
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	metricData   pdata.Metrics
 	metricCount  uint32
 	exportReady  chan struct{}
 }
 
-func newBatchMetrics(nextConsumer consumer.MetricsConsumer) *batchMetrics {
+func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
 	b := &batchMetrics{nextConsumer: nextConsumer, exportReady: make(chan struct{}, 1)}
 	b.reset()
 	return b
@@ -307,7 +330,7 @@ func (bm *batchMetrics) itemCount() uint32 {
 }
 
 func (bm *batchMetrics) size() int {
-	return bm.metricData.Size()
+	return bm.metricData.OtlpProtoSize()
 }
 
 // resets the current batchMetrics structure with zero/empty values.
@@ -328,13 +351,13 @@ func (bm *batchMetrics) add(item interface{}) {
 }
 
 type batchLogs struct {
-	nextConsumer consumer.LogsConsumer
+	nextConsumer consumer.Logs
 	logData      pdata.Logs
 	logCount     uint32
 	exportReady  chan struct{}
 }
 
-func newBatchLogs(nextConsumer consumer.LogsConsumer) *batchLogs {
+func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
 	b := &batchLogs{nextConsumer: nextConsumer, exportReady: make(chan struct{}, 1)}
 	b.reset()
 	return b
@@ -355,7 +378,7 @@ func (bm *batchLogs) itemCount() uint32 {
 }
 
 func (bm *batchLogs) size() int {
-	return bm.logData.SizeBytes()
+	return bm.logData.OtlpProtoSize()
 }
 
 // resets the current batchLogs structure with zero/empty values.

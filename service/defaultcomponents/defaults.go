@@ -17,7 +17,7 @@ package defaultcomponents
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
-	"go.opentelemetry.io/collector/extension/fluentbitextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -36,11 +35,9 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/filterprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
-	"go.opentelemetry.io/collector/processor/queuedprocessor"
+	"go.opentelemetry.io/collector/processor/probabilisticsamplerprocessor"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
-	"go.opentelemetry.io/collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"go.opentelemetry.io/collector/processor/spanprocessor"
-	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
@@ -62,7 +59,6 @@ func Components() (
 		healthcheckextension.NewFactory(),
 		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
-		fluentbitextension.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -70,7 +66,6 @@ func Components() (
 
 	receivers, err := component.MakeReceiverFactoryMap(
 		jaegerreceiver.NewFactory(),
-		fluentforwardreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
@@ -101,7 +96,6 @@ func Components() (
 	processors, err := component.MakeProcessorFactoryMap(
 		attributesprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
-		queuedprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiter.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
@@ -119,5 +113,5 @@ func Components() (
 		Exporters:  exporters,
 	}
 
-	return factories, componenterror.CombineErrors(errs)
+	return factories, consumererror.Combine(errs)
 }

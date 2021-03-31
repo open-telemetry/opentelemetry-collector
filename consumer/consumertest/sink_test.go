@@ -16,7 +16,6 @@ package consumertest
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,15 +40,6 @@ func TestTracesSink(t *testing.T) {
 	assert.Equal(t, 0, sink.SpansCount())
 }
 
-func TestTracesSink_Error(t *testing.T) {
-	sink := new(TracesSink)
-	sink.SetConsumeError(errors.New("my error"))
-	td := testdata.GenerateTraceDataOneSpan()
-	require.Error(t, sink.ConsumeTraces(context.Background(), td))
-	assert.Len(t, sink.AllTraces(), 0)
-	assert.Equal(t, 0, sink.SpansCount())
-}
-
 func TestMetricsSink(t *testing.T) {
 	sink := new(MetricsSink)
 	md := testdata.GenerateMetricsOneMetric()
@@ -65,15 +55,6 @@ func TestMetricsSink(t *testing.T) {
 	assert.Equal(t, 0, sink.MetricsCount())
 }
 
-func TestMetricsSink_Error(t *testing.T) {
-	sink := new(MetricsSink)
-	sink.SetConsumeError(errors.New("my error"))
-	md := testdata.GenerateMetricsOneMetric()
-	require.Error(t, sink.ConsumeMetrics(context.Background(), md))
-	assert.Len(t, sink.AllMetrics(), 0)
-	assert.Equal(t, 0, sink.MetricsCount())
-}
-
 func TestLogsSink(t *testing.T) {
 	sink := new(LogsSink)
 	md := testdata.GenerateLogDataOneLogNoResource()
@@ -86,14 +67,5 @@ func TestLogsSink(t *testing.T) {
 	assert.Equal(t, len(want), sink.LogRecordsCount())
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllLogs()))
-	assert.Equal(t, 0, sink.LogRecordsCount())
-}
-
-func TestLogsSink_Error(t *testing.T) {
-	sink := new(LogsSink)
-	sink.SetConsumeError(errors.New("my error"))
-	ld := testdata.GenerateLogDataOneLogNoResource()
-	require.Error(t, sink.ConsumeLogs(context.Background(), ld))
-	assert.Len(t, sink.AllLogs(), 0)
 	assert.Equal(t, 0, sink.LogRecordsCount())
 }

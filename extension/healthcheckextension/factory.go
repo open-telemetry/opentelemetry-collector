@@ -16,17 +16,20 @@ package healthcheckextension
 
 import (
 	"context"
-	"errors"
-	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "health_check"
+
+	// Use 0.0.0.0 to make the health check endpoint accessible
+	// in container orchestration environments like Kubernetes.
+	defaultEndpoint = "0.0.0.0:13133"
 )
 
 // NewFactory creates a factory for HealthCheck extension.
@@ -37,37 +40,20 @@ func NewFactory() component.ExtensionFactory {
 		createExtension)
 }
 
-func createDefaultConfig() configmodels.Extension {
+func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ExtensionSettings: config.ExtensionSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Port: 13133,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: defaultEndpoint,
+		},
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
-
-	// The runtime settings are global to the application, so while in principle it
-	// is possible to have more than one instance, running multiple does not bring
-	// any value to the service.
-	// In order to avoid this issue we will allow the creation of a single
-	// instance once per process while keeping the private function that allow
-	// the creation of multiple instances for unit tests. Summary: only a single
-	// instance can be created via the factory.
-	if !atomic.CompareAndSwapInt32(&instanceState, instanceNotCreated, instanceCreated) {
-		return nil, errors.New("only a single health check extension instance can be created per process")
-	}
 
 	return newServer(*config, params.Logger), nil
 }
-
-// See comment in createExtension how these are used.
-var instanceState int32
-
-const (
-	instanceNotCreated int32 = 0
-	instanceCreated    int32 = 1
-)

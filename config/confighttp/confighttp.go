@@ -114,6 +114,12 @@ type HTTPServerSettings struct {
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
 	// used to match any origin or one or more characters of an origin.
 	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
+
+	// CorsHeaders are the allowed CORS headers for HTTP/JSON requests to grpc-gateway adapter
+	// for the OTLP receiver. See github.com/rs/cors
+	// CORS needs to be enabled first by providing a non-empty list in CorsOrigins
+	// A wildcard (*) can be used to match any header.
+	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
 }
 
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
@@ -155,9 +161,11 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOp
 		o(serverOpts)
 	}
 	if len(hss.CorsOrigins) > 0 {
-		co := cors.Options{AllowedOrigins: hss.CorsOrigins}
+		co := cors.Options{AllowedOrigins: hss.CorsOrigins, AllowedHeaders: hss.CorsHeaders}
 		handler = cors.New(co).Handler(handler)
 	}
+	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
+
 	handler = middleware.HTTPContentDecompressor(
 		handler,
 		middleware.WithErrorHandler(serverOpts.errorHandler),

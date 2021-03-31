@@ -15,19 +15,22 @@
 package prometheusremotewriteexporter
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
 
-	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	commonpb "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
 
 var (
 	time1   = uint64(time.Now().UnixNano())
-	time2   = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
+	time2   = uint64(time.Now().UnixNano() - 5)
+	time3   = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
 	msTime1 = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	msTime3 = int64(time3 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 
 	label11 = "test_label11"
 	value11 = "test_value11"
@@ -50,6 +53,7 @@ var (
 	intVal2   int64 = 2
 	floatVal1       = 1.0
 	floatVal2       = 2.0
+	floatVal3       = 3.0
 
 	lbs1      = getLabels(label11, value11, label12, value12)
 	lbs2      = getLabels(label21, value21, label22, value22)
@@ -90,6 +94,7 @@ var (
 	validIntHistogram    = "valid_IntHistogram"
 	validDoubleHistogram = "valid_DoubleHistogram"
 	validDoubleSummary   = "valid_DoubleSummary"
+	suffixedCounter      = "valid_IntSum_total"
 
 	validIntGaugeDirty = "*valid_IntGauge$"
 
@@ -122,6 +127,18 @@ var (
 		},
 		validIntSum: {
 			Name: validIntSum,
+			Data: &otlp.Metric_IntSum{
+				IntSum: &otlp.IntSum{
+					DataPoints: []*otlp.IntDataPoint{
+						getIntDataPoint(lbs1, intVal1, time1),
+						nil,
+					},
+					AggregationTemporality: otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+				},
+			},
+		},
+		suffixedCounter: {
+			Name: suffixedCounter,
 			Data: &otlp.Metric_IntSum{
 				IntSum: &otlp.IntSum{
 					DataPoints: []*otlp.IntDataPoint{
@@ -563,4 +580,12 @@ func getQuantiles(bounds []float64, values []float64) []*otlp.DoubleSummaryDataP
 		}
 	}
 	return quantiles
+}
+
+func getTimeseriesMap(timeseries []*prompb.TimeSeries) map[string]*prompb.TimeSeries {
+	tsMap := make(map[string]*prompb.TimeSeries)
+	for i, v := range timeseries {
+		tsMap[fmt.Sprintf("%s%d", "timeseries_name", i)] = v
+	}
+	return tsMap
 }

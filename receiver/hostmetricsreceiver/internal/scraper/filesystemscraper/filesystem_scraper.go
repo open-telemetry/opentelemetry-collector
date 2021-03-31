@@ -21,10 +21,9 @@ import (
 
 	"github.com/shirou/gopsutil/disk"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -62,15 +61,15 @@ func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
 func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := internal.TimeToUnixNano(time.Now())
+	now := pdata.TimestampFromTime(time.Now())
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	var errors []error
+	var errors scrapererror.ScrapeErrors
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
 		if !s.fsFilter.includePartition(partition) {
@@ -78,7 +77,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		}
 		usage, usageErr := s.usage(partition.Mountpoint)
 		if usageErr != nil {
-			errors = append(errors, consumererror.NewPartialScrapeError(usageErr, 0))
+			errors.AddPartial(0, usageErr)
 			continue
 		}
 
@@ -91,18 +90,16 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		appendSystemSpecificMetrics(metrics, 1, now, usages)
 	}
 
-	err = scraperhelper.CombineScrapeErrors(errors)
+	err = errors.Combine()
 	if err != nil && len(usages) == 0 {
-		partialErr := err.(consumererror.PartialScrapeError)
-		partialErr.Failed = metricsLen
-		err = partialErr
+		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	return metrics, err
 }
 
-func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
-	fileSystemUsageDescriptor.CopyTo(metric)
+func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, deviceUsages []*deviceUsage) {
+	metadata.Metrics.SystemFilesystemUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(fileSystemStatesLen * len(deviceUsages))
@@ -111,13 +108,13 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUni
 	}
 }
 
-func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, partition disk.PartitionStat, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(deviceLabelName, partition.Device)
-	labelsMap.Insert(typeLabelName, partition.Fstype)
-	labelsMap.Insert(mountModeLabelName, getMountMode(partition.Opts))
-	labelsMap.Insert(mountPointLabelName, partition.Mountpoint)
-	labelsMap.Insert(stateLabelName, stateLabel)
+	labelsMap.Insert(metadata.Labels.FilesystemDevice, partition.Device)
+	labelsMap.Insert(metadata.Labels.FilesystemType, partition.Fstype)
+	labelsMap.Insert(metadata.Labels.FilesystemMode, getMountMode(partition.Opts))
+	labelsMap.Insert(metadata.Labels.FilesystemMountpoint, partition.Mountpoint)
+	labelsMap.Insert(metadata.Labels.FilesystemState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

@@ -1,0 +1,10 @@
+receivers:
+  bf: # this is the bad receiver factory
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [bf]
+      exporters: [exampleexporter]

@@ -28,7 +28,9 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -84,12 +86,12 @@ func TestResourceToOC(t *testing.T) {
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pdata.NewResource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("cluster1"),
-		conventions.AttributeK8sPod:        pdata.NewAttributeValueString("pod1"),
-		conventions.AttributeK8sNamespace:  pdata.NewAttributeValueString("namespace1"),
-		conventions.AttributeContainerName: pdata.NewAttributeValueString("container-name1"),
-		conventions.AttributeCloudAccount:  pdata.NewAttributeValueString("proj1"),
-		conventions.AttributeCloudZone:     pdata.NewAttributeValueString("zone1"),
+		conventions.AttributeK8sCluster:            pdata.NewAttributeValueString("cluster1"),
+		conventions.AttributeK8sPod:                pdata.NewAttributeValueString("pod1"),
+		conventions.AttributeK8sNamespace:          pdata.NewAttributeValueString("namespace1"),
+		conventions.AttributeContainerName:         pdata.NewAttributeValueString("container-name1"),
+		conventions.AttributeCloudAccount:          pdata.NewAttributeValueString("proj1"),
+		conventions.AttributeCloudAvailabilityZone: pdata.NewAttributeValueString("zone1"),
 	})
 
 	want := &ocresource.Resource{
@@ -161,12 +163,12 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "container",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:    "cluster1",
-				conventions.AttributeK8sPod:        "pod1",
-				conventions.AttributeK8sNamespace:  "namespace1",
-				conventions.AttributeContainerName: "container-name1",
-				conventions.AttributeCloudAccount:  "proj1",
-				conventions.AttributeCloudZone:     "zone1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeK8sPod:                "pod1",
+				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeContainerName:         "container-name1",
+				conventions.AttributeCloudAccount:          "proj1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.ContainerType,
 			wantOk:           true,
@@ -174,10 +176,10 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "pod",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:   "cluster1",
-				conventions.AttributeK8sPod:       "pod1",
-				conventions.AttributeK8sNamespace: "namespace1",
-				conventions.AttributeCloudZone:    "zone1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeK8sPod:                "pod1",
+				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.K8SType,
 			wantOk:           true,
@@ -185,9 +187,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "host",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster: "cluster1",
-				conventions.AttributeCloudZone:  "zone1",
-				conventions.AttributeHostName:   "node1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
+				conventions.AttributeHostName:              "node1",
 			},
 			wantResourceType: resourcekeys.HostType,
 			wantOk:           true,
@@ -195,9 +197,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "gce",
 			labels: map[string]string{
-				conventions.AttributeCloudProvider: "gcp",
-				conventions.AttributeHostID:        "inst1",
-				conventions.AttributeCloudZone:     "zone1",
+				conventions.AttributeCloudProvider:         "gcp",
+				conventions.AttributeHostID:                "inst1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.CloudType,
 			wantOk:           true,
@@ -231,12 +233,9 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			rSpans := make([]*otlptrace.ResourceSpans, 1)
-			rSpans[0] = &otlptrace.ResourceSpans{
-				Resource:                    goldendataset.GenerateResource(test),
-				InstrumentationLibrarySpans: nil,
-			}
-			traces := pdata.TracesFromOtlp(rSpans)
+			traces := pdata.TracesFromInternalRep(internal.TracesFromOtlp(&otlpcollectortrace.ExportTraceServiceRequest{
+				ResourceSpans: []*otlptrace.ResourceSpans{{Resource: goldendataset.GenerateResource(test)}},
+			}))
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
@@ -249,7 +248,12 @@ func TestResourceToOCAndBack(t *testing.T) {
 				assert.True(t, ok)
 				switch v.Type() {
 				case pdata.AttributeValueINT:
-					assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+					// conventions.AttributeProcessID is special because we preserve the type for this.
+					if k == conventions.AttributeProcessID {
+						assert.Equal(t, v.IntVal(), a.IntVal())
+					} else {
+						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+					}
 				case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
 					assert.Equal(t, a, a)
 				default:

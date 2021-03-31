@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 func TestResourceSpansSlice(t *testing.T) {
@@ -129,11 +129,12 @@ func TestResourceSpansSlice_Append(t *testing.T) {
 
 	emptyVal := NewResourceSpans()
 	es.Append(emptyVal)
-	assert.EqualValues(t, es.At(7).orig, emptyVal.orig)
+	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	emptyVal2 := NewResourceSpans()
-	es.Append(emptyVal2)
-	assert.EqualValues(t, es.At(8).orig, emptyVal2.orig)
+	value := NewResourceSpans()
+	fillTestResourceSpans(value)
+	es.Append(value)
+	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
 }
@@ -146,14 +147,12 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
-	ms.InitEmpty()
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
 func TestResourceSpans_InstrumentationLibrarySpans(t *testing.T) {
 	ms := NewResourceSpans()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(), ms.InstrumentationLibrarySpans())
 	fillTestInstrumentationLibrarySpansSlice(ms.InstrumentationLibrarySpans())
 	testValInstrumentationLibrarySpans := generateTestInstrumentationLibrarySpansSlice()
@@ -264,11 +263,12 @@ func TestInstrumentationLibrarySpansSlice_Append(t *testing.T) {
 
 	emptyVal := NewInstrumentationLibrarySpans()
 	es.Append(emptyVal)
-	assert.EqualValues(t, es.At(7).orig, emptyVal.orig)
+	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	emptyVal2 := NewInstrumentationLibrarySpans()
-	es.Append(emptyVal2)
-	assert.EqualValues(t, es.At(8).orig, emptyVal2.orig)
+	value := NewInstrumentationLibrarySpans()
+	fillTestInstrumentationLibrarySpans(value)
+	es.Append(value)
+	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
 }
@@ -281,14 +281,12 @@ func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
 
 func TestInstrumentationLibrarySpans_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
-	ms.InitEmpty()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
 
 func TestInstrumentationLibrarySpans_Spans(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanSlice(), ms.Spans())
 	fillTestSpanSlice(ms.Spans())
 	testValSpans := generateTestSpanSlice()
@@ -399,11 +397,12 @@ func TestSpanSlice_Append(t *testing.T) {
 
 	emptyVal := NewSpan()
 	es.Append(emptyVal)
-	assert.EqualValues(t, es.At(7).orig, emptyVal.orig)
+	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	emptyVal2 := NewSpan()
-	es.Append(emptyVal2)
-	assert.EqualValues(t, es.At(8).orig, emptyVal2.orig)
+	value := NewSpan()
+	fillTestSpan(value)
+	es.Append(value)
+	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
 }
@@ -416,7 +415,6 @@ func TestSpan_CopyTo(t *testing.T) {
 
 func TestSpan_TraceID(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewTraceID([16]byte{}), ms.TraceID())
 	testValTraceID := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
@@ -425,7 +423,6 @@ func TestSpan_TraceID(t *testing.T) {
 
 func TestSpan_SpanID(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanID([8]byte{}), ms.SpanID())
 	testValSpanID := NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
@@ -434,7 +431,6 @@ func TestSpan_SpanID(t *testing.T) {
 
 func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, TraceState(""), ms.TraceState())
 	testValTraceState := TraceState("congo=congos")
 	ms.SetTraceState(testValTraceState)
@@ -443,7 +439,6 @@ func TestSpan_TraceState(t *testing.T) {
 
 func TestSpan_ParentSpanID(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanID([8]byte{}), ms.ParentSpanID())
 	testValParentSpanID := NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetParentSpanID(testValParentSpanID)
@@ -452,7 +447,6 @@ func TestSpan_ParentSpanID(t *testing.T) {
 
 func TestSpan_Name(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
@@ -461,7 +455,6 @@ func TestSpan_Name(t *testing.T) {
 
 func TestSpan_Kind(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, SpanKindUNSPECIFIED, ms.Kind())
 	testValKind := SpanKindSERVER
 	ms.SetKind(testValKind)
@@ -470,25 +463,22 @@ func TestSpan_Kind(t *testing.T) {
 
 func TestSpan_StartTime(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
-	testValStartTime := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, Timestamp(0), ms.StartTime())
+	testValStartTime := Timestamp(1234567890)
 	ms.SetStartTime(testValStartTime)
 	assert.EqualValues(t, testValStartTime, ms.StartTime())
 }
 
 func TestSpan_EndTime(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.EndTime())
-	testValEndTime := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, Timestamp(0), ms.EndTime())
+	testValEndTime := Timestamp(1234567890)
 	ms.SetEndTime(testValEndTime)
 	assert.EqualValues(t, testValEndTime, ms.EndTime())
 }
 
 func TestSpan_Attributes(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
@@ -497,7 +487,6 @@ func TestSpan_Attributes(t *testing.T) {
 
 func TestSpan_DroppedAttributesCount(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
@@ -506,7 +495,6 @@ func TestSpan_DroppedAttributesCount(t *testing.T) {
 
 func TestSpan_Events(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanEventSlice(), ms.Events())
 	fillTestSpanEventSlice(ms.Events())
 	testValEvents := generateTestSpanEventSlice()
@@ -515,7 +503,6 @@ func TestSpan_Events(t *testing.T) {
 
 func TestSpan_DroppedEventsCount(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedEventsCount())
 	testValDroppedEventsCount := uint32(17)
 	ms.SetDroppedEventsCount(testValDroppedEventsCount)
@@ -524,7 +511,6 @@ func TestSpan_DroppedEventsCount(t *testing.T) {
 
 func TestSpan_Links(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanLinkSlice(), ms.Links())
 	fillTestSpanLinkSlice(ms.Links())
 	testValLinks := generateTestSpanLinkSlice()
@@ -533,7 +519,6 @@ func TestSpan_Links(t *testing.T) {
 
 func TestSpan_DroppedLinksCount(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedLinksCount())
 	testValDroppedLinksCount := uint32(17)
 	ms.SetDroppedLinksCount(testValDroppedLinksCount)
@@ -542,7 +527,6 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
-	ms.InitEmpty()
 	fillTestSpanStatus(ms.Status())
 	assert.EqualValues(t, generateTestSpanStatus(), ms.Status())
 }
@@ -651,11 +635,12 @@ func TestSpanEventSlice_Append(t *testing.T) {
 
 	emptyVal := NewSpanEvent()
 	es.Append(emptyVal)
-	assert.EqualValues(t, es.At(7).orig, emptyVal.orig)
+	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	emptyVal2 := NewSpanEvent()
-	es.Append(emptyVal2)
-	assert.EqualValues(t, es.At(8).orig, emptyVal2.orig)
+	value := NewSpanEvent()
+	fillTestSpanEvent(value)
+	es.Append(value)
+	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
 }
@@ -668,16 +653,14 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 
 func TestSpanEvent_Timestamp(t *testing.T) {
 	ms := NewSpanEvent()
-	ms.InitEmpty()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
-	testValTimestamp := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
+	testValTimestamp := Timestamp(1234567890)
 	ms.SetTimestamp(testValTimestamp)
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
 
 func TestSpanEvent_Name(t *testing.T) {
 	ms := NewSpanEvent()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
@@ -686,7 +669,6 @@ func TestSpanEvent_Name(t *testing.T) {
 
 func TestSpanEvent_Attributes(t *testing.T) {
 	ms := NewSpanEvent()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
@@ -695,7 +677,6 @@ func TestSpanEvent_Attributes(t *testing.T) {
 
 func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 	ms := NewSpanEvent()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
@@ -806,11 +787,12 @@ func TestSpanLinkSlice_Append(t *testing.T) {
 
 	emptyVal := NewSpanLink()
 	es.Append(emptyVal)
-	assert.EqualValues(t, es.At(7).orig, emptyVal.orig)
+	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	emptyVal2 := NewSpanLink()
-	es.Append(emptyVal2)
-	assert.EqualValues(t, es.At(8).orig, emptyVal2.orig)
+	value := NewSpanLink()
+	fillTestSpanLink(value)
+	es.Append(value)
+	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
 }
@@ -823,7 +805,6 @@ func TestSpanLink_CopyTo(t *testing.T) {
 
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewTraceID([16]byte{}), ms.TraceID())
 	testValTraceID := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
@@ -832,7 +813,6 @@ func TestSpanLink_TraceID(t *testing.T) {
 
 func TestSpanLink_SpanID(t *testing.T) {
 	ms := NewSpanLink()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanID([8]byte{}), ms.SpanID())
 	testValSpanID := NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
@@ -841,7 +821,6 @@ func TestSpanLink_SpanID(t *testing.T) {
 
 func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
-	ms.InitEmpty()
 	assert.EqualValues(t, TraceState(""), ms.TraceState())
 	testValTraceState := TraceState("congo=congos")
 	ms.SetTraceState(testValTraceState)
@@ -850,7 +829,6 @@ func TestSpanLink_TraceState(t *testing.T) {
 
 func TestSpanLink_Attributes(t *testing.T) {
 	ms := NewSpanLink()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
@@ -859,7 +837,6 @@ func TestSpanLink_Attributes(t *testing.T) {
 
 func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	ms := NewSpanLink()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
@@ -874,25 +851,14 @@ func TestSpanStatus_CopyTo(t *testing.T) {
 
 func TestSpanStatus_Code(t *testing.T) {
 	ms := NewSpanStatus()
-	ms.InitEmpty()
 	assert.EqualValues(t, StatusCode(0), ms.Code())
 	testValCode := StatusCode(1)
 	ms.SetCode(testValCode)
 	assert.EqualValues(t, testValCode, ms.Code())
 }
 
-func TestSpanStatus_DeprecatedCode(t *testing.T) {
-	ms := NewSpanStatus()
-	ms.InitEmpty()
-	assert.EqualValues(t, DeprecatedStatusCode(0), ms.DeprecatedCode())
-	testValDeprecatedCode := DeprecatedStatusCode(1)
-	ms.SetDeprecatedCode(testValDeprecatedCode)
-	assert.EqualValues(t, testValDeprecatedCode, ms.DeprecatedCode())
-}
-
 func TestSpanStatus_Message(t *testing.T) {
 	ms := NewSpanStatus()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Message())
 	testValMessage := "cancelled"
 	ms.SetMessage(testValMessage)
@@ -973,8 +939,8 @@ func fillTestSpan(tv Span) {
 	tv.SetParentSpanID(NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetName("test_name")
 	tv.SetKind(SpanKindSERVER)
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetEndTime(TimestampUnixNano(1234567890))
+	tv.SetStartTime(Timestamp(1234567890))
+	tv.SetEndTime(Timestamp(1234567890))
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 	fillTestSpanEventSlice(tv.Events())
@@ -1004,7 +970,7 @@ func generateTestSpanEvent() SpanEvent {
 }
 
 func fillTestSpanEvent(tv SpanEvent) {
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
+	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetName("test_name")
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
@@ -1045,6 +1011,5 @@ func generateTestSpanStatus() SpanStatus {
 
 func fillTestSpanStatus(tv SpanStatus) {
 	tv.SetCode(StatusCode(1))
-	tv.SetDeprecatedCode(DeprecatedStatusCode(1))
 	tv.SetMessage("cancelled")
 }

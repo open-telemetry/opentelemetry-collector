@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"html"
 	"io/ioutil"
 	"mime"
 	"net"
@@ -49,6 +50,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
@@ -76,7 +78,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	instanceName string
 
 	startOnce sync.Once
@@ -116,7 +118,7 @@ var (
 func newJaegerReceiver(
 	instanceName string,
 	config *configuration,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 	params component.ReceiverCreateParams,
 ) *jReceiver {
 	return &jReceiver{
@@ -233,13 +235,13 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 			jr.grpc.Stop()
 			jr.grpc = nil
 		}
-		err = componenterror.CombineErrors(errs)
+		err = consumererror.Combine(errs)
 	})
 
 	return err
 }
 
-func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.TracesConsumer) (int, error) {
+func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.Traces) (int, error) {
 	if batch == nil {
 		return 0, nil
 	}
@@ -254,7 +256,7 @@ var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 type agentHandler struct {
 	name         string
 	transport    string
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 }
 
 // EmitZipkinBatch is unsupported agent's
@@ -440,7 +442,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {
-		http.Error(w, hErr.msg, hErr.statusCode)
+		http.Error(w, html.EscapeString(hErr.msg), hErr.statusCode)
 		obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
 		return
 	}

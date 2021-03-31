@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   logging:
@@ -14,9 +14,9 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [logging]
     metrics:
-      receivers: [examplereceiver]
+      receivers: [nop]
       exporters: [logging,logging/2]

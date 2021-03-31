@@ -1,6 +1,6 @@
 # Network Configuration Settings
 
-[Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/README.md)
+[Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/README.md)
 leverage network configuration to set connection and transport information.
 
 - `endpoint`: Configures the address for this network connection. For TCP and

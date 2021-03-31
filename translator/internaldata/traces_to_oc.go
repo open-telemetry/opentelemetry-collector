@@ -18,48 +18,29 @@ import (
 	"fmt"
 	"strings"
 
+	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-const sourceFormat = "otlp_trace"
-
 var (
 	defaultProcessID = 0
 )
 
-// TraceDataToOC may be used only by OpenCensus receiver and exporter implementations.
+// ResourceSpansToOC may be used only by OpenCensus receiver and exporter implementations.
+// Deprecated: Use pdata.Traces.
 // TODO: move this function to OpenCensus package.
-func TraceDataToOC(td pdata.Traces) []consumerdata.TraceData {
-	resourceSpans := td.ResourceSpans()
-
-	if resourceSpans.Len() == 0 {
-		return nil
-	}
-
-	ocResourceSpansList := make([]consumerdata.TraceData, 0, resourceSpans.Len())
-
-	for i := 0; i < resourceSpans.Len(); i++ {
-		ocResourceSpansList = append(ocResourceSpansList, resourceSpansToOC(resourceSpans.At(i)))
-	}
-
-	return ocResourceSpansList
-}
-
-func resourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
-	ocTraceData := consumerdata.TraceData{
-		SourceFormat: sourceFormat,
-	}
-	ocTraceData.Node, ocTraceData.Resource = internalResourceToOC(rs.Resource())
+func ResourceSpansToOC(rs pdata.ResourceSpans) (*occommon.Node, *ocresource.Resource, []*octrace.Span) {
+	node, resource := internalResourceToOC(rs.Resource())
 	ilss := rs.InstrumentationLibrarySpans()
 	if ilss.Len() == 0 {
-		return ocTraceData
+		return node, resource, nil
 	}
 	// Approximate the number of the spans as the number of the spans in the first
 	// instrumentation library info.
@@ -72,8 +53,7 @@ func resourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
 			ocSpans = append(ocSpans, spanToOC(spans.At(j)))
 		}
 	}
-	ocTraceData.Spans = ocSpans
-	return ocTraceData
+	return node, resource, ocSpans
 }
 
 func spanToOC(span pdata.Span) *octrace.Span {
@@ -107,8 +87,8 @@ func spanToOC(span pdata.Span) *octrace.Span {
 		ParentSpanId:            spanIDToOC(span.ParentSpanID()),
 		Name:                    stringToTruncatableString(span.Name()),
 		Kind:                    spanKindToOC(span.Kind()),
-		StartTime:               pdata.UnixNanoToTimestamp(span.StartTime()),
-		EndTime:                 pdata.UnixNanoToTimestamp(span.EndTime()),
+		StartTime:               timestampAsTimestampPb(span.StartTime()),
+		EndTime:                 timestampAsTimestampPb(span.EndTime()),
 		Attributes:              attributes,
 		TimeEvents:              eventsToOC(span.Events(), span.DroppedEventsCount()),
 		Links:                   linksToOC(span.Links(), span.DroppedLinksCount()),
@@ -295,10 +275,10 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	// Consider TimeEvent to be of MessageEvent type if all and only relevant attributes are set
 	ocMessageEventAttrs := []string{
-		conventions.OCTimeEventMessageEventType,
-		conventions.OCTimeEventMessageEventID,
-		conventions.OCTimeEventMessageEventUSize,
-		conventions.OCTimeEventMessageEventCSize,
+		conventions.AttributeMessageType,
+		conventions.AttributeMessageID,
+		conventions.AttributeMessageUncompressedSize,
+		conventions.AttributeMessageCompressedSize,
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
 	if attrs.Len() == len(ocMessageEventAttrs) {
@@ -312,16 +292,16 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventAttrValues[attr] = akv
 		}
 		if ocMessageEventAttrFound {
-			ocMessageEventType := ocMessageEventAttrValues[conventions.OCTimeEventMessageEventType]
+			ocMessageEventType := ocMessageEventAttrValues[conventions.AttributeMessageType]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
-				Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
+				Time: timestampAsTimestampPb(event.Timestamp()),
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
-						Id:               uint64(ocMessageEventAttrValues[conventions.OCTimeEventMessageEventID].IntVal()),
-						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.OCTimeEventMessageEventUSize].IntVal()),
-						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.OCTimeEventMessageEventCSize].IntVal()),
+						Id:               uint64(ocMessageEventAttrValues[conventions.AttributeMessageID].IntVal()),
+						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.AttributeMessageUncompressedSize].IntVal()),
+						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.AttributeMessageCompressedSize].IntVal()),
 					},
 				},
 			}
@@ -330,7 +310,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	ocAttributes := attributesMapToOCSpanAttributes(attrs, event.DroppedAttributesCount())
 	return &octrace.Span_TimeEvent{
-		Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
+		Time: timestampAsTimestampPb(event.Timestamp()),
 		Value: &octrace.Span_TimeEvent_Annotation_{
 			Annotation: &octrace.Span_TimeEvent_Annotation{
 				Description: stringToTruncatableString(event.Name()),
@@ -370,7 +350,7 @@ func linksToOC(links pdata.SpanLinkSlice, droppedCount uint32) *octrace.Span_Lin
 }
 
 func traceIDToOC(tid pdata.TraceID) []byte {
-	if !tid.IsValid() {
+	if tid.IsEmpty() {
 		return nil
 	}
 	tidBytes := tid.Bytes()
@@ -378,7 +358,7 @@ func traceIDToOC(tid pdata.TraceID) []byte {
 }
 
 func spanIDToOC(sid pdata.SpanID) []byte {
-	if !sid.IsValid() {
+	if sid.IsEmpty() {
 		return nil
 	}
 	sidBytes := sid.Bytes()

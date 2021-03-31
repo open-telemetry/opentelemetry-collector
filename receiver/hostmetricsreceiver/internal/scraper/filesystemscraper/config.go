@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 // Config relating to FileSystem Metric Scraper.
@@ -73,32 +74,32 @@ func (cfg *Config) createFilter() (*fsFilter, error) {
 	var err error
 	filter := fsFilter{}
 
-	filter.includeDeviceFilter, err = newIncludeFilterHelper(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config, deviceLabelName)
+	filter.includeDeviceFilter, err = newIncludeFilterHelper(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config, metadata.Labels.FilesystemDevice)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeDeviceFilter, err = newExcludeFilterHelper(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config, deviceLabelName)
+	filter.excludeDeviceFilter, err = newExcludeFilterHelper(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config, metadata.Labels.FilesystemDevice)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.includeFSTypeFilter, err = newIncludeFilterHelper(cfg.IncludeFSTypes.FSTypes, &cfg.IncludeFSTypes.Config, typeLabelName)
+	filter.includeFSTypeFilter, err = newIncludeFilterHelper(cfg.IncludeFSTypes.FSTypes, &cfg.IncludeFSTypes.Config, metadata.Labels.FilesystemType)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeFSTypeFilter, err = newExcludeFilterHelper(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config, typeLabelName)
+	filter.excludeFSTypeFilter, err = newExcludeFilterHelper(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config, metadata.Labels.FilesystemType)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, mountPointLabelName)
+	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Labels.FilesystemMountpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, mountPointLabelName)
+	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Labels.FilesystemMountpoint)
 	if err != nil {
 		return nil, err
 	}

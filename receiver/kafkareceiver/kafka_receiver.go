@@ -40,7 +40,7 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 type kafkaConsumer struct {
 	name              string
 	consumerGroup     sarama.ConsumerGroup
-	nextConsumer      consumer.TracesConsumer
+	nextConsumer      consumer.Traces
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaller      Unmarshaller
@@ -50,7 +50,7 @@ type kafkaConsumer struct {
 
 var _ component.Receiver = (*kafkaConsumer)(nil)
 
-func newReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]Unmarshaller, nextConsumer consumer.TracesConsumer) (*kafkaConsumer, error) {
+func newReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]Unmarshaller, nextConsumer consumer.Traces) (*kafkaConsumer, error) {
 	unmarshaller := unmarshalers[config.Encoding]
 	if unmarshaller == nil {
 		return nil, errUnrecognizedEncoding
@@ -124,7 +124,7 @@ func (c *kafkaConsumer) Shutdown(context.Context) error {
 type consumerGroupHandler struct {
 	name         string
 	unmarshaller Unmarshaller
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	ready        chan bool
 	readyCloser  sync.Once
 

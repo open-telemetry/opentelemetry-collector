@@ -24,10 +24,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 func TestScrape(t *testing.T) {
@@ -38,7 +39,7 @@ func TestScrape(t *testing.T) {
 		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
 		connectionsFunc      func(string) ([]net.ConnectionStat, error)
 		expectNetworkMetrics bool
-		expectedStartTime    pdata.TimestampUnixNano
+		expectedStartTime    pdata.Timestamp
 		newErrRegex          string
 		initializationErr    string
 		expectedErr          string
@@ -121,10 +122,10 @@ func TestScrape(t *testing.T) {
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
-				isPartial := consumererror.IsPartialScrapeError(err)
+				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, test.expectedErrCount, err.(consumererror.PartialScrapeError).Failed)
+					assert.Equal(t, test.expectedErrCount, err.(scrapererror.PartialScrapeError).Failed)
 				}
 
 				return
@@ -139,33 +140,34 @@ func TestScrape(t *testing.T) {
 
 			idx := 0
 			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+0), networkPacketsDescriptor, test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), networkDroppedPacketsDescriptor, test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), networkErrorsDescriptor, test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), networkIODescriptor, test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+0), metadata.Metrics.SystemNetworkPackets.New(), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), metadata.Metrics.SystemNetworkDropped.New(), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), metadata.Metrics.SystemNetworkErrors.New(), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), metadata.Metrics.SystemNetworkIo.New(), test.expectedStartTime)
 				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
 				idx += 4
 			}
 
-			assertNetworkTCPConnectionsMetricValid(t, metrics.At(idx+0))
+			assertNetworkConnectionsMetricValid(t, metrics.At(idx+0))
 			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
 		})
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, interfaceLabelName)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, directionLabelName, transmitDirectionLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, directionLabelName, receiveDirectionLabelValue)
+	internal.AssertIntSumMetricLabelExists(t, metric, 0, "device")
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "direction", "transmit")
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "direction", "receive")
 }
 
-func assertNetworkTCPConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, networkTCPConnectionsDescriptor, metric)
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, stateLabelName)
+func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "protocol", "tcp")
+	internal.AssertIntSumMetricLabelExists(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.IntSum().DataPoints().Len())
 }

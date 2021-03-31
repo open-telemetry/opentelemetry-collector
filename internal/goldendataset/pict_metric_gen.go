@@ -39,7 +39,7 @@ func GenerateMetricDatas(metricPairsFile string) ([]pdata.Metrics, error) {
 		}
 		cfg := pictToCfg(metricInputs)
 		cfg.MetricNamePrefix = fmt.Sprintf("pict_%d_", i)
-		md := MetricDataFromCfg(cfg)
+		md := MetricsFromCfg(cfg)
 		out = append(out, md)
 	}
 	return out, nil
@@ -82,8 +82,8 @@ func pictToCfg(inputs PICTMetricInputs) MetricCfg {
 		cfg.IsMonotonicSum = false
 	case MetricTypeIntHistogram:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
-	case MetricTypeDoubleHistogram:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
+	case MetricTypeHistogram:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
 	default:
 		panic("Should not happen, unsupported type " + string(inputs.MetricType))
 	}

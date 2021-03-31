@@ -175,7 +175,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		return nil, fmt.Errorf("error converting span links to Jaeger references: %w", err)
 	}
 
-	startTime := pdata.UnixNanoToTime(span.StartTime())
+	startTime := span.StartTime().AsTime()
 
 	return &model.Span{
 		TraceID:       traceID,
@@ -183,7 +183,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		OperationName: span.Name(),
 		References:    jReferences,
 		StartTime:     startTime,
-		Duration:      pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
+		Duration:      span.EndTime().AsTime().Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
 	}, nil
@@ -261,7 +261,7 @@ func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
 }
 
 func spanIDToJaegerProto(spanID pdata.SpanID) (model.SpanID, error) {
-	uSpanID := tracetranslator.BytesToUInt64SpanID(spanID.Bytes())
+	uSpanID := tracetranslator.SpanIDToUInt64(spanID)
 	if uSpanID == 0 {
 		return model.SpanID(0), errZeroSpanID
 	}
@@ -274,7 +274,7 @@ func makeJaegerProtoReferences(
 	parentSpanID pdata.SpanID,
 	traceID model.TraceID,
 ) ([]model.SpanRef, error) {
-	parentSpanIDSet := parentSpanID.IsValid()
+	parentSpanIDSet := !parentSpanID.IsEmpty()
 	if !parentSpanIDSet && links.Len() == 0 {
 		return nil, nil
 	}
@@ -345,7 +345,7 @@ func spanEventsToJaegerProtoLogs(events pdata.SpanEventSlice) []model.Log {
 		}
 		fields = appendTagsFromAttributes(fields, event.Attributes())
 		logs = append(logs, model.Log{
-			Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
+			Timestamp: event.Timestamp().AsTime(),
 			Fields:    fields,
 		})
 	}
@@ -427,7 +427,7 @@ func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model
 	keyValues := make([]model.KeyValue, 0)
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   tracetranslator.TagInstrumentationName,
+			Key:   conventions.InstrumentationLibraryName,
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -435,7 +435,7 @@ func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   tracetranslator.TagInstrumentationVersion,
+			Key:   conventions.InstrumentationLibraryVersion,
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}

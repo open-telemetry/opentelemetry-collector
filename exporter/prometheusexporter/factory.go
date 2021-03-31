@@ -16,14 +16,10 @@ package prometheusexporter
 
 import (
 	"context"
-	"net"
-	"net/http"
-	"strings"
-
-	"github.com/orijtech/prometheus-go-metrics-exporter"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -32,7 +28,6 @@ const (
 	typeStr = "prometheus"
 )
 
-// NewFactory creates a factory for OTLP exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -40,59 +35,24 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		ConstLabels:    map[string]string{},
-		SendTimestamps: false,
+		ConstLabels:      map[string]string{},
+		SendTimestamps:   false,
+		MetricExpiration: time.Minute * 5,
 	}
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
-	addr := strings.TrimSpace(pcfg.Endpoint)
-	if addr == "" {
-		return nil, errBlankPrometheusAddress
-	}
-
-	opts := prometheus.Options{
-		Namespace:      pcfg.Namespace,
-		ConstLabels:    pcfg.ConstLabels,
-		SendTimestamps: pcfg.SendTimestamps,
-	}
-	pe, err := prometheus.New(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-
-	// The Prometheus metrics exporter has to run on the provided address
-	// as a server that'll be scraped by Prometheus.
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", pe)
-
-	srv := &http.Server{Handler: mux}
-	go func() {
-		_ = srv.Serve(ln)
-	}()
-
-	pexp := &prometheusExporter{
-		name:         cfg.Name(),
-		exporter:     pe,
-		shutdownFunc: ln.Close,
-	}
-
-	return pexp, nil
+	return newPrometheusExporter(pcfg, params.Logger)
 }

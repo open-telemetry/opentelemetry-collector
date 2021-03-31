@@ -20,6 +20,7 @@ import (
 	"path"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
@@ -27,14 +28,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
-	tracev1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
@@ -231,12 +232,18 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	defer exporter.Shutdown(context.Background())
 
-	traceID := data.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := data.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
-	traces := pdata.TracesFromOtlp([]*tracev1.ResourceSpans{
-		{InstrumentationLibrarySpans: []*tracev1.InstrumentationLibrarySpans{{Spans: []*tracev1.Span{{TraceId: traceID, SpanId: spanID}}}}},
-	})
-	err = exporter.ConsumeTraces(context.Background(), traces)
+	traceID := pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+
+	err = exporter.ConsumeTraces(context.Background(), td)
 	require.NoError(t, err)
 	requestes := spanHandler.getRequests()
 	assert.Equal(t, 1, len(requestes))
@@ -246,6 +253,83 @@ func TestMutualTLS(t *testing.T) {
 	require.Len(t, requestes, 1)
 	require.Len(t, requestes[0].GetBatch().Spans, 1)
 	assert.Equal(t, jTraceID, requestes[0].GetBatch().Spans[0].TraceID)
+}
+
+func TestConnectionStateChange(t *testing.T) {
+	var state connectivity.State
+
+	wg := sync.WaitGroup{}
+	sr := &mockStateReporter{
+		state: connectivity.Connecting,
+	}
+	sender := &protoGRPCSender{
+		logger:                    zap.NewNop(),
+		stopCh:                    make(chan (struct{})),
+		conn:                      sr,
+		connStateReporterInterval: 10 * time.Millisecond,
+	}
+
+	wg.Add(1)
+	sender.AddStateChangeCallback(func(c connectivity.State) {
+		state = c
+		wg.Done()
+	})
+
+	sender.start(context.Background(), componenttest.NewNopHost())
+	defer sender.shutdown(context.Background())
+	wg.Wait() // wait for the initial state to be propagated
+
+	// test
+	wg.Add(1)
+	sr.SetState(connectivity.Ready)
+
+	// verify
+	wg.Wait() // wait until we get the state change
+	assert.Equal(t, connectivity.Ready, state)
+}
+
+func TestConnectionReporterEndsOnStopped(t *testing.T) {
+	sr := &mockStateReporter{
+		state: connectivity.Connecting,
+	}
+
+	sender := &protoGRPCSender{
+		logger:                    zap.NewNop(),
+		stopCh:                    make(chan (struct{})),
+		conn:                      sr,
+		connStateReporterInterval: 10 * time.Millisecond,
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		sender.startConnectionStatusReporter()
+		wg.Done()
+	}()
+
+	sender.stopLock.Lock()
+	sender.stopped = true
+	sender.stopLock.Unlock()
+
+	// if the test finishes, we are good... if it gets blocked, the conn status reporter didn't return when the sender was marked as stopped
+	wg.Wait()
+}
+
+type mockStateReporter struct {
+	state connectivity.State
+	mu    sync.RWMutex
+}
+
+func (m *mockStateReporter) GetState() connectivity.State {
+	m.mu.RLock()
+	st := m.state
+	m.mu.RUnlock()
+	return st
+}
+func (m *mockStateReporter) SetState(st connectivity.State) {
+	m.mu.Lock()
+	m.state = st
+	m.mu.Unlock()
 }
 
 func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server), opts ...grpc.ServerOption) (*grpc.Server, net.Addr) {

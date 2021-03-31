@@ -33,10 +33,10 @@ type PropertiesMatcher struct {
 	libraries []instrumentationLibraryMatcher
 
 	// The attribute values are stored in the internal format.
-	attributes attributesMatcher
+	attributes AttributesMatcher
 
 	// The attribute values are stored in the internal format.
-	resources attributesMatcher
+	resources AttributesMatcher
 }
 
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
@@ -61,17 +61,17 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 	}
 
 	var err error
-	var am attributesMatcher
+	var am AttributesMatcher
 	if len(mp.Attributes) > 0 {
-		am, err = newAttributesMatcher(mp.Config, mp.Attributes)
+		am, err = NewAttributesMatcher(mp.Config, mp.Attributes)
 		if err != nil {
 			return PropertiesMatcher{}, fmt.Errorf("error creating attribute filters: %v", err)
 		}
 	}
 
-	var rm attributesMatcher
+	var rm AttributesMatcher
 	if len(mp.Resources) > 0 {
-		rm, err = newAttributesMatcher(mp.Config, mp.Resources)
+		rm, err = NewAttributesMatcher(mp.Config, mp.Resources)
 		if err != nil {
 			return PropertiesMatcher{}, fmt.Errorf("error creating resource filters: %v", err)
 		}

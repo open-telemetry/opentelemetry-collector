@@ -27,7 +27,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -86,7 +85,7 @@ type binaryAnnotation struct {
 }
 
 // v1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func v1JSONBatchToOCProto(blob []byte, parseStringTags bool) ([]consumerdata.TraceData, error) {
+func v1JSONBatchToOCProto(blob []byte, parseStringTags bool) ([]traceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, fmt.Errorf("%s: %w", msgZipkinV1JSONUnmarshalError, err)
@@ -113,15 +112,15 @@ type ocSpanAndParsedAnnotations struct {
 	parsedAnnotations *annotationParseResult
 }
 
-func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]consumerdata.TraceData, error) {
+func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]traceData, error) {
 	// Service to batch maps the service name to the trace request with the corresponding node.
-	svcToTD := make(map[string]*consumerdata.TraceData)
+	svcToTD := make(map[string]*traceData)
 	for _, curr := range ocSpansAndParsedAnnotations {
 		req := getOrCreateNodeRequest(svcToTD, curr.parsedAnnotations.Endpoint)
 		req.Spans = append(req.Spans, curr.ocSpan)
 	}
 
-	tds := make([]consumerdata.TraceData, 0, len(svcToTD))
+	tds := make([]traceData, 0, len(svcToTD))
 	for _, v := range svcToTD {
 		tds = append(tds, *v)
 	}
@@ -415,7 +414,7 @@ func hexTraceIDToOCTraceID(hex string) ([]byte, error) {
 		return nil, errHexTraceIDZero
 	}
 
-	tidBytes := tracetranslator.UInt64ToByteTraceID(high, low)
+	tidBytes := tracetranslator.UInt64ToTraceID(high, low).Bytes()
 	return tidBytes[:], nil
 }
 
@@ -434,7 +433,7 @@ func hexIDToOCID(hex string) ([]byte, error) {
 		return nil, errHexIDZero
 	}
 
-	idBytes := tracetranslator.UInt64ToByteSpanID(idValue)
+	idBytes := tracetranslator.UInt64ToSpanID(idValue).Bytes()
 	return idBytes[:], nil
 }
 
@@ -448,7 +447,7 @@ func epochMicrosecondsToTimestamp(msecs int64) *timestamppb.Timestamp {
 	return t
 }
 
-func getOrCreateNodeRequest(m map[string]*consumerdata.TraceData, endpoint *endpoint) *consumerdata.TraceData {
+func getOrCreateNodeRequest(m map[string]*traceData, endpoint *endpoint) *traceData {
 	// this private function assumes that the caller never passes an nil endpoint
 	nodeKey := endpoint.string()
 	req := m[nodeKey]
@@ -457,7 +456,7 @@ func getOrCreateNodeRequest(m map[string]*consumerdata.TraceData, endpoint *endp
 		return req
 	}
 
-	req = &consumerdata.TraceData{
+	req = &traceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: endpoint.ServiceName},
 		},

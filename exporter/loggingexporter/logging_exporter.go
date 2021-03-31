@@ -25,9 +25,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type logDataBuffer struct {
@@ -102,12 +103,12 @@ func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 		data := m.IntHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logIntHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleHistogram:
-		data := m.DoubleHistogram()
+	case pdata.MetricDataTypeHistogram:
+		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleSummary:
-		data := m.DoubleSummary()
+	case pdata.MetricDataTypeSummary:
+		data := m.Summary()
 		b.logDoubleSummaryDataPoints(data.DataPoints())
 	}
 }
@@ -136,7 +137,7 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 	}
 }
 
-func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice) {
+func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
@@ -190,7 +191,7 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 	}
 }
 
-func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.DoubleSummaryDataPointSlice) {
+func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("SummaryDataPoints #%d", i)
@@ -235,7 +236,7 @@ func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
 
 		if e.Attributes().Len() == 0 {
-			return
+			continue
 		}
 		b.logEntry("     -> Attributes:")
 		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
@@ -259,7 +260,7 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 		b.logEntry("     -> TraceState: %s", l.TraceState())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
 		if l.Attributes().Len() == 0 {
-			return
+			continue
 		}
 		b.logEntry("     -> Attributes:")
 		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
@@ -280,6 +281,8 @@ func attributeValueToString(av pdata.AttributeValue) string {
 		return strconv.FormatInt(av.IntVal(), 10)
 	case pdata.AttributeValueARRAY:
 		return attributeValueArrayToString(av.ArrayVal())
+	case pdata.AttributeValueMAP:
+		return attributeMapToString(av.MapVal())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
 	}
@@ -300,6 +303,17 @@ func attributeValueArrayToString(av pdata.AnyValueArray) string {
 	return b.String()
 }
 
+func attributeMapToString(av pdata.AttributeMap) string {
+	var b strings.Builder
+	b.WriteString("{\n")
+
+	av.Sort().ForEach(func(k string, v pdata.AttributeValue) {
+		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), tracetranslator.AttributeValueToString(v, false))
+	})
+	b.WriteByte('}')
+	return b.String()
+}
+
 type loggingExporter struct {
 	logger *zap.Logger
 	debug  bool
@@ -308,12 +322,12 @@ type loggingExporter struct {
 func (s *loggingExporter) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
-) (int, error) {
+) error {
 
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
 	buf := logDataBuffer{}
@@ -351,17 +365,17 @@ func (s *loggingExporter) pushTraceData(
 	}
 	s.logger.Debug(buf.str.String())
 
-	return 0, nil
+	return nil
 }
 
 func (s *loggingExporter) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
-) (int, error) {
+) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
 	buf := logDataBuffer{}
@@ -387,14 +401,14 @@ func (s *loggingExporter) pushMetricsData(
 
 	s.logger.Debug(buf.str.String())
 
-	return 0, nil
+	return nil
 }
 
 // newTraceExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
+func newTraceExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
@@ -412,9 +426,9 @@ func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
+func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
@@ -432,9 +446,9 @@ func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
+func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
@@ -453,11 +467,11 @@ func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Log
 func (s *loggingExporter) pushLogData(
 	_ context.Context,
 	ld pdata.Logs,
-) (int, error) {
+) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
 	buf := logDataBuffer{}
@@ -483,7 +497,7 @@ func (s *loggingExporter) pushLogData(
 
 	s.logger.Debug(buf.str.String())
 
-	return 0, nil
+	return nil
 }
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {

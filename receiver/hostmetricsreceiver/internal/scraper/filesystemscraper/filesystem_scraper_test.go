@@ -24,10 +24,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 func TestScrape(t *testing.T) {
@@ -196,10 +197,10 @@ func TestScrape(t *testing.T) {
 			if test.expectedErr != "" {
 				assert.Contains(t, err.Error(), test.expectedErr)
 
-				isPartial := consumererror.IsPartialScrapeError(err)
+				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, metricsLen, err.(consumererror.PartialScrapeError).Failed)
+					assert.Equal(t, metricsLen, err.(scrapererror.PartialScrapeError).Failed)
 				}
 
 				return
@@ -216,7 +217,7 @@ func TestScrape(t *testing.T) {
 			assertFileSystemUsageMetricValid(
 				t,
 				metrics.At(0),
-				fileSystemUsageDescriptor,
+				metadata.Metrics.SystemFilesystemUsage.New(),
 				test.expectedDeviceDataPoints*fileSystemStatesLen,
 				test.expectedDeviceLabelValues,
 			)
@@ -226,7 +227,7 @@ func TestScrape(t *testing.T) {
 				assertFileSystemUsageMetricValid(
 					t,
 					metrics.At(1),
-					fileSystemINodesUsageDescriptor,
+					metadata.Metrics.SystemFilesystemInodesUsage.New(),
 					test.expectedDeviceDataPoints*2,
 					test.expectedDeviceLabelValues,
 				)
@@ -245,7 +246,7 @@ func assertFileSystemUsageMetricValid(
 	expectedDeviceLabelValues []map[string]string) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
-		for _, label := range []string{deviceLabelName, typeLabelName, mountModeLabelName, mountPointLabelName} {
+		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertIntSumMetricLabelExists(t, metric, i, label)
 		}
 	}
@@ -269,12 +270,12 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, stateLabelName, usedLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, stateLabelName, freeLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "state", "used")
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "state", "free")
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 2, stateLabelName, reservedLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 2, "state", "reserved")
 }
 
 func isUnix() bool {

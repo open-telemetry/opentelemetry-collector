@@ -1,4 +1,4 @@
-s+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g
+s+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/protogen/+g
 
 s+package opentelemetry.proto.\(.*\).v1;+package opentelemetry.proto.\1.v1;\
 \
@@ -37,4 +37,10 @@ s+opentelemetry.proto.common.v1.InstrumentationLibrary instrumentation_library =
   [ (gogoproto.nullable) = false ];+g
 
 s+Status \(.*\);+Status \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated IntExemplar exemplars = \(.*\);+repeated IntExemplar exemplars = \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated DoubleExemplar exemplars = \(.*\);+repeated DoubleExemplar exemplars = \1\
   [ (gogoproto.nullable) = false ];+g

@@ -30,8 +30,8 @@ The available scrapers are:
 | filesystem | All                          | File System utilization metrics                        |
 | memory     | All                          | Memory utilization metrics                             |
 | network    | All                          | Network interface I/O metrics & TCP connection metrics |
+| paging     | All                          | Paging/Swap space utilization and I/O metrics
 | processes  | Linux                        | Process count metrics                                  |
-| swap       | All                          | Swap space utilization and I/O metrics                 |
 | process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
 
 ### Notes
@@ -89,7 +89,7 @@ process:
 
 If you are only interested in a subset of metrics from a particular source,
 it is recommended you use this receiver with the
-[Filter Processor](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor/filterprocessor).
+[Filter Processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/filterprocessor).
 
 ### Different Frequencies
 

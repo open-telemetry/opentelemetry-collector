@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -26,17 +27,17 @@ import (
 func TestTracesNop(t *testing.T) {
 	nt := NewTracesNop()
 	require.NotNil(t, nt)
-	require.NoError(t, nt.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, nt.ConsumeTraces(context.Background(), pdata.NewTraces()))
 }
 
 func TestMetricsNop(t *testing.T) {
 	nm := NewMetricsNop()
 	require.NotNil(t, nm)
-	require.NoError(t, nm.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, nm.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
 }
 
 func TestLogsNop(t *testing.T) {
 	nl := NewLogsNop()
 	require.NotNil(t, nl)
-	require.NoError(t, nl.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.NoError(t, nl.ConsumeLogs(context.Background(), pdata.NewLogs()))
 }

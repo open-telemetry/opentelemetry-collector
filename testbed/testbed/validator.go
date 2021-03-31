@@ -26,8 +26,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 // TestCaseValidator defines the interface for validating and reporting test results.
@@ -123,7 +124,7 @@ func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
 
 func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata.Traces) {
 	for _, td := range tracesList {
-		resourceSpansList := pdata.TracesToOtlp(td)
+		resourceSpansList := internal.TracesToOtlp(td.InternalRep()).ResourceSpans
 		for _, rs := range resourceSpansList {
 			for _, ils := range rs.InstrumentationLibrarySpans {
 				for _, recdSpan := range ils.Spans {

@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   memory_limiter:
@@ -26,11 +26,11 @@ processors:
     ballast_size_mib: 2000
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [memory_limiter/with-settings]
-      exporters: [exampleexporter]
+      exporters: [nop]

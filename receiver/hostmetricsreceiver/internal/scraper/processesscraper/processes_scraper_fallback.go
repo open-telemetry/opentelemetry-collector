@@ -18,8 +18,6 @@ package processesscraper
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
-const systemSpecificMetricsLen = 2
-
 func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, miscFunc getMiscStats) error {
 	return nil
 }

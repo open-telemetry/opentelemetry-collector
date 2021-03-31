@@ -25,10 +25,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 func TestScrape(t *testing.T) {
@@ -36,7 +36,7 @@ func TestScrape(t *testing.T) {
 		name              string
 		bootTimeFunc      func() (uint64, error)
 		timesFunc         func(bool) ([]cpu.TimesStat, error)
-		expectedStartTime pdata.TimestampUnixNano
+		expectedStartTime pdata.Timestamp
 		initializationErr string
 		expectedErr       string
 	}
@@ -83,10 +83,10 @@ func TestScrape(t *testing.T) {
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
-				isPartial := consumererror.IsPartialScrapeError(err)
+				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, 1, err.(consumererror.PartialScrapeError).Failed)
+					assert.Equal(t, 1, err.(scrapererror.PartialScrapeError).Failed)
 				}
 
 				return
@@ -106,7 +106,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)

@@ -80,7 +80,7 @@ container_cpu_load_average_10s{id="/001-sysfs",image="",name=""} 0
 
 The above example was taken from an cadvisor metric endpoint, the type hint
 tells that the name of this metric group is `container_cpu_load_average_10s`
-and it's of `gague` type. Then it follows by some individual metric points
+and it's of `gauge` type. Then it follows by some individual metric points
 which are of the same metric name. For each individual metric within this
 group, they share the same set of tag keys, with unique value sets.
 
@@ -103,7 +103,7 @@ an object which manage scrapes for a sets of targets
 a http client to fetch data from remote metrics endpoints
 
 - **[Target](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/target.go):**
-the remote metric endpoint, as well as related relabing settings and other metadata
+the remote metric endpoint, as well as related relabeling settings and other metadata
 
 - **[TextParser](https://github.com/prometheus/prometheus/tree/v2.9.2/pkg/textparse):**
 a DFA style streaming decoder/parser for prometheus text format
@@ -119,7 +119,7 @@ also the interface we need to implement to provide a customized storage appender
 the actual scrape pipeline which performs the main scraping and ingestion logic.
 
 ### Prometheus ScrapeLoop workflow explained
-Each scraping cycle is trigger by an configured interval, its workflow is as
+Each scraping cycle is triggered by a configured interval, its workflow is as
 shown in the flowchart below:
 
 ![ScrapeLoop Flowchart](scrapeloop-flowchart.png)
@@ -137,7 +137,7 @@ It basically does the following things in turn:
 
 ### The storage.Appender interface
 As discussed in the previous section, the storage.Appender is the most
-important piece of components for us to implement so as to bring the two worlds
+important piece of components for us to implement to bring the two worlds
 together. It has a very simple interface which is defined below:
 ```go
 type Appender interface {
@@ -168,8 +168,8 @@ Prometheus project for how they should be used. By examining the scrapeLoop
 source code, as well as some storage.Appender implementations. It indicates
 that the first method `Add` is always used for the first time when a unique
 metrics, which means the combination of metric name and its tags are unique, is
-seen for the first time. The `Add` method can return a non zero reference
-number, then the scrapeLoop can cache this number with the metric's uniq
+seen for the first time. The `Add` method can return a non-zero reference
+number, then the scrapeLoop can cache this number with the metric's unique
 signature. The next time, such as the next scrape cycle of the same target,
 when the metric is seen again by matching its signature, it will call the
 `AddFast` method with the cached reference number. This reference number might
@@ -212,7 +212,7 @@ is a metric family change.
 3. Group complex metrics such as histogram together in proper order
 
 In Prometheus, a single aggregated type of metric data such as `histogram` and
-`summary` is represent by multiple metric data points, such as buckets and
+`summary` is represented by multiple metric data points, such as buckets and
 quantiles as well as the additional `_sum` and `_count` data. ScrapeLoop will
 feed them into the appender individually. The appender needs to have a way to
 bundle them together to transform them into a single Metric Datapoint Proto
@@ -228,7 +228,7 @@ of the same metric family before committing the metric family to the sink.
 
 In OpenTelemetry, every metrics of cumulative type is required to have a
 StartTimestamp, which records when a metric is first recorded, however,
-Prometheus dose not provide such data. One of the solutions to tackle this
+Prometheus does not provide such data. One of the solutions to tackle this
 problem is to cache the first observed value of these metrics as well as the
 timestamp, then for any subsequent data of the same metric, use the cached
 timestamp as StartTimestamp and the delta with the first value as value.
@@ -254,7 +254,7 @@ type MetricsData struct {
 }
 ```
 
-The scrape page as whole also can be fit into the above `MetricsData` data
+The scrape page as a whole also can be fit into the above `MetricsData` data
 structure, and all the metrics data points can be stored with the `Metrics`
 array. We will explain the mappings of individual metric types in the following
 couple sections
@@ -281,7 +281,7 @@ Document](https://prometheus.io/docs/concepts/metric_types/#counter),
 > is a cumulative metric that represents a single monotonically increasing
 > counter whose value can only increase or be reset to zero on restart.
 
-It is one of the most simple metric types found in both systems, however, it is
+It is one of simplest metric types found in both systems, however, it is
 a cumulative type of metric. Consider what happens when we have two consecutive
 scrapes from a target, with the first one as shown below:
 ```
@@ -301,7 +301,7 @@ http_requests_total{method="post",code="400"}    5
 
 The Prometheus Receiver will only produce one Metric from the 2nd scrape and
 subsequent ones if any. The 1st scrape, however, is stored as metadata to
-calcualate a delta from.
+calculate a delta from.
 
 The output of the 2nd scrape is as shown below:
 ```go
@@ -346,7 +346,7 @@ gauge_test{id="2",foo=""}    2.0
 
 ```
 
-A major different between Gauges of Prometheus and OpenTelemetry are the value
+A major difference between Gauges of Prometheus and OpenTelemetry are the value
 types. In Prometheus, as mentioned earlier, all values can be considered as
 float type, however, in OpenTelemetry, Gauges can either be `Int64` or
 `Double`. To make the transformation easier, we always assume the data type is
@@ -497,7 +497,7 @@ This is an undocumented data type, that's not currently supported.
 
 ### Summary
 
-Same as histogram, summary is also a complex metric type which is represent by
+Same as histogram, summary is also a complex metric type which is represented by
 multiple data points. A detailed description can be found from [Prometheus
 Summary](https://prometheus.io/docs/concepts/metric_types/#summary)
 

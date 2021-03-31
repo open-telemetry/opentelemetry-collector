@@ -1,7 +1,7 @@
 # OTLP Receiver
 
 Receives data via gRPC or HTTP using [OTLP](
-https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
+https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format.
 
 Supported pipeline types: traces, metrics, logs
@@ -33,9 +33,9 @@ The following settings are configurable:
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configgrpc/README.md) including CORS
-- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configtls/README.md)
-- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md)
+- [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md) including CORS
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
 ## Writing with HTTP/JSON
 
@@ -52,7 +52,8 @@ port is `55681`.
 
 The HTTP/JSON endpoint can also optionally configure
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
-specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
+specifying a list of allowed CORS origins in the `cors_allowed_origins`
+and optionally headers in `cors_allowed_headers`:
 
 ```yaml
 receivers:
@@ -64,4 +65,6 @@ receivers:
         - http://test.com
         # Origins can have wildcards with *, use * by itself to match any origin.
         - https://*.example.com
+        cors_allowed_headers:
+        - TestHeader
 ```

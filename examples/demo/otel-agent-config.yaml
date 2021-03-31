@@ -1,22 +1,23 @@
 receivers:
+  otlp:
+    protocols:
+      grpc:
   opencensus:
-  zipkin:
-    endpoint: :9411
   jaeger:
     protocols:
+      grpc:
       thrift_http:
-
+  zipkin:
 
 exporters:
-  opencensus:
-    endpoint: "otel-collector:55678"
+  otlp:
+    endpoint: "otel-collector:4317"
     insecure: true
   logging:
     loglevel: debug
 
 processors:
   batch:
-  queued_retry:
 
 extensions:
   pprof:
@@ -29,10 +30,10 @@ service:
   extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
-      receivers: [opencensus, jaeger, zipkin]
-      processors: [batch, queued_retry]
-      exporters: [opencensus, logging]
-    metrics:
-      receivers: [opencensus]
+      receivers: [otlp, opencensus, jaeger, zipkin]
       processors: [batch]
-      exporters: [logging,opencensus]
+      exporters: [otlp, logging]
+    metrics:
+      receivers: [otlp, opencensus]
+      processors: [batch]
+      exporters: [otlp, logging]

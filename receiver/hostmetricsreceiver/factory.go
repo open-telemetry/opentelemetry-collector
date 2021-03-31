@@ -19,12 +19,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -33,9 +33,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -56,8 +56,8 @@ var (
 		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
 		memoryscraper.TypeStr:     &memoryscraper.Factory{},
 		networkscraper.TypeStr:    &networkscraper.Factory{},
+		pagingscraper.TypeStr:     &pagingscraper.Factory{},
 		processesscraper.TypeStr:  &processesscraper.Factory{},
-		swapscraper.TypeStr:       &swapscraper.Factory{},
 	}
 
 	resourceScraperFactories = map[string]internal.ResourceScraperFactory{
@@ -76,10 +76,9 @@ func NewFactory() component.ReceiverFactory {
 
 // customUnmarshaler returns custom unmarshaler for this config.
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-
+	componentParser := config.ParserFromViper(componentViperSection)
 	// load the non-dynamic config normally
-
-	err := componentViperSection.Unmarshal(intoCfg)
+	err := componentParser.Unmarshal(intoCfg)
 	if err != nil {
 		return err
 	}
@@ -93,22 +92,22 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 
 	cfg.Scrapers = map[string]internal.Config{}
 
-	scrapersViperSection, err := config.ViperSubExact(componentViperSection, scrapersKey)
+	scrapersSection, err := componentParser.Sub(scrapersKey)
 	if err != nil {
 		return err
 	}
-	if len(scrapersViperSection.AllKeys()) == 0 {
+	if len(scrapersSection.AllKeys()) == 0 {
 		return errors.New("must specify at least one scraper when using hostmetrics receiver")
 	}
 
-	for key := range componentViperSection.GetStringMap(scrapersKey) {
+	for key := range cast.ToStringMap(componentParser.Get(scrapersKey)) {
 		factory, ok := getScraperFactory(key)
 		if !ok {
 			return fmt.Errorf("invalid scraper key: %s", key)
 		}
 
 		collectorCfg := factory.CreateDefaultConfig()
-		collectorViperSection, err := config.ViperSubExact(scrapersViperSection, key)
+		collectorViperSection, err := scrapersSection.Sub(key)
 		if err != nil {
 			return err
 		}
@@ -136,7 +135,7 @@ func getScraperFactory(key string) (internal.BaseFactory, bool) {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr)}
 }
 
@@ -144,8 +143,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 

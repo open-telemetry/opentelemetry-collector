@@ -26,14 +26,14 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal"
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 type exporterImp struct {
@@ -42,13 +42,9 @@ type exporterImp struct {
 	w      *grpcSender
 }
 
-var (
-	errPermanentError = consumererror.Permanent(errors.New("fatal error sending to server"))
-)
-
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg configmodels.Exporter) (*exporterImp, error) {
+func newExporter(cfg config.Exporter) (*exporterImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -69,40 +65,27 @@ func (e *exporterImp) shutdown(context.Context) error {
 	return e.w.stop()
 }
 
-func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
-	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
+func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) error {
+	if err := e.w.exportTrace(ctx, internal.TracesToOtlp(td.InternalRep())); err != nil {
+		return fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
 	}
-	err := e.w.exportTrace(ctx, request)
-
-	if err != nil {
-		return td.SpanCount(), fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
-	}
-	return 0, nil
+	return nil
 }
 
-func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	request := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: pdata.MetricsToOtlp(md),
+func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+	req := internal.MetricsToOtlp(md.InternalRep())
+	if err := e.w.exportMetrics(ctx, req); err != nil {
+		return fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
 	}
-	err := e.w.exportMetrics(ctx, request)
-
-	if err != nil {
-		return md.MetricCount(), fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
-	}
-	return 0, nil
+	return nil
 }
 
-func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) (int, error) {
-	request := &otlplogs.ExportLogsServiceRequest{
-		ResourceLogs: internal.LogsToOtlp(logs.InternalRep()),
+func (e *exporterImp) pushLogData(ctx context.Context, ld pdata.Logs) error {
+	request := internal.LogsToOtlp(ld.InternalRep())
+	if err := e.w.exportLogs(ctx, request); err != nil {
+		return fmt.Errorf("failed to push log data via OTLP exporter: %w", err)
 	}
-	err := e.w.exportLogs(ctx, request)
-
-	if err != nil {
-		return logs.LogRecordCount(), fmt.Errorf("failed to push log data via OTLP exporter: %w", err)
-	}
-	return 0, nil
+	return nil
 }
 
 type grpcSender struct {
@@ -184,7 +167,7 @@ func processError(err error) error {
 
 	if !shouldRetry(st.Code()) {
 		// It is not a retryable error, we should not retry.
-		return errPermanentError
+		return consumererror.Permanent(err)
 	}
 
 	// Need to retry.

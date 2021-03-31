@@ -33,9 +33,10 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
-	otlptraces "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlptraces "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
@@ -157,7 +158,7 @@ func (r *mockMetricsReceiver) Export(
 	req *otlpmetrics.ExportMetricsServiceRequest,
 ) (*otlpmetrics.ExportMetricsServiceResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
-	_, recordCount := pdata.MetricsFromOtlp(req.ResourceMetrics).MetricAndDataPointCount()
+	_, recordCount := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(req)).MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -238,9 +239,7 @@ func TestSendTraces(t *testing.T) {
 	// A trace with 2 spans.
 	td = testdata.GenerateTraceDataTwoSpansSameResource()
 
-	expectedOTLPReq := &otlptraces.ExportTraceServiceRequest{
-		ResourceSpans: testdata.GenerateTraceOtlpSameResourceTwoSpans(),
-	}
+	expectedOTLPReq := internal.TracesToOtlp(td.Clone().InternalRep())
 
 	err = exp.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
@@ -310,9 +309,7 @@ func TestSendMetrics(t *testing.T) {
 	// A trace with 2 spans.
 	md = testdata.GenerateMetricsTwoMetrics()
 
-	expectedOTLPReq := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: testdata.GenerateMetricsOtlpTwoMetrics(),
-	}
+	expectedOTLPReq := internal.MetricsToOtlp(md.Clone().InternalRep())
 
 	err = exp.ConsumeMetrics(context.Background(), md)
 	assert.NoError(t, err)
@@ -450,6 +447,9 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pd
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
+	// Clone the request and store as expected.
+	expectedOTLPReq := internal.TracesToOtlp(td.Clone().InternalRep())
+
 	// Resend the request, this should succeed.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	assert.NoError(t, exp.ConsumeTraces(ctx, td))
@@ -459,10 +459,6 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pd
 	testutil.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
 	}, "receive a request")
-
-	expectedOTLPReq := &otlptraces.ExportTraceServiceRequest{
-		ResourceSpans: testdata.GenerateTraceOtlpSameResourceTwoSpans(),
-	}
 
 	// Verify received span.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
@@ -515,10 +511,7 @@ func TestSendLogData(t *testing.T) {
 
 	// A request with 2 log entries.
 	td = testdata.GenerateLogDataTwoLogsSameResource()
-
-	expectedOTLPReq := &otlplogs.ExportLogsServiceRequest{
-		ResourceLogs: testdata.GenerateLogOtlpSameResourceTwoLogs(),
-	}
+	expectedOTLPReq := internal.LogsToOtlp(td.Clone().InternalRep())
 
 	err = exp.ConsumeLogs(context.Background(), td)
 	assert.NoError(t, err)

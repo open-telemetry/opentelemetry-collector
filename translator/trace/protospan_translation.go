@@ -26,13 +26,6 @@ import (
 
 // Some of the keys used to represent OTLP constructs as tags or annotations in other formats.
 const (
-	AnnotationDescriptionKey = "description"
-
-	MessageEventIDKey               = "message.id"
-	MessageEventTypeKey             = "message.type"
-	MessageEventCompressedSizeKey   = "message.compressed_size"
-	MessageEventUncompressedSizeKey = "message.uncompressed_size"
-
 	TagMessage = "message"
 
 	TagSpanKind = "span.kind"
@@ -46,10 +39,8 @@ const (
 	TagZipkinCensusMsg     = "census.status_description"
 	TagZipkinOpenCensusMsg = "opencensus.status_description"
 
-	TagW3CTraceState          = "w3c.tracestate"
-	TagServiceNameSource      = "otlp.service.name.source"
-	TagInstrumentationName    = "otlp.instrumentation.library.name"
-	TagInstrumentationVersion = "otlp.instrumentation.library.version"
+	TagW3CTraceState     = "w3c.tracestate"
+	TagServiceNameSource = "otlp.service.name.source"
 )
 
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required
@@ -59,7 +50,7 @@ const (
 )
 
 // OpenTracingSpanKind are possible values for TagSpanKind and match the OpenTracing
-// conventions: https://github.com/opentracing/specification/blob/master/semantic_conventions.md
+// conventions: https://github.com/opentracing/specification/blob/main/semantic_conventions.md
 // These values are used for representing span kinds that have no
 // equivalents in OpenCensus format. They are stored as values of TagSpanKind
 type OpenTracingSpanKind string
@@ -298,7 +289,7 @@ func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
 }
 
 // StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#status
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#status
 func StatusCodeFromHTTP(httpStatusCode int) pdata.StatusCode {
 	if httpStatusCode >= 100 && httpStatusCode < 399 {
 		return pdata.StatusCodeUnset

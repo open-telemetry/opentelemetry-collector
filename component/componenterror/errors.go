@@ -12,16 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oterr provides helper functions to create and process
+// Package componenterror provides helper functions to create and process
 // OpenTelemetry specific errors
 package componenterror
 
 import (
 	"errors"
-	"fmt"
-	"strings"
-
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 var (
@@ -34,30 +30,3 @@ var (
 	// ErrNilNextConsumer indicates an error on nil next consumer.
 	ErrNilNextConsumer = errors.New("nil nextConsumer")
 )
-
-// CombineErrors converts a list of errors into one error.
-func CombineErrors(errs []error) error {
-	numErrors := len(errs)
-	if numErrors == 0 {
-		// No errors
-		return nil
-	}
-
-	if numErrors == 1 {
-		return errs[0]
-	}
-
-	errMsgs := make([]string, 0, numErrors)
-	permanent := false
-	for _, err := range errs {
-		if !permanent && consumererror.IsPermanent(err) {
-			permanent = true
-		}
-		errMsgs = append(errMsgs, err.Error())
-	}
-	err := fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
-	if permanent {
-		err = consumererror.Permanent(err)
-	}
-	return err
-}

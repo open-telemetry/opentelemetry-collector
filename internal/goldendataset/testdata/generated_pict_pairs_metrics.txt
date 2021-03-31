@@ -10,9 +10,9 @@ ManyPts	IntGauge	ManyLabels	OneAttr
 ManyPts	NonMonotonicIntSum	ManyLabels	TwoAttrs
 ManyPts	IntHistogram	OneLabel	NoAttrs
 ManyPts	MonotonicIntSum	ManyLabels	NoAttrs
-OnePt	DoubleHistogram	OneLabel	OneAttr
+OnePt	Histogram	OneLabel	OneAttr
 OnePt	NonMonotonicIntSum	NoLabels	NoAttrs
-ManyPts	DoubleHistogram	NoLabels	TwoAttrs
+ManyPts	Histogram	NoLabels	TwoAttrs
 ManyPts	MonotonicDoubleSum	OneLabel	OneAttr
 ManyPts	DoubleGauge	ManyLabels	NoAttrs
 OnePt	MonotonicIntSum	NoLabels	TwoAttrs
@@ -20,7 +20,7 @@ OnePt	IntHistogram	NoLabels	TwoAttrs
 OnePt	MonotonicDoubleSum	ManyLabels	NoAttrs
 ManyPts	DoubleGauge	OneLabel	TwoAttrs
 ManyPts	MonotonicIntSum	OneLabel	OneAttr
-OnePt	DoubleHistogram	ManyLabels	NoAttrs
+OnePt	Histogram	ManyLabels	NoAttrs
 OnePt	NonMonotonicIntSum	OneLabel	OneAttr
 OnePt	NonMonotonicDoubleSum	ManyLabels	NoAttrs
 ManyPts	MonotonicDoubleSum	NoLabels	TwoAttrs

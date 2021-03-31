@@ -34,11 +34,11 @@ import (
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation
 var (
 	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321000, time.UTC)
-	testSpanStartTimestamp = pdata.TimestampUnixNano(testSpanStartTime.UnixNano())
+	testSpanStartTimestamp = pdata.TimestampFromTime(testSpanStartTime)
 	testSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123000, time.UTC)
-	testSpanEventTimestamp = pdata.TimestampUnixNano(testSpanEventTime.UnixNano())
+	testSpanEventTimestamp = pdata.TimestampFromTime(testSpanEventTime)
 	testSpanEndTime        = time.Date(2020, 2, 11, 20, 26, 13, 789000, time.UTC)
-	testSpanEndTimestamp   = pdata.TimestampUnixNano(testSpanEndTime.UnixNano())
+	testSpanEndTimestamp   = pdata.TimestampFromTime(testSpanEndTime)
 )
 
 func TestGetStatusCodeValFromAttr(t *testing.T) {
@@ -274,11 +274,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation2",
 				Tags: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagInstrumentationName,
+						Key:   conventions.InstrumentationLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library2",
 					}, {
-						Key:   tracetranslator.TagInstrumentationVersion,
+						Key:   conventions.InstrumentationLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -291,11 +291,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation1",
 				Tags: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagInstrumentationName,
+						Key:   conventions.InstrumentationLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library1",
 					}, {
-						Key:   tracetranslator.TagInstrumentationVersion,
+						Key:   conventions.InstrumentationLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -627,11 +627,11 @@ func generateProtoSpanWithLibraryInfo(libraryName string) *model.Span {
 	span := generateProtoSpan()
 	span.Tags = append([]model.KeyValue{
 		{
-			Key:   tracetranslator.TagInstrumentationName,
+			Key:   conventions.InstrumentationLibraryName,
 			VType: model.ValueType_STRING,
 			VStr:  libraryName,
 		}, {
-			Key:   tracetranslator.TagInstrumentationVersion,
+			Key:   conventions.InstrumentationLibraryVersion,
 			VType: model.ValueType_STRING,
 			VStr:  "0.42.0",
 		},
@@ -844,8 +844,8 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
 	rs0ils0.Spans().Resize(1)
 	span1 := rs0ils0.Spans().At(0)
-	span1.SetTraceID(pdata.NewTraceID(tracetranslator.UInt64ToByteTraceID(0, 0)))
-	span1.SetSpanID(pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(0)))
+	span1.SetTraceID(tracetranslator.UInt64ToTraceID(0, 0))
+	span1.SetSpanID(tracetranslator.UInt64ToSpanID(0))
 	span1.SetName("operation1")
 	span1.SetStartTime(testSpanStartTimestamp)
 	span1.SetEndTime(testSpanEndTimestamp)

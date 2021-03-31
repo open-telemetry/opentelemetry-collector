@@ -18,20 +18,14 @@ import (
 	"context"
 	"time"
 
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/config"
 )
 
-var (
-	okStatus = trace.Status{Code: trace.StatusCodeOK}
-)
-
-// ComponentSettings for timeout. The timeout applies to individual attempts to send data to the backend.
+// TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
 type TimeoutSettings struct {
 	// Timeout is the timeout for every attempt to send data to the backend.
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -50,16 +44,17 @@ type request interface {
 	context() context.Context
 	// setContext updates the Context of the requests.
 	setContext(context.Context)
-	export(ctx context.Context) (int, error)
-	// Returns a new request that contains the items left to be sent.
-	onPartialError(consumererror.PartialError) request
+	export(ctx context.Context) error
+	// Returns a new request may contain the items left to be sent if some items failed to process and can be retried.
+	// Otherwise, it should return the original request.
+	onError(error) request
 	// Returns the count of spans/metric points or log records.
 	count() int
 }
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
-	send(req request) (int, error)
+	send(req request) error
 }
 
 // baseRequest is a base implementation for the request.
@@ -77,7 +72,7 @@ func (req *baseRequest) setContext(ctx context.Context) {
 
 // baseSettings represents all the options that users can configure.
 type baseSettings struct {
-	*componenthelper.ComponentSettings
+	componentOptions []componenthelper.Option
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
@@ -88,8 +83,7 @@ type baseSettings struct {
 func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		ComponentSettings: componenthelper.DefaultComponentSettings(),
-		TimeoutSettings:   DefaultTimeoutSettings(),
+		TimeoutSettings: DefaultTimeoutSettings(),
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
@@ -107,19 +101,19 @@ func fromOptions(options []Option) *baseSettings {
 // Option apply changes to baseSettings.
 type Option func(*baseSettings)
 
-// WithShutdown overrides the default Shutdown function for an exporter.
-// The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown componenthelper.Shutdown) Option {
-	return func(o *baseSettings) {
-		o.Shutdown = shutdown
-	}
-}
-
 // WithStart overrides the default Start function for an exporter.
 // The default shutdown function does nothing and always returns nil.
 func WithStart(start componenthelper.Start) Option {
 	return func(o *baseSettings) {
-		o.Start = start
+		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
+	}
+}
+
+// WithShutdown overrides the default Shutdown function for an exporter.
+// The default shutdown function does nothing and always returns nil.
+func WithShutdown(shutdown componenthelper.Shutdown) Option {
+	return func(o *baseSettings) {
+		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
 }
 
@@ -158,16 +152,16 @@ func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTel
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.Component
-	cfg                        configmodels.Exporter
+	cfg                        config.Exporter
 	sender                     requestSender
 	qrSender                   *queuedRetrySender
 	convertResourceToTelemetry bool
 }
 
-func newBaseExporter(cfg configmodels.Exporter, logger *zap.Logger, options ...Option) *baseExporter {
+func newBaseExporter(cfg config.Exporter, logger *zap.Logger, options ...Option) *baseExporter {
 	bs := fromOptions(options)
 	be := &baseExporter{
-		Component:                  componenthelper.NewComponent(bs.ComponentSettings),
+		Component:                  componenthelper.New(bs.componentOptions...),
 		cfg:                        cfg,
 		convertResourceToTelemetry: bs.ResourceToTelemetrySettings.Enabled,
 	}
@@ -210,7 +204,7 @@ type timeoutSender struct {
 }
 
 // send implements the requestSender interface
-func (ts *timeoutSender) send(req request) (int, error) {
+func (ts *timeoutSender) send(req request) error {
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
 	ctx := req.context()

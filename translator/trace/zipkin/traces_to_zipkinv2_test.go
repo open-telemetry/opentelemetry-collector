@@ -16,15 +16,12 @@ package zipkin
 
 import (
 	"errors"
-	"io"
-	"math/rand"
 	"testing"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -87,15 +84,11 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 }
 
 func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
-	rscSpans, err := goldendataset.GenerateResourceSpans(
+	tds, err := goldendataset.GenerateTraces(
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
-		io.Reader(rand.New(rand.NewSource(2004))))
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
-	for _, rs := range rscSpans {
-		orig := make([]*otlptrace.ResourceSpans, 1)
-		orig[0] = rs
-		td := pdata.TracesFromOtlp(orig)
+	for _, td := range tds {
 		zipkinSpans, err := InternalTracesToZipkinSpans(td)
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), len(zipkinSpans))

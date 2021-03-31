@@ -19,11 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -38,12 +37,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			TypeVal: "resource",
 			NameVal: "resource",
 		},
 		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
 		},
 	}
 
@@ -70,7 +69,7 @@ func TestInvalidEmptyActions(t *testing.T) {
 func TestInvalidAttributeActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			TypeVal: "resource",
 			NameVal: "resource",
 		},
@@ -84,34 +83,4 @@ func TestInvalidAttributeActions(t *testing.T) {
 
 	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	assert.Error(t, err)
-}
-
-func TestDeprecatedConfig(t *testing.T) {
-	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
-		ResourceType: "host",
-		Labels: map[string]string{
-			"cloud.zone": "zone-1",
-		},
-	}
-
-	handleDeprecatedFields(cfg, zap.NewNop())
-
-	assert.EqualValues(t, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
-		ResourceType: "host",
-		Labels: map[string]string{
-			"cloud.zone": "zone-1",
-		},
-		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "opencensus.resourcetype", Value: "host", Action: processorhelper.UPSERT},
-			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
-		},
-	}, cfg)
 }

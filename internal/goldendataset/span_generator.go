@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/internal/data"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -79,10 +79,10 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 			parentID = data.NewSpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
-			if !traceID.IsValid() {
+			if traceID.IsEmpty() {
 				traceID = generateTraceID(random)
 			}
-			if !parentID.IsValid() {
+			if parentID.IsEmpty() {
 				parentID = generateSpanID(random)
 			}
 		}
@@ -476,33 +476,36 @@ func calculateListSize(listCnt PICTInputSpanChild) int {
 
 func generateSpanEvent(index int) *otlptrace.Span_Event {
 	t := time.Now().Add(-75 * time.Microsecond)
+	name, attributes := generateEventNameAndAttributes(index)
 	return &otlptrace.Span_Event{
 		TimeUnixNano:           uint64(t.UnixNano()),
-		Name:                   "message",
-		Attributes:             generateEventAttributes(index),
+		Name:                   name,
+		Attributes:             attributes,
 		DroppedAttributesCount: 0,
 	}
 }
 
-func generateEventAttributes(index int) []otlpcommon.KeyValue {
-	if index%4 == 2 {
-		return nil
+func generateEventNameAndAttributes(index int) (string, []otlpcommon.KeyValue) {
+	switch index % 4 {
+	case 0, 3:
+		attrMap := make(map[string]interface{})
+		if index%2 == 0 {
+			attrMap[conventions.AttributeMessageType] = "SENT"
+		} else {
+			attrMap[conventions.AttributeMessageType] = "RECEIVED"
+		}
+		attrMap[conventions.AttributeMessageID] = int64(index / 4)
+		attrMap[conventions.AttributeMessageCompressedSize] = int64(17 * index)
+		attrMap[conventions.AttributeMessageUncompressedSize] = int64(24 * index)
+		return "message", convertMapToAttributeKeyValues(attrMap)
+	case 1:
+		return "custom", convertMapToAttributeKeyValues(map[string]interface{}{
+			"app.inretry":  true,
+			"app.progress": 0.6,
+			"app.statemap": "14|5|202"})
+	default:
+		return "annotation", nil
 	}
-	attrMap := make(map[string]interface{})
-	if index%2 == 0 {
-		attrMap[conventions.AttributeMessageType] = "SENT"
-	} else {
-		attrMap[conventions.AttributeMessageType] = "RECEIVED"
-	}
-	attrMap[conventions.AttributeMessageID] = int64(index)
-	attrMap[conventions.AttributeMessageCompressedSize] = int64(17 * index)
-	attrMap[conventions.AttributeMessageUncompressedSize] = int64(24 * index)
-	if index%4 == 1 {
-		attrMap["app.inretry"] = true
-		attrMap["app.progress"] = 0.6
-		attrMap["app.statemap"] = "14|5|202"
-	}
-	return convertMapToAttributeKeyValues(attrMap)
 }
 
 func generateSpanLink(random io.Reader, index int) *otlptrace.Span_Link {

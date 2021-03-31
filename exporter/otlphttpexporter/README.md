@@ -1,7 +1,7 @@
 # OTLP/HTTP Exporter
 
 Exports traces and/or metrics via HTTP using [OTLP](
-https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
+https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format.
 
 *Important: OTLP metrics format is currently marked as "Alpha" and may change in
@@ -32,6 +32,8 @@ The following settings can be optionally configured:
   only be used if `insecure` is set to false.
 - `key_file` path to the TLS key to use for TLS required connections. Should
   only be used if `insecure` is set to false.
+
+- `compression` (default = none): Compression type to use (only gzip is supported today)
 
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.

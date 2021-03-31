@@ -17,7 +17,7 @@ package internal
 var resourceFile = &File{
 	Name: "resource",
 	imports: []string{
-		`otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"`,
+		`otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,

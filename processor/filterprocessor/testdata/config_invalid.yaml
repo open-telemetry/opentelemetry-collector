@@ -1,5 +1,5 @@
 receivers:
-    examplereceiver:
+    nop:
 
 processors:
     filter/include:
@@ -12,15 +12,15 @@ processors:
                     - (\W|^)stock\stips(\W|$
 
 exporters:
-    exampleexporter:
+    nop:
 
 service:
     pipelines:
         traces:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [filter/include]
-            exporters: [exampleexporter]
+            exporters: [nop]
         metrics:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [filter/include]
-            exporters: [exampleexporter]
+            exporters: [nop]

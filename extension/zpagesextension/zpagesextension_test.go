@@ -25,12 +25,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestZPagesExtensionUsage(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	zpagesExt := newServer(config, zap.NewNop())
@@ -42,7 +45,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, zpagesPort, err := net.SplitHostPort(config.Endpoint)
+	_, zpagesPort, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}
@@ -60,7 +63,9 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		Endpoint: endpoint,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: endpoint,
+		},
 	}
 	zpagesExt := newServer(config, zap.NewNop())
 	require.NotNil(t, zpagesExt)
@@ -70,7 +75,9 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestZPagesMultipleStarts(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	zpagesExt := newServer(config, zap.NewNop())
@@ -85,7 +92,9 @@ func TestZPagesMultipleStarts(t *testing.T) {
 
 func TestZPagesMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	zpagesExt := newServer(config, zap.NewNop())
@@ -98,7 +107,9 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 
 func TestZPagesShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	zpagesExt := newServer(config, zap.NewNop())

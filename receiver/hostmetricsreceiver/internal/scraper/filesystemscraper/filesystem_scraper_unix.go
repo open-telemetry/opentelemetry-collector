@@ -18,27 +18,28 @@ package filesystemscraper
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const fileSystemStatesLen = 3
 
-func appendFileSystemUsageStateDataPoints(idps pdata.IntDataPointSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsage *deviceUsage) {
-	initializeFileSystemUsageDataPoint(idps.At(startIdx+0), now, deviceUsage.partition, usedLabelValue, int64(deviceUsage.usage.Used))
-	initializeFileSystemUsageDataPoint(idps.At(startIdx+1), now, deviceUsage.partition, freeLabelValue, int64(deviceUsage.usage.Free))
-	initializeFileSystemUsageDataPoint(idps.At(startIdx+2), now, deviceUsage.partition, reservedLabelValue, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free))
+func appendFileSystemUsageStateDataPoints(idps pdata.IntDataPointSlice, startIdx int, now pdata.Timestamp, deviceUsage *deviceUsage) {
+	initializeFileSystemUsageDataPoint(idps.At(startIdx+0), now, deviceUsage.partition, metadata.LabelFilesystemState.Used, int64(deviceUsage.usage.Used))
+	initializeFileSystemUsageDataPoint(idps.At(startIdx+1), now, deviceUsage.partition, metadata.LabelFilesystemState.Free, int64(deviceUsage.usage.Free))
+	initializeFileSystemUsageDataPoint(idps.At(startIdx+2), now, deviceUsage.partition, metadata.LabelFilesystemState.Reserved, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free))
 }
 
 const systemSpecificMetricsLen = 1
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, now pdata.Timestamp, deviceUsages []*deviceUsage) {
 	metric := metrics.At(startIdx)
-	fileSystemINodesUsageDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemFilesystemInodesUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(deviceUsages))
 	for idx, deviceUsage := range deviceUsages {
 		startIndex := 2 * idx
-		initializeFileSystemUsageDataPoint(idps.At(startIndex+0), now, deviceUsage.partition, usedLabelValue, int64(deviceUsage.usage.InodesUsed))
-		initializeFileSystemUsageDataPoint(idps.At(startIndex+1), now, deviceUsage.partition, freeLabelValue, int64(deviceUsage.usage.InodesFree))
+		initializeFileSystemUsageDataPoint(idps.At(startIndex+0), now, deviceUsage.partition, metadata.LabelFilesystemState.Used, int64(deviceUsage.usage.InodesUsed))
+		initializeFileSystemUsageDataPoint(idps.At(startIndex+1), now, deviceUsage.partition, metadata.LabelFilesystemState.Free, int64(deviceUsage.usage.InodesFree))
 	}
 }

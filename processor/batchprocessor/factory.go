@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -43,9 +43,9 @@ func NewFactory() component.ProcessorFactory {
 		processorhelper.WithLogs(createLogsProcessor))
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -57,8 +57,8 @@ func createDefaultConfig() configmodels.Processor {
 func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 	level := configtelemetry.GetMetricsLevelFlagValue()
@@ -68,8 +68,8 @@ func createTraceProcessor(
 func createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 	level := configtelemetry.GetMetricsLevelFlagValue()
@@ -79,8 +79,8 @@ func createMetricsProcessor(
 func createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
 	level := configtelemetry.GetMetricsLevelFlagValue()

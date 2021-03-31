@@ -26,27 +26,25 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-var nonSpanAttributes = getNonSpanAttributes()
-
-func getNonSpanAttributes() map[string]struct{} {
+var nonSpanAttributes = func() map[string]struct{} {
 	attrs := make(map[string]struct{})
 	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
 		attrs[key] = struct{}{}
 	}
 	attrs[tracetranslator.TagServiceNameSource] = struct{}{}
-	attrs[tracetranslator.TagInstrumentationName] = struct{}{}
-	attrs[tracetranslator.TagInstrumentationVersion] = struct{}{}
+	attrs[conventions.InstrumentationLibraryName] = struct{}{}
+	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
 	attrs[conventions.OCAttributeProcessStartTime] = struct{}{}
 	attrs[conventions.OCAttributeExporterVersion] = struct{}{}
-	attrs[conventions.OCAttributeProcessID] = struct{}{}
+	attrs[conventions.AttributeProcessID] = struct{}{}
 	attrs[conventions.OCAttributeResourceType] = struct{}{}
 	return attrs
-}
+}()
 
 // Custom Sort on
 type byOTLPTypes []*zipkinmodel.SpanModel
@@ -135,9 +133,8 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	dest.SetName(zspan.Name)
-	startNano := zspan.Timestamp.UnixNano()
-	dest.SetStartTime(pdata.TimestampUnixNano(startNano))
-	dest.SetEndTime(pdata.TimestampUnixNano(startNano + zspan.Duration.Nanoseconds()))
+	dest.SetStartTime(pdata.TimestampFromTime(zspan.Timestamp))
+	dest.SetEndTime(pdata.TimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
 	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
 
 	populateSpanStatus(tags, dest.Status())
@@ -162,6 +159,13 @@ func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 		if value, ok := tags[tracetranslator.TagStatusMsg]; ok {
 			status.SetMessage(value)
 			delete(tags, tracetranslator.TagStatusMsg)
+		}
+	}
+
+	if val, ok := tags[tracetranslator.TagError]; ok {
+		if val == "true" {
+			status.SetCode(pdata.StatusCodeError)
+			delete(tags, tracetranslator.TagError)
 		}
 	}
 }
@@ -252,8 +256,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlic
 	events.Resize(len(zspan.Annotations))
 	for ix, anno := range zspan.Annotations {
 		event := events.At(ix)
-		startNano := anno.Timestamp.UnixNano()
-		event.SetTimestamp(pdata.TimestampUnixNano(startNano))
+		event.SetTimestamp(pdata.TimestampFromTime(anno.Timestamp))
 
 		parts := strings.Split(anno.Value, "|")
 		partCnt := len(parts)
@@ -379,8 +382,8 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 	delete(tags, tracetranslator.TagServiceNameSource)
 
-	for key := range getNonSpanAttributes() {
-		if key == tracetranslator.TagInstrumentationName || key == tracetranslator.TagInstrumentationVersion {
+	for key := range nonSpanAttributes {
+		if key == conventions.InstrumentationLibraryName || key == conventions.InstrumentationLibraryVersion {
 			continue
 		}
 		if value, ok := tags[key]; ok {
@@ -394,13 +397,13 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 	if instrLibName == "" {
 		return
 	}
-	if value, ok := tags[tracetranslator.TagInstrumentationName]; ok {
+	if value, ok := tags[conventions.InstrumentationLibraryName]; ok {
 		library.SetName(value)
-		delete(tags, tracetranslator.TagInstrumentationName)
+		delete(tags, conventions.InstrumentationLibraryName)
 	}
-	if value, ok := tags[tracetranslator.TagInstrumentationVersion]; ok {
+	if value, ok := tags[conventions.InstrumentationLibraryVersion]; ok {
 		library.SetVersion(value)
-		delete(tags, tracetranslator.TagInstrumentationVersion)
+		delete(tags, conventions.InstrumentationLibraryVersion)
 	}
 }
 
@@ -423,5 +426,5 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 	if zspan == nil || len(zspan.Tags) == 0 {
 		return ""
 	}
-	return zspan.Tags[tracetranslator.TagInstrumentationName]
+	return zspan.Tags[conventions.InstrumentationLibraryName]
 }

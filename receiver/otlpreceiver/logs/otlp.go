@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
-	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
+	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -32,11 +32,11 @@ const (
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	instanceName string
-	nextConsumer consumer.LogsConsumer
+	nextConsumer consumer.Logs
 }
 
 // New creates a new Receiver reference.
-func New(instanceName string, nextConsumer consumer.LogsConsumer) *Receiver {
+func New(instanceName string, nextConsumer consumer.Logs) *Receiver {
 	r := &Receiver{
 		instanceName: instanceName,
 		nextConsumer: nextConsumer,
@@ -50,11 +50,12 @@ const (
 	receiverTransport = "grpc"
 )
 
+// Export implements the service Export logs func.
 func (r *Receiver) Export(ctx context.Context, req *collectorlog.ExportLogsServiceRequest) (*collectorlog.ExportLogsServiceResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
 
-	ld := pdata.LogsFromInternalRep(internal.LogsFromOtlp(req.ResourceLogs))
+	ld := pdata.LogsFromInternalRep(internal.LogsFromOtlp(req))
 	err := r.sendToNextConsumer(ctxWithReceiverName, ld)
 	if err != nil {
 		return nil, err

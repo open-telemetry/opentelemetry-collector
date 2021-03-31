@@ -62,7 +62,7 @@ service:
 ### zPages
 
 The
-[zpages](https://github.com/open-telemetry/opentelemetry-collector/tree/master/extension/zpagesextension/README.md)
+[zpages](https://github.com/open-telemetry/opentelemetry-collector/tree/main/extension/zpagesextension/README.md)
 extension, which if enabled is exposed locally on port `55679`, can be used to
 check receivers and exporters trace operations via `/debug/tracez`. `zpages`
 may contain error logs that the Collector does not emit.
@@ -80,7 +80,7 @@ extensions:
 ### Local exporters
 
 [Local
-exporters](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#general-information)
+exporters](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#general-information)
 can be configured to inspect the data being processed by the Collector.
 
 For live troubleshooting purposes consider leveraging the `logging` exporter,
@@ -120,7 +120,7 @@ that contains:
       "serviceName": "apip"
     },
     "tags": {
-      "data.http_response_code": "201",
+      "data.http_response_code": "201"
     }
   }
 ]
@@ -168,7 +168,7 @@ Attributes:
 ### Health Check
 
 The
-[health_check](https://github.com/open-telemetry/opentelemetry-collector/tree/master/extension/healthcheckextension/README.md)
+[health_check](https://github.com/open-telemetry/opentelemetry-collector/tree/main/extension/healthcheckextension/README.md)
 extension, which by default is available on all interfaces on port `13133`, can
 be used to ensure the Collector is functioning properly.
 
@@ -188,7 +188,7 @@ It returns a response like the following:
 ### pprof
 
 The
-[pprof](https://github.com/open-telemetry/opentelemetry-collector/tree/master/extension/pprofextension/README.md)
+[pprof](https://github.com/open-telemetry/opentelemetry-collector/tree/main/extension/pprofextension/README.md)
 extension, which by default is available locally on port `1777`, allows you to profile the
 Collector as it runs. This is an advanced use-case that should not be needed in most circumstances.
 
@@ -199,9 +199,9 @@ Collector as it runs. This is an advanced use-case that should not be needed in 
 The Collector may exit/restart because:
 
 - Memory pressure due to missing or misconfigured
-  [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/blob/master/processor/memorylimiter/README.md)
+  [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiter/README.md)
   processor.
-- [Improperly sized](https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/performance.md)
+- [Improperly sized](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md)
   for load.
 - Improperly configured (for example, a queue size configured higher
   than available memory).
@@ -211,13 +211,13 @@ The Collector may exit/restart because:
 
 Data may be dropped for a variety of reasons, but most commonly because of an:
 
-- [Improperly sized Collector](https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/performance.md) resulting in Collector being unable to process and export the data as fast as it is received.
+- [Improperly sized Collector](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md) resulting in Collector being unable to process and export the data as fast as it is received.
 - Exporter destination unavailable or accepting the data too slowly.
 
 To mitigate drops, it is highly recommended to configure the
-[batch](https://github.com/open-telemetry/opentelemetry-collector/blob/master/processor/batchprocessor/README.md)
+[batch](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/batchprocessor/README.md)
 processor. In addition, it may be necessary to configure the [queued retry
-options](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter/exporterhelper#configuration)
+options](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
 on enabled exporters.
 
 ### Receiving data not working
@@ -257,4 +257,12 @@ Check the collector logs as well as `zpages` for potential issues.
 More often than not, exporting data does not work because of a network
 configuration issue. This could be due to a firewall, DNS, or proxy
 issue. Note that the Collector does have
-[proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+[proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+### Startup failing in Windows Docker containers
+
+The process may fail to start in a Windows Docker container with the following
+error: `The service process could not connect to the service controller`. In
+this case the `NO_WINDOWS_SERVICE=1` environment variable should be set to force
+the collector to be started as if it were running in an interactive terminal,
+without attempting to run as a Windows service.

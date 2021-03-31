@@ -23,26 +23,27 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
 // of configmodels.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	configmodels.ReceiverSettings `mapstructure:"squash"`
-	CollectionInterval            time.Duration `mapstructure:"collection_interval"`
+	config.ReceiverSettings `mapstructure:"squash"`
+	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
 }
 
 // DefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func DefaultScraperControllerSettings(cfgType configmodels.Type) ScraperControllerSettings {
+func DefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: string(cfgType),
 			TypeVal: cfgType,
 		},
@@ -89,7 +90,7 @@ type controller struct {
 	name               string
 	logger             *zap.Logger
 	collectionInterval time.Duration
-	nextConsumer       consumer.MetricsConsumer
+	nextConsumer       consumer.Metrics
 
 	metricsScrapers        *multiMetricScraper
 	resourceMetricScrapers []ResourceMetricsScraper
@@ -105,7 +106,7 @@ type controller struct {
 func NewScraperControllerReceiver(
 	cfg *ScraperControllerSettings,
 	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Receiver, error) {
 	if nextConsumer == nil {
@@ -165,7 +166,7 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // startScraping initiates a ticker that calls Scrape based on the configured
@@ -204,7 +205,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 		if err != nil {
 			sc.logger.Error("Error scraping metrics", zap.Error(err))
 
-			if !consumererror.IsPartialScrapeError(err) {
+			if !scrapererror.IsPartialScrapeError(err) {
 				continue
 			}
 		}
@@ -249,7 +250,7 @@ func (mms *multiMetricScraper) Shutdown(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) (pdata.ResourceMetricsSlice, error) {
@@ -260,17 +261,19 @@ func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) 
 	ilms.Resize(1)
 	ilm := ilms.At(0)
 
-	var errs []error
+	var errs scrapererror.ScrapeErrors
 	for _, scraper := range mms.scrapers {
 		metrics, err := scraper.Scrape(ctx, receiverName)
 		if err != nil {
-			errs = append(errs, err)
-			if !consumererror.IsPartialScrapeError(err) {
-				continue
+			partialErr, isPartial := err.(scrapererror.PartialScrapeError)
+			if isPartial {
+				errs.AddPartial(partialErr.Failed, partialErr)
 			}
+
+			continue
 		}
 
 		metrics.MoveAndAppendTo(ilm.Metrics())
 	}
-	return rms, CombineScrapeErrors(errs)
+	return rms, errs.Combine()
 }

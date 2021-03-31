@@ -17,15 +17,15 @@ package internal
 var logFile = &File{
 	Name: "log",
 	imports: []string{
-		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
-		`otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
+		`otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
-		`otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
+		`otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"`,
 	},
 	structs: []baseStruct{
 		resourceLogsSlice,
@@ -88,10 +88,10 @@ var logRecord = &messageValueStruct{
 		&primitiveTypedField{
 			fieldName:       "Timestamp",
 			originFieldName: "TimeUnixNano",
-			returnType:      "TimestampUnixNano",
+			returnType:      "Timestamp",
 			rawType:         "uint64",
-			defaultVal:      "TimestampUnixNano(0)",
-			testVal:         "TimestampUnixNano(1234567890)",
+			defaultVal:      "Timestamp(0)",
+			testVal:         "Timestamp(1234567890)",
 		},
 		traceIDField,
 		spanIDField,

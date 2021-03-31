@@ -19,8 +19,8 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -37,7 +37,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createMetricsExporter(_ context.Context, params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
+	cfg config.Exporter) (component.MetricsExporter, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
@@ -45,13 +45,11 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	}
 
 	client, err := prwCfg.HTTPClientSettings.ToClient()
-
 	if err != nil {
 		return nil, err
 	}
 
 	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels)
-
 	if err != nil {
 		return nil, err
 	}
@@ -69,9 +67,9 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	return prwexp, err
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},

@@ -18,15 +18,15 @@ var traceFile = &File{
 	Name: "trace",
 	imports: []string{
 		`"go.opentelemetry.io/collector/internal/data"`,
-		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
-		`otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"`,
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
+		`otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
-		`otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"`,
+		`otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"`,
 	},
 	structs: []baseStruct{
 		resourceSpansSlice,
@@ -89,7 +89,7 @@ var spanSlice = &sliceOfPtrs{
 var span = &messageValueStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
-		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37",
+		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto#L37",
 	originFullName: "otlptrace.Span",
 	fields: []baseField{
 		traceIDField,
@@ -195,14 +195,6 @@ var spanStatus = &messageValueStruct{
 			// need to also change DeprecatedCode when Code is changed according
 			// to OTLP spec https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231
 			manualSetter: true,
-		},
-		&primitiveTypedField{
-			fieldName:       "DeprecatedCode",
-			originFieldName: "DeprecatedCode",
-			returnType:      "DeprecatedStatusCode",
-			rawType:         "otlptrace.Status_DeprecatedStatusCode",
-			defaultVal:      "DeprecatedStatusCode(0)",
-			testVal:         "DeprecatedStatusCode(1)",
 		},
 		&primitiveField{
 			fieldName:       "Message",

@@ -84,49 +84,18 @@ commands:
     steps:
       - when:
           condition:
-            equal: [master, << pipeline.git.branch >>]
+            equal: [main, << pipeline.git.branch >>]
           steps:
             - run:
                 name: Generate GitHub Issue
                 command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 
-  install_fluentbit:
-    steps:
-      - run: |
-          sudo chmod 0777 -R /opt
-      - restore_cache: # restores saved cache if no changes are detected since last run
-          keys:
-            - "cimg-fluentbit-{{ arch }}-1.5.3"
-      - run: |
-          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
-
-          if [[ -f /opt/td-agent-bit/bin/td-agent-bit ]]; then
-            exit 0
-          fi
-
-          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
-          sudo dpkg -i ./td-agent-bit*.deb
-      - save_cache:
-          key: cimg-fluentbit-{{ arch }}-1.5.3
-          paths:
-            - /opt/td-agent-bit
-
 workflows:
   version: 2
   build-and-test:
     jobs:
-      - windows-test:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - setup-environment:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - lint:
-          requires:
-            - setup-environment
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
@@ -143,6 +112,12 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - correctness:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - correctness-metrics:
           requires:
             - cross-compile
           filters:
@@ -170,11 +145,10 @@ workflows:
           requires:
             - cross-compile
             - correctness
-            - lint
+            - correctness-metrics
             - loadtest
             - test
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -182,11 +156,10 @@ workflows:
           requires:
             - cross-compile
             - correctness
-            - lint
+            - correctness-metrics
             - loadtest
             - test
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -199,23 +172,18 @@ workflows:
           requires:
             - cross-compile
             - correctness
-            - lint
+            - correctness-metrics
             - loadtest
             - test
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
           filters:
             branches:
-              only: master
+              only: main
             tags:
               ignore: /.*/
-      - check-links:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-package:
           name: deb-package
           package_type: deb
@@ -229,18 +197,6 @@ workflows:
           package_type: rpm
           requires:
             - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-  contrib-test:
-    jobs:
-      - setup-environment:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - contribtest:
-          requires:
-            - setup-environment
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
@@ -264,20 +220,6 @@ jobs:
           root: ~/
           paths: go/bin
 
-  lint:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Lint
-          command: make -j4 gochecklicense goimpi golint gomisspell
-      - run:
-          name: Gen Metadata
-          command: make genmdata
-      - run:
-          name: Check generated metadata
-          command: git diff --exit-code || (echo 'Generated code is out of date, please run "make genmdata" and commit the changes in this PR.' && exit 1)
-
   cross-compile:
     executor: golang
     parallelism: 4
@@ -298,7 +240,6 @@ jobs:
     resource_class: medium+
     steps:
       - attach_to_workspace
-      - install_fluentbit
       - run:
           name: Loadtest
           command: TEST_ARGS="-test.run=$(make -s testbed-list-loadtest | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-loadtest
@@ -321,6 +262,16 @@ jobs:
           command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness
       - github_issue_generator
 
+  correctness-metrics:
+    executor: golang
+    parallelism: 4
+    resource_class: medium+
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Metrics correctness tests
+          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness-metrics | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness-metrics
+
   test:
     executor: golang
     environment:
@@ -339,19 +290,6 @@ jobs:
           path: unit-test-results/junit
       - save_module_cache
       - github_issue_generator
-
-  contribtest:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Contrib repo tests
-          command: |
-            contrib_path=/tmp/opentelemetry-collector-contrib
-            git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
-            make CONTRIB_PATH=$contrib_path check-contrib
-
-      - save_module_cache
 
   coverage:
     executor: golang
@@ -414,40 +352,6 @@ jobs:
       - publish_docker_images:
           repo: opentelemetry-collector-dev
           tag: ${CIRCLE_SHA1}
-
-  windows-test:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    environment:
-      GOPATH=~/go
-    steps:
-      - checkout
-      - restore_module_cache
-      - run:
-          name: Upgrade golang
-          command: |
-            choco upgrade golang --version=1.15
-            refreshenv
-      - run:
-          name: Unit tests
-          command: go test ./...
-      - save_module_cache
-      - github_issue_generator
-
-  check-links:
-    docker:
-      - image: circleci/node:9.10
-    steps:
-      - checkout
-      - run:
-          name: Check links in markdown docs
-          command: |
-            pushd $HOME
-            npm install --save-dev markdown-link-check@3.8.1
-            popd
-            export NODE_PATH=$HOME/node_modules
-            bash .circleci/check-links/check-links.sh
 
   windows-msi:
     executor:

@@ -20,24 +20,30 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
+	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 type filterMetricProcessor struct {
-	cfg     *Config
-	include filtermetric.Matcher
-	exclude filtermetric.Matcher
-	logger  *zap.Logger
+	cfg              *Config
+	include          filtermetric.Matcher
+	includeAttribute filtermatcher.AttributesMatcher
+	exclude          filtermetric.Matcher
+	excludeAttribute filtermatcher.AttributesMatcher
+	logger           *zap.Logger
 }
 
 func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
-	inc, err := createMatcher(cfg.Metrics.Include)
+
+	inc, includeAttr, err := createMatcher(cfg.Metrics.Include)
 	if err != nil {
 		return nil, err
 	}
 
-	exc, err := createMatcher(cfg.Metrics.Exclude)
+	exc, excludeAttr, err := createMatcher(cfg.Metrics.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -45,19 +51,23 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	includeMatchType := ""
 	var includeExpressions []string
 	var includeMetricNames []string
+	var includeResourceAttributes []filterconfig.Attribute
 	if cfg.Metrics.Include != nil {
 		includeMatchType = string(cfg.Metrics.Include.MatchType)
 		includeExpressions = cfg.Metrics.Include.Expressions
 		includeMetricNames = cfg.Metrics.Include.MetricNames
+		includeResourceAttributes = cfg.Metrics.Include.ResourceAttributes
 	}
 
 	excludeMatchType := ""
 	var excludeExpressions []string
 	var excludeMetricNames []string
+	var excludeResourceAttributes []filterconfig.Attribute
 	if cfg.Metrics.Exclude != nil {
 		excludeMatchType = string(cfg.Metrics.Exclude.MatchType)
 		excludeExpressions = cfg.Metrics.Exclude.Expressions
 		excludeMetricNames = cfg.Metrics.Exclude.MetricNames
+		excludeResourceAttributes = cfg.Metrics.Exclude.ResourceAttributes
 	}
 
 	logger.Info(
@@ -65,25 +75,42 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.String("include match_type", includeMatchType),
 		zap.Strings("include expressions", includeExpressions),
 		zap.Strings("include metric names", includeMetricNames),
+		zap.Any("include metrics with resource attributes", includeResourceAttributes),
 		zap.String("exclude match_type", excludeMatchType),
 		zap.Strings("exclude expressions", excludeExpressions),
 		zap.Strings("exclude metric names", excludeMetricNames),
+		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
 	)
 
 	return &filterMetricProcessor{
-		cfg:     cfg,
-		include: inc,
-		exclude: exc,
-		logger:  logger,
+		cfg:              cfg,
+		include:          inc,
+		includeAttribute: includeAttr,
+		exclude:          exc,
+		excludeAttribute: excludeAttr,
+		logger:           logger,
 	}, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, error) {
+func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
 	// Nothing specified in configuration
 	if mp == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
-	return filtermetric.NewMatcher(mp)
+	var attributeMatcher filtermatcher.AttributesMatcher
+	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
+		filterset.Config{
+			MatchType:    filterset.MatchType(mp.MatchType),
+			RegexpConfig: mp.RegexpConfig,
+		},
+		mp.ResourceAttributes,
+	)
+	if err != nil {
+		return nil, attributeMatcher, err
+	}
+
+	nameMatcher, err := filtermetric.NewMatcher(mp)
+	return nameMatcher, attributeMatcher, err
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
@@ -91,7 +118,14 @@ func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Me
 	rms := pdm.ResourceMetrics()
 	idx := newMetricIndex()
 	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		rm := rms.At(i)
+
+		keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
+		if !keepMetricsForResource {
+			continue
+		}
+
+		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
@@ -135,4 +169,24 @@ func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) (bool, e
 	}
 
 	return true, nil
+}
+
+func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pdata.Resource) bool {
+	resourceAttributes := resource.Attributes()
+
+	if fmp.include != nil && fmp.includeAttribute != nil {
+		matches := fmp.includeAttribute.Match(resourceAttributes)
+		if !matches {
+			return false
+		}
+	}
+
+	if fmp.exclude != nil && fmp.excludeAttribute != nil {
+		matches := fmp.excludeAttribute.Match(resourceAttributes)
+		if matches {
+			return false
+		}
+	}
+
+	return true
 }

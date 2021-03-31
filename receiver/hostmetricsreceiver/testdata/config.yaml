@@ -14,22 +14,22 @@ receivers:
         include:
           interfaces: ["test1"]
           match_type: "strict"
+      paging:
       processes:
-      swap:
       process:
         include:
           names: ["test2", "test3"]
           match_type: "regexp"
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
       receivers: [hostmetrics]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      processors: [nop]
+      exporters: [nop]

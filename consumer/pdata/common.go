@@ -19,21 +19,12 @@ package pdata
 
 import (
 	"sort"
-	"time"
 
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
 
-// TimestampUnixNano is a time specified as UNIX Epoch time in nanoseconds since
-// 00:00:00 UTC on 1 January 1970.
-type TimestampUnixNano uint64
-
-func (ts TimestampUnixNano) String() string {
-	return time.Unix(0, int64(ts)).String()
-}
-
 // AttributeValueType specifies the type of AttributeValue.
-type AttributeValueType int
+type AttributeValueType int32
 
 const (
 	AttributeValueNULL AttributeValueType = iota
@@ -95,6 +86,7 @@ func NewAttributeValueNull() AttributeValue {
 	return AttributeValue{orig: orig}
 }
 
+// NewAttributeValue is deprecated.
 // Deprecated: Use NewAttributeValueNull()
 func NewAttributeValue() AttributeValue {
 	return NewAttributeValueNull()
@@ -280,6 +272,10 @@ func (a AttributeValue) CopyTo(dest AttributeValue) {
 
 // Equal checks for equality, it returns true if the objects are equal otherwise false.
 func (a AttributeValue) Equal(av AttributeValue) bool {
+	if a.orig == av.orig {
+		return true
+	}
+
 	if a.orig.Value == nil || av.orig.Value == nil {
 		return a.orig.Value == av.orig.Value
 	}
@@ -293,8 +289,30 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 		return v.IntValue == av.orig.GetIntValue()
 	case *otlpcommon.AnyValue_DoubleValue:
 		return v.DoubleValue == av.orig.GetDoubleValue()
+	case *otlpcommon.AnyValue_ArrayValue:
+		vv := v.ArrayValue.GetValues()
+		avv := av.orig.GetArrayValue().GetValues()
+		if len(vv) != len(avv) {
+			return false
+		}
+
+		for i, val := range avv {
+			val := val
+			av := newAttributeValue(&vv[i])
+
+			// According to the specification, array values must be scalar.
+			if avType := av.Type(); avType == AttributeValueARRAY || avType == AttributeValueMAP {
+				return false
+			}
+
+			if !av.Equal(newAttributeValue(&val)) {
+				return false
+			}
+		}
+		return true
 	}
-	// TODO: handle MAP and ARRAY data types.
+
+	// TODO: handle MAP data type
 	return false
 }
 

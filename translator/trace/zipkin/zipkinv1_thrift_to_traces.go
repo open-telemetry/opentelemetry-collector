@@ -23,11 +23,10 @@ import (
 
 func V1ThriftBatchToInternalTraces(zSpans []*zipkincore.Span) (pdata.Traces, error) {
 	traces := pdata.NewTraces()
-
 	ocTraces, _ := v1ThriftBatchToOCProto(zSpans)
 
 	for _, td := range ocTraces {
-		tmp := internaldata.OCToTraceData(td)
+		tmp := internaldata.OCToTraces(td.Node, td.Resource, td.Spans)
 		tmp.ResourceSpans().MoveAndAppendTo(traces.ResourceSpans())
 	}
 	return traces, nil

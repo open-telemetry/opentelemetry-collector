@@ -23,11 +23,10 @@ import (
 	"github.com/shirou/gopsutil/net"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -38,7 +37,7 @@ const (
 // scraper for Network Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime pdata.Timestamp
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -77,35 +76,35 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 	return nil
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	var errors []error
+	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(networkMetricsLen, err)
 	}
 
-	err = s.scrapeAndAppendNetworkTCPConnectionsMetric(metrics)
+	err = s.scrapeAndAppendNetworkConnectionsMetric(metrics)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(connectionsMetricsLen, err)
 	}
 
-	return metrics, scraperhelper.CombineScrapeErrors(errors)
+	return metrics, errors.Combine()
 }
 
-func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
-	now := internal.TimeToUnixNano(time.Now())
+func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp) error {
+	now := pdata.TimestampFromTime(time.Now())
 
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, networkMetricsLen)
+		return err
 	}
 
 	// filter network interfaces by name
@@ -114,81 +113,81 @@ func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice
 	if len(ioCounters) > 0 {
 		startIdx := metrics.Len()
 		metrics.Resize(startIdx + networkMetricsLen)
-		initializeNetworkPacketsMetric(metrics.At(startIdx+0), networkPacketsDescriptor, startTime, now, ioCounters)
-		initializeNetworkDroppedPacketsMetric(metrics.At(startIdx+1), networkDroppedPacketsDescriptor, startTime, now, ioCounters)
-		initializeNetworkErrorsMetric(metrics.At(startIdx+2), networkErrorsDescriptor, startTime, now, ioCounters)
-		initializeNetworkIOMetric(metrics.At(startIdx+3), networkIODescriptor, startTime, now, ioCounters)
+		initializeNetworkPacketsMetric(metrics.At(startIdx+0), metadata.Metrics.SystemNetworkPackets, startTime, now, ioCounters)
+		initializeNetworkDroppedPacketsMetric(metrics.At(startIdx+1), metadata.Metrics.SystemNetworkDropped, startTime, now, ioCounters)
+		initializeNetworkErrorsMetric(metrics.At(startIdx+2), metadata.Metrics.SystemNetworkErrors, startTime, now, ioCounters)
+		initializeNetworkIOMetric(metrics.At(startIdx+3), metadata.Metrics.SystemNetworkIo, startTime, now, ioCounters)
 	}
 
 	return nil
 }
 
-func initializeNetworkPacketsMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
 	for idx, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, transmitDirectionLabelValue, int64(ioCounters.PacketsSent))
-		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, receiveDirectionLabelValue, int64(ioCounters.PacketsRecv))
+		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.PacketsSent))
+		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Receive, int64(ioCounters.PacketsRecv))
 	}
 }
 
-func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
 	for idx, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, transmitDirectionLabelValue, int64(ioCounters.Dropout))
-		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, receiveDirectionLabelValue, int64(ioCounters.Dropin))
+		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.Dropout))
+		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Receive, int64(ioCounters.Dropin))
 	}
 }
 
-func initializeNetworkErrorsMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkErrorsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
 	for idx, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, transmitDirectionLabelValue, int64(ioCounters.Errout))
-		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, receiveDirectionLabelValue, int64(ioCounters.Errin))
+		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.Errout))
+		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Receive, int64(ioCounters.Errin))
 	}
 }
 
-func initializeNetworkIOMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkIOMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
 	for idx, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, transmitDirectionLabelValue, int64(ioCounters.BytesSent))
-		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, receiveDirectionLabelValue, int64(ioCounters.BytesRecv))
+		initializeNetworkDataPoint(idps.At(2*idx+0), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.BytesSent))
+		initializeNetworkDataPoint(idps.At(2*idx+1), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Receive, int64(ioCounters.BytesRecv))
 	}
 }
 
-func initializeNetworkDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, interfaceLabel, directionLabel string, value int64) {
+func initializeNetworkDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, deviceLabel, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(interfaceLabelName, interfaceLabel)
-	labelsMap.Insert(directionLabelName, directionLabel)
+	labelsMap.Insert(metadata.Labels.NetworkDevice, deviceLabel)
+	labelsMap.Insert(metadata.Labels.NetworkDirection, directionLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
 
-func (s *scraper) scrapeAndAppendNetworkTCPConnectionsMetric(metrics pdata.MetricSlice) error {
-	now := internal.TimeToUnixNano(time.Now())
+func (s *scraper) scrapeAndAppendNetworkConnectionsMetric(metrics pdata.MetricSlice) error {
+	now := pdata.TimestampFromTime(time.Now())
 
 	connections, err := s.connections("tcp")
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, connectionsMetricsLen)
+		return err
 	}
 
-	connectionStatusCounts := getTCPConnectionStatusCounts(connections)
+	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + connectionsMetricsLen)
-	initializeNetworkTCPConnectionsMetric(metrics.At(startIdx), now, connectionStatusCounts)
+	initializeNetworkConnectionsMetric(metrics.At(startIdx), now, tcpConnectionStatusCounts)
 	return nil
 }
 
@@ -204,22 +203,23 @@ func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]i
 	return tcpStatuses
 }
 
-func initializeNetworkTCPConnectionsMetric(metric pdata.Metric, now pdata.TimestampUnixNano, connectionStateCounts map[string]int64) {
-	networkTCPConnectionsDescriptor.CopyTo(metric)
+func initializeNetworkConnectionsMetric(metric pdata.Metric, now pdata.Timestamp, connectionStateCounts map[string]int64) {
+	metadata.Metrics.SystemNetworkConnections.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(len(connectionStateCounts))
 
 	i := 0
 	for connectionState, count := range connectionStateCounts {
-		initializeNetworkTCPConnectionsDataPoint(idps.At(i), now, connectionState, count)
+		initializeNetworkConnectionsDataPoint(idps.At(i), now, metadata.LabelNetworkProtocol.Tcp, connectionState, count)
 		i++
 	}
 }
 
-func initializeNetworkTCPConnectionsDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
+func initializeNetworkConnectionsDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, protocolLabel, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(stateLabelName, stateLabel)
+	labelsMap.Insert(metadata.Labels.NetworkProtocol, protocolLabel)
+	labelsMap.Insert(metadata.Labels.NetworkState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

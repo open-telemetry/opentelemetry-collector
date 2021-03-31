@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -62,7 +62,7 @@ type Option func(*baseSettings)
 // The default shutdown function does nothing and always returns nil.
 func WithStart(start componenthelper.Start) Option {
 	return func(o *baseSettings) {
-		o.Start = start
+		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
 	}
 }
 
@@ -70,7 +70,7 @@ func WithStart(start componenthelper.Start) Option {
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown componenthelper.Shutdown) Option {
 	return func(o *baseSettings) {
-		o.Shutdown = shutdown
+		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
 }
 
@@ -83,16 +83,15 @@ func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
 }
 
 type baseSettings struct {
-	*componenthelper.ComponentSettings
-	capabilities component.ProcessorCapabilities
+	componentOptions []componenthelper.Option
+	capabilities     component.ProcessorCapabilities
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
 func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		ComponentSettings: componenthelper.DefaultComponentSettings(),
-		capabilities:      component.ProcessorCapabilities{MutatesConsumedData: true},
+		capabilities: component.ProcessorCapabilities{MutatesConsumedData: true},
 	}
 
 	for _, op := range options {
@@ -114,7 +113,7 @@ type baseProcessor struct {
 func newBaseProcessor(fullName string, options ...Option) baseProcessor {
 	bs := fromOptions(options)
 	be := baseProcessor{
-		Component:    componenthelper.NewComponent(bs.ComponentSettings),
+		Component:    componenthelper.New(bs.componentOptions...),
 		fullName:     fullName,
 		capabilities: bs.capabilities,
 		traceAttributes: []trace.Attribute{
@@ -132,7 +131,7 @@ func (bp *baseProcessor) GetCapabilities() component.ProcessorCapabilities {
 type tracesProcessor struct {
 	baseProcessor
 	processor    TProcessor
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 }
 
 func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -150,8 +149,8 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 // NewTraceProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewTraceProcessor(
-	config configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	config config.Processor,
+	nextConsumer consumer.Traces,
 	processor TProcessor,
 	options ...Option,
 ) (component.TracesProcessor, error) {
@@ -173,7 +172,7 @@ func NewTraceProcessor(
 type metricsProcessor struct {
 	baseProcessor
 	processor    MProcessor
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 }
 
 func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -194,8 +193,8 @@ func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics
 // NewMetricsProcessor creates a MetricsProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewMetricsProcessor(
-	config configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	config config.Processor,
+	nextConsumer consumer.Metrics,
 	processor MProcessor,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
@@ -217,7 +216,7 @@ func NewMetricsProcessor(
 type logProcessor struct {
 	baseProcessor
 	processor    LProcessor
-	nextConsumer consumer.LogsConsumer
+	nextConsumer consumer.Logs
 }
 
 func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
@@ -235,8 +234,8 @@ func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 // NewLogsProcessor creates a LogsProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewLogsProcessor(
-	config configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	config config.Processor,
+	nextConsumer consumer.Logs,
 	processor LProcessor,
 	options ...Option,
 ) (component.LogsProcessor, error) {

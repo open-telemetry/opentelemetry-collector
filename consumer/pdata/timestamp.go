@@ -16,37 +16,23 @@ package pdata
 
 import (
 	"time"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TimestampToUnixNano(ts *timestamppb.Timestamp) (t TimestampUnixNano) {
-	if ts == nil {
-		return
-	}
-	return TimestampUnixNano(uint64(ts.AsTime().UnixNano()))
+// Timestamp is a time specified as UNIX Epoch time in nanoseconds since
+// 00:00:00 UTC on 1 January 1970.
+type Timestamp uint64
+
+// TimestampFromTime constructs a new Timestamp from the provided time.Time.
+func TimestampFromTime(t time.Time) Timestamp {
+	return Timestamp(uint64(t.UnixNano()))
 }
 
-func UnixNanoToTimestamp(u TimestampUnixNano) *timestamppb.Timestamp {
-	// 0 is a special case and want to make sure we return nil.
-	if u == 0 {
-		return nil
-	}
-	return timestamppb.New(UnixNanoToTime(u))
+// AsTime converts this to a time.Time.
+func (ts Timestamp) AsTime() time.Time {
+	return time.Unix(0, int64(ts)).UTC()
 }
 
-func UnixNanoToTime(u TimestampUnixNano) time.Time {
-	// 0 is a special case and want to make sure we return a time that IsZero() returns true.
-	if u == 0 {
-		return time.Time{}
-	}
-	return time.Unix(0, int64(u)).UTC()
-}
-
-func TimeToUnixNano(t time.Time) TimestampUnixNano {
-	// 0 is a special case and want to make sure we return zero timestamp to support inverse function for UnixNanoToTime
-	if t.IsZero() {
-		return 0
-	}
-	return TimestampUnixNano(uint64(t.UnixNano()))
+// String returns the string representation of this in UTC.
+func (ts Timestamp) String() string {
+	return ts.AsTime().String()
 }

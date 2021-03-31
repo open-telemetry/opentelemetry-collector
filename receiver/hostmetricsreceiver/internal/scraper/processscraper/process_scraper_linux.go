@@ -20,19 +20,20 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const cpuStatesLen = 3
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.At(0), startTime, now, cpuTime.User, userStateLabelValue)
-	initializeCPUTimeDataPoint(ddps.At(1), startTime, now, cpuTime.System, systemStateLabelValue)
-	initializeCPUTimeDataPoint(ddps.At(2), startTime, now, cpuTime.Iowait, waitStateLabelValue)
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat) {
+	initializeCPUTimeDataPoint(ddps.At(0), startTime, now, cpuTime.User, metadata.LabelProcessState.User)
+	initializeCPUTimeDataPoint(ddps.At(1), startTime, now, cpuTime.System, metadata.LabelProcessState.System)
+	initializeCPUTimeDataPoint(ddps.At(2), startTime, now, cpuTime.Iowait, metadata.LabelProcessState.Wait)
 }
 
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.TimestampUnixNano, value float64, stateLabel string) {
+func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(stateLabelName, stateLabel)
+	labelsMap.Insert(metadata.Labels.ProcessState, stateLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)

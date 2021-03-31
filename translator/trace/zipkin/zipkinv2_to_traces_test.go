@@ -57,6 +57,12 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 			td:   generateTraceSingleSpanMinmalResource(),
 			err:  nil,
 		},
+		{
+			name: "errorTag",
+			zs:   generateSpanErrorTags(),
+			td:   generateTraceSingleSpanErrorStatus(),
+			err:  nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -101,6 +107,15 @@ func generateSpanNoTags() []*zipkinmodel.SpanModel {
 	return spans
 }
 
+func generateSpanErrorTags() []*zipkinmodel.SpanModel {
+	errorTags := make(map[string]string)
+	errorTags["error"] = "true"
+
+	spans := generateSpanNoEndpoints()
+	spans[0].Tags = errorTags
+	return spans
+}
+
 func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
@@ -126,5 +141,25 @@ func generateTraceSingleSpanMinmalResource() pdata.Traces {
 	rsc := rs.Resource()
 	rsc.Attributes().InitEmptyWithCapacity(1)
 	rsc.Attributes().UpsertString(conventions.AttributeServiceName, "SoleAttr")
+	return td
+}
+
+func generateTraceSingleSpanErrorStatus() pdata.Traces {
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	rs := td.ResourceSpans().At(0)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(
+		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
+	span.SetName("MinimalData")
+	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetStartTime(1596911098294000000)
+	span.SetEndTime(1596911098295000000)
+	span.Attributes().InitEmptyWithCapacity(0)
+	span.Status().SetCode(pdata.StatusCodeError)
 	return td
 }

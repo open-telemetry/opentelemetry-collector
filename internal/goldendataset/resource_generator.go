@@ -15,8 +15,8 @@
 package goldendataset
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -134,7 +134,7 @@ func generateCloudK8sAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeCloudProvider] = "aws"
 	attrMap[conventions.AttributeCloudAccount] = "12345678901"
 	attrMap[conventions.AttributeCloudRegion] = "us-east-1"
-	attrMap[conventions.AttributeCloudZone] = "us-east-1c"
+	attrMap[conventions.AttributeCloudAvailabilityZone] = "us-east-1c"
 	return attrMap
 }
 
@@ -146,7 +146,7 @@ func generateFassAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeCloudProvider] = "gcp"
 	attrMap[conventions.AttributeCloudAccount] = "opentelemetry"
 	attrMap[conventions.AttributeCloudRegion] = "us-central1"
-	attrMap[conventions.AttributeCloudZone] = "us-central1-a"
+	attrMap[conventions.AttributeCloudAvailabilityZone] = "us-central1-a"
 	return attrMap
 }
 
