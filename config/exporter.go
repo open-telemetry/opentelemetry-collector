@@ -24,9 +24,15 @@ type Exporters map[string]Exporter
 
 // ExporterSettings defines common settings for an exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
+// When embedded in the exporter config it must be with `mapstructure:"-"` tag.
 type ExporterSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
+}
+
+// NewExporterSettings return a new ExporterSettings with the given type.
+func NewExporterSettings(typeVal Type) *ExporterSettings {
+	return &ExporterSettings{TypeVal: typeVal, NameVal: string(typeVal)}
 }
 
 var _ Exporter = (*ExporterSettings)(nil)

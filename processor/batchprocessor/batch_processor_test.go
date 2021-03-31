@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -227,8 +228,9 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
-		SendBatchSize: 1000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           3 * time.Second,
+		SendBatchSize:     1000,
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -253,8 +255,9 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       200 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           200 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -304,8 +307,9 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -360,8 +364,9 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 
 func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 100,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     100,
 	}
 	requestCount := 5
 	metricsPerRequest := 10
@@ -407,8 +412,9 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
-		SendBatchSize: 1000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           3 * time.Second,
+		SendBatchSize:     1000,
 	}
 	requestCount := 5
 	metricsPerRequest := 10
@@ -491,8 +497,9 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       200 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           200 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -542,8 +549,9 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -598,8 +606,9 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 100,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     100,
 	}
 	requestCount := 5
 	logsPerRequest := 10
@@ -645,8 +654,9 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
-		SendBatchSize: 1000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           3 * time.Second,
+		SendBatchSize:     1000,
 	}
 	requestCount := 5
 	logsPerRequest := 10

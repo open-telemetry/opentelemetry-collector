@@ -20,7 +20,7 @@ import (
 
 // Config has the configuration guiding the trace sampler processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 	// SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
 	// Values greater or equal 100 are treated as "sample all traces".
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`

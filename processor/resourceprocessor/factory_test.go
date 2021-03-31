@@ -37,10 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
 		AttributesActions: []processorhelper.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
 		},
@@ -69,10 +66,7 @@ func TestInvalidEmptyActions(t *testing.T) {
 func TestInvalidAttributeActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
 		AttributesActions: []processorhelper.ActionKeyValue{
 			{Key: "k", Value: "v", Action: "invalid-action"},
 		},

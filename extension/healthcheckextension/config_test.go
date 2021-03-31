@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions["health_check/1"]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.ExtensionSettings{
+			ExtensionSettings: &config.ExtensionSettings{
 				TypeVal: "health_check",
 				NameVal: "health_check/1",
 			},

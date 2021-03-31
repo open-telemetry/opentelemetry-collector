@@ -45,12 +45,9 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		SendBatchSize: defaultSendBatchSize,
-		Timeout:       defaultTimeout,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		SendBatchSize:     defaultSendBatchSize,
+		Timeout:           defaultTimeout,
 	}
 }
 

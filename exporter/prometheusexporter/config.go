@@ -24,7 +24,7 @@ import (
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 
 	// The address on which the Prometheus scrape handler will be run on.
 	Endpoint string `mapstructure:"endpoint"`

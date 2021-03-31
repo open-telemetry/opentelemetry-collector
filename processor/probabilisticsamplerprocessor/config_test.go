@@ -41,10 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	p0 := cfg.Processors["probabilistic_sampler"]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: "probabilistic_sampler",
-				NameVal: "probabilistic_sampler",
-			},
+			ProcessorSettings:  config.NewProcessorSettings(typeStr),
 			SamplingPercentage: 15.3,
 			HashSeed:           22,
 		})

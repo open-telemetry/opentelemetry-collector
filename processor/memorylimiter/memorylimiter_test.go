@@ -119,10 +119,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		},
 		consumertest.NewMetricsNop(),
 		ml,
@@ -193,10 +190,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	}
 	tp, err := processorhelper.NewTraceProcessor(
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		},
 		consumertest.NewTracesNop(),
 		ml,
@@ -267,10 +261,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		},
 		consumertest.NewLogsNop(),
 		ml,
