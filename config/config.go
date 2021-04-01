@@ -170,7 +170,7 @@ type validatable interface {
 	Validate() error
 }
 
-// Unmarshable defines the interface for the configuration unmarshaling.
+// Unmarshable defines the optional interface for the configuration unmarshaling.
 type Unmarshable interface {
 	// Unmarshal is a function that un-marshals a viper data into the Unmarshable struct in a custom way.
 	// componentViperSection *viper.Viper
