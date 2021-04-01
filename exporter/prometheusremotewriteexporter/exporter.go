@@ -324,6 +324,7 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
+	defer resp.Body.Close()
 
 	// 2xx status code is considered a success
 	// 5xx errors are recoverable and the exporter should retry
