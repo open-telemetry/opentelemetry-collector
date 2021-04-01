@@ -146,7 +146,7 @@ issues:
   # See the list of default excludes here https://golangci-lint.run/usage/configuration.
   include:
     - EXC0001
-    # - EXC0002 - TODO: Enable this
+    - EXC0002
     - EXC0003
     - EXC0004
     - EXC0005
