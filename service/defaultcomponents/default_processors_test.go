@@ -156,18 +156,18 @@ type createProcessorFn func(
 
 func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
 	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateLogsProcessor(ctx, params, cfg, consumertest.NewLogsNop())
+		return factory.CreateLogsProcessor(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
 	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateMetricsProcessor(ctx, params, cfg, consumertest.NewMetricsNop())
+		return factory.CreateMetricsProcessor(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
 	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateTracesProcessor(ctx, params, cfg, consumertest.NewTracesNop())
+		return factory.CreateTracesProcessor(ctx, params, cfg, consumertest.NewNop())
 	}
 }

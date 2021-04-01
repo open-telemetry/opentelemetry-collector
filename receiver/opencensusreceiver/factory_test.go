@@ -111,7 +111,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr, err := createTraceReceiver(ctx, params, tt.cfg, consumertest.NewTracesNop())
+			tr, err := createTraceReceiver(ctx, params, tt.cfg, consumertest.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTracesReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -187,7 +187,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tc, err := createMetricsReceiver(context.Background(), params, tt.cfg, consumertest.NewMetricsNop())
+			tc, err := createMetricsReceiver(context.Background(), params, tt.cfg, consumertest.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return

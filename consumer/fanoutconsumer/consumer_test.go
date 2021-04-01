@@ -27,7 +27,7 @@ import (
 )
 
 func TestTracesProcessorNotMultiplexing(t *testing.T) {
-	nop := consumertest.NewTracesNop()
+	nop := consumertest.NewNop()
 	tfc := NewTraces([]consumer.Traces{nop})
 	assert.Same(t, nop, tfc)
 }
@@ -65,7 +65,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	// Make one processor return error
-	processors[1] = consumertest.NewTracesErr(errors.New("my error"))
+	processors[1] = consumertest.NewErr(errors.New("my error"))
 
 	tfc := NewTraces(processors)
 	td := testdata.GenerateTraceDataOneSpan()
@@ -81,7 +81,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestMetricsProcessorNotMultiplexing(t *testing.T) {
-	nop := consumertest.NewMetricsNop()
+	nop := consumertest.NewNop()
 	mfc := NewMetrics([]consumer.Metrics{nop})
 	assert.Same(t, nop, mfc)
 }
@@ -119,7 +119,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	// Make one processor return error
-	processors[1] = consumertest.NewMetricsErr(errors.New("my error"))
+	processors[1] = consumertest.NewErr(errors.New("my error"))
 
 	mfc := NewMetrics(processors)
 	md := testdata.GenerateMetricsOneMetric()
@@ -135,7 +135,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestLogsProcessorNotMultiplexing(t *testing.T) {
-	nop := consumertest.NewLogsNop()
+	nop := consumertest.NewNop()
 	lfc := NewLogs([]consumer.Logs{nop})
 	assert.Same(t, nop, lfc)
 }
@@ -173,7 +173,7 @@ func TestLogsProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	// Make one processor return error
-	processors[1] = consumertest.NewLogsErr(errors.New("my error"))
+	processors[1] = consumertest.NewErr(errors.New("my error"))
 
 	lfc := NewLogs(processors)
 	ld := testdata.GenerateLogDataOneLog()

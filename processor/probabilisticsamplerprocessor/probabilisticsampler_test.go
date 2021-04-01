@@ -45,23 +45,23 @@ func TestNewTraceProcessor(t *testing.T) {
 		},
 		{
 			name:         "happy_path",
-			nextConsumer: consumertest.NewTracesNop(),
+			nextConsumer: consumertest.NewNop(),
 			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: consumertest.NewTracesNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
 			name:         "happy_path_hash_seed",
-			nextConsumer: consumertest.NewTracesNop(),
+			nextConsumer: consumertest.NewNop(),
 			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: consumertest.NewTracesNop(),
+				nextConsumer: consumertest.NewNop(),
 				hashSeed:     4321,
 			},
 		},

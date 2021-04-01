@@ -80,7 +80,7 @@ func TestTraceInvalidUrl(t *testing.T) {
 func TestTraceError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	startTraceReceiver(t, addr, consumertest.NewTracesErr(errors.New("my_error")))
+	startTraceReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
 	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 
 	td := testdata.GenerateTraceDataOneSpan()
@@ -188,7 +188,7 @@ func TestCompressionOptions(t *testing.T) {
 func TestMetricsError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	startMetricsReceiver(t, addr, consumertest.NewMetricsErr(errors.New("my_error")))
+	startMetricsReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
 	exp := startMetricsExporter(t, "", fmt.Sprintf("http://%s/v1/metrics", addr))
 
 	md := testdata.GenerateMetricsOneMetric()
@@ -241,7 +241,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 func TestLogsError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	startLogsReceiver(t, addr, consumertest.NewLogsErr(errors.New("my_error")))
+	startLogsReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
 	exp := startLogsExporter(t, "", fmt.Sprintf("http://%s/v1/logs", addr))
 
 	md := testdata.GenerateLogDataOneLog()
