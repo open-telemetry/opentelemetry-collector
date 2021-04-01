@@ -162,7 +162,7 @@ otelcol:
 
 .PHONY: run
 run:
-	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG}
+	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
