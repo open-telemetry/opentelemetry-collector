@@ -15,11 +15,20 @@
 package otlpreceiver
 
 import (
-	"github.com/spf13/viper"
+	"fmt"
+
+	"github.com/spf13/cast"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+)
+
+const (
+	// Protocol values.
+	protoGRPC          = "grpc"
+	protoHTTP          = "http"
+	protocolsFieldName = "protocols"
 )
 
 type Protocols struct {
@@ -43,7 +52,43 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-// Unmarshal a viper data into the config struct
-func (cfg *Config) Unmarshal(componentViperSection *viper.Viper) error {
-	return customUnmarshaler(componentViperSection, cfg)
+// Unmarshal a config.Parser into the config struct.
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
+		return fmt.Errorf("empty config for OTLP receiver")
+	}
+	// first load the config normally
+	err := componentParser.UnmarshalExact(cfg)
+	if err != nil {
+		return err
+	}
+
+	// next manually search for protocols in viper, if a protocol is not present it means it is disable.
+	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
+
+	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
+	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
+	// include only known protocols.
+	knownProtocols := 0
+	if _, ok := protocols[protoGRPC]; !ok {
+		cfg.GRPC = nil
+	} else {
+		knownProtocols++
+	}
+
+	if _, ok := protocols[protoHTTP]; !ok {
+		cfg.HTTP = nil
+	} else {
+		knownProtocols++
+	}
+
+	if len(protocols) != knownProtocols {
+		return fmt.Errorf("unknown protocols in the OTLP receiver")
+	}
+
+	if cfg.GRPC == nil && cfg.HTTP == nil {
+		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
+	}
+
+	return nil
 }

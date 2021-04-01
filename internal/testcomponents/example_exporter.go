@@ -17,8 +17,6 @@ package testcomponents
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,8 +36,8 @@ type ExampleExporter struct {
 }
 
 // Unmarshal a viper data into the config struct
-func (cfg *ExampleExporter) Unmarshal(componentViperSection *viper.Viper) error {
-	return componentViperSection.UnmarshalExact(cfg)
+func (cfg *ExampleExporter) Unmarshal(componentParser *config.Parser) error {
+	return componentParser.UnmarshalExact(cfg)
 }
 
 const expType = "exampleexporter"

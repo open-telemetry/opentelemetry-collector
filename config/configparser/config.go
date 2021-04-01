@@ -531,7 +531,7 @@ func expandEnv(s string) string {
 
 func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.Unmarshable); ok {
-		return cu.Unmarshal(componentSection.Viper())
+		return cu.Unmarshal(componentSection)
 	}
 
 	return componentSection.UnmarshalExact(intoCfg)

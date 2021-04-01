@@ -32,8 +32,6 @@ package config
 import (
 	"errors"
 	"fmt"
-
-	"github.com/spf13/viper"
 )
 
 var (
@@ -172,10 +170,10 @@ type validatable interface {
 
 // Unmarshable defines the optional interface for the configuration unmarshaling.
 type Unmarshable interface {
-	// Unmarshal is a function that un-marshals a viper data into the Unmarshable struct in a custom way.
-	// componentViperSection *viper.Viper
+	// Unmarshal is a function that un-marshals a Parser into the Unmarshable struct in a custom way.
+	// componentSection *Parser
 	//   The config for this specific component. May be nil or empty if no config available.
-	Unmarshal(componentViperSection *viper.Viper) error
+	Unmarshal(componentSection *Parser) error
 }
 
 // DataType is the data type that is supported for collection. We currently support
