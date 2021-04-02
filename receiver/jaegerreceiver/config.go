@@ -82,7 +82,7 @@ type Config struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
-var _ config.Unmarshable = (*Config)(nil)
+var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

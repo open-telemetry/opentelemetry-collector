@@ -536,7 +536,7 @@ func expandEnv(s string) string {
 
 // deprecatedUnmarshaler interface is a deprecated optional interface that if implemented by a Factory,
 // the configuration loading system will use to unmarshal the config.
-// Use config.Unmarshable instead.
+// Implement config.CustomUnmarshable on the configuration struct instead.
 type deprecatedUnmarshaler interface {
 	// Unmarshal is a function that un-marshals a viper data into a config struct in a custom way.
 	// componentViperSection *viper.Viper
@@ -547,7 +547,7 @@ type deprecatedUnmarshaler interface {
 }
 
 func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
-	if cu, ok := intoCfg.(config.Unmarshable); ok {
+	if cu, ok := intoCfg.(config.CustomUnmarshable); ok {
 		return cu.Unmarshal(componentSection)
 	}
 

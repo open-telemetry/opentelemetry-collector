@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-var _ config.Unmarshable = (*ExampleExporter)(nil)
+var _ config.CustomUnmarshable = (*ExampleExporter)(nil)
 
 // ExampleExporter is for testing purposes. We are defining an example config and factory
 // for "exampleexporter" exporter type.
