@@ -72,5 +72,5 @@ func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusC
 
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(statusCode)
-	w.Write(msg)
+	w.Write(msg) // nolint:errcheck
 }

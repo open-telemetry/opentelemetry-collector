@@ -61,7 +61,7 @@ func sha1Hasher(attr pdata.AttributeValue) {
 	if len(val) > 0 {
 		// #nosec
 		h := sha1.New()
-		h.Write(val)
+		h.Write(val) // nolint: errcheck
 		val = h.Sum(nil)
 		hashedBytes := make([]byte, hex.EncodedLen(len(val)))
 		hex.Encode(hashedBytes, val)

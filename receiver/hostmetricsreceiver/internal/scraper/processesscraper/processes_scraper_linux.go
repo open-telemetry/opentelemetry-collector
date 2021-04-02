@@ -25,9 +25,8 @@ import (
 
 const unixSystemSpecificMetricsLen = 1
 
-func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.Timestamp, misc *load.MiscStat) error {
+func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.Timestamp, misc *load.MiscStat) {
 	initializeProcessesCreatedMetric(metrics.At(startIndex), now, misc)
-	return nil
 }
 
 func initializeProcessesCreatedMetric(metric pdata.Metric, now pdata.Timestamp, misc *load.MiscStat) {
