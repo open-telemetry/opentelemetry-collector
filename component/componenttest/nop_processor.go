@@ -25,7 +25,9 @@ import (
 )
 
 // nopProcessorFactory is factory for nopProcessor.
-type nopProcessorFactory struct{}
+type nopProcessorFactory struct {
+	component.BaseProcessorFactory
+}
 
 var nopProcessorFactoryInstance = &nopProcessorFactory{}
 

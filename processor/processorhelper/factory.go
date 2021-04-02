@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -41,10 +40,11 @@ type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParam
 type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Logs) (component.LogsProcessor, error)
 
 type factory struct {
+	component.BaseProcessorFactory
 	cfgType                config.Type
 	customUnmarshaler      component.CustomUnmarshaler
 	createDefaultConfig    CreateDefaultConfig
-	createTraceProcessor   CreateTraceProcessor
+	createTracesProcessor  CreateTraceProcessor
 	createMetricsProcessor CreateMetricsProcessor
 	createLogsProcessor    CreateLogsProcessor
 }
@@ -59,7 +59,7 @@ func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) Factor
 // WithTraces overrides the default "error not supported" implementation for CreateTraceProcessor.
 func WithTraces(createTraceProcessor CreateTraceProcessor) FactoryOption {
 	return func(o *factory) {
-		o.createTraceProcessor = createTraceProcessor
+		o.createTracesProcessor = createTraceProcessor
 	}
 }
 
@@ -115,10 +115,10 @@ func (f *factory) CreateTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	if f.createTraceProcessor != nil {
-		return f.createTraceProcessor(ctx, params, cfg, nextConsumer)
+	if f.createTracesProcessor == nil {
+		return f.BaseProcessorFactory.CreateTracesProcessor(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return f.createTracesProcessor(ctx, params, cfg, nextConsumer)
 }
 
 // CreateMetricsProcessor creates a component.MetricsProcessor based on this config.
@@ -128,10 +128,10 @@ func (f *factory) CreateMetricsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	if f.createMetricsProcessor != nil {
-		return f.createMetricsProcessor(ctx, params, cfg, nextConsumer)
+	if f.createMetricsProcessor == nil {
+		return f.BaseProcessorFactory.CreateMetricsProcessor(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return f.createMetricsProcessor(ctx, params, cfg, nextConsumer)
 }
 
 // CreateLogsProcessor creates a component.LogsProcessor based on this config.
@@ -141,10 +141,10 @@ func (f *factory) CreateLogsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	if f.createLogsProcessor != nil {
-		return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
+	if f.createLogsProcessor == nil {
+		return f.BaseProcessorFactory.CreateLogsProcessor(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
 }
 
 var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
