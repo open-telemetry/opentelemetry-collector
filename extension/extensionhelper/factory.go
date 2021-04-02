@@ -17,6 +17,8 @@ package extensionhelper
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
@@ -32,8 +34,16 @@ type CreateServiceExtension func(context.Context, component.ExtensionCreateParam
 
 type factory struct {
 	cfgType                config.Type
+	customUnmarshaler      component.CustomUnmarshaler
 	createDefaultConfig    CreateDefaultConfig
 	createServiceExtension CreateServiceExtension
+}
+
+// WithCustomUnmarshaler implements component.DeprecatedUnmarshaler.
+func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
+	return func(o *factory) {
+		o.customUnmarshaler = customUnmarshaler
+	}
 }
 
 // NewFactory returns a component.ExtensionFactory.
@@ -50,7 +60,13 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	return f
+	var ret component.ExtensionFactory
+	if f.customUnmarshaler != nil {
+		ret = &factoryWithUnmarshaler{f}
+	} else {
+		ret = f
+	}
+	return ret
 }
 
 // Type gets the type of the Extension config created by this factory.
@@ -69,4 +85,15 @@ func (f *factory) CreateExtension(
 	params component.ExtensionCreateParams,
 	cfg config.Extension) (component.Extension, error) {
 	return f.createServiceExtension(ctx, params, cfg)
+}
+
+var _ component.DeprecatedUnmarshaler = (*factoryWithUnmarshaler)(nil)
+
+type factoryWithUnmarshaler struct {
+	*factory
+}
+
+// Unmarshal un-marshals the config using the provided custom unmarshaler.
+func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

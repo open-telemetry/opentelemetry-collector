@@ -17,6 +17,8 @@ package processorhelper
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
@@ -40,10 +42,18 @@ type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, 
 
 type factory struct {
 	cfgType                config.Type
+	customUnmarshaler      component.CustomUnmarshaler
 	createDefaultConfig    CreateDefaultConfig
 	createTraceProcessor   CreateTraceProcessor
 	createMetricsProcessor CreateMetricsProcessor
 	createLogsProcessor    CreateLogsProcessor
+}
+
+// WithCustomUnmarshaler implements component.DeprecatedUnmarshaler.
+func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
+	return func(o *factory) {
+		o.customUnmarshaler = customUnmarshaler
+	}
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraceProcessor.
@@ -79,7 +89,13 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	return f
+	var ret component.ProcessorFactory
+	if f.customUnmarshaler != nil {
+		ret = &factoryWithUnmarshaler{f}
+	} else {
+		ret = f
+	}
+	return ret
 }
 
 // Type gets the type of the Processor config created by this factory.
@@ -129,4 +145,15 @@ func (f *factory) CreateLogsProcessor(
 		return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+var _ component.DeprecatedUnmarshaler = (*factoryWithUnmarshaler)(nil)
+
+type factoryWithUnmarshaler struct {
+	*factory
+}
+
+// Unmarshal un-marshals the config using the provided custom unmarshaler.
+func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

@@ -16,8 +16,10 @@ package exporterhelper
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -51,6 +53,8 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+	_, ok := factory.(component.DeprecatedUnmarshaler)
+	assert.False(t, ok)
 	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
@@ -65,9 +69,14 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 		defaultConfig,
 		WithTraces(createTraceExporter),
 		WithMetrics(createMetricsExporter),
-		WithLogs(createLogsExporter))
+		WithLogs(createLogsExporter),
+		WithCustomUnmarshaler(customUnmarshaler))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+
+	fu, ok := factory.(component.DeprecatedUnmarshaler)
+	assert.True(t, ok)
+	assert.Equal(t, errors.New("my error"), fu.Unmarshal(nil, nil))
 
 	te, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
 	assert.NoError(t, err)
@@ -96,4 +105,8 @@ func createMetricsExporter(context.Context, component.ExporterCreateParams, conf
 
 func createLogsExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.LogsExporter, error) {
 	return nopLogsExporter, nil
+}
+
+func customUnmarshaler(*viper.Viper, interface{}) error {
+	return errors.New("my error")
 }
