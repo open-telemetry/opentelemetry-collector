@@ -541,7 +541,7 @@ func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 
-// unmarshaler returns an unmarshaling function. It should be removed when deprecatedUnmarshaler is removed.
+// unmarshaler returns an unmarshaling function. It should be removed when config.DeprecatedUnmarshaler is removed.
 func unmarshaler(factory component.Factory) func(componentViperSection *config.Parser, intoCfg interface{}) error {
 	if fu, ok := factory.(component.DeprecatedUnmarshaler); ok {
 		return func(componentParser *config.Parser, intoCfg interface{}) error {
