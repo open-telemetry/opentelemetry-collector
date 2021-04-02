@@ -70,6 +70,7 @@ func WithLogs(createLogsExporter CreateLogsExporter) FactoryOption {
 }
 
 // WithCustomUnmarshaler implements component.DeprecatedUnmarshaler.
+// Deprecated, use config.Unmarshal instead.
 func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {
 		o.customUnmarshaler = customUnmarshaler
