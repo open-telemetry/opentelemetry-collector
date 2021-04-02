@@ -165,14 +165,20 @@ func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pd
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		ml.obsrep.TracesRefused(ctx, numSpans)
+		err := ml.obsrep.TracesRefused(ctx, numSpans)
+		if err != nil {
+			return td, err
+		}
 
 		return td, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	ml.obsrep.TracesAccepted(ctx, numSpans)
+	err := ml.obsrep.TracesAccepted(ctx, numSpans)
+	if err != nil {
+		return td, nil
+	}
 	return td, nil
 }
 
@@ -185,14 +191,19 @@ func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		ml.obsrep.MetricsRefused(ctx, numDataPoints)
-
+		err := ml.obsrep.MetricsRefused(ctx, numDataPoints)
+		if err != nil {
+			return md, err
+		}
 		return md, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	ml.obsrep.MetricsAccepted(ctx, numDataPoints)
+	err := ml.obsrep.MetricsAccepted(ctx, numDataPoints)
+	if err != nil {
+		return md, err
+	}
 	return md, nil
 }
 
@@ -205,14 +216,19 @@ func (ml *memoryLimiter) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		ml.obsrep.LogsRefused(ctx, numRecords)
-
+		err := ml.obsrep.LogsRefused(ctx, numRecords)
+		if err != nil {
+			return ld, err
+		}
 		return ld, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	ml.obsrep.LogsAccepted(ctx, numRecords)
+	err := ml.obsrep.LogsAccepted(ctx, numRecords)
+	if err != nil {
+		return ld, err
+	}
 	return ld, nil
 }
 

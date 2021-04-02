@@ -137,9 +137,9 @@ func NewProcessor(cfg ProcessorSettings) *Processor {
 }
 
 // TracesAccepted reports that the trace data was accepted.
-func (por *Processor) TracesAccepted(ctx context.Context, numSpans int) {
+func (por *Processor) TracesAccepted(ctx context.Context, numSpans int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedSpans.M(int64(numSpans)),
@@ -147,12 +147,13 @@ func (por *Processor) TracesAccepted(ctx context.Context, numSpans int) {
 			mProcessorDroppedSpans.M(0),
 		)
 	}
+	return nil
 }
 
 // TracesRefused reports that the trace data was refused.
-func (por *Processor) TracesRefused(ctx context.Context, numSpans int) {
+func (por *Processor) TracesRefused(ctx context.Context, numSpans int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedSpans.M(0),
@@ -160,12 +161,13 @@ func (por *Processor) TracesRefused(ctx context.Context, numSpans int) {
 			mProcessorDroppedSpans.M(0),
 		)
 	}
+	return nil
 }
 
 // TracesDropped reports that the trace data was dropped.
-func (por *Processor) TracesDropped(ctx context.Context, numSpans int) {
+func (por *Processor) TracesDropped(ctx context.Context, numSpans int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedSpans.M(0),
@@ -173,12 +175,13 @@ func (por *Processor) TracesDropped(ctx context.Context, numSpans int) {
 			mProcessorDroppedSpans.M(int64(numSpans)),
 		)
 	}
+	return nil
 }
 
 // MetricsAccepted reports that the metrics were accepted.
-func (por *Processor) MetricsAccepted(ctx context.Context, numPoints int) {
+func (por *Processor) MetricsAccepted(ctx context.Context, numPoints int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedMetricPoints.M(int64(numPoints)),
@@ -186,12 +189,13 @@ func (por *Processor) MetricsAccepted(ctx context.Context, numPoints int) {
 			mProcessorDroppedMetricPoints.M(0),
 		)
 	}
+	return nil
 }
 
 // MetricsRefused reports that the metrics were refused.
-func (por *Processor) MetricsRefused(ctx context.Context, numPoints int) {
+func (por *Processor) MetricsRefused(ctx context.Context, numPoints int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedMetricPoints.M(0),
@@ -199,12 +203,13 @@ func (por *Processor) MetricsRefused(ctx context.Context, numPoints int) {
 			mProcessorDroppedMetricPoints.M(0),
 		)
 	}
+	return nil
 }
 
 // MetricsDropped reports that the metrics were dropped.
-func (por *Processor) MetricsDropped(ctx context.Context, numPoints int) {
+func (por *Processor) MetricsDropped(ctx context.Context, numPoints int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedMetricPoints.M(0),
@@ -212,12 +217,13 @@ func (por *Processor) MetricsDropped(ctx context.Context, numPoints int) {
 			mProcessorDroppedMetricPoints.M(int64(numPoints)),
 		)
 	}
+	return nil
 }
 
 // LogsAccepted reports that the logs were accepted.
-func (por *Processor) LogsAccepted(ctx context.Context, numRecords int) {
+func (por *Processor) LogsAccepted(ctx context.Context, numRecords int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedLogRecords.M(int64(numRecords)),
@@ -225,12 +231,13 @@ func (por *Processor) LogsAccepted(ctx context.Context, numRecords int) {
 			mProcessorDroppedLogRecords.M(0),
 		)
 	}
+	return nil
 }
 
 // LogsRefused reports that the logs were refused.
-func (por *Processor) LogsRefused(ctx context.Context, numRecords int) {
+func (por *Processor) LogsRefused(ctx context.Context, numRecords int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedLogRecords.M(0),
@@ -238,12 +245,13 @@ func (por *Processor) LogsRefused(ctx context.Context, numRecords int) {
 			mProcessorDroppedMetricPoints.M(0),
 		)
 	}
+	return nil
 }
 
 // LogsDropped reports that the logs were dropped.
-func (por *Processor) LogsDropped(ctx context.Context, numRecords int) {
+func (por *Processor) LogsDropped(ctx context.Context, numRecords int) error {
 	if por.level != configtelemetry.LevelNone {
-		stats.RecordWithTags(
+		return stats.RecordWithTags(
 			ctx,
 			por.mutators,
 			mProcessorAcceptedLogRecords.M(0),
@@ -251,4 +259,5 @@ func (por *Processor) LogsDropped(ctx context.Context, numRecords int) {
 			mProcessorDroppedLogRecords.M(int64(numRecords)),
 		)
 	}
+	return nil
 }

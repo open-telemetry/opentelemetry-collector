@@ -548,9 +548,12 @@ func TestProcessorTraceData(t *testing.T) {
 	const droppedSpans = 13
 
 	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
-	obsrep.TracesAccepted(context.Background(), acceptedSpans)
-	obsrep.TracesRefused(context.Background(), refusedSpans)
-	obsrep.TracesDropped(context.Background(), droppedSpans)
+	err = obsrep.TracesAccepted(context.Background(), acceptedSpans)
+	require.NoError(t, err)
+	err = obsrep.TracesRefused(context.Background(), refusedSpans)
+	require.NoError(t, err)
+	err = obsrep.TracesDropped(context.Background(), droppedSpans)
+	require.NoError(t, err)
 
 	obsreporttest.CheckProcessorTracesViews(t, processor, acceptedSpans, refusedSpans, droppedSpans)
 }
@@ -565,10 +568,12 @@ func TestProcessorMetricsData(t *testing.T) {
 	const droppedPoints = 17
 
 	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
-	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
-	obsrep.MetricsRefused(context.Background(), refusedPoints)
-	obsrep.MetricsDropped(context.Background(), droppedPoints)
-
+	err = obsrep.MetricsAccepted(context.Background(), acceptedPoints)
+	require.NoError(t, err)
+	err = obsrep.MetricsRefused(context.Background(), refusedPoints)
+	require.NoError(t, err)
+	err = obsrep.MetricsDropped(context.Background(), droppedPoints)
+	require.NoError(t, err)
 	obsreporttest.CheckProcessorMetricsViews(t, processor, acceptedPoints, refusedPoints, droppedPoints)
 }
 
