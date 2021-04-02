@@ -199,6 +199,7 @@ func (app *Application) GetLogger() *zap.Logger {
 	return app.logger
 }
 
+// Shutdown shuts down the application.
 func (app *Application) Shutdown() {
 	// TODO: Implement a proper shutdown with graceful draining of the pipeline.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/483.

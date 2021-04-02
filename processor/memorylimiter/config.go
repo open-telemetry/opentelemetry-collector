@@ -25,7 +25,7 @@ import (
 
 // Config defines configuration for memory memoryLimiter processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	// CheckInterval is the time between measurements of memory usage for the
 	// purposes of avoiding going over the limits. Defaults to zero, so no

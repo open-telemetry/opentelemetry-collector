@@ -20,7 +20,7 @@ import (
 
 // Config defines configuration for logging exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
 	LogLevel string `mapstructure:"loglevel"`

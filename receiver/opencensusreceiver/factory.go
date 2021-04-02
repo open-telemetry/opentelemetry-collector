@@ -30,6 +30,7 @@ const (
 	typeStr = "opencensus"
 )
 
+// NewFactory creates a new OpenCensus receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,

@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// Scrape metrics.
+// ScrapeMetrics scrapes metrics.
 type ScrapeMetrics func(context.Context) (pdata.MetricSlice, error)
 
-// Scrape resource metrics.
+// ScrapeResourceMetrics scrapes resource metrics.
 type ScrapeResourceMetrics func(context.Context) (pdata.ResourceMetricsSlice, error)
 
 type baseSettings struct {
@@ -36,6 +36,7 @@ type baseSettings struct {
 // ScraperOption apply changes to internal options.
 type ScraperOption func(*baseSettings)
 
+// BaseScraper is the base interface for scrapers.
 type BaseScraper interface {
 	component.Component
 

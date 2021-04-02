@@ -62,6 +62,7 @@ func verifyTraceProcessorDoesntProduceAfterShutdown(t *testing.T, factory compon
 	assert.EqualValues(t, generatedCount, nextSink.SpansCount())
 }
 
+// VerifyProcessorShutdown verifies the processor doesn't produce telemetry data after shutdown.
 func VerifyProcessorShutdown(t *testing.T, factory component.ProcessorFactory, cfg config.Processor) {
 	verifyTraceProcessorDoesntProduceAfterShutdown(t, factory, cfg)
 	// TODO: add metrics and logs verification.

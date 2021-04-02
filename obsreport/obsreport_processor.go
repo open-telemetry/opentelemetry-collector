@@ -25,16 +25,16 @@ import (
 )
 
 const (
-	// Key used to identify processors in metrics and traces.
+	// ProcessorKey is the key used to identify processors in metrics and traces.
 	ProcessorKey = "processor"
 
-	// Key used to identify spans dropped by the Collector.
+	// DroppedSpansKey is the key used to identify spans dropped by the Collector.
 	DroppedSpansKey = "dropped_spans"
 
-	// Key used to identify metric points dropped by the Collector.
+	// DroppedMetricPointsKey is the key used to identify metric points dropped by the Collector.
 	DroppedMetricPointsKey = "dropped_metric_points"
 
-	// Key used to identify log records dropped by the Collector.
+	// DroppedLogRecordsKey is the key used to identify log records dropped by the Collector.
 	DroppedLogRecordsKey = "dropped_log_records"
 )
 
@@ -116,16 +116,19 @@ func ProcessorMetricViews(configType string, legacyViews []*view.View) []*view.V
 
 var gProcessor = &Processor{level: configtelemetry.LevelNone}
 
+// Processor is a helper to add observability to a component.Processor.
 type Processor struct {
 	level    configtelemetry.Level
 	mutators []tag.Mutator
 }
 
+// ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
 	Level         configtelemetry.Level
 	ProcessorName string
 }
 
+// NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) *Processor {
 	return &Processor{
 		level:    cfg.Level,

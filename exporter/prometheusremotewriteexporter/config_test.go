@@ -50,7 +50,7 @@ func Test_loadConfig(t *testing.T) {
 	e1 := cfg.Exporters["prometheusremotewrite/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: config.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "prometheusremotewrite/2",
 				TypeVal: "prometheusremotewrite",
 			},

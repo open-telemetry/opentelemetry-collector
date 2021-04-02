@@ -76,12 +76,14 @@ type MetricData interface {
 	HasAggregated() bool
 }
 
+// Aggregated defines a metric aggregation type.
 type Aggregated struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
 	Aggregation string `yaml:"aggregation" validate:"oneof=delta cumulative"`
 }
 
+// Type gets the metric aggregation type.
 func (agg Aggregated) Type() string {
 	switch agg.Aggregation {
 	case "delta":
@@ -93,6 +95,7 @@ func (agg Aggregated) Type() string {
 	}
 }
 
+// Mono defines the metric monotonicity.
 type Mono struct {
 	// Monotonic is true if the sum is monotonic.
 	Monotonic bool `yaml:"monotonic"`

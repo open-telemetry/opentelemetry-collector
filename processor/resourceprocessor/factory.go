@@ -44,10 +44,7 @@ func NewFactory() component.ProcessorFactory {
 // Note: This isn't a valid configuration because the processor would do no work.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
 	}
 }
 

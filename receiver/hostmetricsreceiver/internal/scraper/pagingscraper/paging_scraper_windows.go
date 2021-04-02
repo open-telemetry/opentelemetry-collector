@@ -170,7 +170,7 @@ func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingType, metadata.LabelPagingType.Major)
 	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

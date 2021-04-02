@@ -24,7 +24,7 @@ type ScrapeErrors struct {
 	failedScrapeCount int
 }
 
-// Add adds a PartialScrapeError with the provided failed count and error.
+// AddPartial adds a PartialScrapeError with the provided failed count and error.
 func (s *ScrapeErrors) AddPartial(failed int, err error) {
 	s.errs = append(s.errs, NewPartialScrapeError(err, failed))
 	s.failedScrapeCount += failed

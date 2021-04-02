@@ -88,7 +88,7 @@ func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now 
 	}
 	labelsMap.Insert(metadata.Labels.CPUState, stateLabel)
 
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

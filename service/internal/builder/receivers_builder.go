@@ -94,11 +94,11 @@ func BuildReceivers(
 	builtPipelines BuiltPipelines,
 	factories map[config.Type]component.ReceiverFactory,
 ) (Receivers, error) {
-	rb := &receiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories}
+	rb := &receiversBuilder{logger.With(zap.String(zapKindKey, zapKindReceiver)), appInfo, config, builtPipelines, factories}
 
 	receivers := make(Receivers)
 	for _, cfg := range rb.config.Receivers {
-		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
+		logger := rb.logger.With(zap.String(zapNameKey, cfg.Name()))
 		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {

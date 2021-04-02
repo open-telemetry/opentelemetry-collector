@@ -258,7 +258,7 @@ func intPointsToOC(dps pdata.IntDataPointSlice, labelKeys *labelKeys) []*ocmetri
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(ip.StartTime()),
+			StartTimestamp: timestampAsTimestampPb(ip.StartTimestamp()),
 			LabelValues:    labelValuesToOC(ip.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
@@ -282,7 +282,7 @@ func doublePointToOC(dps pdata.DoubleDataPointSlice, labelKeys *labelKeys) []*oc
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(dp.StartTime()),
+			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
@@ -309,7 +309,7 @@ func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labe
 		doubleExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(dp.StartTime()),
+			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
@@ -342,7 +342,7 @@ func intHistogramPointToOC(dps pdata.IntHistogramDataPointSlice, labelKeys *labe
 		intExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(dp.StartTime()),
+			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
@@ -402,7 +402,7 @@ func doubleSummaryPointToOC(dps pdata.SummaryDataPointSlice, labelKeys *labelKey
 		percentileValues := summaryPercentilesToOC(dp.QuantileValues())
 
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(dp.StartTime()),
+			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{

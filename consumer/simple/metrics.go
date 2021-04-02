@@ -122,7 +122,7 @@ func (mb *Metrics) WithLabels(l map[string]string) *Metrics {
 	return out
 }
 
-// AsSafeBuilder returns an instance of this builder wrapped in
+// AsSafe returns an instance of this builder wrapped in
 // SafeMetrics that ensures all of the public methods on this instance
 // will be thread-safe between goroutines.  You must explicitly type these
 // instances as SafeMetrics.
@@ -133,35 +133,41 @@ func (mb Metrics) AsSafe() *SafeMetrics {
 	}
 }
 
+// AddGaugeDataPoint adds an integer gauge data point.
 func (mb *Metrics) AddGaugeDataPoint(name string, metricValue int64) *Metrics {
 	typ := pdata.MetricDataTypeIntGauge
 	mb.addDataPoint(name, typ, metricValue)
 	return mb
 }
 
+// AddDGaugeDataPoint adds a double gauge data point.
 func (mb *Metrics) AddDGaugeDataPoint(name string, metricValue float64) *Metrics {
 	typ := pdata.MetricDataTypeDoubleGauge
 	mb.addDataPoint(name, typ, metricValue)
 	return mb
 }
 
+// AddSumDataPoint adds an integer sum data point.
 func (mb *Metrics) AddSumDataPoint(name string, metricValue int64) *Metrics {
 	typ := pdata.MetricDataTypeIntSum
 	mb.addDataPoint(name, typ, metricValue)
 	return mb
 }
 
+// AddDSumDataPoint adds a double sum data point.
 func (mb *Metrics) AddDSumDataPoint(name string, metricValue float64) *Metrics {
 	typ := pdata.MetricDataTypeDoubleSum
 	mb.addDataPoint(name, typ, metricValue)
 	return mb
 }
 
+// AddHistogramRawDataPoint adds an integer histogram data point.
 func (mb *Metrics) AddHistogramRawDataPoint(name string, hist pdata.IntHistogramDataPoint) *Metrics {
 	mb.addDataPoint(name, pdata.MetricDataTypeIntHistogram, hist)
 	return mb
 }
 
+// AddDHistogramRawDataPoint adds a double histogram data point.
 func (mb *Metrics) AddDHistogramRawDataPoint(name string, hist pdata.HistogramDataPoint) *Metrics {
 	mb.addDataPoint(name, pdata.MetricDataTypeHistogram, hist)
 	return mb
@@ -300,13 +306,14 @@ func cloneStringMap(m map[string]string) map[string]string {
 }
 
 // SafeMetrics is a wrapper for Metrics that ensures the wrapped
-// instance can be used safely across goroutines.  It is meant to be created
-// from the AsSafeBuilder on Metrics.
+// instance can be used safely across goroutines. It is meant to be created
+// from the AsSafe on Metrics.
 type SafeMetrics struct {
 	*sync.Mutex
 	*Metrics
 }
 
+// WithLabels wraps Metrics.WithLabels.
 func (mb *SafeMetrics) WithLabels(l map[string]string) *SafeMetrics {
 	mb.Lock()
 	defer mb.Unlock()
@@ -317,6 +324,7 @@ func (mb *SafeMetrics) WithLabels(l map[string]string) *SafeMetrics {
 	}
 }
 
+// AddGaugeDataPoint wraps Metrics.AddGaugeDataPoint.
 func (mb *SafeMetrics) AddGaugeDataPoint(name string, metricValue int64) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddGaugeDataPoint(name, metricValue)
@@ -324,6 +332,7 @@ func (mb *SafeMetrics) AddGaugeDataPoint(name string, metricValue int64) *SafeMe
 	return mb
 }
 
+// AddDGaugeDataPoint wraps Metrics.AddDGaugeDataPoint.
 func (mb *SafeMetrics) AddDGaugeDataPoint(name string, metricValue float64) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddDGaugeDataPoint(name, metricValue)
@@ -331,6 +340,7 @@ func (mb *SafeMetrics) AddDGaugeDataPoint(name string, metricValue float64) *Saf
 	return mb
 }
 
+// AddSumDataPoint wraps Metrics.AddSumDataPoint.
 func (mb *SafeMetrics) AddSumDataPoint(name string, metricValue int64) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddSumDataPoint(name, metricValue)
@@ -338,6 +348,7 @@ func (mb *SafeMetrics) AddSumDataPoint(name string, metricValue int64) *SafeMetr
 	return mb
 }
 
+// AddDSumDataPoint wraps Metrics.AddDSumDataPoint.
 func (mb *SafeMetrics) AddDSumDataPoint(name string, metricValue float64) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddDSumDataPoint(name, metricValue)
@@ -345,6 +356,7 @@ func (mb *SafeMetrics) AddDSumDataPoint(name string, metricValue float64) *SafeM
 	return mb
 }
 
+// AddHistogramRawDataPoint wraps Metrics.AddHistogramRawDataPoint.
 func (mb *SafeMetrics) AddHistogramRawDataPoint(name string, hist pdata.IntHistogramDataPoint) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddHistogramRawDataPoint(name, hist)
@@ -352,6 +364,7 @@ func (mb *SafeMetrics) AddHistogramRawDataPoint(name string, hist pdata.IntHisto
 	return mb
 }
 
+// AddDHistogramRawDataPoint wraps AddDHistogramRawDataPoint.
 func (mb *SafeMetrics) AddDHistogramRawDataPoint(name string, hist pdata.HistogramDataPoint) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddDHistogramRawDataPoint(name, hist)

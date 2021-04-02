@@ -22,9 +22,8 @@ import (
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	// squash ensures fields are correctly decoded in embedded struct.
-	config.ExporterSettings        `mapstructure:",squash"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	*config.ExporterSettings       `mapstructure:"-"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
@@ -35,5 +34,5 @@ type Config struct {
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
-	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"`
+	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }

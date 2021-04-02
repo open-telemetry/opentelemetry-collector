@@ -37,6 +37,7 @@ var (
 	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
 )
 
+// NewFactory creates a new Prometheus receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,

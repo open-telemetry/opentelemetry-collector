@@ -22,7 +22,7 @@ import (
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
+	*config.ExtensionSettings `mapstructure:"-"`
 
 	// Port is the port used to publish the health check status.
 	// The default value is 13133.

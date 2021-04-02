@@ -161,6 +161,7 @@ func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 	return rawMap
 }
 
+// AttributeArrayToSlice creates a slice out of a pdata.AnyValueArray.
 func AttributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 	rawSlice := make([]interface{}, 0, attrArray.Len())
 	for i := 0; i < attrArray.Len(); i++ {

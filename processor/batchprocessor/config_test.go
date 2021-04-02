@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
+			ProcessorSettings: &config.ProcessorSettings{
 				TypeVal: "batch",
 				NameVal: "batch/2",
 			},

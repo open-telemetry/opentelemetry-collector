@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["logging/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: config.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "logging/2",
 				TypeVal: "logging",
 			},

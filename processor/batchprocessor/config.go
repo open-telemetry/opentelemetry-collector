@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for batch processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`

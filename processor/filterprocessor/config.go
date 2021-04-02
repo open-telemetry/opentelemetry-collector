@@ -21,11 +21,11 @@ import (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
-	Metrics                  MetricFilters `mapstructure:"metrics"`
+	*config.ProcessorSettings `mapstructure:"-"`
+	Metrics                   MetricFilters `mapstructure:"metrics"`
 }
 
-// MetricFilter filters by Metric properties.
+// MetricFilters filters by Metric properties.
 type MetricFilters struct {
 	// Include match properties describe metrics that should be included in the Collector Service pipeline,
 	// all other metrics should be dropped from further processing.

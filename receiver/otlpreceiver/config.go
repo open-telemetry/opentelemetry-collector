@@ -31,6 +31,7 @@ const (
 	protocolsFieldName = "protocols"
 )
 
+// Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
 	HTTP *confighttp.HTTPServerSettings `mapstructure:"http"`

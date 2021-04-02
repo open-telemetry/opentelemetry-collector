@@ -28,7 +28,7 @@ import (
 // This determines if a span is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	filterconfig.MatchConfig `mapstructure:",squash"`
 

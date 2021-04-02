@@ -24,11 +24,17 @@ type Extension interface {
 // Extensions is a map of names to extensions.
 type Extensions map[string]Extension
 
-// ExtensionSettings defines common settings for a service extension configuration.
+// ExtensionSettings defines common settings for a extension configuration.
 // Specific extensions can embed this struct and extend it with more fields if needed.
+// When embedded in the extension config it must be with `mapstructure:"-"` tag.
 type ExtensionSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
+}
+
+// NewExtensionSettings return a new ExtensionSettings with the given type.
+func NewExtensionSettings(typeVal Type) *ExtensionSettings {
+	return &ExtensionSettings{TypeVal: typeVal, NameVal: string(typeVal)}
 }
 
 var _ Extension = (*ExtensionSettings)(nil)

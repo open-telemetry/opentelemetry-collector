@@ -36,7 +36,7 @@ type CreateTracesExporter func(context.Context, component.ExporterCreateParams, 
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateMetricsExporter()
 type CreateMetricsExporter func(context.Context, component.ExporterCreateParams, config.Exporter) (component.MetricsExporter, error)
 
-// CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
+// CreateLogsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
 type CreateLogsExporter func(context.Context, component.ExporterCreateParams, config.Exporter) (component.LogsExporter, error)
 
 type factory struct {
