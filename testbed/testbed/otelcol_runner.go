@@ -83,7 +83,10 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 	ipp.logger = logger
 	v := config.NewViper()
 	v.SetConfigType("yaml")
-	v.ReadConfig(strings.NewReader(configStr))
+	err = v.ReadConfig(strings.NewReader(configStr))
+	if err != nil {
+		return configCleanup, err
+	}
 	cfg, err := configparser.Load(config.ParserFromViper(v), ipp.factories)
 	if err != nil {
 		return configCleanup, err
