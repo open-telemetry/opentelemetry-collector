@@ -145,18 +145,18 @@ type createReceiverFn func(
 
 func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateLogsReceiver(ctx, params, cfg, consumertest.NewLogsNop())
+		return factory.CreateLogsReceiver(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateMetricsReceiver(ctx, params, cfg, consumertest.NewMetricsNop())
+		return factory.CreateMetricsReceiver(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateTracesReceiver(ctx, params, cfg, consumertest.NewTracesNop())
+		return factory.CreateTracesReceiver(ctx, params, cfg, consumertest.NewNop())
 	}
 }

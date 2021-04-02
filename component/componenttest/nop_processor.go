@@ -80,17 +80,13 @@ func (f *nopProcessorFactory) CreateLogsProcessor(
 
 var nopProcessorInstance = &nopProcessor{
 	Component: componenthelper.New(),
-	Traces:    consumertest.NewTracesNop(),
-	Metrics:   consumertest.NewMetricsNop(),
-	Logs:      consumertest.NewLogsNop(),
+	Consumer:  consumertest.NewNop(),
 }
 
 // nopProcessor stores consumed traces and metrics for testing purposes.
 type nopProcessor struct {
 	component.Component
-	consumer.Traces
-	consumer.Metrics
-	consumer.Logs
+	consumertest.Consumer
 }
 
 func (*nopProcessor) GetCapabilities() component.ProcessorCapabilities {

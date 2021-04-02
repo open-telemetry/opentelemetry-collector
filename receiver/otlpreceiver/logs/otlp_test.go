@@ -105,7 +105,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewLogsErr(errors.New("my error")))
+	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
 	logClient, logClientDoneFn, err := makeLogsServiceClient(port)

@@ -109,7 +109,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewTracesErr(errors.New("my error")))
+	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)

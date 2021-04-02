@@ -44,7 +44,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	port, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewTracesNop())
+	port, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneReceiverFn()
 
 	n := 20
@@ -66,7 +66,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewTracesNop())
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneFn()
 
 	n := 20
@@ -96,7 +96,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewTracesNop())
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)

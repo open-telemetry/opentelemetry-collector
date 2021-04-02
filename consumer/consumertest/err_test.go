@@ -25,6 +25,16 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+func TestErr(t *testing.T) {
+	err := errors.New("my error")
+	ec := NewErr(err)
+	require.NotNil(t, ec)
+	assert.NotPanics(t, ec.unexported)
+	assert.Equal(t, err, ec.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.Equal(t, err, ec.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, err, ec.ConsumeTraces(context.Background(), pdata.NewTraces()))
+}
+
 func TestTracesErr(t *testing.T) {
 	err := errors.New("my error")
 	nt := NewTracesErr(err)

@@ -339,7 +339,7 @@ func TestProtoHttp(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewMetricsNop())
+	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	defer ocr.Shutdown(context.Background())

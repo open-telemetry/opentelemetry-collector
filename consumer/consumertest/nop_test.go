@@ -24,6 +24,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+func TestNop(t *testing.T) {
+	nc := NewNop()
+	require.NotNil(t, nc)
+	assert.NotPanics(t, nc.unexported)
+	assert.NoError(t, nc.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.NoError(t, nc.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, nc.ConsumeTraces(context.Background(), pdata.NewTraces()))
+}
+
 func TestTracesNop(t *testing.T) {
 	nt := NewTracesNop()
 	require.NotNil(t, nt)
