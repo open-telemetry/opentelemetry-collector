@@ -118,7 +118,7 @@ type ProcessorFactory interface {
 		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
 
-	// unexportedExtension is a dummy method to force this interface to not be implemented.
+	// unexportedProcessor is a dummy method to force this interface to not be implemented.
 	unexportedProcessor()
 }
 
