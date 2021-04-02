@@ -22,10 +22,11 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 type TestProcessorFactory struct {
+	BaseProcessorFactory
 	name string
 }
 
@@ -39,22 +40,7 @@ func (f *TestProcessorFactory) CreateDefaultConfig() config.Processor {
 	return nil
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *TestProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Traces) (TracesProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Logs) (LogsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-func TestFactoriesBuilder(t *testing.T) {
+func TestMakeProcessorFactoryMap(t *testing.T) {
 	type testCase struct {
 		in  []ProcessorFactory
 		out map[config.Type]ProcessorFactory
@@ -63,18 +49,18 @@ func TestFactoriesBuilder(t *testing.T) {
 	testCases := []testCase{
 		{
 			in: []ProcessorFactory{
-				&TestProcessorFactory{"p1"},
-				&TestProcessorFactory{"p2"},
+				&TestProcessorFactory{name: "p1"},
+				&TestProcessorFactory{name: "p2"},
 			},
 			out: map[config.Type]ProcessorFactory{
-				"p1": &TestProcessorFactory{"p1"},
-				"p2": &TestProcessorFactory{"p2"},
+				"p1": &TestProcessorFactory{name: "p1"},
+				"p2": &TestProcessorFactory{name: "p2"},
 			},
 		},
 		{
 			in: []ProcessorFactory{
-				&TestProcessorFactory{"p1"},
-				&TestProcessorFactory{"p1"},
+				&TestProcessorFactory{name: "p1"},
+				&TestProcessorFactory{name: "p1"},
 			},
 		},
 	}
@@ -88,4 +74,21 @@ func TestFactoriesBuilder(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, c.out, out)
 	}
+}
+
+func TestBaseProcessorFactory(t *testing.T) {
+	bpf := BaseProcessorFactory{}
+	assert.Panics(t, func() {
+		bpf.Type()
+	})
+	assert.Panics(t, func() {
+		bpf.CreateDefaultConfig()
+	})
+	assert.NotPanics(t, bpf.unexportedProcessor)
+	_, err := bpf.CreateTracesProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewTracesNop())
+	assert.ErrorIs(t, err, configerror.ErrDataTypeIsNotSupported)
+	_, err = bpf.CreateMetricsProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewMetricsNop())
+	assert.ErrorIs(t, err, configerror.ErrDataTypeIsNotSupported)
+	_, err = bpf.CreateLogsProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewLogsNop())
+	assert.ErrorIs(t, err, configerror.ErrDataTypeIsNotSupported)
 }
