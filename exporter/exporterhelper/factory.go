@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 )
 
 // FactoryOption apply changes to ExporterOptions.
@@ -115,7 +115,7 @@ func (f *factory) CreateTracesExporter(
 	if f.createTracesExporter != nil {
 		return f.createTracesExporter(ctx, params, cfg)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a component.MetricsExporter based on this config.
@@ -126,7 +126,7 @@ func (f *factory) CreateMetricsExporter(
 	if f.createMetricsExporter != nil {
 		return f.createMetricsExporter(ctx, params, cfg)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateLogsExporter creates a metrics processor based on this config.
@@ -138,7 +138,7 @@ func (f *factory) CreateLogsExporter(
 	if f.createLogsExporter != nil {
 		return f.createLogsExporter(ctx, params, cfg)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
