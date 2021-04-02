@@ -245,8 +245,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, extensionCfg); err != nil {
+		if err := unmarshal(componentConfig, extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, fullName, err)
 		}
 
@@ -281,8 +280,7 @@ func LoadReceiver(componentConfig *config.Parser, fullName string, factory compo
 
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
-	unm := unmarshaler(factory)
-	if err := unm(componentConfig, receiverCfg); err != nil {
+	if err := unmarshal(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, fullName, err)
 	}
 
@@ -354,8 +352,7 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, exporterCfg); err != nil {
+		if err := unmarshal(componentConfig, exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, fullName, err)
 		}
 
@@ -397,8 +394,7 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, processorCfg); err != nil {
+		if err := unmarshal(componentConfig, processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, fullName, err)
 		}
 
@@ -539,14 +535,4 @@ func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
 	}
 
 	return componentSection.UnmarshalExact(intoCfg)
-}
-
-// unmarshaler returns an unmarshaling function. It should be removed when config.DeprecatedUnmarshaler is removed.
-func unmarshaler(factory component.Factory) func(componentViperSection *config.Parser, intoCfg interface{}) error {
-	if fu, ok := factory.(component.DeprecatedUnmarshaler); ok {
-		return func(componentParser *config.Parser, intoCfg interface{}) error {
-			return fu.Unmarshal(componentParser.Viper(), intoCfg)
-		}
-	}
-	return unmarshal
 }
