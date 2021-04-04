@@ -36,8 +36,10 @@ import (
 )
 
 const (
-	portAttr   = "port"
-	schemeAttr = "scheme"
+	portAttr     = "port"
+	schemeAttr   = "scheme"
+	jobAttr      = "job"
+	instanceAttr = "instance"
 
 	transport  = "http"
 	dataformat = "prometheus"
@@ -227,8 +229,10 @@ func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resou
 	}
 	resource := &resourcepb.Resource{
 		Labels: map[string]string{
-			portAttr:   port,
-			schemeAttr: scheme,
+			jobAttr:      job,
+			instanceAttr: instance,
+			portAttr:     port,
+			schemeAttr:   scheme,
 		},
 	}
 	return node, resource
