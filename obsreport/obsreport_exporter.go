@@ -44,38 +44,38 @@ const (
 	failedToSendLogRecordsKey = "send_failed_log_records"
 )
 
-// GetExporterKey returns the exporterKey
-func GetExporterKey() string {
+// ExporterKey returns the exporterKey
+func ExporterKey() string {
 	return exporterKey
 }
 
-// GetSentSpansKey returns the sentSpansKey
-func GetSentSpansKey() string {
+// SentSpansKey returns the sentSpansKey
+func SentSpansKey() string {
 	return sentSpansKey
 }
 
-// GetFailedToSendSpansKey returns the failedToSendSpansKey
-func GetFailedToSendSpansKey() string {
+// FailedToSendSpansKey returns the failedToSendSpansKey
+func FailedToSendSpansKey() string {
 	return failedToSendSpansKey
 }
 
-// GetSentMetricPointsKey returns the sentMetricPointsKey
-func GetSentMetricPointsKey() string {
+// SentMetricPointsKey returns the sentMetricPointsKey
+func SentMetricPointsKey() string {
 	return sentMetricPointsKey
 }
 
-// GetFailedToSendMetricPointsKey returns the failedToSendMetricPointsKey
-func GetFailedToSendMetricPointsKey() string {
+// FailedToSendMetricPointsKey returns the failedToSendMetricPointsKey
+func FailedToSendMetricPointsKey() string {
 	return failedToSendMetricPointsKey
 }
 
-// GetSentLogRecordsKey returns the sentLogrecordsKey
-func GetSentLogRecordsKey() string {
+// SentLogRecordsKey returns the sentLogrecordsKey
+func SentLogRecordsKey() string {
 	return sentLogRecordsKey
 }
 
-// GetFailedToSendLogRecordsKey returns the failedToSendLogRecordsKey
-func GetFailedToSendLogRecordsKey() string {
+// FailedToSendLogRecordsKey returns the failedToSendLogRecordsKey
+func FailedToSendLogRecordsKey() string {
 	return failedToSendLogRecordsKey
 }
 
