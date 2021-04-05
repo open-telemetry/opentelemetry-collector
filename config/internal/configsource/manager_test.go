@@ -177,6 +177,60 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 	assert.NoError(t, manager.Close(ctx))
 }
 
+func TestConfigSourceManager_ParamsHandling(t *testing.T) {
+	ctx := context.Background()
+	tstCfgSrc := testConfigSource{
+		ValueMap: map[string]valueEntry{
+			"elem0": {Value: nil},
+			"elem1": {
+				Value: map[string]interface{}{
+					"p0": true,
+					"p1": "a string with spaces",
+					"p3": 42,
+				},
+			},
+			"k0": {Value: nil},
+			"k1": {
+				Value: map[string]interface{}{
+					"p0": true,
+					"p1": "a string with spaces",
+					"p2":  map[string]interface{}{
+						"p2_0": "a nested map0",
+						"p2_1": true,
+					},
+				},
+			},
+		},
+	}
+
+	// Set OnRetrieve to check if the parameters were parsed as expected.
+	tstCfgSrc.OnRetrieve = func (ctx context.Context, selector string, params interface{}) error {
+		assert.Equal(t, tstCfgSrc.ValueMap[selector].Value, params)
+		return nil
+	}
+
+	manager, err := NewManager(nil)
+	require.NoError(t, err)
+	manager.configSources = map[string]ConfigSource{
+		"tstcfgsrc": &tstCfgSrc,
+	}
+
+	file := path.Join("testdata", "params_handling.yaml")
+	cp, err := config.NewParserFromFile(file)
+	require.NoError(t, err)
+
+	expectedFile := path.Join("testdata", "params_handling_expected.yaml")
+	expectedParser, err := config.NewParserFromFile(expectedFile)
+	require.NoError(t, err)
+	expectedCfg := expectedParser.Viper().AllSettings()
+
+	res, err := manager.Resolve(ctx, cp)
+	require.NoError(t, err)
+	actualCfg := res.Viper().AllSettings()
+	assert.Equal(t, expectedCfg, actualCfg)
+	assert.NoError(t, manager.Close(ctx))
+}
+
 func TestConfigSourceManager_WatchForUpdate(t *testing.T) {
 	ctx := context.Background()
 	manager, err := NewManager(nil)
@@ -348,7 +402,7 @@ func Test_parseCfgSrc(t *testing.T) {
 		},
 		{
 			name:       "array_in_params",
-			str:        "cfgsrc:selector?p0=[0,1,2]&p1=done",
+			str:        "cfgsrc:selector?p0=0&p0=1&p0=2&p1=done",
 			cfgSrcName: "cfgsrc",
 			selector:   "selector",
 			params: map[string]interface{}{
@@ -365,6 +419,15 @@ func Test_parseCfgSrc(t *testing.T) {
 				"no_closing": interface{}(nil),
 			},
 		},
+		{
+			name:    "use_url_encode",
+			str:     "cfgsrc:selector?p0=contains+%3D+and+%26+too",
+			cfgSrcName: "cfgsrc",
+			selector:   "selector",
+			params: map[string]interface{}{
+				"p0": "contains = and & too",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -374,6 +437,7 @@ func Test_parseCfgSrc(t *testing.T) {
 				return
 			}
 
+			assert.NoError(t, err)
 			assert.Equal(t, tt.cfgSrcName, cfgSrcName)
 			assert.Equal(t, tt.selector, selector)
 			assert.Equal(t, tt.params, params)
@@ -389,6 +453,8 @@ type testConfigSource struct {
 	ErrOnRetrieve    error
 	ErrOnRetrieveEnd error
 	ErrOnClose       error
+
+	OnRetrieve func(ctx context.Context, selector string, params interface{}) error
 }
 
 type valueEntry struct {
@@ -406,7 +472,13 @@ func (t *testConfigSource) NewSession(context.Context) (Session, error) {
 	return t, nil
 }
 
-func (t *testConfigSource) Retrieve(_ context.Context, selector string, _ interface{}) (Retrieved, error) {
+func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params interface{}) (Retrieved, error) {
+	if t.OnRetrieve != nil {
+		if err := t.OnRetrieve(ctx, selector, params); err != nil {
+			return nil, err
+		}
+	}
+
 	if t.ErrOnRetrieve != nil {
 		return nil, t.ErrOnRetrieve
 	}

@@ -19,10 +19,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -39,18 +40,41 @@ import (
 // 5. Close to close the instance;
 //
 // The current syntax to reference a config source in a YAML is provisional. Currently
-// only now-wrapped single line is supported:
+// single-line:
 //
-//    $<cfgSrcName>:<selector>[?<params>]
+//    param_to_be_retrieved: $<cfgSrcName>:<selector>[?<params_url_query_format>]
+//
+// and multi-line are supported:
+//
+//    param_to_be_retrieved: |
+//      $<cfgSrcName>: <selector>
+//      [<params_multi_line_YAML>]
 //
 // The <cfgSrcName> is a name string used to indentify the config source instance to be used
 // to retrieve the value.
 //
 // The <selector> is the mandatory parameter required when retrieving data from a config source.
 //
-// <params> is an optional parameter in syntax similar to single line YAML but removing the spaces
-// to ensure that it is a string value. Not all config sources need these params, they are used to
-// provide extra control when retrieving the data.
+// Not all config sources need the optional parameters, they are used to provide extra control when
+// retrieving and preparing the data to be injected into the configuration.
+//
+// For single-line format <params_url_query_format> uses the same syntax as URL query parameters.
+// Hypothetical example in a YAML file:
+//
+// component:
+//   config_field: $file:/etc/secret.bin?binary=true
+//
+// For mult-line format <params_multi_line_YAML> uses syntax as a YAML inside YAML. Possible usage
+// example in a YAML file:
+//
+// component:
+//   config_field: |
+//     $yamltemplate: /etc/component_template.yaml
+//     logs_path: /var/logs/component.log
+//     timeout: 10s
+//
+// Not all config sources need these optional parameters, they are used to provide extra control when
+// retrieving and data to be injected into the configuration.
 //
 // Assuming a config source named "env" that retrieve environment variables and one named "file" that
 // retrieves contents from individual files, here are some examples:
@@ -244,11 +268,7 @@ func (m *Manager) expandConfigSources(ctx context.Context, s string) (interface{
 	// Provisional implementation: only strings prefixed with the first character '$'
 	// are checked for config sources.
 	//
-	// TODO: Handle different ways to express config sources:
-	//
-	// 1. Concatenated with other strings (needs delimiter syntax);
-	// 2. Using spaces in its declaration;
-	// 3. Multiline;
+	// TODO: Handle concatenated with other strings (needs delimiter syntax);
 	//
 	if len(s) == 0 || s[0] != '$' {
 		// TODO: handle escaped $.
@@ -286,10 +306,8 @@ func (m *Manager) expandConfigSources(ctx context.Context, s string) (interface{
 }
 
 // parseCfgSrc extracts the reference to a config source from a string value.
-// The current syntax is provisional: <cfgSrcName>:<selector>[?<params>]
 // The caller should check for error explicitly since it is possible for the
 // other values to have been partially set.
-// TODO: Improve parameter resolution.
 func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err error) {
 	const cfgSrcDelim string = ":"
 	parts := strings.SplitN(s, cfgSrcDelim, 2)
@@ -299,50 +317,72 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 	}
 	cfgSrcName = strings.Trim(parts[0], " ")
 
-	const selectorDelim string = "?"
-	parts = strings.SplitN(parts[1], selectorDelim, 2)
-	selector = strings.Trim(parts[0], " ")
+	// Separate multi-line and single line case.
+	afterCfgSrcName := parts[1]
+	switch {
+	case strings.Contains(afterCfgSrcName, "\n"):
+		// Multi-line, until the first \n it is the selector, everything after as YAML.
+		parts = strings.SplitN(afterCfgSrcName, "\n", 2)
+		selector = strings.Trim(parts[0], " ")
 
-	if len(parts) == 2 {
-		// There are parameters, for now simply transform it to an YAML and parse it
-		params, err = parseParams(parts[1])
-		if err != nil {
-			err = fmt.Errorf("invalid parameters syntax at %q: %w", s, err)
-			return
+		if len(parts) > 1 && len(parts[1]) > 0 {
+			v := config.NewViper()
+			v.SetConfigType("yaml")
+			if err = v.ReadConfig(bytes.NewReader([]byte(parts[1]))); err != nil {
+				return
+			}
+			params = v.AllSettings()
+		}
+
+	default:
+		// Single line, and parameters as URL query.
+		const selectorDelim string = "?"
+		parts = strings.SplitN(parts[1], selectorDelim, 2)
+		selector = strings.Trim(parts[0], " ")
+	
+		if len(parts) == 2 {
+			paramsPart := parts[1]
+			params, err = parseParamsAsURLQuery(paramsPart)
+			if err != nil {
+				err = fmt.Errorf("invalid parameters syntax at %q: %w", s, err)
+				return
+			}
 		}
 	}
 
 	return cfgSrcName, selector, params, err
 }
 
-func parseParams(s string) (interface{}, error) {
-	// Build a single-line valid yaml text to be parsed.
-	// The delimiter chars are all ASCII '&' and '=', looping over string
-	// as bytes is fine.
-	yamlBuf := make([]byte, 0, 2*len(s))
-	yamlBuf = append(yamlBuf, []byte("params: { ")...)
-
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '=':
-			// End of paramater name
-			yamlBuf = append(yamlBuf, ": "...)
-		case '&':
-			// Starting next parameter
-			yamlBuf = append(yamlBuf, ", "...)
-		default:
-			yamlBuf = append(yamlBuf, s[i])
-		}
-	}
-
-	// yamlBuf now it is a single line representing the params, parse it.
-	yamlBuf = append(yamlBuf, " }"...)
-	v := viper.New()
-	v.SetConfigType("yaml")
-	if err := v.ReadConfig(bytes.NewReader(yamlBuf)); err != nil {
+func parseParamsAsURLQuery(s string) (interface{}, error) {
+	values, err := url.ParseQuery(s)
+	if err != nil {
 		return nil, err
 	}
 
-	return v.Get("params"), nil
+	// Transform single array values in scalars.
+	params := make(map[string]interface{})
+	for k, v := range values {
+		switch len(v) {
+		case 0:
+			params[k] = nil
+		case 1:
+			var iface interface{}
+			if err := yaml.Unmarshal([]byte(v[0]), &iface); err != nil {
+				return nil, err
+			}
+			params[k] = iface
+		default:
+			// It is a slice add element by element
+			elemSlice := make([]interface{}, 0, len(v))
+			for _, elem := range v {
+				var iface interface{}
+				if err := yaml.Unmarshal([]byte(elem), &iface); err != nil {
+					return nil, err
+				}
+				elemSlice = append(elemSlice, iface)
+			}
+			params[k] = elemSlice
+		}
+	}
+	return params, err
 }
-
