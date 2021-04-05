@@ -37,9 +37,9 @@ var (
 	r = metric.NewRegistry()
 
 	queueSizeGauge, _ = r.AddInt64DerivedGauge(
-		obsreport.ExporterKey+"/queue_size",
+		obsreport.GetExporterKey()+"/queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches)"),
-		metric.WithLabelKeys(obsreport.ExporterKey),
+		metric.WithLabelKeys(obsreport.GetExporterKey()),
 		metric.WithUnit(metricdata.UnitDimensionless))
 )
 
@@ -127,7 +127,7 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
-	traceAttr := trace.StringAttribute(obsreport.ExporterKey, fullName)
+	traceAttr := trace.StringAttribute(obsreport.GetExporterKey(), fullName)
 	return &queuedRetrySender{
 		fullName: fullName,
 		cfg:      qCfg,
