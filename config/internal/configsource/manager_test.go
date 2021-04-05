@@ -337,7 +337,7 @@ func Test_parseCfgSrc(t *testing.T) {
 		},
 		{
 			name:       "params",
-			str:        "cfgsrc:selector?{p0:1,p1:a_string,p2:true}",
+			str:        "cfgsrc:selector?p0=1&p1=a_string&p2=true",
 			cfgSrcName: "cfgsrc",
 			selector:   "selector",
 			params: map[string]interface{}{
@@ -347,15 +347,8 @@ func Test_parseCfgSrc(t *testing.T) {
 			},
 		},
 		{
-			name:       "scalar_params",
-			str:        "cfgsrc:selector?true",
-			cfgSrcName: "cfgsrc",
-			selector:   "selector",
-			params:     true,
-		},
-		{
 			name:       "array_in_params",
-			str:        "cfgsrc:selector?{p0:[0,1,2],p1:done}",
+			str:        "cfgsrc:selector?p0=[0,1,2]&p1=done",
 			cfgSrcName: "cfgsrc",
 			selector:   "selector",
 			params: map[string]interface{}{
@@ -364,9 +357,13 @@ func Test_parseCfgSrc(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid_params",
-			str:     "cfgsrc:selector?{no_closing:bracket",
-			wantErr: true,
+			name:    "empty_param",
+			str:     "cfgsrc:selector?no_closing=",
+			cfgSrcName: "cfgsrc",
+			selector:   "selector",
+			params: map[string]interface{}{
+				"no_closing": interface{}(nil),
+			},
 		},
 	}
 	for _, tt := range tests {

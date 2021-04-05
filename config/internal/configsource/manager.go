@@ -60,7 +60,7 @@ import (
 //      logs_dir: $env:LOGS_DIR
 //
 //      # Retrieves the value from the file /etc/secret.bin and injects its contents as a []byte.
-//      bytes_from_file: $file:/etc/secret.bin?{binary:true}
+//      bytes_from_file: $file:/etc/secret.bin?binary=true
 //
 //      # Retrieves the value from the file /etc/text.txt and injects its contents as a string.
 //      # Hypothetically the "file" config source by default tries to inject the file contents
@@ -294,7 +294,7 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 	const cfgSrcDelim string = ":"
 	parts := strings.SplitN(s, cfgSrcDelim, 2)
 	if len(parts) != 2 {
-		err = fmt.Errorf("inproper config source syntax at %q, it must have at least the config source name and a selector", s)
+		err = fmt.Errorf("invalid config source syntax at %q, it must have at least the config source name and a selector", s)
 		return
 	}
 	cfgSrcName = strings.Trim(parts[0], " ")
@@ -317,20 +317,26 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 
 func parseParams(s string) (interface{}, error) {
 	// Build a single-line valid yaml text to be parsed.
-	// The delimiter chars are all ASCII '{', '}', ',', ':', looping over string
-	//  as bytes is fine.
+	// The delimiter chars are all ASCII '&' and '=', looping over string
+	// as bytes is fine.
 	yamlBuf := make([]byte, 0, 2*len(s))
-	yamlBuf = append(yamlBuf, []byte("params: ")...)
+	yamlBuf = append(yamlBuf, []byte("params: { ")...)
 
 	for i := 0; i < len(s); i++ {
-		yamlBuf = append(yamlBuf, s[i])
-		if yamlDelimiter(s[i]) {
-			// Make it a legal YAML by adding a single space after the delimiters.
-			yamlBuf = append(yamlBuf, ' ')
+		switch s[i] {
+		case '=':
+			// End of paramater name
+			yamlBuf = append(yamlBuf, ": "...)
+		case '&':
+			// Starting next parameter
+			yamlBuf = append(yamlBuf, ", "...)
+		default:
+			yamlBuf = append(yamlBuf, s[i])
 		}
 	}
 
 	// yamlBuf now it is a single line representing the params, parse it.
+	yamlBuf = append(yamlBuf, " }"...)
 	v := viper.New()
 	v.SetConfigType("yaml")
 	if err := v.ReadConfig(bytes.NewReader(yamlBuf)); err != nil {
@@ -340,6 +346,3 @@ func parseParams(s string) (interface{}, error) {
 	return v.Get("params"), nil
 }
 
-func yamlDelimiter(c byte) bool {
-	return c == '{' || c == '}' || c == ':' || c == ','
-}
