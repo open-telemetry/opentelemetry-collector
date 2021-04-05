@@ -194,7 +194,7 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 				Value: map[string]interface{}{
 					"p0": true,
 					"p1": "a string with spaces",
-					"p2":  map[string]interface{}{
+					"p2": map[string]interface{}{
 						"p2_0": "a nested map0",
 						"p2_1": true,
 					},
@@ -204,7 +204,7 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 	}
 
 	// Set OnRetrieve to check if the parameters were parsed as expected.
-	tstCfgSrc.OnRetrieve = func (ctx context.Context, selector string, params interface{}) error {
+	tstCfgSrc.OnRetrieve = func(ctx context.Context, selector string, params interface{}) error {
 		assert.Equal(t, tstCfgSrc.ValueMap[selector].Value, params)
 		return nil
 	}
@@ -411,8 +411,8 @@ func Test_parseCfgSrc(t *testing.T) {
 			},
 		},
 		{
-			name:    "empty_param",
-			str:     "cfgsrc:selector?no_closing=",
+			name:       "empty_param",
+			str:        "cfgsrc:selector?no_closing=",
 			cfgSrcName: "cfgsrc",
 			selector:   "selector",
 			params: map[string]interface{}{
@@ -420,8 +420,8 @@ func Test_parseCfgSrc(t *testing.T) {
 			},
 		},
 		{
-			name:    "use_url_encode",
-			str:     "cfgsrc:selector?p0=contains+%3D+and+%26+too",
+			name:       "use_url_encode",
+			str:        "cfgsrc:selector?p0=contains+%3D+and+%26+too",
 			cfgSrcName: "cfgsrc",
 			selector:   "selector",
 			params: map[string]interface{}{

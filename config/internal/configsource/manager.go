@@ -69,8 +69,8 @@ import (
 //
 // component:
 //   config_field: |
-//     $yamltemplate: /etc/component_template.yaml
-//     logs_path: /var/logs/component.log
+//     $yamltemplate: /etc/log_template.yaml
+//     logs_path: /var/logs/
 //     timeout: 10s
 //
 // Not all config sources need these optional parameters, they are used to provide extra control when
@@ -339,7 +339,7 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 		const selectorDelim string = "?"
 		parts = strings.SplitN(parts[1], selectorDelim, 2)
 		selector = strings.Trim(parts[0], " ")
-	
+
 		if len(parts) == 2 {
 			paramsPart := parts[1]
 			params, err = parseParamsAsURLQuery(paramsPart)
@@ -367,7 +367,7 @@ func parseParamsAsURLQuery(s string) (interface{}, error) {
 			params[k] = nil
 		case 1:
 			var iface interface{}
-			if err := yaml.Unmarshal([]byte(v[0]), &iface); err != nil {
+			if err = yaml.Unmarshal([]byte(v[0]), &iface); err != nil {
 				return nil, err
 			}
 			params[k] = iface
@@ -376,7 +376,7 @@ func parseParamsAsURLQuery(s string) (interface{}, error) {
 			elemSlice := make([]interface{}, 0, len(v))
 			for _, elem := range v {
 				var iface interface{}
-				if err := yaml.Unmarshal([]byte(elem), &iface); err != nil {
+				if err = yaml.Unmarshal([]byte(elem), &iface); err != nil {
 					return nil, err
 				}
 				elemSlice = append(elemSlice, iface)
