@@ -25,8 +25,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
@@ -134,7 +134,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, processorCreateParams, getConfigFn())
-		if errors.Is(err, configerror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

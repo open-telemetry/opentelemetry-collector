@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -41,17 +41,17 @@ func (f *TestReceiverFactory) CreateDefaultConfig() config.Receiver {
 
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *TestReceiverFactory) CreateTracesReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Traces) (TracesReceiver, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Metrics) (MetricsReceiver, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *TestReceiverFactory) CreateLogsReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Logs) (LogsReceiver, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func TestBuildReceivers(t *testing.T) {

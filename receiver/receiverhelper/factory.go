@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -117,7 +117,7 @@ func (f *factory) CreateTracesReceiver(
 	if f.createTraceReceiver != nil {
 		return f.createTraceReceiver(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a component.MetricsReceiver based on this config.
@@ -129,7 +129,7 @@ func (f *factory) CreateMetricsReceiver(
 	if f.createMetricsReceiver != nil {
 		return f.createMetricsReceiver(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateLogsReceiver creates a metrics processor based on this config.
@@ -142,7 +142,7 @@ func (f *factory) CreateLogsReceiver(
 	if f.createLogsReceiver != nil {
 		return f.createLogsReceiver(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)

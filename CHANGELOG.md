@@ -22,7 +22,8 @@
 - Remove `configtest.NewViperFromYamlFile()`, use `config.Parser.NewParserFromFile()` (#2806)
 - Move `config.ViperSubExact()` to use `config.Parser.Sub()` (#2806)
 - Update LoadReceiver signature to remove unused params (#2823)
-- Change constants in `obsreport_exporter.go` to private (#TBD)
+- Move `configerror.ErrDataTypeIsNotSupported` to `componenterror.ErrDataTypeIsNotSupported` (#2886)
+- Change constants in `obsreport_exporter.go` to private (#2895)
 
 ## 💡 Enhancements 💡
 
