@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 type TestExporterFactory struct {
@@ -39,17 +40,17 @@ func (f *TestExporterFactory) CreateDefaultConfig() config.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, config.Exporter) (TracesExporter, error) {
+func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, config.Exporter, consumer.Traces) (TracesExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateParams, config.Exporter) (MetricsExporter, error) {
+func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateParams, config.Exporter, consumer.Metrics) (MetricsExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// CreateMetricsExporter creates a logs exporter based on this config.
-func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, config.Exporter) (LogsExporter, error) {
+// CreateLogsExporter creates a logs exporter based on this config.
+func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, config.Exporter, consumer.Logs) (LogsExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

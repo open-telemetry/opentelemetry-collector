@@ -26,11 +26,9 @@ import (
 // nopReceiverFactory is factory for nopReceiver.
 type nopReceiverFactory struct{}
 
-var nopReceiverFactoryInstance = &nopReceiverFactory{}
-
-// NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop exporters.
+// NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop receivers.
 func NewNopReceiverFactory() component.ReceiverFactory {
-	return nopReceiverFactoryInstance
+	return &nopReceiverFactory{}
 }
 
 // Type gets the type of the Receiver config created by this factory.
@@ -65,7 +63,7 @@ func (f *nopReceiverFactory) CreateMetricsReceiver(
 	return nopReceiverInstance, nil
 }
 
-// CreateMetricsReceiver implements component.ReceiverFactory interface.
+// CreateLogsReceiver implements component.ReceiverFactory interface.
 func (f *nopReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,

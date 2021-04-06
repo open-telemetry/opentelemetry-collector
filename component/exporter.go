@@ -56,7 +56,7 @@ type ExporterCreateParams struct {
 	ApplicationStartInfo ApplicationStartInfo
 }
 
-// ExporterFactory can create TracesExporter and MetricsExporter. This is the
+// ExporterFactory can create TracesExporter, MetricsExporter and LogsExporter. This is the
 // new factory type that can create new style exporters.
 type ExporterFactory interface {
 	Factory
@@ -77,6 +77,7 @@ type ExporterFactory interface {
 		ctx context.Context,
 		params ExporterCreateParams,
 		cfg config.Exporter,
+		nextConsumer consumer.Traces,
 	) (TracesExporter, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
@@ -86,6 +87,7 @@ type ExporterFactory interface {
 		ctx context.Context,
 		params ExporterCreateParams,
 		cfg config.Exporter,
+		nextConsumer consumer.Metrics,
 	) (MetricsExporter, error)
 
 	// CreateLogsExporter creates an exporter based on the config.
@@ -95,5 +97,6 @@ type ExporterFactory interface {
 		ctx context.Context,
 		params ExporterCreateParams,
 		cfg config.Exporter,
+		nextConsumer consumer.Logs,
 	) (LogsExporter, error)
 }

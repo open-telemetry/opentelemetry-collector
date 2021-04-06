@@ -29,11 +29,9 @@ type nopProcessorFactory struct {
 	component.BaseProcessorFactory
 }
 
-var nopProcessorFactoryInstance = &nopProcessorFactory{}
-
-// NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop exporters.
+// NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopProcessorFactory() component.ProcessorFactory {
-	return nopProcessorFactoryInstance
+	return &nopProcessorFactory{}
 }
 
 // Type gets the type of the Processor config created by this factory.
@@ -68,7 +66,7 @@ func (f *nopProcessorFactory) CreateMetricsProcessor(
 	return nopProcessorInstance, nil
 }
 
-// CreateMetricsProcessor implements component.ProcessorFactory interface.
+// CreateLogsProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,

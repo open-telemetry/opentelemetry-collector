@@ -25,11 +25,9 @@ import (
 // nopExtensionFactory is factory for nopExtension.
 type nopExtensionFactory struct{}
 
-var nopExtensionFactoryInstance = &nopExtensionFactory{}
-
-// NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop exporters.
+// NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
 func NewNopExtensionFactory() component.ExtensionFactory {
-	return nopExtensionFactoryInstance
+	return &nopExtensionFactory{}
 }
 
 // Type gets the type of the Extension config created by this factory.
