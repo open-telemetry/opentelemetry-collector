@@ -24,8 +24,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -56,11 +56,11 @@ func TestNewFactory(t *testing.T) {
 	_, ok := factory.(component.ConfigUnmarshaler)
 	assert.False(t, ok)
 	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 }
 
 func TestNewFactory_WithConstructors(t *testing.T) {

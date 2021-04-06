@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 )
 
 type TestExporterFactory struct {
@@ -40,17 +40,17 @@ func (f *TestExporterFactory) CreateDefaultConfig() config.Exporter {
 
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, config.Exporter) (TracesExporter, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateParams, config.Exporter) (MetricsExporter, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a logs exporter based on this config.
 func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, config.Exporter) (LogsExporter, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func TestBuildExporters(t *testing.T) {

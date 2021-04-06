@@ -22,6 +22,7 @@
 - Remove `configtest.NewViperFromYamlFile()`, use `config.Parser.NewParserFromFile()` (#2806)
 - Move `config.ViperSubExact()` to use `config.Parser.Sub()` (#2806)
 - Update LoadReceiver signature to remove unused params (#2823)
+- Move `configerror.ErrDataTypeIsNotSupported` to `componenterror.ErrDataTypeIsNotSupported` (#2886)
 
 ## 💡 Enhancements 💡
 
