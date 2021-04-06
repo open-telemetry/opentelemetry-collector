@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.24.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Remove legacy internal metrics for memorylimiter processor, `spans_dropped` and `trace_batches_dropped` (#2841)
@@ -23,6 +25,10 @@
 - Move `config.ViperSubExact()` to use `config.Parser.Sub()` (#2806)
 - Update LoadReceiver signature to remove unused params (#2823)
 - Move `configerror.ErrDataTypeIsNotSupported` to `componenterror.ErrDataTypeIsNotSupported` (#2886)
+- Rename`CreateTraceExporter` type to `CreateTracesExporter` in `exporterhelper` (#2779)
+- Move `fluentbit` extension to contrib (#2795)
+- Move `configmodels` to `config` (#2808)
+- Move `fluentforward` receiver to contrib (#2723)
 
 ## 💡 Enhancements 💡
 
@@ -31,10 +37,24 @@
 - Use `confignet.TCPAddr` for `pprof` and `zpages` extensions (#2829)
 - Deprecate `consumetest.New[${SIGNAL}]Nop` in favor of `consumetest.NewNop` (#2878)
 - Deprecate `consumetest.New[${SIGNAL}]Err` in favor of `consumetest.NewErr` (#2878)
+- Add watcher to values retrieved via config sources (#2803)
+- Updates for cloud semantic conventions (#2809)
+  - `cloud.infrastructure_service` -> `cloud.platform`
+  - `cloud.zone` -> `cloud.availability_zone`
+- Add systemd environment file for deb/rpm packages (#2822)
+- Add validate interface in `configmodels` to force each component do configuration validation (#2802, #2856)
+- Add `aws.ecs.task.revision` to semantic conventions list (#2816)
+- Set unprivileged user to container image (#2838)
+- Add New funcs for extension, exporter, processor config settings (#2872)
+- Report metric about current size of the exporter retry queue (#2858)
+- Allow adding new signals in `ProcessorFactory` by forcing everyone to embed `BaseProcessorFactory` (#2885)
 
 ## 🧰 Bug fixes 🧰
 
 - `pdata.TracesFromOtlpProtoBytes`: Fixes to handle backwards compatibility changes in proto (#2798)
+- `jaeger` receiver: Escape user input used in output (#2815)
+- `prometheus` exporter: Ensure same time is used for updated time (#2745)
+- `prometheusremotewrite` exporter: Close HTTP response body (#2875)
 
 ## v0.23.0 Beta
 
