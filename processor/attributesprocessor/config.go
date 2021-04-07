@@ -37,3 +37,10 @@ type Config struct {
 	// This is a required field.
 	processorhelper.Settings `mapstructure:",squash"`
 }
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

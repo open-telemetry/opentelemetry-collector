@@ -52,5 +52,12 @@ type Config struct {
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
 }
 
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}
+
 // Name of BallastSizeMiB config option.
 const ballastSizeMibKey = "ballast_size_mib"

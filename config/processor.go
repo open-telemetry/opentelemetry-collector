@@ -16,8 +16,10 @@ package config
 
 // Processor is the configuration of a processor. Specific processors must implement this
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.
+// Embedded validatable will force each processor to implement Validate() function
 type Processor interface {
 	NamedEntity
+	validatable
 }
 
 // Processors is a map of names to Processors.
@@ -51,4 +53,9 @@ func (proc *ProcessorSettings) SetName(name string) {
 // Type sets the processor type.
 func (proc *ProcessorSettings) Type() Type {
 	return proc.TypeVal
+}
+
+// Validate validates the configuration and returns an error if invalid.
+func (proc *ProcessorSettings) Validate() error {
+	return nil
 }

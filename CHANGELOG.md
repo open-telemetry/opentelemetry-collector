@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+## 💡 Enhancements 💡
+
+- Add `validatable` interface with `Validate()` to all `config.<component>` (#2898)
+  - add the empty `Validate()` implementation for all component configs
+
 ## v0.24.0 Beta
 
 ## 🛑 Breaking changes 🛑

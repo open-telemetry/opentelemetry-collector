@@ -27,3 +27,10 @@ type Config struct {
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	AttributesActions []processorhelper.ActionKeyValue `mapstructure:"attributes"`
 }
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

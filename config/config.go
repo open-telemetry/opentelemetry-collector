@@ -76,6 +76,23 @@ func (cfg *Config) Validate() error {
 		return errMissingExporters
 	}
 
+	// Validate the exporter configuration.
+	for exp, expCfg := range cfg.Exporters {
+		if err := expCfg.Validate(); err != nil {
+			return fmt.Errorf("exporter \"%s\" has invalid configuration: %w", exp, err)
+		}
+	}
+
+	// Validate the processor configuration if there is any processor
+	// configured in the pipeline
+	if len(cfg.Processors) != 0 {
+		for proc, procCfg := range cfg.Processors {
+			if err := procCfg.Validate(); err != nil {
+				return fmt.Errorf("processor \"%s\" has invalid configuration: %w", proc, err)
+			}
+		}
+	}
+
 	// Check that all enabled extensions in the service are configured
 	if err := cfg.validateServiceExtensions(); err != nil {
 		return err
@@ -92,6 +109,13 @@ func (cfg *Config) validateServiceExtensions() error {
 		// Check that the name referenced in the Service extensions exists in the top-level extensions
 		if cfg.Extensions[ref] == nil {
 			return fmt.Errorf("service references extension %q which does not exist", ref)
+		}
+	}
+
+	// Validate the extension configuration.
+	for ext, extCfg := range cfg.Extensions {
+		if err := extCfg.Validate(); err != nil {
+			return fmt.Errorf("extension \"%s\" has invalid configuration: %w", ext, err)
 		}
 	}
 

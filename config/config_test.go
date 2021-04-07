@@ -22,15 +22,51 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var errInvalidConfig = errors.New("invalid receiver config")
+var errInvalidRecvConfig = errors.New("invalid receiver config")
+var errInvalidExpConfig = errors.New("invalid exporter config")
+var errInvalidProcConfig = errors.New("invalid processor config")
+var errInvalidExtConfig = errors.New("invalid extension config")
 
-type nopConfig struct {
+type nopRecvConfig struct {
 	ReceiverSettings
 }
 
-func (nc *nopConfig) Validate() error {
+func (nc *nopRecvConfig) Validate() error {
 	if nc.TypeVal != "nop" {
-		return errInvalidConfig
+		return errInvalidRecvConfig
+	}
+	return nil
+}
+
+type nopExpConfig struct {
+	ExporterSettings
+}
+
+func (nc *nopExpConfig) Validate() error {
+	if nc.TypeVal != "nop" {
+		return errInvalidExpConfig
+	}
+	return nil
+}
+
+type nopProcConfig struct {
+	ProcessorSettings
+}
+
+func (nc *nopProcConfig) Validate() error {
+	if nc.TypeVal != "nop" {
+		return errInvalidProcConfig
+	}
+	return nil
+}
+
+type nopExtConfig struct {
+	ExtensionSettings
+}
+
+func (nc *nopExtConfig) Validate() error {
+	if nc.TypeVal != "nop" {
+		return errInvalidExtConfig
 	}
 	return nil
 }
@@ -136,14 +172,53 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Receivers["nop"] = &nopConfig{
+				cfg.Receivers["nop"] = &nopRecvConfig{
 					ReceiverSettings: ReceiverSettings{
 						TypeVal: "invalid_rec_type",
 					},
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`receiver "nop" has invalid configuration: %w`, errInvalidConfig),
+			expected: fmt.Errorf(`receiver "nop" has invalid configuration: %w`, errInvalidRecvConfig),
+		},
+		{
+			name: "invalid-exporter-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Exporters["nop"] = &nopExpConfig{
+					ExporterSettings: ExporterSettings{
+						TypeVal: "invalid_exp_type",
+					},
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`exporter "nop" has invalid configuration: %w`, errInvalidExpConfig),
+		},
+		{
+			name: "invalid-processor-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Processors["nop"] = &nopProcConfig{
+					ProcessorSettings: ProcessorSettings{
+						TypeVal: "invalid_proc_type",
+					},
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`processor "nop" has invalid configuration: %w`, errInvalidProcConfig),
+		},
+		{
+			name: "invalid-extension-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Extensions["nop"] = &nopExtConfig{
+					ExtensionSettings: ExtensionSettings{
+						TypeVal: "invalid_ext_type",
+					},
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
 		},
 	}
 
@@ -158,20 +233,32 @@ func TestConfigValidate(t *testing.T) {
 func generateConfig() *Config {
 	return &Config{
 		Receivers: map[string]Receiver{
-			"nop": &nopConfig{
+			"nop": &nopRecvConfig{
 				ReceiverSettings: ReceiverSettings{
 					TypeVal: "nop",
 				},
 			},
 		},
 		Exporters: map[string]Exporter{
-			"nop": &ExporterSettings{TypeVal: "nop"},
+			"nop": &nopExpConfig{
+				ExporterSettings: ExporterSettings{
+					TypeVal: "nop",
+				},
+			},
 		},
 		Processors: map[string]Processor{
-			"nop": &ProcessorSettings{TypeVal: "nop"},
+			"nop": &nopProcConfig{
+				ProcessorSettings: ProcessorSettings{
+					TypeVal: "nop",
+				},
+			},
 		},
 		Extensions: map[string]Extension{
-			"nop": &ExtensionSettings{TypeVal: "nop"},
+			"nop": &nopExtConfig{
+				ExtensionSettings: ExtensionSettings{
+					TypeVal: "nop",
+				},
+			},
 		},
 		Service: Service{
 			Extensions: []string{"nop"},
