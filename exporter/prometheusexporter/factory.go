@@ -52,19 +52,32 @@ func createMetricsExporter(
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
-	exporter, err := newPrometheusExporter(pcfg, params.Logger)
+	prometheus, err := newPrometheusExporter(pcfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		exporter.ConsumeMetrics,
-		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
+		prometheus.ConsumeMetrics,
+		exporterhelper.WithStart(prometheus.Start),
+		exporterhelper.WithShutdown(prometheus.Shutdown),
 		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
 			Enabled: pcfg.ResourceAttributesAsTags,
 		}),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wrapMetricsExpoter{
+		MetricsExporter: exporter,
+		exporter:        prometheus,
+	}, nil
+}
+
+type wrapMetricsExpoter struct {
+	component.MetricsExporter
+	exporter *prometheusExporter
 }
