@@ -17,6 +17,8 @@ The following settings can be optionally configured:
 - `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying
   metric sample in the response.
 - `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
+- `resource_attributes_as_tag` (default = `false`): if set to true will transform all resource
+  attributes into labels.
 
 Example:
 
@@ -30,4 +32,5 @@ exporters:
       "another label": spaced value
     send_timestamps: true
     metric_expiration: 180m
+	resource_attributes_as_tags: true
 ```

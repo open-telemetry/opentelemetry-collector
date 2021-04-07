@@ -40,4 +40,8 @@ type Config struct {
 
 	// MetricExpiration defines how long metrics are kept without updates
 	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
+
+	// ResourceAttributesAsTags, if sMet to true, will use the exporterhelper feature to
+	// transform all resource attributes into metric labels.
+	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
 }

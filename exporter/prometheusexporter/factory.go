@@ -52,5 +52,19 @@ func createMetricsExporter(
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
-	return newPrometheusExporter(pcfg, params.Logger)
+	exporter, err := newPrometheusExporter(pcfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		params.Logger,
+		exporter.ConsumeMetrics,
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
+			Enabled: pcfg.ResourceAttributesAsTags,
+		}),
+	)
 }
