@@ -70,6 +70,8 @@ func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error
 		return c.convertIntHistogram(metric)
 	case pdata.MetricDataTypeHistogram:
 		return c.convertDoubleHistogram(metric)
+	case pdata.MetricDataTypeSummary:
+		return c.convertSummary(metric)
 	}
 
 	return nil, errUnknownMetricType
@@ -203,6 +205,30 @@ func (c *collector) convertIntHistogram(metric pdata.Metric) (prometheus.Metric,
 
 	if c.sendTimestamps {
 		return prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m), nil
+	}
+	return m, nil
+}
+
+func (c *collector) convertSummary(metric pdata.Metric) (prometheus.Metric, error) {
+	// TODO: In the off chance that we have multiple points
+	// within the same metric, how should we handle them?
+	point := metric.Summary().DataPoints().At(0)
+
+	quantiles := make(map[float64]float64)
+	qv := point.QuantileValues()
+	for j := 0; j < qv.Len(); j++ {
+		qvj := qv.At(j)
+		// There should be EXACTLY one quantile value lest it is an invalid exposition.
+		quantiles[qvj.Quantile()] = qvj.Value()
+	}
+
+	desc, labelValues := c.getMetricMetadata(metric, point.LabelsMap())
+	m, err := prometheus.NewConstSummary(desc, point.Count(), point.Sum(), quantiles, labelValues...)
+	if err != nil {
+		return nil, err
+	}
+	if c.sendTimestamps {
+		return prometheus.NewMetricWithTimestamp(point.Timestamp().AsTime(), m), nil
 	}
 	return m, nil
 }
