@@ -32,5 +32,5 @@ exporters:
       "another label": spaced value
     send_timestamps: true
     metric_expiration: 180m
-	resource_attributes_as_tags: true
+    resource_attributes_as_tags: true
 ```
