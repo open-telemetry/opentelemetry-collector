@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 
@@ -28,6 +29,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
+
+// expandPrefixChar is the char used to prefix strings that can be expanded,
+// either environment variables or config sources.
+const expandPrefixChar = '$'
 
 // Manager is used to inject data from config sources into a configuration and also
 // to monitor for updates on the items injected into the configuration.  All methods
@@ -44,13 +49,17 @@ import (
 //
 //    param_to_be_retrieved: $<cfgSrcName>:<selector>[?<params_url_query_format>]
 //
+// bracketed single-line:
+//
+//    param_to_be_retrieved: ${<cfgSrcName>:<selector>[?<params_url_query_format>]}
+//
 // and multi-line are supported:
 //
 //    param_to_be_retrieved: |
 //      $<cfgSrcName>: <selector>
 //      [<params_multi_line_YAML>]
 //
-// The <cfgSrcName> is a name string used to indentify the config source instance to be used
+// The <cfgSrcName> is a name string used to identify the config source instance to be used
 // to retrieve the value.
 //
 // The <selector> is the mandatory parameter required when retrieving data from a config source.
@@ -64,7 +73,7 @@ import (
 // component:
 //   config_field: $file:/etc/secret.bin?binary=true
 //
-// For mult-line format <params_multi_line_YAML> uses syntax as a YAML inside YAML. Possible usage
+// For multi-line format <params_multi_line_YAML> uses syntax as a YAML inside YAML. Possible usage
 // example in a YAML file:
 //
 // component:
@@ -91,6 +100,21 @@ import (
 //      # as a string if params doesn't specify that "binary" is true.
 //      text_from_file: $file:/etc/text.txt
 //
+// Bracketed single-line should be used when concatenating a suffix to the value retrieved by
+// the config source. Example:
+//
+//    component:
+//      # Retrieves the value of the environment variable LOGS_DIR and appends /component.log to it.
+//      log_file_fullname: ${env:LOGS_DIR}/component.log
+//
+// Environment variables are expanded before passed to the config source when used in the selector or
+// the optional parameters. Example:
+//
+//    component:
+//      # Retrieves the value from the file text.txt located on the path specified by the environment
+//      # variable DATA_PATH.
+//      text_from_file: $file:$DATA_PATH/text.txt
+//
 type Manager struct {
 	// configSources is map from ConfigSource names (as defined in the configuration)
 	// and the respective instances.
@@ -114,7 +138,7 @@ type Manager struct {
 // NewManager creates a new instance of a Manager to be used to inject data from
 // ConfigSource objects into a configuration and watch for updates on the injected
 // data.
-func NewManager(*config.Parser) (*Manager, error) {
+func NewManager(_ *config.Parser) (*Manager, error) {
 	// TODO: Config sources should be extracted for the config itself, need Factories for that.
 
 	return &Manager{
@@ -236,7 +260,7 @@ func (m *Manager) retrieveEndAllSessions(ctx context.Context) []error {
 func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
-		return m.expandConfigSources(ctx, v)
+		return m.expandString(ctx, v)
 	case []interface{}:
 		nslice := make([]interface{}, 0, len(v))
 		for _, vint := range v {
@@ -262,32 +286,14 @@ func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (in
 	}
 }
 
-// expandConfigSources retrieve data from the specified config sources and injects them into
-// the configuration. The Manager tracks sessions and watcher objects as needed.
-func (m *Manager) expandConfigSources(ctx context.Context, s string) (interface{}, error) {
-	// Provisional implementation: only strings prefixed with the first character '$'
-	// are checked for config sources.
-	//
-	// TODO: Handle concatenated with other strings (needs delimiter syntax);
-	//
-	if len(s) == 0 || s[0] != '$' {
-		// TODO: handle escaped $.
-		return s, nil
-	}
-
-	cfgSrcName, selector, params, err := parseCfgSrc(s[1:])
+func (m *Manager) expandConfigSource(ctx context.Context, cfgSrc ConfigSource, s string) (interface{}, error) {
+	cfgSrcName, selector, params, err := parseCfgSrc(s)
 	if err != nil {
 		return nil, err
 	}
 
 	session, ok := m.sessions[cfgSrcName]
 	if !ok {
-		// The session for this config source was not created yet.
-		cfgSrc, ok := m.configSources[cfgSrcName]
-		if !ok {
-			return nil, fmt.Errorf("config source %q not found", cfgSrcName)
-		}
-
 		session, err = cfgSrc.NewSession(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create session for config source %q: %w", cfgSrcName, err)
@@ -303,6 +309,107 @@ func (m *Manager) expandConfigSources(ctx context.Context, s string) (interface{
 	m.watchers = append(m.watchers, retrieved.WatchForUpdate)
 
 	return retrieved.Value(), nil
+}
+
+// expandString expands environment variables that are specified on the string.
+func (m *Manager) expandString(ctx context.Context, s string) (interface{}, error) {
+	// Code based on os.Expand function. All delimiters are checked against are
+	// ASCII so bytes are fine for this operation.
+	var buf []byte
+
+	// Using i, j, and w variables to keep correspondence with os.Expand code.
+	// i tracks the index in s from which a slice to be appended to buf should start.
+	// j tracks the char being currently checked and also the end of the slice to be appended to buf.
+	// w tracks the number of characters being consumed after a prefix identifying and env var or
+	// config source.
+	i := 0
+	for j := 0; j < len(s); j++ {
+		if s[j] == expandPrefixChar && j+1 < len(s) {
+			if buf == nil {
+				buf = make([]byte, 0, 2*len(s))
+			}
+			buf = append(buf, s[i:j]...)
+
+			var retrieved interface{}
+			var err error
+			w := 0 // number of bytes consumed on this pass
+
+			switch {
+			case s[j+1] == expandPrefixChar:
+				// Escaped prefix:
+				buf = append(buf, s[j])
+				w = 1 // consumed a single char
+
+			case s[j+1] == '{':
+				// Bracketed usage, consume everything until first '}' like os.Expand.
+				var content string
+				content, w = getShellName(s[j+1:])
+				content = strings.Trim(content, " ") // Allow for some spacing but just on outside of expression.
+				if len(content) > 1 && content[0] == expandPrefixChar {
+					name, _ := getShellName(content[1:])
+					if cfgSrc, ok := m.configSources[name]; ok {
+						// The name matches a config source, try to apply it.
+						retrieved, err = m.expandConfigSource(ctx, cfgSrc, expandEnvVars(content[1:]))
+						if err != nil {
+							return nil, err
+						}
+					}
+				}
+
+				if retrieved == nil {
+					// Not a config source, expand as os.ExpandEnv
+					buf = osExpandEnv(buf, content, w)
+				} else {
+					consumedAll := j+w+1 == len(s)
+					if consumedAll {
+						if len(buf) == 0 {
+							// This is the only content on the string, config
+							// source is free to return interface{}.
+							return retrieved, nil
+						}
+
+						// Convert the retrieved value to string.
+						return string(buf) + fmt.Sprintf("%v", retrieved), nil
+					}
+
+					// There are still characters to be processed.
+					buf = append(buf, fmt.Sprintf("%v", retrieved)...)
+				}
+
+			default:
+				var name string
+				name, w = getShellName(s[j+1:])
+				if cfgSrc, ok := m.configSources[name]; ok {
+					// This is a config source, since it is not delimited it will
+					// always consume until end of the string.
+					cfgSrcInvoke := expandEnvVars(s[j+1:])
+					retrieved, err = m.expandConfigSource(ctx, cfgSrc, cfgSrcInvoke)
+					if err != nil {
+						return nil, err
+					}
+					if len(buf) == 0 {
+						// This is the only content on the string, config
+						// source is free to return interface{}
+						return retrieved, nil
+					}
+
+					// Convert the retrieved value to string.
+					return string(buf) + fmt.Sprintf("%v", retrieved), nil
+				}
+
+				// Keep the same behavior as os.ExpandEnv
+				buf = osExpandEnv(buf, name, w)
+			}
+
+			j += w    // move the index of the char being (j) checked by the number of characters consumed (w) on this iteration.
+			i = j + 1 // next slice to be copied start
+		}
+	}
+
+	if buf == nil {
+		return s, nil
+	}
+	return string(buf) + s[i:], nil
 }
 
 // parseCfgSrc extracts the reference to a config source from a string value.
@@ -385,4 +492,80 @@ func parseParamsAsURLQuery(s string) (interface{}, error) {
 		}
 	}
 	return params, err
+}
+
+// expandEnvVars is used to expand environment variables with the same syntax used
+// by config.Parser.
+func expandEnvVars(s string) string {
+	return os.Expand(s, func(str string) string {
+		// This allows escaping environment variable substitution via $$, e.g.
+		// - $FOO will be substituted with env var FOO
+		// - $$FOO will be replaced with $FOO
+		// - $$$FOO will be replaced with $ + substituted env var FOO
+		if str == "$" {
+			return "$"
+		}
+		return os.Getenv(str)
+	})
+}
+
+// Does the same behavior as os.ExpandEnv
+func osExpandEnv(buf []byte, name string, w int) []byte {
+	if name == "" && w > 0 {
+		// Encountered invalid syntax; eat the
+		// characters.
+	} else if name == "" {
+		// Valid syntax, but $ was not followed by a
+		// name. Leave the dollar character untouched.
+		buf = append(buf, expandPrefixChar)
+	} else {
+		buf = append(buf, os.Getenv(name)...)
+	}
+	return buf
+}
+
+// Below are helper functions used by os.Expand, copied without changes from original sources (env.go).
+
+// isShellSpecialVar reports whether the character identifies a special
+// shell variable such as $*.
+func isShellSpecialVar(c uint8) bool {
+	switch c {
+	case '*', '#', '$', '@', '!', '?', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		return true
+	}
+	return false
+}
+
+// isAlphaNum reports whether the byte is an ASCII letter, number, or underscore
+func isAlphaNum(c uint8) bool {
+	return c == '_' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
+}
+
+// getShellName returns the name that begins the string and the number of bytes
+// consumed to extract it. If the name is enclosed in {}, it's part of a ${}
+// expansion and two more bytes are needed than the length of the name.
+func getShellName(s string) (string, int) {
+	switch {
+	case s[0] == '{':
+		if len(s) > 2 && isShellSpecialVar(s[1]) && s[2] == '}' {
+			return s[1:2], 3
+		}
+		// Scan to closing brace
+		for i := 1; i < len(s); i++ {
+			if s[i] == '}' {
+				if i == 1 {
+					return "", 2 // Bad syntax; eat "${}"
+				}
+				return s[1:i], i + 1
+			}
+		}
+		return "", 1 // Bad syntax; eat "${"
+	case isShellSpecialVar(s[0]):
+		return s[0:1], 1
+	}
+	// Scan alphanumerics.
+	var i int
+	for i = 0; i < len(s) && isAlphaNum(s[i]); i++ {
+	}
+	return s[:i], i
 }
