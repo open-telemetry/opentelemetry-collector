@@ -22,6 +22,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/hashicorp/vault/api v1.1.0
 	github.com/jaegertracing/jaeger v1.22.0
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/openzipkin/zipkin-go v0.2.5
@@ -49,6 +50,5 @@ require (
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
-	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )
