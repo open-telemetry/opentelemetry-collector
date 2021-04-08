@@ -18,6 +18,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+type ConfigSettings interface {
+	config.NamedEntity
+}
+
 // Settings defines common settings of a ConfigSource configuration.
 // Specific config sources can embed this struct and extend it with more fields if needed.
 // When embedded it must be with `mapstructure:"-"` tag.
@@ -31,8 +35,8 @@ func NewSettings(typeVal config.Type) *Settings {
 	return &Settings{TypeVal: typeVal, NameVal: string(typeVal)}
 }
 
-// Ensure that Settings satisfy the config.NamedEntity interface.
-var _ config.NamedEntity = (*Settings)(nil)
+// Ensure that Settings satisfy the ConfigSettings interface.
+var _ ConfigSettings = (*Settings)(nil)
 
 // Name gets the config source name.
 func (css *Settings) Name() string {
