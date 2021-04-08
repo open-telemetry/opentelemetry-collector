@@ -30,9 +30,19 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-// expandPrefixChar is the char used to prefix strings that can be expanded,
-// either environment variables or config sources.
-const expandPrefixChar = '$'
+const (
+	// expandPrefixChar is the char used to prefix strings that can be expanded,
+	// either environment variables or config sources.
+	expandPrefixChar = '$'
+	// configSourceNameDelimChar is the char used to terminate the name of config source
+	// when it is used to retrieve values to inject in the configuration
+	configSourceNameDelimChar = ':'
+)
+
+// private error types to help with testability
+type (
+	errUnknownConfigSource struct{ error }
+)
 
 // Manager is used to inject data from config sources into a configuration and also
 // to monitor for updates on the items injected into the configuration.  All methods
@@ -379,7 +389,18 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				// source or an environment variable.
 				var name string
 				name, w = getShellName(s[j+1:])
-				if cfgSrc, ok := m.configSources[name]; ok {
+
+				// Peek next char after name, if it is a config source name delimiter treat the remaining of the
+				// string as a config source.
+				if j+w+1 < len(s) && s[j+w+1] == configSourceNameDelimChar {
+					// Treat it as an attempt to retrieve data from a config source.
+					cfgSrc, ok := m.configSources[name]
+					if !ok {
+						return nil, &errUnknownConfigSource{
+							fmt.Errorf(`config source %q not found if this was intended to be an environment variable use "${%s}" instead"`, name, name),
+						}
+					}
+
 					// This is a config source, since it is not delimited it will
 					// always consume until end of the string.
 					cfgSrcInvoke := expandEnvVars(s[j+1:])

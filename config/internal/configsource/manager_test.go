@@ -434,14 +434,9 @@ func TestManager_expandString(t *testing.T) {
 			want:  "prefix-envvar_value",
 		},
 		{
-			name:  "suffixed_envvar",
-			input: "$envvar:suffix",
-			want:  "envvar_value:suffix",
-		},
-		{
-			name:  "envvar",
-			input: "$envvar:suffix",
-			want:  "envvar_value:suffix",
+			name:    "envvar_treated_as_cfgsrc",
+			input:   "$envvar:suffix",
+			wantErr: &errUnknownConfigSource{},
 		},
 		{
 			name:  "cfgsrc_using_envvar",
@@ -472,7 +467,7 @@ func TestManager_expandString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := csp.expandString(ctx, tt.input)
-			require.ErrorIs(t, err, tt.wantErr)
+			require.IsType(t, tt.wantErr, err)
 			require.Equal(t, tt.want, got)
 		})
 	}
