@@ -361,18 +361,14 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 					buf = osExpandEnv(buf, content, w)
 				} else {
 					consumedAll := j+w+1 == len(s)
-					if consumedAll {
-						if len(buf) == 0 {
-							// This is the only content on the string, config
-							// source is free to return interface{}.
-							return retrieved, nil
-						}
-
-						// Convert the retrieved value to string.
-						return string(buf) + fmt.Sprintf("%v", retrieved), nil
+					if consumedAll && len(buf) == 0 {
+						// This is the only content on the string, config
+						// source is free to return interface{}.
+						return retrieved, nil
 					}
 
-					// There are still characters to be processed.
+					// Either there was a prefix already or there are still
+					// characters to be processed.
 					buf = append(buf, fmt.Sprintf("%v", retrieved)...)
 				}
 
@@ -387,6 +383,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 					if err != nil {
 						return nil, err
 					}
+
 					if len(buf) == 0 {
 						// This is the only content on the string, config
 						// source is free to return interface{}
@@ -401,7 +398,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				buf = osExpandEnv(buf, name, w)
 			}
 
-			j += w    // move the index of the char being (j) checked by the number of characters consumed (w) on this iteration.
+			j += w    // move the index of the char being checked (j) by the number of characters consumed (w) on this iteration.
 			i = j + 1 // next slice to be copied start
 		}
 	}
