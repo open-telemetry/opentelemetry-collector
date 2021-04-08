@@ -322,8 +322,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 	// Using i, j, and w variables to keep correspondence with os.Expand code.
 	// i tracks the index in s from which a slice to be appended to buf should start.
 	// j tracks the char being currently checked and also the end of the slice to be appended to buf.
-	// w tracks the number of characters being consumed after a prefix identifying and env var or
-	// config source.
+	// w tracks the number of characters being consumed after a prefix identifying env vars or config sources.
 	i := 0
 	for j := 0; j < len(s); j++ {
 		if s[j] == expandPrefixChar && j+1 < len(s) {
@@ -346,7 +345,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				// Bracketed usage, consume everything until first '}' exactly as os.Expand.
 				var content string
 				content, w = getShellName(s[j+1:])
-				content = strings.Trim(content, " ") // Allow for some spacing but just on outside of expression.
+				content = strings.Trim(content, " ") // Allow for some spaces.
 				if len(content) > 1 && content[0] == expandPrefixChar {
 					name, _ := getShellName(content[1:])
 					if cfgSrc, ok := m.configSources[name]; ok {
@@ -404,7 +403,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 			}
 
 			j += w    // move the index of the char being checked (j) by the number of characters consumed (w) on this iteration.
-			i = j + 1 // next slice to be copied start
+			i = j + 1 // update start index (i) of next slice of bytes to be copied.
 		}
 	}
 
@@ -413,8 +412,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 		return s, nil
 	}
 
-	// Return whatever was accumulated on the buffer plus the remaining of the
-	// original string.
+	// Return whatever was accumulated on the buffer plus the remaining of the original string.
 	return string(buf) + s[i:], nil
 }
 
@@ -515,7 +513,8 @@ func expandEnvVars(s string) string {
 	})
 }
 
-// Does the same behavior as os.ExpandEnv
+// osExpandEnv replicate the internal behavior of os.ExpandEnv when handling env
+// vars updating the buffer accordingly.
 func osExpandEnv(buf []byte, name string, w int) []byte {
 	switch {
 	case name == "" && w > 0:
