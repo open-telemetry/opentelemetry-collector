@@ -286,6 +286,8 @@ func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (in
 	}
 }
 
+// expandConfigSource retrieve data from the specified config source and injects them into
+// the configuration. The Manager tracks sessions and watcher objects as needed.
 func (m *Manager) expandConfigSource(ctx context.Context, cfgSrc ConfigSource, s string) (interface{}, error) {
 	cfgSrcName, selector, params, err := parseCfgSrc(s)
 	if err != nil {
@@ -311,9 +313,9 @@ func (m *Manager) expandConfigSource(ctx context.Context, cfgSrc ConfigSource, s
 	return retrieved.Value(), nil
 }
 
-// expandString expands environment variables that are specified on the string.
+// expandString expands environment variables and config sources that are specified on the string.
 func (m *Manager) expandString(ctx context.Context, s string) (interface{}, error) {
-	// Code based on os.Expand function. All delimiters are checked against are
+	// Code based on os.Expand function. All delimiters that are checked against are
 	// ASCII so bytes are fine for this operation.
 	var buf []byte
 
@@ -341,7 +343,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				w = 1 // consumed a single char
 
 			case s[j+1] == '{':
-				// Bracketed usage, consume everything until first '}' like os.Expand.
+				// Bracketed usage, consume everything until first '}' exactly as os.Expand.
 				var content string
 				content, w = getShellName(s[j+1:])
 				content = strings.Trim(content, " ") // Allow for some spacing but just on outside of expression.
@@ -349,7 +351,8 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 					name, _ := getShellName(content[1:])
 					if cfgSrc, ok := m.configSources[name]; ok {
 						// The name matches a config source, try to apply it.
-						retrieved, err = m.expandConfigSource(ctx, cfgSrc, expandEnvVars(content[1:]))
+						cfgSrcInovke := expandEnvVars(content[1:])
+						retrieved, err = m.expandConfigSource(ctx, cfgSrc, cfgSrcInovke)
 						if err != nil {
 							return nil, err
 						}
@@ -373,6 +376,8 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				}
 
 			default:
+				// Non-bracketed usage, ie.: found the prefix char, it can be either a config
+				// source or an environment variable.
 				var name string
 				name, w = getShellName(s[j+1:])
 				if cfgSrc, ok := m.configSources[name]; ok {
@@ -404,8 +409,12 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 	}
 
 	if buf == nil {
+		// No changes to original string, just return it.
 		return s, nil
 	}
+
+	// Return whatever was accumulated on the buffer plus the remaining of the
+	// original string.
 	return string(buf) + s[i:], nil
 }
 
