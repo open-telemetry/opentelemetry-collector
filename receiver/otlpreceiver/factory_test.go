@@ -43,18 +43,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	config := cfg.(*Config)
-	config.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	config.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, new(consumertest.TracesSink))
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, new(consumertest.MetricsSink))
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
