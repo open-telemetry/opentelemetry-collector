@@ -30,10 +30,10 @@ const (
 
 // Private error types to help with testability.
 type (
-	errorInvalidTypeAndNameKey struct{ error }
-	errorUnknownType           struct{ error }
-	errorUnmarshalError        struct{ error }
-	errorDuplicateName         struct{ error }
+	errInvalidTypeAndNameKey struct{ error }
+	errUnknownType           struct{ error }
+	errUnmarshalError        struct{ error }
+	errDuplicateName         struct{ error }
 )
 
 // Load reads the configuration for ConfigSource objects from the given parser and returns a map
@@ -48,26 +48,6 @@ func Load(ctx context.Context, v *config.Parser, factories Factories) (map[strin
 	return cfgSrcSettings, nil
 }
 
-// Build builds the ConfigSource objects according to the given ConfigSettings.
-func Build(ctx context.Context, configSourcesSettings map[string]ConfigSettings, params CreateParams, factories Factories) (map[string]ConfigSource, error) {
-	cfgSources := make(map[string]ConfigSource, len(configSourcesSettings))
-	for fullName, cfgSrcSettings := range configSourcesSettings {
-		// If we have the setting we also have the factory.
-		factory, ok  := factories[cfgSrcSettings.Type()]
-		if !ok {
-			return nil, errorUnknownType{fmt.Errorf("unknown %s config source type for %s", cfgSrcSettings.Type(), fullName)}
-		}
-
-		cfgSrc, err := factory.CreateConfigSource(ctx, params, cfgSrcSettings)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create config source %s: %v", fullName, err)
-		}
-		cfgSources[fullName] = cfgSrc
-	}
-
-	return cfgSources, nil
-}
-
 func loadSettings(css map[string]interface{}, factories Factories) (map[string]ConfigSettings, error) {
 	// Prepare resulting map.
 	cfgSrcToSettings := make(map[string]ConfigSettings)
@@ -75,18 +55,19 @@ func loadSettings(css map[string]interface{}, factories Factories) (map[string]C
 	// Iterate over extensions and create a config for each.
 	for key, value := range css {
 		settingsParser := config.NewParserFromStringMap(cast.ToStringMap(value))
+
 		// TODO: expand env vars.
 
 		// Decode the key into type and fullName components.
 		typeStr, fullName, err := configparser.DecodeTypeAndName(key)
 		if err != nil {
-			return nil, &errorInvalidTypeAndNameKey{fmt.Errorf("invalid %s type and name key %q: %v", configSourcesKey, key, err)}
+			return nil, &errInvalidTypeAndNameKey{fmt.Errorf("invalid %s type and name key %q: %v", configSourcesKey, key, err)}
 		}
 
 		// Find the factory based on "type" that we read from config source.
 		factory := factories[typeStr]
 		if factory == nil {
-			return nil, &errorUnknownType{fmt.Errorf("unknown %s type %q for %s", configSourcesKey, typeStr, fullName)}
+			return nil, &errUnknownType{fmt.Errorf("unknown %s type %q for %s", configSourcesKey, typeStr, fullName)}
 		}
 
 		// Create the default config.
@@ -96,11 +77,11 @@ func loadSettings(css map[string]interface{}, factories Factories) (map[string]C
 		// Now that the default settings struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		if err := settingsParser.UnmarshalExact(&cfgSrcSettings); err != nil {
-			return nil, errorUnmarshalError{fmt.Errorf("error reading %s configuration for %s: %v", configSourcesKey, fullName, err)}
+			return nil, &errUnmarshalError{fmt.Errorf("error reading %s configuration for %s: %v", configSourcesKey, fullName, err)}
 		}
 
 		if cfgSrcToSettings[fullName] != nil {
-			return nil, errorDuplicateName{fmt.Errorf("duplicate %s name %s", configSourcesKey, fullName)}
+			return nil, &errDuplicateName{fmt.Errorf("duplicate %s name %s", configSourcesKey, fullName)}
 		}
 
 		cfgSrcToSettings[fullName] = cfgSrcSettings
