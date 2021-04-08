@@ -20,13 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHTTPStatusFromOTStatus(t *testing.T) {
-	for otelStatus := int32(OCOK); otelStatus <= OCUnauthenticated; otelStatus++ {
-		httpStatus := HTTPStatusCodeFromOCStatus(otelStatus)
-		assert.True(t, httpStatus != 0)
-	}
-}
-
 func TestOTStatusFromHTTPStatus(t *testing.T) {
 	for httpStatus := int32(100); httpStatus <= 604; httpStatus++ {
 		otelStatus := OCStatusCodeFromHTTP(httpStatus)
