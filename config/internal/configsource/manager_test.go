@@ -450,17 +450,17 @@ func TestManager_expandString(t *testing.T) {
 		},
 		{
 			name:  "delimited_cfgsrc",
-			input: "${$tstcfgsrc:int_key}",
+			input: "${tstcfgsrc:int_key}",
 			want:  1,
 		},
 		{
 			name:  "delimited_cfgsrc_with_spaces",
-			input: "${ $tstcfgsrc: int_key }",
+			input: "${ tstcfgsrc: int_key }",
 			want:  1,
 		},
 		{
 			name:  "interpolated_and_delimited_cfgsrc",
-			input: "0/${ $tstcfgsrc: $envvar_str_key }/2/${$tstcfgsrc:int_key}",
+			input: "0/${ tstcfgsrc: $envvar_str_key }/2/${tstcfgsrc:int_key}",
 			want:  "0/test_value/2/1",
 		},
 	}

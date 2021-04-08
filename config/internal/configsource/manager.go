@@ -356,15 +356,18 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				var content string
 				content, w = getShellName(s[j+1:])
 				content = strings.Trim(content, " ") // Allow for some spaces.
-				if len(content) > 1 && content[0] == expandPrefixChar {
-					name, _ := getShellName(content[1:])
-					if cfgSrc, ok := m.configSources[name]; ok {
-						// The name matches a config source, try to apply it.
-						cfgSrcInovke := expandEnvVars(content[1:])
-						retrieved, err = m.expandConfigSource(ctx, cfgSrc, cfgSrcInovke)
-						if err != nil {
-							return nil, err
-						}
+				if len(content) > 1 && strings.Contains(content, string(configSourceNameDelimChar)) {
+					name, _ := getShellName(content)
+					cfgSrc, ok := m.configSources[name]
+					if !ok {
+						return nil, newErrUnknownConfigSource(name)
+					}
+
+					// The name matches a config source, try to apply it.
+					cfgSrcInovke := expandEnvVars(content)
+					retrieved, err = m.expandConfigSource(ctx, cfgSrc, cfgSrcInovke)
+					if err != nil {
+						return nil, err
 					}
 				}
 
@@ -396,9 +399,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 					// Treat it as an attempt to retrieve data from a config source.
 					cfgSrc, ok := m.configSources[name]
 					if !ok {
-						return nil, &errUnknownConfigSource{
-							fmt.Errorf(`config source %q not found if this was intended to be an environment variable use "${%s}" instead"`, name, name),
-						}
+						return nil, newErrUnknownConfigSource(name)
 					}
 
 					// This is a config source, since it is not delimited it will
@@ -437,12 +438,17 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 	return string(buf) + s[i:], nil
 }
 
+func newErrUnknownConfigSource(cfgSrcName string) error {
+	return &errUnknownConfigSource{
+		fmt.Errorf(`config source %q not found if this was intended to be an environment variable use "${%s}" instead"`, cfgSrcName, cfgSrcName),
+	}
+}
+
 // parseCfgSrc extracts the reference to a config source from a string value.
 // The caller should check for error explicitly since it is possible for the
 // other values to have been partially set.
 func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err error) {
-	const cfgSrcDelim string = ":"
-	parts := strings.SplitN(s, cfgSrcDelim, 2)
+	parts := strings.SplitN(s, string(configSourceNameDelimChar), 2)
 	if len(parts) != 2 {
 		err = fmt.Errorf("invalid config source syntax at %q, it must have at least the config source name and a selector", s)
 		return
