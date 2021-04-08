@@ -511,16 +511,18 @@ func expandEnvVars(s string) string {
 
 // Does the same behavior as os.ExpandEnv
 func osExpandEnv(buf []byte, name string, w int) []byte {
-	if name == "" && w > 0 {
+	switch {
+	case name == "" && w > 0:
 		// Encountered invalid syntax; eat the
 		// characters.
-	} else if name == "" {
+	case name == "":
 		// Valid syntax, but $ was not followed by a
 		// name. Leave the dollar character untouched.
 		buf = append(buf, expandPrefixChar)
-	} else {
+	default:
 		buf = append(buf, os.Getenv(name)...)
 	}
+
 	return buf
 }
 
