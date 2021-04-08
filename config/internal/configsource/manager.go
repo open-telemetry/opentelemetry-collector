@@ -122,7 +122,8 @@ type (
 //
 //    component:
 //      # Retrieves the value from the file text.txt located on the path specified by the environment
-//      # variable DATA_PATH.
+//      # variable DATA_PATH. The name of the environment variable is the string after the delimiter
+//      # until the first character different than '_' and non-alpha-numeric.
 //      text_from_file: $file:$DATA_PATH/text.txt
 //
 type Manager struct {
@@ -337,6 +338,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 	for j := 0; j < len(s); j++ {
 		if s[j] == expandPrefixChar && j+1 < len(s) {
 			if buf == nil {
+				// Assuming that the length of the string will double after expansion of env vars and config sources.
 				buf = make([]byte, 0, 2*len(s))
 			}
 			buf = append(buf, s[i:j]...)
@@ -347,7 +349,8 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 
 			switch {
 			case s[j+1] == expandPrefixChar:
-				// Escaped prefix:
+				// Escaping the prefix so $$ becomes a single $ without attempting
+				// to treat the string after it as a config source or env var.
 				buf = append(buf, s[j])
 				w = 1 // consumed a single char
 

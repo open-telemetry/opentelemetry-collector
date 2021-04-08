@@ -454,6 +454,11 @@ func TestManager_expandString(t *testing.T) {
 			want:  1,
 		},
 		{
+			name:    "unknown_delimited_cfgsrc",
+			input:   "${cfgsrc:int_key}",
+			wantErr: &errUnknownConfigSource{},
+		},
+		{
 			name:  "delimited_cfgsrc_with_spaces",
 			input: "${ tstcfgsrc: int_key }",
 			want:  1,
