@@ -249,7 +249,8 @@ understanding of what happened and in what context.
 ### Observability
 
 Out of the box, your users should be able to observe the state of your component. 
-The collector exposes an OpenMetrics endpoint at `/metrics` where your data will land.
+The collector exposes an OpenMetrics endpoint at `http://localhost:8888/metrics`
+where your data will land.
 
 When using the regular helpers, you should have some metrics added around key 
 events automatically. For instance, exporters should have `otelcol_exporter_sent_spans` 
