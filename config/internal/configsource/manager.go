@@ -367,45 +367,23 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 			// Append everything consumed up to the prefix char (but not including the prefix char) to the result.
 			buf = append(buf, s[i:j]...)
 
-			var retrieved interface{}
-			var err error
+			var expandableContent, cfgSrcName string
 			w := 0 // number of bytes consumed on this pass
 
 			switch {
 			case s[j+1] == expandPrefixChar:
 				// Escaping the prefix so $$ becomes a single $ without attempting
 				// to treat the string after it as a config source or env var.
-				buf = append(buf, s[j])
+				expandableContent = string(expandPrefixChar)
 				w = 1 // consumed a single char
 
 			case s[j+1] == '{':
 				// Bracketed usage, consume everything until first '}' exactly as os.Expand.
-				var content string
-				content, w = getShellName(s[j+1:])
-				content = strings.Trim(content, " ") // Allow for some spaces.
-				if len(content) > 1 && strings.Contains(content, string(configSourceNameDelimChar)) {
-					// Bracket content contains ':' treating it as a config source.
-					name, _ := getShellName(content)
-					retrieved, err = m.retrieveConfigSourceData(ctx, name, content)
-					if err != nil {
-						return nil, err
-					}
-				}
-
-				if retrieved == nil {
-					// Not a config source, expand as os.ExpandEnv
-					buf = osExpandEnv(buf, content, w)
-				} else {
-					consumedAll := j+w+1 == len(s)
-					if consumedAll && len(buf) == 0 {
-						// This is the only content on the string, config
-						// source is free to return interface{}.
-						return retrieved, nil
-					}
-
-					// Either there was a prefix already or there are still
-					// characters to be processed.
-					buf = append(buf, fmt.Sprintf("%v", retrieved)...)
+				expandableContent, w = getShellName(s[j+1:])
+				expandableContent = strings.Trim(expandableContent, " ") // Allow for some spaces.
+				if len(expandableContent) > 1 && strings.Contains(expandableContent, string(configSourceNameDelimChar)) {
+					// Bracket expandableContent contains ':' treating it as a config source.
+					cfgSrcName, _ = getShellName(expandableContent)
 				}
 
 			default:
@@ -413,29 +391,40 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				// source or an environment variable.
 				var name string
 				name, w = getShellName(s[j+1:])
+				expandableContent = name // Assume for now that it is an env var.
 
 				// Peek next char after name, if it is a config source name delimiter treat the remaining of the
 				// string as a config source.
 				if j+w+1 < len(s) && s[j+w+1] == configSourceNameDelimChar {
-					// This is a config source, since it is not delimited it will
-					// always consume until end of the string.
-					retrieved, err = m.retrieveConfigSourceData(ctx, name, s[j+1:])
-					if err != nil {
-						return nil, err
-					}
+					// This is a config source, since it is not delimited it will consume until end of the string.
+					cfgSrcName = name
+					expandableContent = s[j+1:]
+					w = len(expandableContent) // Set consumed bytes to the length of expandableContent
+				}
+			}
 
-					if len(buf) == 0 {
-						// This is the only content on the string, config
-						// source is free to return interface{}
-						return retrieved, nil
-					}
+			switch {
+			case cfgSrcName == "":
+				// Not a config source, expand as os.ExpandEnv
+				buf = osExpandEnv(buf, expandableContent, w)
 
-					// Convert the retrieved value to string.
-					return string(buf) + fmt.Sprintf("%v", retrieved), nil
+			default:
+				// A config source, retrieve and apply results.
+				retrieved, err := m.retrieveConfigSourceData(ctx, cfgSrcName, expandableContent)
+				if err != nil {
+					return nil, err
 				}
 
-				// Keep the same behavior as os.ExpandEnv
-				buf = osExpandEnv(buf, name, w)
+				consumedAll := j+w+1 == len(s)
+				if consumedAll && len(buf) == 0 {
+					// This is the only expandableContent on the string, config
+					// source is free to return interface{}.
+					return retrieved, nil
+				}
+
+				// Either there was a prefix already or there are still
+				// characters to be processed.
+				buf = append(buf, fmt.Sprintf("%v", retrieved)...)
 			}
 
 			j += w    // move the index of the char being checked (j) by the number of characters consumed (w) on this iteration.
@@ -578,7 +567,7 @@ func osExpandEnv(buf []byte, name string, w int) []byte {
 	case name == "" && w > 0:
 		// Encountered invalid syntax; eat the
 		// characters.
-	case name == "":
+	case name == "" || name == "$":
 		// Valid syntax, but $ was not followed by a
 		// name. Leave the dollar character untouched.
 		buf = append(buf, expandPrefixChar)
