@@ -26,31 +26,34 @@ import (
 )
 
 type vaultConfigSource struct {
-	client *api.Client
-	path   string
+	logger       *zap.Logger
+	client       *api.Client
+	path         string
+	pollInterval time.Duration
 }
 
 var _ configsource.ConfigSource = (*vaultConfigSource)(nil)
 
 func (v *vaultConfigSource) NewSession(context.Context) (configsource.Session, error) {
-	// TODO: Logger and poll interval should not be hard coded here but come from factory creating the config source.
-	return newSession(v.client, v.path, zap.NewNop(), 2*time.Second)
+	return newSession(v.client, v.path, v.logger, v.pollInterval)
 }
 
-func newConfigSource(address, token, path string) (*vaultConfigSource, error) {
+func newConfigSource(logger *zap.Logger, cfg *Config) (*vaultConfigSource, error) {
 	// Client doesn't connect on creation and can't be closed. Keeping the same instance
 	// for all sessions is ok.
 	client, err := api.NewClient(&api.Config{
-		Address: address,
+		Address: cfg.Endpoint,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	client.SetToken(token)
+	client.SetToken(cfg.Token)
 
 	return &vaultConfigSource{
-		client: client,
-		path:   path,
+		logger:       logger,
+		client:       client,
+		path:         cfg.Path,
+		pollInterval: cfg.PollInterval,
 	}, nil
 }

@@ -18,30 +18,34 @@ package vaultconfigsource
 import (
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/stretchr/testify/require"
 )
 
 func TestVaultNewConfigSource(t *testing.T) {
 	tests := []struct {
 		name    string
-		address string
-		path    string
-		token   string
+		config  *Config
 		wantErr bool
 	}{
 		{
-			name:    "minimal",
-			address: "https://some.server:1234/",
+			name: "minimal",
+			config: &Config{
+				Endpoint: "https://some.server:1234/",
+			},
 		},
 		{
-			name:    "invalid_address",
-			address: "invalid\baddress",
+			name: "invalid_endpoint",
+			config: &Config{
+				Endpoint: "some\bad_endpoint",
+			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfgSrc, err := newConfigSource(tt.address, tt.token, tt.path)
+			cfgSrc, err := newConfigSource(zap.NewNop(), tt.config)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Nil(t, cfgSrc)

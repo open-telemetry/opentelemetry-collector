@@ -38,7 +38,7 @@ type (
 
 // Load reads the configuration for ConfigSource objects from the given parser and returns a map
 // from the full name of config sources to the respective ConfigSettings.
-func Load(ctx context.Context, v *config.Parser, factories Factories) (map[string]ConfigSettings, error) {
+func Load(_ context.Context, v *config.Parser, factories Factories) (map[string]ConfigSettings, error) {
 
 	cfgSrcSettings, err := loadSettings(cast.ToStringMap(v.Get(configSourcesKey)), factories)
 	if err != nil {

@@ -63,7 +63,15 @@ func TestVaultSessionForKV(t *testing.T) {
 	defer requireCmdRun(t, stopVault)
 	requireCmdRun(t, setupKVStore)
 
-	cs, err := newConfigSource(address, token, "secret/data/kv")
+	logger := zap.NewNop()
+	config := Config{
+		Endpoint:     address,
+		Token:        token,
+		Path:         "secret/data/kv",
+		PollInterval: 2 * time.Second,
+	}
+
+	cs, err := newConfigSource(logger, &config)
 	require.NoError(t, err)
 	require.NotNil(t, cs)
 
@@ -99,7 +107,15 @@ func TestVaultPollingKVUpdate(t *testing.T) {
 	defer requireCmdRun(t, stopVault)
 	requireCmdRun(t, setupKVStore)
 
-	cs, err := newConfigSource(address, token, "secret/data/kv")
+	logger := zap.NewNop()
+	config := Config{
+		Endpoint:     address,
+		Token:        token,
+		Path:         "secret/data/kv",
+		PollInterval: 2 * time.Second,
+	}
+
+	cs, err := newConfigSource(logger, &config)
 	require.NoError(t, err)
 	require.NotNil(t, cs)
 
@@ -172,7 +188,15 @@ func TestVaultRenewableSecret(t *testing.T) {
 	requireCmdRun(t, setupMongoVaultPlugin)
 	requireCmdRun(t, setupMongoSecret)
 
-	cs, err := newConfigSource(address, token, "database/creds/my-role")
+	logger := zap.NewNop()
+	config := Config{
+		Endpoint:     address,
+		Token:        token,
+		Path:         "database/creds/my-role",
+		PollInterval: 2 * time.Second,
+	}
+
+	cs, err := newConfigSource(logger, &config)
 	require.NoError(t, err)
 	require.NotNil(t, cs)
 
@@ -235,7 +259,15 @@ func TestVaultV1SecretWithTTL(t *testing.T) {
 	requireCmdRun(t, createKVVer1Store)
 	requireCmdRun(t, setupKVVer1Store)
 
-	cs, err := newConfigSource(address, token, "kv/my-secret")
+	logger := zap.NewNop()
+	config := Config{
+		Endpoint:     address,
+		Token:        token,
+		Path:         "kv/my-secret",
+		PollInterval: 2 * time.Second,
+	}
+
+	cs, err := newConfigSource(logger, &config)
 	require.NoError(t, err)
 	require.NotNil(t, cs)
 
@@ -295,7 +327,15 @@ func TestVaultV1NonWatchableSecret(t *testing.T) {
 	requireCmdRun(t, createKVVer1Store)
 	requireCmdRun(t, setupKVVer1NoTTL)
 
-	cs, err := newConfigSource(address, token, "kv/my-secret")
+	logger := zap.NewNop()
+	config := Config{
+		Endpoint:     address,
+		Token:        token,
+		Path:         "kv/my-secret",
+		PollInterval: 2 * time.Second,
+	}
+
+	cs, err := newConfigSource(logger, &config)
 	require.NoError(t, err)
 	require.NotNil(t, cs)
 
@@ -371,7 +411,15 @@ func TestVaultRetrieveErrors(t *testing.T) {
 				testToken = tt.token
 			}
 
-			cfgSrc, err := newConfigSource(address, testToken, tt.path)
+			logger := zap.NewNop()
+			config := Config{
+				Endpoint:     address,
+				Token:        testToken,
+				Path:         tt.path,
+				PollInterval: 2 * time.Second,
+			}
+
+			cfgSrc, err := newConfigSource(logger, &config)
 			require.NoError(t, err)
 			require.NotNil(t, cfgSrc)
 

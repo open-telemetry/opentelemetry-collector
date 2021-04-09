@@ -15,16 +15,24 @@
 
 package vaultconfigsource
 
-import "go.opentelemetry.io/collector/config/internal/configsource"
+import (
+	"time"
+
+	"go.opentelemetry.io/collector/config/internal/configsource"
+)
 
 type Config struct {
 	*configsource.Settings
 	// Endpoint is the address of the Vault server, typically it is set via the
 	// VAULT_ADDR environment variable for the Vault CLI.
 	Endpoint string `mapstructure:"endpoint"`
-	// Path is the Vault path where the secret to be retrieved is located.
-	Path string `mapstructure:"path"`
 	// Token is the token to be used to access the Vault server, typically is set
 	// via the VAULT_TOKEN environment variable for the Vault CLI.
 	Token string `mapstructure:"token"`
+	// Path is the Vault path where the secret to be retrieved is located.
+	Path string `mapstructure:"path"`
+	// PollInterval is the interval in which the config source will check for
+	// changes on the data on the given Vault path. This is only used for
+	// non-dynamic secret stores. Defaults to 1 minute if not specified.
+	PollInterval time.Duration `mapstructure:"poll_interval"`
 }

@@ -127,9 +127,15 @@ func (m *mockCfgSrcFactory) CreateDefaultConfig() ConfigSettings {
 	}
 }
 
-func (m *mockCfgSrcFactory) CreateConfigSource(ctx context.Context, params CreateParams, cfg ConfigSettings) (ConfigSource, error) {
+func (m *mockCfgSrcFactory) CreateConfigSource(_ context.Context, _ CreateParams, cfg ConfigSettings) (ConfigSource, error) {
 	if m.ErrOnCreateConfigSource != nil {
 		return nil, m.ErrOnCreateConfigSource
 	}
-	return &testConfigSource{}, nil
+	return &testConfigSource{
+		ValueMap: map[string]valueEntry{
+			cfg.Name(): {
+				Value: cfg,
+			},
+		},
+	}, nil
 }
