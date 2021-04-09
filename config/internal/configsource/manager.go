@@ -126,6 +126,28 @@ type (
 //      # until the first character different than '_' and non-alpha-numeric.
 //      text_from_file: $file:$DATA_PATH/text.txt
 //
+// Since environment variables and config sources both use the '$', with or without brackets, as a prefix
+// for their expansion it is necessary to have a way to distinguish between them. For the non-bracketed
+// syntax the code will peek at the first character other than alpha-numeric and '_' after the '$'. If
+// that character is a ':' it will treat it as a config source and as environment variable otherwise.
+// For example:
+//
+//    component:
+//      field_0: $PATH:/etc/logs # Injects the data from a config sourced named "PATH" using the selector "/etc/logs".
+//      field_1: $PATH/etc/logs  # Expands the environment variable "PATH" and adds the suffix "/etc/logs" to it.
+//
+// So if you need to include an environment followed by ':' the bracketed syntax must be used instead:
+//
+//    component:
+//      field_0: ${PATH}:/etc/logs # Expands the environment variable "PATH" and adds the suffix ":/etc/logs" to it.
+//
+// For the bracketed syntax the presence of ':' inside the brackets indicates that code will treat the bracketed
+// contents as a config source. For example:
+//
+//    component:
+//      field_0: ${file:/var/secret.txt} # Injects the data from a config sourced named "file" using the selector "/var/secret.txt".
+//      field_1: ${file}:/var/secret.txt # Expands the environment variable "file" and adds the suffix ":/var/secret.txt" to it.
+//
 type Manager struct {
 	// configSources is map from ConfigSource names (as defined in the configuration)
 	// and the respective instances.
@@ -341,6 +363,8 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				// Assuming that the length of the string will double after expansion of env vars and config sources.
 				buf = make([]byte, 0, 2*len(s))
 			}
+
+			// Append everything consumed up to the prefix char (but not including the prefix char) to the result.
 			buf = append(buf, s[i:j]...)
 
 			var retrieved interface{}
@@ -360,15 +384,9 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				content, w = getShellName(s[j+1:])
 				content = strings.Trim(content, " ") // Allow for some spaces.
 				if len(content) > 1 && strings.Contains(content, string(configSourceNameDelimChar)) {
+					// Bracket content contains ':' treating it as a config source.
 					name, _ := getShellName(content)
-					cfgSrc, ok := m.configSources[name]
-					if !ok {
-						return nil, newErrUnknownConfigSource(name)
-					}
-
-					// The name matches a config source, try to apply it.
-					cfgSrcInovke := expandEnvVars(content)
-					retrieved, err = m.expandConfigSource(ctx, cfgSrc, cfgSrcInovke)
+					retrieved, err = m.retrieveConfigSourceData(ctx, name, content)
 					if err != nil {
 						return nil, err
 					}
@@ -399,16 +417,9 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				// Peek next char after name, if it is a config source name delimiter treat the remaining of the
 				// string as a config source.
 				if j+w+1 < len(s) && s[j+w+1] == configSourceNameDelimChar {
-					// Treat it as an attempt to retrieve data from a config source.
-					cfgSrc, ok := m.configSources[name]
-					if !ok {
-						return nil, newErrUnknownConfigSource(name)
-					}
-
 					// This is a config source, since it is not delimited it will
 					// always consume until end of the string.
-					cfgSrcInvoke := expandEnvVars(s[j+1:])
-					retrieved, err = m.expandConfigSource(ctx, cfgSrc, cfgSrcInvoke)
+					retrieved, err = m.retrieveConfigSourceData(ctx, name, s[j+1:])
 					if err != nil {
 						return nil, err
 					}
@@ -439,6 +450,23 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 
 	// Return whatever was accumulated on the buffer plus the remaining of the original string.
 	return string(buf) + s[i:], nil
+}
+
+func (m *Manager) retrieveConfigSourceData(ctx context.Context, name, cfgSrcInvoke string) (interface{}, error) {
+	cfgSrc, ok := m.configSources[name]
+	if !ok {
+		return nil, newErrUnknownConfigSource(name)
+	}
+
+	// Expand any env vars on the selector and parameters. Nested config source usage
+	// is not supported.
+	cfgSrcInvoke = expandEnvVars(cfgSrcInvoke)
+	retrieved, err := m.expandConfigSource(ctx, cfgSrc, cfgSrcInvoke)
+	if err != nil {
+		return nil, err
+	}
+
+	return retrieved, nil
 }
 
 func newErrUnknownConfigSource(cfgSrcName string) error {
