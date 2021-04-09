@@ -17,12 +17,12 @@ package vaultconfigsource
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"path"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/internal/configsource"

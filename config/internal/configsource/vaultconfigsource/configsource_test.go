@@ -18,9 +18,8 @@ package vaultconfigsource
 import (
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestVaultNewConfigSource(t *testing.T) {

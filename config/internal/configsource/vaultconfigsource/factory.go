@@ -66,7 +66,7 @@ func (v *vaultFactory) CreateConfigSource(_ context.Context, params configsource
 	}
 
 	if vaultCfg.Token == "" {
-		return nil, &errMissingToken{errors.New("cannot connect to vault with an emtpy token")}
+		return nil, &errMissingToken{errors.New("cannot connect to vault with an empty token")}
 	}
 
 	if vaultCfg.Path == "" {
