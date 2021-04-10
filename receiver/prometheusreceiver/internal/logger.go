@@ -61,6 +61,14 @@ func extractLogData(keyvals []interface{}) *logData {
 	lvl := level.InfoValue() // default
 	msg := ""
 
+	// Prometheus scrape errors are only logged when --log-level=DEBUG is set.
+	// thus we shall have to translate those debugs into errors. See:
+	//  * https://github.com/prometheus/prometheus/issues/2820
+	//  * https://github.com/prometheus/prometheus/pull/3135
+	//  * https://github.com/open-telemetry/opentelemetry-collector/issues/2364
+
+	foundErr := true
+
 	other := make([]interface{}, 0, len(keyvals))
 	for i := 0; i < len(keyvals); i += 2 {
 		key := keyvals[i]
@@ -71,12 +79,20 @@ func extractLogData(keyvals []interface{}) *logData {
 			continue
 		}
 
+		foundErr = key == "err"
+
 		if m, ok := matchLogMessage(key, val); ok {
 			msg = m
 			continue
 		}
 
 		other = append(other, key, val)
+	}
+
+	// Now transform the level into Warn as we'd like per:
+	//  * https://github.com/open-telemetry/opentelemetry-collector/issues/2364
+	if foundErr && lvl == level.DebugValue() {
+		lvl = level.WarnValue()
 	}
 
 	return &logData{

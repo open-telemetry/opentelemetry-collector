@@ -184,9 +184,21 @@ func TestExtractLogData(t *testing.T) {
 				"warn", // Field is preserved
 			},
 		},
+		{
+			name: "transform Prometheus Debug level err into Warn level",
+			input: []interface{}{
+				"level", level.DebugValue(),
+				"err",
+				`Get "http://0.0.0.0:9999/metrics": dial tcp 0.0.0.0:9999: connect: connection refused`,
+			},
+			wantLevel: level.WarnValue(), // The transformed level
+			wantOutput: []interface{}{
+				"err", `Get "http://0.0.0.0:9999/metrics": dial tcp 0.0.0.0:9999: connect: connection refused`,
+			},
+		},
 	}
 
-	for _, tc := range tcs {
+	for _, tc := range tcs[len(tcs)-2:] {
 		t.Run(tc.name, func(t *testing.T) {
 			ld := extractLogData(tc.input)
 			assert.Equal(t, tc.wantLevel, ld.level)
