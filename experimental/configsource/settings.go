@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+// ConfigSettings is the interface required to be implemented by the settings of
+// all ConfigSource objects.
 type ConfigSettings interface {
 	config.NamedEntity
 }

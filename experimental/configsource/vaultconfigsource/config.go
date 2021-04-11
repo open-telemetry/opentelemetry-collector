@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/experimental/configsource"
 )
 
+// Config holds the configuration for the creation of Vault ConfigSource objects.
 type Config struct {
 	*configsource.Settings
 	// Endpoint is the address of the Vault server, typically it is set via the

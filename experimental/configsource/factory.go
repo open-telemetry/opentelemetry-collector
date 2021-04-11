@@ -50,4 +50,5 @@ type Factory interface {
 	CreateConfigSource(ctx context.Context, params CreateParams, cfg ConfigSettings) (ConfigSource, error)
 }
 
+// Factories maps the type of a ConfigSource to the respective factory object.
 type Factories map[config.Type]Factory

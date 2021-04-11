@@ -80,6 +80,7 @@ func (v *vaultFactory) CreateConfigSource(_ context.Context, params configsource
 	return newConfigSource(params.Logger, vaultCfg)
 }
 
+// NewFactory creates a factory for Vault ConfigSource objects.
 func NewFactory() configsource.Factory {
 	return &vaultFactory{}
 }
