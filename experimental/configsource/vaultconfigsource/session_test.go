@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/internal/configsource"
+	"go.opentelemetry.io/collector/experimental/configsource"
 )
 
 const (

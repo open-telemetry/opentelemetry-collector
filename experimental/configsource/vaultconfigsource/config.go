@@ -18,7 +18,7 @@ package vaultconfigsource
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/internal/configsource"
+	"go.opentelemetry.io/collector/experimental/configsource"
 )
 
 type Config struct {

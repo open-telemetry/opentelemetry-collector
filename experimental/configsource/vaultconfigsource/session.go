@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/vault/api"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/internal/configsource"
+	"go.opentelemetry.io/collector/experimental/configsource"
 )
 
 var errInvalidPollInterval = errors.New("poll interval must be greater than zero")

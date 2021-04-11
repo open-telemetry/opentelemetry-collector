@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/internal/configsource"
+	"go.opentelemetry.io/collector/experimental/configsource"
 )
 
 const (
