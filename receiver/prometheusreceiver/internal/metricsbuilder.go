@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -93,25 +94,37 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.numTimeseries++
 		b.droppedTimeseries++
 		return errMetricNameNotFound
+
 	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
+		if metricName != scrapeUpMetricName {
+			return nil
+		}
+
 		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
-		if metricName == scrapeUpMetricName && v != 1.0 {
-			if v == 0.0 {
-				b.logger.Warn("Failed to scrape Prometheus endpoint",
-					zap.Int64("scrape_timestamp", t),
-					zap.String("target_labels", fmt.Sprintf("%v", lm)))
-			} else {
-				b.logger.Warn("The 'up' metric contains invalid value",
-					zap.Float64("value", v),
-					zap.Int64("scrape_timestamp", t),
-					zap.String("target_labels", fmt.Sprintf("%v", lm)))
-			}
+		instanceValue := lm["instance"]
+		switch v {
+		case 1.0: // The instance is up!
+			recordInstanceAsUp(context.Background(), instanceValue)
+
+		case 0.0: // The instance is definitely down.
+			recordInstanceAsDown(context.Background(), instanceValue)
+			b.logger.Warn("Failed to scrape Prometheus endpoint",
+				zap.Int64("scrape_timestamp", t),
+				zap.String("target_labels", fmt.Sprintf("%v", lm)))
+
+		default: // We got an invalid value for "up"
+			recordInstanceAsDown(context.Background(), instanceValue)
+			b.logger.Warn("The 'up' metric contains invalid value",
+				zap.Float64("value", v),
+				zap.Int64("scrape_timestamp", t),
+				zap.String("target_labels", fmt.Sprintf("%v", lm)))
 		}
 		return nil
+
 	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
 		b.startTime = v
 	}
