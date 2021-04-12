@@ -8,6 +8,9 @@
 
 - Add `validatable` interface with `Validate()` to all `config.<component>` (#2898)
   - add the empty `Validate()` implementation for all component configs
+  
+## 🧰 Bug fixes 🧰
+- Fix Jaeger receiver to honor TLS Settings (#2866)
 
 ## v0.24.0 Beta
 
@@ -62,7 +65,6 @@
 - `jaeger` receiver: Escape user input used in output (#2815)
 - `prometheus` exporter: Ensure same time is used for updated time (#2745)
 - `prometheusremotewrite` exporter: Close HTTP response body (#2875)
-- Fix Jaeger receiver to honor TLS Settings (#2866)
 
 ## v0.23.0 Beta
 
