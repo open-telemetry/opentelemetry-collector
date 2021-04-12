@@ -15,11 +15,19 @@
 package prometheusreceiver
 
 import (
+	"fmt"
 	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/spf13/cast"
+	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
+)
+
+const (
+	// The key for Prometheus scraping configs.
+	prometheusConfigKey = "config"
 )
 
 // Config defines configuration for Prometheus receiver.
@@ -38,8 +46,42 @@ type Config struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
+var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	return nil
+}
+
+// Unmarshal a config.Parser into the config struct.
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	if componentParser == nil {
+		return nil
+	}
+	// We need custom unmarshaling because prometheus "config" subkey defines its own
+	// YAML unmarshaling routines so we need to do it explicitly.
+
+	err := componentParser.UnmarshalExact(cfg)
+	if err != nil {
+		return fmt.Errorf("prometheus receiver failed to parse config: %s", err)
+	}
+
+	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
+	promCfgMap := cast.ToStringMap(componentParser.Get(prometheusConfigKey))
+	if len(promCfgMap) == 0 {
+		return nil
+	}
+	out, err := yaml.Marshal(promCfgMap)
+	if err != nil {
+		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
+	}
+
+	err = yaml.UnmarshalStrict(out, &cfg.PrometheusConfig)
+	if err != nil {
+		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
+	}
+	if len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
+		return errNilScrapeConfig
+	}
 	return nil
 }

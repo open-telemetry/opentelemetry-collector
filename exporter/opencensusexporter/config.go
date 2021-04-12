@@ -30,3 +30,10 @@ type Config struct {
 	// The number of workers that send the gRPC requests.
 	NumWorkers int `mapstructure:"num_workers"`
 }
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

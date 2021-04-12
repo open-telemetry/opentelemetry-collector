@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configparser implements loading of configuration from Viper configuration.
+// Package configparser implements configuration loading from a config.Parser.
 // The implementation relies on registered factories that allow creating
 // default configuration for each type of receiver/exporter/processor.
 package configparser
@@ -23,6 +23,7 @@ import (
 	"reflect"
 
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -494,15 +495,32 @@ func expandEnv(s string) string {
 	})
 }
 
+// deprecatedUnmarshaler interface is a deprecated optional interface that if implemented by a Factory,
+// the configuration loading system will use to unmarshal the config.
+// Implement config.CustomUnmarshable on the configuration struct instead.
+type deprecatedUnmarshaler interface {
+	// Unmarshal is a function that un-marshals a viper data into a config struct in a custom way.
+	// componentViperSection *viper.Viper
+	//   The config for this specific component. May be nil or empty if no config available.
+	// intoCfg interface{}
+	//   An empty interface wrapping a pointer to the config struct to unmarshal into.
+	Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error
+}
+
+func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
+	if cu, ok := intoCfg.(config.CustomUnmarshable); ok {
+		return cu.Unmarshal(componentSection)
+	}
+
+	return componentSection.UnmarshalExact(intoCfg)
+}
+
+// unmarshaler returns an unmarshaling function. It should be removed when deprecatedUnmarshaler is removed.
 func unmarshaler(factory component.Factory) func(componentViperSection *config.Parser, intoCfg interface{}) error {
-	if fu, ok := factory.(component.ConfigUnmarshaler); ok {
+	if fu, ok := factory.(deprecatedUnmarshaler); ok {
 		return func(componentParser *config.Parser, intoCfg interface{}) error {
 			return fu.Unmarshal(componentParser.Viper(), intoCfg)
 		}
 	}
-	return defaultUnmarshaler
-}
-
-func defaultUnmarshaler(componentParser *config.Parser, intoCfg interface{}) error {
-	return componentParser.UnmarshalExact(intoCfg)
+	return unmarshal
 }

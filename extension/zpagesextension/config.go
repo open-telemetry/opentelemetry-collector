@@ -28,3 +28,10 @@ type Config struct {
 	// make it available on all network interfaces.
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 }
+
+var _ config.Extension = (*Config)(nil)
+
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

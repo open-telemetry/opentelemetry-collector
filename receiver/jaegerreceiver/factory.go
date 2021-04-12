@@ -22,9 +22,6 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -57,59 +54,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
-}
-
-// customUnmarshaler is used to add defaults for named but empty protocols
-func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	componentParser := config.ParserFromViper(componentViperSection)
-	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
-		return fmt.Errorf("empty config for Jaeger receiver")
-	}
-
-	// UnmarshalExact will not set struct properties to nil even if no key is provided,
-	// so set the protocol structs to nil where the keys were omitted.
-	err := componentParser.UnmarshalExact(intoCfg)
-	if err != nil {
-		return err
-	}
-
-	receiverCfg := intoCfg.(*Config)
-
-	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
-	if len(protocols) == 0 {
-		return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
-	}
-
-	knownProtocols := 0
-	if _, ok := protocols[protoGRPC]; !ok {
-		receiverCfg.GRPC = nil
-	} else {
-		knownProtocols++
-	}
-	if _, ok := protocols[protoThriftHTTP]; !ok {
-		receiverCfg.ThriftHTTP = nil
-	} else {
-		knownProtocols++
-	}
-	if _, ok := protocols[protoThriftBinary]; !ok {
-		receiverCfg.ThriftBinary = nil
-	} else {
-		knownProtocols++
-	}
-	if _, ok := protocols[protoThriftCompact]; !ok {
-		receiverCfg.ThriftCompact = nil
-	} else {
-		knownProtocols++
-	}
-	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
-	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
-	// include only known protocols.
-	if len(protocols) != knownProtocols {
-		return fmt.Errorf("unknown protocols in the Jaeger receiver")
-	}
-	return nil
+		receiverhelper.WithTraces(createTraceReceiver))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.

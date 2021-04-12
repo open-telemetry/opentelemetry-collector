@@ -19,19 +19,15 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"net/http"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/prometheus/common/expfmt"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -39,12 +35,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/parserprovider"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -149,10 +142,8 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 
 	params := Parameters{
 		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
-		ConfigFactory: func(_ *cobra.Command, factories component.Factories) (*config.Config, error) {
-			return constructMimumalOpConfig(t, factories), nil
-		},
-		Factories: factories,
+		ParserProvider:       new(minimalParserLoader),
+		Factories:            factories,
 	}
 	app, err := New(params)
 	require.NoError(t, err)
@@ -225,105 +216,9 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 	}
 }
 
-func TestSetFlag(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-	params := Parameters{
-		Factories: factories,
-	}
-	t.Run("unknown_component", func(t *testing.T) {
-		app, err := New(params)
-		require.NoError(t, err)
-		err = app.rootCmd.ParseFlags([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.doesnotexist.timeout=2s",
-		})
-		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)
-		require.Error(t, err)
-		require.Nil(t, cfg)
+type minimalParserLoader struct{}
 
-	})
-	t.Run("component_not_added_to_pipeline", func(t *testing.T) {
-		app, err := New(params)
-		require.NoError(t, err)
-		err = app.rootCmd.ParseFlags([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.batch/foo.timeout=2s",
-		})
-		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)
-		require.NoError(t, err)
-		assert.NotNil(t, cfg)
-		err = cfg.Validate()
-		require.NoError(t, err)
-
-		var processors []string
-		for k := range cfg.Processors {
-			processors = append(processors, k)
-		}
-		sort.Strings(processors)
-		// batch/foo is not added to the pipeline
-		assert.Equal(t, []string{"attributes", "batch", "batch/foo"}, processors)
-		assert.Equal(t, []string{"attributes", "batch"}, cfg.Service.Pipelines["traces"].Processors)
-	})
-	t.Run("ok", func(t *testing.T) {
-		app, err := New(params)
-		require.NoError(t, err)
-
-		err = app.rootCmd.ParseFlags([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.batch.timeout=2s",
-			// Arrays are overridden and object arrays cannot be indexed
-			// this creates actions array of size 1
-			"--set=processors.attributes.actions.key=foo",
-			"--set=processors.attributes.actions.value=bar",
-			"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
-			"--set=extensions.health_check.endpoint=localhost:8080",
-		})
-		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)
-		require.NoError(t, err)
-		require.NotNil(t, cfg)
-		err = cfg.Validate()
-		require.NoError(t, err)
-
-		assert.Equal(t, 2, len(cfg.Processors))
-		batch := cfg.Processors["batch"].(*batchprocessor.Config)
-		assert.Equal(t, time.Second*2, batch.Timeout)
-		jaeger := cfg.Receivers["jaeger"].(*jaegerreceiver.Config)
-		assert.Equal(t, "localhost:12345", jaeger.GRPC.NetAddr.Endpoint)
-		attributes := cfg.Processors["attributes"].(*attributesprocessor.Config)
-		require.Equal(t, 1, len(attributes.Actions))
-		assert.Equal(t, "foo", attributes.Actions[0].Key)
-		assert.Equal(t, "bar", attributes.Actions[0].Value)
-	})
-}
-
-func TestSetFlag_component_does_not_exist(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-
-	cmd := &cobra.Command{}
-	addSetFlag(cmd.Flags())
-	fs := &flag.FlagSet{}
-	builder.Flags(fs)
-	cmd.Flags().AddGoFlagSet(fs)
-	cmd.ParseFlags([]string{
-		"--config=testdata/otelcol-config.yaml",
-		"--set=processors.batch.timeout=2s",
-		// Arrays are overridden and object arrays cannot be indexed
-		// this creates actions array of size 1
-		"--set=processors.attributes.actions.key=foo",
-		"--set=processors.attributes.actions.value=bar",
-		"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
-	})
-	cfg, err := FileLoaderConfigFactory(cmd, factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-}
-
-func constructMimumalOpConfig(t *testing.T, factories component.Factories) *config.Config {
+func (*minimalParserLoader) Get() (*config.Parser, error) {
 	configStr := `
 receivers:
   otlp:
@@ -347,11 +242,15 @@ service:
 	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
-	cfg, err := configparser.Load(config.ParserFromViper(v), factories)
-	assert.NoError(t, err)
-	err = cfg.Validate()
-	assert.NoError(t, err)
-	return cfg
+	return config.ParserFromViper(v), nil
+}
+
+type errParserLoader struct {
+	err error
+}
+
+func (epl *errParserLoader) Get() (*config.Parser, error) {
+	return nil, epl.err
 }
 
 func TestApplication_updateService(t *testing.T) {
@@ -359,25 +258,20 @@ func TestApplication_updateService(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 	sentinelError := errors.New("sentinel error")
-	returnConfigFactoryFn := func(cfg *config.Config, err error) ConfigFactory {
-		return func(*cobra.Command, component.Factories) (*config.Config, error) {
-			return cfg, err
-		}
-	}
 
 	tests := []struct {
-		name          string
-		configFactory ConfigFactory
-		service       *service
-		skip          bool
+		name           string
+		parserProvider parserprovider.ParserProvider
+		service        *service
+		skip           bool
 	}{
 		{
-			name:          "first_load_err",
-			configFactory: returnConfigFactoryFn(nil, sentinelError),
+			name:           "first_load_err",
+			parserProvider: &errParserLoader{err: sentinelError},
 		},
 		{
-			name:          "retire_service_ok_load_err",
-			configFactory: returnConfigFactoryFn(nil, sentinelError),
+			name:           "retire_service_ok_load_err",
+			parserProvider: &errParserLoader{err: sentinelError},
 			service: &service{
 				logger:          zap.NewNop(),
 				builtExporters:  builder.Exporters{},
@@ -387,8 +281,8 @@ func TestApplication_updateService(t *testing.T) {
 			},
 		},
 		{
-			name:          "retire_service_ok_load_ok",
-			configFactory: returnConfigFactoryFn(constructMimumalOpConfig(t, factories), nil),
+			name:           "retire_service_ok_load_ok",
+			parserProvider: new(minimalParserLoader),
 			service: &service{
 				logger:          zap.NewNop(),
 				builtExporters:  builder.Exporters{},
@@ -407,10 +301,10 @@ func TestApplication_updateService(t *testing.T) {
 			}
 
 			app := Application{
-				logger:        zap.NewNop(),
-				configFactory: tt.configFactory,
-				factories:     factories,
-				service:       tt.service,
+				logger:         zap.NewNop(),
+				parserProvider: tt.parserProvider,
+				factories:      factories,
+				service:        tt.service,
 			}
 
 			err := app.updateService(ctx)

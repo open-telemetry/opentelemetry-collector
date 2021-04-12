@@ -41,3 +41,10 @@ type Config struct {
 	// MetricExpiration defines how long metrics are kept without updates
 	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
 }
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

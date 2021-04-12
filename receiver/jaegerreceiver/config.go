@@ -15,6 +15,10 @@
 package jaegerreceiver
 
 import (
+	"fmt"
+
+	"github.com/spf13/cast"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -78,8 +82,57 @@ type Config struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
+var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	return nil
+}
+
+// Unmarshal a config.Parser into the config struct.
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
+		return fmt.Errorf("empty config for Jaeger receiver")
+	}
+
+	// UnmarshalExact will not set struct properties to nil even if no key is provided,
+	// so set the protocol structs to nil where the keys were omitted.
+	err := componentParser.UnmarshalExact(cfg)
+	if err != nil {
+		return err
+	}
+
+	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
+	if len(protocols) == 0 {
+		return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
+	}
+
+	knownProtocols := 0
+	if _, ok := protocols[protoGRPC]; !ok {
+		cfg.GRPC = nil
+	} else {
+		knownProtocols++
+	}
+	if _, ok := protocols[protoThriftHTTP]; !ok {
+		cfg.ThriftHTTP = nil
+	} else {
+		knownProtocols++
+	}
+	if _, ok := protocols[protoThriftBinary]; !ok {
+		cfg.ThriftBinary = nil
+	} else {
+		knownProtocols++
+	}
+	if _, ok := protocols[protoThriftCompact]; !ok {
+		cfg.ThriftCompact = nil
+	} else {
+		knownProtocols++
+	}
+	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
+	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
+	// include only known protocols.
+	if len(protocols) != knownProtocols {
+		return fmt.Errorf("unknown protocols in the Jaeger receiver")
+	}
 	return nil
 }
