@@ -31,3 +31,10 @@ type Config struct {
 	// SamplingThereafter defines the sampling rate after the initial samples are logged.
 	SamplingThereafter int `mapstructure:"sampling_thereafter"`
 }
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}
