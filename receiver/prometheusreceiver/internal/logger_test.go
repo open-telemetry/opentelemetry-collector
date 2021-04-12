@@ -198,7 +198,7 @@ func TestExtractLogData(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tcs[len(tcs)-2:] {
+	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			ld := extractLogData(tc.input)
 			assert.Equal(t, tc.wantLevel, ld.level)
