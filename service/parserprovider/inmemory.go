@@ -24,7 +24,7 @@ type inMemoryProvider struct {
 	buf io.Reader
 }
 
-// NewInMemory returns a new ParserProvider that reads the configuration from the provided buffer as json.
+// NewInMemory returns a new ParserProvider that reads the configuration from the provided buffer as YAML.
 func NewInMemory(buf io.Reader) ParserProvider {
 	return &inMemoryProvider{buf: buf}
 }
