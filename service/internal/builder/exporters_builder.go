@@ -21,8 +21,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -256,7 +256,7 @@ func (eb *exportersBuilder) buildExporter(
 		}
 
 		if err != nil {
-			if err == configerror.ErrDataTypeIsNotSupported {
+			if err == componenterror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
 				return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
 			}

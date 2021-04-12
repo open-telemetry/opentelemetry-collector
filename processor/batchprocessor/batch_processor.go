@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/processor"
 )
 
 // batch_processor is a component that accepts spans and metrics, places them
@@ -199,7 +198,7 @@ func (bp *batchProcessor) resetTimer() {
 
 func (bp *batchProcessor) sendItems(measure *stats.Int64Measure) {
 	// Add that it came form the trace pipeline?
-	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
+	statsTags := []tag.Mutator{tag.Insert(processorTagKey, bp.name)}
 	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
 
 	if bp.telemetryLevel == configtelemetry.LevelDetailed {

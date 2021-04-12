@@ -25,8 +25,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 )
@@ -122,7 +122,7 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 
 	for _, createFn := range createFns {
 		firstRcvr, err := createFn(ctx, receiverCreateParams, getConfigFn())
-		if errors.Is(err, configerror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)
@@ -145,18 +145,18 @@ type createReceiverFn func(
 
 func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateLogsReceiver(ctx, params, cfg, consumertest.NewLogsNop())
+		return factory.CreateLogsReceiver(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateMetricsReceiver(ctx, params, cfg, consumertest.NewMetricsNop())
+		return factory.CreateMetricsReceiver(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateTracesReceiver(ctx, params, cfg, consumertest.NewTracesNop())
+		return factory.CreateTracesReceiver(ctx, params, cfg, consumertest.NewNop())
 	}
 }

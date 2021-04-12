@@ -47,7 +47,8 @@ func (j jaegerMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 				errs = append(errs, err)
 				continue
 			}
-			messages = append(messages, Message{Value: bts})
+			key := []byte(span.TraceID.String())
+			messages = append(messages, Message{Value: bts, Key: key})
 		}
 	}
 	return messages, consumererror.Combine(errs)

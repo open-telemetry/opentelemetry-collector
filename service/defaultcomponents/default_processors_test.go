@@ -25,8 +25,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
@@ -134,7 +134,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, processorCreateParams, getConfigFn())
-		if errors.Is(err, configerror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)
@@ -156,18 +156,18 @@ type createProcessorFn func(
 
 func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
 	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateLogsProcessor(ctx, params, cfg, consumertest.NewLogsNop())
+		return factory.CreateLogsProcessor(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
 	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateMetricsProcessor(ctx, params, cfg, consumertest.NewMetricsNop())
+		return factory.CreateMetricsProcessor(ctx, params, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
 	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateTracesProcessor(ctx, params, cfg, consumertest.NewTracesNop())
+		return factory.CreateTracesProcessor(ctx, params, cfg, consumertest.NewNop())
 	}
 }

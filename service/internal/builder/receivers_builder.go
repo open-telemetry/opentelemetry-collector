@@ -22,8 +22,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/fanoutconsumer"
@@ -192,11 +192,11 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 		createdReceiver, err = factory.CreateLogsReceiver(ctx, creationParams, cfg, junction)
 
 	default:
-		err = configerror.ErrDataTypeIsNotSupported
+		err = componenterror.ErrDataTypeIsNotSupported
 	}
 
 	if err != nil {
-		if err == configerror.ErrDataTypeIsNotSupported {
+		if err == componenterror.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
 				"receiver %s does not support %s but it was used in a "+
 					"%s pipeline",

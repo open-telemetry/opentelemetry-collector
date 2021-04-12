@@ -27,6 +27,8 @@ var (
 
 type nopConsumer struct{}
 
+func (nc *nopConsumer) unexported() {}
+
 func (nc *nopConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
 	return nil
 }
@@ -39,17 +41,25 @@ func (nc *nopConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
 	return nil
 }
 
+// NewNop returns a Consumer that just drops all received data and returns no error.
+func NewNop() Consumer {
+	return nopInstance
+}
+
 // NewTracesNop returns a consumer.Traces that just drops all received data and returns no error.
+// Deprecated: Use NewNop().
 func NewTracesNop() consumer.Traces {
 	return nopInstance
 }
 
 // NewMetricsNop returns a consumer.Metrics that just drops all received data and returns no error.
+// Deprecated: Use NewNop().
 func NewMetricsNop() consumer.Metrics {
 	return nopInstance
 }
 
 // NewLogsNop returns a consumer.Logs that just drops all received data and returns no error.
+// Deprecated: Use NewNop().
 func NewLogsNop() consumer.Logs {
 	return nopInstance
 }
