@@ -171,6 +171,13 @@ docker-component: check-component
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
+.PHONY: docker-windows-component # Not intended to be used directly
+docker-windows-component: check-component
+	GOOS=windows $(MAKE) $(COMPONENT)
+	cp ./bin/$(COMPONENT)_windows_amd64 ./cmd/$(COMPONENT)/$(COMPONENT).exe
+	docker build -t $(COMPONENT) -f ./cmd/$(COMPONENT)/Dockerfile_windows ./cmd/$(COMPONENT)/
+	rm ./cmd/$(COMPONENT)/$(COMPONENT)
+
 .PHONY: for-all
 for-all:
 	@echo "running $${CMD} in root"
@@ -220,6 +227,10 @@ delete-tag:
 .PHONY: docker-otelcol
 docker-otelcol:
 	COMPONENT=otelcol $(MAKE) docker-component
+
+.PHONY: docker-windows-otelcol
+docker-windows-otelcol:
+	COMPONENT=otelcol $(MAKE) docker-windows-component
 
 .PHONY: binaries-all-sys
 binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
