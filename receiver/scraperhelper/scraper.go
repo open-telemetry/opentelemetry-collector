@@ -116,7 +116,11 @@ func (ms metricsScraper) Scrape(ctx context.Context, receiverName string) (pdata
 	ctx = obsreport.ScraperContext(ctx, receiverName, ms.Name())
 	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, ms.Name())
 	metrics, err := ms.ScrapeMetrics(ctx)
-	obsreport.EndMetricsScrapeOp(ctx, metrics.Len(), err)
+	count := 0
+	if err == nil {
+		count = metrics.Len()
+	}
+	obsreport.EndMetricsScrapeOp(ctx, count, err)
 	return metrics, err
 }
 
@@ -155,7 +159,11 @@ func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverName strin
 	ctx = obsreport.ScraperContext(ctx, receiverName, rms.Name())
 	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, rms.Name())
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
-	obsreport.EndMetricsScrapeOp(ctx, metricCount(resourceMetrics), err)
+	count := 0
+	if err == nil {
+		count = metricCount(resourceMetrics)
+	}
+	obsreport.EndMetricsScrapeOp(ctx, count, err)
 	return resourceMetrics, err
 }
 
