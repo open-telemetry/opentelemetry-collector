@@ -30,10 +30,5 @@ func NewInMemory(buf io.Reader) ParserProvider {
 }
 
 func (inp *inMemoryProvider) Get() (*config.Parser, error) {
-	v := config.NewViper()
-	v.SetConfigType("yaml")
-	if err := v.ReadConfig(inp.buf); err != nil {
-		return nil, err
-	}
-	return config.ParserFromViper(v), nil
+	return config.NewParserFromBuffer(inp.buf)
 }

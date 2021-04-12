@@ -239,10 +239,7 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	v := config.NewViper()
-	v.SetConfigType("yaml")
-	v.ReadConfig(strings.NewReader(configStr))
-	return config.ParserFromViper(v), nil
+	return config.NewParserFromBuffer(strings.NewReader(configStr))
 }
 
 type errParserLoader struct {
