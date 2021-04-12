@@ -15,9 +15,18 @@
 package hostmetricsreceiver
 
 import (
+	"errors"
+	"fmt"
+
+	"github.com/spf13/cast"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+)
+
+const (
+	scrapersKey = "scrapers"
 )
 
 // Config defines configuration for HostMetrics receiver.
@@ -27,8 +36,51 @@ type Config struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
+var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	return nil
+}
+
+// Unmarshal a config.Parser into the config struct.
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	// load the non-dynamic config normally
+	err := componentParser.Unmarshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	// dynamically load the individual collector configs based on the key name
+
+	cfg.Scrapers = map[string]internal.Config{}
+
+	scrapersSection, err := componentParser.Sub(scrapersKey)
+	if err != nil {
+		return err
+	}
+	if len(scrapersSection.AllKeys()) == 0 {
+		return errors.New("must specify at least one scraper when using hostmetrics receiver")
+	}
+
+	for key := range cast.ToStringMap(componentParser.Get(scrapersKey)) {
+		factory, ok := getScraperFactory(key)
+		if !ok {
+			return fmt.Errorf("invalid scraper key: %s", key)
+		}
+
+		collectorCfg := factory.CreateDefaultConfig()
+		collectorViperSection, err := scrapersSection.Sub(key)
+		if err != nil {
+			return err
+		}
+		err = collectorViperSection.UnmarshalExact(collectorCfg)
+		if err != nil {
+			return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
+		}
+
+		cfg.Scrapers[key] = collectorCfg
+	}
+
 	return nil
 }

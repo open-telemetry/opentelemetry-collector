@@ -17,8 +17,6 @@ package receiverhelper
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
@@ -27,13 +25,6 @@ import (
 
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption func(o *factory)
-
-// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
-func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
-	return func(o *factory) {
-		o.customUnmarshaler = customUnmarshaler
-	}
-}
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraceReceiver.
 func WithTraces(createTraceReceiver CreateTraceReceiver) FactoryOption {
@@ -70,7 +61,6 @@ type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, co
 
 type factory struct {
 	cfgType               config.Type
-	customUnmarshaler     component.CustomUnmarshaler
 	createDefaultConfig   CreateDefaultConfig
 	createTraceReceiver   CreateTraceReceiver
 	createMetricsReceiver CreateMetricsReceiver
@@ -89,13 +79,7 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	var ret component.ReceiverFactory
-	if f.customUnmarshaler != nil {
-		ret = &factoryWithUnmarshaler{f}
-	} else {
-		ret = f
-	}
-	return ret
+	return f
 }
 
 // Type gets the type of the Receiver config created by this factory.
@@ -143,15 +127,4 @@ func (f *factory) CreateLogsReceiver(
 		return f.createLogsReceiver(ctx, params, cfg, nextConsumer)
 	}
 	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
-
-type factoryWithUnmarshaler struct {
-	*factory
-}
-
-// Unmarshal un-marshals the config using the provided custom unmarshaler.
-func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

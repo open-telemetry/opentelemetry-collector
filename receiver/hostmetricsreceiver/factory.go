@@ -16,11 +16,8 @@ package hostmetricsreceiver
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -44,8 +41,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr     = "hostmetrics"
-	scrapersKey = "scrapers"
+	typeStr = "hostmetrics"
 )
 
 var (
@@ -70,56 +66,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
-}
-
-// customUnmarshaler returns custom unmarshaler for this config.
-func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	componentParser := config.ParserFromViper(componentViperSection)
-	// load the non-dynamic config normally
-	err := componentParser.Unmarshal(intoCfg)
-	if err != nil {
-		return err
-	}
-
-	cfg, ok := intoCfg.(*Config)
-	if !ok {
-		return fmt.Errorf("config type not hostmetrics.Config")
-	}
-
-	// dynamically load the individual collector configs based on the key name
-
-	cfg.Scrapers = map[string]internal.Config{}
-
-	scrapersSection, err := componentParser.Sub(scrapersKey)
-	if err != nil {
-		return err
-	}
-	if len(scrapersSection.AllKeys()) == 0 {
-		return errors.New("must specify at least one scraper when using hostmetrics receiver")
-	}
-
-	for key := range cast.ToStringMap(componentParser.Get(scrapersKey)) {
-		factory, ok := getScraperFactory(key)
-		if !ok {
-			return fmt.Errorf("invalid scraper key: %s", key)
-		}
-
-		collectorCfg := factory.CreateDefaultConfig()
-		collectorViperSection, err := scrapersSection.Sub(key)
-		if err != nil {
-			return err
-		}
-		err = collectorViperSection.UnmarshalExact(collectorCfg)
-		if err != nil {
-			return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
-		}
-
-		cfg.Scrapers[key] = collectorCfg
-	}
-
-	return nil
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
 func getScraperFactory(key string) (internal.BaseFactory, bool) {
