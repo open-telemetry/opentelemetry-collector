@@ -488,12 +488,12 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 		selector = strings.Trim(parts[0], " ")
 
 		if len(parts) > 1 && len(parts[1]) > 0 {
-			v := config.NewViper()
-			v.SetConfigType("yaml")
-			if err = v.ReadConfig(bytes.NewReader([]byte(parts[1]))); err != nil {
+			var cp *config.Parser
+			cp, err = config.NewParserFromBuffer(bytes.NewReader([]byte(parts[1])))
+			if err != nil {
 				return
 			}
-			params = v.AllSettings()
+			params = cp.ToStringMap()
 		}
 
 	default:
