@@ -4,7 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Remove `config.DecodeTypeAndName`, use `config.IDFromString` (#2869)
+- Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)
 
 ## v0.24.0 Beta
 
