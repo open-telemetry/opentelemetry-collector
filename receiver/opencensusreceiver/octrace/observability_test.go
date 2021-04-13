@@ -44,12 +44,12 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	port, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
+	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneReceiverFn()
 
 	n := 20
 	// Now for the traceExporter that sends 0 length spans
-	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
+	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the trace service client: %v", err)
 	spans := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte("12345678")}}
 	for i := 0; i < n; i++ {

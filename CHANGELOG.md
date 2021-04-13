@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove testutil.HostPortFromAddr, users can write their own parsing helper (#2919)
 - Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)
 - Remove config.NewViper, users should use config.NewParser (#2917)
 

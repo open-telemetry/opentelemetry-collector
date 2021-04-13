@@ -17,7 +17,6 @@ package testutil
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -171,18 +170,6 @@ func WaitForPort(t *testing.T, port uint16) error {
 			return fmt.Errorf("failed to wait for port %d", port)
 		}
 	}
-}
-
-// HostPortFromAddr extracts host and port from a network address
-func HostPortFromAddr(addr net.Addr) (host string, port int, err error) {
-	addrStr := addr.String()
-	sepIndex := strings.LastIndex(addrStr, ":")
-	if sepIndex < 0 {
-		return "", -1, errors.New("failed to parse host:port")
-	}
-	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
-	port, err = strconv.Atoi(portStr)
-	return host, port, err
 }
 
 // WaitFor the specific condition for up to 10 seconds. Records a test error

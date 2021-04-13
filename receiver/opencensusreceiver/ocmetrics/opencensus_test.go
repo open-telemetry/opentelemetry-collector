@@ -50,14 +50,13 @@ import (
 func TestReceiver_endToEnd(t *testing.T) {
 	metricSink := new(consumertest.MetricsSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
-	address := fmt.Sprintf("localhost:%d", port)
 	expFactory := opencensusexporter.NewFactory()
 	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
-	expCfg.Endpoint = address
+	expCfg.Endpoint = addr.String()
 	expCfg.WaitForReady = true
 	oce, err := expFactory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
@@ -88,10 +87,10 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	metricSink := new(consumertest.MetricsSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
+	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the gRPC MetricsService_ExportClient: %v", err)
 	defer metricsClientDoneFn()
 
@@ -272,10 +271,10 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 
 	metricSink := new(consumertest.MetricsSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
+	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the gRPC MetricsService_ExportClient: %v", err)
 	defer metricsClientDoneFn()
 
@@ -327,9 +326,8 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 }
 
 // Helper functions from here on below
-func makeMetricsServiceClient(port int) (agentmetricspb.MetricsService_ExportClient, func(), error) {
-	addr := fmt.Sprintf(":%d", port)
-	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func makeMetricsServiceClient(addr net.Addr) (agentmetricspb.MetricsService_ExportClient, func(), error) {
+	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -350,7 +348,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (int, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -359,12 +357,6 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (int, func()) {
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
-	}
-
-	_, port, err := testutil.HostPortFromAddr(ln.Addr())
-	if err != nil {
-		done()
-		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
 	oci, err := New(receiverTagValue, sr)
@@ -377,7 +369,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (int, func()) {
 		_ = srv.Serve(ln)
 	}()
 
-	return port, done
+	return ln.Addr(), done
 }
 
 func makeMetric(val int) *metricspb.Metric {
