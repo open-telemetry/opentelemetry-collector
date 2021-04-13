@@ -85,11 +85,16 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 
 	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(srv.builtPipelines))
 	for c, p := range srv.builtPipelines {
+		// TODO: Change the template to use ID.
+		var recvs []string
+		for _, recvID := range c.Receivers {
+			recvs = append(recvs, recvID.String())
+		}
 		row := zpages.SummaryPipelinesTableRowData{
 			FullName:            c.Name,
 			InputType:           string(c.InputType),
 			MutatesConsumedData: p.MutatesConsumedData,
-			Receivers:           c.Receivers,
+			Receivers:           recvs,
 			Processors:          c.Processors,
 			Exporters:           c.Exporters,
 		}

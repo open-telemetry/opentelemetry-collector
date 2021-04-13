@@ -38,8 +38,8 @@ func TestLoadConfigFile(t *testing.T) {
 
 	// Verify receivers
 	require.Len(t, cfg.Receivers, 2)
-	assert.Contains(t, cfg.Receivers, "nop")
-	assert.Contains(t, cfg.Receivers, "nop/myreceiver")
+	assert.Contains(t, cfg.Receivers, config.NewID("nop"))
+	assert.Contains(t, cfg.Receivers, config.NewIDWithName("nop", "myreceiver"))
 
 	// Verify exporters
 	assert.Len(t, cfg.Exporters, 2)
@@ -59,7 +59,7 @@ func TestLoadConfigFile(t *testing.T) {
 		&config.Pipeline{
 			Name:       "traces",
 			InputType:  config.TracesDataType,
-			Receivers:  []string{"nop"},
+			Receivers:  []config.ComponentID{config.NewID("nop")},
 			Processors: []string{"nop"},
 			Exporters:  []string{"nop"},
 		},

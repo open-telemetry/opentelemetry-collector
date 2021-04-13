@@ -99,7 +99,6 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 func (or *OCDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := opencensusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
-	cfg.SetName(or.ProtocolName())
 	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -154,7 +153,6 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 func (jr *JaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
-	cfg.SetName(jr.ProtocolName())
 	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", jr.Port), Transport: "tcp"},
 	}
@@ -198,7 +196,6 @@ type BaseOTLPDataReceiver struct {
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.SetName(bor.exporterType)
 	if bor.exporterType == "otlp" {
 		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", bor.Port), Transport: "tcp"}
 		cfg.HTTP = nil
@@ -300,7 +297,6 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 func (zr *ZipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
-	cfg.SetName(zr.ProtocolName())
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}

@@ -107,10 +107,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "prometheus",
-			NameVal: "prometheus",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateParams, rcvCfg, exporter)

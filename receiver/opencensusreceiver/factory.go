@@ -25,10 +25,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "opencensus"
-)
+const typeStr = "opencensus"
 
 // NewFactory creates a new OpenCensus receiver factory.
 func NewFactory() component.ReceiverFactory {
@@ -41,10 +38,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:55678",
@@ -103,7 +97,7 @@ func createReceiver(cfg config.Receiver) (*ocReceiver, error) {
 		// We don't have a receiver, so create one.
 		var err error
 		receiver, err = newOpenCensusReceiver(
-			rCfg.Name(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, opts...)
+			rCfg.ID().String(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, opts...)
 		if err != nil {
 			return nil, err
 		}

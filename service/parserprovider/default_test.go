@@ -114,7 +114,7 @@ func TestDefault(t *testing.T) {
 		assert.Equal(t, 2, len(cfg.Processors))
 		batch := cfg.Processors["batch"].(*batchprocessor.Config)
 		assert.Equal(t, time.Second*2, batch.Timeout)
-		jaeger := cfg.Receivers["jaeger"].(*jaegerreceiver.Config)
+		jaeger := cfg.Receivers[config.NewID("jaeger")].(*jaegerreceiver.Config)
 		assert.Equal(t, "localhost:12345", jaeger.GRPC.NetAddr.Endpoint)
 		attributes := cfg.Processors["attributes"].(*attributesprocessor.Config)
 		require.Equal(t, 1, len(attributes.Actions))

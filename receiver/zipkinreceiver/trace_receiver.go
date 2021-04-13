@@ -74,7 +74,7 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 
 	zr := &ZipkinReceiver{
 		nextConsumer: nextConsumer,
-		instanceName: config.Name(),
+		instanceName: config.ID().String(),
 		config:       config,
 	}
 	return zr, nil

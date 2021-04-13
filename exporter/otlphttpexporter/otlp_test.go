@@ -353,7 +353,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(addr string, defaultCfg config.Exporter) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg config.Receiver) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
 	cfg.HTTP.Endpoint = addr
 	cfg.GRPC = nil

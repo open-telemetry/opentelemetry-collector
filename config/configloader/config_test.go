@@ -50,30 +50,24 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID("examplereceiver")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1000",
 			},
 			ExtraSetting: "some string",
 		},
-		cfg.Receivers["examplereceiver"],
+		cfg.Receivers[config.NewID("examplereceiver")],
 		"Did not load receiver config correctly")
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver/myreceiver",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName("examplereceiver", "myreceiver")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:12345",
 			},
 			ExtraSetting: "some string",
 		},
-		cfg.Receivers["examplereceiver/myreceiver"],
+		cfg.Receivers[config.NewIDWithName("examplereceiver", "myreceiver")],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
@@ -122,7 +116,7 @@ func TestDecodeConfig(t *testing.T) {
 		&config.Pipeline{
 			Name:       "traces",
 			InputType:  config.TracesDataType,
-			Receivers:  []string{"examplereceiver"},
+			Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
 		},
@@ -228,10 +222,7 @@ func TestSimpleConfig(t *testing.T) {
 
 			assert.Equalf(t,
 				&testcomponents.ExampleReceiver{
-					ReceiverSettings: config.ReceiverSettings{
-						TypeVal: "examplereceiver",
-						NameVal: "examplereceiver",
-					},
+					ReceiverSettings: config.NewReceiverSettings(config.NewID("examplereceiver")),
 					TCPAddr: confignet.TCPAddr{
 						Endpoint: "localhost:1234",
 					},
@@ -239,7 +230,7 @@ func TestSimpleConfig(t *testing.T) {
 					ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
 					ExtraListSetting: []string{receiverExtraListElement + "_1", receiverExtraListElement + "_2"},
 				},
-				cfg.Receivers["examplereceiver"],
+				cfg.Receivers[config.MustIDFromString("examplereceiver")],
 				"TEST[%s] Did not load receiver config correctly", test.name)
 
 			// Verify exporters
@@ -282,7 +273,7 @@ func TestSimpleConfig(t *testing.T) {
 				&config.Pipeline{
 					Name:       "traces",
 					InputType:  config.TracesDataType,
-					Receivers:  []string{"examplereceiver"},
+					Receivers:  []config.ComponentID{config.MustIDFromString("examplereceiver")},
 					Processors: []string{"exampleprocessor"},
 					Exporters:  []string{"exampleexporter"},
 				},
@@ -330,10 +321,7 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID("examplereceiver")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
@@ -356,7 +344,7 @@ func TestEscapedEnvVars(t *testing.T) {
 			},
 			ExtraListSetting: []string{"$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", "$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2"},
 		},
-		cfg.Receivers["examplereceiver"],
+		cfg.Receivers[config.MustIDFromString("examplereceiver")],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
@@ -398,7 +386,7 @@ func TestEscapedEnvVars(t *testing.T) {
 		&config.Pipeline{
 			Name:       "traces",
 			InputType:  config.TracesDataType,
-			Receivers:  []string{"examplereceiver"},
+			Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
 		},

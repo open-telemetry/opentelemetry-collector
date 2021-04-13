@@ -60,7 +60,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-const otlpReceiverName = "otlp_receiver_test"
+const otlpReceiverName = "receiver_test"
 
 var traceJSON = []byte(`
 	{
@@ -620,7 +620,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			msg *collectortrace.ExportTraceServiceRequest) error
 	}{
 		{
-			receiverTag: "otlp_trace",
+			receiverTag: "trace",
 			exportFn:    exportBidiFn,
 		},
 	}
@@ -658,7 +658,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
 
-				obsreporttest.CheckReceiverTraces(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				obsreporttest.CheckReceiverTraces(t, "otlp/"+exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}
@@ -666,9 +666,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: "IncorrectTLS",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -694,9 +692,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: "IncorrectTLS",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -718,7 +714,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetName(name)
+	cfg.SetIDName(name)
 	cfg.GRPC.NetAddr.Endpoint = endpoint
 	cfg.HTTP = nil
 	return newReceiver(t, factory, cfg, tc, mc)
@@ -727,7 +723,7 @@ func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Tra
 func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetName(otlpReceiverName)
+	cfg.SetIDName(otlpReceiverName)
 	cfg.HTTP.Endpoint = endpoint
 	cfg.GRPC = nil
 	return newReceiver(t, factory, cfg, tc, mc)
@@ -773,7 +769,7 @@ func TestShutdown(t *testing.T) {
 	// Create OTLP receiver with gRPC and HTTP protocols.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetName(otlpReceiverName)
+	cfg.SetIDName(otlpReceiverName)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
 	ocr := newReceiver(t, factory, cfg, nextSink, nil)

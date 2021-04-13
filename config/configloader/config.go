@@ -235,7 +235,7 @@ func loadService(rawService serviceSettings) (config.Service, error) {
 func LoadReceiver(componentConfig *config.Parser, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
-	receiverCfg.SetName(id.String())
+	receiverCfg.SetIDName(id.Name())
 	expandEnvLoadedConfig(receiverCfg)
 
 	// Now that the default config struct is created we can Unmarshal into it
@@ -262,7 +262,6 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(receiversKeyName, key, err)
 		}
-		fullName := id.String()
 
 		// Find receiver factory based on "type" that we read from config source
 		factory := factories[id.Type()]
@@ -277,10 +276,10 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 			return nil, err
 		}
 
-		if receivers[fullName] != nil {
+		if receivers[id] != nil {
 			return nil, errorDuplicateName(receiversKeyName, id)
 		}
-		receivers[fullName] = receiverCfg
+		receivers[id] = receiverCfg
 	}
 
 	return receivers, nil
@@ -401,7 +400,13 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipeline
 		}
 
 		pipelineCfg.Name = fullName
-		pipelineCfg.Receivers = rawPipeline.Receivers
+		for _, idRecvStr := range rawPipeline.Receivers {
+			idRecv, err := config.IDFromString(idRecvStr)
+			if err != nil {
+				return nil, fmt.Errorf("pipelines: config for %v contains invalid receiver name %s : %w", id, idRecvStr, err)
+			}
+			pipelineCfg.Receivers = append(pipelineCfg.Receivers, idRecv)
+		}
 		pipelineCfg.Processors = rawPipeline.Processors
 		pipelineCfg.Exporters = rawPipeline.Exporters
 
