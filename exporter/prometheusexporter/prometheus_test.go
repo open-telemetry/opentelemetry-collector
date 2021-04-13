@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -261,10 +262,12 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		Endpoint:                 ":7777",
-		SendTimestamps:           true,
-		MetricExpiration:         120 * time.Minute,
-		ResourceAttributesAsTags: true,
+		Endpoint:         ":7777",
+		SendTimestamps:   true,
+		MetricExpiration: 120 * time.Minute,
+		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
+			Enabled: true,
+		},
 	}
 
 	factory := NewFactory()

@@ -63,9 +63,7 @@ func createMetricsExporter(
 		prometheus.ConsumeMetrics,
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
-		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
-			Enabled: pcfg.ResourceAttributesAsTags,
-		}),
+		exporterhelper.WithResourceToTelemetryConversion(pcfg.ResourceToTelemetrySettings),
 	)
 	if err != nil {
 		return nil, err
