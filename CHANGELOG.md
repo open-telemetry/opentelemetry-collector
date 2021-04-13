@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)
 - Remove config.NewViper, users should use config.NewParser (#2917)
 
 ## 💡 Enhancements 💡
@@ -29,9 +30,9 @@
   - Rename `NewComponent()` to `New()`
 - obsReport.NewExporter accepts a settings struct (#2668)
 - Remove ErrorWaitingHost from `componenttest` (#2582)
-- Move `config.Load` to use `configparser.Load` (#2796)
+- Move `config.Load` to `configparser.Load` (#2796)
 - Remove `configtest.NewViperFromYamlFile()`, use `config.Parser.NewParserFromFile()` (#2806)
-- Move `config.ViperSubExact()` to use `config.Parser.Sub()` (#2806)
+- Remove `config.ViperSubExact()`, use `config.Parser.Sub()` (#2806)
 - Update LoadReceiver signature to remove unused params (#2823)
 - Move `configerror.ErrDataTypeIsNotSupported` to `componenterror.ErrDataTypeIsNotSupported` (#2886)
 - Rename`CreateTraceExporter` type to `CreateTracesExporter` in `exporterhelper` (#2779)

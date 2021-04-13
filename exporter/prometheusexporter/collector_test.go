@@ -349,10 +349,12 @@ func TestCollectMetrics(t *testing.T) {
 						require.Equal(t, tt.value, *pbMetric.Counter.Value)
 						require.Nil(t, pbMetric.Gauge)
 						require.Nil(t, pbMetric.Histogram)
+						require.Nil(t, pbMetric.Summary)
 					case prometheus.GaugeValue:
 						require.Equal(t, tt.value, *pbMetric.Gauge.Value)
 						require.Nil(t, pbMetric.Counter)
 						require.Nil(t, pbMetric.Histogram)
+						require.Nil(t, pbMetric.Summary)
 					}
 				}
 				require.Equal(t, 1, j)
@@ -482,6 +484,118 @@ func TestAccumulateHistograms(t *testing.T) {
 					for _, b := range h.Bucket {
 						require.Equal(t, tt.histogramPoints[(*b).GetUpperBound()], b.GetCumulativeCount())
 					}
+				}
+				require.Equal(t, 1, n)
+			})
+		}
+	}
+}
+
+func TestAccumulateSummary(t *testing.T) {
+	quantileValue := func(pN, value float64) pdata.ValueAtQuantile {
+		vqpN := pdata.NewValueAtQuantile()
+		vqpN.SetQuantile(pN)
+		vqpN.SetValue(value)
+		return vqpN
+	}
+	quantilesFromMap := func(qf map[float64]float64) (qL []*io_prometheus_client.Quantile) {
+		f64Ptr := func(v float64) *float64 { return &v }
+		for quantile, value := range qf {
+			qL = append(qL, &io_prometheus_client.Quantile{
+				Quantile: f64Ptr(quantile), Value: f64Ptr(value),
+			})
+		}
+		return qL
+	}
+	tests := []struct {
+		name          string
+		metric        func(time.Time) pdata.Metric
+		wantSum       float64
+		wantCount     uint64
+		wantQuantiles []*io_prometheus_client.Quantile
+	}{
+		{
+			name:      "Summary with single point",
+			wantSum:   0.012,
+			wantCount: 10,
+			wantQuantiles: quantilesFromMap(map[float64]float64{
+				0.50: 190,
+				0.99: 817,
+			}),
+			metric: func(ts time.Time) (metric pdata.Metric) {
+				sp := pdata.NewSummaryDataPoint()
+				sp.SetCount(10)
+				sp.SetSum(0.012)
+				sp.SetCount(10)
+				sp.LabelsMap().Insert("label_1", "1")
+				sp.LabelsMap().Insert("label_2", "2")
+				sp.SetTimestamp(pdata.TimestampFromTime(ts))
+
+				sp.QuantileValues().Append(quantileValue(0.50, 190))
+				sp.QuantileValues().Append(quantileValue(0.99, 817))
+
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeSummary)
+				metric.Summary().DataPoints().Append(sp)
+				metric.SetDescription("test description")
+
+				return
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		for _, sendTimestamp := range []bool{true, false} {
+			name := tt.name
+			if sendTimestamp {
+				name += "/WithTimestamp"
+			}
+			t.Run(name, func(t *testing.T) {
+				ts := time.Now()
+				metric := tt.metric(ts)
+				c := collector{
+					accumulator: &mockAccumulator{
+						[]pdata.Metric{metric},
+					},
+					sendTimestamps: sendTimestamp,
+					logger:         zap.NewNop(),
+				}
+
+				ch := make(chan prometheus.Metric, 1)
+				go func() {
+					c.Collect(ch)
+					close(ch)
+				}()
+
+				n := 0
+				for m := range ch {
+					n++
+					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
+					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+
+					pbMetric := io_prometheus_client.Metric{}
+					m.Write(&pbMetric)
+
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+					for _, l := range pbMetric.Label {
+						require.Equal(t, labelsKeys[*l.Name], *l.Value)
+					}
+
+					if sendTimestamp {
+						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+					} else {
+						require.Nil(t, pbMetric.TimestampMs)
+					}
+
+					require.Nil(t, pbMetric.Gauge)
+					require.Nil(t, pbMetric.Counter)
+					require.Nil(t, pbMetric.Histogram)
+
+					s := *pbMetric.Summary
+					require.Equal(t, tt.wantCount, *s.SampleCount)
+					require.Equal(t, tt.wantSum, *s.SampleSum)
+					require.Equal(t, tt.wantQuantiles, s.Quantile)
 				}
 				require.Equal(t, 1, n)
 			})
