@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove config.NewViper, users should use config.NewParser (#2917)
+
 ## 💡 Enhancements 💡
 
 - Add `validatable` interface with `Validate()` to all `config.<component>` (#2898)
