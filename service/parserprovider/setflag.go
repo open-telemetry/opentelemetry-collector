@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -52,7 +54,7 @@ func (sfl *setFlagProvider) Get() (*config.Parser, error) {
 			return nil, err
 		}
 	}
-	viperFlags := config.NewViper()
+	viperFlags := viper.NewWithOptions(viper.KeyDelimiter(config.KeyDelimiter))
 	viperFlags.SetConfigType(setFlagFileType)
 	if err := viperFlags.ReadConfig(b); err != nil {
 		return nil, fmt.Errorf("failed to read set flag config: %v", err)
