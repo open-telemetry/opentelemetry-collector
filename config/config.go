@@ -83,8 +83,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// Validate the processor configuration if there is any processor
-	// configured in the pipeline
+	// Validate the processor configuration.
 	for proc, procCfg := range cfg.Processors {
 		if err := procCfg.Validate(); err != nil {
 			return fmt.Errorf("processor \"%s\" has invalid configuration: %w", proc, err)
