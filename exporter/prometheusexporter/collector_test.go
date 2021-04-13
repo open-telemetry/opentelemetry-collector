@@ -498,30 +498,21 @@ func TestAccumulateSummary(t *testing.T) {
 		vqpN.SetValue(value)
 		return vqpN
 	}
-	quantilesFromMap := func(qf map[float64]float64) (qL []*io_prometheus_client.Quantile) {
-		f64Ptr := func(v float64) *float64 { return &v }
-		for quantile, value := range qf {
-			qL = append(qL, &io_prometheus_client.Quantile{
-				Quantile: f64Ptr(quantile), Value: f64Ptr(value),
-			})
-		}
-		return qL
-	}
 	tests := []struct {
 		name          string
 		metric        func(time.Time) pdata.Metric
 		wantSum       float64
 		wantCount     uint64
-		wantQuantiles []*io_prometheus_client.Quantile
+		wantQuantiles map[float64]float64
 	}{
 		{
 			name:      "Summary with single point",
 			wantSum:   0.012,
 			wantCount: 10,
-			wantQuantiles: quantilesFromMap(map[float64]float64{
+			wantQuantiles: map[float64]float64{
 				0.50: 190,
 				0.99: 817,
-			}),
+			},
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				sp := pdata.NewSummaryDataPoint()
 				sp.SetCount(10)
@@ -595,7 +586,12 @@ func TestAccumulateSummary(t *testing.T) {
 					s := *pbMetric.Summary
 					require.Equal(t, tt.wantCount, *s.SampleCount)
 					require.Equal(t, tt.wantSum, *s.SampleSum)
-					require.Equal(t, tt.wantQuantiles, s.Quantile)
+					// To ensure that we can compare quantiles, we need to just extract their values.
+					gotQuantiles := make(map[float64]float64)
+					for _, q := range s.Quantile {
+						gotQuantiles[q.GetQuantile()] = q.GetValue()
+					}
+					require.Equal(t, tt.wantQuantiles, gotQuantiles)
 				}
 				require.Equal(t, 1, n)
 			})
