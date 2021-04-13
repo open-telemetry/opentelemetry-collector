@@ -17,7 +17,6 @@ package testutil
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -27,7 +26,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -141,35 +139,6 @@ func createExclusionsList(exclusionsText string, t *testing.T) []portpair {
 		}
 	}
 	return exclusions
-}
-
-// WaitForPort repeatedly attempts to open a local port until it either succeeds or 5 seconds pass
-// It is useful if you need to asynchronously start a service and wait for it to start
-func WaitForPort(t *testing.T, port uint16) error {
-	t.Helper()
-
-	totalDuration := 5 * time.Second
-	wait := 100 * time.Millisecond
-	address := fmt.Sprintf("localhost:%d", port)
-
-	ticker := time.NewTicker(wait)
-	defer ticker.Stop()
-
-	timeout := time.After(totalDuration)
-
-	for {
-		select {
-		case <-ticker.C:
-			conn, err := net.Dial("tcp", address)
-			if err == nil && conn != nil {
-				conn.Close()
-				return nil
-			}
-
-		case <-timeout:
-			return fmt.Errorf("failed to wait for port %d", port)
-		}
-	}
 }
 
 // LimitedWriter is an io.Writer that will return an EOF error after MaxLen has

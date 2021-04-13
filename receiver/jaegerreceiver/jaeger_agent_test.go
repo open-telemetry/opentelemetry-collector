@@ -157,7 +157,14 @@ func TestJaegerHTTP(t *testing.T) {
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
 	// allow http server to start
-	assert.NoError(t, testutil.WaitForPort(t, port), "WaitForPort failed")
+	assert.Eventually(t, func() bool {
+		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		if err == nil && conn != nil {
+			conn.Close()
+			return true
+		}
+		return false
+	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
 
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
