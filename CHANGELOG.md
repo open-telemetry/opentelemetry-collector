@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove testutil.HostPortFromAddr, users can write their own parsing helper (#2919)
+
 ## 💡 Enhancements 💡
 
 - Add `validatable` interface with `Validate()` to all `config.<component>` (#2898)
