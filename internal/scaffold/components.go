@@ -125,6 +125,6 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	return factories, consumererror.CombineErrors(errs)
+	return factories, consumererror.Combine(errs)
 }
 `
