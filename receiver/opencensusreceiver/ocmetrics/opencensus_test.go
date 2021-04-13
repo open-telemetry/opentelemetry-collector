@@ -43,7 +43,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -70,9 +69,9 @@ func TestReceiver_endToEnd(t *testing.T) {
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NoError(t, oce.ConsumeMetrics(context.Background(), md))
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	gotMetrics := metricSink.AllMetrics()
 	require.Len(t, gotMetrics, 1)
 	assert.Equal(t, md, gotMetrics[0])

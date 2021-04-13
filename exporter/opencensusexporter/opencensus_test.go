@@ -17,6 +17,7 @@ package opencensusexporter
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,9 +67,9 @@ func TestSendTraces(t *testing.T) {
 
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	traces := sink.AllTraces()
 	require.Len(t, traces, 1)
 	assert.Equal(t, td, traces[0])
@@ -77,9 +78,9 @@ func TestSendTraces(t *testing.T) {
 	// Sending data no Node.
 	td.ResourceSpans().At(0).Resource().Attributes().InitEmptyWithCapacity(0)
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	traces = sink.AllTraces()
 	require.Len(t, traces, 1)
 	assert.Equal(t, td, traces[0])
@@ -163,9 +164,9 @@ func TestSendMetrics(t *testing.T) {
 
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	metrics := sink.AllMetrics()
 	require.Len(t, metrics, 1)
 	assert.Equal(t, md, metrics[0])
@@ -174,9 +175,9 @@ func TestSendMetrics(t *testing.T) {
 	sink.Reset()
 	md.ResourceMetrics().At(0).Resource().Attributes().InitEmptyWithCapacity(0)
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	metrics = sink.AllMetrics()
 	require.Len(t, metrics, 1)
 	assert.Equal(t, md, metrics[0])
