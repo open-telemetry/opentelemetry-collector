@@ -68,14 +68,14 @@ func (b baseScraper) Name() string {
 }
 
 // WithStart sets the function that will be called on startup.
-func WithStart(start componenthelper.Start) ScraperOption {
+func WithStart(start componenthelper.StartFunc) ScraperOption {
 	return func(o *baseSettings) {
 		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
 	}
 }
 
 // WithShutdown sets the function that will be called on shutdown.
-func WithShutdown(shutdown componenthelper.Shutdown) ScraperOption {
+func WithShutdown(shutdown componenthelper.ShutdownFunc) ScraperOption {
 	return func(o *baseSettings) {
 		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
