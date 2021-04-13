@@ -172,36 +172,6 @@ func WaitForPort(t *testing.T, port uint16) error {
 	}
 }
 
-// WaitFor the specific condition for up to 10 seconds. Records a test error
-// if condition does not become true.
-func WaitFor(t *testing.T, cond func() bool, errMsg ...interface{}) bool {
-	t.Helper()
-
-	startTime := time.Now()
-
-	// Start with 5 ms waiting interval between condition re-evaluation.
-	waitInterval := time.Millisecond * 5
-
-	for {
-		time.Sleep(waitInterval)
-
-		// Increase waiting interval exponentially up to 500 ms.
-		if waitInterval < time.Millisecond*500 {
-			waitInterval *= 2
-		}
-
-		if cond() {
-			return true
-		}
-
-		if time.Since(startTime) > time.Second*10 {
-			// Waited too long
-			t.Error("Time out waiting for", errMsg)
-			return false
-		}
-	}
-}
-
 // LimitedWriter is an io.Writer that will return an EOF error after MaxLen has
 // been reached.  If MaxLen is 0, Writes will always succeed.
 type LimitedWriter struct {

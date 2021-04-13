@@ -4,9 +4,10 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Remove testutil.HostPortFromAddr, users can write their own parsing helper (#2919)
+- Remove `testutil.HostPortFromAddr`, users can write their own parsing helper (#2919)
 - Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)
-- Remove config.NewViper, users should use config.NewParser (#2917)
+- Remove `config.NewViper`, users should use `config.NewParser` (#2917)
+- Remove `testutil.WaitFor`, use `testify.Eventually` helper if needed (#2920)
 
 ## 💡 Enhancements 💡
 
