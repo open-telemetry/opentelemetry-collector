@@ -39,7 +39,6 @@ import (
 	otlptraces "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
 )
 
 type mockReceiver struct {
@@ -229,9 +228,9 @@ func TestSendTraces(t *testing.T) {
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
-	}, "receive a request")
+	}, 10*time.Second, 5*time.Millisecond)
 
 	// Ensure it was received empty.
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
@@ -245,9 +244,9 @@ func TestSendTraces(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait until it is received.
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
-	}, "receive a request")
+	}, 10*time.Second, 5*time.Millisecond)
 
 	expectedHeader := []string{"header-value"}
 
@@ -299,9 +298,9 @@ func TestSendMetrics(t *testing.T) {
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
-	}, "receive a request")
+	}, 10*time.Second, 5*time.Millisecond)
 
 	// Ensure it was received empty.
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
@@ -315,9 +314,9 @@ func TestSendMetrics(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait until it is received.
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
-	}, "receive a request")
+	}, 10*time.Second, 5*time.Millisecond)
 
 	expectedHeader := []string{"header-value"}
 
@@ -456,9 +455,9 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pd
 	cancel()
 
 	// Wait until it is received.
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
-	}, "receive a request")
+	}, 10*time.Second, 5*time.Millisecond)
 
 	// Verify received span.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
@@ -502,9 +501,9 @@ func TestSendLogData(t *testing.T) {
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), td))
 
 	// Wait until it is received.
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
-	}, "receive a request")
+	}, 10*time.Second, 5*time.Millisecond)
 
 	// Ensure it was received empty.
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
@@ -517,9 +516,9 @@ func TestSendLogData(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait until it is received.
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
-	}, "receive a request")
+	}, 10*time.Second, 5*time.Millisecond)
 
 	// Verify received logs.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))

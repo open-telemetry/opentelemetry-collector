@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
@@ -198,9 +199,9 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
 	}
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return sink.SpansCount() > 0
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 
 	gotTraces := sink.AllTraces()
 	require.Equal(t, 1, len(gotTraces))
