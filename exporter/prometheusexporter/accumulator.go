@@ -94,9 +94,41 @@ func (a *lastValueAccumulator) addMetric(metric pdata.Metric, il pdata.Instrumen
 		return a.accumulateIntHistogram(metric, il, now)
 	case pdata.MetricDataTypeHistogram:
 		return a.accumulateDoubleHistogram(metric, il, now)
+	case pdata.MetricDataTypeSummary:
+		return a.accumulateSummary(metric, il, now)
+	default:
+		a.logger.With(
+			zap.String("data_type", string(metric.DataType())),
+			zap.String("metric_name", metric.Name()),
+		).Error("failed to translate metric")
 	}
 
 	return 0
+}
+
+func (a *lastValueAccumulator) accumulateSummary(metric pdata.Metric, il pdata.InstrumentationLibrary, now time.Time) (n int) {
+	dps := metric.Summary().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		ip := dps.At(i)
+
+		signature := timeseriesSignature(il.Name(), metric, ip.LabelsMap())
+
+		v, ok := a.registeredMetrics.Load(signature)
+		stalePoint := ok &&
+			ip.Timestamp().AsTime().Before(v.(*accumulatedValue).value.Summary().DataPoints().At(0).Timestamp().AsTime())
+
+		if stalePoint {
+			// Only keep this datapoint if it has a later timestamp.
+			continue
+		}
+
+		mm := createMetric(metric)
+		mm.Summary().DataPoints().Append(ip)
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: mm, instrumentationLibrary: il, updated: now})
+		n++
+	}
+
+	return n
 }
 
 func (a *lastValueAccumulator) accumulateIntGauge(metric pdata.Metric, il pdata.InstrumentationLibrary, now time.Time) (n int) {
