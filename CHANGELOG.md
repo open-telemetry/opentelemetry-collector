@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)
+- Remove config.NewViper, users should use config.NewParser (#2917)
 
 ## 💡 Enhancements 💡
 

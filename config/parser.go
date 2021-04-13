@@ -29,23 +29,23 @@ const (
 	KeyDelimiter = "::"
 )
 
-// NewViper creates a new Viper instance with key delimiter KeyDelimiter instead of the
+// newViper creates a new Viper instance with key delimiter KeyDelimiter instead of the
 // default ".". This way configs can have keys that contain ".".
-func NewViper() *viper.Viper {
+func newViper() *viper.Viper {
 	return viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter))
 }
 
 // NewParser creates a new empty Parser instance.
 func NewParser() *Parser {
 	return &Parser{
-		v: NewViper(),
+		v: newViper(),
 	}
 }
 
 // NewParserFromFile creates a new Parser by reading the given file.
 func NewParserFromFile(fileName string) (*Parser, error) {
 	// Read yaml config from file
-	v := NewViper()
+	v := newViper()
 	v.SetConfigFile(fileName)
 	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
@@ -55,7 +55,7 @@ func NewParserFromFile(fileName string) (*Parser, error) {
 
 // NewParserFromBuffer creates a new Parser by reading the given yaml buffer.
 func NewParserFromBuffer(buf io.Reader) (*Parser, error) {
-	v := NewViper()
+	v := newViper()
 	v.SetConfigType("yaml")
 	if err := v.ReadConfig(buf); err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func NewParserFromBuffer(buf io.Reader) (*Parser, error) {
 
 // NewParserFromStringMap creates a parser from a map[string]interface{}.
 func NewParserFromStringMap(data map[string]interface{}) *Parser {
-	v := NewViper()
+	v := newViper()
 	// Cannot return error because the subv is empty.
 	_ = v.MergeConfigMap(data)
 	return &Parser{v: v}
@@ -127,7 +127,7 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv := NewViper()
+		subv := newViper()
 		// Cannot return error because the subv is empty.
 		_ = subv.MergeConfigMap(cast.ToStringMap(data))
 		return &Parser{v: subv}, nil
