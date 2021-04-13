@@ -175,7 +175,7 @@ docker-component: check-component
 docker-windows-component: check-component
 	GOOS=windows $(MAKE) $(COMPONENT)
 	cp ./bin/$(COMPONENT)_windows_amd64 ./cmd/$(COMPONENT)/$(COMPONENT).exe
-	docker build -t $(COMPONENT) -f ./cmd/$(COMPONENT)/Dockerfile_windows ./cmd/$(COMPONENT)/
+	docker build -t $(COMPONENT)-windows -f ./cmd/$(COMPONENT)/Dockerfile_windows ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: for-all
