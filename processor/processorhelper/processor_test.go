@@ -56,8 +56,13 @@ func TestWithOptions(t *testing.T) {
 	assert.False(t, bp.GetCapabilities().MutatesConsumedData)
 }
 
+<<<<<<< HEAD
 func TestNewTraceExporter(t *testing.T) {
 	me, err := NewTracesProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(nil))
+=======
+func TestNewTracesExporter(t *testing.T) {
+	me, err := NewTraceProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(nil))
+>>>>>>> d6977cfc (Fix all TraceExporter usages, use TracesExporter)
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -65,15 +70,20 @@ func TestNewTraceExporter(t *testing.T) {
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
+<<<<<<< HEAD
 func TestNewTraceExporter_NilRequiredFields(t *testing.T) {
 	_, err := NewTracesProcessor(testCfg, consumertest.NewNop(), nil)
+=======
+func TestNewTracesExporter_NilRequiredFields(t *testing.T) {
+	_, err := NewTraceProcessor(testCfg, consumertest.NewNop(), nil)
+>>>>>>> d6977cfc (Fix all TraceExporter usages, use TracesExporter)
 	assert.Error(t, err)
 
 	_, err = NewTracesProcessor(testCfg, nil, newTestTProcessor(nil))
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
-func TestNewTraceExporter_ProcessTraceError(t *testing.T) {
+func TestNewTracesExporter_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
 	me, err := NewTracesProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)

@@ -231,7 +231,7 @@ func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 
 	var exporters []consumer.Traces
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.getTraceExporter())
+		exporters = append(exporters, builtExp.getTracesExporter())
 	}
 
 	// Create a junction point that fans out to all exporters.

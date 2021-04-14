@@ -163,9 +163,9 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTraceExporter(&tt.args.config, zap.NewNop())
+			got, err := newTracesExporter(&tt.args.config, zap.NewNop())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("newTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newTracesExporter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got == nil {

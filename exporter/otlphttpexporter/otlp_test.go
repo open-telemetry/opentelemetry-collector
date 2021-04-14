@@ -62,17 +62,17 @@ func TestInvalidConfig(t *testing.T) {
 
 func TestTraceNoBackend(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
+	exp := startTracesExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
 func TestTraceInvalidUrl(t *testing.T) {
-	exp := startTraceExporter(t, "http:/\\//this_is_an/*/invalid_url", "")
+	exp := startTracesExporter(t, "http:/\\//this_is_an/*/invalid_url", "")
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 
-	exp = startTraceExporter(t, "", "http:/\\//this_is_an/*/invalid_url")
+	exp = startTracesExporter(t, "", "http:/\\//this_is_an/*/invalid_url")
 	td = testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
@@ -81,7 +81,7 @@ func TestTraceError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	startTracesReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
-	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
+	exp := startTracesExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
@@ -116,7 +116,7 @@ func TestTraceRoundTrip(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			startTracesReceiver(t, addr, sink)
-			exp := startTraceExporter(t, test.baseURL, test.overrideURL)
+			exp := startTracesExporter(t, test.baseURL, test.overrideURL)
 
 			td := testdata.GenerateTraceDataOneSpan()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
@@ -291,7 +291,7 @@ func TestLogsRoundTrip(t *testing.T) {
 	}
 }
 
-func startTraceExporter(t *testing.T, baseURL string, overrideURL string) component.TracesExporter {
+func startTracesExporter(t *testing.T, baseURL string, overrideURL string) component.TracesExporter {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
@@ -448,7 +448,7 @@ func TestErrorResponses(t *testing.T) {
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			exp, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 			require.NoError(t, err)
 
 			traces := pdata.NewTraces()

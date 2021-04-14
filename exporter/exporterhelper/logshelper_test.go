@@ -183,7 +183,7 @@ func generateLogsTraffic(t *testing.T, le component.LogsExporter, numRequests in
 }
 
 func checkWrapSpanForLogsExporter(t *testing.T, le component.LogsExporter, wantError error, numLogRecords int64) {
-	ocSpansSaver := new(testOCTraceExporter)
+	ocSpansSaver := new(testOCTracesExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 

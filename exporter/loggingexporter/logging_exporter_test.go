@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte, err := newTraceExporter(&config.ExporterSettings{}, "Debug", zap.NewNop())
+func TestLoggingTracesExporterNoErrors(t *testing.T) {
+	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 

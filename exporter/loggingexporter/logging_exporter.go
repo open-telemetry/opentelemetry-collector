@@ -404,15 +404,15 @@ func (s *loggingExporter) pushMetricsData(
 	return nil
 }
 
-// newTraceExporter creates an exporter.TracesExporter that just drops the
+// newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
+func newTracesExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		logger,
 		s.pushTraceData,
