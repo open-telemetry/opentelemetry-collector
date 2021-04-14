@@ -28,7 +28,7 @@ type spanAttributesProcessor struct {
 	exclude  filterspan.Matcher
 }
 
-// newTraceProcessor returns a processor that modifies attributes of a span.
+// newTracesProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
 func newSpanAttributesProcessor(attrProc *processorhelper.AttrProc, include, exclude filterspan.Matcher) *spanAttributesProcessor {

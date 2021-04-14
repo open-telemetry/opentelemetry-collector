@@ -46,7 +46,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, typeStr, cfg.Name())
 }
 
-func TestFactory_CreateTraceProcessor(t *testing.T) {
+func TestFactory_CreateTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -59,9 +59,9 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	assert.NotNil(t, tp)
 }
 
-// TestFactory_CreateTraceProcessor_InvalidConfig ensures the default configuration
+// TestFactory_CreateTracesProcessor_InvalidConfig ensures the default configuration
 // returns an error.
-func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
+func TestFactory_CreateTracesProcessor_InvalidConfig(t *testing.T) {
 	factory := NewFactory()
 
 	testcases := []struct {

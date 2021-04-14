@@ -50,7 +50,7 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig,
-		WithTraces(createTraceProcessor),
+		WithTraces(createTracesProcessor),
 		WithMetrics(createMetricsProcessor),
 		WithLogs(createLogsProcessor))
 	assert.EqualValues(t, typeStr, factory.Type())
@@ -70,7 +70,7 @@ func defaultConfig() config.Processor {
 	return defaultCfg
 }
 
-func createTraceProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
 	return nil, nil
 }
 

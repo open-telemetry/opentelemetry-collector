@@ -43,7 +43,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
+func TestFactoryCreateTracesProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	ap, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewNop())
@@ -51,7 +51,7 @@ func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
 	assert.Nil(t, ap)
 }
 
-func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
+func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -64,7 +64,7 @@ func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
 	assert.Nil(t, ap)
 }
 
-func TestFactoryCreateTraceProcessor(t *testing.T) {
+func TestFactoryCreateTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
