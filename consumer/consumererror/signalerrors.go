@@ -21,7 +21,7 @@ import (
 )
 
 // Traces is an error that may carry associated Trace data for a subset of received data
-// that faiiled to be processed or sent.
+// that failed to be processed or sent.
 type Traces struct {
 	error
 	failed pdata.Traces
@@ -50,7 +50,7 @@ func (err Traces) GetTraces() pdata.Traces {
 }
 
 // Logs is an error that may carry associated Log data for a subset of received data
-// that faiiled to be processed or sent.
+// that failed to be processed or sent.
 type Logs struct {
 	error
 	failed pdata.Logs
@@ -79,7 +79,7 @@ func (err Logs) GetLogs() pdata.Logs {
 }
 
 // Metrics is an error that may carry associated Metrics data for a subset of received data
-// that faiiled to be processed or sent.
+// that failed to be processed or sent.
 type Metrics struct {
 	error
 	failed pdata.Metrics
