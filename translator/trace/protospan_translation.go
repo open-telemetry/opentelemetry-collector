@@ -140,7 +140,7 @@ func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 // AttributeMapToMap converts an OTLP AttributeMap to a standard go map
 func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 	rawMap := make(map[string]interface{})
-	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
+	attrMap.Range(func(k string, v pdata.AttributeValue) {
 		switch v.Type() {
 		case pdata.AttributeValueSTRING:
 			rawMap[k] = v.StringVal()

@@ -18,7 +18,7 @@ import "go.opentelemetry.io/collector/consumer/pdata"
 
 func attributesToMap(attributes pdata.AttributeMap) map[string]pdata.AttributeValue {
 	out := map[string]pdata.AttributeValue{}
-	attributes.ForEach(func(k string, v pdata.AttributeValue) {
+	attributes.Range(func(k string, v pdata.AttributeValue) {
 		out[k] = v
 	})
 	return out

@@ -604,19 +604,19 @@ func (am AttributeMap) Sort() AttributeMap {
 // Len returns the length of this map.
 //
 // Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
-// it is possible that when iterating using "ForEach" to get access to fewer elements because nil elements are skipped.
+// it is possible that when iterating using "Range" to get access to fewer elements because nil elements are skipped.
 func (am AttributeMap) Len() int {
 	return len(*am.orig)
 }
 
-// ForEach iterates over the every elements in the map by calling the provided func.
+// Range iterates over the every elements in the map by calling the provided func.
 //
 // Example:
 //
-// it := sm.ForEach(func(k string, v AttributeValue) {
+// it := sm.Range(func(k string, v AttributeValue) {
 //   ...
 // })
-func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
+func (am AttributeMap) Range(f func(k string, v AttributeValue)) {
 	for i := range *am.orig {
 		kv := &(*am.orig)[i]
 		f(kv.Key, AttributeValue{&kv.Value})
@@ -747,19 +747,19 @@ func (sm StringMap) Upsert(k, v string) {
 // Len returns the length of this map.
 //
 // Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
-// it is possible that when iterating using "ForEach" to get access to fewer elements because nil elements are skipped.
+// it is possible that when iterating using "Range" to get access to fewer elements because nil elements are skipped.
 func (sm StringMap) Len() int {
 	return len(*sm.orig)
 }
 
-// ForEach iterates over the every elements in the map by calling the provided func.
+// Range iterates over the every elements in the map by calling the provided func.
 //
 // Example:
 //
-// it := sm.ForEach(func(k string, v StringValue) {
+// it := sm.Range(func(k string, v StringValue) {
 //   ...
 // })
-func (sm StringMap) ForEach(f func(k string, v string)) {
+func (sm StringMap) Range(f func(k string, v string)) {
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
 		f(skv.Key, skv.Value)

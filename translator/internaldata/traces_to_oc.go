@@ -115,7 +115,7 @@ func attributesMapToOCAttributeMap(attributes pdata.AttributeMap) map[string]*oc
 	}
 
 	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Len())
-	attributes.ForEach(func(k string, v pdata.AttributeValue) {
+	attributes.Range(func(k string, v pdata.AttributeValue) {
 		ocAttributes[k] = attributeValueToOC(v)
 	})
 	return ocAttributes

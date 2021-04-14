@@ -60,7 +60,7 @@ func extractLabelsFromResource(resource *pdata.Resource) pdata.StringMap {
 	labelMap := pdata.NewStringMap()
 
 	attrMap := resource.Attributes()
-	attrMap.ForEach(func(k string, av pdata.AttributeValue) {
+	attrMap.Range(func(k string, av pdata.AttributeValue) {
 		stringLabel := tracetranslator.AttributeValueToString(av, false)
 		labelMap.Upsert(k, stringLabel)
 	})
@@ -110,7 +110,7 @@ func addLabelsToDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice, newL
 }
 
 func joinStringMaps(from, to pdata.StringMap) {
-	from.ForEach(func(k, v string) {
+	from.Range(func(k, v string) {
 		to.Upsert(k, v)
 	})
 }

@@ -314,7 +314,7 @@ func diffValues(
 
 func attrMapToString(m pdata.AttributeMap) string {
 	out := ""
-	m.ForEach(func(k string, v pdata.AttributeValue) {
+	m.Range(func(k string, v pdata.AttributeValue) {
 		out += "[" + k + "=" + v.StringVal() + "]"
 	})
 	return out

@@ -414,7 +414,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan pdata.Span, recdSpan 
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	sentAttrs pdata.AttributeMap, recdAttrs pdata.AttributeMap, fmtStr string) {
-	sentAttrs.ForEach(func(sentKey string, sentVal pdata.AttributeValue) {
+	sentAttrs.Range(func(sentKey string, sentVal pdata.AttributeValue) {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {
 			af := &TraceAssertionFailure{
