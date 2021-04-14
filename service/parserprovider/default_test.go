@@ -44,12 +44,13 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *config.Parser
-		cp, err = pl.Get()
+		var provided Provided
+		provided, err = pl.Get()
 		require.NoError(t, err)
-		require.NotNil(t, cp)
+		require.NotNil(t, provided)
+		require.NotNil(t, provided.Value())
 		var cfg *config.Config
-		cfg, err = configparser.Load(cp, factories)
+		cfg, err = configparser.Load(provided.Value(), factories)
 		require.Error(t, err)
 		require.Nil(t, cfg)
 
@@ -64,12 +65,13 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *config.Parser
-		cp, err = pl.Get()
+		var provided Provided
+		provided, err = pl.Get()
 		require.NoError(t, err)
-		require.NotNil(t, cp)
+		require.NotNil(t, provided)
+		require.NotNil(t, provided.Value())
 		var cfg *config.Config
-		cfg, err = configparser.Load(cp, factories)
+		cfg, err = configparser.Load(provided.Value(), factories)
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -100,12 +102,13 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *config.Parser
-		cp, err = pl.Get()
+		var provided Provided
+		provided, err = pl.Get()
 		require.NoError(t, err)
-		require.NotNil(t, cp)
+		require.NotNil(t, provided)
+		require.NotNil(t, provided.Value())
 		var cfg *config.Config
-		cfg, err = configparser.Load(cp, factories)
+		cfg, err = configparser.Load(provided.Value(), factories)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -142,10 +145,11 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 
 	pl := Default()
 	require.NotNil(t, pl)
-	cp, err := pl.Get()
+	provided, err := pl.Get()
 	require.NoError(t, err)
-	require.NotNil(t, cp)
-	cfg, err := configparser.Load(cp, factories)
+	require.NotNil(t, provided)
+	require.NotNil(t, provided.Value())
+	cfg, err := configparser.Load(provided.Value(), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }

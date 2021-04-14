@@ -15,30 +15,19 @@
 package parserprovider
 
 import (
-	"errors"
-	"fmt"
-
 	"go.opentelemetry.io/collector/config"
 )
 
-type fileProvider struct{}
+var _ Provided = (*simpleProvided)(nil)
 
-// NewFile returns a new ParserProvider that reads the configuration from a file configured
-// via the --config command line flag.
-func NewFile() ParserProvider {
-	return &fileProvider{}
+type simpleProvided struct {
+	cp *config.Parser
 }
 
-func (fl *fileProvider) Get() (Provided, error) {
-	fileName := getConfigFlag()
-	if fileName == "" {
-		return nil, errors.New("config file not specified")
-	}
+func NewSimpleProvided(cp *config.Parser) Provided {
+	return &simpleProvided{cp: cp}
+}
 
-	cp, err := config.NewParserFromFile(fileName)
-	if err != nil {
-		return nil, fmt.Errorf("error loading config file %q: %v", fileName, err)
-	}
-
-	return NewSimpleProvided(cp), nil
+func (s *simpleProvided) Value() *config.Parser {
+	return s.cp
 }

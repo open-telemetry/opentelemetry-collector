@@ -221,12 +221,12 @@ func (app *Application) runAndWaitForShutdownEvent() {
 func (app *Application) setupConfigurationComponents(ctx context.Context) error {
 	app.logger.Info("Loading configuration...")
 
-	cp, err := app.parserProvider.Get()
+	provided, err := app.parserProvider.Get()
 	if err != nil {
 		return fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
 
-	cfg, err := configparser.Load(cp, app.factories)
+	cfg, err := configparser.Load(provided.Value(), app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}

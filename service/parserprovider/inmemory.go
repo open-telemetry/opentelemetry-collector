@@ -29,6 +29,10 @@ func NewInMemory(buf io.Reader) ParserProvider {
 	return &inMemoryProvider{buf: buf}
 }
 
-func (inp *inMemoryProvider) Get() (*config.Parser, error) {
-	return config.NewParserFromBuffer(inp.buf)
+func (inp *inMemoryProvider) Get() (Provided, error) {
+	cp, err := config.NewParserFromBuffer(inp.buf)
+	if err != nil {
+		return nil, err
+	}
+	return NewSimpleProvided(cp), nil
 }

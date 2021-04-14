@@ -36,8 +36,11 @@ func TestSetFlags(t *testing.T) {
 	require.NoError(t, err)
 
 	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get()
+	provided, err := sfl.Get()
 	require.NoError(t, err)
+
+	cp := provided.Value()
+	require.NotNil(t, cp)
 
 	keys := cp.AllKeys()
 	assert.Len(t, keys, 4)
@@ -52,13 +55,16 @@ func TestSetFlags_empty(t *testing.T) {
 	Flags(flags)
 
 	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get()
+	provided, err := sfl.Get()
 	require.NoError(t, err)
+
+	cp := provided.Value()
+	require.NotNil(t, cp)
 	assert.Equal(t, 0, len(cp.AllKeys()))
 }
 
 type emptyProvider struct{}
 
-func (el *emptyProvider) Get() (*config.Parser, error) {
-	return config.NewParser(), nil
+func (el *emptyProvider) Get() (Provided, error) {
+	return NewSimpleProvided(config.NewParser()), nil
 }

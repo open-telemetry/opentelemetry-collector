@@ -41,7 +41,7 @@ func NewSetFlag(base ParserProvider) ParserProvider {
 	}
 }
 
-func (sfl *setFlagProvider) Get() (*config.Parser, error) {
+func (sfl *setFlagProvider) Get() (Provided, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
 		return sfl.base.Get()
@@ -60,10 +60,12 @@ func (sfl *setFlagProvider) Get() (*config.Parser, error) {
 		return nil, fmt.Errorf("failed to read set flag config: %v", err)
 	}
 
-	cp, err := sfl.base.Get()
+	provided, err := sfl.base.Get()
 	if err != nil {
 		return nil, err
 	}
+
+	cp := provided.Value()
 
 	// Viper implementation of v.MergeConfig(io.Reader) or v.MergeConfigMap(map[string]interface)
 	// does not work properly.  This is b/c if it attempts to merge into a nil object it will fail here
@@ -100,5 +102,5 @@ func (sfl *setFlagProvider) Get() (*config.Parser, error) {
 		cp.Set(k, viperFlags.Get(k))
 	}
 
-	return cp, nil
+	return NewSimpleProvided(cp), nil
 }

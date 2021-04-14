@@ -14,11 +14,19 @@
 
 package parserprovider
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"go.opentelemetry.io/collector/config"
+)
 
 // ParserProvider is an interface that helps providing configuration's parser.
 // Implementations may load the parser from a file, a database or any other source.
 type ParserProvider interface {
 	// Get returns the config.Parser if succeed or error otherwise.
-	Get() (*config.Parser, error)
+	Get() (Provided, error)
+}
+
+// Provided holds the result of a call to the ParserProvider.Get method.
+type Provided interface {
+	// Value is the retrieved data that will be injected on the configuration.
+	Value() *config.Parser
 }

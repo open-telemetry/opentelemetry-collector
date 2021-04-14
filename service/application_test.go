@@ -218,7 +218,7 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 
 type minimalParserLoader struct{}
 
-func (*minimalParserLoader) Get() (*config.Parser, error) {
+func (*minimalParserLoader) Get() (parserprovider.Provided, error) {
 	configStr := `
 receivers:
   otlp:
@@ -239,14 +239,18 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	return config.NewParserFromBuffer(strings.NewReader(configStr))
+	cp, err := config.NewParserFromBuffer(strings.NewReader(configStr))
+	if err != nil {
+		return nil, err
+	}
+	return parserprovider.NewSimpleProvided(cp), nil
 }
 
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get() (*config.Parser, error) {
+func (epl *errParserLoader) Get() (parserprovider.Provided, error) {
 	return nil, epl.err
 }
 
