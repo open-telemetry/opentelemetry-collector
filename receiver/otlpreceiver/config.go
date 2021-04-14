@@ -50,6 +50,10 @@ var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.GRPC == nil &&
+		cfg.HTTP == nil {
+		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
+	}
 	return nil
 }
 
@@ -86,10 +90,5 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 	if len(protocols) != knownProtocols {
 		return fmt.Errorf("unknown protocols in the OTLP receiver")
 	}
-
-	if cfg.GRPC == nil && cfg.HTTP == nil {
-		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
-	}
-
 	return nil
 }

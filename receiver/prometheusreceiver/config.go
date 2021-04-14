@@ -50,6 +50,9 @@ var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.PrometheusConfig != nil && len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
+		return errNilScrapeConfig
+	}
 	return nil
 }
 
@@ -79,9 +82,6 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 	err = yaml.UnmarshalStrict(out, &cfg.PrometheusConfig)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
-	}
-	if len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
-		return errNilScrapeConfig
 	}
 	return nil
 }
