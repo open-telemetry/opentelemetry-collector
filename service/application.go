@@ -30,7 +30,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
@@ -226,7 +226,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 		return fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
 
-	cfg, err := configparser.Load(cp, app.factories)
+	cfg, err := configloader.Load(cp, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
