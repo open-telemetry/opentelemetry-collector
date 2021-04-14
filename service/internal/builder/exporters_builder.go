@@ -59,7 +59,7 @@ func (bexp *builtExporter) Shutdown(ctx context.Context) error {
 	return consumererror.Combine(errors)
 }
 
-func (bexp *builtExporter) getTraceExporter() component.TracesExporter {
+func (bexp *builtExporter) getTracesExporter() component.TracesExporter {
 	exp := bexp.expByDataType[config.TracesDataType]
 	if exp == nil {
 		return nil

@@ -34,15 +34,15 @@ import (
 )
 
 const (
-	fakeTraceExporterType   = "fake_trace_exporter"
-	fakeTraceExporterName   = "fake_trace_exporter/with_name"
+	fakeTracesExporterType  = "fake_traces_exporter"
+	fakeTracesExporterName  = "fake_traces_exporter/with_name"
 	fakeTraceParentSpanName = "fake_trace_parent_span_name"
 )
 
 var (
-	fakeTraceExporterConfig = &config.ExporterSettings{
-		TypeVal: fakeTraceExporterType,
-		NameVal: fakeTraceExporterName,
+	fakeTracesExporterConfig = &config.ExporterSettings{
+		TypeVal: fakeTracesExporterType,
+		NameVal: fakeTracesExporterName,
 	}
 )
 
@@ -53,39 +53,39 @@ func TestTracesRequest(t *testing.T) {
 	assert.EqualValues(t, newTracesRequest(context.Background(), testdata.GenerateTraceDataEmpty(), nil), mr.onError(traceErr))
 }
 
-type testOCTraceExporter struct {
+type testOCTracesExporter struct {
 	mu       sync.Mutex
 	spanData []*trace.SpanData
 }
 
-func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
+func (tote *testOCTracesExporter) ExportSpan(sd *trace.SpanData) {
 	tote.mu.Lock()
 	defer tote.mu.Unlock()
 
 	tote.spanData = append(tote.spanData, sd)
 }
 
-func TestTraceExporter_InvalidName(t *testing.T) {
-	te, err := NewTraceExporter(nil, zap.NewNop(), newTraceDataPusher(nil))
+func TestTracesExporter_InvalidName(t *testing.T) {
+	te, err := NewTracesExporter(nil, zap.NewNop(), newTraceDataPusher(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilConfig, err)
 }
 
-func TestTraceExporter_NilLogger(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, nil, newTraceDataPusher(nil))
+func TestTracesExporter_NilLogger(t *testing.T) {
+	te, err := NewTracesExporter(fakeTracesExporterConfig, nil, newTraceDataPusher(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilLogger, err)
 }
 
-func TestTraceExporter_NilPushTraceData(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), nil)
+func TestTracesExporter_NilPushTraceData(t *testing.T) {
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, te)
 	require.Equal(t, errNilPushTraceData, err)
 }
 
-func TestTraceExporter_Default(t *testing.T) {
+func TestTracesExporter_Default(t *testing.T) {
 	td := pdata.NewTraces()
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -93,10 +93,10 @@ func TestTraceExporter_Default(t *testing.T) {
 	assert.Nil(t, te.Shutdown(context.Background()))
 }
 
-func TestTraceExporter_Default_ReturnError(t *testing.T) {
+func TestTracesExporter_Default_ReturnError(t *testing.T) {
 	td := pdata.NewTraces()
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -104,45 +104,45 @@ func TestTraceExporter_Default_ReturnError(t *testing.T) {
 	require.Equal(t, want, err)
 }
 
-func TestTraceExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
+func TestTracesExporter_WithRecordMetrics(t *testing.T) {
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraceExporter(t, te, nil)
+	checkRecordedMetricsForTracesExporter(t, te, nil)
 }
 
-func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
+func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraceExporter(t, te, want)
+	checkRecordedMetricsForTracesExporter(t, te, want)
 }
 
-func TestTraceExporter_WithSpan(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
+func TestTracesExporter_WithSpan(t *testing.T) {
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraceExporter(t, te, nil, 1)
+	checkWrapSpanForTracesExporter(t, te, nil, 1)
 }
 
-func TestTraceExporter_WithSpan_ReturnError(t *testing.T) {
+func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraceExporter(t, te, want, 1)
+	checkWrapSpanForTracesExporter(t, te, want, 1)
 }
 
-func TestTraceExporter_WithShutdown(t *testing.T) {
+func TestTracesExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdown))
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -150,11 +150,11 @@ func TestTraceExporter_WithShutdown(t *testing.T) {
 	assert.True(t, shutdownCalled)
 }
 
-func TestTraceExporter_WithShutdown_ReturnError(t *testing.T) {
+func TestTracesExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdownErr))
+	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -167,7 +167,7 @@ func newTraceDataPusher(retError error) PushTraces {
 	}
 }
 
-func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TracesExporter, wantError error) {
+func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExporter, wantError error) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
@@ -180,9 +180,9 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TracesExpor
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, 0, int64(numBatches*td.SpanCount()))
+		obsreporttest.CheckExporterTracesViews(t, fakeTracesExporterName, 0, int64(numBatches*td.SpanCount()))
 	} else {
-		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, int64(numBatches*td.SpanCount()), 0)
+		obsreporttest.CheckExporterTracesViews(t, fakeTracesExporterName, int64(numBatches*td.SpanCount()), 0)
 	}
 }
 
@@ -199,8 +199,8 @@ func generateTraceTraffic(t *testing.T, te component.TracesExporter, numRequests
 	}
 }
 
-func checkWrapSpanForTraceExporter(t *testing.T, te component.TracesExporter, wantError error, numSpans int64) {
-	ocSpansSaver := new(testOCTraceExporter)
+func checkWrapSpanForTracesExporter(t *testing.T, te component.TracesExporter, wantError error, numSpans int64) {
+	ocSpansSaver := new(testOCTracesExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 

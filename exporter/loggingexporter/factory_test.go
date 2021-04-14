@@ -41,7 +41,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	assert.NotNil(t, me)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 

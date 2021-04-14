@@ -42,9 +42,9 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.Nil(t, exp)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig()
-	exp, err := createTraceExporter(
+	exp, err := createTracesExporter(
 		context.Background(),
 		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
