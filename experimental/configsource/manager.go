@@ -24,8 +24,10 @@ import (
 	"strings"
 	"sync"
 
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
@@ -175,15 +177,22 @@ type Manager struct {
 // NewManager creates a new instance of a Manager to be used to inject data from
 // ConfigSource objects into a configuration and watch for updates on the injected
 // data.
-func NewManager(_ *config.Parser) (*Manager, error) {
-	// TODO: Config sources should be extracted for the config itself, need Factories for that.
+func NewManager(parser *config.Parser, logger *zap.Logger, appStartInfo component.ApplicationStartInfo, factories Factories) (*Manager, error) {
+	configSourcesSettings, err := Load(context.Background(), parser, factories)
+	if err != nil {
+		return nil, err
+	}
 
-	return &Manager{
-		// TODO: Temporarily tests should set their config sources per their needs.
-		sessions:   make(map[string]Session),
-		watchingCh: make(chan struct{}),
-		closeCh:    make(chan struct{}),
-	}, nil
+	params := CreateParams{
+		Logger:               logger,
+		ApplicationStartInfo: appStartInfo,
+	}
+	cfgSources, err := Build(context.Background(), configSourcesSettings, params, factories)
+	if err != nil {
+		return nil, err
+	}
+
+	return newManager(cfgSources), nil
 }
 
 // Resolve inspects the given config.Parser and resolves all config sources referenced
@@ -193,6 +202,11 @@ func (m *Manager) Resolve(ctx context.Context, parser *config.Parser) (*config.P
 	res := config.NewParser()
 	allKeys := parser.AllKeys()
 	for _, k := range allKeys {
+		if strings.HasPrefix(k, configSourcesKey) {
+			// Remove everything under config_sources
+			continue
+		}
+
 		value, err := m.expandStringValues(ctx, parser.Get(k))
 		if err != nil {
 			// Call RetrieveEnd for all sessions used so far but don't record any errors.
@@ -284,6 +298,14 @@ func (m *Manager) Close(ctx context.Context) error {
 	return consumererror.Combine(errs)
 }
 
+func newManager(configSources map[string]ConfigSource) *Manager {
+	return  &Manager{
+		configSources: configSources,
+		sessions:      make(map[string]Session),
+		watchingCh:    make(chan struct{}),
+		closeCh:       make(chan struct{}),
+	}
+}
 func (m *Manager) retrieveEndAllSessions(ctx context.Context) []error {
 	var errs []error
 	for _, session := range m.sessions {

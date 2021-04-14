@@ -1,3 +1,6 @@
+config_sources:
+  file:
+
 receivers:
   otlp:
     protocols:
@@ -14,7 +17,6 @@ exporters:
     endpoint: "otel-collector:4317"
     insecure: true
   logging:
-    loglevel: debug
 
 processors:
   batch:
@@ -23,17 +25,17 @@ extensions:
   pprof:
     endpoint: :1777
   zpages:
-    endpoint: :55679
+    endpoint: $file:/etc/agent-zpages-endpoint.txt
   health_check:
 
 service:
   extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
-      receivers: [otlp, opencensus, jaeger, zipkin]
+      receivers: [otlp, jaeger, zipkin]
       processors: [batch]
       exporters: [otlp, logging]
     metrics:
-      receivers: [otlp, opencensus]
+      receivers: [otlp]
       processors: [batch]
       exporters: [otlp, logging]

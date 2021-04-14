@@ -7,7 +7,7 @@ COPY otelcol /
 # copied with the execute bit lost (see #1317)
 RUN chmod 755 /otelcol
 
-FROM scratch
+FROM alpine:3.12
 
 ARG USER_UID=10001
 USER ${USER_UID}

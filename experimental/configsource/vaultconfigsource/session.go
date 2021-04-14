@@ -78,7 +78,7 @@ func (v *vaultSession) Retrieve(_ context.Context, selector string, _ interface{
 		return nil, &errBadSelector{fmt.Errorf("no value at path %q for key %q", v.path, selector)}
 	}
 
-	return newRetrieved(value, watchForUpdateFn), nil
+	return configsource.NewRetrieved(value, watchForUpdateFn), nil
 }
 
 func (v *vaultSession) RetrieveEnd(context.Context) error {
@@ -314,26 +314,4 @@ func traverseToKey(data map[string]interface{}, key string) interface{} {
 
 func watcherNotSupported() error {
 	return configsource.ErrWatcherNotSupported
-}
-
-type retrieved struct {
-	value            interface{}
-	watchForUpdateFn func() error
-}
-
-var _ configsource.Retrieved = (*retrieved)(nil)
-
-func (r *retrieved) Value() interface{} {
-	return r.value
-}
-
-func (r *retrieved) WatchForUpdate() error {
-	return r.watchForUpdateFn()
-}
-
-func newRetrieved(value interface{}, watchForUpdateFn func() error) *retrieved {
-	return &retrieved{
-		value,
-		watchForUpdateFn,
-	}
 }

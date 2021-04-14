@@ -1,3 +1,12 @@
+config_sources:
+  env:
+  file:
+#  vault:
+#    endpoint: http://host.docker.internal:8200
+#    token: dev_token
+#    path: secret/data/kv
+#    poll_interval: 5s
+
 receivers:
   otlp:
     protocols:
@@ -8,7 +17,8 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: promexample
     const_labels:
-      label1: value1
+#      label1: $vault:data.label
+      label2: from-file-$file:/etc/label.txt
   logging:
 
   zipkin:
@@ -27,7 +37,7 @@ extensions:
   pprof:
     endpoint: :1888
   zpages:
-    endpoint: :55679
+    endpoint: localhost:${env:ZPAGES_ENDPOINT}
 
 service:
   extensions: [pprof, zpages, health_check]
@@ -35,7 +45,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, zipkin, jaeger]
+      exporters: [logging, jaeger]
     metrics:
       receivers: [otlp]
       processors: [batch]

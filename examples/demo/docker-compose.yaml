@@ -9,28 +9,25 @@ services:
       - "14268"
       - "14250"
 
-  # Zipkin
-  zipkin-all-in-one:
-    image: openzipkin/zipkin:latest
-    ports:
-      - "9411:9411"
-
   # Collector
   otel-collector:
     image: ${OTELCOL_IMG}
     command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    environment:
+      - ZPAGES_ENDPOINT=5567
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./label.txt:/etc/label.txt
     ports:
       - "1888:1888"   # pprof extension
       - "8888:8888"   # Prometheus metrics exposed by the collector
       - "8889:8889"   # Prometheus exporter metrics
       - "13133:13133" # health_check extension
       - "4317"        # OTLP gRPC receiver
-      - "55670:55679" # zpages extension
+      - "5567:5567"   # zpages extension
     depends_on:
       - jaeger-all-in-one
-      - zipkin-all-in-one
+      # - zipkin-all-in-one
 
   # Agent
   otel-agent:
@@ -38,6 +35,7 @@ services:
     command: ["--config=/etc/otel-agent-config.yaml", "${OTELCOL_ARGS}"]
     volumes:
       - ./otel-agent-config.yaml:/etc/otel-agent-config.yaml
+      - ./agent-zpages-endpoint.txt:/etc/agent-zpages-endpoint.txt
     ports:
       - "8887:8888"   # Prometheus metrics exposed by the agent
       - "14250"       # Jaeger grpc receiver
@@ -46,7 +44,7 @@ services:
       - "4317"        # OTLP gRPC receiver
       - "9411"        # Zipkin receiver
       - "1777:1777"   # pprof extension
-      - "55679:55679" # zpages extension
+      - "5569:5569"   # zpages extension
       - "13133"       # health_check
     depends_on:
       - otel-collector
@@ -68,7 +66,7 @@ services:
 
   metrics-load-generator:
     build:
-      dockerfile: $PWD/app/Dockerfile
+      dockerfile: C:\Users\pjanotti\go\src\github.com\open-telemetry\opentelemetry-collector\examples\demo/app/Dockerfile
       context: ./app
     environment:
       - OTEL_AGENT_ENDPOINT=otel-agent:4317

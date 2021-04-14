@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -33,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/experimental/configsource"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -139,7 +141,11 @@ func New(params Parameters) (*Application, error) {
 	parserProvider := params.ParserProvider
 	if parserProvider == nil {
 		// use default provider.
-		parserProvider = parserprovider.Default()
+		logger, err := zap.NewDevelopment() // TODO find a way to share with app.
+		if err != nil {
+			return nil, err
+		}
+		parserProvider = parserprovider.NewConfigSourceParserProvider(logger, params.ApplicationStartInfo)
 	}
 	app.parserProvider = parserProvider
 
@@ -254,6 +260,23 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 	}
 
 	app.service = service
+
+	// If config sources were used start a goroutine watching for updates.
+	if watcher, ok := app.parserProvider.(parserprovider.Watcher); ok {
+		go func() {
+			err := watcher.WatchForUpdate()
+			switch {
+			case errors.Is(err, configsource.ErrSessionClosed):
+				// This is the case of shutdown of the whole application, nothing to do.
+				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
+				return
+			default:
+				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
+				app.updateService(context.Background())
+			}
+		}()
+	}
+
 	return nil
 }
 
@@ -291,6 +314,12 @@ func (app *Application) execute(ctx context.Context) error {
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
+	if closer, ok := app.parserProvider.(parserprovider.Closer); ok {
+		if err := closer.Close(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close config: %w", err))
+		}
+	}
+
 	if app.service != nil {
 		if err := app.service.Shutdown(ctx); err != nil {
 			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
@@ -323,6 +352,12 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 // to the latest configuration. It requires that app.parserProvider and app.factories
 // are properly populated to finish successfully.
 func (app *Application) updateService(ctx context.Context) error {
+	if closer, ok := app.parserProvider.(parserprovider.Closer); ok {
+		if err := closer.Close(ctx); err != nil {
+			return fmt.Errorf("failed retire current config provider: %w", err)
+		}
+	}
+
 	if app.service != nil {
 		retiringService := app.service
 		app.service = nil
