@@ -17,7 +17,6 @@ package consumertest
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -43,23 +42,5 @@ func (nc *nopConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
 
 // NewNop returns a Consumer that just drops all received data and returns no error.
 func NewNop() Consumer {
-	return nopInstance
-}
-
-// NewTracesNop returns a consumer.Traces that just drops all received data and returns no error.
-// Deprecated: Use NewNop().
-func NewTracesNop() consumer.Traces {
-	return nopInstance
-}
-
-// NewMetricsNop returns a consumer.Metrics that just drops all received data and returns no error.
-// Deprecated: Use NewNop().
-func NewMetricsNop() consumer.Metrics {
-	return nopInstance
-}
-
-// NewLogsNop returns a consumer.Logs that just drops all received data and returns no error.
-// Deprecated: Use NewNop().
-func NewLogsNop() consumer.Logs {
 	return nopInstance
 }
