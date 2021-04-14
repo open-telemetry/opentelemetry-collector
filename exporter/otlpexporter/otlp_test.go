@@ -55,12 +55,12 @@ func (r *mockReceiver) GetMetadata() metadata.MD {
 	return r.metadata
 }
 
-type mockTraceReceiver struct {
+type mockTracesReceiver struct {
 	mockReceiver
 	lastRequest *otlptraces.ExportTraceServiceRequest
 }
 
-func (r *mockTraceReceiver) Export(
+func (r *mockTracesReceiver) Export(
 	ctx context.Context,
 	req *otlptraces.ExportTraceServiceRequest,
 ) (*otlptraces.ExportTraceServiceResponse, error) {
@@ -79,14 +79,14 @@ func (r *mockTraceReceiver) Export(
 	return &otlptraces.ExportTraceServiceResponse{}, nil
 }
 
-func (r *mockTraceReceiver) GetLastRequest() *otlptraces.ExportTraceServiceRequest {
+func (r *mockTracesReceiver) GetLastRequest() *otlptraces.ExportTraceServiceRequest {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
 }
 
-func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
-	rcv := &mockTraceReceiver{
+func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
+	rcv := &mockTracesReceiver{
 		mockReceiver: mockReceiver{
 			srv: obsreport.GRPCServerWithObservabilityEnabled(),
 		},
@@ -192,7 +192,7 @@ func TestSendTraces(t *testing.T) {
 	// Start an OTLP-compatible receiver.
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-	rcv := otlpTraceReceiverOnGRPCServer(ln)
+	rcv := otlpTracesReceiverOnGRPCServer(ln)
 	// Also closes the connection.
 	defer rcv.srv.GracefulStop()
 
@@ -428,7 +428,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	}()
 
 	time.Sleep(2 * time.Second)
-	rcv := otlpTraceReceiverOnGRPCServer(ln)
+	rcv := otlpTracesReceiverOnGRPCServer(ln)
 	defer rcv.srv.GracefulStop()
 	// Wait until one of the conditions below triggers.
 	select {
@@ -441,7 +441,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 }
 
 func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pdata.Traces, ln net.Listener) {
-	rcv := otlpTraceReceiverOnGRPCServer(ln)
+	rcv := otlpTracesReceiverOnGRPCServer(ln)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))

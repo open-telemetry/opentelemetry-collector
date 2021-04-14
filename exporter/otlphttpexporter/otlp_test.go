@@ -80,7 +80,7 @@ func TestTraceInvalidUrl(t *testing.T) {
 func TestTraceError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	startTraceReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
+	startTracesReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
 	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 
 	td := testdata.GenerateTraceDataOneSpan()
@@ -115,7 +115,7 @@ func TestTraceRoundTrip(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			startTraceReceiver(t, addr, sink)
+			startTracesReceiver(t, addr, sink)
 			exp := startTraceExporter(t, test.baseURL, test.overrideURL)
 
 			td := testdata.GenerateTraceDataOneSpan()
@@ -160,7 +160,7 @@ func TestCompressionOptions(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			startTraceReceiver(t, addr, sink)
+			startTracesReceiver(t, addr, sink)
 
 			factory := NewFactory()
 			cfg := createExporterConfig(test.baseURL, factory.CreateDefaultConfig())
@@ -329,7 +329,7 @@ func createExporterConfig(baseURL string, defaultCfg config.Exporter) *Config {
 	return cfg
 }
 
-func startTraceReceiver(t *testing.T, addr string, next consumer.Traces) {
+func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, next)

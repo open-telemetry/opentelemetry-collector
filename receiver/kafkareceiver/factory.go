@@ -64,7 +64,7 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(f.createTraceReceiver))
+		receiverhelper.WithTraces(f.createTracesReceiver))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -92,7 +92,7 @@ type kafkaReceiverFactory struct {
 	unmarshalers map[string]Unmarshaller
 }
 
-func (f *kafkaReceiverFactory) createTraceReceiver(
+func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg config.Receiver,

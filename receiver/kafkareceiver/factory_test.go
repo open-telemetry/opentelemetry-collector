@@ -36,24 +36,24 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, defaultClientID, cfg.ClientID)
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
-	r, err := f.createTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
 
-func TestCreateTraceReceiver_error(t *testing.T) {
+func TestCreateTracesReceiver_error(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
 	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
-	r, err := f.createTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
