@@ -56,13 +56,8 @@ func TestWithOptions(t *testing.T) {
 	assert.False(t, bp.GetCapabilities().MutatesConsumedData)
 }
 
-<<<<<<< HEAD
-func TestNewTraceExporter(t *testing.T) {
+func TestNewTracesProcessor(t *testing.T) {
 	me, err := NewTracesProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(nil))
-=======
-func TestNewTracesExporter(t *testing.T) {
-	me, err := NewTraceProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(nil))
->>>>>>> d6977cfc (Fix all TraceExporter usages, use TracesExporter)
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -70,27 +65,22 @@ func TestNewTracesExporter(t *testing.T) {
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
-<<<<<<< HEAD
-func TestNewTraceExporter_NilRequiredFields(t *testing.T) {
+func TestNewTracesProcessor_NilRequiredFields(t *testing.T) {
 	_, err := NewTracesProcessor(testCfg, consumertest.NewNop(), nil)
-=======
-func TestNewTracesExporter_NilRequiredFields(t *testing.T) {
-	_, err := NewTraceProcessor(testCfg, consumertest.NewNop(), nil)
->>>>>>> d6977cfc (Fix all TraceExporter usages, use TracesExporter)
 	assert.Error(t, err)
 
 	_, err = NewTracesProcessor(testCfg, nil, newTestTProcessor(nil))
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
-func TestNewTracesExporter_ProcessTraceError(t *testing.T) {
+func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
 	me, err := NewTracesProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
 }
 
-func TestNewMetricsExporter(t *testing.T) {
+func TestNewMetricsProcessor(t *testing.T) {
 	me, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), newTestMProcessor(nil))
 	require.NoError(t, err)
 
@@ -99,7 +89,7 @@ func TestNewMetricsExporter(t *testing.T) {
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
-func TestNewMetricsExporter_NilRequiredFields(t *testing.T) {
+func TestNewMetricsProcessor_NilRequiredFields(t *testing.T) {
 	_, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
@@ -107,20 +97,20 @@ func TestNewMetricsExporter_NilRequiredFields(t *testing.T) {
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
-func TestNewMetricsExporter_ProcessMetricsError(t *testing.T) {
+func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
 	me, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), newTestMProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
 }
 
-func TestNewMetricsExporter_ProcessMetricsErrSkipProcessingData(t *testing.T) {
+func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
 	me, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.Equal(t, nil, me.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
 }
 
-func TestNewLogsExporter(t *testing.T) {
+func TestNewLogsProcessor(t *testing.T) {
 	me, err := NewLogsProcessor(testCfg, consumertest.NewNop(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
@@ -129,7 +119,7 @@ func TestNewLogsExporter(t *testing.T) {
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
-func TestNewLogsExporter_NilRequiredFields(t *testing.T) {
+func TestNewLogsProcessor_NilRequiredFields(t *testing.T) {
 	_, err := NewLogsProcessor(testCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
@@ -137,7 +127,7 @@ func TestNewLogsExporter_NilRequiredFields(t *testing.T) {
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
-func TestNewLogsExporter_ProcessLogError(t *testing.T) {
+func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
 	me, err := NewLogsProcessor(testCfg, consumertest.NewNop(), newTestLProcessor(want))
 	require.NoError(t, err)
