@@ -25,13 +25,13 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
+func TestTracesProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewNop()
 	tfc := NewTracesCloning([]consumer.Traces{nop})
 	assert.Same(t, nop, tfc)
 }
 
-func TestTraceProcessorCloningMultiplexing(t *testing.T) {
+func TestTracesProcessorCloningMultiplexing(t *testing.T) {
 	processors := make([]consumer.Traces, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)

@@ -88,7 +88,7 @@ type ProcessorFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Processor
 
-	// CreateTraceProcessor creates a trace processor based on this config.
+	// CreateTracesProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTracesProcessor(

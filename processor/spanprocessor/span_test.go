@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func TestNewTraceProcessor(t *testing.T) {
+func TestNewTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
