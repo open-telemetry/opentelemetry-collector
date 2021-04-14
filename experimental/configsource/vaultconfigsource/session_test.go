@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -442,20 +443,6 @@ func TestVaultRetrieveErrors(t *testing.T) {
 	}
 }
 
-func requireCmdRun(t *testing.T, cli string) {
-	parts := strings.Split(cli, " ")
-	cmd := exec.Command(parts[0], parts[1:]...) // #nosec
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	time.Sleep(500 * time.Millisecond)
-	if err != nil {
-		err = fmt.Errorf("cmd.Run() %s %v failed %w. stdout: %q stderr: %q", cmd.Path, cmd.Args, err, stdout.String(), stderr.String())
-	}
-	require.NoError(t, err)
-}
-
 func Test_vaultSession_extractVersionMetadata(t *testing.T) {
 	tests := []struct {
 		metadataMap map[string]interface{}
@@ -505,4 +492,26 @@ func Test_vaultSession_extractVersionMetadata(t *testing.T) {
 			assert.Equal(t, tt.expectedMd, metadata)
 		})
 	}
+}
+
+func requireCmdRun(t *testing.T, cli string) {
+	skipCheck(t)
+	parts := strings.Split(cli, " ")
+	cmd := exec.Command(parts[0], parts[1:]...) // #nosec
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	time.Sleep(500 * time.Millisecond)
+	if err != nil {
+		err = fmt.Errorf("cmd.Run() %s %v failed %w. stdout: %q stderr: %q", cmd.Path, cmd.Args, err, stdout.String(), stderr.String())
+	}
+	require.NoError(t, err)
+}
+
+func skipCheck(t *testing.T) {
+	if s, ok := os.LookupEnv("RUN_VAULT_DOCKER_TESTS"); ok && s != "" {
+		return
+	}
+	t.Skipf("Test must be explicitly enabled via 'RUN_VAULT_DOCKER_TESTS' environment variable.")
 }
