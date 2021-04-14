@@ -43,7 +43,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	}
 }
 
-// Collector dynamically allocates metrics, describe shoud be noop
+// Describe is a no-op, because the collector dynamically allocates metrics.
 // https://github.com/prometheus/client_golang/blob/v1.9.0/prometheus/collector.go#L28-L40
 func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
 

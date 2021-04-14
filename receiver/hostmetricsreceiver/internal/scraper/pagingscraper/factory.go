@@ -26,7 +26,7 @@ import (
 // This file implements Factory for Paging scraper.
 
 const (
-	// The value of "type" key in configuration.
+	// TypeStr the value of "type" key in configuration.
 	TypeStr = "paging"
 )
 

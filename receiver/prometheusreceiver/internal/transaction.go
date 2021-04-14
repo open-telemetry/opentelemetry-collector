@@ -90,7 +90,7 @@ func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bo
 // ensure *transaction has implemented the storage.Appender interface
 var _ storage.Appender = (*transaction)(nil)
 
-// always returns 0 to disable label caching
+// Add always returns 0 to disable label caching.
 func (tr *transaction) Add(ls labels.Labels, t int64, v float64) (uint64, error) {
 	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
 	// scrape the remote target,  if the previous scrape was success and some data were cached internally
@@ -114,7 +114,7 @@ func (tr *transaction) Add(ls labels.Labels, t int64, v float64) (uint64, error)
 	return 0, tr.metricBuilder.AddDataPoint(ls, t, v)
 }
 
-// always returns error since caching is not supported by Add() function
+// AddFast always returns error since caching is not supported by Add() function.
 func (tr *transaction) AddFast(_ uint64, _ int64, _ float64) error {
 	return storage.ErrNotFound
 }
@@ -139,7 +139,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 	return nil
 }
 
-// submit metrics data to consumers
+// Commit submits metrics data to consumers.
 func (tr *transaction) Commit() error {
 	if tr.isNew {
 		// In a situation like not able to connect to the remote server, scrapeloop will still commit even if it had

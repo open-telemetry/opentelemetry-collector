@@ -63,7 +63,7 @@ func (f *nopExporterFactory) CreateMetricsExporter(
 	return nopExporterInstance, nil
 }
 
-// CreateMetricsExporter implements component.ExporterFactory interface.
+// CreateLogsExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateLogsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,

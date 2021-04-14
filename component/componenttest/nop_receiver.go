@@ -65,7 +65,7 @@ func (f *nopReceiverFactory) CreateMetricsReceiver(
 	return nopReceiverInstance, nil
 }
 
-// CreateMetricsReceiver implements component.ReceiverFactory interface.
+// CreateLogsReceiver implements component.ReceiverFactory interface.
 func (f *nopReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
