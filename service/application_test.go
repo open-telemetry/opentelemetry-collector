@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 
@@ -46,7 +47,10 @@ func TestApplication_Start(t *testing.T) {
 	require.NoError(t, err)
 
 	loggingHookCalled := false
+	zapHookMu := &sync.Mutex{}
 	hook := func(entry zapcore.Entry) error {
+		zapHookMu.Lock()
+		defer zapHookMu.Unlock()
 		loggingHookCalled = true
 		return nil
 	}
