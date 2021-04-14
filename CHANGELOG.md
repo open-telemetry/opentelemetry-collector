@@ -13,6 +13,7 @@
 - Remove `config.NewViper`, users should use `config.NewParser` (#2917)
 - Remove `testutil.WaitFor`, use `testify.Eventually` helper if needed (#2920)
 - Remove testutil.WaitForPort, users can use testify.Eventually (#2926)
+- Rename `processorhelper.NewTraceProcessor` to `processorhelper.NewTracesProcessor` (#2935)
 
 ## 💡 Enhancements 💡
 
