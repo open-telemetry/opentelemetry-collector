@@ -180,9 +180,9 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TracesExpor
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, 0, int64(numBatches*td.SpanCount()))
+		obsreporttest.CheckExporterTraces(t, fakeTraceExporterName, 0, int64(numBatches*td.SpanCount()))
 	} else {
-		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, int64(numBatches*td.SpanCount()), 0)
+		obsreporttest.CheckExporterTraces(t, fakeTraceExporterName, int64(numBatches*td.SpanCount()), 0)
 	}
 }
 

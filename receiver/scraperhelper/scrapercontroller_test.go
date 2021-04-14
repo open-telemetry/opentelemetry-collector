@@ -361,7 +361,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 		_, dpc := md.MetricAndDataPointCount()
 		dataPointCount += dpc
 	}
-	obsreporttest.CheckReceiverMetricsViews(t, "receiver", "", int64(dataPointCount), 0)
+	obsreporttest.CheckReceiverMetrics(t, "receiver", "", int64(dataPointCount), 0)
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData) {
@@ -396,7 +396,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	obsreporttest.CheckScraperMetricsViews(t, "receiver", "scraper", expectedScraped, expectedErrored)
+	obsreporttest.CheckScraperMetrics(t, "receiver", "scraper", expectedScraped, expectedErrored)
 }
 
 func singleMetric() pdata.MetricSlice {

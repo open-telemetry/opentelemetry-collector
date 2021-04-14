@@ -459,7 +459,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
-				obsreporttest.CheckReceiverTracesViews(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				obsreporttest.CheckReceiverTraces(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}
@@ -608,7 +608,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
-				obsreporttest.CheckReceiverMetricsViews(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				obsreporttest.CheckReceiverMetrics(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}
