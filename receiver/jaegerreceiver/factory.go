@@ -54,7 +54,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver))
+		receiverhelper.WithTraces(createTracesReceiver))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
@@ -86,8 +86,8 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-// createTraceReceiver creates a trace receiver based on provided config.
-func createTraceReceiver(
+// createTracesReceiver creates a trace receiver based on provided config.
+func createTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg config.Receiver,
