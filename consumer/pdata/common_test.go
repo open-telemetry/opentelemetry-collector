@@ -540,9 +540,10 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 }
 
 func TestAttributeMapIterationNil(t *testing.T) {
-	NewAttributeMap().Range(func(k string, v AttributeValue) {
+	NewAttributeMap().Range(func(k string, v AttributeValue) bool {
 		// Fail if any element is returned
 		t.Fail()
+		return true
 	})
 }
 
@@ -555,11 +556,19 @@ func TestAttributeMap_Range(t *testing.T) {
 		"k_null":   NewAttributeValueNull(),
 	}
 	am := NewAttributeMap().InitFromMap(rawMap)
-	assert.EqualValues(t, 5, am.Len())
+	assert.Equal(t, 5, am.Len())
 
-	am.Range(func(k string, v AttributeValue) {
+	calls := 0
+	am.Range(func(k string, v AttributeValue) bool {
+		calls++
+		return false
+	})
+	assert.Equal(t, 1, calls)
+
+	am.Range(func(k string, v AttributeValue) bool {
 		assert.True(t, v.Equal(rawMap[k]))
 		delete(rawMap, k)
+		return true
 	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
@@ -813,9 +822,10 @@ func TestStringMap(t *testing.T) {
 }
 
 func TestStringMapIterationNil(t *testing.T) {
-	NewStringMap().Range(func(k string, v string) {
+	NewStringMap().Range(func(k string, v string) bool {
 		// Fail if any element is returned
 		t.Fail()
+		return true
 	})
 }
 
@@ -824,9 +834,17 @@ func TestStringMap_Range(t *testing.T) {
 	sm := NewStringMap().InitFromMap(rawMap)
 	assert.EqualValues(t, 3, sm.Len())
 
-	sm.Range(func(k string, v string) {
+	calls := 0
+	sm.Range(func(k string, v string) bool {
+		calls++
+		return false
+	})
+	assert.Equal(t, 1, calls)
+
+	sm.Range(func(k string, v string) bool {
 		assert.EqualValues(t, rawMap[k], v)
 		delete(rawMap, k)
+		return true
 	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
@@ -916,8 +934,9 @@ func BenchmarkAttributeMap_Range(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
-		am.Range(func(k string, v AttributeValue) {
+		am.Range(func(k string, v AttributeValue) bool {
 			numEls++
+			return true
 		})
 		if numEls != numElements {
 			b.Fail()
@@ -962,8 +981,9 @@ func BenchmarkStringMap_Range(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
-		sm.Range(func(s string, value string) {
+		sm.Range(func(s string, value string) bool {
 			numEls++
+			return true
 		})
 		if numEls != numElements {
 			b.Fail()

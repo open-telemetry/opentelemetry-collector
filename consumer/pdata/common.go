@@ -609,17 +609,19 @@ func (am AttributeMap) Len() int {
 	return len(*am.orig)
 }
 
-// Range iterates over the every elements in the map by calling the provided func.
+// Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
 //
 // Example:
 //
 // it := sm.Range(func(k string, v AttributeValue) {
 //   ...
 // })
-func (am AttributeMap) Range(f func(k string, v AttributeValue)) {
+func (am AttributeMap) Range(f func(k string, v AttributeValue) bool) {
 	for i := range *am.orig {
 		kv := &(*am.orig)[i]
-		f(kv.Key, AttributeValue{&kv.Value})
+		if !f(kv.Key, AttributeValue{&kv.Value}) {
+			break
+		}
 	}
 }
 
@@ -752,17 +754,19 @@ func (sm StringMap) Len() int {
 	return len(*sm.orig)
 }
 
-// Range iterates over the every elements in the map by calling the provided func.
+// Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
 //
 // Example:
 //
 // it := sm.Range(func(k string, v StringValue) {
 //   ...
 // })
-func (sm StringMap) Range(f func(k string, v string)) {
+func (sm StringMap) Range(f func(k string, v string) bool) {
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
-		f(skv.Key, skv.Value)
+		if !f(skv.Key, skv.Value) {
+			break
+		}
 	}
 }
 
