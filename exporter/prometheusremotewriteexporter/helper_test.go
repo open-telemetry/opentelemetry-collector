@@ -367,3 +367,116 @@ func Test_batchTimeSeries(t *testing.T) {
 		})
 	}
 }
+
+// Ensure that before a prompb.WriteRequest is created, that the points per TimeSeries
+// are sorted by Timestamp value, to prevent Prometheus from barfing when it gets poorly
+// sorted values. See issues:
+// * https://github.com/open-telemetry/wg-prometheus/issues/10
+// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
+func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
+	outOfOrder := []prompb.TimeSeries{
+		{
+			Samples: []prompb.Sample{
+				{
+					Value:     10.11,
+					Timestamp: 1000,
+				},
+				{
+					Value:     7.81,
+					Timestamp: 2,
+				},
+				{
+					Value:     987.81,
+					Timestamp: 1,
+				},
+				{
+					Value:     18.22,
+					Timestamp: 999,
+				},
+			},
+		},
+		{
+			Samples: []prompb.Sample{
+				{
+					Value:     99.91,
+					Timestamp: 5,
+				},
+				{
+					Value:     4.33,
+					Timestamp: 3,
+				},
+				{
+					Value:     47.81,
+					Timestamp: 4,
+				},
+				{
+					Value:     18.22,
+					Timestamp: 8,
+				},
+			},
+		},
+	}
+	got := convertTimeseriesToRequest(outOfOrder)
+
+	// We must ensure that the resulting Timeseries' sample points are sorted by Timestamp.
+	want := &prompb.WriteRequest{
+		Timeseries: []prompb.TimeSeries{
+			{
+				Samples: []prompb.Sample{
+					{
+						Value:     987.81,
+						Timestamp: 1,
+					},
+					{
+						Value:     7.81,
+						Timestamp: 2,
+					},
+					{
+						Value:     18.22,
+						Timestamp: 999,
+					},
+					{
+						Value:     10.11,
+						Timestamp: 1000,
+					},
+				},
+			},
+			{
+				Samples: []prompb.Sample{
+					{
+						Value:     4.33,
+						Timestamp: 3,
+					},
+					{
+						Value:     47.81,
+						Timestamp: 4,
+					},
+					{
+						Value:     99.91,
+						Timestamp: 5,
+					},
+					{
+						Value:     18.22,
+						Timestamp: 8,
+					},
+				},
+			},
+		},
+	}
+	assert.Equal(t, got, want)
+
+	// For a full sanity/logical check, assert that EVERY
+	// Sample has a Timestamp bigger than its prior values.
+	for ti, ts := range got.Timeseries {
+		for i := range ts.Samples {
+			si := ts.Samples[i]
+			for j := 0; j < i; j++ {
+				sj := ts.Samples[j]
+				if sj.Timestamp > si.Timestamp {
+					t.Errorf("Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
+						ti, j, sj.Timestamp, i, si.Timestamp)
+				}
+			}
+		}
+	}
+}
