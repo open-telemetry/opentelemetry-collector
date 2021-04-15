@@ -55,12 +55,12 @@ func main() {
 
 	app, err := service.New(service.Parameters{ApplicationStartInfo: info, Factories: factories})
 	if err != nil {
-		log.Fatal("failed to construct the application: %w", err)
+		log.Fatalf("failed to construct the application: %v", err)
 	}
 
 	err = app.Run()
 	if err != nil {
-		log.Fatal("application run finished with error: %w", err)
+		log.Fatalf("application run finished with error: %v", err)
 	}
 }
 `
