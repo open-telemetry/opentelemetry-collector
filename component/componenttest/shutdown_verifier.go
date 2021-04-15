@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func verifyTraceProcessorDoesntProduceAfterShutdown(t *testing.T, factory component.ProcessorFactory, cfg config.Processor) {
+func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory component.ProcessorFactory, cfg config.Processor) {
 	// Create a processor and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
 	processor, err := factory.CreateTracesProcessor(
@@ -64,7 +64,7 @@ func verifyTraceProcessorDoesntProduceAfterShutdown(t *testing.T, factory compon
 
 // VerifyProcessorShutdown verifies the processor doesn't produce telemetry data after shutdown.
 func VerifyProcessorShutdown(t *testing.T, factory component.ProcessorFactory, cfg config.Processor) {
-	verifyTraceProcessorDoesntProduceAfterShutdown(t, factory, cfg)
+	verifyTracesProcessorDoesntProduceAfterShutdown(t, factory, cfg)
 	// TODO: add metrics and logs verification.
 	// TODO: add other shutdown verifications.
 }

@@ -204,7 +204,7 @@ func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numReque
 }
 
 func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, numMetricPoints int64) {
-	ocSpansSaver := new(testOCTraceExporter)
+	ocSpansSaver := new(testOCTracesExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 

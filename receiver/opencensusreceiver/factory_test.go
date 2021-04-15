@@ -46,7 +46,7 @@ func TestCreateReceiver(t *testing.T) {
 	config.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := createTraceReceiver(context.Background(), params, cfg, nil)
+	tReceiver, err := createTracesReceiver(context.Background(), params, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
@@ -55,7 +55,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	defaultReceiverSettings := config.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
@@ -111,7 +111,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr, err := createTraceReceiver(ctx, params, tt.cfg, consumertest.NewNop())
+			tr, err := createTracesReceiver(ctx, params, tt.cfg, consumertest.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTracesReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return

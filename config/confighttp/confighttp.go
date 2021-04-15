@@ -95,7 +95,7 @@ type headerRoundTripper struct {
 	headers   map[string]string
 }
 
-// Custom RoundTrip that add headers
+// RoundTrip is a custom RoundTripper that adds headers to the request.
 func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	for k, v := range interceptor.headers {
 		req.Header.Set(k, v)

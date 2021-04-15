@@ -34,14 +34,14 @@ import (
 // to stop further processing without propagating an error back up the pipeline to logs.
 var ErrSkipProcessingData = errors.New("sentinel error to skip processing data from the remainder of the pipeline")
 
-// TProcessor is a helper interface that allows avoiding implementing all functions in TracesProcessor by using NewTraceProcessor.
+// TProcessor is a helper interface that allows avoiding implementing all functions in TracesProcessor by using NewTracesProcessor.
 type TProcessor interface {
 	// ProcessTraces is a helper function that processes the incoming data and returns the data to be sent to the next component.
 	// If error is returned then returned data are ignored. It MUST not call the next component.
 	ProcessTraces(context.Context, pdata.Traces) (pdata.Traces, error)
 }
 
-// MProcessor is a helper interface that allows avoiding implementing all functions in MetricsProcessor by using NewTraceProcessor.
+// MProcessor is a helper interface that allows avoiding implementing all functions in MetricsProcessor by using NewTracesProcessor.
 type MProcessor interface {
 	// ProcessMetrics is a helper function that processes the incoming data and returns the data to be sent to the next component.
 	// If error is returned then returned data are ignored. It MUST not call the next component.
@@ -146,9 +146,9 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	return tp.nextConsumer.ConsumeTraces(ctx, td)
 }
 
-// NewTraceProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
+// NewTracesProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
-func NewTraceProcessor(
+func NewTracesProcessor(
 	config config.Processor,
 	nextConsumer consumer.Traces,
 	processor TProcessor,

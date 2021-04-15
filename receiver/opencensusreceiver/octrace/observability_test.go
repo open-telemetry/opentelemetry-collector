@@ -92,7 +92,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	// Denoise this test by setting the sampler to never sample
 	defer trace.ApplyConfig(trace.Config{DefaultSampler: trace.NeverSample()})
 
-	ocSpansSaver := new(testOCTraceExporter)
+	ocSpansSaver := new(testOCTracesExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 
@@ -163,12 +163,12 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	}
 }
 
-type testOCTraceExporter struct {
+type testOCTracesExporter struct {
 	mu       sync.Mutex
 	spanData []*trace.SpanData
 }
 
-func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
+func (tote *testOCTracesExporter) ExportSpan(sd *trace.SpanData) {
 	tote.mu.Lock()
 	defer tote.mu.Unlock()
 

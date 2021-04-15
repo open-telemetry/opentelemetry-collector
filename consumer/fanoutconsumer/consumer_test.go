@@ -58,7 +58,7 @@ func TestTracesProcessorMultiplexing(t *testing.T) {
 	}
 }
 
-func TestTraceProcessorWhenOneErrors(t *testing.T) {
+func TestTracesProcessorWhenOneErrors(t *testing.T) {
 	processors := make([]consumer.Traces, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)

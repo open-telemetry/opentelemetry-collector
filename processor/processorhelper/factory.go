@@ -28,8 +28,8 @@ type FactoryOption func(o *factory)
 // CreateDefaultConfig is the equivalent of component.ProcessorFactory.CreateDefaultConfig()
 type CreateDefaultConfig func() config.Processor
 
-// CreateTraceProcessor is the equivalent of component.ProcessorFactory.CreateTracesProcessor()
-type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error)
+// CreateTracesProcessor is the equivalent of component.ProcessorFactory.CreateTracesProcessor()
+type CreateTracesProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error)
 
 // CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
 type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Metrics) (component.MetricsProcessor, error)
@@ -41,15 +41,15 @@ type factory struct {
 	component.BaseProcessorFactory
 	cfgType                config.Type
 	createDefaultConfig    CreateDefaultConfig
-	createTracesProcessor  CreateTraceProcessor
+	createTracesProcessor  CreateTracesProcessor
 	createMetricsProcessor CreateMetricsProcessor
 	createLogsProcessor    CreateLogsProcessor
 }
 
-// WithTraces overrides the default "error not supported" implementation for CreateTraceProcessor.
-func WithTraces(createTraceProcessor CreateTraceProcessor) FactoryOption {
+// WithTraces overrides the default "error not supported" implementation for CreateTracesProcessor.
+func WithTraces(createTracesProcessor CreateTracesProcessor) FactoryOption {
 	return func(o *factory) {
-		o.createTracesProcessor = createTraceProcessor
+		o.createTracesProcessor = createTracesProcessor
 	}
 }
 
@@ -92,7 +92,7 @@ func (f *factory) CreateDefaultConfig() config.Processor {
 	return f.createDefaultConfig()
 }
 
-// CreateTraceProcessor creates a component.TracesProcessor based on this config.
+// CreateTracesProcessor creates a component.TracesProcessor based on this config.
 func (f *factory) CreateTracesProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,

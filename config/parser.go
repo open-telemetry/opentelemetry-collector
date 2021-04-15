@@ -90,7 +90,6 @@ func (l *Parser) Unmarshal(rawVal interface{}) error {
 
 // UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent.
 func (l *Parser) UnmarshalExact(intoCfg interface{}) error {
-	l.v.AllKeys()
 	return l.v.UnmarshalExact(intoCfg)
 }
 

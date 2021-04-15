@@ -37,7 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name     string
@@ -170,7 +170,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			params := component.ExporterCreateParams{Logger: zap.NewNop()}
-			tReceiver, tErr := createTraceExporter(context.Background(), params, &tt.config)
+			tReceiver, tErr := createTracesExporter(context.Background(), params, &tt.config)
 			checkErrorsAndShutdown(t, tReceiver, tErr, tt.mustFail)
 			mReceiver, mErr := createMetricsExporter(context.Background(), params, &tt.config)
 			checkErrorsAndShutdown(t, mReceiver, mErr, tt.mustFail)
