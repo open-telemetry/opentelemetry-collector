@@ -36,9 +36,9 @@ type MetricsMarshaller interface {
 	Encoding() string
 }
 
-// LogsMarshaller marshals metrics into Message array
+// LogsMarshaller marshals logs into Message array
 type LogsMarshaller interface {
-	// Marshal serializes metrics into Messages
+	// Marshal serializes logs into Messages
 	Marshal(logs pdata.Logs) ([]Message, error)
 
 	// Encoding returns encoding name

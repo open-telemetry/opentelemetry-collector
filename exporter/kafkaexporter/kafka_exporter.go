@@ -76,7 +76,7 @@ func (e *kafkaMetricsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-// kafkaLogsProducer uses sarama to produce metrics messages to kafka
+// kafkaLogsProducer uses sarama to produce logs messages to kafka
 type kafkaLogsProducer struct {
 	producer   sarama.SyncProducer
 	topic      string
