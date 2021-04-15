@@ -37,14 +37,14 @@ func (ext *builtExtension) Start(ctx context.Context, host component.Host) error
 	return ext.extension.Start(ctx, host)
 }
 
-// Stop the receiver.
+// Shutdown the receiver.
 func (ext *builtExtension) Shutdown(ctx context.Context) error {
 	return ext.extension.Shutdown(ctx)
 }
 
 var _ component.Extension = (*builtExtension)(nil)
 
-// Exporters is a map of exporters created from exporter configs.
+// Extensions is a map of extensions created from extension configs.
 type Extensions map[config.Extension]*builtExtension
 
 // StartAll starts all exporters.
@@ -125,7 +125,7 @@ func BuildExtensions(
 	config *config.Config,
 	factories map[config.Type]component.ExtensionFactory,
 ) (Extensions, error) {
-	eb := &extensionsBuilder{logger.With(zap.String(kindLogKey, kindLogExtension)), appInfo, config, factories}
+	eb := &extensionsBuilder{logger.With(zap.String(zapKindKey, zapKindExtension)), appInfo, config, factories}
 
 	extensions := make(Extensions)
 	for _, extName := range eb.config.Service.Extensions {
@@ -134,7 +134,7 @@ func BuildExtensions(
 			return nil, fmt.Errorf("extension %q is not configured", extName)
 		}
 
-		componentLogger := eb.logger.With(zap.String(typeLogKey, string(extCfg.Type())), zap.String(nameLogKey, extCfg.Name()))
+		componentLogger := eb.logger.With(zap.String(zapNameKey, extCfg.Name()))
 		ext, err := eb.buildExtension(componentLogger, eb.appInfo, extCfg)
 		if err != nil {
 			return nil, err

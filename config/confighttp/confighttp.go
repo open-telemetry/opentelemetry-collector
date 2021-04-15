@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/internal/middleware"
 )
 
+// HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
@@ -54,6 +55,7 @@ type HTTPClientSettings struct {
 	OAuth2Settings *configclientauth.OAuth2ClientSettings `mapstructure:"oauth2,omitempty"`
 }
 
+// ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
@@ -105,7 +107,7 @@ type headerRoundTripper struct {
 	headers   map[string]string
 }
 
-// Custom RoundTrip that add headers
+// RoundTrip is a custom RoundTripper that adds headers to the request.
 func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	for k, v := range interceptor.headers {
 		req.Header.Set(k, v)
@@ -114,6 +116,7 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 	return interceptor.transport.RoundTrip(req)
 }
 
+// HTTPServerSettings defines settings for creating an HTTP server.
 type HTTPServerSettings struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint"`
@@ -134,6 +137,7 @@ type HTTPServerSettings struct {
 	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
 }
 
+// ToListener creates a net.Listener.
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
@@ -157,6 +161,8 @@ type toServerOptions struct {
 	errorHandler middleware.ErrorHandler
 }
 
+// ToServerOption is an option to change the behavior of the HTTP server
+// returned by HTTPServerSettings.ToServer().
 type ToServerOption func(opts *toServerOptions)
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
@@ -167,6 +173,7 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 	}
 }
 
+// ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOption) *http.Server {
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {

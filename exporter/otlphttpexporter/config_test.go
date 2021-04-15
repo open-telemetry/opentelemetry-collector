@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["otlphttp/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: config.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "otlphttp/2",
 				TypeVal: "otlphttp",
 			},

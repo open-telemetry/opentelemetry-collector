@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["prometheus/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: config.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "prometheus/2",
 				TypeVal: "prometheus",
 			},

@@ -476,10 +476,24 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 	}
 }
 
+func orderBySampleTimestamp(tsArray []prompb.TimeSeries) []prompb.TimeSeries {
+	for i := range tsArray {
+		sL := tsArray[i].Samples
+		sort.Slice(sL, func(i, j int) bool {
+			return sL[i].Timestamp < sL[j].Timestamp
+		})
+	}
+	return tsArray
+}
+
 func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
 	// the remote_write endpoint only requires the timeseries.
 	// otlp defines it's own way to handle metric metadata
 	return &prompb.WriteRequest{
-		Timeseries: tsArray,
+		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
+		// See:
+		// * https://github.com/open-telemetry/wg-prometheus/issues/10
+		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
+		Timeseries: orderBySampleTimestamp(tsArray),
 	}
 }

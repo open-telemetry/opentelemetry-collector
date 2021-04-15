@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings      `mapstructure:"-"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
@@ -39,4 +39,11 @@ type Config struct {
 	// The compression key for supported compression types within
 	// collector. Currently the only supported mode is `gzip`.
 	Compression string `mapstructure:"compression"`
+}
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

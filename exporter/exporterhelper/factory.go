@@ -17,11 +17,9 @@ package exporterhelper
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 )
 
 // FactoryOption apply changes to ExporterOptions.
@@ -36,12 +34,11 @@ type CreateTracesExporter func(context.Context, component.ExporterCreateParams, 
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateMetricsExporter()
 type CreateMetricsExporter func(context.Context, component.ExporterCreateParams, config.Exporter) (component.MetricsExporter, error)
 
-// CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
+// CreateLogsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
 type CreateLogsExporter func(context.Context, component.ExporterCreateParams, config.Exporter) (component.LogsExporter, error)
 
 type factory struct {
 	cfgType               config.Type
-	customUnmarshaler     component.CustomUnmarshaler
 	createDefaultConfig   CreateDefaultConfig
 	createTracesExporter  CreateTracesExporter
 	createMetricsExporter CreateMetricsExporter
@@ -49,9 +46,9 @@ type factory struct {
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver.
-func WithTraces(createTraceExporter CreateTracesExporter) FactoryOption {
+func WithTraces(createTracesExporter CreateTracesExporter) FactoryOption {
 	return func(o *factory) {
-		o.createTracesExporter = createTraceExporter
+		o.createTracesExporter = createTracesExporter
 	}
 }
 
@@ -69,13 +66,6 @@ func WithLogs(createLogsExporter CreateLogsExporter) FactoryOption {
 	}
 }
 
-// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
-func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
-	return func(o *factory) {
-		o.customUnmarshaler = customUnmarshaler
-	}
-}
-
 // NewFactory returns a component.ExporterFactory.
 func NewFactory(
 	cfgType config.Type,
@@ -88,13 +78,7 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	var ret component.ExporterFactory
-	if f.customUnmarshaler != nil {
-		ret = &factoryWithUnmarshaler{f}
-	} else {
-		ret = f
-	}
-	return ret
+	return f
 }
 
 // Type gets the type of the Exporter config created by this factory.
@@ -115,7 +99,7 @@ func (f *factory) CreateTracesExporter(
 	if f.createTracesExporter != nil {
 		return f.createTracesExporter(ctx, params, cfg)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a component.MetricsExporter based on this config.
@@ -126,7 +110,7 @@ func (f *factory) CreateMetricsExporter(
 	if f.createMetricsExporter != nil {
 		return f.createMetricsExporter(ctx, params, cfg)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateLogsExporter creates a metrics processor based on this config.
@@ -138,16 +122,5 @@ func (f *factory) CreateLogsExporter(
 	if f.createLogsExporter != nil {
 		return f.createLogsExporter(ctx, params, cfg)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
-
-type factoryWithUnmarshaler struct {
-	*factory
-}
-
-// Unmarshal un-marshals the config using the provided custom unmarshaler.
-func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return f.customUnmarshaler(componentViperSection, intoCfg)
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }

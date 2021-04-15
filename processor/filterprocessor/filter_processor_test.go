@@ -306,10 +306,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.ProcessorSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ProcessorSettings: config.NewProcessorSettings(typeStr),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -457,7 +454,7 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 		ctx,
 		component.ProcessorCreateParams{},
 		cfg,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 	)
 	pdms := metricSlice(128)
 	for i := 0; i < b.N; i++ {
@@ -560,7 +557,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 			Logger: zap.NewNop(),
 		},
 		cfg,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 	)
 	require.NotPanics(t, func() {
 		_ = proc.ConsumeMetrics(ctx, metrics)

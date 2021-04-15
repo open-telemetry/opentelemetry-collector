@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
-// TODO: Modify Matcher to invoke both the include and exclude properties so
-// calling processors will always have the same logic.
 // Matcher is an interface that allows matching a log record against a
 // configuration of a match.
+// TODO: Modify Matcher to invoke both the include and exclude properties so
+//  calling processors will always have the same logic.
 type Matcher interface {
 	MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
 }

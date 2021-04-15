@@ -30,3 +30,10 @@ type Config struct {
 	// Disabled by default
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
 }
+
+var _ config.Receiver = (*Config)(nil)
+
+// Validate checks the receiver configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

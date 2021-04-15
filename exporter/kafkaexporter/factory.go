@@ -61,20 +61,17 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(f.createTraceExporter),
+		exporterhelper.WithTraces(f.createTracesExporter),
 		exporterhelper.WithMetrics(f.createMetricsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
-		Brokers:         []string{defaultBroker},
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		Brokers:          []string{defaultBroker},
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
 		Encoding: defaultEncoding,
@@ -93,7 +90,7 @@ type kafkaExporterFactory struct {
 	metricsMarshallers map[string]MetricsMarshaller
 }
 
-func (f *kafkaExporterFactory) createTraceExporter(
+func (f *kafkaExporterFactory) createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg config.Exporter,
@@ -106,7 +103,7 @@ func (f *kafkaExporterFactory) createTraceExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		exp.traceDataPusher,

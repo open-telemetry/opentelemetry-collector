@@ -170,7 +170,7 @@ func initializeNetworkDataPoint(dataPoint pdata.IntDataPoint, startTime, now pda
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.NetworkDevice, deviceLabel)
 	labelsMap.Insert(metadata.Labels.NetworkDirection, directionLabel)
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

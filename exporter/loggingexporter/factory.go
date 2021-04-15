@@ -37,24 +37,21 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ExporterSettings:   config.NewExporterSettings(typeStr),
 		LogLevel:           "info",
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 	}
 }
 
-func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -62,7 +59,7 @@ func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, co
 		return nil, err
 	}
 
-	return newTraceExporter(config, cfg.LogLevel, exporterLogger)
+	return newTracesExporter(config, cfg.LogLevel, exporterLogger)
 }
 
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {

@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -72,6 +73,9 @@ type ProcessorCreateParams struct {
 
 // ProcessorFactory is factory interface for processors. This is the
 // new factory type that can create new style processors.
+//
+// This interface cannot be directly implemented, implementations need to embed
+// the BaseProcessorFactory or use the processorhelper.NewFactory to implement it.
 type ProcessorFactory interface {
 	Factory
 
@@ -84,7 +88,7 @@ type ProcessorFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Processor
 
-	// CreateTraceProcessor creates a trace processor based on this config.
+	// CreateTracesProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTracesProcessor(
@@ -113,4 +117,39 @@ type ProcessorFactory interface {
 		cfg config.Processor,
 		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
+
+	// unexportedProcessor is a dummy method to force this interface to not be implemented.
+	unexportedProcessor()
 }
+
+// BaseProcessorFactory is the interface that must be embedded by all ProcessorFactory implementations.
+type BaseProcessorFactory struct{}
+
+var _ ProcessorFactory = (*BaseProcessorFactory)(nil)
+
+// Type must be override.
+func (b BaseProcessorFactory) Type() config.Type {
+	panic("implement me")
+}
+
+// CreateDefaultConfig must be override.
+func (b BaseProcessorFactory) CreateDefaultConfig() config.Processor {
+	panic("implement me")
+}
+
+// CreateTracesProcessor default implemented as not supported date type.
+func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Traces) (TracesProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+// CreateMetricsProcessor default implemented as not supported date type.
+func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+// CreateLogsProcessor default implemented as not supported date type.
+func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Logs) (LogsProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+func (b BaseProcessorFactory) unexportedProcessor() {}

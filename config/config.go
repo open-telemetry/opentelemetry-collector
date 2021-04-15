@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configmodels defines the data models for entities. This file defines the
+// Package config defines the data models for entities. This file defines the
 // models for configuration format. The defined entities are:
 // Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
 //
@@ -49,6 +49,8 @@ type Config struct {
 	Service
 }
 
+var _ validatable = (*Config)(nil)
+
 // Validate returns an error if the config is invalid.
 //
 // This function performs basic validation of configuration. There may be more subtle
@@ -61,10 +63,38 @@ func (cfg *Config) Validate() error {
 		return errMissingReceivers
 	}
 
+	// Validate the receiver configuration.
+	for recv, recvCfg := range cfg.Receivers {
+		if err := recvCfg.Validate(); err != nil {
+			return fmt.Errorf("receiver \"%s\" has invalid configuration: %w", recv, err)
+		}
+	}
+
 	// Currently there is no default exporter enabled.
 	// The configuration must specify at least one exporter to be valid.
 	if len(cfg.Exporters) == 0 {
 		return errMissingExporters
+	}
+
+	// Validate the exporter configuration.
+	for exp, expCfg := range cfg.Exporters {
+		if err := expCfg.Validate(); err != nil {
+			return fmt.Errorf("exporter \"%s\" has invalid configuration: %w", exp, err)
+		}
+	}
+
+	// Validate the processor configuration.
+	for proc, procCfg := range cfg.Processors {
+		if err := procCfg.Validate(); err != nil {
+			return fmt.Errorf("processor \"%s\" has invalid configuration: %w", proc, err)
+		}
+	}
+
+	// Validate the extension configuration.
+	for ext, extCfg := range cfg.Extensions {
+		if err := extCfg.Validate(); err != nil {
+			return fmt.Errorf("extension \"%s\" has invalid configuration: %w", ext, err)
+		}
 	}
 
 	// Check that all enabled extensions in the service are configured
@@ -151,6 +181,21 @@ type NamedEntity interface {
 	Type() Type
 	Name() string
 	SetName(name string)
+}
+
+// validatable defines the interface for the configuration validation.
+type validatable interface {
+	// Validate validates the configuration and returns an error if invalid.
+	Validate() error
+}
+
+// CustomUnmarshable defines an optional interface for custom configuration unmarshaling.
+// A configuration struct can implement this interface to override the default unmarshaling.
+type CustomUnmarshable interface {
+	// Unmarshal is a function that un-marshals a Parser into the unmarshable struct in a custom way.
+	// componentSection *Parser
+	//   The config for this specific component. May be nil or empty if no config available.
+	Unmarshal(componentSection *Parser) error
 }
 
 // DataType is the data type that is supported for collection. We currently support

@@ -1,5 +1,5 @@
 [Unit]
-Description=OpenTelemety Collector
+Description=OpenTelemetry Collector
 After=network.target
 
 [Service]

@@ -26,8 +26,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
@@ -180,7 +180,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, expCreateParams, getConfigFn())
-		if errors.Is(err, configerror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

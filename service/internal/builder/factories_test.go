@@ -58,9 +58,7 @@ func createTestFactories() component.Factories {
 
 func newBadReceiverFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory("bf", func() config.Receiver {
-		return &config.ReceiverSettings{
-			TypeVal: "bf",
-		}
+		return &config.ReceiverSettings{TypeVal: "bf"}
 	})
 }
 
@@ -84,7 +82,7 @@ func newBadExtensionFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		"bf",
 		func() config.Extension {
-			return &config.ExporterSettings{
+			return &config.ExtensionSettings{
 				TypeVal: "bf",
 			}
 		},

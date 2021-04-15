@@ -32,8 +32,8 @@ func TestJaegerMarshaller(t *testing.T) {
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTime(pdata.Timestamp(10))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTime(pdata.Timestamp(20))
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTimestamp(pdata.Timestamp(10))
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTimestamp(pdata.Timestamp(20))
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
@@ -41,6 +41,7 @@ func TestJaegerMarshaller(t *testing.T) {
 
 	batches[0].Spans[0].Process = batches[0].Process
 	jaegerProtoBytes, err := batches[0].Spans[0].Marshal()
+	messageKey := []byte(batches[0].Spans[0].TraceID.String())
 	require.NoError(t, err)
 	require.NotNil(t, jaegerProtoBytes)
 
@@ -58,7 +59,7 @@ func TestJaegerMarshaller(t *testing.T) {
 				marshaller: jaegerProtoSpanMarshaller{},
 			},
 			encoding: "jaeger_proto",
-			messages: []Message{{Value: jaegerProtoBytes}},
+			messages: []Message{{Value: jaegerProtoBytes, Key: messageKey}},
 		},
 		{
 			unmarshaller: jaegerMarshaller{
@@ -67,7 +68,7 @@ func TestJaegerMarshaller(t *testing.T) {
 				},
 			},
 			encoding: "jaeger_json",
-			messages: []Message{{Value: jsonByteBuffer.Bytes()}},
+			messages: []Message{{Value: jsonByteBuffer.Bytes(), Key: messageKey}},
 		},
 	}
 	for _, test := range tests {

@@ -32,10 +32,7 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.ExtensionSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
+		ExtensionSettings: config.NewExtensionSettings(typeStr),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultEndpoint,
 		},

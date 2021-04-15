@@ -25,7 +25,7 @@ import (
 
 // Config defines configuration for memory memoryLimiter processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	// CheckInterval is the time between measurements of memory usage for the
 	// purposes of avoiding going over the limits. Defaults to zero, so no
@@ -50,6 +50,13 @@ type Config struct {
 	// MemorySpikePercentage is the maximum, in percents against the total memory,
 	// spike expected between the measurements of memory usage.
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
+}
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }
 
 // Name of BallastSizeMiB config option.

@@ -144,8 +144,8 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
-	dest.SetStartTime(pdata.TimestampFromTime(src.StartTime.AsTime()))
-	dest.SetEndTime(pdata.TimestampFromTime(src.EndTime.AsTime()))
+	dest.SetStartTimestamp(pdata.TimestampFromTime(src.StartTime.AsTime()))
+	dest.SetEndTimestamp(pdata.TimestampFromTime(src.EndTime.AsTime()))
 
 	ocStatusToInternal(src.Status, src.Attributes, dest.Status())
 

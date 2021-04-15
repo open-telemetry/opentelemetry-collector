@@ -16,8 +16,10 @@ package config
 
 // Receiver is the configuration of a receiver. Specific receivers must implement this
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
+// Embedded validatable will force each receiver to implement Validate() function
 type Receiver interface {
 	NamedEntity
+	validatable
 }
 
 // Receivers is a map of names to Receivers.
@@ -25,6 +27,8 @@ type Receivers map[string]Receiver
 
 // ReceiverSettings defines common settings for a receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
+// It is highly recommended to "override" the Validate() function.
+// When embedded in the processor config it must be with `mapstructure:"-"` tag.
 type ReceiverSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
@@ -45,4 +49,9 @@ func (rs *ReceiverSettings) SetName(name string) {
 // Type sets the receiver type.
 func (rs *ReceiverSettings) Type() Type {
 	return rs.TypeVal
+}
+
+// Validate validates the configuration and returns an error if invalid.
+func (rs *ReceiverSettings) Validate() error {
+	return nil
 }

@@ -34,7 +34,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	config2 "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 	"go.opentelemetry.io/collector/testutil"
@@ -59,13 +59,13 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	}))
 	defer cst.Close()
 
-	config := &Config{
+	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: cst.URL,
 		},
 		Format: "json",
 	}
-	zexp, err := NewFactory().CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	zexp, err := NewFactory().CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, zexp)
 
@@ -75,15 +75,15 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
-	cfg := &zipkinreceiver.Config{
-		ReceiverSettings: config2.ReceiverSettings{
+	recvCfg := &zipkinreceiver.Config{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: "zipkin_receiver",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.New(cfg, zexp)
+	zi, err := zipkinreceiver.New(recvCfg, zexp)
 	assert.NoError(t, err)
 	require.NotNil(t, zi)
 
@@ -307,13 +307,13 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	}))
 	defer cst.Close()
 
-	config := &Config{
+	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: cst.URL,
 		},
 		Format: "proto",
 	}
-	zexp, err := NewFactory().CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	zexp, err := NewFactory().CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
@@ -324,15 +324,15 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	port := testutil.GetAvailablePort(t)
-	cfg := &zipkinreceiver.Config{
-		ReceiverSettings: config2.ReceiverSettings{
+	recvCfg := &zipkinreceiver.Config{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: "zipkin_receiver",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: fmt.Sprintf(":%d", port),
 		},
 	}
-	zi, err := zipkinreceiver.New(cfg, zexp)
+	zi, err := zipkinreceiver.New(recvCfg, zexp)
 	require.NoError(t, err)
 
 	err = zi.Start(context.Background(), componenttest.NewNopHost())

@@ -22,7 +22,7 @@ import (
 // Config has the configuration for the extension enabling the golang
 // net/http/pprof (Performance Profiler) extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
+	*config.ExtensionSettings `mapstructure:"-"`
 
 	// TCPAddr is the address and port in which the pprof will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to
@@ -41,4 +41,11 @@ type Config struct {
 	// Optional file name to save the CPU profile to. The profiling starts when the
 	// Collector starts and is saved to the file when the Collector is terminated.
 	SaveToFile string `mapstructure:"save_to_file"`
+}
+
+var _ config.Extension = (*Config)(nil)
+
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

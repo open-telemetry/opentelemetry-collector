@@ -42,7 +42,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
 	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
-	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	r, err := f.createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -64,7 +64,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
-	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	r, err := f.createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)

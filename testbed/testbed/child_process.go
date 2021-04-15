@@ -187,7 +187,7 @@ func expandExeFileName(exeName string) string {
 	return buf.String()
 }
 
-// start a child process.
+// Start a child process.
 //
 // cp.AgentExePath defines the executable to run. If unspecified
 // "../../bin/otelcol_{{.GOOS}}_{{.GOARCH}}" will be used.
@@ -236,6 +236,7 @@ func (cp *ChildProcess) Start(params StartParams) error {
 		args = append(args, "--config")
 		args = append(args, cp.configFileName)
 	}
+	// #nosec
 	cp.cmd = exec.Command(exePath, args...)
 
 	// Capture standard output and standard error.

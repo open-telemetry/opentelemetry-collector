@@ -17,18 +17,26 @@ package config
 // Extension is the configuration of a service extension. Specific extensions
 // must implement this interface and will typically embed ExtensionSettings
 // struct or a struct that extends it.
+// Embedded validatable will force each extension to implement Validate() function
 type Extension interface {
 	NamedEntity
+	validatable
 }
 
 // Extensions is a map of names to extensions.
 type Extensions map[string]Extension
 
-// ExtensionSettings defines common settings for a service extension configuration.
+// ExtensionSettings defines common settings for a extension configuration.
 // Specific extensions can embed this struct and extend it with more fields if needed.
+// When embedded in the extension config it must be with `mapstructure:"-"` tag.
 type ExtensionSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
+}
+
+// NewExtensionSettings return a new ExtensionSettings with the given type.
+func NewExtensionSettings(typeVal Type) *ExtensionSettings {
+	return &ExtensionSettings{TypeVal: typeVal, NameVal: string(typeVal)}
 }
 
 var _ Extension = (*ExtensionSettings)(nil)
@@ -46,4 +54,9 @@ func (ext *ExtensionSettings) SetName(name string) {
 // Type sets the extension type.
 func (ext *ExtensionSettings) Type() Type {
 	return ext.TypeVal
+}
+
+// Validate validates the configuration and returns an error if invalid.
+func (ext *ExtensionSettings) Validate() error {
+	return nil
 }

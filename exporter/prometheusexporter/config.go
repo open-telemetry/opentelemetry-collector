@@ -24,7 +24,7 @@ import (
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 
 	// The address on which the Prometheus scrape handler will be run on.
 	Endpoint string `mapstructure:"endpoint"`
@@ -40,4 +40,11 @@ type Config struct {
 
 	// MetricExpiration defines how long metrics are kept without updates
 	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
+}
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

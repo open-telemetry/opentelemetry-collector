@@ -103,7 +103,7 @@ type Option func(*baseSettings)
 
 // WithStart overrides the default Start function for an exporter.
 // The default shutdown function does nothing and always returns nil.
-func WithStart(start componenthelper.Start) Option {
+func WithStart(start componenthelper.StartFunc) Option {
 	return func(o *baseSettings) {
 		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
 	}
@@ -111,7 +111,7 @@ func WithStart(start componenthelper.Start) Option {
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown componenthelper.Shutdown) Option {
+func WithShutdown(shutdown componenthelper.ShutdownFunc) Option {
 	return func(o *baseSettings) {
 		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
@@ -186,8 +186,7 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// If no error then start the queuedRetrySender.
-	be.qrSender.start()
-	return nil
+	return be.qrSender.start()
 }
 
 // Shutdown all senders and exporter and is invoked during service shutdown.
