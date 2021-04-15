@@ -76,6 +76,16 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ${returnType}((*ms.orig).${originFieldName})
 }`
 
+const accessorsPrimitiveStructTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return ${returnType}{orig: ((*ms.orig).${originFieldName})}
+}
+
+// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+	(*ms.orig).${originFieldName} = v.orig
+}`
+
 type baseField interface {
 	generateAccessors(ms baseStruct, sb *strings.Builder)
 
@@ -304,6 +314,62 @@ func (ptf *primitiveTypedField) generateCopyToValue(sb *strings.Builder) {
 }
 
 var _ baseField = (*primitiveTypedField)(nil)
+
+// Types that has defined a custom type (e.g. "type TraceID struct {}")
+type primitiveStructField struct {
+	fieldName       string
+	originFieldName string
+	returnType      string
+	defaultVal      string
+	testVal         string
+}
+
+func (ptf *primitiveStructField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	template := accessorsPrimitiveStructTemplate
+	sb.WriteString(os.Expand(template, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return ptf.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(ptf.fieldName)
+		case "returnType":
+			return ptf.returnType
+		case "originFieldName":
+			return ptf.originFieldName
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (ptf *primitiveStructField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "defaultVal":
+			return ptf.defaultVal
+		case "fieldName":
+			return ptf.fieldName
+		case "testValue":
+			return ptf.testVal
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (ptf *primitiveStructField) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\ttv.Set" + ptf.fieldName + "(" + ptf.testVal + ")")
+}
+
+func (ptf *primitiveStructField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
+}
+
+var _ baseField = (*primitiveStructField)(nil)
 
 // oneofField is used in case where the proto defines an "oneof".
 type oneofField struct {

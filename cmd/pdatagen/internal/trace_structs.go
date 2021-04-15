@@ -206,29 +206,26 @@ var spanStatus = &messageValueStruct{
 	},
 }
 
-var traceIDField = &primitiveTypedField{
+var traceIDField = &primitiveStructField{
 	fieldName:       "TraceID",
 	originFieldName: "TraceId",
 	returnType:      "TraceID",
-	rawType:         "data.TraceID",
 	defaultVal:      "NewTraceID([16]byte{})",
 	testVal:         "NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
-var spanIDField = &primitiveTypedField{
+var spanIDField = &primitiveStructField{
 	fieldName:       "SpanID",
 	originFieldName: "SpanId",
 	returnType:      "SpanID",
-	rawType:         "data.SpanID",
 	defaultVal:      "NewSpanID([8]byte{})",
 	testVal:         "NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})",
 }
 
-var parentSpanIDField = &primitiveTypedField{
+var parentSpanIDField = &primitiveStructField{
 	fieldName:       "ParentSpanID",
 	originFieldName: "ParentSpanId",
 	returnType:      "SpanID",
-	rawType:         "data.SpanID",
 	defaultVal:      "NewSpanID([8]byte{})",
 	testVal:         "NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }
