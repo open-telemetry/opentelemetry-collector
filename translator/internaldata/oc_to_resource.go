@@ -80,6 +80,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	attrs := dest.Attributes()
+	attrs.Clear()
 	attrs.EnsureCapacity(maxTotalAttrCount)
 
 	if ocNode != nil {

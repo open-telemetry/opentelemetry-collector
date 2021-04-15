@@ -102,6 +102,7 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 	}
 
 	attrs := dest.Attributes()
+	attrs.Clear()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
 		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
@@ -176,6 +177,7 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	}
 
 	attrs := dest.Attributes()
+	attrs.Clear()
 	attrs.EnsureCapacity(len(span.Tags))
 	jTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
@@ -332,6 +334,7 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
+		attrs.Clear()
 		attrs.EnsureCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {

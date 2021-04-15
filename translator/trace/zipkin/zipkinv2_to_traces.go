@@ -143,6 +143,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	attrs := dest.Attributes()
+	attrs.Clear()
 	attrs.EnsureCapacity(len(tags))
 	if err := zTagsToInternalAttrs(zspan, tags, attrs, parseStringTags); err != nil {
 		return err
