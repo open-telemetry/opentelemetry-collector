@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package configsource is an experimental package that define the interface
+// of "configuration sources", e.g.: Vault, ZooKeeper, etcd, and others, that
+// can be used to provide secrets or any other configuration data to be used by
+// the collector.
 package configsource
 
 import (
