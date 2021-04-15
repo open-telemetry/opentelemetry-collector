@@ -148,11 +148,10 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 	r.perTestResults = []*CorrectnessTestResult{}
 
 	// Create resultsSummary file
-	var err error
-	err = os.MkdirAll(resultsDir, os.FileMode(0755))
-	if err != nil {
+	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
 		log.Fatalf(err.Error())
 	}
+	var err error
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "CORRECTNESSRESULTS.md"))
 	if err != nil {
 		log.Fatalf(err.Error())
