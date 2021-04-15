@@ -160,7 +160,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 
 			// Send one custom data.
 			log := pdata.Logs{}
-			processor.firstLC.(consumer.Logs).ConsumeLogs(context.Background(), log)
+			require.NoError(t, processor.firstLC.(consumer.Logs).ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
 			for _, expConsumer := range exporterConsumers {
@@ -221,7 +221,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	}
 
 	td := testdata.GenerateTraceDataOneSpan()
-	processor.firstTC.(consumer.Traces).ConsumeTraces(context.Background(), td)
+	require.NoError(t, processor.firstTC.(consumer.Traces).ConsumeTraces(context.Background(), td))
 
 	// Now verify received data.
 	for _, expConsumer := range exporterConsumers {

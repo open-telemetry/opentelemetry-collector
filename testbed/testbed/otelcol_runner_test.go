@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
@@ -59,7 +60,10 @@ service:
 	assert.NotNil(t, configCleanup)
 	assert.NotEmpty(t, runner.configStr)
 	args := StartParams{}
-	defer runner.Stop()
+	defer func() {
+		_, err := runner.Stop()
+		require.NoError(t, err)
+	}()
 	assert.NoError(t, runner.Start(args))
 	assert.NotNil(t, runner.svc)
 }

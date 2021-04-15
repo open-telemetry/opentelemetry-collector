@@ -164,7 +164,7 @@ func TestJsonHttp(t *testing.T) {
 	ocr := newHTTPReceiver(t, addr, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	defer require.NoError(t, ocr.Shutdown(context.Background()))
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
@@ -342,7 +342,7 @@ func TestProtoHttp(t *testing.T) {
 	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	defer require.NoError(t, ocr.Shutdown(context.Background()))
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
@@ -484,7 +484,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	ocr := newHTTPReceiver(t, addr, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	defer require.NoError(t, ocr.Shutdown(context.Background()))
 
 	url := fmt.Sprintf("http://%s/v1/traces", addr)
 
@@ -636,7 +636,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				ocr := newGRPCReceiver(t, exporter.receiverTag, addr, sink, nil)
 				require.NotNil(t, ocr)
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-				defer ocr.Shutdown(context.Background())
+				defer require.NoError(t, ocr.Shutdown(context.Background()))
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 				require.NoError(t, err)
@@ -789,7 +789,8 @@ func TestShutdown(t *testing.T) {
 	senderGrpc := func(msg *collectortrace.ExportTraceServiceRequest) {
 		// Send request via OTLP/gRPC.
 		client := collectortrace.NewTraceServiceClient(conn)
-		client.Export(context.Background(), msg)
+		_, err = client.Export(context.Background(), msg)
+		require.NoError(t, err)
 	}
 	senderHTTP := func(msg *collectortrace.ExportTraceServiceRequest) {
 		// Send request via OTLP/HTTP.
@@ -802,7 +803,8 @@ func TestShutdown(t *testing.T) {
 		client := &http.Client{}
 		resp, err2 := client.Do(req)
 		if err2 == nil {
-			ioutil.ReadAll(resp.Body)
+			_, err3 := ioutil.ReadAll(resp.Body)
+			require.NoError(t, err3)
 		}
 	}
 

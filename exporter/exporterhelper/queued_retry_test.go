@@ -327,7 +327,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
 	for i := 0; i < 7; i++ {
-		be.sender.send(newErrorRequest(context.Background()))
+		require.NoError(t, be.sender.send(newErrorRequest(context.Background())))
 	}
 	checkValueForProducer(t, defaultExporterTags, int64(7), "exporter/queue_size")
 

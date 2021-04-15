@@ -242,7 +242,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			// Send one data.
 			log := pdata.Logs{}
 			producer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
-			producer.ConsumeLogs(context.Background(), log)
+			require.NoError(t, producer.ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
 			for _, name := range exporterNames {

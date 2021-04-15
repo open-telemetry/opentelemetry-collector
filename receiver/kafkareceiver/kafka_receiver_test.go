@@ -88,7 +88,7 @@ func TestReceiverStart(t *testing.T) {
 
 	err := c.Start(context.Background(), nil)
 	require.NoError(t, err)
-	c.Shutdown(context.Background())
+	require.NoError(t, c.Shutdown(context.Background()))
 }
 
 func TestReceiverStartConsume(t *testing.T) {
@@ -100,7 +100,7 @@ func TestReceiverStartConsume(t *testing.T) {
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
-	c.Shutdown(context.Background())
+	require.NoError(t, c.Shutdown(context.Background()))
 	err := c.consumeLoop(ctx, &consumerGroupHandler{
 		ready: make(chan bool),
 	})
@@ -121,7 +121,7 @@ func TestReceiver_error(t *testing.T) {
 
 	err := c.Start(context.Background(), nil)
 	require.NoError(t, err)
-	c.Shutdown(context.Background())
+	require.NoError(t, c.Shutdown(context.Background()))
 	waitUntil(func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
 	}, 100, time.Millisecond*100)
@@ -130,7 +130,7 @@ func TestReceiver_error(t *testing.T) {
 
 func TestConsumerGroupHandler(t *testing.T) {
 	views := MetricViews()
-	view.Register(views...)
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	c := consumerGroupHandler{
@@ -306,7 +306,7 @@ var _ sarama.ConsumerGroup = (*testConsumerGroup)(nil)
 
 func (t testConsumerGroup) Consume(ctx context.Context, topics []string, handler sarama.ConsumerGroupHandler) error {
 	t.once.Do(func() {
-		handler.Setup(testConsumerGroupSession{})
+		t.err = handler.Setup(testConsumerGroupSession{})
 	})
 	return t.err
 }

@@ -359,6 +359,6 @@ func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		InternalTracesToJaegerProto(td)
+		InternalTracesToJaegerProto(td) // nolint:errcheck
 	}
 }
