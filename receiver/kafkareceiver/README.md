@@ -2,7 +2,7 @@
 
 Kafka receiver receives traces from Kafka. Message payload encoding is configurable.
 
-Supported pipeline types: traces
+Supported pipeline types: traces, logs
 
 ## Getting Started
 
@@ -13,7 +13,7 @@ The following settings are required:
 The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
-- `topic` (default = otlp_spans): The name of the kafka topic to export to
+- `topic` (default = otlp_spans): The name of the kafka topic to read from
 - `encoding` (default = otlp_proto): The encoding of the payload sent to kafka. Available encodings:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`.
   - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
