@@ -37,14 +37,14 @@ func (ext *builtExtension) Start(ctx context.Context, host component.Host) error
 	return ext.extension.Start(ctx, host)
 }
 
-// Stop the receiver.
+// Shutdown the receiver.
 func (ext *builtExtension) Shutdown(ctx context.Context) error {
 	return ext.extension.Shutdown(ctx)
 }
 
 var _ component.Extension = (*builtExtension)(nil)
 
-// Exporters is a map of exporters created from exporter configs.
+// Extensions is a map of extensions created from extension configs.
 type Extensions map[config.Extension]*builtExtension
 
 // StartAll starts all exporters.

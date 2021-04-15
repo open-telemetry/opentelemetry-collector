@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package parserprovider
 
 import (
+	"flag"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -25,10 +25,9 @@ import (
 )
 
 func TestSetFlags(t *testing.T) {
-	cmd := &cobra.Command{}
-	addSetFlag(cmd.Flags())
-
-	err := cmd.ParseFlags([]string{
+	flags := new(flag.FlagSet)
+	Flags(flags)
+	err := flags.Parse([]string{
 		"--set=processors.batch.timeout=2s",
 		"--set=processors.batch/foo.timeout=3s",
 		"--set=receivers.otlp.protocols.grpc.endpoint=localhost:1818",
@@ -36,8 +35,8 @@ func TestSetFlags(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	cp := config.NewParser()
-	err = AddSetFlagProperties(cp, cmd)
+	sfl := NewSetFlag(new(emptyProvider))
+	cp, err := sfl.Get()
 	require.NoError(t, err)
 
 	keys := cp.AllKeys()
@@ -48,16 +47,18 @@ func TestSetFlags(t *testing.T) {
 	assert.Equal(t, "localhost:1818", cp.Get("receivers::otlp::protocols::grpc::endpoint"))
 }
 
-func TestSetFlags_err_set_flag(t *testing.T) {
-	cmd := &cobra.Command{}
-	require.Error(t, AddSetFlagProperties(config.NewParser(), cmd))
-}
-
 func TestSetFlags_empty(t *testing.T) {
-	cmd := &cobra.Command{}
-	addSetFlag(cmd.Flags())
-	cp := config.NewParser()
-	err := AddSetFlagProperties(cp, cmd)
+	flags := new(flag.FlagSet)
+	Flags(flags)
+
+	sfl := NewSetFlag(new(emptyProvider))
+	cp, err := sfl.Get()
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(cp.AllKeys()))
+}
+
+type emptyProvider struct{}
+
+func (el *emptyProvider) Get() (*config.Parser, error) {
+	return config.NewParser(), nil
 }

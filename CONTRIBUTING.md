@@ -246,6 +246,16 @@ the event happens.
 Make log message human readable and also include data that is needed for easier
 understanding of what happened and in what context.
 
+### Observability
+
+Out of the box, your users should be able to observe the state of your component. 
+The collector exposes an OpenMetrics endpoint at `http://localhost:8888/metrics`
+where your data will land.
+
+When using the regular helpers, you should have some metrics added around key 
+events automatically. For instance, exporters should have `otelcol_exporter_sent_spans` 
+tracked without your exporter doing anything.
+
 ### Resource Usage
 
 Limit usage of CPU, RAM or other resources that the code can use. Do not write code

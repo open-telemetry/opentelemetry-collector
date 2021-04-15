@@ -148,6 +148,7 @@ func producerMessages(messages []Message, topic string) []*sarama.ProducerMessag
 		producerMessages[i] = &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(messages[i].Value),
+			Key:   sarama.ByteEncoder(messages[i].Key),
 		}
 	}
 	return producerMessages

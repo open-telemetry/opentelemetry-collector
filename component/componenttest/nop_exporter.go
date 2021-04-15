@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -64,7 +63,7 @@ func (f *nopExporterFactory) CreateMetricsExporter(
 	return nopExporterInstance, nil
 }
 
-// CreateMetricsExporter implements component.ExporterFactory interface.
+// CreateLogsExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateLogsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
@@ -75,15 +74,11 @@ func (f *nopExporterFactory) CreateLogsExporter(
 
 var nopExporterInstance = &nopExporter{
 	Component: componenthelper.New(),
-	Traces:    consumertest.NewTracesNop(),
-	Metrics:   consumertest.NewMetricsNop(),
-	Logs:      consumertest.NewLogsNop(),
+	Consumer:  consumertest.NewNop(),
 }
 
 // nopExporter stores consumed traces and metrics for testing purposes.
 type nopExporter struct {
 	component.Component
-	consumer.Traces
-	consumer.Metrics
-	consumer.Logs
+	consumertest.Consumer
 }

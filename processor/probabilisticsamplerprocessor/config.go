@@ -29,3 +29,10 @@ type Config struct {
 	// different sampling rates, configuring different seeds avoids that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 }
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

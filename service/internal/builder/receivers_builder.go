@@ -22,8 +22,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/fanoutconsumer"
@@ -38,12 +38,12 @@ type builtReceiver struct {
 	receiver component.Receiver
 }
 
-// Start the receiver.
+// Start starts the receiver.
 func (rcv *builtReceiver) Start(ctx context.Context, host component.Host) error {
 	return rcv.receiver.Start(ctx, host)
 }
 
-// Stop the receiver.
+// Shutdown stops the receiver.
 func (rcv *builtReceiver) Shutdown(ctx context.Context) error {
 	return rcv.receiver.Shutdown(ctx)
 }
@@ -51,7 +51,7 @@ func (rcv *builtReceiver) Shutdown(ctx context.Context) error {
 // Receivers is a map of receivers created from receiver configs.
 type Receivers map[config.Receiver]*builtReceiver
 
-// StopAll stops all receivers.
+// ShutdownAll stops all receivers.
 func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
 	var errs []error
 	for _, rcv := range rcvs {
@@ -192,11 +192,11 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 		createdReceiver, err = factory.CreateLogsReceiver(ctx, creationParams, cfg, junction)
 
 	default:
-		err = configerror.ErrDataTypeIsNotSupported
+		err = componenterror.ErrDataTypeIsNotSupported
 	}
 
 	if err != nil {
-		if err == configerror.ErrDataTypeIsNotSupported {
+		if err == componenterror.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
 				"receiver %s does not support %s but it was used in a "+
 					"%s pipeline",

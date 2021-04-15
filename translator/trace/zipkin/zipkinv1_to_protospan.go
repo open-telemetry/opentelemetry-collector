@@ -508,7 +508,7 @@ func setTimestampsIfUnset(span *tracepb.Span) {
 		if span.Attributes.AttributeMap == nil {
 			span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 1)
 		}
-		span.Attributes.AttributeMap[StartTimeAbsent] = &tracepb.AttributeValue{
+		span.Attributes.AttributeMap[startTimeAbsent] = &tracepb.AttributeValue{
 			Value: &tracepb.AttributeValue_BoolValue{
 				BoolValue: true,
 			}}

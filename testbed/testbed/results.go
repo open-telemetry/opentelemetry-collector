@@ -25,7 +25,7 @@ import (
 
 // TestResultsSummary defines the interface to record results of one category of testing.
 type TestResultsSummary interface {
-	// Create and open the file and write headers.
+	// Init creates and open the file and write headers.
 	Init(resultsDir string)
 	// Add results for one test.
 	Add(testName string, result interface{})

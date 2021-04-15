@@ -25,7 +25,9 @@ import (
 )
 
 // nopProcessorFactory is factory for nopProcessor.
-type nopProcessorFactory struct{}
+type nopProcessorFactory struct {
+	component.BaseProcessorFactory
+}
 
 var nopProcessorFactoryInstance = &nopProcessorFactory{}
 
@@ -66,7 +68,7 @@ func (f *nopProcessorFactory) CreateMetricsProcessor(
 	return nopProcessorInstance, nil
 }
 
-// CreateMetricsProcessor implements component.ProcessorFactory interface.
+// CreateLogsProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
@@ -78,17 +80,13 @@ func (f *nopProcessorFactory) CreateLogsProcessor(
 
 var nopProcessorInstance = &nopProcessor{
 	Component: componenthelper.New(),
-	Traces:    consumertest.NewTracesNop(),
-	Metrics:   consumertest.NewMetricsNop(),
-	Logs:      consumertest.NewLogsNop(),
+	Consumer:  consumertest.NewNop(),
 }
 
 // nopProcessor stores consumed traces and metrics for testing purposes.
 type nopProcessor struct {
 	component.Component
-	consumer.Traces
-	consumer.Metrics
-	consumer.Logs
+	consumertest.Consumer
 }
 
 func (*nopProcessor) GetCapabilities() component.ProcessorCapabilities {

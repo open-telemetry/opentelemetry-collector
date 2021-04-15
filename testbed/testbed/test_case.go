@@ -195,8 +195,12 @@ func (tc *TestCase) StartAgent(args ...string) {
 		// if the endpoint is not-empty, i.e. the sender does use network (some senders
 		// like text log writers don't).
 		tc.WaitFor(func() bool {
-			_, err := net.Dial(tc.LoadGenerator.sender.GetEndpoint().Network(), tc.LoadGenerator.sender.GetEndpoint().String())
-			return err == nil
+			conn, err := net.Dial(tc.LoadGenerator.sender.GetEndpoint().Network(), tc.LoadGenerator.sender.GetEndpoint().String())
+			if err == nil && conn != nil {
+				conn.Close()
+				return true
+			}
+			return false
 		})
 	}
 }

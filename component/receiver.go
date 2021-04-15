@@ -77,7 +77,7 @@ type ReceiverFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Receiver
 
-	// CreateTraceReceiver creates a trace receiver based on this config.
+	// CreateTracesReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTracesReceiver(ctx context.Context, params ReceiverCreateParams,

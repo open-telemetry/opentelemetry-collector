@@ -99,25 +99,22 @@ linters:
   disable:
     - errcheck
   enable:
+    - exportloopref
+    - gocritic
     - gofmt
     - goimports
     - golint
     - gosec
     - govet
-    - staticcheck
     - misspell
-    - scopelint
+    - staticcheck
     - unconvert
-    - gocritic
     - unparam
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - scopelint
     - path: otlp_test.go
       linters:
         # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007

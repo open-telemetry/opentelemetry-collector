@@ -68,14 +68,14 @@ func (b baseScraper) Name() string {
 }
 
 // WithStart sets the function that will be called on startup.
-func WithStart(start componenthelper.Start) ScraperOption {
+func WithStart(start componenthelper.StartFunc) ScraperOption {
 	return func(o *baseSettings) {
 		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
 	}
 }
 
 // WithShutdown sets the function that will be called on shutdown.
-func WithShutdown(shutdown componenthelper.Shutdown) ScraperOption {
+func WithShutdown(shutdown componenthelper.ShutdownFunc) ScraperOption {
 	return func(o *baseSettings) {
 		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
@@ -116,7 +116,11 @@ func (ms metricsScraper) Scrape(ctx context.Context, receiverName string) (pdata
 	ctx = obsreport.ScraperContext(ctx, receiverName, ms.Name())
 	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, ms.Name())
 	metrics, err := ms.ScrapeMetrics(ctx)
-	obsreport.EndMetricsScrapeOp(ctx, metrics.Len(), err)
+	count := 0
+	if err == nil {
+		count = metrics.Len()
+	}
+	obsreport.EndMetricsScrapeOp(ctx, count, err)
 	return metrics, err
 }
 
@@ -155,7 +159,11 @@ func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverName strin
 	ctx = obsreport.ScraperContext(ctx, receiverName, rms.Name())
 	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, rms.Name())
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
-	obsreport.EndMetricsScrapeOp(ctx, metricCount(resourceMetrics), err)
+	count := 0
+	if err == nil {
+		count = metricCount(resourceMetrics)
+	}
+	obsreport.EndMetricsScrapeOp(ctx, count, err)
 	return resourceMetrics, err
 }
 
