@@ -669,11 +669,35 @@ func TestAttributeMap_Update(t *testing.T) {
 	assert.EqualValues(t, 123, av2.IntVal())
 }
 
-func TestAttributeMap_InitEmptyWithCapacity(t *testing.T) {
+func TestAttributeMap_EnsureCapacity_Zero(t *testing.T) {
 	am := NewAttributeMap()
-	am.InitEmptyWithCapacity(0)
-	assert.Equal(t, NewAttributeMap(), am)
+	am.EnsureCapacity(0)
 	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 0, cap(*am.orig))
+}
+
+func TestAttributeMap_EnsureCapacity(t *testing.T) {
+	am := NewAttributeMap()
+	am.EnsureCapacity(5)
+	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 5, cap(*am.orig))
+	am.EnsureCapacity(3)
+	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 5, cap(*am.orig))
+	am.EnsureCapacity(8)
+	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 8, cap(*am.orig))
+}
+
+func TestAttributeMap_Clear(t *testing.T) {
+	am := NewAttributeMap()
+	assert.Nil(t, *am.orig)
+	am.Clear()
+	assert.Nil(t, *am.orig)
+	am.EnsureCapacity(5)
+	assert.NotNil(t, *am.orig)
+	am.Clear()
+	assert.Nil(t, *am.orig)
 }
 
 func TestNilStringMap(t *testing.T) {
@@ -846,11 +870,35 @@ func TestStringMap_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestStringMap(), dest)
 }
 
-func TestStringMap_InitEmptyWithCapacity(t *testing.T) {
+func TestStringMap_EnsureCapacity_Zero(t *testing.T) {
 	sm := NewStringMap()
-	sm.InitEmptyWithCapacity(0)
-	assert.Equal(t, NewStringMap(), sm)
+	sm.EnsureCapacity(0)
 	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 0, cap(*sm.orig))
+}
+
+func TestStringMap_EnsureCapacity(t *testing.T) {
+	sm := NewStringMap()
+	sm.EnsureCapacity(5)
+	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 5, cap(*sm.orig))
+	sm.EnsureCapacity(3)
+	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 5, cap(*sm.orig))
+	sm.EnsureCapacity(8)
+	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 8, cap(*sm.orig))
+}
+
+func TestStringMap_Clear(t *testing.T) {
+	sm := NewStringMap()
+	assert.Nil(t, *sm.orig)
+	sm.Clear()
+	assert.Nil(t, *sm.orig)
+	sm.EnsureCapacity(5)
+	assert.NotNil(t, *sm.orig)
+	sm.Clear()
+	assert.Nil(t, *sm.orig)
 }
 
 func TestStringMap_InitFromMap(t *testing.T) {

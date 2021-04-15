@@ -504,7 +504,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 			{
 				dp := dps.At(0)
 				labels := dp.LabelsMap()
-				labels.InitEmptyWithCapacity(3)
 				labels.Insert("env", "prod")
 				labels.Insert("app", "myapp")
 				labels.Insert("version", "1.0")
@@ -514,7 +513,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 			{
 				dp := dps.At(1)
 				labels := dp.LabelsMap()
-				labels.InitEmptyWithCapacity(3)
 				labels.Insert("env", "prod")
 				labels.Insert("app", "myapp")
 				labels.Insert("version", "1.0")

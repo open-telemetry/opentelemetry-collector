@@ -131,7 +131,6 @@ func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 	span.SetKind(pdata.SpanKindCLIENT)
 	span.SetStartTimestamp(1596911098294000000)
 	span.SetEndTimestamp(1596911098295000000)
-	span.Attributes().InitEmptyWithCapacity(0)
 	return td
 }
 
@@ -139,7 +138,6 @@ func generateTraceSingleSpanMinmalResource() pdata.Traces {
 	td := generateTraceSingleSpanNoResourceOrInstrLibrary()
 	rs := td.ResourceSpans().At(0)
 	rsc := rs.Resource()
-	rsc.Attributes().InitEmptyWithCapacity(1)
 	rsc.Attributes().UpsertString(conventions.AttributeServiceName, "SoleAttr")
 	return td
 }
@@ -159,7 +157,6 @@ func generateTraceSingleSpanErrorStatus() pdata.Traces {
 	span.SetKind(pdata.SpanKindCLIENT)
 	span.SetStartTimestamp(1596911098294000000)
 	span.SetEndTimestamp(1596911098295000000)
-	span.Attributes().InitEmptyWithCapacity(0)
 	span.Status().SetCode(pdata.StatusCodeError)
 	return td
 }
