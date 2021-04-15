@@ -58,7 +58,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTracesViews(t, "oc_trace", "grpc", int64(n), 0)
+	obsreporttest.CheckReceiverTraces(t, "oc_trace", "grpc", int64(n), 0)
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
@@ -79,7 +79,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTracesViews(t, "oc_trace", "grpc", 0, 0)
+	obsreporttest.CheckReceiverTraces(t, "oc_trace", "grpc", 0, 0)
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {

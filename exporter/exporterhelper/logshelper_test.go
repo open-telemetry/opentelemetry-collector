@@ -167,9 +167,9 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		obsreporttest.CheckExporterLogsViews(t, fakeLogsExporterName, 0, int64(numBatches*ld.LogRecordCount()))
+		obsreporttest.CheckExporterLogs(t, fakeLogsExporterName, 0, int64(numBatches*ld.LogRecordCount()))
 	} else {
-		obsreporttest.CheckExporterLogsViews(t, fakeLogsExporterName, int64(numBatches*ld.LogRecordCount()), 0)
+		obsreporttest.CheckExporterLogs(t, fakeLogsExporterName, int64(numBatches*ld.LogRecordCount()), 0)
 	}
 }
 
