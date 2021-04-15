@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configloader"
 )
 
 // LoadConfigFile loads a config from file.
@@ -30,7 +30,7 @@ func LoadConfigFile(t *testing.T, fileName string, factories component.Factories
 	cp, err := config.NewParserFromFile(fileName)
 	require.NoError(t, err)
 	// Load the config from viper using the given factories.
-	cfg, err := configparser.Load(cp, factories)
+	cfg, err := configloader.Load(cp, factories)
 	if err != nil {
 		return nil, err
 	}
