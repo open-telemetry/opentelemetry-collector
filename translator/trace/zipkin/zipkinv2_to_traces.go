@@ -217,7 +217,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.TraceID(rawTrace))
+		link.SetTraceID(pdata.NewTraceID(rawTrace.Bytes()))
 
 		// Convert span id.
 		rawSpan := data.SpanID{}
@@ -225,7 +225,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.SpanID(rawSpan))
+		link.SetSpanID(pdata.NewSpanID(rawSpan.Bytes()))
 
 		link.SetTraceState(pdata.TraceState(parts[2]))
 
