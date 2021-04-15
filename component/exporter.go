@@ -77,7 +77,6 @@ type ExporterFactory interface {
 		ctx context.Context,
 		params ExporterCreateParams,
 		cfg config.Exporter,
-		nextConsumer consumer.Traces,
 	) (TracesExporter, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
@@ -87,7 +86,6 @@ type ExporterFactory interface {
 		ctx context.Context,
 		params ExporterCreateParams,
 		cfg config.Exporter,
-		nextConsumer consumer.Metrics,
 	) (MetricsExporter, error)
 
 	// CreateLogsExporter creates an exporter based on the config.
@@ -97,6 +95,5 @@ type ExporterFactory interface {
 		ctx context.Context,
 		params ExporterCreateParams,
 		cfg config.Exporter,
-		nextConsumer consumer.Logs,
 	) (LogsExporter, error)
 }

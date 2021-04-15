@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -49,7 +48,6 @@ func (f *nopExporterFactory) CreateTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ config.Exporter,
-	_ consumer.Traces,
 ) (component.TracesExporter, error) {
 	return nopExporterInstance, nil
 }
@@ -59,7 +57,6 @@ func (f *nopExporterFactory) CreateMetricsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ config.Exporter,
-	_ consumer.Metrics,
 ) (component.MetricsExporter, error) {
 	return nopExporterInstance, nil
 }
@@ -69,7 +66,6 @@ func (f *nopExporterFactory) CreateLogsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ config.Exporter,
-	_ consumer.Logs,
 ) (component.LogsExporter, error) {
 	return nopExporterInstance, nil
 }
