@@ -257,18 +257,19 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 
 	app.service = service
 
-	// If config sources were used start a goroutine watching for updates.
+	// If provider is watchable start a goroutine watching for updates.
 	if watchable, ok := app.parserProvider.(parserprovider.Watchable); ok {
 		go func() {
 			err := watchable.WatchForUpdate()
 			switch {
+			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
 			case errors.Is(err, configsource.ErrSessionClosed):
 				// This is the case of shutdown of the whole application, nothing to do.
 				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
 				return
 			default:
 				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
-				app.updateService(context.Background())
+				app.reloadService(context.Background())
 			}
 		}()
 	}
@@ -344,10 +345,10 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 	return nil, 0
 }
 
-// updateService shutdowns the current app.service and setups a new one according
+// reloadService shutdowns the current app.service and setups a new one according
 // to the latest configuration. It requires that app.parserProvider and app.factories
 // are properly populated to finish successfully.
-func (app *Application) updateService(ctx context.Context) error {
+func (app *Application) reloadService(ctx context.Context) error {
 	if closeable, ok := app.parserProvider.(parserprovider.Closeable); ok {
 		if err := closeable.Close(ctx); err != nil {
 			return fmt.Errorf("failed close current config provider: %w", err)
