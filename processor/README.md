@@ -36,14 +36,16 @@ processor documentation for more information.
 
 1. [memory_limiter](memorylimiter/README.md)
 2. *any sampling processors*
+3. `k8s_tagger` if using (must be before `batch` else receiving context is lost)
 3. [batch](batchprocessor/README.md)
 4. *any other processors*
 
 ### Metrics
 
 1. [memory_limiter](memorylimiter/README.md)
-2. [batch](batchprocessor/README.md)
-3. *any other processors*
+2. `k8s_tagger` if using (must be before `batch` else receiving context is lost)
+3. [batch](batchprocessor/README.md)
+4. *any other processors*
 
 ## <a name="data-ownership"></a>Data Ownership
 
