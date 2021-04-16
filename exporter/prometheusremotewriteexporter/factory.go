@@ -56,6 +56,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	}
 
 	// Don't support the queue.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/2949.
 	// Prometheus remote write samples needs to be in chronological
 	// order for each timeseries. If we shard the incoming metrics
 	// without considering this limitation, we experience
