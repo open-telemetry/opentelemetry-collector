@@ -25,17 +25,19 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (
@@ -51,11 +53,12 @@ type PrwExporter struct {
 	client         *http.Client
 	wg             *sync.WaitGroup
 	closeChan      chan struct{}
+	startInfo      component.ApplicationStartInfo
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, startInfo component.ApplicationStartInfo) (*PrwExporter, error) {
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
 	}
@@ -77,6 +80,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		client:         client,
 		wg:             new(sync.WaitGroup),
 		closeChan:      make(chan struct{}),
+		startInfo:      startInfo,
 	}, nil
 }
 
@@ -318,7 +322,8 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	req.Header.Add("Content-Encoding", "snappy")
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-	req.Header.Set("User-Agent", "OpenTelemetry-Collector/"+version.Version)
+	FormatHeaderValues(req, prwe.startInfo.ExeName, prwe.startInfo.Version, prwe.startInfo.GitHash)
+	FormatHeaderValues(req, "go-version", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	resp, err := prwe.client.Do(req)
 	if err != nil {
@@ -343,4 +348,26 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return consumererror.Permanent(err)
 	}
 	return nil
+}
+
+// FormatHeaderValues will add the name/version pair to the User-Agent request
+// header. If the extra parameters are provided they will be added as metadata to the
+// name/version pair resulting in the following format.
+// "name/version (extra0; extra1; ...)"
+// The user agent part will be concatenated with this current request's user agent string.
+func FormatHeaderValues(req *http.Request, name, version string, extra ...string) {
+	ua := fmt.Sprintf("%s/%s", name, version)
+	if len(extra) > 0 {
+		ua += fmt.Sprintf(" (%s)", strings.Join(extra, "; "))
+	}
+	AddToUserAgent(req, ua)
+}
+
+// AddToUserAgent adds the string to the end of the request's current user agent.
+func AddToUserAgent(req *http.Request, s string) {
+	curUA := req.Header.Get("User-Agent")
+	if len(curUA) > 0 {
+		s = curUA + " " + s
+	}
+	req.Header.Set("User-Agent", s)
 }
