@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal/builder"
@@ -254,6 +256,24 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 	}
 
 	app.service = service
+
+	// If provider is watchable start a goroutine watching for updates.
+	if watchable, ok := app.parserProvider.(parserprovider.Watchable); ok {
+		go func() {
+			err := watchable.WatchForUpdate()
+			switch {
+			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
+			case errors.Is(err, configsource.ErrSessionClosed):
+				// This is the case of shutdown of the whole application, nothing to do.
+				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
+				return
+			default:
+				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
+				app.reloadService(context.Background())
+			}
+		}()
+	}
+
 	return nil
 }
 
@@ -291,6 +311,12 @@ func (app *Application) execute(ctx context.Context) error {
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
+	if closable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+		if err := closable.Close(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close config: %w", err))
+		}
+	}
+
 	if app.service != nil {
 		if err := app.service.Shutdown(ctx); err != nil {
 			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
@@ -319,10 +345,16 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 	return nil, 0
 }
 
-// updateService shutdowns the current app.service and setups a new one according
+// reloadService shutdowns the current app.service and setups a new one according
 // to the latest configuration. It requires that app.parserProvider and app.factories
 // are properly populated to finish successfully.
-func (app *Application) updateService(ctx context.Context) error {
+func (app *Application) reloadService(ctx context.Context) error {
+	if closeable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+		if err := closeable.Close(ctx); err != nil {
+			return fmt.Errorf("failed close current config provider: %w", err)
+		}
+	}
+
 	if app.service != nil {
 		retiringService := app.service
 		app.service = nil

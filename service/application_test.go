@@ -89,7 +89,7 @@ func TestApplication_Start(t *testing.T) {
 	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
 
 	// Trigger another configuration load.
-	require.NoError(t, app.updateService(context.Background()))
+	require.NoError(t, app.reloadService(context.Background()))
 	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
 
 	app.signalsChannel <- syscall.SIGTERM
@@ -250,7 +250,7 @@ func (epl *errParserLoader) Get() (*config.Parser, error) {
 	return nil, epl.err
 }
 
-func TestApplication_updateService(t *testing.T) {
+func TestApplication_reloadService(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 	ctx := context.Background()
@@ -304,7 +304,7 @@ func TestApplication_updateService(t *testing.T) {
 				service:        tt.service,
 			}
 
-			err := app.updateService(ctx)
+			err := app.reloadService(ctx)
 
 			if err != nil {
 				assert.ErrorIs(t, err, sentinelError)
