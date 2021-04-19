@@ -226,29 +226,24 @@ func ocAttrsToDroppedAttributes(ocAttrs *octrace.Span_Attributes) uint32 {
 
 // initAttributeMapFromOC initialize AttributeMap from OC attributes
 func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.AttributeMap) {
-	if ocAttrs == nil {
+	if ocAttrs == nil || len(ocAttrs.AttributeMap) == 0 {
 		return
 	}
 
-	if len(ocAttrs.AttributeMap) > 0 {
-		dest.InitEmptyWithCapacity(len(ocAttrs.AttributeMap))
-		for key, ocAttr := range ocAttrs.AttributeMap {
-			switch attribValue := ocAttr.Value.(type) {
-			case *octrace.AttributeValue_StringValue:
-				dest.UpsertString(key, attribValue.StringValue.GetValue())
-
-			case *octrace.AttributeValue_IntValue:
-				dest.UpsertInt(key, attribValue.IntValue)
-
-			case *octrace.AttributeValue_BoolValue:
-				dest.UpsertBool(key, attribValue.BoolValue)
-
-			case *octrace.AttributeValue_DoubleValue:
-				dest.UpsertDouble(key, attribValue.DoubleValue)
-
-			default:
-				dest.UpsertString(key, "<Unknown OpenCensus attribute value type>")
-			}
+	dest.Clear()
+	dest.EnsureCapacity(len(ocAttrs.AttributeMap))
+	for key, ocAttr := range ocAttrs.AttributeMap {
+		switch attribValue := ocAttr.Value.(type) {
+		case *octrace.AttributeValue_StringValue:
+			dest.UpsertString(key, attribValue.StringValue.GetValue())
+		case *octrace.AttributeValue_IntValue:
+			dest.UpsertInt(key, attribValue.IntValue)
+		case *octrace.AttributeValue_BoolValue:
+			dest.UpsertBool(key, attribValue.BoolValue)
+		case *octrace.AttributeValue_DoubleValue:
+			dest.UpsertDouble(key, attribValue.DoubleValue)
+		default:
+			dest.UpsertString(key, "<Unknown OpenCensus attribute value type>")
 		}
 	}
 }

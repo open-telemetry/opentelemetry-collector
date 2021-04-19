@@ -238,7 +238,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	}
 }
 
-func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, labelsMap pdata.StringMap) {
+func fillLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, labelsMap pdata.StringMap) {
 	if len(ocLabelsKeys) == 0 || len(ocLabelValues) == 0 {
 		return
 	}
@@ -250,7 +250,8 @@ func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics
 		lablesCount = len(ocLabelValues)
 	}
 
-	labelsMap.InitEmptyWithCapacity(lablesCount)
+	labelsMap.Clear()
+	labelsMap.EnsureCapacity(lablesCount)
 	for i := 0; i < lablesCount; i++ {
 		if !ocLabelValues[i].GetHasValue() {
 			continue
@@ -280,7 +281,7 @@ func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetInt64Value())
 		}
 	}
@@ -308,7 +309,7 @@ func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSl
 
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetDoubleValue())
 		}
 	}
@@ -336,7 +337,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.Histogra
 
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			distributionValue := point.GetDistributionValue()
 			dp.SetSum(distributionValue.GetSum())
 			dp.SetCount(uint64(distributionValue.GetCount()))
@@ -368,7 +369,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			summaryValue := point.GetSummaryValue()
 			dp.SetSum(summaryValue.GetSum().GetValue())
 			dp.SetCount(uint64(summaryValue.GetCount().GetValue()))
@@ -414,12 +415,13 @@ func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempla
 	if ocExemplar.GetTimestamp() != nil {
 		exemplar.SetTimestamp(pdata.TimestampFromTime(ocExemplar.GetTimestamp().AsTime()))
 	}
-	exemplar.SetValue(ocExemplar.GetValue())
-	attachments := exemplar.FilteredLabels()
 	ocAttachments := ocExemplar.GetAttachments()
-	attachments.InitEmptyWithCapacity(len(ocAttachments))
+	exemplar.SetValue(ocExemplar.GetValue())
+	filteredLabels := exemplar.FilteredLabels()
+	filteredLabels.Clear()
+	filteredLabels.EnsureCapacity(len(ocAttachments))
 	for k, v := range ocAttachments {
-		attachments.Upsert(k, v)
+		filteredLabels.Upsert(k, v)
 	}
 }
 

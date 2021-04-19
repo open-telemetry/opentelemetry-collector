@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Rename ForEach (in pdata) with Range to be consistent with sync.Map (#2931)
 - Rename `componenthelper.Start` to `componenthelper.StartFunc` (#2880)
 - Rename `componenthelper.Stop` to `componenthelper.StopFunc` (#2880)
 - Remove `exporterheleper.WithCustomUnmarshaler`, `processorheleper.WithCustomUnmarshaler`, `receiverheleper.WithCustomUnmarshaler`, `extensionheleper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
@@ -15,6 +16,7 @@
 - Remove testutil.WaitForPort, users can use testify.Eventually (#2926)
 - Rename `processorhelper.NewTraceProcessor` to `processorhelper.NewTracesProcessor` (#2935)
 - Rename `exporterhelper.NewTraceExporter` to `exporterhelper.NewTracesExporter` (#2937)
+- Remove InitEmptyWithCapacity, add EnsureCapacity and Clear (#2845)
 
 ## 💡 Enhancements 💡
 

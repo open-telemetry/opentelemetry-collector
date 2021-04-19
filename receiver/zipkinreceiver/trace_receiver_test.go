@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -45,7 +46,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
-	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -243,8 +243,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	// fail with error. Use a small hack to transform the multiple arrays into a
 	// single one.
 	accumulatedJSONMsgs := strings.ReplaceAll(buf.String(), "][", ",")
-	gj := testutil.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
-	wj := testutil.GenerateNormalizedJSON(t, string(receiverInputJSON))
+	gj := generateNormalizedJSON(t, accumulatedJSONMsgs)
+	wj := generateNormalizedJSON(t, string(receiverInputJSON))
 	// translation to OTLP sorts spans so do a span-by-span comparison
 	gj = gj[1 : len(gj)-1]
 	wj = wj[1 : len(wj)-1]
@@ -598,4 +598,20 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		t.Error("next consumer did not receive the batch")
 		break
 	}
+}
+
+// generateNormalizedJSON generates a normalized JSON from the string
+// given to the function. Useful to compare JSON contents that
+// may have differences due to formatting. It returns nil in case of
+// invalid JSON.
+func generateNormalizedJSON(t *testing.T, jsonStr string) string {
+	var i interface{}
+
+	err := json.Unmarshal([]byte(jsonStr), &i)
+	require.NoError(t, err)
+
+	n, err := json.Marshal(i)
+	require.NoError(t, err)
+
+	return string(n)
 }

@@ -76,14 +76,15 @@ func TestSendTraces(t *testing.T) {
 
 	sink.Reset()
 	// Sending data no Node.
-	td.ResourceSpans().At(0).Resource().Attributes().InitEmptyWithCapacity(0)
+	td.ResourceSpans().At(0).Resource().Attributes().Clear()
+	td = td.Clone()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
 	}, 10*time.Second, 5*time.Millisecond)
 	traces = sink.AllTraces()
 	require.Len(t, traces, 1)
-	assert.Equal(t, td, traces[0])
+	assert.EqualValues(t, td, traces[0])
 }
 
 func TestSendTraces_NoBackend(t *testing.T) {
@@ -173,7 +174,7 @@ func TestSendMetrics(t *testing.T) {
 
 	// Sending data no node.
 	sink.Reset()
-	md.ResourceMetrics().At(0).Resource().Attributes().InitEmptyWithCapacity(0)
+	md.ResourceMetrics().At(0).Resource().Attributes().Clear()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1

@@ -155,8 +155,10 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		}
 		t.resource = &resourcepb.Resource{
 			Labels: map[string]string{
-				"scheme": "http",
-				"port":   port,
+				"instance": u.Host,
+				"job":      t.name,
+				"scheme":   "http",
+				"port":     port,
 			},
 		}
 	}
