@@ -68,15 +68,15 @@ func TestWithUnmarshallers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaller.Encoding()
-		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		receiver, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
-		require.NotNil(t, exporter)
+		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = new(otlpTracesPbUnmarshaller).Encoding()
-		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		receiver, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
-		assert.NotNil(t, exporter)
+		assert.NotNil(t, receiver)
 	})
 }
 

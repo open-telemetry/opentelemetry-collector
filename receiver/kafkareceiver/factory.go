@@ -41,7 +41,7 @@ const (
 	defaultMetadataFull = true
 )
 
-// FactoryOption applies changes to kafkaExporterFactory.
+// FactoryOption applies changes to kafkaReceiverFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
 // WithAddUnmarshallers adds marshallers.

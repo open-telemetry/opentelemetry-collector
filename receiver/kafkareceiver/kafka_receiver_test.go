@@ -57,7 +57,7 @@ func TestNewReceiver_encoding_err(t *testing.T) {
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 }
 
-func TestNewExporter_err_auth_type(t *testing.T) {
+func TestNewReceiver_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
 		Authentication: kafkaexporter.Authentication{
