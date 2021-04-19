@@ -136,7 +136,7 @@ func TestReception(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer require.NoError(t, jr.Shutdown(context.Background()))
+	defer func() { require.NoError(t, jr.Shutdown(context.Background())) }()
 
 	t.Log("Starting")
 
@@ -169,7 +169,7 @@ func TestPortsNotOpen(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer require.NoError(t, jr.Shutdown(context.Background()))
+	defer func() { require.NoError(t, jr.Shutdown(context.Background())) }()
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -198,7 +198,7 @@ func TestGRPCReception(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer require.NoError(t, jr.Shutdown(context.Background()))
+	defer func() { require.NoError(t, jr.Shutdown(context.Background())) }()
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -254,7 +254,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer require.NoError(t, jr.Shutdown(context.Background()))
+	defer func() { require.NoError(t, jr.Shutdown(context.Background())) }()
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -389,7 +389,7 @@ func TestSampling(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer require.NoError(t, jr.Shutdown(context.Background()))
+	defer func() { require.NoError(t, jr.Shutdown(context.Background())) }()
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
@@ -441,7 +441,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer require.NoError(t, jr.Shutdown(context.Background()))
+	defer func() { require.NoError(t, jr.Shutdown(context.Background())) }()
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
@@ -470,7 +470,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer require.NoError(t, jr.Shutdown(context.Background()))
+	defer func() { require.NoError(t, jr.Shutdown(context.Background())) }()
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 }
 
@@ -531,7 +531,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), newAssertNoErrorHost(t))
 	require.NoError(t, err)
-	defer require.NoError(t, exp.Shutdown(context.Background()))
+	defer func() { require.NoError(t, exp.Shutdown(context.Background())) }()
 	<-time.After(200 * time.Millisecond)
 
 	resp, err := http.Get(fmt.Sprintf("http://%s?service=bar", hostEndpoint))

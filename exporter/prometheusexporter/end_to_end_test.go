@@ -82,7 +82,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err = exporter.Start(ctx, nil); err != nil {
 		t.Fatalf("Failed to start the Prometheus receiver: %v", err)
 	}
-	defer require.NoError(t, exporter.Shutdown(ctx))
+	defer func() { require.NoError(t, exporter.Shutdown(ctx)) }()
 
 	// 3. Create the Prometheus receiver scraping from the DropWizard mock server and
 	// it'll feed scraped and converted metrics then pass them to the Prometheus exporter.
@@ -120,7 +120,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err = prometheusReceiver.Start(ctx, nil); err != nil {
 		t.Fatalf("Failed to start the Prometheus receiver: %v", err)
 	}
-	defer require.NoError(t, prometheusReceiver.Shutdown(ctx))
+	defer func() { require.NoError(t, prometheusReceiver.Shutdown(ctx)) }()
 
 	// 4. Scrape from the Prometheus exporter to ensure that we export summary metrics
 	// We shall let the Prometheus exporter scrape the DropWizard mock server, at least 9 times.
