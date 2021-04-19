@@ -42,10 +42,10 @@ var (
 
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
-	Receivers
-	Exporters
-	Processors
-	Extensions
+	Receivers  map[string]Receiver
+	Exporters  map[string]Exporter
+	Processors map[string]Processor
+	Extensions map[string]Extension
 	Service
 }
 
@@ -170,7 +170,7 @@ type Service struct {
 	Extensions []string
 
 	// Pipelines is the set of data pipelines configured for the service.
-	Pipelines Pipelines
+	Pipelines map[string]*Pipeline
 }
 
 // Type is the component type as it is used in the config.
@@ -222,6 +222,3 @@ type Pipeline struct {
 	Processors []string
 	Exporters  []string
 }
-
-// Pipelines is a map of names to Pipelines.
-type Pipelines map[string]*Pipeline

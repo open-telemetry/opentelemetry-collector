@@ -22,9 +22,6 @@ type Processor interface {
 	validatable
 }
 
-// Processors is a map of names to Processors.
-type Processors map[string]Processor
-
 // ProcessorSettings defines common settings for a processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 // When embedded in the processor config it must be with `mapstructure:"-"` tag.

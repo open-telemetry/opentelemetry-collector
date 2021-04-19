@@ -23,9 +23,6 @@ type Extension interface {
 	validatable
 }
 
-// Extensions is a map of names to extensions.
-type Extensions map[string]Extension
-
 // ExtensionSettings defines common settings for a extension configuration.
 // Specific extensions can embed this struct and extend it with more fields if needed.
 // When embedded in the extension config it must be with `mapstructure:"-"` tag.

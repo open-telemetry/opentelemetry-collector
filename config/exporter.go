@@ -21,9 +21,6 @@ type Exporter interface {
 	validatable
 }
 
-// Exporters is a map of names to Exporters.
-type Exporters map[string]Exporter
-
 // ExporterSettings defines common settings for an exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 // When embedded in the exporter config it must be with `mapstructure:"-"` tag.
