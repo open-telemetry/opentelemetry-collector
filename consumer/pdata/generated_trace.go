@@ -18,7 +18,6 @@
 package pdata
 
 import (
-	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
@@ -465,22 +464,22 @@ func NewSpan() Span {
 
 // TraceID returns the traceid associated with this Span.
 func (ms Span) TraceID() TraceID {
-	return TraceID((*ms.orig).TraceId)
+	return TraceID{orig: ((*ms.orig).TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this Span.
 func (ms Span) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = data.TraceID(v)
+	(*ms.orig).TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this Span.
 func (ms Span) SpanID() SpanID {
-	return SpanID((*ms.orig).SpanId)
+	return SpanID{orig: ((*ms.orig).SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this Span.
 func (ms Span) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = data.SpanID(v)
+	(*ms.orig).SpanId = v.orig
 }
 
 // TraceState returns the tracestate associated with this Span.
@@ -495,12 +494,12 @@ func (ms Span) SetTraceState(v TraceState) {
 
 // ParentSpanID returns the parentspanid associated with this Span.
 func (ms Span) ParentSpanID() SpanID {
-	return SpanID((*ms.orig).ParentSpanId)
+	return SpanID{orig: ((*ms.orig).ParentSpanId)}
 }
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
 func (ms Span) SetParentSpanID(v SpanID) {
-	(*ms.orig).ParentSpanId = data.SpanID(v)
+	(*ms.orig).ParentSpanId = v.orig
 }
 
 // Name returns the name associated with this Span.
@@ -931,22 +930,22 @@ func NewSpanLink() SpanLink {
 
 // TraceID returns the traceid associated with this SpanLink.
 func (ms SpanLink) TraceID() TraceID {
-	return TraceID((*ms.orig).TraceId)
+	return TraceID{orig: ((*ms.orig).TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this SpanLink.
 func (ms SpanLink) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = data.TraceID(v)
+	(*ms.orig).TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this SpanLink.
 func (ms SpanLink) SpanID() SpanID {
-	return SpanID((*ms.orig).SpanId)
+	return SpanID{orig: ((*ms.orig).SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this SpanLink.
 func (ms SpanLink) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = data.SpanID(v)
+	(*ms.orig).SpanId = v.orig
 }
 
 // TraceState returns the tracestate associated with this SpanLink.

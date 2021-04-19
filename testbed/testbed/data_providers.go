@@ -128,7 +128,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	if dp.options.Attributes != nil {
 		attrs := md.ResourceMetrics().At(0).Resource().Attributes()
-		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
@@ -168,7 +168,7 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
 	if dp.options.Attributes != nil {
 		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
-		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
