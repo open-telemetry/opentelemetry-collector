@@ -55,12 +55,17 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, err
 	}
 
+	// Don't support the queue.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/2949.
+	// Prometheus remote write samples needs to be in chronological
+	// order for each timeseries. If we shard the incoming metrics
+	// without considering this limitation, we experience
+	// "out of order samples" errors.
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(prwCfg.QueueSettings),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -75,7 +80,6 @@ func createDefaultConfig() config.Exporter {
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
