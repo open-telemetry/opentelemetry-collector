@@ -376,8 +376,9 @@ func timeseriesSignature(ilmName string, metric pdata.Metric, labels pdata.Strin
 	b.WriteString(metric.DataType().String())
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
-	labels.ForEach(func(k string, v string) {
+	labels.Range(func(k string, v string) bool {
 		b.WriteString("*" + k + "*" + v)
+		return true
 	})
 	return b.String()
 }

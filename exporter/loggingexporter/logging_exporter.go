@@ -50,8 +50,9 @@ func (b *logDataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	}
 
 	b.logEntry("%s:", label)
-	am.ForEach(func(k string, v pdata.AttributeValue) {
+	am.Range(func(k string, v pdata.AttributeValue) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+		return true
 	})
 }
 
@@ -61,8 +62,9 @@ func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
 	}
 
 	b.logEntry("%s:", description)
-	sm.ForEach(func(k string, v string) {
+	sm.Range(func(k string, v string) bool {
 		b.logEntry("     -> %s: %s", k, v)
+		return true
 	})
 }
 
@@ -239,8 +241,9 @@ func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		e.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+			return true
 		})
 	}
 }
@@ -263,8 +266,9 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		l.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+			return true
 		})
 	}
 }
@@ -307,8 +311,9 @@ func attributeMapToString(av pdata.AttributeMap) string {
 	var b strings.Builder
 	b.WriteString("{\n")
 
-	av.Sort().ForEach(func(k string, v pdata.AttributeValue) {
+	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
 		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), tracetranslator.AttributeValueToString(v, false))
+		return true
 	})
 	b.WriteByte('}')
 	return b.String()
