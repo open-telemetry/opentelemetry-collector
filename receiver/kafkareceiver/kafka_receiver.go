@@ -55,7 +55,7 @@ type kafkaLogsConsumer struct {
 	nextConsumer      consumer.Logs
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaller      logsUnmarshaller
+	unmarshaller      LogsUnmarshaller
 
 	logger *zap.Logger
 }
@@ -134,7 +134,7 @@ func (c *kafkaConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]logsUnmarshaller, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]LogsUnmarshaller, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	unmarshaller := unmarshalers[config.Encoding]
 	if unmarshaller == nil {
 		return nil, errUnrecognizedEncoding
@@ -217,7 +217,7 @@ type consumerGroupHandler struct {
 
 type logsConsumerGroupHandler struct {
 	name         string
-	unmarshaller logsUnmarshaller
+	unmarshaller LogsUnmarshaller
 	nextConsumer consumer.Logs
 	ready        chan bool
 	readyCloser  sync.Once

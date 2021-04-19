@@ -34,7 +34,7 @@ func (*otlpTracesPbUnmarshaller) Encoding() string {
 type otlpLogsPbUnmarshaller struct {
 }
 
-var _ logsUnmarshaller = (*otlpLogsPbUnmarshaller)(nil)
+var _ LogsUnmarshaller = (*otlpLogsPbUnmarshaller)(nil)
 
 func (p *otlpLogsPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Logs, error) {
 	return pdata.LogsFromOtlpProtoBytes(bytes)

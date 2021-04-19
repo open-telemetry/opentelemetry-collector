@@ -27,8 +27,8 @@ type Unmarshaller interface {
 	Encoding() string
 }
 
-// logsUnmarshaller deserializes the message body.
-type logsUnmarshaller interface {
+// LogsUnmarshaller deserializes the message body.
+type LogsUnmarshaller interface {
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (pdata.Logs, error)
 
@@ -54,9 +54,9 @@ func defaultUnmarshallers() map[string]Unmarshaller {
 	}
 }
 
-func defaultLogsUnmarshallers() map[string]logsUnmarshaller {
+func defaultLogsUnmarshallers() map[string]LogsUnmarshaller {
 	otlp := &otlpLogsPbUnmarshaller{}
-	return map[string]logsUnmarshaller{
+	return map[string]LogsUnmarshaller{
 		otlp.Encoding(): otlp,
 	}
 }

@@ -53,8 +53,8 @@ func WithAddUnmarshallers(encodingMarshaller map[string]Unmarshaller) FactoryOpt
 	}
 }
 
-// WithAddLogsUnmarshallers adds logsUnmarshallers.
-func WithAddLogsUnmarshallers(encodingMarshaller map[string]logsUnmarshaller) FactoryOption {
+// WithAddLogsUnmarshallers adds LogsUnmarshallers.
+func WithAddLogsUnmarshallers(encodingMarshaller map[string]LogsUnmarshaller) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for encoding, unmarshaller := range encodingMarshaller {
 			factory.logsUnmarshaller[encoding] = unmarshaller
@@ -102,7 +102,7 @@ func createDefaultConfig() config.Receiver {
 
 type kafkaReceiverFactory struct {
 	unmarshalers     map[string]Unmarshaller
-	logsUnmarshaller map[string]logsUnmarshaller
+	logsUnmarshaller map[string]LogsUnmarshaller
 }
 
 func (f *kafkaReceiverFactory) createTracesReceiver(

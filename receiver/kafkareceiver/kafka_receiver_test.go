@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"sync"
 	"testing"
 	"time"
@@ -36,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 func TestNewReceiver_version_err(t *testing.T) {
