@@ -60,8 +60,7 @@ func newOIDCServer() (*oidcServer, error) {
 	})
 	mux.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		err := json.NewEncoder(w).Encode(jwks)
-		if err != nil {
+		if err := json.NewEncoder(w).Encode(jwks); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
