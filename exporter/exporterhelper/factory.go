@@ -46,9 +46,9 @@ type factory struct {
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver.
-func WithTraces(createTraceExporter CreateTracesExporter) FactoryOption {
+func WithTraces(createTracesExporter CreateTracesExporter) FactoryOption {
 	return func(o *factory) {
-		o.createTracesExporter = createTraceExporter
+		o.createTracesExporter = createTracesExporter
 	}
 }
 

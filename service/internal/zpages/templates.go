@@ -56,7 +56,7 @@ type HeaderData struct {
 	Title string
 }
 
-// WriteHTMLFooter writes the header.
+// WriteHTMLHeader writes the header.
 func WriteHTMLHeader(w io.Writer, hd HeaderData) {
 	if err := headerTemplate.Execute(w, hd); err != nil {
 		log.Printf("zpages: executing template: %v", err)
@@ -127,7 +127,7 @@ type PropertiesTableData struct {
 	Properties [][2]string
 }
 
-// WriteHTMLFooter writes the footer.
+// WriteHTMLPropertiesTable writes the HTML for properties table.
 func WriteHTMLPropertiesTable(w io.Writer, chd PropertiesTableData) {
 	if err := propertiesTableTemplate.Execute(w, chd); err != nil {
 		log.Printf("zpages: executing template: %v", err)

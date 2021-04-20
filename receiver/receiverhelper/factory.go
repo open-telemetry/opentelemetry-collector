@@ -26,10 +26,10 @@ import (
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption func(o *factory)
 
-// WithTraces overrides the default "error not supported" implementation for CreateTraceReceiver.
-func WithTraces(createTraceReceiver CreateTraceReceiver) FactoryOption {
+// WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver.
+func WithTraces(createTracesReceiver CreateTracesReceiver) FactoryOption {
 	return func(o *factory) {
-		o.createTraceReceiver = createTraceReceiver
+		o.createTracesReceiver = createTracesReceiver
 	}
 }
 
@@ -50,8 +50,8 @@ func WithLogs(createLogsReceiver CreateLogsReceiver) FactoryOption {
 // CreateDefaultConfig is the equivalent of component.ReceiverFactory.CreateDefaultConfig()
 type CreateDefaultConfig func() config.Receiver
 
-// CreateTraceReceiver is the equivalent of component.ReceiverFactory.CreateTracesReceiver()
-type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error)
+// CreateTracesReceiver is the equivalent of component.ReceiverFactory.CreateTracesReceiver()
+type CreateTracesReceiver func(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error)
 
 // CreateMetricsReceiver is the equivalent of component.ReceiverFactory.CreateMetricsReceiver()
 type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error)
@@ -62,7 +62,7 @@ type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, co
 type factory struct {
 	cfgType               config.Type
 	createDefaultConfig   CreateDefaultConfig
-	createTraceReceiver   CreateTraceReceiver
+	createTracesReceiver  CreateTracesReceiver
 	createMetricsReceiver CreateMetricsReceiver
 	createLogsReceiver    CreateLogsReceiver
 }
@@ -92,14 +92,14 @@ func (f *factory) CreateDefaultConfig() config.Receiver {
 	return f.createDefaultConfig()
 }
 
-// CreateTraceReceiver creates a component.TracesReceiver based on this config.
+// CreateTracesReceiver creates a component.TracesReceiver based on this config.
 func (f *factory) CreateTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces) (component.TracesReceiver, error) {
-	if f.createTraceReceiver != nil {
-		return f.createTraceReceiver(ctx, params, cfg, nextConsumer)
+	if f.createTracesReceiver != nil {
+		return f.createTracesReceiver(ctx, params, cfg, nextConsumer)
 	}
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }

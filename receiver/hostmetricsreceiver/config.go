@@ -40,11 +40,19 @@ var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	if len(cfg.Scrapers) == 0 {
+		return errors.New("must specify at least one scraper when using hostmetrics receiver")
+	}
+
 	return nil
 }
 
 // Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	if componentParser == nil {
+		return nil
+	}
+
 	// load the non-dynamic config normally
 	err := componentParser.Unmarshal(cfg)
 	if err != nil {
@@ -58,9 +66,6 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 	scrapersSection, err := componentParser.Sub(scrapersKey)
 	if err != nil {
 		return err
-	}
-	if len(scrapersSection.AllKeys()) == 0 {
-		return errors.New("must specify at least one scraper when using hostmetrics receiver")
 	}
 
 	for key := range cast.ToStringMap(componentParser.Get(scrapersKey)) {

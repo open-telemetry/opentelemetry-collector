@@ -50,7 +50,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig,
-		WithTraces(createTraceReceiver),
+		WithTraces(createTracesReceiver),
 		WithMetrics(createMetricsReceiver),
 		WithLogs(createLogsReceiver))
 	assert.EqualValues(t, typeStr, factory.Type())
@@ -70,7 +70,7 @@ func defaultConfig() config.Receiver {
 	return defaultCfg
 }
 
-func createTraceReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
+func createTracesReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
 	return nil, nil
 }
 

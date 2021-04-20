@@ -34,7 +34,7 @@ var (
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
-	nopTracesExporter, _ = NewTraceExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
+	nopTracesExporter, _ = NewTracesExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
 		return nil
 	})
 	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) error {
@@ -63,7 +63,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig,
-		WithTraces(createTraceExporter),
+		WithTraces(createTracesExporter),
 		WithMetrics(createMetricsExporter),
 		WithLogs(createLogsExporter))
 	assert.EqualValues(t, typeStr, factory.Type())
@@ -86,7 +86,7 @@ func defaultConfig() config.Exporter {
 	return defaultCfg
 }
 
-func createTraceExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.TracesExporter, error) {
 	return nopTracesExporter, nil
 }
 

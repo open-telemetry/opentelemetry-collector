@@ -140,7 +140,7 @@ const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -192,7 +192,7 @@ func Test${structName}_CopyTo(t *testing.T) {
 
 func Test${structName}_Resize(t *testing.T) {
 	es := generateTest${structName}()
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
@@ -235,12 +235,11 @@ func Test${structName}_Resize(t *testing.T) {
 func Test${structName}_Append(t *testing.T) {
 	es := generateTest${structName}()
 
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	es.Append(emptyVal)
 	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	value := New${elementName}()
-	fillTest${elementName}(value)
+	value := generateTest${elementName}()
 	es.Append(value)
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 
@@ -376,7 +375,7 @@ const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -428,7 +427,7 @@ func Test${structName}_CopyTo(t *testing.T) {
 
 func Test${structName}_Resize(t *testing.T) {
 	es := generateTest${structName}()
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
@@ -471,12 +470,11 @@ func Test${structName}_Resize(t *testing.T) {
 func Test${structName}_Append(t *testing.T) {
 	es := generateTest${structName}()
 
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	es.Append(emptyVal)
 	assert.EqualValues(t, emptyVal, es.At(7))
 
-	value := New${elementName}()
-	fillTest${elementName}(value)
+	value := generateTest${elementName}()
 	es.Append(value)
 	assert.EqualValues(t, value, es.At(8))
 

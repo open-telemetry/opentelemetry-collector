@@ -17,7 +17,6 @@ package metrics
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"testing"
 
@@ -33,7 +32,6 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
 )
 
 var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
@@ -124,10 +122,10 @@ func TestExport_EmptyRequest(t *testing.T) {
 
 	metricSink := new(consumertest.MetricsSink)
 
-	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
+	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
@@ -139,10 +137,10 @@ func TestExport_EmptyRequest(t *testing.T) {
 func TestExport_ErrorConsumer(t *testing.T) {
 	// given
 
-	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
+	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
+	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
@@ -180,9 +178,8 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, func(), error) {
-	addr := fmt.Sprintf(":%d", port)
-	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func makeMetricsServiceClient(addr net.Addr) (collectormetrics.MetricsServiceClient, func(), error) {
+	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -193,7 +190,7 @@ func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, 
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (int, func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -204,9 +201,6 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (int, func()) {
 		}
 	}
 
-	_, port, err := testutil.HostPortFromAddr(ln.Addr())
-	require.NoError(t, err)
-
 	r := New(receiverTagValue, mc)
 	// Now run it as a gRPC server
 	srv := obsreport.GRPCServerWithObservabilityEnabled()
@@ -215,5 +209,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (int, func()) {
 		_ = srv.Serve(ln)
 	}()
 
-	return port, done
+	return ln.Addr(), done
 }

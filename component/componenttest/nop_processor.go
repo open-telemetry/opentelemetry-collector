@@ -68,7 +68,7 @@ func (f *nopProcessorFactory) CreateMetricsProcessor(
 	return nopProcessorInstance, nil
 }
 
-// CreateMetricsProcessor implements component.ProcessorFactory interface.
+// CreateLogsProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,

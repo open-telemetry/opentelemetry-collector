@@ -155,8 +155,10 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		}
 		t.resource = &resourcepb.Resource{
 			Labels: map[string]string{
-				"scheme": "http",
-				"port":   port,
+				"instance": u.Host,
+				"job":      t.name,
+				"scheme":   "http",
+				"port":     port,
 			},
 		}
 	}
@@ -1066,7 +1068,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	defer rcvr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()
@@ -1153,7 +1155,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric, StartTimeMetricRegex: startTimeMetricRegex}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	defer rcvr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()

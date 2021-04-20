@@ -57,7 +57,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultReceiverSettings := config.ReceiverSettings{
 		TypeVal: typeStr,

@@ -35,7 +35,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver),
+		receiverhelper.WithTraces(createTracesReceiver),
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
@@ -56,7 +56,7 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func createTraceReceiver(
+func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg config.Receiver,
