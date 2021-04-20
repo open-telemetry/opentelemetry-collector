@@ -132,6 +132,26 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
 }
 
+func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
+		Endpoint: defaultHTTPBindEndpoint,
+		TLSSetting: &configtls.TLSServerSetting{
+			TLSSetting: configtls.TLSSetting{
+				CertFile: "./testdata/server.crt",
+				KeyFile:  "./testdata/server.key",
+			},
+		},
+	}
+
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+
+	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	assert.NoError(t, err, "tls-enabled receiver creation failed")
+}
+
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()

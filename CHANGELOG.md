@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+## 💡 Enhancements 💡
+
+## 🧰 Bug fixes 🧰
+
+- Fix Jaeger receiver to honor TLS Settings (#2866)
+
 ## v0.25.0 Beta
 
 ## 🛑 Breaking changes 🛑

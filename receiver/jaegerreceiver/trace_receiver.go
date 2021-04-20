@@ -49,6 +49,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
@@ -58,10 +59,11 @@ import (
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type configuration struct {
-	CollectorThriftPort  int
-	CollectorHTTPPort    int
-	CollectorGRPCPort    int
-	CollectorGRPCOptions []grpc.ServerOption
+	CollectorThriftPort   int
+	CollectorHTTPPort     int
+	CollectorHTTPSettings confighttp.HTTPServerSettings
+	CollectorGRPCPort     int
+	CollectorGRPCOptions  []grpc.ServerOption
 
 	AgentCompactThriftPort       int
 	AgentCompactThriftConfig     ServerConfigUDP
@@ -175,14 +177,6 @@ func (jr *jReceiver) collectorGRPCAddr() string {
 
 func (jr *jReceiver) collectorGRPCEnabled() bool {
 	return jr.config != nil && jr.config.CollectorGRPCPort > 0
-}
-
-func (jr *jReceiver) collectorHTTPAddr() string {
-	var port int
-	if jr.config != nil {
-		port = jr.config.CollectorHTTPPort
-	}
-	return fmt.Sprintf(":%d", port)
 }
 
 func (jr *jReceiver) collectorHTTPEnabled() bool {
@@ -462,11 +456,10 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.collectorHTTPEnabled() {
-		// Now the collector that runs over HTTP
-		caddr := jr.collectorHTTPAddr()
-		cln, cerr := net.Listen("tcp", caddr)
+		cln, cerr := jr.config.CollectorHTTPSettings.ToListener()
 		if cerr != nil {
-			return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
+			return fmt.Errorf("failed to bind to Collector address %q: %v",
+				jr.config.CollectorHTTPSettings.Endpoint, cerr)
 		}
 
 		nr := mux.NewRouter()

@@ -130,7 +130,10 @@ func TestReception(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	// 1. Create the Jaeger receiver aka "server"
 	config := &configuration{
-		CollectorHTTPPort: int(port), // that's the only one used by this test
+		CollectorHTTPPort: int(port),
+		CollectorHTTPSettings: confighttp.HTTPServerSettings{
+			Endpoint: fmt.Sprintf(":%d", port),
+		},
 	}
 	sink := new(consumertest.TracesSink)
 
