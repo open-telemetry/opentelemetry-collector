@@ -366,7 +366,7 @@ func (mat *metricsAdjusterTest) dropped() int {
 
 func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
 	l := zap.NewNop()
-	defer func() { require.NoError(t, l.Sync()) }() // flushes buffer, if any
+	t.Cleanup(func() { require.NoError(t, l.Sync()) }) // flushes buffer, if any
 	ma := NewMetricsAdjuster(tsm, l)
 
 	for _, test := range script {

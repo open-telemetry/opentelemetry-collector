@@ -42,7 +42,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() { require.NoError(t, hcExt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
@@ -102,7 +102,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, hcExt.Start(context.Background(), mh))
-	defer func() { require.NoError(t, hcExt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
 
 	require.Error(t, hcExt.Start(context.Background(), mh))
 }
