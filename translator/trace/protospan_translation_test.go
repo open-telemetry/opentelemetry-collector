@@ -148,7 +148,7 @@ func TestAttributeArrayToStringAndBack(t *testing.T) {
 }
 
 func compareMaps(t *testing.T, expected pdata.AttributeMap, actual pdata.AttributeMap) {
-	expected.ForEach(func(k string, e pdata.AttributeValue) {
+	expected.Range(func(k string, e pdata.AttributeValue) bool {
 		a, ok := actual.Get(k)
 		assert.True(t, ok)
 		if ok {
@@ -158,6 +158,7 @@ func compareMaps(t *testing.T, expected pdata.AttributeMap, actual pdata.Attribu
 				assert.Equal(t, e, a)
 			}
 		}
+		return true
 	})
 }
 

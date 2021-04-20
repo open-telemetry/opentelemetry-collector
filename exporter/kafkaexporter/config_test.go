@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(cfg.Receivers))
+	require.Equal(t, 1, len(cfg.Exporters))
 
 	c := cfg.Exporters[typeStr].(*Config)
 	assert.Equal(t, &Config{

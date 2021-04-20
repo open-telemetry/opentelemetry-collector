@@ -27,7 +27,7 @@ import (
 type jaegerProtoSpanUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*jaegerProtoSpanUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*jaegerProtoSpanUnmarshaller)(nil)
 
 func (j jaegerProtoSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	span := &jaegerproto.Span{}
@@ -45,7 +45,7 @@ func (j jaegerProtoSpanUnmarshaller) Encoding() string {
 type jaegerJSONSpanUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*jaegerJSONSpanUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*jaegerJSONSpanUnmarshaller)(nil)
 
 func (j jaegerJSONSpanUnmarshaller) Unmarshal(data []byte) (pdata.Traces, error) {
 	span := &jaegerproto.Span{}
