@@ -253,7 +253,7 @@ func parseAnnotationValue(value string, parseStringTags bool) *tracepb.Attribute
 	pbAttrib := &tracepb.AttributeValue{}
 
 	if parseStringTags {
-		switch tracetranslator.DetermineValueType(value, false) {
+		switch tracetranslator.DetermineValueType(value) {
 		case pdata.AttributeValueINT:
 			iValue, _ := strconv.ParseInt(value, 10, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
