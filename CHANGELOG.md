@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `zipkin` translator: Handle missing starttime case for zipkin json v2 format spans (#2506)
+
 ## 🛑 Breaking changes 🛑
 
 ## 💡 Enhancements 💡

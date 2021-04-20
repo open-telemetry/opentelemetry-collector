@@ -601,6 +601,55 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	}
 }
 
+func TestFromBytesWithNoTimestamp(t *testing.T) {
+	noTimestampBytes, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_notimestamp.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+
+	next := &zipkinMockTraceConsumer{
+		ch: make(chan pdata.Traces, 10),
+	}
+	cfg := &Config{
+		ReceiverSettings: config.ReceiverSettings{
+			NameVal: zipkinReceiverName,
+		},
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "",
+		},
+		ParseStringTags: true,
+	}
+	zi, err := New(cfg, next)
+	require.NoError(t, err)
+
+	hdr := make(http.Header)
+	hdr.Set("Content-Type", "application/json")
+
+	// under the hood this calls V2SpansToInternalTraces, the
+	// method we want to test, and this is a better end to end
+	// representation of what happens for the notimestamp case.
+	traces, err := zi.v2ToTraceSpans(noTimestampBytes, hdr)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	gs := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	assert.NotNil(t, gs.StartTimestamp)
+	assert.NotNil(t, gs.EndTimestamp)
+
+	// missing timestamp and duration in the incoming zipkin v2 json
+	// are handled and converted to unix time zero in the internal span
+	// format.
+	fakeStartTimestamp := gs.StartTimestamp().AsTime().UnixNano()
+	assert.Equal(t, int64(0), fakeStartTimestamp)
+
+	fakeEndTimestamp := gs.StartTimestamp().AsTime().UnixNano()
+	assert.Equal(t, int64(0), fakeEndTimestamp)
+
+	wasAbsent, mapContainedKey := gs.Attributes().Get("otel.zipkin.absentField.startTime")
+	assert.True(t, mapContainedKey)
+	assert.True(t, wasAbsent.BoolVal())
+}
+
 // generateNormalizedJSON generates a normalized JSON from the string
 // given to the function. Useful to compare JSON contents that
 // may have differences due to formatting. It returns nil in case of
