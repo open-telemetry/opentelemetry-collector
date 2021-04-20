@@ -802,7 +802,7 @@ func TestShutdown(t *testing.T) {
 		client := &http.Client{}
 		resp, err2 := client.Do(req)
 		if err2 == nil {
-			ioutil.ReadAll(resp.Body) // nolint:errcheck
+			resp.Body.Close()
 		}
 	}
 
