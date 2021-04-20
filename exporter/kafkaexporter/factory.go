@@ -27,6 +27,7 @@ const (
 	typeStr             = "kafka"
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
+	defaultLogsTopic    = "otlp_logs"
 	defaultEncoding     = "otlp_proto"
 	defaultBroker       = "localhost:9092"
 	// default from sarama.NewConfig()
@@ -54,6 +55,7 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	f := &kafkaExporterFactory{
 		tracesMarshallers:  tracesMarshallers(),
 		metricsMarshallers: metricsMarshallers(),
+		logsMarshallers:    logsMarshallers(),
 	}
 	for _, o := range options {
 		o(f)
@@ -62,7 +64,9 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithTraces(f.createTracesExporter),
-		exporterhelper.WithMetrics(f.createMetricsExporter))
+		exporterhelper.WithMetrics(f.createMetricsExporter),
+		exporterhelper.WithLogs(f.createLogsExporter),
+	)
 }
 
 func createDefaultConfig() config.Exporter {
@@ -88,6 +92,7 @@ func createDefaultConfig() config.Exporter {
 type kafkaExporterFactory struct {
 	tracesMarshallers  map[string]TracesMarshaller
 	metricsMarshallers map[string]MetricsMarshaller
+	logsMarshallers    map[string]LogsMarshaller
 }
 
 func (f *kafkaExporterFactory) createTracesExporter(
@@ -132,6 +137,31 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		cfg,
 		params.Logger,
 		exp.metricsDataPusher,
+		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
+		// and will rely on the sarama Producer Timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithShutdown(exp.Close))
+}
+
+func (f *kafkaExporterFactory) createLogsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
+) (component.LogsExporter, error) {
+	oCfg := cfg.(*Config)
+	if oCfg.Topic == "" {
+		oCfg.Topic = defaultLogsTopic
+	}
+	exp, err := newLogsExporter(*oCfg, params, f.logsMarshallers)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewLogsExporter(
+		cfg,
+		params.Logger,
+		exp.logsDataPusher,
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

@@ -76,6 +76,30 @@ func (e *kafkaMetricsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
+// kafkaLogsProducer uses sarama to produce logs messages to kafka
+type kafkaLogsProducer struct {
+	producer   sarama.SyncProducer
+	topic      string
+	marshaller LogsMarshaller
+	logger     *zap.Logger
+}
+
+func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) error {
+	messages, err := e.marshaller.Marshal(ld)
+	if err != nil {
+		return consumererror.Permanent(err)
+	}
+	err = e.producer.SendMessages(producerMessages(messages, e.topic))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *kafkaLogsProducer) Close(context.Context) error {
+	return e.producer.Close()
+}
+
 func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c := sarama.NewConfig()
 	// These setting are required by the sarama.SyncProducer implementation.
@@ -140,6 +164,25 @@ func newTracesExporter(config Config, params component.ExporterCreateParams, mar
 		marshaller: marshaller,
 		logger:     params.Logger,
 	}, nil
+}
+
+func newLogsExporter(config Config, params component.ExporterCreateParams, marshallers map[string]LogsMarshaller) (*kafkaLogsProducer, error) {
+	marshaller := marshallers[config.Encoding]
+	if marshaller == nil {
+		return nil, errUnrecognizedEncoding
+	}
+	producer, err := newSaramaProducer(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &kafkaLogsProducer{
+		producer:   producer,
+		topic:      config.Topic,
+		marshaller: marshaller,
+		logger:     params.Logger,
+	}, nil
+
 }
 
 func producerMessages(messages []Message, topic string) []*sarama.ProducerMessage {
