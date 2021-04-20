@@ -1356,12 +1356,10 @@ func (s *labelAndValueSorter) Less(i, j int) bool {
 }
 
 func (s *labelAndValueSorter) Swap(i, j int) {
-	tmp := s.m.MetricDescriptor.LabelKeys[i]
-	s.m.MetricDescriptor.LabelKeys[i] = s.m.MetricDescriptor.LabelKeys[j]
-	s.m.MetricDescriptor.LabelKeys[j] = tmp
-
+	labels := s.m.MetricDescriptor.LabelKeys
+	labels[i], labels[j] = labels[j], labels[i]
 	for _, t := range s.m.Timeseries {
-		labels := t.LabelValues
-		labels[i], labels[j] = labels[j], labels[i]
+		values := t.LabelValues
+		values[i], values[j] = values[j], values[i]
 	}
 }
