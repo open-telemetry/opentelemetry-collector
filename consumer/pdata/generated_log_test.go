@@ -32,7 +32,7 @@ func TestResourceLogsSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := NewResourceLogs()
+	emptyVal := newResourceLogs(&otlplogs.ResourceLogs{})
 	testVal := generateTestResourceLogs()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -84,7 +84,7 @@ func TestResourceLogsSlice_CopyTo(t *testing.T) {
 
 func TestResourceLogsSlice_Resize(t *testing.T) {
 	es := generateTestResourceLogsSlice()
-	emptyVal := NewResourceLogs()
+	emptyVal := newResourceLogs(&otlplogs.ResourceLogs{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*otlplogs.ResourceLogs]bool, resizeSmallLen)
@@ -127,12 +127,11 @@ func TestResourceLogsSlice_Resize(t *testing.T) {
 func TestResourceLogsSlice_Append(t *testing.T) {
 	es := generateTestResourceLogsSlice()
 
-	emptyVal := NewResourceLogs()
+	emptyVal := newResourceLogs(&otlplogs.ResourceLogs{})
 	es.Append(emptyVal)
 	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	value := NewResourceLogs()
-	fillTestResourceLogs(value)
+	value := generateTestResourceLogs()
 	es.Append(value)
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 
@@ -166,7 +165,7 @@ func TestInstrumentationLibraryLogsSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := NewInstrumentationLibraryLogs()
+	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 	testVal := generateTestInstrumentationLibraryLogs()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -218,7 +217,7 @@ func TestInstrumentationLibraryLogsSlice_CopyTo(t *testing.T) {
 
 func TestInstrumentationLibraryLogsSlice_Resize(t *testing.T) {
 	es := generateTestInstrumentationLibraryLogsSlice()
-	emptyVal := NewInstrumentationLibraryLogs()
+	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, resizeSmallLen)
@@ -261,12 +260,11 @@ func TestInstrumentationLibraryLogsSlice_Resize(t *testing.T) {
 func TestInstrumentationLibraryLogsSlice_Append(t *testing.T) {
 	es := generateTestInstrumentationLibraryLogsSlice()
 
-	emptyVal := NewInstrumentationLibraryLogs()
+	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 	es.Append(emptyVal)
 	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	value := NewInstrumentationLibraryLogs()
-	fillTestInstrumentationLibraryLogs(value)
+	value := generateTestInstrumentationLibraryLogs()
 	es.Append(value)
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 
@@ -300,7 +298,7 @@ func TestLogSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := NewLogRecord()
+	emptyVal := newLogRecord(&otlplogs.LogRecord{})
 	testVal := generateTestLogRecord()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -352,7 +350,7 @@ func TestLogSlice_CopyTo(t *testing.T) {
 
 func TestLogSlice_Resize(t *testing.T) {
 	es := generateTestLogSlice()
-	emptyVal := NewLogRecord()
+	emptyVal := newLogRecord(&otlplogs.LogRecord{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*otlplogs.LogRecord]bool, resizeSmallLen)
@@ -395,12 +393,11 @@ func TestLogSlice_Resize(t *testing.T) {
 func TestLogSlice_Append(t *testing.T) {
 	es := generateTestLogSlice()
 
-	emptyVal := NewLogRecord()
+	emptyVal := newLogRecord(&otlplogs.LogRecord{})
 	es.Append(emptyVal)
 	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	value := NewLogRecord()
-	fillTestLogRecord(value)
+	value := generateTestLogRecord()
 	es.Append(value)
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 

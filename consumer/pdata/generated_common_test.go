@@ -54,7 +54,7 @@ func TestAnyValueArray(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := NewAttributeValue()
+	emptyVal := newAttributeValue(&otlpcommon.AnyValue{})
 	testVal := generateTestAttributeValue()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -106,7 +106,7 @@ func TestAnyValueArray_CopyTo(t *testing.T) {
 
 func TestAnyValueArray_Resize(t *testing.T) {
 	es := generateTestAnyValueArray()
-	emptyVal := NewAttributeValue()
+	emptyVal := newAttributeValue(&otlpcommon.AnyValue{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
@@ -149,12 +149,11 @@ func TestAnyValueArray_Resize(t *testing.T) {
 func TestAnyValueArray_Append(t *testing.T) {
 	es := generateTestAnyValueArray()
 
-	emptyVal := NewAttributeValue()
+	emptyVal := newAttributeValue(&otlpcommon.AnyValue{})
 	es.Append(emptyVal)
 	assert.EqualValues(t, emptyVal, es.At(7))
 
-	value := NewAttributeValue()
-	fillTestAttributeValue(value)
+	value := generateTestAttributeValue()
 	es.Append(value)
 	assert.EqualValues(t, value, es.At(8))
 

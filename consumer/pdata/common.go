@@ -82,50 +82,37 @@ func newAttributeValue(orig *otlpcommon.AnyValue) AttributeValue {
 
 // NewAttributeValueNull creates a new AttributeValue with a null value.
 func NewAttributeValueNull() AttributeValue {
-	orig := &otlpcommon.AnyValue{}
-	return AttributeValue{orig: orig}
-}
-
-// NewAttributeValue is deprecated.
-// Deprecated: Use NewAttributeValueNull()
-func NewAttributeValue() AttributeValue {
-	return NewAttributeValueNull()
+	return AttributeValue{orig: &otlpcommon.AnyValue{}}
 }
 
 // NewAttributeValueString creates a new AttributeValue with the given string value.
 func NewAttributeValueString(v string) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}}}
 }
 
 // NewAttributeValueInt creates a new AttributeValue with the given int64 value.
 func NewAttributeValueInt(v int64) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: v}}}
 }
 
 // NewAttributeValueDouble creates a new AttributeValue with the given float64 value.
 func NewAttributeValueDouble(v float64) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: v}}}
 }
 
 // NewAttributeValueBool creates a new AttributeValue with the given bool value.
 func NewAttributeValueBool(v bool) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: v}}}
 }
 
 // NewAttributeValueMap creates a new AttributeValue of map type.
 func NewAttributeValueMap() AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}}}
 }
 
 // NewAttributeValueArray creates a new AttributeValue of array type.
 func NewAttributeValueArray() AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
 }
 
 // Type returns the type of the value for this AttributeValue.
