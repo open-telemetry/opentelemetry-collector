@@ -161,17 +161,18 @@ func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 func isUsefulLabel(mType metricspb.MetricDescriptor_Type, labelKey string) bool {
 	switch labelKey {
 	case model.MetricNameLabel:
+		return false
 	case model.SchemeLabel:
+		return false
 	case model.MetricsPathLabel:
+		return false
 	case model.BucketLabel:
 		return mType != metricspb.MetricDescriptor_GAUGE_DISTRIBUTION &&
 			mType != metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 	case model.QuantileLabel:
 		return mType != metricspb.MetricDescriptor_SUMMARY
-	default:
-		return true
 	}
-	return false
+	return true
 }
 
 // dpgSignature is used to create a key for data complexValue belong to a same group of a metric family
