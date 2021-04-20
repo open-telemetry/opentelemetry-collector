@@ -100,8 +100,7 @@ func (mb *MockBackend) Stop() {
 		log.Printf("Stopping mock backend...")
 
 		mb.logFile.Close()
-		err := mb.receiver.Stop()
-		if err != nil {
+		if err := mb.receiver.Stop(); err != nil {
 			log.Printf("Failed to stop receiver: %v", err)
 		}
 		// Print stats.
