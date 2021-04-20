@@ -149,9 +149,8 @@ func TestAnyValueArray_Resize(t *testing.T) {
 func TestAnyValueArray_Append(t *testing.T) {
 	es := generateTestAnyValueArray()
 
-	emptyVal := newAttributeValue(&otlpcommon.AnyValue{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal, es.At(7))
+	es.AppendEmpty()
+	assert.EqualValues(t, newAttributeValue(&otlpcommon.AnyValue{}), es.At(7))
 
 	value := generateTestAttributeValue()
 	es.Append(value)

@@ -112,9 +112,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	// First span/resource
 	want.ResourceSpans().At(0).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "svc-1")
-	want.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span0 := want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span0 := want.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span0.SetTraceID(pdata.NewTraceID([16]byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
 	span0.SetSpanID(pdata.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
 	span0.SetParentSpanID(pdata.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
@@ -130,9 +128,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	// Second span/resource
 	want.ResourceSpans().At(1).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "search")
-	want.ResourceSpans().At(1).InstrumentationLibrarySpans().Resize(1)
-	want.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span1 := want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span1 := want.ResourceSpans().At(1).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span1.SetTraceID(pdata.NewTraceID([16]byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0}))
 	span1.SetSpanID(pdata.NewSpanID([8]byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60}))
 	span1.SetParentSpanID(pdata.NewSpanID([8]byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10}))

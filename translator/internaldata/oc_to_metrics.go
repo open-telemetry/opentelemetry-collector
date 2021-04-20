@@ -108,8 +108,7 @@ func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
 
 		// Allocate a slice for metrics that need to be combined into first ResourceMetrics.
 		ilms := rm0.InstrumentationLibraryMetrics()
-		ilms.Resize(1)
-		combinedMetrics := ilms.At(0).Metrics()
+		combinedMetrics := ilms.AppendEmpty().Metrics()
 		combinedMetrics.Resize(combinedMetricCount)
 
 		// Index to next available slot in "combinedMetrics" slice.
@@ -161,10 +160,7 @@ func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
 func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out pdata.ResourceMetrics) {
 	ocNodeResourceToInternal(node, ocMetric.Resource, out.Resource())
 	ilms := out.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	metrics := ilms.At(0).Metrics()
-	metrics.Resize(1)
-	ocMetricToMetrics(ocMetric, metrics.At(0))
+	ocMetricToMetrics(ocMetric, ilms.AppendEmpty().Metrics().AppendEmpty())
 }
 
 func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
@@ -387,9 +383,8 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 	for i := range buckets {
 		buckets[i] = uint64(ocBuckets[i].GetCount())
 		if ocBuckets[i].GetExemplar() != nil {
-			exemplar := pdata.NewExemplar()
+			exemplar := dp.Exemplars().AppendEmpty()
 			exemplarToMetrics(ocBuckets[i].GetExemplar(), exemplar)
-			dp.Exemplars().Append(exemplar)
 		}
 	}
 	dp.SetBucketCounts(buckets)

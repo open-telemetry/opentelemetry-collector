@@ -137,13 +137,10 @@ func TestAttributeValueToString(t *testing.T) {
 	assert.EqualValues(t, `{"a\"\\":"b\"\\","c":123,"d":null,"e":{"a\"\\":"b\"\\","c":123,"d":null}}`, tracetranslator.AttributeValueToString(v, false))
 
 	v = pdata.NewAttributeValueArray()
-	av := pdata.NewAttributeValueString(`b"\`)
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueInt(123)
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueNull()
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueArray()
+	v.ArrayVal().AppendEmpty().SetStringVal(`b"\`)
+	v.ArrayVal().AppendEmpty().SetIntVal(123)
+	v.ArrayVal().AppendEmpty()
+	av := pdata.NewAttributeValueArray()
 	v.ArrayVal().Append(av)
 	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, tracetranslator.AttributeValueToString(v, false))
 }

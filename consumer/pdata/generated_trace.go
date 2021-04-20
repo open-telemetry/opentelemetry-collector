@@ -131,8 +131,16 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 // given ResourceSpans at that new position.  The original ResourceSpans
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ResourceSpansSlice) Append(e ResourceSpans) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ResourceSpans.
+// It returns the newly added ResourceSpans.
+func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
+	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -283,8 +291,16 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 // given InstrumentationLibrarySpans at that new position.  The original InstrumentationLibrarySpans
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es InstrumentationLibrarySpansSlice) Append(e InstrumentationLibrarySpans) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty InstrumentationLibrarySpans.
+// It returns the newly added InstrumentationLibrarySpans.
+func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibrarySpans {
+	*es.orig = append(*es.orig, &otlptrace.InstrumentationLibrarySpans{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -435,8 +451,16 @@ func (es SpanSlice) Resize(newLen int) {
 // given Span at that new position.  The original Span
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SpanSlice) Append(e Span) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty Span.
+// It returns the newly added Span.
+func (es SpanSlice) AppendEmpty() Span {
+	*es.orig = append(*es.orig, &otlptrace.Span{})
+	return es.At(es.Len() - 1)
 }
 
 // Span represents a single operation within a trace.
@@ -721,8 +745,16 @@ func (es SpanEventSlice) Resize(newLen int) {
 // given SpanEvent at that new position.  The original SpanEvent
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SpanEventSlice) Append(e SpanEvent) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty SpanEvent.
+// It returns the newly added SpanEvent.
+func (es SpanEventSlice) AppendEmpty() SpanEvent {
+	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
+	return es.At(es.Len() - 1)
 }
 
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
@@ -901,8 +933,16 @@ func (es SpanLinkSlice) Resize(newLen int) {
 // given SpanLink at that new position.  The original SpanLink
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SpanLinkSlice) Append(e SpanLink) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty SpanLink.
+// It returns the newly added SpanLink.
+func (es SpanLinkSlice) AppendEmpty() SpanLink {
+	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
+	return es.At(es.Len() - 1)
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a

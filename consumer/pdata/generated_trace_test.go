@@ -127,9 +127,8 @@ func TestResourceSpansSlice_Resize(t *testing.T) {
 func TestResourceSpansSlice_Append(t *testing.T) {
 	es := generateTestResourceSpansSlice()
 
-	emptyVal := newResourceSpans(&otlptrace.ResourceSpans{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlptrace.ResourceSpans{}, es.At(7).orig)
 
 	value := generateTestResourceSpans()
 	es.Append(value)
@@ -260,9 +259,8 @@ func TestInstrumentationLibrarySpansSlice_Resize(t *testing.T) {
 func TestInstrumentationLibrarySpansSlice_Append(t *testing.T) {
 	es := generateTestInstrumentationLibrarySpansSlice()
 
-	emptyVal := newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlptrace.InstrumentationLibrarySpans{}, es.At(7).orig)
 
 	value := generateTestInstrumentationLibrarySpans()
 	es.Append(value)
@@ -393,9 +391,8 @@ func TestSpanSlice_Resize(t *testing.T) {
 func TestSpanSlice_Append(t *testing.T) {
 	es := generateTestSpanSlice()
 
-	emptyVal := newSpan(&otlptrace.Span{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlptrace.Span{}, es.At(7).orig)
 
 	value := generateTestSpan()
 	es.Append(value)
@@ -630,9 +627,8 @@ func TestSpanEventSlice_Resize(t *testing.T) {
 func TestSpanEventSlice_Append(t *testing.T) {
 	es := generateTestSpanEventSlice()
 
-	emptyVal := newSpanEvent(&otlptrace.Span_Event{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlptrace.Span_Event{}, es.At(7).orig)
 
 	value := generateTestSpanEvent()
 	es.Append(value)
@@ -781,9 +777,8 @@ func TestSpanLinkSlice_Resize(t *testing.T) {
 func TestSpanLinkSlice_Append(t *testing.T) {
 	es := generateTestSpanLinkSlice()
 
-	emptyVal := newSpanLink(&otlptrace.Span_Link{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlptrace.Span_Link{}, es.At(7).orig)
 
 	value := generateTestSpanLink()
 	es.Append(value)

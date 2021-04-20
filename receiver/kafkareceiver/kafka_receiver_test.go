@@ -221,7 +221,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().AppendEmpty()
 	bts, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}

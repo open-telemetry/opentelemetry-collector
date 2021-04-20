@@ -54,7 +54,7 @@ func generateMetricsOtlpEmpty() *otlpcollectormetrics.ExportMetricsServiceReques
 
 func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
 	md := GenerateMetricsEmpty()
-	md.ResourceMetrics().Resize(1)
+	md.ResourceMetrics().AppendEmpty()
 	return md
 }
 
@@ -85,7 +85,7 @@ func generateMetricsOtlpNoLibraries() *otlpcollectormetrics.ExportMetricsService
 
 func GenerateMetricsOneEmptyInstrumentationLibrary() pdata.Metrics {
 	md := GenerateMetricsNoLibraries()
-	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
+	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty()
 	return md
 }
 
@@ -106,10 +106,8 @@ func generateMetricsOtlpOneEmptyInstrumentationLibrary() *otlpcollectormetrics.E
 func GenerateMetricsOneMetricNoResource() pdata.Metrics {
 	md := GenerateMetricsOneEmptyResourceMetrics()
 	rm0 := md.ResourceMetrics().At(0)
-	rm0.InstrumentationLibraryMetrics().Resize(1)
-	rm0ils0 := rm0.InstrumentationLibraryMetrics().At(0)
-	rm0ils0.Metrics().Resize(1)
-	initCounterIntMetric(rm0ils0.Metrics().At(0))
+	rm0ils0 := rm0.InstrumentationLibraryMetrics().AppendEmpty()
+	initCounterIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -132,8 +130,7 @@ func generateMetricsOtlpOneMetricNoResource() *otlpcollectormetrics.ExportMetric
 func GenerateMetricsOneMetric() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	rm0ils0.Metrics().Resize(1)
-	initCounterIntMetric(rm0ils0.Metrics().At(0))
+	initCounterIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -157,26 +154,23 @@ func generateMetricsOtlpOneMetric() *otlpcollectormetrics.ExportMetricsServiceRe
 func GenerateMetricsOneMetricOneDataPoint() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	rm0ils0.Metrics().Resize(1)
-	initGaugeIntMetricOneDataPoint(rm0ils0.Metrics().At(0))
+	initGaugeIntMetricOneDataPoint(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
 func GenerateMetricsTwoMetrics() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	rm0ils0.Metrics().Resize(2)
-	initCounterIntMetric(rm0ils0.Metrics().At(0))
-	initCounterIntMetric(rm0ils0.Metrics().At(1))
+	initCounterIntMetric(rm0ils0.Metrics().AppendEmpty())
+	initCounterIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
 func GenerateMetricsOneCounterOneSummaryMetrics() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	rm0ils0.Metrics().Resize(2)
-	initCounterIntMetric(rm0ils0.Metrics().At(0))
-	initDoubleSummaryMetric(rm0ils0.Metrics().At(1))
+	initCounterIntMetric(rm0ils0.Metrics().AppendEmpty())
+	initDoubleSummaryMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -236,29 +230,26 @@ func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
 	ms.Resize(7)
 
 	initMetric(ms.At(0), TestGaugeDoubleMetricName, pdata.MetricDataTypeDoubleGauge)
-	ms.At(0).DoubleGauge().DataPoints().Resize(1)
+	ms.At(0).DoubleGauge().DataPoints().AppendEmpty()
 	initMetric(ms.At(1), TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge)
-	ms.At(1).IntGauge().DataPoints().Resize(1)
+	ms.At(1).IntGauge().DataPoints().AppendEmpty()
 	initMetric(ms.At(2), TestCounterDoubleMetricName, pdata.MetricDataTypeDoubleSum)
-	ms.At(2).DoubleSum().DataPoints().Resize(1)
+	ms.At(2).DoubleSum().DataPoints().AppendEmpty()
 	initMetric(ms.At(3), TestCounterIntMetricName, pdata.MetricDataTypeIntSum)
-	ms.At(3).IntSum().DataPoints().Resize(1)
+	ms.At(3).IntSum().DataPoints().AppendEmpty()
 	initMetric(ms.At(4), TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
-	ms.At(4).Histogram().DataPoints().Resize(1)
+	ms.At(4).Histogram().DataPoints().AppendEmpty()
 	initMetric(ms.At(5), TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram)
-	ms.At(5).IntHistogram().DataPoints().Resize(1)
+	ms.At(5).IntHistogram().DataPoints().AppendEmpty()
 	initMetric(ms.At(6), TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
-	ms.At(6).Summary().DataPoints().Resize(1)
+	ms.At(6).Summary().DataPoints().AppendEmpty()
 	return md
 }
 
 func GenerateMetricsMetricTypeInvalid() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	ms := ilm0.Metrics()
-	ms.Resize(1)
-
-	initMetric(ms.At(0), TestCounterIntMetricName, pdata.MetricDataTypeNone)
+	initMetric(ilm0.Metrics().AppendEmpty(), TestCounterIntMetricName, pdata.MetricDataTypeNone)
 	return md
 }
 
@@ -287,15 +278,12 @@ func generateMetricsOtlpAllTypesNoDataPoints() *otlpcollectormetrics.ExportMetri
 
 func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	metricData := pdata.NewMetrics()
-	metricData.ResourceMetrics().Resize(1)
+	rm := metricData.ResourceMetrics().AppendEmpty()
+	initResource1(rm.Resource())
 
-	rms := metricData.ResourceMetrics()
-	initResource1(rms.At(0).Resource())
-	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
-
-	ilms := rms.At(0).InstrumentationLibraryMetrics()
-	ilms.At(0).Metrics().Resize(5)
-	ms := ilms.At(0).Metrics()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.Metrics().Resize(5)
+	ms := ilm.Metrics()
 	initCounterIntMetric(ms.At(0))
 	initSumDoubleMetric(ms.At(1))
 	initDoubleHistogramMetric(ms.At(2))
@@ -346,9 +334,7 @@ func initCounterIntMetric(im pdata.Metric) {
 func initGaugeIntMetricOneDataPoint(im pdata.Metric) {
 	initMetric(im, TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge)
 
-	idps := im.IntGauge().DataPoints()
-	idps.Resize(1)
-	idp0 := idps.At(0)
+	idp0 := im.IntGauge().DataPoints().AppendEmpty()
 	initMetricLabels1(idp0.LabelsMap())
 	idp0.SetStartTimestamp(TestMetricStartTimestamp)
 	idp0.SetTimestamp(TestMetricTimestamp)
@@ -431,9 +417,7 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
 	hdp1.SetBucketCounts([]uint64{0, 1})
-	exemplars := hdp1.Exemplars()
-	exemplars.Resize(1)
-	exemplar := exemplars.At(0)
+	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
 	exemplar.SetValue(15)
 	initMetricAttachment(exemplar.FilteredLabels())
@@ -489,9 +473,7 @@ func initIntHistogramMetric(hm pdata.Metric) {
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
 	hdp1.SetBucketCounts([]uint64{0, 1})
-	exemplars := hdp1.Exemplars()
-	exemplars.Resize(1)
-	exemplar := exemplars.At(0)
+	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
 	exemplar.SetValue(15)
 	initMetricAttachment(exemplar.FilteredLabels())

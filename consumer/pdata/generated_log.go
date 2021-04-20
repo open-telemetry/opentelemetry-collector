@@ -131,8 +131,16 @@ func (es ResourceLogsSlice) Resize(newLen int) {
 // given ResourceLogs at that new position.  The original ResourceLogs
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ResourceLogsSlice) Append(e ResourceLogs) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ResourceLogs.
+// It returns the newly added ResourceLogs.
+func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
+	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
+	return es.At(es.Len() - 1)
 }
 
 // ResourceLogs is a collection of logs from a Resource.
@@ -283,8 +291,16 @@ func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
 // given InstrumentationLibraryLogs at that new position.  The original InstrumentationLibraryLogs
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es InstrumentationLibraryLogsSlice) Append(e InstrumentationLibraryLogs) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty InstrumentationLibraryLogs.
+// It returns the newly added InstrumentationLibraryLogs.
+func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLogs {
+	*es.orig = append(*es.orig, &otlplogs.InstrumentationLibraryLogs{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
@@ -435,8 +451,16 @@ func (es LogSlice) Resize(newLen int) {
 // given LogRecord at that new position.  The original LogRecord
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es LogSlice) Append(e LogRecord) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty LogRecord.
+// It returns the newly added LogRecord.
+func (es LogSlice) AppendEmpty() LogRecord {
+	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
+	return es.At(es.Len() - 1)
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.

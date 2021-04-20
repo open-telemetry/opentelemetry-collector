@@ -36,8 +36,7 @@ func splitLogs(size int, toSplit pdata.Logs) pdata.Logs {
 
 		for j := rl.InstrumentationLibraryLogs().Len() - 1; j >= 0; j-- {
 			instLogs := rl.InstrumentationLibraryLogs().At(j)
-			destInstLogs := pdata.NewInstrumentationLibraryLogs()
-			destRl.InstrumentationLibraryLogs().Append(destInstLogs)
+			destInstLogs := destRl.InstrumentationLibraryLogs().AppendEmpty()
 			instLogs.InstrumentationLibrary().CopyTo(destInstLogs.InstrumentationLibrary())
 
 			if size-copiedLogs >= instLogs.Logs().Len() {
