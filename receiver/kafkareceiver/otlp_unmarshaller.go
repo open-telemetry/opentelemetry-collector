@@ -21,7 +21,7 @@ import (
 type otlpTracesPbUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*otlpTracesPbUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*otlpTracesPbUnmarshaller)(nil)
 
 func (p *otlpTracesPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	return pdata.TracesFromOtlpProtoBytes(bytes)

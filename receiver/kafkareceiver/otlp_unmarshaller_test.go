@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestUnmarshallOTLP(t *testing.T) {
+func TestUnmarshallOTLPTraces(t *testing.T) {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
@@ -40,7 +40,7 @@ func TestUnmarshallOTLP(t *testing.T) {
 	assert.Equal(t, "otlp_proto", p.Encoding())
 }
 
-func TestUnmarshallOTLP_error(t *testing.T) {
+func TestUnmarshallOTLPTraces_error(t *testing.T) {
 	p := otlpTracesPbUnmarshaller{}
 	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)

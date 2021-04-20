@@ -40,7 +40,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
+	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshallers()}
 	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	// no available broker
 	require.Error(t, err)
@@ -52,15 +52,15 @@ func TestCreateTracesReceiver_error(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
-	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
+	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshallers()}
 	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
 
-func TestWithUnmarshallers(t *testing.T) {
-	unmarshaller := &customUnmarshaller{}
-	f := NewFactory(WithAddUnmarshallers(map[string]Unmarshaller{unmarshaller.Encoding(): unmarshaller}))
+func TestWithTracesUnmarshallers(t *testing.T) {
+	unmarshaller := &customTracesUnmarshaller{}
+	f := NewFactory(WithAddTracesUnmarshallers(map[string]TracesUnmarshaller{unmarshaller.Encoding(): unmarshaller}))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false
@@ -124,19 +124,19 @@ func TestWithLogsUnmarshallers(t *testing.T) {
 	})
 }
 
-type customUnmarshaller struct {
+type customTracesUnmarshaller struct {
 }
 
 type customLogsUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*customUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*customTracesUnmarshaller)(nil)
 
-func (c customUnmarshaller) Unmarshal([]byte) (pdata.Traces, error) {
+func (c customTracesUnmarshaller) Unmarshal([]byte) (pdata.Traces, error) {
 	panic("implement me")
 }
 
-func (c customUnmarshaller) Encoding() string {
+func (c customTracesUnmarshaller) Encoding() string {
 	return "custom"
 }
 
