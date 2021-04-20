@@ -64,7 +64,7 @@ func TestUnmarshallZipkin(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		unmarshaller Unmarshaller
+		unmarshaller TracesUnmarshaller
 		encoding     string
 		bytes        []byte
 		expected     pdata.Traces

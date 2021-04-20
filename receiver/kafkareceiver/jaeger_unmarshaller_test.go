@@ -47,7 +47,7 @@ func TestUnmarshallJaeger(t *testing.T) {
 	jsonMarshaller.Marshal(jsonBytes, batches[0].Spans[0])
 
 	tests := []struct {
-		unmarshaller Unmarshaller
+		unmarshaller TracesUnmarshaller
 		encoding     string
 		bytes        []byte
 	}{

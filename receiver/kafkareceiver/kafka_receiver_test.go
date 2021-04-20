@@ -38,27 +38,27 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestNewReceiver_version_err(t *testing.T) {
+func TestNewTracesReceiver_version_err(t *testing.T) {
 	c := Config{
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, component.ReceiverCreateParams{}, defaultTracesUnmarshallers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
 
-func TestNewReceiver_encoding_err(t *testing.T) {
+func TestNewTracesReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, component.ReceiverCreateParams{}, defaultTracesUnmarshallers(), consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 }
 
-func TestNewReceiver_err_auth_type(t *testing.T) {
+func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
 		Authentication: kafkaexporter.Authentication{
@@ -73,15 +73,15 @@ func TestNewReceiver_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, component.ReceiverCreateParams{}, defaultTracesUnmarshallers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
 }
 
-func TestReceiverStart(t *testing.T) {
+func TestTracesReceiverStart(t *testing.T) {
 	testClient := testConsumerGroup{once: &sync.Once{}}
-	c := kafkaConsumer{
+	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        zap.NewNop(),
 		consumerGroup: testClient,
@@ -92,9 +92,9 @@ func TestReceiverStart(t *testing.T) {
 	c.Shutdown(context.Background())
 }
 
-func TestReceiverStartConsume(t *testing.T) {
+func TestTracesReceiverStartConsume(t *testing.T) {
 	testClient := testConsumerGroup{once: &sync.Once{}}
-	c := kafkaConsumer{
+	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        zap.NewNop(),
 		consumerGroup: testClient,
@@ -102,19 +102,19 @@ func TestReceiverStartConsume(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
 	c.Shutdown(context.Background())
-	err := c.consumeLoop(ctx, &consumerGroupHandler{
+	err := c.consumeLoop(ctx, &tracesConsumerGroupHandler{
 		ready: make(chan bool),
 	})
 	assert.EqualError(t, err, context.Canceled.Error())
 }
 
-func TestReceiver_error(t *testing.T) {
+func TestTracesReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
 
 	expectedErr := fmt.Errorf("handler error")
 	testClient := testConsumerGroup{once: &sync.Once{}, err: expectedErr}
-	c := kafkaConsumer{
+	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        logger,
 		consumerGroup: testClient,
@@ -129,12 +129,12 @@ func TestReceiver_error(t *testing.T) {
 	assert.True(t, logObserver.FilterField(zap.Error(expectedErr)).Len() > 0)
 }
 
-func TestConsumerGroupHandler(t *testing.T) {
+func TestTracesConsumerGroupHandler(t *testing.T) {
 	views := MetricViews()
 	view.Register(views...)
 	defer view.Unregister(views...)
 
-	c := consumerGroupHandler{
+	c := tracesConsumerGroupHandler{
 		unmarshaller: &otlpTracesPbUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
@@ -177,8 +177,8 @@ func TestConsumerGroupHandler(t *testing.T) {
 	wg.Wait()
 }
 
-func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
-	c := consumerGroupHandler{
+func TestTracesConsumerGroupHandler_error_unmarshall(t *testing.T) {
+	c := tracesConsumerGroupHandler{
 		unmarshaller: &otlpTracesPbUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
@@ -200,9 +200,9 @@ func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 	wg.Wait()
 }
 
-func TestConsumerGroupHandler_error_nextConsumer(t *testing.T) {
+func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consumer")
-	c := consumerGroupHandler{
+	c := tracesConsumerGroupHandler{
 		unmarshaller: &otlpTracesPbUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
@@ -418,8 +418,6 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	close(groupClaim.messageChan)
 	wg.Wait()
 }
-
-// end
 
 type testConsumerGroupClaim struct {
 	messageChan chan *sarama.ConsumerMessage

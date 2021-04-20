@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// Unmarshaller deserializes the message body.
-type Unmarshaller interface {
+// TracesUnmarshaller deserializes the message body.
+type TracesUnmarshaller interface {
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (pdata.Traces, error)
 
@@ -36,15 +36,15 @@ type LogsUnmarshaller interface {
 	Encoding() string
 }
 
-// defaultUnmarshallers returns map of supported encodings with Unmarshaller.
-func defaultUnmarshallers() map[string]Unmarshaller {
+// defaultTracesUnmarshallers returns map of supported encodings with TracesUnmarshaller.
+func defaultTracesUnmarshallers() map[string]TracesUnmarshaller {
 	otlp := &otlpTracesPbUnmarshaller{}
 	jaegerProto := jaegerProtoSpanUnmarshaller{}
 	jaegerJSON := jaegerJSONSpanUnmarshaller{}
 	zipkinProto := zipkinProtoSpanUnmarshaller{}
 	zipkinJSON := zipkinJSONSpanUnmarshaller{}
 	zipkinThrift := zipkinThriftSpanUnmarshaller{}
-	return map[string]Unmarshaller{
+	return map[string]TracesUnmarshaller{
 		otlp.Encoding():         otlp,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,

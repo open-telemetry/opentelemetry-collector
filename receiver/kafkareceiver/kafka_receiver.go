@@ -36,14 +36,14 @@ const (
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
-// kafkaConsumer uses sarama to consume and handle messages from kafka.
-type kafkaConsumer struct {
+// kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
+type kafkaTracesConsumer struct {
 	name              string
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Traces
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaller      Unmarshaller
+	unmarshaller      TracesUnmarshaller
 
 	logger *zap.Logger
 }
@@ -60,10 +60,10 @@ type kafkaLogsConsumer struct {
 	logger *zap.Logger
 }
 
-var _ component.Receiver = (*kafkaConsumer)(nil)
+var _ component.Receiver = (*kafkaTracesConsumer)(nil)
 var _ component.Receiver = (*kafkaLogsConsumer)(nil)
 
-func newReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]Unmarshaller, nextConsumer consumer.Traces) (*kafkaConsumer, error) {
+func newTracesReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]TracesUnmarshaller, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	unmarshaller := unmarshalers[config.Encoding]
 	if unmarshaller == nil {
 		return nil, errUnrecognizedEncoding
@@ -88,7 +88,7 @@ func newReceiver(config Config, params component.ReceiverCreateParams, unmarshal
 	if err != nil {
 		return nil, err
 	}
-	return &kafkaConsumer{
+	return &kafkaTracesConsumer{
 		name:          config.Name(),
 		consumerGroup: client,
 		topics:        []string{config.Topic},
@@ -98,10 +98,10 @@ func newReceiver(config Config, params component.ReceiverCreateParams, unmarshal
 	}, nil
 }
 
-func (c *kafkaConsumer) Start(context.Context, component.Host) error {
+func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
-	consumerGroup := &consumerGroupHandler{
+	consumerGroup := &tracesConsumerGroupHandler{
 		name:         c.name,
 		logger:       c.logger,
 		unmarshaller: c.unmarshaller,
@@ -113,7 +113,7 @@ func (c *kafkaConsumer) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -129,7 +129,7 @@ func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler sarama.Consumer
 	}
 }
 
-func (c *kafkaConsumer) Shutdown(context.Context) error {
+func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	c.cancelConsumeLoop()
 	return c.consumerGroup.Close()
 }
@@ -205,9 +205,9 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-type consumerGroupHandler struct {
+type tracesConsumerGroupHandler struct {
 	name         string
-	unmarshaller Unmarshaller
+	unmarshaller TracesUnmarshaller
 	nextConsumer consumer.Traces
 	ready        chan bool
 	readyCloser  sync.Once
@@ -225,10 +225,10 @@ type logsConsumerGroupHandler struct {
 	logger *zap.Logger
 }
 
-var _ sarama.ConsumerGroupHandler = (*consumerGroupHandler)(nil)
+var _ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
 var _ sarama.ConsumerGroupHandler = (*logsConsumerGroupHandler)(nil)
 
-func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
+func (c *tracesConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
@@ -237,13 +237,13 @@ func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error 
 	return nil
 }
 
-func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
+func (c *tracesConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
 	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
 	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionClose.M(1))
 	return nil
 }
 
-func (c *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	c.logger.Info("Starting consumer group", zap.Int32("partition", claim.Partition()))
 	for message := range claim.Messages() {
 		c.logger.Debug("Kafka message claimed",
