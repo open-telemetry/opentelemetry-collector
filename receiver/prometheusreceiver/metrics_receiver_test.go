@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -180,7 +181,13 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []internaldata.Metri
 	}
 }
 
-func doCompare(name string, t *testing.T, want, got interface{}) {
+func doCompare(name string, t *testing.T, want, got *internaldata.MetricsData) {
+	for _, m := range got.Metrics {
+		sortLabelsAndValues(m)
+	}
+	for _, m := range want.Metrics {
+		sortLabelsAndValues(m)
+	}
 	t.Run(name, func(t *testing.T) {
 		assert.EqualValues(t, want, got)
 	})
@@ -283,7 +290,18 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
 	gotG1.Timeseries[0].LabelValues[0].Value = "-"
-	doCompare("scrape1", t, wantG1, gotG1)
+	doCompare("scrape1", t,
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{wantG1},
+		},
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{gotG1},
+		},
+	)
 
 	// verify the 2nd metricData
 	m2 := mds[1]
@@ -539,7 +557,18 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
-	doCompare("scrape1", t, wantG1, gotG1)
+	doCompare("scrape1", t,
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{wantG1},
+		},
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{gotG1},
+		},
+	)
 
 	// verify the 2nd metricData
 	m2 := mds[1]
@@ -914,7 +943,18 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
 	gotG1.Timeseries[0].LabelValues[0].Value = "-" // instance label is not deterministic
 	// set this timestamp to wantG1
-	doCompare("scrape1", t, wantG1, gotG1)
+	doCompare("scrape1", t,
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{wantG1},
+		},
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{gotG1},
+		},
+	)
 
 	// verify the 2nd metricData
 	m2 := mds[1]
@@ -1296,5 +1336,32 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	// loop to validate outputs for each targets
 	for _, target := range targets {
 		target.validateFunc(t, target, results[target.name])
+	}
+}
+
+func sortLabelsAndValues(m *metricspb.Metric) {
+	sort.Sort(&labelAndValueSorter{m: m})
+}
+
+type labelAndValueSorter struct {
+	m *metricspb.Metric
+}
+
+func (s *labelAndValueSorter) Len() int {
+	return len(s.m.MetricDescriptor.LabelKeys)
+}
+
+func (s *labelAndValueSorter) Less(i, j int) bool {
+	return s.m.MetricDescriptor.LabelKeys[i].Key < s.m.MetricDescriptor.LabelKeys[j].Key
+}
+
+func (s *labelAndValueSorter) Swap(i, j int) {
+	tmp := s.m.MetricDescriptor.LabelKeys[i]
+	s.m.MetricDescriptor.LabelKeys[i] = s.m.MetricDescriptor.LabelKeys[j]
+	s.m.MetricDescriptor.LabelKeys[j] = tmp
+
+	for _, t := range s.m.Timeseries {
+		labels := t.LabelValues
+		labels[i], labels[j] = labels[j], labels[i]
 	}
 }
