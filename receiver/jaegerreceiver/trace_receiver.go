@@ -364,7 +364,7 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPAddr(), jr, metrics.NullFactory)
 
 		go func() {
-			if err := jr.agentServer.ListenAndServe(); err != nil {
+			if err := jr.agentServer.ListenAndServe(); err != http.ErrServerClosed {
 				jr.logger.Error("http server failure", zap.Error(err))
 			}
 		}()
