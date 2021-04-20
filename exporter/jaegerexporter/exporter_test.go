@@ -237,7 +237,7 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), nil)
 	require.NoError(t, err)
-	defer exporter.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
 	traceID := pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 	spanID := pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
@@ -282,8 +282,8 @@ func TestConnectionStateChange(t *testing.T) {
 		wg.Done()
 	})
 
-	sender.start(context.Background(), componenttest.NewNopHost())
-	defer sender.shutdown(context.Background())
+	require.NoError(t, sender.start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, sender.shutdown(context.Background())) })
 	wg.Wait() // wait for the initial state to be propagated
 
 	// test

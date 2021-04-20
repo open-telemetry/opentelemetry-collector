@@ -219,7 +219,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	buf := new(bytes.Buffer)
 	// This will act as the final Zipkin server.
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(buf, r.Body)
+		_, err = io.Copy(buf, r.Body)
+		require.NoError(t, err)
 		_ = r.Body.Close()
 	}))
 	defer backend.Close()

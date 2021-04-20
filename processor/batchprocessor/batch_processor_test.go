@@ -96,7 +96,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 	// Added to test logic that check for empty resources.
 	td := testdata.GenerateTraceDataEmpty()
-	batcher.ConsumeTraces(context.Background(), td)
+	require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	// wait for all spans to be reported
 	for {

@@ -67,7 +67,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	jr.Shutdown(context.Background())
+	require.NoError(t, jr.Shutdown(context.Background()))
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
@@ -91,7 +91,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
 
 	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
 	assert.Error(t, err, "should not have been able to listen to the port")
@@ -112,7 +112,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	jr.Shutdown(context.Background())
+	require.NoError(t, jr.Shutdown(context.Background()))
 }
 
 func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server), opts ...grpc.ServerOption) (*grpc.Server, net.Addr) {
@@ -152,7 +152,7 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
@@ -190,7 +190,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	sink := new(consumertest.TracesSink)
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 

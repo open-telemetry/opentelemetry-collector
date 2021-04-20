@@ -136,7 +136,7 @@ func TestReception(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	t.Log("Starting")
 
@@ -169,7 +169,7 @@ func TestPortsNotOpen(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -198,7 +198,7 @@ func TestGRPCReception(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -254,7 +254,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -328,7 +328,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 
 func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 	traceID := model.TraceID{}
-	traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+	traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}) // nolint:errcheck
 	parentSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	childSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 
@@ -389,7 +389,7 @@ func TestSampling(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
@@ -441,7 +441,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
@@ -470,7 +470,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 }
 
@@ -531,7 +531,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), newAssertNoErrorHost(t))
 	require.NoError(t, err)
-	defer exp.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
 	<-time.After(200 * time.Millisecond)
 
 	resp, err := http.Get(fmt.Sprintf("http://%s?service=bar", hostEndpoint))
@@ -577,7 +577,10 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 		return err
 	}
 
-	io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(ioutil.Discard, resp.Body)
+	if err != nil {
+		return err
+	}
 	resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
