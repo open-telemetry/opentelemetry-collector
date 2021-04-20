@@ -513,30 +513,27 @@ func TestMetricIndexAll(t *testing.T) {
 func TestNilResourceMetrics(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
-	rms.Append(pdata.NewResourceMetrics())
+	rms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
 
 func TestNilILM(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
-	rm := pdata.NewResourceMetrics()
-	rms.Append(rm)
+	rm := rms.AppendEmpty()
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Append(pdata.NewInstrumentationLibraryMetrics())
+	ilms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
 
 func TestNilMetric(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
-	rm := pdata.NewResourceMetrics()
-	rms.Append(rm)
+	rm := rms.AppendEmpty()
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilms.Append(ilm)
+	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
-	ms.Append(pdata.NewMetric())
+	ms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
 

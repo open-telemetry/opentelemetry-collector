@@ -174,6 +174,14 @@ func (es AnyValueArray) Resize(newLen int) {
 // given AttributeValue at that new position.  The original AttributeValue
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es AnyValueArray) Append(e AttributeValue) {
 	*es.orig = append(*es.orig, *e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty AttributeValue.
+// It returns the newly added AttributeValue.
+func (es AnyValueArray) AppendEmpty() AttributeValue {
+	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
+	return es.At(es.Len() - 1)
 }

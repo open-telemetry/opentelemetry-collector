@@ -332,16 +332,14 @@ func verifySingleSpan(
 
 	// Send one span.
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName: pdata.NewAttributeValueString(serviceName),
 	})
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
-	spans.Resize(1)
-	spans.At(0).SetTraceID(testbed.GenerateSequentialTraceID(1))
-	spans.At(0).SetSpanID(testbed.GenerateSequentialSpanID(1))
-	spans.At(0).SetName(spanName)
+	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(testbed.GenerateSequentialTraceID(1))
+	span.SetSpanID(testbed.GenerateSequentialSpanID(1))
+	span.SetName(spanName)
 
 	sender := tc.Sender.(testbed.TraceDataSender)
 	require.NoError(t, sender.ConsumeTraces(context.Background(), td))

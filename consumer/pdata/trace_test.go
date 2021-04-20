@@ -32,22 +32,20 @@ func TestSpanCount(t *testing.T) {
 	md := NewTraces()
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().Resize(1)
+	rs := md.ResourceSpans().AppendEmpty()
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	ils.Spans().AppendEmpty()
 	assert.EqualValues(t, 1, md.SpanCount())
 
 	rms := md.ResourceSpans()
 	rms.Resize(3)
-	rms.At(0).InstrumentationLibrarySpans().Resize(1)
-	rms.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	rms.At(1).InstrumentationLibrarySpans().Resize(1)
-	rms.At(2).InstrumentationLibrarySpans().Resize(1)
-	rms.At(2).InstrumentationLibrarySpans().At(0).Spans().Resize(5)
+	rms.At(1).InstrumentationLibrarySpans().AppendEmpty()
+	rms.At(2).InstrumentationLibrarySpans().AppendEmpty().Spans().Resize(5)
+	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.SpanCount())
 }
 
@@ -97,11 +95,7 @@ func TestSpanCountWithEmpty(t *testing.T) {
 
 func TestSpanStatusCode(t *testing.T) {
 	td := NewTraces()
-	rss := td.ResourceSpans()
-	rss.Resize(1)
-	rss.At(0).InstrumentationLibrarySpans().Resize(1)
-	rss.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	status := rss.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Status()
+	status := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().Status()
 
 	// Check handling of deprecated status code, see spec here:
 	// https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231

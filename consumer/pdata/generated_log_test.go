@@ -127,9 +127,8 @@ func TestResourceLogsSlice_Resize(t *testing.T) {
 func TestResourceLogsSlice_Append(t *testing.T) {
 	es := generateTestResourceLogsSlice()
 
-	emptyVal := newResourceLogs(&otlplogs.ResourceLogs{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlplogs.ResourceLogs{}, es.At(7).orig)
 
 	value := generateTestResourceLogs()
 	es.Append(value)
@@ -260,9 +259,8 @@ func TestInstrumentationLibraryLogsSlice_Resize(t *testing.T) {
 func TestInstrumentationLibraryLogsSlice_Append(t *testing.T) {
 	es := generateTestInstrumentationLibraryLogsSlice()
 
-	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlplogs.InstrumentationLibraryLogs{}, es.At(7).orig)
 
 	value := generateTestInstrumentationLibraryLogs()
 	es.Append(value)
@@ -393,9 +391,8 @@ func TestLogSlice_Resize(t *testing.T) {
 func TestLogSlice_Append(t *testing.T) {
 	es := generateTestLogSlice()
 
-	emptyVal := newLogRecord(&otlplogs.LogRecord{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlplogs.LogRecord{}, es.At(7).orig)
 
 	value := generateTestLogRecord()
 	es.Append(value)

@@ -241,56 +241,50 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 	case pdata.MetricDataTypeIntGauge:
 		m := metric.IntGauge()
 		dps := m.DataPoints()
-		dp := pdata.NewIntDataPoint()
+		dp := dps.AppendEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(int64))
 		dp.SetTimestamp(tsNano)
-		dps.Append(dp)
 
 	case pdata.MetricDataTypeIntSum:
 		m := metric.IntSum()
 		dps := m.DataPoints()
-		dp := pdata.NewIntDataPoint()
+		dp := dps.AppendEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(int64))
 		dp.SetTimestamp(tsNano)
-		dps.Append(dp)
 
 	case pdata.MetricDataTypeDoubleGauge:
 		m := metric.DoubleGauge()
 		dps := m.DataPoints()
-		dp := pdata.NewDoubleDataPoint()
+		dp := dps.AppendEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(float64))
 		dp.SetTimestamp(tsNano)
-		dps.Append(dp)
 
 	case pdata.MetricDataTypeDoubleSum:
 		m := metric.DoubleSum()
 		dps := m.DataPoints()
-		dp := pdata.NewDoubleDataPoint()
+		dp := dps.AppendEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(float64))
 		dp.SetTimestamp(tsNano)
-		dps.Append(dp)
 
 	case pdata.MetricDataTypeIntHistogram:
 		m := metric.IntHistogram()
 		dps := m.DataPoints()
-		dp := pdata.NewIntHistogramDataPoint()
+		dp := dps.AppendEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		val.(pdata.IntHistogramDataPoint).CopyTo(dp)
 		dp.SetTimestamp(tsNano)
-		dps.Append(dp)
 
 	case pdata.MetricDataTypeHistogram:
 		m := metric.Histogram()
 		dps := m.DataPoints()
-		dp := pdata.NewHistogramDataPoint()
+		dp := dps.AppendEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		val.(pdata.HistogramDataPoint).CopyTo(dp)
 		dp.SetTimestamp(tsNano)
-		dps.Append(dp)
 
 	default:
 		panic("invalid metric type: " + typ.String())

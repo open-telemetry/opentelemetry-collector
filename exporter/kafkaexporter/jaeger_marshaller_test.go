@@ -28,14 +28,12 @@ import (
 
 func TestJaegerMarshaller(t *testing.T) {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTimestamp(pdata.Timestamp(10))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTimestamp(pdata.Timestamp(20))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("foo")
+	span.SetStartTimestamp(pdata.Timestamp(10))
+	span.SetEndTimestamp(pdata.Timestamp(20))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	require.NoError(t, err)
 

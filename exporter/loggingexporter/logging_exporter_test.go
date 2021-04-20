@@ -65,15 +65,13 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
 	ava := pdata.NewAttributeValueArray()
-	av := ava.ArrayVal()
-	av.Append(pdata.NewAttributeValueString("foo"))
-	av.Append(pdata.NewAttributeValueInt(42))
+	ava.ArrayVal().AppendEmpty().SetStringVal("foo")
+	ava.ArrayVal().AppendEmpty().SetIntVal(42)
 
 	ava2 := pdata.NewAttributeValueArray()
-	av2 := ava2.ArrayVal()
-	av2.Append(pdata.NewAttributeValueString("bar"))
+	ava2.ArrayVal().AppendEmpty().SetStringVal("bar")
 
-	av.Append(ava2)
+	ava.ArrayVal().Append(ava2)
 
 	assert.Equal(t, 3, ava.ArrayVal().Len())
 	assert.Equal(t, "[foo, 42, [bar]]", attributeValueToString(ava))

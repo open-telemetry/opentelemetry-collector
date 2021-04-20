@@ -266,12 +266,12 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.False(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueArray()
-	av1.ArrayVal().Append(NewAttributeValueInt(123))
+	av1.ArrayVal().AppendEmpty().SetIntVal(123)
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewAttributeValueArray()
-	av2.ArrayVal().Append(NewAttributeValueDouble(123))
+	av2.ArrayVal().AppendEmpty().SetDoubleVal(123)
 	assert.False(t, av1.Equal(av2))
 
 	NewAttributeValueInt(123).CopyTo(av2.ArrayVal().At(0))
@@ -1210,7 +1210,7 @@ func TestAnyValueArrayWithNilValues(t *testing.T) {
 	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "test_value", val.StringVal())
 
-	sm.Append(NewAttributeValueString("other_value"))
+	sm.AppendEmpty().SetStringVal("other_value")
 	val = sm.At(2)
 	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())

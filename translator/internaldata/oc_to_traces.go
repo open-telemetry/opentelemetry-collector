@@ -38,9 +38,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 
 	if len(spans) == 0 {
 		// At least one of the td.Node or td.Resource is not nil. Set the resource and return.
-		rss := traceData.ResourceSpans()
-		rss.Resize(1)
-		ocNodeResourceToInternal(node, resource, rss.At(0).Resource())
+		ocNodeResourceToInternal(node, resource, traceData.ResourceSpans().AppendEmpty().Resource())
 		return traceData
 	}
 

@@ -120,11 +120,11 @@ func simpleAttributeValueMap() pdata.AttributeValue {
 func simpleAttributeValueArray() pdata.AttributeValue {
 	ret := pdata.NewAttributeValueArray()
 	attrArr := ret.ArrayVal()
-	attrArr.Append(pdata.NewAttributeValueString("strVal"))
-	attrArr.Append(pdata.NewAttributeValueInt(7))
-	attrArr.Append(pdata.NewAttributeValueDouble(18.6))
-	attrArr.Append(pdata.NewAttributeValueBool(false))
-	attrArr.Append(pdata.NewAttributeValueNull())
+	attrArr.AppendEmpty().SetStringVal("strVal")
+	attrArr.AppendEmpty().SetIntVal(7)
+	attrArr.AppendEmpty().SetDoubleVal(18.6)
+	attrArr.AppendEmpty().SetBoolVal(false)
+	attrArr.AppendEmpty()
 	return ret
 }
 
@@ -137,9 +137,7 @@ func constructTestAttributeSubmap() pdata.AttributeValue {
 
 func constructTestAttributeSubarray() pdata.AttributeValue {
 	value := pdata.NewAttributeValueArray()
-	a1 := pdata.NewAttributeValueString("strOne")
-	value.ArrayVal().Append(a1)
-	a2 := pdata.NewAttributeValueString("strTwo")
-	value.ArrayVal().Append(a2)
+	value.ArrayVal().AppendEmpty().SetStringVal("strOne")
+	value.ArrayVal().AppendEmpty().SetStringVal("strTwo")
 	return value
 }

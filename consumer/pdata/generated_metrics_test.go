@@ -127,9 +127,8 @@ func TestResourceMetricsSlice_Resize(t *testing.T) {
 func TestResourceMetricsSlice_Append(t *testing.T) {
 	es := generateTestResourceMetricsSlice()
 
-	emptyVal := newResourceMetrics(&otlpmetrics.ResourceMetrics{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.ResourceMetrics{}, es.At(7).orig)
 
 	value := generateTestResourceMetrics()
 	es.Append(value)
@@ -260,9 +259,8 @@ func TestInstrumentationLibraryMetricsSlice_Resize(t *testing.T) {
 func TestInstrumentationLibraryMetricsSlice_Append(t *testing.T) {
 	es := generateTestInstrumentationLibraryMetricsSlice()
 
-	emptyVal := newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.InstrumentationLibraryMetrics{}, es.At(7).orig)
 
 	value := generateTestInstrumentationLibraryMetrics()
 	es.Append(value)
@@ -393,9 +391,8 @@ func TestMetricSlice_Resize(t *testing.T) {
 func TestMetricSlice_Append(t *testing.T) {
 	es := generateTestMetricSlice()
 
-	emptyVal := newMetric(&otlpmetrics.Metric{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.Metric{}, es.At(7).orig)
 
 	value := generateTestMetric()
 	es.Append(value)
@@ -682,9 +679,8 @@ func TestIntDataPointSlice_Resize(t *testing.T) {
 func TestIntDataPointSlice_Append(t *testing.T) {
 	es := generateTestIntDataPointSlice()
 
-	emptyVal := newIntDataPoint(&otlpmetrics.IntDataPoint{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.IntDataPoint{}, es.At(7).orig)
 
 	value := generateTestIntDataPoint()
 	es.Append(value)
@@ -841,9 +837,8 @@ func TestDoubleDataPointSlice_Resize(t *testing.T) {
 func TestDoubleDataPointSlice_Append(t *testing.T) {
 	es := generateTestDoubleDataPointSlice()
 
-	emptyVal := newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.DoubleDataPoint{}, es.At(7).orig)
 
 	value := generateTestDoubleDataPoint()
 	es.Append(value)
@@ -1000,9 +995,8 @@ func TestIntHistogramDataPointSlice_Resize(t *testing.T) {
 func TestIntHistogramDataPointSlice_Append(t *testing.T) {
 	es := generateTestIntHistogramDataPointSlice()
 
-	emptyVal := newIntHistogramDataPoint(&otlpmetrics.IntHistogramDataPoint{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.IntHistogramDataPoint{}, es.At(7).orig)
 
 	value := generateTestIntHistogramDataPoint()
 	es.Append(value)
@@ -1183,9 +1177,8 @@ func TestHistogramDataPointSlice_Resize(t *testing.T) {
 func TestHistogramDataPointSlice_Append(t *testing.T) {
 	es := generateTestHistogramDataPointSlice()
 
-	emptyVal := newHistogramDataPoint(&otlpmetrics.DoubleHistogramDataPoint{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.DoubleHistogramDataPoint{}, es.At(7).orig)
 
 	value := generateTestHistogramDataPoint()
 	es.Append(value)
@@ -1366,9 +1359,8 @@ func TestSummaryDataPointSlice_Resize(t *testing.T) {
 func TestSummaryDataPointSlice_Append(t *testing.T) {
 	es := generateTestSummaryDataPointSlice()
 
-	emptyVal := newSummaryDataPoint(&otlpmetrics.DoubleSummaryDataPoint{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.DoubleSummaryDataPoint{}, es.At(7).orig)
 
 	value := generateTestSummaryDataPoint()
 	es.Append(value)
@@ -1533,9 +1525,8 @@ func TestValueAtQuantileSlice_Resize(t *testing.T) {
 func TestValueAtQuantileSlice_Append(t *testing.T) {
 	es := generateTestValueAtQuantileSlice()
 
-	emptyVal := newValueAtQuantile(&otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{}, es.At(7).orig)
 
 	value := generateTestValueAtQuantile()
 	es.Append(value)
@@ -1668,9 +1659,8 @@ func TestIntExemplarSlice_Resize(t *testing.T) {
 func TestIntExemplarSlice_Append(t *testing.T) {
 	es := generateTestIntExemplarSlice()
 
-	emptyVal := newIntExemplar(&otlpmetrics.IntExemplar{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal, es.At(7))
+	es.AppendEmpty()
+	assert.EqualValues(t, newIntExemplar(&otlpmetrics.IntExemplar{}), es.At(7))
 
 	value := generateTestIntExemplar()
 	es.Append(value)
@@ -1811,9 +1801,8 @@ func TestExemplarSlice_Resize(t *testing.T) {
 func TestExemplarSlice_Append(t *testing.T) {
 	es := generateTestExemplarSlice()
 
-	emptyVal := newExemplar(&otlpmetrics.DoubleExemplar{})
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal, es.At(7))
+	es.AppendEmpty()
+	assert.EqualValues(t, newExemplar(&otlpmetrics.DoubleExemplar{}), es.At(7))
 
 	value := generateTestExemplar()
 	es.Append(value)
