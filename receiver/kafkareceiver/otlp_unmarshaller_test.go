@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 func TestUnmarshallOTLP(t *testing.T) {
@@ -41,6 +42,26 @@ func TestUnmarshallOTLP(t *testing.T) {
 
 func TestUnmarshallOTLP_error(t *testing.T) {
 	p := otlpTracesPbUnmarshaller{}
+	_, err := p.Unmarshal([]byte("+$%"))
+	assert.Error(t, err)
+}
+
+func TestUnmarshallOTLPLogs(t *testing.T) {
+	ld := testdata.GenerateLogDataOneLog()
+
+	expected, err := ld.ToOtlpProtoBytes()
+	require.NoError(t, err)
+
+	p := otlpLogsPbUnmarshaller{}
+	got, err := p.Unmarshal(expected)
+	require.NoError(t, err)
+
+	assert.Equal(t, ld, got)
+	assert.Equal(t, "otlp_proto", p.Encoding())
+}
+
+func TestUnmarshallOTLPLogs_error(t *testing.T) {
+	p := otlpLogsPbUnmarshaller{}
 	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }

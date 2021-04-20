@@ -40,3 +40,18 @@ func TestDefaultUnMarshaller(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultLogsUnMarshaller(t *testing.T) {
+	expectedEncodings := []string{
+		"otlp_proto",
+	}
+	marshallers := defaultLogsUnmarshallers()
+	assert.Equal(t, len(expectedEncodings), len(marshallers))
+	for _, e := range expectedEncodings {
+		t.Run(e, func(t *testing.T) {
+			m, ok := marshallers[e]
+			require.True(t, ok)
+			assert.NotNil(t, m)
+		})
+	}
+}

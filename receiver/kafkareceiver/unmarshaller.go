@@ -27,6 +27,15 @@ type Unmarshaller interface {
 	Encoding() string
 }
 
+// LogsUnmarshaller deserializes the message body.
+type LogsUnmarshaller interface {
+	// Unmarshal deserializes the message body into traces.
+	Unmarshal([]byte) (pdata.Logs, error)
+
+	// Encoding of the serialized messages.
+	Encoding() string
+}
+
 // defaultUnmarshallers returns map of supported encodings with Unmarshaller.
 func defaultUnmarshallers() map[string]Unmarshaller {
 	otlp := &otlpTracesPbUnmarshaller{}
@@ -42,5 +51,12 @@ func defaultUnmarshallers() map[string]Unmarshaller {
 		zipkinProto.Encoding():  zipkinProto,
 		zipkinJSON.Encoding():   zipkinJSON,
 		zipkinThrift.Encoding(): zipkinThrift,
+	}
+}
+
+func defaultLogsUnmarshallers() map[string]LogsUnmarshaller {
+	otlp := &otlpLogsPbUnmarshaller{}
+	return map[string]LogsUnmarshaller{
+		otlp.Encoding(): otlp,
 	}
 }
