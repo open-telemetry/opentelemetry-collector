@@ -263,11 +263,16 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			Name:        "go_threads",
 			Description: "Number of OS threads created",
 			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+			LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				Points: []*metricspb.Point{
 					{Value: &metricspb.Point_DoubleValue{DoubleValue: 19.0}},
+				},
+				LabelValues: []*metricspb.LabelValue{
+					{Value: "-", HasValue: true},
+					{Value: "target1", HasValue: true},
 				},
 			},
 		},
@@ -277,6 +282,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
+	gotG1.Timeseries[0].LabelValues[0].Value = "-"
 	doCompare("scrape1", t, wantG1, gotG1)
 
 	// verify the 2nd metricData
@@ -291,11 +297,16 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
 							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 18.0}},
+						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target1", HasValue: true},
 						},
 					},
 				},
@@ -305,13 +316,15 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "http_requests_total",
 					Description: "The total number of HTTP requests.",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "method"}},
+					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "instance"}, {Key: "job"}, {Key: "method"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts1,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "200", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target1", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -322,6 +335,8 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 						StartTimestamp: ts1,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "400", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target1", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -336,6 +351,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
 					Description: "A histogram of the request duration.",
 					Unit:        "s",
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
@@ -363,6 +379,10 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 									}},
 							},
 						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target1", HasValue: true},
+						},
 					},
 				},
 			},
@@ -370,12 +390,17 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "rpc_duration_seconds",
 					Type:        metricspb.MetricDescriptor_SUMMARY,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 					Description: "A summary of the RPC duration in seconds.",
 					Unit:        "s",
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts1,
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target1", HasValue: true},
+						},
 						Points: []*metricspb.Point{
 							{
 								Timestamp: ts2,
@@ -409,6 +434,11 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 		},
 	}
 
+	m2.Metrics[0].Timeseries[0].LabelValues[0].Value = "-"
+	m2.Metrics[1].Timeseries[0].LabelValues[1].Value = "-"
+	m2.Metrics[1].Timeseries[1].LabelValues[1].Value = "-"
+	m2.Metrics[2].Timeseries[0].LabelValues[0].Value = "-"
+	m2.Metrics[3].Timeseries[0].LabelValues[0].Value = "-"
 	doCompare("scrape2", t, want2, &m2)
 }
 
@@ -490,16 +520,22 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			Name:        "go_threads",
 			Description: "Number of OS threads created",
 			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+			LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				Points: []*metricspb.Point{
 					{Value: &metricspb.Point_DoubleValue{DoubleValue: 18.0}},
 				},
+				LabelValues: []*metricspb.LabelValue{
+					{Value: "-", HasValue: true},
+					{Value: "target2", HasValue: true},
+				},
 			},
 		},
 	}
 	gotG1 := m1.Metrics[0]
+	gotG1.Timeseries[0].LabelValues[0].Value = "-"
 	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
@@ -518,11 +554,16 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
 							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
+						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 						},
 					},
 				},
@@ -532,13 +573,15 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "http_requests_total",
 					Description: "The total number of HTTP requests.",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "method"}},
+					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "instance"}, {Key: "job"}, {Key: "method"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts1,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "200", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -549,6 +592,8 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 						StartTimestamp: ts1,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "400", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -559,6 +604,10 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			},
 		},
 	}
+
+	m2.Metrics[0].Timeseries[0].LabelValues[0].Value = "-"
+	m2.Metrics[1].Timeseries[0].LabelValues[1].Value = "-"
+	m2.Metrics[1].Timeseries[1].LabelValues[1].Value = "-"
 	doCompare("scrape2", t, want2, &m2)
 
 	// verify the 3rd metricData, with the new code=500 counter which first appeared on 2nd run
@@ -575,11 +624,16 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
 							{Timestamp: ts3, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
+						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 						},
 					},
 				},
@@ -589,13 +643,15 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "http_requests_total",
 					Description: "The total number of HTTP requests.",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "method"}},
+					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "instance"}, {Key: "job"}, {Key: "method"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts1,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "200", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -606,6 +662,8 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 						StartTimestamp: ts1,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "400", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -616,6 +674,8 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 						StartTimestamp: ts2,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "500", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -626,6 +686,11 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			},
 		},
 	}
+
+	m3.Metrics[0].Timeseries[0].LabelValues[0].Value = "-"
+	m3.Metrics[1].Timeseries[0].LabelValues[1].Value = "-"
+	m3.Metrics[1].Timeseries[1].LabelValues[1].Value = "-"
+	m3.Metrics[1].Timeseries[2].LabelValues[1].Value = "-"
 	doCompare("scrape3", t, want3, &m3)
 
 	// verify the 4th metricData which reset happens, all cumulative types shall be absent
@@ -641,17 +706,24 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
 							{Timestamp: ts4, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
 						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
+						},
 					},
 				},
 			},
 		},
 	}
+
+	m4.Metrics[0].Timeseries[0].LabelValues[0].Value = "-"
 	doCompare("scrape4", t, want4, &m4)
 
 	// verify the 4th metricData which reset happens, all cumulative types shall be absent
@@ -668,11 +740,16 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
 							{Timestamp: ts5, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
+						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 						},
 					},
 				},
@@ -682,13 +759,15 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "http_requests_total",
 					Description: "The total number of HTTP requests.",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "method"}},
+					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "instance"}, {Key: "job"}, {Key: "method"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts4,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "200", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -699,6 +778,8 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 						StartTimestamp: ts4,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "400", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -709,6 +790,8 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 						StartTimestamp: ts4,
 						LabelValues: []*metricspb.LabelValue{
 							{Value: "500", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target2", HasValue: true},
 							{Value: "post", HasValue: true},
 						},
 						Points: []*metricspb.Point{
@@ -719,6 +802,11 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			},
 		},
 	}
+
+	m5.Metrics[0].Timeseries[0].LabelValues[0].Value = "-"
+	m5.Metrics[1].Timeseries[0].LabelValues[1].Value = "-"
+	m5.Metrics[1].Timeseries[1].LabelValues[1].Value = "-"
+	m5.Metrics[1].Timeseries[2].LabelValues[1].Value = "-"
 	doCompare("scrape5", t, want5, &m5)
 }
 
@@ -807,19 +895,25 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name:        "go_threads",
 			Description: "Number of OS threads created",
+			LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				Points: []*metricspb.Point{
 					{Value: &metricspb.Point_DoubleValue{DoubleValue: 18.0}},
 				},
+				LabelValues: []*metricspb.LabelValue{
+					{Value: "-", HasValue: true},
+					{Value: "target3", HasValue: true},
+				},
 			},
 		},
 	}
 	gotG1 := m1.Metrics[0]
 	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
-	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
+	gotG1.Timeseries[0].LabelValues[0].Value = "-" // instance label is not deterministic
+	// set this timestamp to wantG1
 	doCompare("scrape1", t, wantG1, gotG1)
 
 	// verify the 2nd metricData
@@ -835,11 +929,16 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
 							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
+						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target3", HasValue: true},
 						},
 					},
 				},
@@ -850,6 +949,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					Description: "A histogram of the request duration.",
 					Unit:        "s",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "instance"}, {Key: "job"}},
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
@@ -878,6 +978,10 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 								},
 							},
 						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "-", HasValue: true},
+							{Value: "target3", HasValue: true},
+						},
 					},
 				},
 			},
@@ -885,14 +989,18 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "rpc_duration_seconds",
 					Type:        metricspb.MetricDescriptor_SUMMARY,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "foo"}},
+					LabelKeys:   []*metricspb.LabelKey{{Key: "foo"}, {Key: "instance"}, {Key: "job"}},
 					Description: "A summary of the RPC duration in seconds.",
 					Unit:        "s",
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts1,
-						LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "bar", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target3", HasValue: true},
+						},
 						Points: []*metricspb.Point{
 							{
 								Timestamp: ts2,
@@ -931,7 +1039,11 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 					},
 					{
 						StartTimestamp: ts1,
-						LabelValues:    []*metricspb.LabelValue{{Value: "no_quantile", HasValue: true}},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "no_quantile", HasValue: true},
+							{Value: "-", HasValue: true},
+							{Value: "target3", HasValue: true},
+						},
 						Points: []*metricspb.Point{
 							{
 								Timestamp: ts2,
@@ -952,6 +1064,10 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 		},
 	}
 
+	m2.Metrics[0].Timeseries[0].LabelValues[0].Value = "-"
+	m2.Metrics[1].Timeseries[0].LabelValues[0].Value = "-"
+	m2.Metrics[2].Timeseries[0].LabelValues[1].Value = "-"
+	m2.Metrics[2].Timeseries[1].LabelValues[1].Value = "-"
 	doCompare("scrape2", t, want2, &m2)
 }
 
