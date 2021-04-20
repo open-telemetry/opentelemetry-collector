@@ -17,7 +17,6 @@ package tracetranslator
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"regexp"
 	"strconv"
 
@@ -75,7 +74,6 @@ type attrValDescript struct {
 }
 
 var attrValDescriptions = getAttrValDescripts()
-var complexAttrValDescriptions = getComplexAttrValDescripts()
 
 func getAttrValDescripts() []*attrValDescript {
 	descriptions := make([]*attrValDescript, 0, 5)
@@ -86,11 +84,6 @@ func getAttrValDescripts() []*attrValDescript {
 	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueMAP))
 	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueARRAY))
 	return descriptions
-}
-
-func getComplexAttrValDescripts() []*attrValDescript {
-	descriptions := getAttrValDescripts()
-	return descriptions[4:]
 }
 
 func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *attrValDescript {
@@ -185,109 +178,14 @@ func AttributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 	return rawSlice
 }
 
-// UpsertStringToAttributeMap upserts a string value to the specified key as it's native OTLP type
-func UpsertStringToAttributeMap(key string, val string, dest pdata.AttributeMap, omitSimpleTypes bool) {
-	switch DetermineValueType(val, omitSimpleTypes) {
-	case pdata.AttributeValueINT:
-		iVal, _ := strconv.ParseInt(val, 10, 64)
-		dest.UpsertInt(key, iVal)
-	case pdata.AttributeValueDOUBLE:
-		fVal, _ := strconv.ParseFloat(val, 64)
-		dest.UpsertDouble(key, fVal)
-	case pdata.AttributeValueBOOL:
-		bVal, _ := strconv.ParseBool(val)
-		dest.UpsertBool(key, bVal)
-	case pdata.AttributeValueMAP:
-		var attrs map[string]interface{}
-		err := json.Unmarshal([]byte(val), &attrs)
-		if err == nil {
-			attrMap := pdata.NewAttributeValueMap()
-			jsonMapToAttributeMap(attrs, attrMap.MapVal())
-			dest.Upsert(key, attrMap)
-		} else {
-			dest.UpsertString(key, "")
-		}
-	case pdata.AttributeValueARRAY:
-		var jArray []interface{}
-		err := json.Unmarshal([]byte(val), &jArray)
-		if err == nil {
-			attrArr := pdata.NewAttributeValueArray()
-			jsonArrayToAttributeArray(jArray, attrArr.ArrayVal())
-			dest.Upsert(key, attrArr)
-		} else {
-			dest.UpsertString(key, "")
-		}
-	default:
-		dest.UpsertString(key, val)
-	}
-}
-
 // DetermineValueType returns the native OTLP attribute type the string translates to.
-func DetermineValueType(value string, omitSimpleTypes bool) pdata.AttributeValueType {
-	if omitSimpleTypes {
-		for _, desc := range complexAttrValDescriptions {
-			if desc.regex.MatchString(value) {
-				return desc.attrType
-			}
-		}
-	} else {
-		for _, desc := range attrValDescriptions {
-			if desc.regex.MatchString(value) {
-				return desc.attrType
-			}
+func DetermineValueType(value string) pdata.AttributeValueType {
+	for _, desc := range attrValDescriptions {
+		if desc.regex.MatchString(value) {
+			return desc.attrType
 		}
 	}
 	return pdata.AttributeValueSTRING
-}
-
-func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap) {
-	for key, val := range attrs {
-		if val == nil {
-			dest.Upsert(key, pdata.NewAttributeValueNull())
-			continue
-		}
-		if s, ok := val.(string); ok {
-			dest.UpsertString(key, s)
-		} else if d, ok := val.(float64); ok {
-			if math.Mod(d, 1.0) == 0.0 {
-				dest.UpsertInt(key, int64(d))
-			} else {
-				dest.UpsertDouble(key, d)
-			}
-		} else if b, ok := val.(bool); ok {
-			dest.UpsertBool(key, b)
-		} else if m, ok := val.(map[string]interface{}); ok {
-			value := pdata.NewAttributeValueMap()
-			jsonMapToAttributeMap(m, value.MapVal())
-			dest.Upsert(key, value)
-		} else if a, ok := val.([]interface{}); ok {
-			value := pdata.NewAttributeValueArray()
-			jsonArrayToAttributeArray(a, value.ArrayVal())
-			dest.Upsert(key, value)
-		}
-	}
-}
-
-func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
-	for _, val := range jArray {
-		if val == nil {
-			dest.Append(pdata.NewAttributeValueNull())
-			continue
-		}
-		if s, ok := val.(string); ok {
-			dest.Append(pdata.NewAttributeValueString(s))
-		} else if d, ok := val.(float64); ok {
-			if math.Mod(d, 1.0) == 0.0 {
-				dest.Append(pdata.NewAttributeValueInt(int64(d)))
-			} else {
-				dest.Append(pdata.NewAttributeValueDouble(d))
-			}
-		} else if b, ok := val.(bool); ok {
-			dest.Append(pdata.NewAttributeValueBool(b))
-		} else {
-			dest.Append(pdata.NewAttributeValueString("<Invalid array value>"))
-		}
-	}
 }
 
 // StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code

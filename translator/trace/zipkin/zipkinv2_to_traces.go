@@ -345,7 +345,7 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 		}
 
 		if parseStringTags {
-			switch tracetranslator.DetermineValueType(val, false) {
+			switch tracetranslator.DetermineValueType(val) {
 			case pdata.AttributeValueINT:
 				iValue, _ := strconv.ParseInt(val, 10, 64)
 				dest.UpsertInt(key, iValue)

@@ -60,62 +60,53 @@ func TestAttributeValueToString(t *testing.T) {
 			expected: "true",
 		},
 		{
-			name:     "null",
-			input:    pdata.NewAttributeValueNull(),
-			jsonLike: false,
-			expected: "",
-		},
-		{
-			name:     "null",
-			input:    pdata.NewAttributeValueNull(),
-			jsonLike: true,
-			expected: "null",
-		},
-		{
-			name:     "map",
+			name:     "empty_map",
 			input:    pdata.NewAttributeValueMap(),
 			jsonLike: false,
 			expected: "{}",
 		},
 		{
-			name:     "array",
+			name:     "simple_map",
+			input:    simpleAttributeValueMap(),
+			jsonLike: false,
+			expected: "{\"arrKey\":[\"strOne\",\"strTwo\"],\"boolKey\":false,\"floatKey\":18.6,\"intKey\":7,\"mapKey\":{\"keyOne\":\"valOne\",\"keyTwo\":\"valTwo\"},\"nullKey\":null,\"strKey\":\"strVal\"}",
+		},
+		{
+			name:     "empty_array",
 			input:    pdata.NewAttributeValueArray(),
 			jsonLike: false,
 			expected: "[]",
 		},
 		{
-			name:     "array",
+			name:     "simple_array",
+			input:    simpleAttributeValueArray(),
+			jsonLike: false,
+			expected: "[\"strVal\",7,18.6,false,null]",
+		},
+		{
+			name:     "null",
 			input:    pdata.NewAttributeValueNull(),
 			jsonLike: false,
 			expected: "",
+		},
+		{
+			name:     "null_json",
+			input:    pdata.NewAttributeValueNull(),
+			jsonLike: true,
+			expected: "null",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := AttributeValueToString(test.input, test.jsonLike)
 			assert.Equal(t, test.expected, actual)
-			dest := pdata.NewAttributeMap()
-			key := "keyOne"
-			UpsertStringToAttributeMap(key, actual, dest, false)
-			val, ok := dest.Get(key)
-			assert.True(t, ok)
-			if !test.jsonLike {
-				switch test.input.Type() {
-				case pdata.AttributeValueINT, pdata.AttributeValueDOUBLE, pdata.AttributeValueBOOL:
-					assert.EqualValues(t, test.input, val)
-				case pdata.AttributeValueARRAY:
-					assert.NotNil(t, val)
-				default:
-					assert.Equal(t, test.expected, val.StringVal())
-				}
-			}
 		})
 	}
 }
 
-func TestAttributeMapToStringAndBack(t *testing.T) {
-	expected := pdata.NewAttributeValueMap()
-	attrMap := expected.MapVal()
+func simpleAttributeValueMap() pdata.AttributeValue {
+	ret := pdata.NewAttributeValueMap()
+	attrMap := ret.MapVal()
 	attrMap.UpsertString("strKey", "strVal")
 	attrMap.UpsertInt("intKey", 7)
 	attrMap.UpsertDouble("floatKey", 18.6)
@@ -123,55 +114,18 @@ func TestAttributeMapToStringAndBack(t *testing.T) {
 	attrMap.Upsert("nullKey", pdata.NewAttributeValueNull())
 	attrMap.Upsert("mapKey", constructTestAttributeSubmap())
 	attrMap.Upsert("arrKey", constructTestAttributeSubarray())
-	strVal := AttributeValueToString(expected, false)
-	dest := pdata.NewAttributeMap()
-	UpsertStringToAttributeMap("parent", strVal, dest, false)
-	actual, ok := dest.Get("parent")
-	assert.True(t, ok)
-	compareMaps(t, attrMap, actual.MapVal())
+	return ret
 }
 
-func TestAttributeArrayToStringAndBack(t *testing.T) {
-	expected := pdata.NewAttributeValueArray()
-	attrArr := expected.ArrayVal()
+func simpleAttributeValueArray() pdata.AttributeValue {
+	ret := pdata.NewAttributeValueArray()
+	attrArr := ret.ArrayVal()
 	attrArr.Append(pdata.NewAttributeValueString("strVal"))
 	attrArr.Append(pdata.NewAttributeValueInt(7))
 	attrArr.Append(pdata.NewAttributeValueDouble(18.6))
 	attrArr.Append(pdata.NewAttributeValueBool(false))
 	attrArr.Append(pdata.NewAttributeValueNull())
-	strVal := AttributeValueToString(expected, false)
-	dest := pdata.NewAttributeMap()
-	UpsertStringToAttributeMap("parent", strVal, dest, false)
-	actual, ok := dest.Get("parent")
-	assert.True(t, ok)
-	compareArrays(t, attrArr, actual.ArrayVal())
-}
-
-func compareMaps(t *testing.T, expected pdata.AttributeMap, actual pdata.AttributeMap) {
-	expected.Range(func(k string, e pdata.AttributeValue) bool {
-		a, ok := actual.Get(k)
-		assert.True(t, ok)
-		if ok {
-			if e.Type() == pdata.AttributeValueMAP {
-				compareMaps(t, e.MapVal(), a.MapVal())
-			} else {
-				assert.Equal(t, e, a)
-			}
-		}
-		return true
-	})
-}
-
-func compareArrays(t *testing.T, expected pdata.AnyValueArray, actual pdata.AnyValueArray) {
-	for i := 0; i < expected.Len(); i++ {
-		e := expected.At(i)
-		a := actual.At(i)
-		if e.Type() == pdata.AttributeValueMAP {
-			compareMaps(t, e.MapVal(), a.MapVal())
-		} else {
-			assert.Equal(t, e, a)
-		}
-	}
+	return ret
 }
 
 func constructTestAttributeSubmap() pdata.AttributeValue {
