@@ -6,6 +6,9 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Change `With*Unmarshallers` signatures in Kafka exporter/receiver (#2973)
+- Rename `marshall` to `marshal` in all the occurrences (#2977)
+
 ## 💡 Enhancements 💡
 
 ## 🧰 Bug fixes 🧰
