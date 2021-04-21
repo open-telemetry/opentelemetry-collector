@@ -66,6 +66,11 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		params.Logger,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 1,
+			// TODO(jbd): Allow users to modify the queue size.
+		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
