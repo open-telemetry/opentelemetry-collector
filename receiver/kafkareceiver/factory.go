@@ -48,7 +48,7 @@ type FactoryOption func(factory *kafkaReceiverFactory)
 func WithTracesUnmarshallers(tracesUnmarshallers ...TracesUnmarshaller) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaller := range tracesUnmarshallers {
-			factory.tracesUnmarshallers[unmarshaller.Encoding()] = unmarshaller
+			factory.tracesUnmarshalers[unmarshaller.Encoding()] = unmarshaller
 		}
 	}
 }
@@ -57,7 +57,7 @@ func WithTracesUnmarshallers(tracesUnmarshallers ...TracesUnmarshaller) FactoryO
 func WithLogsUnmarshallers(logsUnmarshallers ...LogsUnmarshaller) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaller := range logsUnmarshallers {
-			factory.logsUnmarshallers[unmarshaller.Encoding()] = unmarshaller
+			factory.logsUnmarshaller[unmarshaller.Encoding()] = unmarshaller
 		}
 	}
 }
@@ -65,8 +65,8 @@ func WithLogsUnmarshallers(logsUnmarshallers ...LogsUnmarshaller) FactoryOption 
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	f := &kafkaReceiverFactory{
-		tracesUnmarshallers: defaultTracesUnmarshallers(),
-		logsUnmarshallers:   defaultLogsUnmarshallers(),
+		tracesUnmarshalers: defaultTracesUnmarshallers(),
+		logsUnmarshaller:   defaultLogsUnmarshallers(),
 	}
 	for _, o := range options {
 		o(f)
@@ -101,8 +101,8 @@ func createDefaultConfig() config.Receiver {
 }
 
 type kafkaReceiverFactory struct {
-	tracesUnmarshallers map[string]TracesUnmarshaller
-	logsUnmarshallers   map[string]LogsUnmarshaller
+	tracesUnmarshalers map[string]TracesUnmarshaller
+	logsUnmarshaller   map[string]LogsUnmarshaller
 }
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
@@ -112,7 +112,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newTracesReceiver(*c, params, f.tracesUnmarshallers, nextConsumer)
+	r, err := newTracesReceiver(*c, params, f.tracesUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newLogsReceiver(*c, params, f.logsUnmarshallers, nextConsumer)
+	r, err := newLogsReceiver(*c, params, f.logsUnmarshaller, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

@@ -40,7 +40,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{tracesUnmarshallers: defaultTracesUnmarshallers()}
+	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshallers()}
 	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	// no available broker
 	require.Error(t, err)
@@ -52,7 +52,7 @@ func TestCreateTracesReceiver_error(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
-	f := kafkaReceiverFactory{tracesUnmarshallers: defaultTracesUnmarshallers()}
+	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshallers()}
 	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
@@ -84,7 +84,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{logsUnmarshallers: defaultLogsUnmarshallers()}
+	f := kafkaReceiverFactory{logsUnmarshaller: defaultLogsUnmarshallers()}
 	r, err := f.createLogsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	// no available broker
 	require.Error(t, err)
@@ -96,7 +96,7 @@ func TestCreateLogsReceiver_error(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
-	f := kafkaReceiverFactory{logsUnmarshallers: defaultLogsUnmarshallers()}
+	f := kafkaReceiverFactory{logsUnmarshaller: defaultLogsUnmarshallers()}
 	r, err := f.createLogsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
