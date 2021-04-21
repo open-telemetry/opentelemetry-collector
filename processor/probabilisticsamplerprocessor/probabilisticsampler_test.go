@@ -223,9 +223,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
 		traces := pdata.NewTraces()
-		rs := traces.ResourceSpans().AppendEmpty()
-		instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
-		instrLibrarySpans.Spans().Append(getSpanWithAttributes(key, attribValue))
+		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
 		return traces
 	}
 	tests := []struct {
@@ -410,9 +408,13 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 
 func getSpanWithAttributes(key string, value pdata.AttributeValue) pdata.Span {
 	span := pdata.NewSpan()
-	span.SetName("spanName")
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{key: value})
+	initSpanWithAttributes(key, value, span)
 	return span
+}
+
+func initSpanWithAttributes(key string, value pdata.AttributeValue, dest pdata.Span) {
+	dest.SetName("spanName")
+	dest.Attributes().InitFromMap(map[string]pdata.AttributeValue{key: value})
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
