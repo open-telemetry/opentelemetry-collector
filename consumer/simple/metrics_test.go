@@ -292,13 +292,11 @@ func TestMetrics(t *testing.T) {
 func TestMetricFactories(t *testing.T) {
 	mb := Metrics{
 		Metrics: pdata.NewMetrics(),
-		MetricFactoriesByName: map[string]func() pdata.Metric{
-			"disk.ops": func() pdata.Metric {
-				m := pdata.NewMetric()
+		MetricFactoriesByName: map[string]func(pdata.Metric){
+			"disk.ops": func(m pdata.Metric) {
 				m.SetName("disk.ops")
 				m.SetDescription("This counts disk operations")
 				m.SetDataType(pdata.MetricDataTypeIntSum)
-				return m
 			},
 		},
 		InstrumentationLibraryName:    "example",
