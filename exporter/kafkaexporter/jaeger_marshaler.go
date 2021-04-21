@@ -25,13 +25,13 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-type jaegerMarshaller struct {
-	marshaller jaegerSpanMarshaller
+type jaegerMarshaler struct {
+	marshaler jaegerSpanMarshaler
 }
 
-var _ TracesMarshaller = (*jaegerMarshaller)(nil)
+var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
-func (j jaegerMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
+func (j jaegerMarshaler) Marshal(traces pdata.Traces) ([]Message, error) {
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(traces)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (j jaegerMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
-			bts, err := j.marshaller.marshall(span)
+			bts, err := j.marshaler.marshal(span)
 			// continue to process spans that can be serialized
 			if err != nil {
 				errs = append(errs, err)
@@ -54,46 +54,46 @@ func (j jaegerMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 	return messages, consumererror.Combine(errs)
 }
 
-func (j jaegerMarshaller) Encoding() string {
-	return j.marshaller.encoding()
+func (j jaegerMarshaler) Encoding() string {
+	return j.marshaler.encoding()
 }
 
-type jaegerSpanMarshaller interface {
-	marshall(span *jaegerproto.Span) ([]byte, error)
+type jaegerSpanMarshaler interface {
+	marshal(span *jaegerproto.Span) ([]byte, error)
 	encoding() string
 }
 
-type jaegerProtoSpanMarshaller struct {
+type jaegerProtoSpanMarshaler struct {
 }
 
-var _ jaegerSpanMarshaller = (*jaegerProtoSpanMarshaller)(nil)
+var _ jaegerSpanMarshaler = (*jaegerProtoSpanMarshaler)(nil)
 
-func (p jaegerProtoSpanMarshaller) marshall(span *jaegerproto.Span) ([]byte, error) {
+func (p jaegerProtoSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error) {
 	return span.Marshal()
 }
 
-func (p jaegerProtoSpanMarshaller) encoding() string {
+func (p jaegerProtoSpanMarshaler) encoding() string {
 	return "jaeger_proto"
 }
 
-type jaegerJSONSpanMarshaller struct {
-	pbMarshaller *jsonpb.Marshaler
+type jaegerJSONSpanMarshaler struct {
+	pbMarshaler *jsonpb.Marshaler
 }
 
-var _ jaegerSpanMarshaller = (*jaegerJSONSpanMarshaller)(nil)
+var _ jaegerSpanMarshaler = (*jaegerJSONSpanMarshaler)(nil)
 
-func newJaegerJSONMarshaller() *jaegerJSONSpanMarshaller {
-	return &jaegerJSONSpanMarshaller{
-		pbMarshaller: &jsonpb.Marshaler{},
+func newJaegerJSONMarshaler() *jaegerJSONSpanMarshaler {
+	return &jaegerJSONSpanMarshaler{
+		pbMarshaler: &jsonpb.Marshaler{},
 	}
 }
 
-func (p jaegerJSONSpanMarshaller) marshall(span *jaegerproto.Span) ([]byte, error) {
+func (p jaegerJSONSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error) {
 	out := new(bytes.Buffer)
-	err := p.pbMarshaller.Marshal(out, span)
+	err := p.pbMarshaler.Marshal(out, span)
 	return out.Bytes(), err
 }
 
-func (p jaegerJSONSpanMarshaller) encoding() string {
+func (p jaegerJSONSpanMarshaler) encoding() string {
 	return "jaeger_json"
 }
