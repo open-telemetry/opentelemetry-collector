@@ -484,16 +484,13 @@ func BenchmarkPdataMetrics(b *testing.B) {
 		resAttrs.Insert("host", pdata.NewAttributeValueString("my-host"))
 		resAttrs.Insert("serviceName", pdata.NewAttributeValueString("app"))
 
-		ilms := rm.InstrumentationLibraryMetrics()
-		ilms.Resize(1)
-		ilm := ilms.At(0)
-		metrics := ilm.Metrics()
-		metrics.Resize(6)
-
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 		il := ilm.InstrumentationLibrary()
 		il.SetName("example")
 		il.SetVersion("0.1")
 
+		metrics := ilm.Metrics()
+		metrics.Resize(6)
 		for i := 0; i < 50; i++ {
 			metric := metrics.At(0)
 			metric.SetName("gauge" + strconv.Itoa(i))

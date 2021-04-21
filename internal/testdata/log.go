@@ -30,8 +30,7 @@ var (
 )
 
 func GenerateLogDataEmpty() pdata.Logs {
-	ld := pdata.NewLogs()
-	return ld
+	return pdata.NewLogs()
 }
 
 func generateLogOtlpEmpty() *otlpcollectorlog.ExportLogsServiceRequest {
@@ -40,7 +39,7 @@ func generateLogOtlpEmpty() *otlpcollectorlog.ExportLogsServiceRequest {
 
 func GenerateLogDataOneEmptyResourceLogs() pdata.Logs {
 	ld := GenerateLogDataEmpty()
-	ld.ResourceLogs().Resize(1)
+	ld.ResourceLogs().AppendEmpty()
 	return ld
 }
 
@@ -54,8 +53,7 @@ func generateLogOtlpOneEmptyResourceLogs() *otlpcollectorlog.ExportLogsServiceRe
 
 func GenerateLogDataNoLogRecords() pdata.Logs {
 	ld := GenerateLogDataOneEmptyResourceLogs()
-	rs0 := ld.ResourceLogs().At(0)
-	initResource1(rs0.Resource())
+	initResource1(ld.ResourceLogs().At(0).Resource())
 	return ld
 }
 
@@ -72,8 +70,7 @@ func generateLogOtlpNoLogRecords() *otlpcollectorlog.ExportLogsServiceRequest {
 func GenerateLogDataOneEmptyLogs() pdata.Logs {
 	ld := GenerateLogDataNoLogRecords()
 	rs0 := ld.ResourceLogs().At(0)
-	rs0.InstrumentationLibraryLogs().Resize(1)
-	rs0.InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	rs0.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 	return ld
 }
 
@@ -97,10 +94,7 @@ func generateLogOtlpOneEmptyLogs() *otlpcollectorlog.ExportLogsServiceRequest {
 func GenerateLogDataOneLogNoResource() pdata.Logs {
 	ld := GenerateLogDataOneEmptyResourceLogs()
 	rs0 := ld.ResourceLogs().At(0)
-	rs0.InstrumentationLibraryLogs().Resize(1)
-	rs0.InstrumentationLibraryLogs().At(0).Logs().Resize(1)
-	rs0lr0 := rs0.InstrumentationLibraryLogs().At(0).Logs().At(0)
-	fillLogOne(rs0lr0)
+	fillLogOne(rs0.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty())
 	return ld
 }
 
@@ -122,11 +116,7 @@ func generateLogOtlpOneLogNoResource() *otlpcollectorlog.ExportLogsServiceReques
 
 func GenerateLogDataOneLog() pdata.Logs {
 	ld := GenerateLogDataOneEmptyLogs()
-	rs0 := ld.ResourceLogs().At(0)
-	rs0.InstrumentationLibraryLogs().Resize(1)
-	rs0.InstrumentationLibraryLogs().At(0).Logs().Resize(1)
-	rs0lr0 := rs0.InstrumentationLibraryLogs().At(0).Logs().At(0)
-	fillLogOne(rs0lr0)
+	fillLogOne(ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0))
 	return ld
 }
 
@@ -149,11 +139,9 @@ func generateLogOtlpOneLog() *otlpcollectorlog.ExportLogsServiceRequest {
 
 func GenerateLogDataTwoLogsSameResource() pdata.Logs {
 	ld := GenerateLogDataOneEmptyLogs()
-	rs0 := ld.ResourceLogs().At(0)
-	rs0.InstrumentationLibraryLogs().Resize(1)
-	rs0.InstrumentationLibraryLogs().At(0).Logs().Resize(2)
-	fillLogOne(rs0.InstrumentationLibraryLogs().At(0).Logs().At(0))
-	fillLogTwo(rs0.InstrumentationLibraryLogs().At(0).Logs().At(1))
+	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	fillLogOne(logs.At(0))
+	fillLogTwo(logs.AppendEmpty())
 	return ld
 }
 
@@ -178,18 +166,14 @@ func generateLogOtlpSameResourceTwoLogs() *otlpcollectorlog.ExportLogsServiceReq
 
 func GenerateLogDataTwoLogsSameResourceOneDifferent() pdata.Logs {
 	ld := pdata.NewLogs()
-	ld.ResourceLogs().Resize(2)
-	rl0 := ld.ResourceLogs().At(0)
+	rl0 := ld.ResourceLogs().AppendEmpty()
 	initResource1(rl0.Resource())
-	rl0.InstrumentationLibraryLogs().Resize(1)
-	rl0.InstrumentationLibraryLogs().At(0).Logs().Resize(2)
-	fillLogOne(rl0.InstrumentationLibraryLogs().At(0).Logs().At(0))
-	fillLogTwo(rl0.InstrumentationLibraryLogs().At(0).Logs().At(1))
-	rl1 := ld.ResourceLogs().At(1)
+	logs := rl0.InstrumentationLibraryLogs().AppendEmpty().Logs()
+	fillLogOne(logs.AppendEmpty())
+	fillLogTwo(logs.AppendEmpty())
+	rl1 := ld.ResourceLogs().AppendEmpty()
 	initResource2(rl1.Resource())
-	rl1.InstrumentationLibraryLogs().Resize(1)
-	rl1.InstrumentationLibraryLogs().At(0).Logs().Resize(1)
-	fillLogThree(rl1.InstrumentationLibraryLogs().At(0).Logs().At(0))
+	fillLogThree(rl1.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty())
 	return ld
 }
 
@@ -318,11 +302,10 @@ func generateOtlpLogThree() *otlplogs.LogRecord {
 
 func GenerateLogDataManyLogsSameResource(count int) pdata.Logs {
 	ld := GenerateLogDataOneEmptyLogs()
-	rs0 := ld.ResourceLogs().At(0)
-	rs0.InstrumentationLibraryLogs().Resize(1)
-	rs0.InstrumentationLibraryLogs().At(0).Logs().Resize(count)
+	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logs.Resize(count)
 	for i := 0; i < count; i++ {
-		l := rs0.InstrumentationLibraryLogs().At(0).Logs().At(i)
+		l := logs.At(i)
 		if i%2 == 0 {
 			fillLogOne(l)
 		} else {

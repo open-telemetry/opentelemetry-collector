@@ -26,8 +26,7 @@ import (
 
 func TestUnmarshallOTLPTraces(t *testing.T) {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
+	td.ResourceSpans().AppendEmpty().Resource().Attributes().InsertString("foo", "bar")
 
 	expected, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)

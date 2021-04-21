@@ -32,15 +32,7 @@ type Log struct {
 // Attributes are sorted by key name.
 func Logs(recs ...Log) pdata.Logs {
 	out := pdata.NewLogs()
-
-	logs := out.ResourceLogs()
-
-	logs.Resize(1)
-	rls := logs.At(0)
-
-	rls.InstrumentationLibraryLogs().Resize(1)
-	logSlice := rls.InstrumentationLibraryLogs().At(0).Logs()
-
+	logSlice := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 	logSlice.Resize(len(recs))
 	for i := range recs {
 		l := logSlice.At(i)

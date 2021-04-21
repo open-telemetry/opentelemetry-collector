@@ -160,16 +160,15 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	rl := logs.ResourceLogs().AppendEmpty()
 	if dp.options.Attributes != nil {
-		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+		attrs := rl.Resource().Attributes()
 		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
 	}
-	logRecords := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
 	logRecords.Resize(dp.options.ItemsPerBatch)
 
 	now := pdata.TimestampFromTime(time.Now())

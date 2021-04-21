@@ -84,8 +84,7 @@ func (tsp *tracesamplerprocessor) processTraces(resourceSpans pdata.ResourceSpan
 	sampledTraceData.ResourceSpans().Resize(sampledTraceData.ResourceSpans().Len() + 1)
 	rs := sampledTraceData.ResourceSpans().At(sampledTraceData.ResourceSpans().Len() - 1)
 	resourceSpans.Resource().CopyTo(rs.Resource())
-	rs.InstrumentationLibrarySpans().Resize(1)
-	spns := rs.InstrumentationLibrarySpans().At(0).Spans()
+	spns := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
 
 	ilss := resourceSpans.InstrumentationLibrarySpans()
 	for j := 0; j < ilss.Len(); j++ {

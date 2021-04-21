@@ -188,10 +188,7 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExpo
 
 func generateTraceTraffic(t *testing.T, te component.TracesExporter, numRequests int, wantError error) {
 	td := pdata.NewTraces()
-	rs := td.ResourceSpans()
-	rs.Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

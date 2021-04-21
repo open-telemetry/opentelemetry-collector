@@ -53,17 +53,13 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 
 func generateTraceData(serviceName, spanName string, attrs map[string]pdata.AttributeValue) pdata.Traces {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	rs := td.ResourceSpans().At(0)
+	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ils := rs.InstrumentationLibrarySpans().At(0)
-	spans := ils.Spans()
-	spans.Resize(1)
-	spans.At(0).SetName(spanName)
-	spans.At(0).Attributes().InitFromMap(attrs).Sort()
+	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName(spanName)
+	span.Attributes().InitFromMap(attrs).Sort()
 	return td
 }
 

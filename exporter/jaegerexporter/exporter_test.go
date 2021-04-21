@@ -243,10 +243,7 @@ func TestMutualTLS(t *testing.T) {
 	spanID := pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 

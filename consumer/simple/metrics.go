@@ -180,8 +180,7 @@ func (mb *Metrics) getMetricsSlice() pdata.MetricSlice {
 	}
 
 	rmsLen := rms.Len()
-	rms.Resize(rmsLen + 1)
-	rm := rms.At(rmsLen)
+	rm := rms.AppendEmpty()
 
 	res := rm.Resource()
 	for k, v := range mb.ResourceAttributes {
@@ -189,8 +188,7 @@ func (mb *Metrics) getMetricsSlice() pdata.MetricSlice {
 	}
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	ilm := ilms.At(0)
+	ilm := ilms.AppendEmpty()
 
 	il := ilm.InstrumentationLibrary()
 	il.SetName(mb.InstrumentationLibraryName)

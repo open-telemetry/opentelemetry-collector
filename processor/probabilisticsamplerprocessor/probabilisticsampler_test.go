@@ -223,10 +223,8 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
 		traces := pdata.NewTraces()
-		traces.ResourceSpans().Resize(1)
-		rs := traces.ResourceSpans().At(0)
-		rs.InstrumentationLibrarySpans().Resize(1)
-		instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
+		rs := traces.ResourceSpans().AppendEmpty()
+		instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
 		instrLibrarySpans.Spans().Append(getSpanWithAttributes(key, attribValue))
 		return traces
 	}
@@ -449,8 +447,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			rs.Resource().Attributes().InsertBool("bool", true)
 			rs.Resource().Attributes().InsertString("string", "yes")
 			rs.Resource().Attributes().InsertInt("int64", 10000000)
-			rs.InstrumentationLibrarySpans().Resize(1)
-			ils := rs.InstrumentationLibrarySpans().At(0)
+			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 			ils.Spans().Resize(numTracesPerBatch)
 
 			for k := 0; k < numTracesPerBatch; k++ {
