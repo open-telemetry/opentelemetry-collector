@@ -529,12 +529,9 @@ func initDoubleSummaryMetric(sm pdata.Metric) {
 	sdp1.SetCount(1)
 	sdp1.SetSum(15)
 
-	quantiles := pdata.NewValueAtQuantileSlice()
-	quantiles.Resize(1)
-	quantiles.At(0).SetQuantile(0.01)
-	quantiles.At(0).SetValue(15)
-
-	quantiles.CopyTo(sdp1.QuantileValues())
+	quantile := sdp1.QuantileValues().AppendEmpty()
+	quantile.SetQuantile(0.01)
+	quantile.SetValue(15)
 }
 
 func generateOTLPDoubleSummaryMetric() *otlpmetrics.Metric {

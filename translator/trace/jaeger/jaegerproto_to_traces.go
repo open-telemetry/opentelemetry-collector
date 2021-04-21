@@ -67,9 +67,7 @@ func ProtoBatchToInternalTraces(batch model.Batch) pdata.Traces {
 		return traceData
 	}
 
-	rss := traceData.ResourceSpans()
-	rss.Resize(1)
-	protoBatchToResourceSpans(batch, rss.At(0))
+	protoBatchToResourceSpans(batch, traceData.ResourceSpans().AppendEmpty())
 
 	return traceData
 }

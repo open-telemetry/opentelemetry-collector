@@ -84,9 +84,7 @@ func TestJaegerMarshaller_error_covert_traceID(t *testing.T) {
 		marshaller: jaegerProtoSpanMarshaller{},
 	}
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	// fails in zero traceID
 	messages, err := marshaller.Marshal(td)
 	require.Error(t, err)

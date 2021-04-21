@@ -40,10 +40,8 @@ func TestSplitTraces(t *testing.T) {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	}
 	cp := pdata.NewTraces()
-	cp.ResourceSpans().Resize(1)
-	cp.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	cp.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(5)
-	cpSpans := cp.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+	cpSpans := cp.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+	cpSpans.Resize(5)
 	td.ResourceSpans().At(0).Resource().CopyTo(
 		cp.ResourceSpans().At(0).Resource())
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).InstrumentationLibrary().CopyTo(

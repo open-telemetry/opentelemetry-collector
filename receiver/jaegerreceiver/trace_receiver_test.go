@@ -298,16 +298,14 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	childSpanID := pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
 	rs.Resource().Attributes().InsertBool("bool", true)
 	rs.Resource().Attributes().InsertString("string", "yes")
 	rs.Resource().Attributes().InsertInt("int64", 10000000)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	rs.InstrumentationLibrarySpans().At(0).Spans().Resize(2)
+	spans := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
 
-	span0 := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span0 := spans.AppendEmpty()
 	span0.SetSpanID(childSpanID)
 	span0.SetParentSpanID(parentSpanID)
 	span0.SetTraceID(traceID)
@@ -317,7 +315,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.Status().SetCode(pdata.StatusCodeError)
 	span0.Status().SetMessage("Stale indices")
 
-	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
+	span1 := spans.AppendEmpty()
 	span1.SetSpanID(parentSpanID)
 	span1.SetTraceID(traceID)
 	span1.SetName("ProxyFetch")

@@ -36,18 +36,14 @@ func ThriftBatchToInternalTraces(batch *jaeger.Batch) pdata.Traces {
 		return traceData
 	}
 
-	rss := traceData.ResourceSpans()
-	rss.Resize(1)
-	rs := rss.At(0)
+	rs := traceData.ResourceSpans().AppendEmpty()
 	jThriftProcessToInternalResource(jProcess, rs.Resource())
 
 	if len(jSpans) == 0 {
 		return traceData
 	}
 
-	ilss := rs.InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	jThriftSpansToInternal(jSpans, ilss.At(0).Spans())
+	jThriftSpansToInternal(jSpans, rs.InstrumentationLibrarySpans().AppendEmpty().Spans())
 
 	return traceData
 }

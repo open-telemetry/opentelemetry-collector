@@ -84,9 +84,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 	ocNodeResourceToInternal(node, resource, rs0.Resource())
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
-	ilss := rs0.InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	ils0 := ilss.At(0)
+	ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
 	combinedSpans := ils0.Spans()
 	combinedSpans.Resize(combinedSpanCount)
 
@@ -123,11 +121,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, dest pdata.ResourceSpans) {
 	ocNodeResourceToInternal(node, ocSpan.Resource, dest.Resource())
 	ilss := dest.InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	ils0 := ilss.At(0)
-	spans := ils0.Spans()
-	spans.Resize(1)
-	ocSpanToInternal(ocSpan, spans.At(0))
+	ocSpanToInternal(ocSpan, ilss.AppendEmpty().Spans().AppendEmpty())
 }
 
 func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
