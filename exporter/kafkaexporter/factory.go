@@ -41,11 +41,11 @@ const (
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaExporterFactory)
 
-// WithAddTracesMarshallers adds tracesMarshallers.
-func WithAddTracesMarshallers(encodingMarshaller map[string]TracesMarshaller) FactoryOption {
+// WithTracesMarshallers adds tracesMarshallers.
+func WithTracesMarshallers(tracesMarshallers ...TracesMarshaller) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
-		for encoding, marshaller := range encodingMarshaller {
-			factory.tracesMarshallers[encoding] = marshaller
+		for _, marshaller := range tracesMarshallers {
+			factory.tracesMarshallers[marshaller.Encoding()] = marshaller
 		}
 	}
 }

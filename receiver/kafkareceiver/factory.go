@@ -44,20 +44,20 @@ const (
 // FactoryOption applies changes to kafkaReceiverFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
-// WithAddTracesUnmarshallers adds marshallers.
-func WithAddTracesUnmarshallers(encodingMarshaller map[string]TracesUnmarshaller) FactoryOption {
+// WithTracesUnmarshallers adds Unmarshallers.
+func WithTracesUnmarshallers(tracesUnmarshallers ...TracesUnmarshaller) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
-		for encoding, unmarshaller := range encodingMarshaller {
-			factory.tracesUnmarshalers[encoding] = unmarshaller
+		for _, unmarshaller := range tracesUnmarshallers {
+			factory.tracesUnmarshallers[unmarshaller.Encoding()] = unmarshaller
 		}
 	}
 }
 
-// WithAddLogsUnmarshallers adds LogsUnmarshallers.
-func WithAddLogsUnmarshallers(encodingMarshaller map[string]LogsUnmarshaller) FactoryOption {
+// WithLogsUnmarshallers adds LogsUnmarshallers.
+func WithLogsUnmarshallers(logsUnmarshallers ...LogsUnmarshaller) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
-		for encoding, unmarshaller := range encodingMarshaller {
-			factory.logsUnmarshaller[encoding] = unmarshaller
+		for _, unmarshaller := range logsUnmarshallers {
+			factory.logsUnmarshallers[unmarshaller.Encoding()] = unmarshaller
 		}
 	}
 }
@@ -65,8 +65,8 @@ func WithAddLogsUnmarshallers(encodingMarshaller map[string]LogsUnmarshaller) Fa
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	f := &kafkaReceiverFactory{
-		tracesUnmarshalers: defaultTracesUnmarshallers(),
-		logsUnmarshaller:   defaultLogsUnmarshallers(),
+		tracesUnmarshallers: defaultTracesUnmarshallers(),
+		logsUnmarshallers:   defaultLogsUnmarshallers(),
 	}
 	for _, o := range options {
 		o(f)
@@ -101,8 +101,8 @@ func createDefaultConfig() config.Receiver {
 }
 
 type kafkaReceiverFactory struct {
-	tracesUnmarshalers map[string]TracesUnmarshaller
-	logsUnmarshaller   map[string]LogsUnmarshaller
+	tracesUnmarshallers map[string]TracesUnmarshaller
+	logsUnmarshallers   map[string]LogsUnmarshaller
 }
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
@@ -112,7 +112,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newTracesReceiver(*c, params, f.tracesUnmarshalers, nextConsumer)
+	r, err := newTracesReceiver(*c, params, f.tracesUnmarshallers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newLogsReceiver(*c, params, f.logsUnmarshaller, nextConsumer)
+	r, err := newLogsReceiver(*c, params, f.logsUnmarshallers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
