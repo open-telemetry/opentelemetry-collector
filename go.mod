@@ -24,6 +24,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/jaegertracing/jaeger v1.22.0
 	github.com/leoluk/perflib_exporter v0.1.0
+	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.25.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.17.1-0.20210409145101-a881ed8b0592
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
 	github.com/prometheus/client_golang v1.10.0
@@ -41,8 +44,10 @@ require (
 	github.com/tklauser/go-sysconf v0.3.4 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/xdg-go/scram v0.0.0-20180814205039-7eeb5667e42c
+	go.etcd.io/bbolt v1.3.4 // indirect
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
+	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2
 	golang.org/x/text v0.3.6

@@ -38,12 +38,14 @@ import (
 	"go.opentelemetry.io/collector/processor/probabilisticsamplerprocessor"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
 	"go.opentelemetry.io/collector/processor/spanprocessor"
+	"go.opentelemetry.io/collector/receiver/filelogreceiver"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
+	"go.opentelemetry.io/collector/receiver/syslogreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -72,6 +74,8 @@ func Components() (
 		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		kafkareceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
+		syslogreceiver.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
