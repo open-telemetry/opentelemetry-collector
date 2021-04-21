@@ -43,7 +43,7 @@ type kafkaTracesConsumer struct {
 	nextConsumer      consumer.Traces
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaller      TracesUnmarshaller
+	unmarshaler       TracesUnmarshaler
 
 	logger *zap.Logger
 }
@@ -55,7 +55,7 @@ type kafkaLogsConsumer struct {
 	nextConsumer      consumer.Logs
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaller      LogsUnmarshaller
+	unmarshaler       LogsUnmarshaler
 
 	logger *zap.Logger
 }
@@ -63,9 +63,9 @@ type kafkaLogsConsumer struct {
 var _ component.Receiver = (*kafkaTracesConsumer)(nil)
 var _ component.Receiver = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]TracesUnmarshaller, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
-	unmarshaller := unmarshalers[config.Encoding]
-	if unmarshaller == nil {
+func newTracesReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+	unmarshaler := unmarshalers[config.Encoding]
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 
@@ -93,7 +93,7 @@ func newTracesReceiver(config Config, params component.ReceiverCreateParams, unm
 		consumerGroup: client,
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
-		unmarshaller:  unmarshaller,
+		unmarshaler:   unmarshaler,
 		logger:        params.Logger,
 	}, nil
 }
@@ -104,7 +104,7 @@ func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 	consumerGroup := &tracesConsumerGroupHandler{
 		name:         c.name,
 		logger:       c.logger,
-		unmarshaller: c.unmarshaller,
+		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
 	}
@@ -134,9 +134,9 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]LogsUnmarshaller, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
-	unmarshaller := unmarshalers[config.Encoding]
-	if unmarshaller == nil {
+func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+	unmarshaler := unmarshalers[config.Encoding]
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 
@@ -164,7 +164,7 @@ func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmar
 		consumerGroup: client,
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
-		unmarshaller:  unmarshaller,
+		unmarshaler:   unmarshaler,
 		logger:        params.Logger,
 	}, nil
 }
@@ -175,7 +175,7 @@ func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
 	logsConsumerGroup := &logsConsumerGroupHandler{
 		name:         c.name,
 		logger:       c.logger,
-		unmarshaller: c.unmarshaller,
+		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
 	}
@@ -207,7 +207,7 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 
 type tracesConsumerGroupHandler struct {
 	name         string
-	unmarshaller TracesUnmarshaller
+	unmarshaler  TracesUnmarshaler
 	nextConsumer consumer.Traces
 	ready        chan bool
 	readyCloser  sync.Once
@@ -217,7 +217,7 @@ type tracesConsumerGroupHandler struct {
 
 type logsConsumerGroupHandler struct {
 	name         string
-	unmarshaller LogsUnmarshaller
+	unmarshaler  LogsUnmarshaler
 	nextConsumer consumer.Logs
 	ready        chan bool
 	readyCloser  sync.Once
@@ -260,15 +260,15 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			statMessageOffset.M(message.Offset),
 			statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
 
-		traces, err := c.unmarshaller.Unmarshal(message.Value)
+		traces, err := c.unmarshaler.Unmarshal(message.Value)
 		if err != nil {
-			c.logger.Error("failed to unmarshall message", zap.Error(err))
+			c.logger.Error("failed to unmarshal message", zap.Error(err))
 			return err
 		}
 
 		spanCount := traces.SpanCount()
 		err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
-		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaller.Encoding(), spanCount, err)
+		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
 		if err != nil {
 			return err
 		}
@@ -308,15 +308,15 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			statMessageOffset.M(message.Offset),
 			statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
 
-		logs, err := c.unmarshaller.Unmarshal(message.Value)
+		logs, err := c.unmarshaler.Unmarshal(message.Value)
 		if err != nil {
-			c.logger.Error("failed to unmarshall message", zap.Error(err))
+			c.logger.Error("failed to unmarshal message", zap.Error(err))
 			return err
 		}
 
 		err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
 		// TODO
-		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaller.Encoding(), logs.LogRecordCount(), err)
+		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
 		if err != nil {
 			return err
 		}
