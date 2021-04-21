@@ -104,7 +104,7 @@ func TestCreateLogsExporter_err(t *testing.T) {
 
 func TestWithMarshallers(t *testing.T) {
 	cm := &customMarshaller{}
-	f := NewFactory(WithAddTracesMarshallers(map[string]TracesMarshaller{cm.Encoding(): cm}))
+	f := NewFactory(WithTracesMarshallers(cm))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false

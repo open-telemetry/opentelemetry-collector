@@ -44,20 +44,20 @@ const (
 // FactoryOption applies changes to kafkaReceiverFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
-// WithAddTracesUnmarshallers adds marshallers.
-func WithAddTracesUnmarshallers(encodingMarshaller map[string]TracesUnmarshaller) FactoryOption {
+// WithTracesUnmarshallers adds Unmarshallers.
+func WithTracesUnmarshallers(tracesUnmarshallers ...TracesUnmarshaller) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
-		for encoding, unmarshaller := range encodingMarshaller {
-			factory.tracesUnmarshalers[encoding] = unmarshaller
+		for _, unmarshaller := range tracesUnmarshallers {
+			factory.tracesUnmarshalers[unmarshaller.Encoding()] = unmarshaller
 		}
 	}
 }
 
-// WithAddLogsUnmarshallers adds LogsUnmarshallers.
-func WithAddLogsUnmarshallers(encodingMarshaller map[string]LogsUnmarshaller) FactoryOption {
+// WithLogsUnmarshallers adds LogsUnmarshallers.
+func WithLogsUnmarshallers(logsUnmarshallers ...LogsUnmarshaller) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
-		for encoding, unmarshaller := range encodingMarshaller {
-			factory.logsUnmarshaller[encoding] = unmarshaller
+		for _, unmarshaller := range logsUnmarshallers {
+			factory.logsUnmarshaller[unmarshaller.Encoding()] = unmarshaller
 		}
 	}
 }
