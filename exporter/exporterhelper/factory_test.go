@@ -16,27 +16,25 @@ package exporterhelper
 
 import (
 	"context"
-	"errors"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const typeStr = "test"
 
 var (
-	defaultCfg = &configmodels.ExporterSettings{
+	defaultCfg = &config.ExporterSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
-	nopTracesExporter, _ = NewTraceExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
+	nopTracesExporter, _ = NewTracesExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
 		return nil
 	})
 	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) error {
@@ -53,30 +51,23 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
-	_, ok := factory.(component.ConfigUnmarshaler)
-	assert.False(t, ok)
 	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 }
 
 func TestNewFactory_WithConstructors(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig,
-		WithTraces(createTraceExporter),
+		WithTraces(createTracesExporter),
 		WithMetrics(createMetricsExporter),
-		WithLogs(createLogsExporter),
-		WithCustomUnmarshaler(customUnmarshaler))
+		WithLogs(createLogsExporter))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
-
-	fu, ok := factory.(component.ConfigUnmarshaler)
-	assert.True(t, ok)
-	assert.Equal(t, errors.New("my error"), fu.Unmarshal(nil, nil))
 
 	te, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
 	assert.NoError(t, err)
@@ -91,22 +82,18 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.Same(t, nopLogsExporter, le)
 }
 
-func defaultConfig() configmodels.Exporter {
+func defaultConfig() config.Exporter {
 	return defaultCfg
 }
 
-func createTraceExporter(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.TracesExporter, error) {
 	return nopTracesExporter, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.MetricsExporter, error) {
 	return nopMetricsExporter, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.LogsExporter, error) {
 	return nopLogsExporter, nil
-}
-
-func customUnmarshaler(*viper.Viper, interface{}) error {
-	return errors.New("my error")
 }

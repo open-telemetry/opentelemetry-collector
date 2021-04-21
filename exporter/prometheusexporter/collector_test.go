@@ -67,7 +67,7 @@ func TestConvertInvalidDataType(t *testing.T) {
 
 func TestConvertInvalidMetric(t *testing.T) {
 	for _, mType := range []pdata.MetricDataType{
-		pdata.MetricDataTypeDoubleHistogram,
+		pdata.MetricDataTypeHistogram,
 		pdata.MetricDataTypeIntHistogram,
 		pdata.MetricDataTypeDoubleSum,
 		pdata.MetricDataTypeIntSum,
@@ -78,17 +78,17 @@ func TestConvertInvalidMetric(t *testing.T) {
 		metric.SetDataType(mType)
 		switch metric.DataType() {
 		case pdata.MetricDataTypeIntGauge:
-			metric.IntGauge().DataPoints().Append(pdata.NewIntDataPoint())
+			metric.IntGauge().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeIntSum:
-			metric.IntSum().DataPoints().Append(pdata.NewIntDataPoint())
+			metric.IntSum().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeDoubleGauge:
-			metric.DoubleGauge().DataPoints().Append(pdata.NewDoubleDataPoint())
+			metric.DoubleGauge().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeDoubleSum:
-			metric.DoubleSum().DataPoints().Append(pdata.NewDoubleDataPoint())
+			metric.DoubleSum().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeIntHistogram:
-			metric.IntHistogram().DataPoints().Append(pdata.NewIntHistogramDataPoint())
-		case pdata.MetricDataTypeDoubleHistogram:
-			metric.DoubleHistogram().DataPoints().Append(pdata.NewDoubleHistogramDataPoint())
+			metric.IntHistogram().DataPoints().AppendEmpty()
+		case pdata.MetricDataTypeHistogram:
+			metric.Histogram().DataPoints().AppendEmpty()
 		}
 		c := collector{}
 
@@ -119,17 +119,15 @@ func (c *errorCheckCore) Write(ent zapcore.Entry, _ []zapcore.Field) error {
 func (*errorCheckCore) Sync() error { return nil }
 
 func TestCollectMetricsLabelSanitize(t *testing.T) {
-	dp := pdata.NewIntDataPoint()
+	metric := pdata.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.SetDescription("test description")
+	dp := metric.IntGauge().DataPoints().AppendEmpty()
 	dp.SetValue(42)
 	dp.LabelsMap().Insert("label.1", "1")
 	dp.LabelsMap().Insert("label/2", "2")
 	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
-
-	metric := pdata.NewMetric()
-	metric.SetName("test_metric")
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	metric.IntGauge().DataPoints().Append(dp)
-	metric.SetDescription("test description")
 
 	loggerCore := errorCheckCore{}
 	c := collector{
@@ -152,7 +150,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 		require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
 
 		pbMetric := io_prometheus_client.Metric{}
-		m.Write(&pbMetric)
+		require.NoError(t, m.Write(&pbMetric))
 
 		labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
 		for _, l := range pbMetric.Label {
@@ -175,17 +173,15 @@ func TestCollectMetrics(t *testing.T) {
 			metricType: prometheus.GaugeValue,
 			value:      42.0,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewIntDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeIntGauge)
+				metric.SetDescription("test description")
+				dp := metric.IntGauge().DataPoints().AppendEmpty()
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntGauge)
-				metric.IntGauge().DataPoints().Append(dp)
-				metric.SetDescription("test description")
 
 				return
 			},
@@ -195,17 +191,15 @@ func TestCollectMetrics(t *testing.T) {
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metric.SetDescription("test description")
+				dp := metric.DoubleGauge().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				metric.DoubleGauge().DataPoints().Append(dp)
-				metric.SetDescription("test description")
 
 				return
 			},
@@ -215,19 +209,17 @@ func TestCollectMetrics(t *testing.T) {
 			metricType: prometheus.GaugeValue,
 			value:      42.0,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewIntDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeIntSum)
+				metric.IntSum().SetIsMonotonic(false)
+				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDescription("test description")
+				dp := metric.IntSum().DataPoints().AppendEmpty()
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntSum)
-				metric.IntSum().DataPoints().Append(dp)
-				metric.IntSum().SetIsMonotonic(false)
-				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
 
 				return
 			},
@@ -237,19 +229,17 @@ func TestCollectMetrics(t *testing.T) {
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+				metric.DoubleSum().SetIsMonotonic(false)
+				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDescription("test description")
+				dp := metric.DoubleSum().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().DataPoints().Append(dp)
-				metric.DoubleSum().SetIsMonotonic(false)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
 
 				return
 			},
@@ -259,19 +249,17 @@ func TestCollectMetrics(t *testing.T) {
 			metricType: prometheus.CounterValue,
 			value:      42.0,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewIntDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeIntSum)
+				metric.IntSum().SetIsMonotonic(true)
+				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDescription("test description")
+				dp := metric.IntSum().DataPoints().AppendEmpty()
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntSum)
-				metric.IntSum().DataPoints().Append(dp)
-				metric.IntSum().SetIsMonotonic(true)
-				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
 
 				return
 			},
@@ -281,19 +269,17 @@ func TestCollectMetrics(t *testing.T) {
 			metricType: prometheus.CounterValue,
 			value:      42.42,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+				metric.DoubleSum().SetIsMonotonic(true)
+				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDescription("test description")
+				dp := metric.DoubleSum().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().DataPoints().Append(dp)
-				metric.DoubleSum().SetIsMonotonic(true)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
 
 				return
 			},
@@ -331,7 +317,7 @@ func TestCollectMetrics(t *testing.T) {
 					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
 
 					pbMetric := io_prometheus_client.Metric{}
-					m.Write(&pbMetric)
+					require.NoError(t, m.Write(&pbMetric))
 
 					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
 					for _, l := range pbMetric.Label {
@@ -349,10 +335,12 @@ func TestCollectMetrics(t *testing.T) {
 						require.Equal(t, tt.value, *pbMetric.Counter.Value)
 						require.Nil(t, pbMetric.Gauge)
 						require.Nil(t, pbMetric.Histogram)
+						require.Nil(t, pbMetric.Summary)
 					case prometheus.GaugeValue:
 						require.Equal(t, tt.value, *pbMetric.Gauge.Value)
 						require.Nil(t, pbMetric.Counter)
 						require.Nil(t, pbMetric.Histogram)
+						require.Nil(t, pbMetric.Summary)
 					}
 				}
 				require.Equal(t, 1, j)
@@ -379,7 +367,12 @@ func TestAccumulateHistograms(t *testing.T) {
 			histogramSum:   42.0,
 			histogramCount: 7,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewIntHistogramDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDescription("test description")
+				dp := metric.IntHistogram().DataPoints().AppendEmpty()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{1.2, 10.0})
@@ -388,18 +381,11 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-				metric.IntHistogram().DataPoints().Append(dp)
-				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
-
 				return
 			},
 		},
 		{
-			name: "DoubleHistogram",
+			name: "Histogram",
 			histogramPoints: map[float64]uint64{
 				3.5:  5,
 				10.0: 7,
@@ -407,7 +393,12 @@ func TestAccumulateHistograms(t *testing.T) {
 			histogramSum:   42.42,
 			histogramCount: 7,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleHistogramDataPoint()
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDescription("test description")
+				dp := metric.Histogram().DataPoints().AppendEmpty()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
@@ -415,13 +406,107 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				return
+			},
+		},
+	}
 
+	for _, tt := range tests {
+		for _, sendTimestamp := range []bool{true, false} {
+			name := tt.name
+			if sendTimestamp {
+				name += "/WithTimestamp"
+			}
+			t.Run(name, func(t *testing.T) {
+				ts := time.Now()
+				metric := tt.metric(ts)
+				c := collector{
+					accumulator: &mockAccumulator{
+						[]pdata.Metric{metric},
+					},
+					sendTimestamps: sendTimestamp,
+					logger:         zap.NewNop(),
+				}
+
+				ch := make(chan prometheus.Metric, 1)
+				go func() {
+					c.Collect(ch)
+					close(ch)
+				}()
+
+				n := 0
+				for m := range ch {
+					n++
+					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
+					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+
+					pbMetric := io_prometheus_client.Metric{}
+					require.NoError(t, m.Write(&pbMetric))
+
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+					for _, l := range pbMetric.Label {
+						require.Equal(t, labelsKeys[*l.Name], *l.Value)
+					}
+
+					if sendTimestamp {
+						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+					} else {
+						require.Nil(t, pbMetric.TimestampMs)
+					}
+
+					require.Nil(t, pbMetric.Gauge)
+					require.Nil(t, pbMetric.Counter)
+
+					h := *pbMetric.Histogram
+					require.Equal(t, tt.histogramCount, h.GetSampleCount())
+					require.Equal(t, tt.histogramSum, h.GetSampleSum())
+					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
+
+					for _, b := range h.Bucket {
+						require.Equal(t, tt.histogramPoints[(*b).GetUpperBound()], b.GetCumulativeCount())
+					}
+				}
+				require.Equal(t, 1, n)
+			})
+		}
+	}
+}
+
+func TestAccumulateSummary(t *testing.T) {
+	fillQuantileValue := func(pN, value float64, dest pdata.ValueAtQuantile) {
+		dest.SetQuantile(pN)
+		dest.SetValue(value)
+	}
+	tests := []struct {
+		name          string
+		metric        func(time.Time) pdata.Metric
+		wantSum       float64
+		wantCount     uint64
+		wantQuantiles map[float64]float64
+	}{
+		{
+			name:      "Summary with single point",
+			wantSum:   0.012,
+			wantCount: 10,
+			wantQuantiles: map[float64]float64{
+				0.50: 190,
+				0.99: 817,
+			},
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				metric.DoubleHistogram().DataPoints().Append(dp)
-				metric.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSummary)
 				metric.SetDescription("test description")
+				sp := metric.Summary().DataPoints().AppendEmpty()
+				sp.SetCount(10)
+				sp.SetSum(0.012)
+				sp.SetCount(10)
+				sp.LabelsMap().Insert("label_1", "1")
+				sp.LabelsMap().Insert("label_2", "2")
+				sp.SetTimestamp(pdata.TimestampFromTime(ts))
+
+				fillQuantileValue(0.50, 190, sp.QuantileValues().AppendEmpty())
+				fillQuantileValue(0.99, 817, sp.QuantileValues().AppendEmpty())
 
 				return
 			},
@@ -458,7 +543,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
 
 					pbMetric := io_prometheus_client.Metric{}
-					m.Write(&pbMetric)
+					require.NoError(t, m.Write(&pbMetric))
 
 					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
 					for _, l := range pbMetric.Label {
@@ -473,15 +558,17 @@ func TestAccumulateHistograms(t *testing.T) {
 
 					require.Nil(t, pbMetric.Gauge)
 					require.Nil(t, pbMetric.Counter)
+					require.Nil(t, pbMetric.Histogram)
 
-					h := *pbMetric.Histogram
-					require.Equal(t, tt.histogramCount, h.GetSampleCount())
-					require.Equal(t, tt.histogramSum, h.GetSampleSum())
-					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
-
-					for _, b := range h.Bucket {
-						require.Equal(t, tt.histogramPoints[(*b).GetUpperBound()], b.GetCumulativeCount())
+					s := *pbMetric.Summary
+					require.Equal(t, tt.wantCount, *s.SampleCount)
+					require.Equal(t, tt.wantSum, *s.SampleSum)
+					// To ensure that we can compare quantiles, we need to just extract their values.
+					gotQuantiles := make(map[float64]float64)
+					for _, q := range s.Quantile {
+						gotQuantiles[q.GetQuantile()] = q.GetValue()
 					}
+					require.Equal(t, tt.wantQuantiles, gotQuantiles)
 				}
 				require.Equal(t, 1, n)
 			})

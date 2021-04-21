@@ -18,7 +18,6 @@
 package pdata
 
 import (
-	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
@@ -132,8 +131,16 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 // given ResourceSpans at that new position.  The original ResourceSpans
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ResourceSpansSlice) Append(e ResourceSpans) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ResourceSpans.
+// It returns the newly added ResourceSpans.
+func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
+	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -284,8 +291,16 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 // given InstrumentationLibrarySpans at that new position.  The original InstrumentationLibrarySpans
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es InstrumentationLibrarySpansSlice) Append(e InstrumentationLibrarySpans) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty InstrumentationLibrarySpans.
+// It returns the newly added InstrumentationLibrarySpans.
+func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibrarySpans {
+	*es.orig = append(*es.orig, &otlptrace.InstrumentationLibrarySpans{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -436,8 +451,16 @@ func (es SpanSlice) Resize(newLen int) {
 // given Span at that new position.  The original Span
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SpanSlice) Append(e Span) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty Span.
+// It returns the newly added Span.
+func (es SpanSlice) AppendEmpty() Span {
+	*es.orig = append(*es.orig, &otlptrace.Span{})
+	return es.At(es.Len() - 1)
 }
 
 // Span represents a single operation within a trace.
@@ -465,22 +488,22 @@ func NewSpan() Span {
 
 // TraceID returns the traceid associated with this Span.
 func (ms Span) TraceID() TraceID {
-	return TraceID((*ms.orig).TraceId)
+	return TraceID{orig: ((*ms.orig).TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this Span.
 func (ms Span) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = data.TraceID(v)
+	(*ms.orig).TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this Span.
 func (ms Span) SpanID() SpanID {
-	return SpanID((*ms.orig).SpanId)
+	return SpanID{orig: ((*ms.orig).SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this Span.
 func (ms Span) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = data.SpanID(v)
+	(*ms.orig).SpanId = v.orig
 }
 
 // TraceState returns the tracestate associated with this Span.
@@ -495,12 +518,12 @@ func (ms Span) SetTraceState(v TraceState) {
 
 // ParentSpanID returns the parentspanid associated with this Span.
 func (ms Span) ParentSpanID() SpanID {
-	return SpanID((*ms.orig).ParentSpanId)
+	return SpanID{orig: ((*ms.orig).ParentSpanId)}
 }
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
 func (ms Span) SetParentSpanID(v SpanID) {
-	(*ms.orig).ParentSpanId = data.SpanID(v)
+	(*ms.orig).ParentSpanId = v.orig
 }
 
 // Name returns the name associated with this Span.
@@ -523,23 +546,23 @@ func (ms Span) SetKind(v SpanKind) {
 	(*ms.orig).Kind = otlptrace.Span_SpanKind(v)
 }
 
-// StartTime returns the starttime associated with this Span.
-func (ms Span) StartTime() Timestamp {
+// StartTimestamp returns the starttimestamp associated with this Span.
+func (ms Span) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this Span.
-func (ms Span) SetStartTime(v Timestamp) {
+// SetStartTimestamp replaces the starttimestamp associated with this Span.
+func (ms Span) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
-// EndTime returns the endtime associated with this Span.
-func (ms Span) EndTime() Timestamp {
+// EndTimestamp returns the endtimestamp associated with this Span.
+func (ms Span) EndTimestamp() Timestamp {
 	return Timestamp((*ms.orig).EndTimeUnixNano)
 }
 
-// SetEndTime replaces the endtime associated with this Span.
-func (ms Span) SetEndTime(v Timestamp) {
+// SetEndTimestamp replaces the endtimestamp associated with this Span.
+func (ms Span) SetEndTimestamp(v Timestamp) {
 	(*ms.orig).EndTimeUnixNano = uint64(v)
 }
 
@@ -601,8 +624,8 @@ func (ms Span) CopyTo(dest Span) {
 	dest.SetParentSpanID(ms.ParentSpanID())
 	dest.SetName(ms.Name())
 	dest.SetKind(ms.Kind())
-	dest.SetStartTime(ms.StartTime())
-	dest.SetEndTime(ms.EndTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
+	dest.SetEndTimestamp(ms.EndTimestamp())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 	ms.Events().CopyTo(dest.Events())
@@ -722,8 +745,16 @@ func (es SpanEventSlice) Resize(newLen int) {
 // given SpanEvent at that new position.  The original SpanEvent
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SpanEventSlice) Append(e SpanEvent) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty SpanEvent.
+// It returns the newly added SpanEvent.
+func (es SpanEventSlice) AppendEmpty() SpanEvent {
+	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
+	return es.At(es.Len() - 1)
 }
 
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
@@ -902,8 +933,16 @@ func (es SpanLinkSlice) Resize(newLen int) {
 // given SpanLink at that new position.  The original SpanLink
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SpanLinkSlice) Append(e SpanLink) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty SpanLink.
+// It returns the newly added SpanLink.
+func (es SpanLinkSlice) AppendEmpty() SpanLink {
+	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
+	return es.At(es.Len() - 1)
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a
@@ -931,22 +970,22 @@ func NewSpanLink() SpanLink {
 
 // TraceID returns the traceid associated with this SpanLink.
 func (ms SpanLink) TraceID() TraceID {
-	return TraceID((*ms.orig).TraceId)
+	return TraceID{orig: ((*ms.orig).TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this SpanLink.
 func (ms SpanLink) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = data.TraceID(v)
+	(*ms.orig).TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this SpanLink.
 func (ms SpanLink) SpanID() SpanID {
-	return SpanID((*ms.orig).SpanId)
+	return SpanID{orig: ((*ms.orig).SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this SpanLink.
 func (ms SpanLink) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = data.SpanID(v)
+	(*ms.orig).SpanId = v.orig
 }
 
 // TraceState returns the tracestate associated with this SpanLink.

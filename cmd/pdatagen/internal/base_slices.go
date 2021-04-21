@@ -129,8 +129,16 @@ func (es ${structName}) Resize(newLen int) {
 // given ${elementName} at that new position.  The original ${elementName}
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ${structName}) Append(e ${elementName}) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ${elementName}.
+// It returns the newly added ${elementName}.
+func (es ${structName}) AppendEmpty() ${elementName} {
+	*es.orig = append(*es.orig, &${originName}{})
+	return es.At(es.Len() - 1)
 }`
 
 const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
@@ -140,7 +148,7 @@ const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -192,7 +200,7 @@ func Test${structName}_CopyTo(t *testing.T) {
 
 func Test${structName}_Resize(t *testing.T) {
 	es := generateTest${structName}()
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
@@ -235,12 +243,10 @@ func Test${structName}_Resize(t *testing.T) {
 func Test${structName}_Append(t *testing.T) {
 	es := generateTest${structName}()
 
-	emptyVal := New${elementName}()
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	es.AppendEmpty()
+	assert.EqualValues(t, &${originName}{}, es.At(7).orig)
 
-	value := New${elementName}()
-	fillTest${elementName}(value)
+	value := generateTest${elementName}()
 	es.Append(value)
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 
@@ -365,8 +371,16 @@ func (es ${structName}) Resize(newLen int) {
 // given ${elementName} at that new position.  The original ${elementName}
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ${structName}) Append(e ${elementName}) {
 	*es.orig = append(*es.orig, *e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ${elementName}.
+// It returns the newly added ${elementName}.
+func (es ${structName}) AppendEmpty() ${elementName} {
+	*es.orig = append(*es.orig, ${originName}{})
+	return es.At(es.Len() - 1)
 }`
 
 const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
@@ -376,7 +390,7 @@ const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -428,7 +442,7 @@ func Test${structName}_CopyTo(t *testing.T) {
 
 func Test${structName}_Resize(t *testing.T) {
 	es := generateTest${structName}()
-	emptyVal := New${elementName}()
+	emptyVal := new${elementName}(&${originName}{})
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
@@ -471,12 +485,10 @@ func Test${structName}_Resize(t *testing.T) {
 func Test${structName}_Append(t *testing.T) {
 	es := generateTest${structName}()
 
-	emptyVal := New${elementName}()
-	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal, es.At(7))
+	es.AppendEmpty()
+	assert.EqualValues(t, new${elementName}(&${originName}{}), es.At(7))
 
-	value := New${elementName}()
-	fillTest${elementName}(value)
+	value := generateTest${elementName}()
 	es.Append(value)
 	assert.EqualValues(t, value, es.At(8))
 

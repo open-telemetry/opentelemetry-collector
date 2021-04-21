@@ -96,7 +96,40 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.NoError(t, zErr, zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
+
+		// check that all timestamps converted back and forth without change
+		for i := 0; i < td.ResourceSpans().Len(); i++ {
+			instSpans := td.ResourceSpans().At(i).InstrumentationLibrarySpans()
+			for j := 0; j < instSpans.Len(); j++ {
+				spans := instSpans.At(j).Spans()
+				for k := 0; k < spans.Len(); k++ {
+					span := spans.At(k)
+
+					// search for the span with the same id to compare to
+					spanFromZS := findSpanByID(tdFromZS.ResourceSpans(), span.SpanID())
+
+					assert.Equal(t, span.StartTimestamp().AsTime().UnixNano(), spanFromZS.StartTimestamp().AsTime().UnixNano())
+					assert.Equal(t, span.EndTimestamp().AsTime().UnixNano(), spanFromZS.EndTimestamp().AsTime().UnixNano())
+				}
+			}
+		}
 	}
+}
+
+func findSpanByID(rs pdata.ResourceSpansSlice, spanID pdata.SpanID) *pdata.Span {
+	for i := 0; i < rs.Len(); i++ {
+		instSpans := rs.At(i).InstrumentationLibrarySpans()
+		for j := 0; j < instSpans.Len(); j++ {
+			spans := instSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if span.SpanID() == spanID {
+					return &span
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func generateTraceOneSpanOneTraceID() pdata.Traces {

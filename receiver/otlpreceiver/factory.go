@@ -16,15 +16,13 @@ package otlpreceiver
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -34,30 +32,25 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "otlp"
 
-	// Protocol values.
-	protoGRPC          = "grpc"
-	protoHTTP          = "http"
-	protocolsFieldName = "protocols"
-
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:55681"
 	legacyGRPCEndpoint  = "0.0.0.0:55680"
 )
 
+// NewFactory creates a new OTLP receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver),
+		receiverhelper.WithTraces(createTracesReceiver),
 		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithLogs(createLogReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
+		receiverhelper.WithLogs(createLogReceiver))
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -77,53 +70,11 @@ func createDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// customUnmarshaler is used to add defaults for named but empty protocols
-func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
-		return fmt.Errorf("empty config for OTLP receiver")
-	}
-	// first load the config normally
-	err := componentViperSection.UnmarshalExact(intoCfg)
-	if err != nil {
-		return err
-	}
-
-	receiverCfg := intoCfg.(*Config)
-	// next manually search for protocols in viper, if a protocol is not present it means it is disable.
-	protocols := componentViperSection.GetStringMap(protocolsFieldName)
-
-	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
-	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
-	// include only known protocols.
-	knownProtocols := 0
-	if _, ok := protocols[protoGRPC]; !ok {
-		receiverCfg.GRPC = nil
-	} else {
-		knownProtocols++
-	}
-
-	if _, ok := protocols[protoHTTP]; !ok {
-		receiverCfg.HTTP = nil
-	} else {
-		knownProtocols++
-	}
-
-	if len(protocols) != knownProtocols {
-		return fmt.Errorf("unknown protocols in the OTLP receiver")
-	}
-
-	if receiverCfg.GRPC == nil && receiverCfg.HTTP == nil {
-		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
-	}
-
-	return nil
-}
-
 // CreateTracesReceiver creates a  trace receiver based on provided config.
-func createTraceReceiver(
+func createTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -140,7 +91,7 @@ func createTraceReceiver(
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -157,7 +108,7 @@ func createMetricsReceiver(
 func createLogReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -170,7 +121,7 @@ func createLogReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
+func createReceiver(cfg config.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of

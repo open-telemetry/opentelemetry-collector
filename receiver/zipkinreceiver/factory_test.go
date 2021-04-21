@@ -35,19 +35,19 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig()
 
-	tReceiver, err := createTraceReceiver(
+	tReceiver, err := createTracesReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		cfg,
-		consumertest.NewTracesNop())
+		consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = createTraceReceiver(
+	tReceiver, err = createTracesReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		cfg,
-		consumertest.NewTracesNop())
+		consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

@@ -24,6 +24,7 @@ Available log exporters (sorted alphabetically):
 
 - [OTLP gRPC](otlpexporter/README.md)
 - [OTLP HTTP](otlphttpexporter/README.md)
+- [Kafka](kafkaexporter/README.md)
 
 Available local exporters (sorted alphabetically):
 

@@ -28,19 +28,18 @@ import (
 
 func TestJaegerMarshaller(t *testing.T) {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTime(pdata.Timestamp(10))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTime(pdata.Timestamp(20))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("foo")
+	span.SetStartTimestamp(pdata.Timestamp(10))
+	span.SetEndTimestamp(pdata.Timestamp(20))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	require.NoError(t, err)
 
 	batches[0].Spans[0].Process = batches[0].Process
 	jaegerProtoBytes, err := batches[0].Spans[0].Marshal()
+	messageKey := []byte(batches[0].Spans[0].TraceID.String())
 	require.NoError(t, err)
 	require.NotNil(t, jaegerProtoBytes)
 
@@ -58,7 +57,7 @@ func TestJaegerMarshaller(t *testing.T) {
 				marshaller: jaegerProtoSpanMarshaller{},
 			},
 			encoding: "jaeger_proto",
-			messages: []Message{{Value: jaegerProtoBytes}},
+			messages: []Message{{Value: jaegerProtoBytes, Key: messageKey}},
 		},
 		{
 			unmarshaller: jaegerMarshaller{
@@ -67,7 +66,7 @@ func TestJaegerMarshaller(t *testing.T) {
 				},
 			},
 			encoding: "jaeger_json",
-			messages: []Message{{Value: jsonByteBuffer.Bytes()}},
+			messages: []Message{{Value: jsonByteBuffer.Bytes(), Key: messageKey}},
 		},
 	}
 	for _, test := range tests {
@@ -85,9 +84,7 @@ func TestJaegerMarshaller_error_covert_traceID(t *testing.T) {
 		marshaller: jaegerProtoSpanMarshaller{},
 	}
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	// fails in zero traceID
 	messages, err := marshaller.Marshal(td)
 	require.Error(t, err)

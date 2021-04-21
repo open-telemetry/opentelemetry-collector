@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -50,8 +50,9 @@ func (b *logDataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	}
 
 	b.logEntry("%s:", label)
-	am.ForEach(func(k string, v pdata.AttributeValue) {
+	am.Range(func(k string, v pdata.AttributeValue) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+		return true
 	})
 }
 
@@ -61,8 +62,9 @@ func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
 	}
 
 	b.logEntry("%s:", description)
-	sm.ForEach(func(k string, v string) {
+	sm.Range(func(k string, v string) bool {
 		b.logEntry("     -> %s: %s", k, v)
+		return true
 	})
 }
 
@@ -103,8 +105,8 @@ func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 		data := m.IntHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logIntHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleHistogram:
-		data := m.DoubleHistogram()
+	case pdata.MetricDataTypeHistogram:
+		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
 	case pdata.MetricDataTypeSummary:
@@ -119,7 +121,7 @@ func (b *logDataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
 		b.logEntry("IntDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Value: %d", p.Value())
 	}
@@ -131,19 +133,19 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 		b.logEntry("DoubleDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Value: %f", p.Value())
 	}
 }
 
-func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice) {
+func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
@@ -170,7 +172,7 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %d", p.Sum())
@@ -197,7 +199,7 @@ func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlic
 		b.logEntry("SummaryDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
 		b.logEntry("Timestamp: %d", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
@@ -239,8 +241,9 @@ func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		e.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+			return true
 		})
 	}
 }
@@ -263,8 +266,9 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		l.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+			return true
 		})
 	}
 }
@@ -307,8 +311,9 @@ func attributeMapToString(av pdata.AttributeMap) string {
 	var b strings.Builder
 	b.WriteString("{\n")
 
-	av.Sort().ForEach(func(k string, v pdata.AttributeValue) {
+	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
 		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), tracetranslator.AttributeValueToString(v, false))
+		return true
 	})
 	b.WriteByte('}')
 	return b.String()
@@ -351,8 +356,8 @@ func (s *loggingExporter) pushTraceData(
 				buf.logAttr("ID", span.SpanID().HexString())
 				buf.logAttr("Name", span.Name())
 				buf.logAttr("Kind", span.Kind().String())
-				buf.logAttr("Start time", span.StartTime().String())
-				buf.logAttr("End time", span.EndTime().String())
+				buf.logAttr("Start time", span.StartTimestamp().String())
+				buf.logAttr("End time", span.EndTimestamp().String())
 
 				buf.logAttr("Status code", span.Status().Code().String())
 				buf.logAttr("Status message", span.Status().Message())
@@ -404,15 +409,15 @@ func (s *loggingExporter) pushMetricsData(
 	return nil
 }
 
-// newTraceExporter creates an exporter.TracesExporter that just drops the
+// newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
+func newTracesExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		logger,
 		s.pushTraceData,
@@ -426,7 +431,7 @@ func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
+func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
@@ -446,7 +451,7 @@ func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
+func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,

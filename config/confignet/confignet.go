@@ -32,10 +32,12 @@ type NetAddr struct {
 	Transport string `mapstructure:"transport"`
 }
 
+// Dial equivalent with net.Dial for this address.
 func (na *NetAddr) Dial() (net.Conn, error) {
 	return net.Dial(na.Transport, na.Endpoint)
 }
 
+// Listen equivalent with net.Listen for this address.
 func (na *NetAddr) Listen() (net.Listener, error) {
 	return net.Listen(na.Transport, na.Endpoint)
 }
@@ -50,10 +52,12 @@ type TCPAddr struct {
 	Endpoint string `mapstructure:"endpoint"`
 }
 
+// Dial equivalent with net.Dial for this address.
 func (na *TCPAddr) Dial() (net.Conn, error) {
 	return net.Dial("tcp", na.Endpoint)
 }
 
+// Listen equivalent with net.Listen for this address.
 func (na *TCPAddr) Listen() (net.Listener, error) {
 	return net.Listen("tcp", na.Endpoint)
 }

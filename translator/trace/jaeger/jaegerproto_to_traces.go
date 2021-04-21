@@ -67,9 +67,7 @@ func ProtoBatchToInternalTraces(batch model.Batch) pdata.Traces {
 		return traceData
 	}
 
-	rss := traceData.ResourceSpans()
-	rss.Resize(1)
-	protoBatchToResourceSpans(batch, rss.At(0))
+	protoBatchToResourceSpans(batch, traceData.ResourceSpans().AppendEmpty())
 
 	return traceData
 }
@@ -102,11 +100,12 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 	}
 
 	attrs := dest.Attributes()
+	attrs.Clear()
 	if serviceName != "" {
-		attrs.InitEmptyWithCapacity(len(tags) + 1)
+		attrs.EnsureCapacity(len(tags) + 1)
 		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
 	} else {
-		attrs.InitEmptyWithCapacity(len(tags))
+		attrs.EnsureCapacity(len(tags))
 	}
 	jTagsToInternalAttributes(tags, attrs)
 
@@ -167,8 +166,8 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
-	dest.SetStartTime(pdata.TimestampFromTime(span.StartTime))
-	dest.SetEndTime(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
+	dest.SetStartTimestamp(pdata.TimestampFromTime(span.StartTime))
+	dest.SetEndTimestamp(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
@@ -176,7 +175,8 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	}
 
 	attrs := dest.Attributes()
-	attrs.InitEmptyWithCapacity(len(span.Tags))
+	attrs.Clear()
+	attrs.EnsureCapacity(len(span.Tags))
 	jTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
@@ -332,7 +332,8 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.InitEmptyWithCapacity(len(log.Fields))
+		attrs.Clear()
+		attrs.EnsureCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
 			event.SetName(name.StringVal())

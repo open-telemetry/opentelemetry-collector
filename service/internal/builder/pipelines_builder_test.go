@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -58,26 +58,26 @@ func TestBuildPipelines(t *testing.T) {
 	}
 }
 
-func createExampleConfig(dataType string) *configmodels.Config {
+func createExampleConfig(dataType string) *config.Config {
 	exampleReceiverFactory := testcomponents.ExampleReceiverFactory
 	exampleProcessorFactory := testcomponents.ExampleProcessorFactory
 	exampleExporterFactory := testcomponents.ExampleExporterFactory
 
-	cfg := &configmodels.Config{
-		Receivers: map[string]configmodels.Receiver{
+	cfg := &config.Config{
+		Receivers: map[string]config.Receiver{
 			string(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
 		},
-		Processors: map[string]configmodels.Processor{
+		Processors: map[string]config.Processor{
 			string(exampleProcessorFactory.Type()): exampleProcessorFactory.CreateDefaultConfig(),
 		},
-		Exporters: map[string]configmodels.Exporter{
+		Exporters: map[string]config.Exporter{
 			string(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
 		},
-		Service: configmodels.Service{
-			Pipelines: map[string]*configmodels.Pipeline{
+		Service: config.Service{
+			Pipelines: map[string]*config.Pipeline{
 				dataType: {
 					Name:       dataType,
-					InputType:  configmodels.DataType(dataType),
+					InputType:  config.DataType(dataType),
 					Receivers:  []string{string(exampleReceiverFactory.Type())},
 					Processors: []string{string(exampleProcessorFactory.Type())},
 					Exporters:  []string{string(exampleExporterFactory.Type())},
@@ -160,7 +160,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 
 			// Send one custom data.
 			log := pdata.Logs{}
-			processor.firstLC.(consumer.Logs).ConsumeLogs(context.Background(), log)
+			require.NoError(t, processor.firstLC.(consumer.Logs).ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
 			for _, expConsumer := range exporterConsumers {
@@ -215,13 +215,13 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// First check that there are no traces in the exporters yet.
 	var exporterConsumers []*testcomponents.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		expConsumer := exporter.getTraceExporter().(*testcomponents.ExampleExporterConsumer)
+		expConsumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, expConsumer)
 		require.Equal(t, len(expConsumer.Traces), 0)
 	}
 
 	td := testdata.GenerateTraceDataOneSpan()
-	processor.firstTC.(consumer.Traces).ConsumeTraces(context.Background(), td)
+	require.NoError(t, processor.firstTC.(consumer.Traces).ConsumeTraces(context.Background(), td))
 
 	// Now verify received data.
 	for _, expConsumer := range exporterConsumers {

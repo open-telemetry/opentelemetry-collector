@@ -121,9 +121,19 @@ func spanToZipkinSpan(
 
 	zs.Sampled = &sampled
 	zs.Name = span.Name()
-	zs.Timestamp = span.StartTime().AsTime()
-	if span.EndTime() != 0 {
-		zs.Duration = time.Duration(span.EndTime() - span.StartTime())
+	startTime := span.StartTimestamp().AsTime()
+
+	// leave timestamp unset on zs (zipkin span) if
+	// otel span startTime is zero.  Zipkin has a
+	// case where startTime is not set on the span.
+	// See handling of this (and setting of otel span
+	// to unix time zero) in zipkinv2_to_traces.go
+	if startTime.Unix() != 0 {
+		zs.Timestamp = startTime
+	}
+
+	if span.EndTimestamp() != 0 {
+		zs.Duration = time.Duration(span.EndTimestamp() - span.StartTimestamp())
 	}
 	zs.Kind = spanKindToZipkinKind(span.Kind())
 	if span.Kind() == pdata.SpanKindINTERNAL {
@@ -212,8 +222,9 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
-	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
+	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
 		rawMap[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 	return rawMap
 }
@@ -235,8 +246,9 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		zTags[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 
 	serviceName = extractZipkinServiceName(zTags)

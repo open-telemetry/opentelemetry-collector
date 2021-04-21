@@ -27,17 +27,17 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 const (
@@ -67,6 +67,8 @@ type Application struct {
 
 	factories component.Factories
 
+	parserProvider parserprovider.ParserProvider
+
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
 
@@ -83,54 +85,25 @@ type Parameters struct {
 	Factories component.Factories
 	// ApplicationStartInfo provides application start information.
 	ApplicationStartInfo component.ApplicationStartInfo
-	// ConfigFactory that creates the configuration.
-	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
-	// The default factory loads the configuration file and overrides component's configuration
+	// ParserProvider provides the configuration's Parser.
+	// If it is not provided a default provider is used. The default provider loads the configuration
+	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
-	ConfigFactory ConfigFactory
+	ParserProvider parserprovider.ParserProvider
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
 }
 
-// ConfigFactory creates config.
-// The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
-// Viper and command instances are passed from the Application.
-// The factories also belong to the Application and are equal to the factories passed via Parameters.
-type ConfigFactory func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
-
-// FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file
-// and from --set command line flag (if the flag is present).
-func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
-	file := builder.GetConfigFile()
-	if file == "" {
-		return nil, errors.New("config file not specified")
-	}
-	// first load the config file
-	v.SetConfigFile(file)
-	err := v.ReadInConfig()
-	if err != nil {
-		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
-	}
-
-	// next overlay the config file with --set flags
-	if err := AddSetFlagProperties(v, cmd); err != nil {
-		return nil, fmt.Errorf("failed to process set flag: %v", err)
-	}
-	return config.Load(v, factories)
-}
-
 // New creates and returns a new instance of Application.
 func New(params Parameters) (*Application, error) {
+	if err := configcheck.ValidateConfigFromFactories(params.Factories); err != nil {
+		return nil, err
+	}
+
 	app := &Application{
 		info:         params.ApplicationStartInfo,
 		factories:    params.Factories,
 		stateChannel: make(chan State, Closed+1),
-	}
-
-	factory := params.ConfigFactory
-	if factory == nil {
-		// use default factory that loads the configuration file
-		factory = FileLoaderConfigFactory
 	}
 
 	rootCmd := &cobra.Command{
@@ -142,7 +115,7 @@ func New(params Parameters) (*Application, error) {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
-			if err := app.execute(context.Background(), factory); err != nil {
+			if err := app.execute(context.Background()); err != nil {
 				return err
 			}
 
@@ -154,6 +127,7 @@ func New(params Parameters) (*Application, error) {
 	flagSet := new(flag.FlagSet)
 	addFlagsFns := []func(*flag.FlagSet){
 		configtelemetry.Flags,
+		parserprovider.Flags,
 		telemetry.Flags,
 		builder.Flags,
 		loggerFlags,
@@ -162,11 +136,25 @@ func New(params Parameters) (*Application, error) {
 		addFlags(flagSet)
 	}
 	rootCmd.Flags().AddGoFlagSet(flagSet)
-	addSetFlag(rootCmd.Flags())
-
 	app.rootCmd = rootCmd
 
+	parserProvider := params.ParserProvider
+	if parserProvider == nil {
+		// use default provider.
+		parserProvider = parserprovider.Default()
+	}
+	app.parserProvider = parserProvider
+
 	return app, nil
+}
+
+// Run starts the collector according to the command and configuration
+// given by the user, and waits for it to complete.
+func (app *Application) Run() error {
+	// From this point on do not show usage in case of error.
+	app.rootCmd.SilenceUsage = true
+
+	return app.rootCmd.Execute()
 }
 
 // GetStateChannel returns state channel of the application.
@@ -185,6 +173,7 @@ func (app *Application) GetLogger() *zap.Logger {
 	return app.logger
 }
 
+// Shutdown shuts down the application.
 func (app *Application) Shutdown() {
 	// TODO: Implement a proper shutdown with graceful draining of the pipeline.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/483.
@@ -229,21 +218,28 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	app.stateChannel <- Closing
 }
 
-func (app *Application) setupConfigurationComponents(ctx context.Context, factory ConfigFactory) error {
-	if err := configcheck.ValidateConfigFromFactories(app.factories); err != nil {
-		return err
-	}
-
+// setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
+// sets the app.service with the service currently running.
+func (app *Application) setupConfigurationComponents(ctx context.Context) error {
 	app.logger.Info("Loading configuration...")
 
-	cfg, err := factory(config.NewViper(), app.rootCmd, app.factories)
+	cp, err := app.parserProvider.Get()
+	if err != nil {
+		return fmt.Errorf("cannot load configuration's parser: %w", err)
+	}
+
+	cfg, err := configloader.Load(cp, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
 
+	if err = cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	app.logger.Info("Applying configuration...")
 
-	app.service, err = newService(&settings{
+	service, err := newService(&settings{
 		Factories:         app.factories,
 		StartInfo:         app.info,
 		Config:            cfg,
@@ -254,10 +250,34 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 		return err
 	}
 
-	return app.service.Start(ctx)
+	err = service.Start(ctx)
+	if err != nil {
+		return err
+	}
+
+	app.service = service
+
+	// If provider is watchable start a goroutine watching for updates.
+	if watchable, ok := app.parserProvider.(parserprovider.Watchable); ok {
+		go func() {
+			err := watchable.WatchForUpdate()
+			switch {
+			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
+			case errors.Is(err, configsource.ErrSessionClosed):
+				// This is the case of shutdown of the whole application, nothing to do.
+				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
+				return
+			default:
+				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
+				app.reloadService(context.Background())
+			}
+		}()
+	}
+
+	return nil
 }
 
-func (app *Application) execute(ctx context.Context, factory ConfigFactory) error {
+func (app *Application) execute(ctx context.Context) error {
 	app.logger.Info("Starting "+app.info.LongName+"...",
 		zap.String("Version", app.info.Version),
 		zap.String("GitHash", app.info.GitHash),
@@ -276,7 +296,7 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		return err
 	}
 
-	err = app.setupConfigurationComponents(ctx, factory)
+	err = app.setupConfigurationComponents(ctx)
 	if err != nil {
 		return err
 	}
@@ -291,8 +311,16 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
-	if err := app.service.Shutdown(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
+	if closable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+		if err := closable.Close(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close config: %w", err))
+		}
+	}
+
+	if app.service != nil {
+		if err := app.service.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
+		}
 	}
 
 	if err := applicationTelemetry.shutdown(); err != nil {
@@ -306,15 +334,6 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	return consumererror.Combine(errs)
 }
 
-// Run starts the collector according to the command and configuration
-// given by the user, and waits for it to complete.
-func (app *Application) Run() error {
-	// From this point on do not show usage in case of error.
-	app.rootCmd.SilenceUsage = true
-
-	return app.rootCmd.Execute()
-}
-
 func (app *Application) createMemoryBallast() ([]byte, uint64) {
 	ballastSizeMiB := builder.MemBallastSize()
 	if ballastSizeMiB > 0 {
@@ -324,4 +343,29 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 		return ballast, ballastSizeBytes
 	}
 	return nil, 0
+}
+
+// reloadService shutdowns the current app.service and setups a new one according
+// to the latest configuration. It requires that app.parserProvider and app.factories
+// are properly populated to finish successfully.
+func (app *Application) reloadService(ctx context.Context) error {
+	if closeable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+		if err := closeable.Close(ctx); err != nil {
+			return fmt.Errorf("failed close current config provider: %w", err)
+		}
+	}
+
+	if app.service != nil {
+		retiringService := app.service
+		app.service = nil
+		if err := retiringService.Shutdown(ctx); err != nil {
+			return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+		}
+	}
+
+	if err := app.setupConfigurationComponents(ctx); err != nil {
+		return fmt.Errorf("failed to setup configuration components: %w", err)
+	}
+
+	return nil
 }

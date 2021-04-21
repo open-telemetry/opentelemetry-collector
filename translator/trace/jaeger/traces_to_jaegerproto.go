@@ -116,11 +116,12 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.Attribu
 		return dest
 	}
 
-	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		if key == conventions.AttributeServiceName {
-			return
+			return true
 		}
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
+		return true
 	})
 	return dest
 }
@@ -129,8 +130,9 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) [
 	if attrs.Len() == 0 {
 		return dest
 	}
-	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
+		return true
 	})
 	return dest
 }
@@ -175,7 +177,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		return nil, fmt.Errorf("error converting span links to Jaeger references: %w", err)
 	}
 
-	startTime := span.StartTime().AsTime()
+	startTime := span.StartTimestamp().AsTime()
 
 	return &model.Span{
 		TraceID:       traceID,
@@ -183,7 +185,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		OperationName: span.Name(),
 		References:    jReferences,
 		StartTime:     startTime,
-		Duration:      span.EndTime().AsTime().Sub(startTime),
+		Duration:      span.EndTimestamp().AsTime().Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
 	}, nil

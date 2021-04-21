@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal"
@@ -42,8 +42,8 @@ import (
 
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPrwExporter(t *testing.T) {
-	config := &Config{
-		ExporterSettings:   configmodels.ExporterSettings{},
+	cfg := &Config{
+		ExporterSettings:   config.NewExporterSettings(typeStr),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
@@ -62,7 +62,7 @@ func Test_NewPrwExporter(t *testing.T) {
 	}{
 		{
 			"invalid_URL",
-			config,
+			cfg,
 			"test",
 			"invalid URL",
 			map[string]string{"Key1": "Val1"},
@@ -71,7 +71,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"nil_client",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{"Key1": "Val1"},
@@ -80,7 +80,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"invalid_labels_case",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{"Key1": ""},
@@ -89,7 +89,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"success_case",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{"Key1": "Val1"},
@@ -98,7 +98,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"success_case_no_labels",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{},
@@ -685,11 +685,8 @@ func Test_PushMetrics(t *testing.T) {
 			assert.NoError(t, uErr)
 
 			config := &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: "prometheusremotewrite",
-					NameVal: "prometheusremotewrite",
-				},
-				Namespace: "",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Namespace:        "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://some.url:9411/api/prom/push",
 					// We almost read 0 bytes, so no need to tune ReadBufferSize.

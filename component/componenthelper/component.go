@@ -20,29 +20,40 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Start specifies the function invoked when the exporter is being started.
-type Start func(context.Context, component.Host) error
+// StartFunc specifies the function invoked when the exporter is being started.
+type StartFunc func(context.Context, component.Host) error
 
-// Shutdown specifies the function invoked when the exporter is being shutdown.
-type Shutdown func(context.Context) error
+// ShutdownFunc specifies the function invoked when the exporter is being shutdown.
+type ShutdownFunc func(context.Context) error
 
-// ComponentSettings represents a settings struct to create components.
-type ComponentSettings struct {
-	Start
-	Shutdown
+// baseSettings represents a settings struct to create components.
+type baseSettings struct {
+	StartFunc
+	ShutdownFunc
 }
 
-// DefaultComponentSettings returns the default settings for a component. The Start and Shutdown are no-op.
-func DefaultComponentSettings() *ComponentSettings {
-	return &ComponentSettings{
-		Start:    func(ctx context.Context, host component.Host) error { return nil },
-		Shutdown: func(ctx context.Context) error { return nil },
+// Option represents the possible options for New.
+type Option func(*baseSettings)
+
+// WithStart overrides the default Start function for a processor.
+// The default shutdown function does nothing and always returns nil.
+func WithStart(start StartFunc) Option {
+	return func(o *baseSettings) {
+		o.StartFunc = start
+	}
+}
+
+// WithShutdown overrides the default Shutdown function for a processor.
+// The default shutdown function does nothing and always returns nil.
+func WithShutdown(shutdown ShutdownFunc) Option {
+	return func(o *baseSettings) {
+		o.ShutdownFunc = shutdown
 	}
 }
 
 type baseComponent struct {
-	start    Start
-	shutdown Shutdown
+	start    StartFunc
+	shutdown ShutdownFunc
 }
 
 // Start all senders and exporter and is invoked during service start.
@@ -55,10 +66,25 @@ func (be *baseComponent) Shutdown(ctx context.Context) error {
 	return be.shutdown(ctx)
 }
 
-// NewComponent returns a component.Component that calls the given Start and Shutdown.
-func NewComponent(s *ComponentSettings) component.Component {
+// fromOptions returns the internal settings starting from the default and applying all options.
+func fromOptions(options []Option) *baseSettings {
+	opts := &baseSettings{
+		StartFunc:    func(ctx context.Context, host component.Host) error { return nil },
+		ShutdownFunc: func(ctx context.Context) error { return nil },
+	}
+
+	for _, op := range options {
+		op(opts)
+	}
+
+	return opts
+}
+
+// New returns a component.Component configured with the provided Options.
+func New(options ...Option) component.Component {
+	bs := fromOptions(options)
 	return &baseComponent{
-		start:    s.Start,
-		shutdown: s.Shutdown,
+		start:    bs.StartFunc,
+		shutdown: bs.ShutdownFunc,
 	}
 }

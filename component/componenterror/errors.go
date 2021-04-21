@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oterr provides helper functions to create and process
+// Package componenterror provides helper functions to create and process
 // OpenTelemetry specific errors
 package componenterror
 
@@ -29,4 +29,9 @@ var (
 
 	// ErrNilNextConsumer indicates an error on nil next consumer.
 	ErrNilNextConsumer = errors.New("nil nextConsumer")
+
+	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor
+	// factory methods that create the entity if the particular telemetry
+	// data type is not supported by the receiver, exporter or processor.
+	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
 )

@@ -17,13 +17,14 @@ package consumertest
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type errConsumer struct {
 	err error
 }
+
+func (er *errConsumer) unexported() {}
 
 func (er *errConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
 	return er.err
@@ -37,17 +38,7 @@ func (er *errConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
 	return er.err
 }
 
-// NewTracesErr returns a consumer.Traces that just drops all received data and returns the given error.
-func NewTracesErr(err error) consumer.Traces {
-	return &errConsumer{err: err}
-}
-
-// NewMetricsErr returns a consumer.Metrics that just drops all received data and returns the given error.
-func NewMetricsErr(err error) consumer.Metrics {
-	return &errConsumer{err: err}
-}
-
-// NewLogsErr returns a consumer.Logs that just drops all received data and returns the given error.
-func NewLogsErr(err error) consumer.Logs {
+// NewErr returns a Consumer that just drops all received data and returns no error.
+func NewErr(err error) Consumer {
 	return &errConsumer{err: err}
 }

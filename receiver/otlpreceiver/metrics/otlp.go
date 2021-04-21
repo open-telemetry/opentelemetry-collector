@@ -49,6 +49,7 @@ const (
 	receiverTransport = "grpc"
 )
 
+// Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
 	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
 

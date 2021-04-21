@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"html"
 	"io/ioutil"
 	"mime"
 	"net"
@@ -48,6 +49,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
@@ -57,10 +59,11 @@ import (
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type configuration struct {
-	CollectorThriftPort  int
-	CollectorHTTPPort    int
-	CollectorGRPCPort    int
-	CollectorGRPCOptions []grpc.ServerOption
+	CollectorThriftPort   int
+	CollectorHTTPPort     int
+	CollectorHTTPSettings confighttp.HTTPServerSettings
+	CollectorGRPCPort     int
+	CollectorGRPCOptions  []grpc.ServerOption
 
 	AgentCompactThriftPort       int
 	AgentCompactThriftConfig     ServerConfigUDP
@@ -174,14 +177,6 @@ func (jr *jReceiver) collectorGRPCAddr() string {
 
 func (jr *jReceiver) collectorGRPCEnabled() bool {
 	return jr.config != nil && jr.config.CollectorGRPCPort > 0
-}
-
-func (jr *jReceiver) collectorHTTPAddr() string {
-	var port int
-	if jr.config != nil {
-		port = jr.config.CollectorHTTPPort
-	}
-	return fmt.Sprintf(":%d", port)
 }
 
 func (jr *jReceiver) collectorHTTPEnabled() bool {
@@ -363,7 +358,7 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPAddr(), jr, metrics.NullFactory)
 
 		go func() {
-			if err := jr.agentServer.ListenAndServe(); err != nil {
+			if err := jr.agentServer.ListenAndServe(); err != http.ErrServerClosed {
 				jr.logger.Error("http server failure", zap.Error(err))
 			}
 		}()
@@ -441,7 +436,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {
-		http.Error(w, hErr.msg, hErr.statusCode)
+		http.Error(w, html.EscapeString(hErr.msg), hErr.statusCode)
 		obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
 		return
 	}
@@ -461,11 +456,10 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.collectorHTTPEnabled() {
-		// Now the collector that runs over HTTP
-		caddr := jr.collectorHTTPAddr()
-		cln, cerr := net.Listen("tcp", caddr)
+		cln, cerr := jr.config.CollectorHTTPSettings.ToListener()
 		if cerr != nil {
-			return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
+			return fmt.Errorf("failed to bind to Collector address %q: %v",
+				jr.config.CollectorHTTPSettings.Endpoint, cerr)
 		}
 
 		nr := mux.NewRouter()

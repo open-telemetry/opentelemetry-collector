@@ -29,22 +29,20 @@ func TestLogRecordCount(t *testing.T) {
 	md := NewLogs()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().Resize(1)
+	rl := md.ResourceLogs().AppendEmpty()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	ill.Logs().AppendEmpty()
 	assert.EqualValues(t, 1, md.LogRecordCount())
 
 	rms := md.ResourceLogs()
 	rms.Resize(3)
-	rms.At(0).InstrumentationLibraryLogs().Resize(1)
-	rms.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
-	rms.At(1).InstrumentationLibraryLogs().Resize(1)
-	rms.At(2).InstrumentationLibraryLogs().Resize(1)
-	rms.At(2).InstrumentationLibraryLogs().At(0).Logs().Resize(5)
+	rms.At(1).InstrumentationLibraryLogs().AppendEmpty()
+	rms.At(2).InstrumentationLibraryLogs().AppendEmpty().Logs().Resize(5)
+	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.LogRecordCount())
 }
 

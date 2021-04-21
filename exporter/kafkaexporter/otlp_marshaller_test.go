@@ -47,3 +47,15 @@ func TestOTLPMetricsPbMarshaller(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, md, extracted)
 }
+
+func TestOTLPLogsPbMarshaller(t *testing.T) {
+	ld := testdata.GenerateLogDataOneLog()
+	m := otlpLogsPbMarshaller{}
+	assert.Equal(t, "otlp_proto", m.Encoding())
+	messages, err := m.Marshal(ld)
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	extracted, err := pdata.LogsFromOtlpProtoBytes(messages[0].Value)
+	require.NoError(t, err)
+	assert.EqualValues(t, ld, extracted)
+}

@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -36,31 +36,28 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithTraces(createTracesProcessor),
 		processorhelper.WithMetrics(createMetricsProcessor),
 		processorhelper.WithLogs(createLogsProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
 	}
 }
 
-func createTraceProcessor(
+func createTracesProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTraceProcessor(
+	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
 		&resourceProcessor{attrProc: attrProc},
@@ -70,7 +67,7 @@ func createTraceProcessor(
 func createMetricsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
@@ -86,7 +83,7 @@ func createMetricsProcessor(
 func createLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {

@@ -24,7 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -37,38 +37,34 @@ func TestDefaultExtensions(t *testing.T) {
 
 	extFactories := allFactories.Extensions
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	port := testutil.GetAvailablePort(t)
 
 	tests := []struct {
-		extension   configmodels.Type
+		extension   config.Type
 		getConfigFn getExtensionConfigFn
 	}{
 		{
 			extension: "health_check",
-			getConfigFn: func() configmodels.Extension {
+			getConfigFn: func() config.Extension {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
-				cfg.Port = port
+				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
 			},
 		},
 		{
 			extension: "pprof",
-			getConfigFn: func() configmodels.Extension {
+			getConfigFn: func() config.Extension {
 				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
-				cfg.Endpoint = endpoint
+				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
 			},
 		},
 		{
 			extension: "zpages",
-			getConfigFn: func() configmodels.Extension {
+			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
-				cfg.Endpoint = endpoint
+				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
 			},
-		},
-		{
-			extension: "fluentbit",
 		},
 	}
 
@@ -80,7 +76,7 @@ func TestDefaultExtensions(t *testing.T) {
 			assert.Equal(t, tt.extension, factory.Type())
 			assert.Equal(t, tt.extension, factory.CreateDefaultConfig().Type())
 
-			verifyExtensionLifecycle(t, factory, nil)
+			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -88,7 +84,7 @@ func TestDefaultExtensions(t *testing.T) {
 // getExtensionConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getExtensionConfigFn func() configmodels.Extension
+type getExtensionConfigFn func() config.Extension
 
 // verifyExtensionLifecycle is used to test if an extension type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if

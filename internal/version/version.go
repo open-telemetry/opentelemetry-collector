@@ -67,7 +67,7 @@ var InfoVar = Info{
 
 // RuntimeVar returns the InfoVar plus runtime information like uptime.
 func RuntimeVar() Info {
-	return append(InfoVar, [2]string{"StartTime", startTime.String()}, [2]string{"Uptime", time.Since(startTime).String()})
+	return append(InfoVar, [2]string{"StartTimestamp", startTime.String()}, [2]string{"Uptime", time.Since(startTime).String()})
 }
 
 // Info has properties about the build and runtime.

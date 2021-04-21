@@ -160,7 +160,7 @@ func (mp *MountPoint) Translate(absPath string) (string, error) {
 // parseMountInfo parses procPathMountInfo (usually at `/proc/$PID/mountinfo`)
 // and yields parsed *MountPoint into newMountPoint.
 func parseMountInfo(procPathMountInfo string, newMountPoint func(*MountPoint) error) error {
-	mountInfoFile, err := os.Open(procPathMountInfo)
+	mountInfoFile, err := os.Open(filepath.Clean(procPathMountInfo))
 	if err != nil {
 		return err
 	}

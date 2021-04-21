@@ -72,7 +72,7 @@ func TestNilIntHistogram(t *testing.T) {
 }
 
 func TestNilDoubleHistogram(t *testing.T) {
-	dataType := pdata.MetricDataTypeDoubleHistogram
+	dataType := pdata.MetricDataTypeHistogram
 	testNilValue(t, dataType)
 }
 
@@ -93,8 +93,7 @@ func TestIntGaugeEmptyDataPoint(t *testing.T) {
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
 	m.SetDataType(pdata.MetricDataTypeIntGauge)
-	dps := m.IntGauge().DataPoints()
-	dps.Resize(1)
+	m.IntGauge().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -106,8 +105,7 @@ func TestDoubleGaugeEmptyDataPoint(t *testing.T) {
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
 	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dps := m.DoubleGauge().DataPoints()
-	dps.Resize(1)
+	m.DoubleGauge().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -119,8 +117,7 @@ func TestDoubleSumEmptyDataPoint(t *testing.T) {
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
 	m.SetDataType(pdata.MetricDataTypeDoubleSum)
-	dps := m.DoubleSum().DataPoints()
-	dps.Resize(1)
+	m.DoubleSum().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -132,8 +129,7 @@ func TestIntSumEmptyDataPoint(t *testing.T) {
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
 	m.SetDataType(pdata.MetricDataTypeIntSum)
-	dps := m.IntSum().DataPoints()
-	dps.Resize(1)
+	m.IntSum().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -145,8 +141,7 @@ func TestIntHistogramEmptyDataPoint(t *testing.T) {
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
 	m.SetDataType(pdata.MetricDataTypeIntHistogram)
-	dps := m.IntHistogram().DataPoints()
-	dps.Resize(1)
+	m.IntHistogram().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -157,9 +152,8 @@ func TestDoubleHistogramEmptyDataPoint(t *testing.T) {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	dps := m.DoubleHistogram().DataPoints()
-	dps.Resize(1)
+	m.SetDataType(pdata.MetricDataTypeHistogram)
+	m.Histogram().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -202,8 +196,7 @@ func testMatchIntGauge(t *testing.T, metricName, expression string, lbls map[str
 	m.SetName(metricName)
 	m.SetDataType(pdata.MetricDataTypeIntGauge)
 	dps := m.IntGauge().DataPoints()
-	dps.Resize(1)
-	pt := dps.At(0)
+	pt := dps.AppendEmpty()
 	if lbls != nil {
 		pt.LabelsMap().InitFromMap(lbls)
 	}
@@ -249,8 +242,7 @@ func testMatchDoubleGauge(t *testing.T, metricName string) bool {
 	m.SetName(metricName)
 	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	dps := m.DoubleGauge().DataPoints()
-	pt := pdata.NewDoubleDataPoint()
-	dps.Append(pt)
+	dps.AppendEmpty()
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	return match
@@ -271,8 +263,7 @@ func matchDoubleSum(t *testing.T, metricName string) bool {
 	m.SetName(metricName)
 	m.SetDataType(pdata.MetricDataTypeDoubleSum)
 	dps := m.DoubleSum().DataPoints()
-	pt := pdata.NewDoubleDataPoint()
-	dps.Append(pt)
+	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	return matched
@@ -293,8 +284,7 @@ func matchIntSum(t *testing.T, metricName string) bool {
 	m.SetName(metricName)
 	m.SetDataType(pdata.MetricDataTypeIntSum)
 	dps := m.IntSum().DataPoints()
-	pt := pdata.NewIntDataPoint()
-	dps.Append(pt)
+	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	return matched
@@ -315,8 +305,7 @@ func matchIntHistogram(t *testing.T, metricName string) bool {
 	m.SetName(metricName)
 	m.SetDataType(pdata.MetricDataTypeIntHistogram)
 	dps := m.IntHistogram().DataPoints()
-	pt := pdata.NewIntHistogramDataPoint()
-	dps.Append(pt)
+	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	return matched
@@ -335,10 +324,9 @@ func matchDoubleHistogram(t *testing.T, metricName string) bool {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	dps := m.DoubleHistogram().DataPoints()
-	pt := pdata.NewDoubleHistogramDataPoint()
-	dps.Append(pt)
+	m.SetDataType(pdata.MetricDataTypeHistogram)
+	dps := m.Histogram().DataPoints()
+	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	return matched

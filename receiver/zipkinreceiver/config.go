@@ -15,13 +15,13 @@
 package zipkinreceiver
 
 import (
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for Zipkin receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
 
 	// Configures the receiver server protocol.
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -29,4 +29,11 @@ type Config struct {
 	// If enabled the zipkin receiver will attempt to parse string tags/binary annotations into int/bool/float.
 	// Disabled by default
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
+}
+
+var _ config.Receiver = (*Config)(nil)
+
+// Validate checks the receiver configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

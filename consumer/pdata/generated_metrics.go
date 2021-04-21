@@ -131,8 +131,16 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 // given ResourceMetrics at that new position.  The original ResourceMetrics
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ResourceMetricsSlice) Append(e ResourceMetrics) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ResourceMetrics.
+// It returns the newly added ResourceMetrics.
+func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
+	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -283,8 +291,16 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 // given InstrumentationLibraryMetrics at that new position.  The original InstrumentationLibraryMetrics
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es InstrumentationLibraryMetricsSlice) Append(e InstrumentationLibraryMetrics) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty InstrumentationLibraryMetrics.
+// It returns the newly added InstrumentationLibraryMetrics.
+func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibraryMetrics {
+	*es.orig = append(*es.orig, &otlpmetrics.InstrumentationLibraryMetrics{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -435,8 +451,16 @@ func (es MetricSlice) Resize(newLen int) {
 // given Metric at that new position.  The original Metric
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es MetricSlice) Append(e Metric) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty Metric.
+// It returns the newly added Metric.
+func (es MetricSlice) AppendEmpty() Metric {
+	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
+	return es.At(es.Len() - 1)
 }
 
 // Metric represents one metric as a collection of datapoints.
@@ -715,45 +739,45 @@ func (ms IntHistogram) CopyTo(dest IntHistogram) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
-// DoubleHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.
+// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleHistogram function to create new instances.
+// Must use NewHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleHistogram struct {
+type Histogram struct {
 	orig *otlpmetrics.DoubleHistogram
 }
 
-func newDoubleHistogram(orig *otlpmetrics.DoubleHistogram) DoubleHistogram {
-	return DoubleHistogram{orig: orig}
+func newHistogram(orig *otlpmetrics.DoubleHistogram) Histogram {
+	return Histogram{orig: orig}
 }
 
-// NewDoubleHistogram creates a new empty DoubleHistogram.
+// NewHistogram creates a new empty Histogram.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleHistogram() DoubleHistogram {
-	return newDoubleHistogram(&otlpmetrics.DoubleHistogram{})
+func NewHistogram() Histogram {
+	return newHistogram(&otlpmetrics.DoubleHistogram{})
 }
 
-// AggregationTemporality returns the aggregationtemporality associated with this DoubleHistogram.
-func (ms DoubleHistogram) AggregationTemporality() AggregationTemporality {
+// AggregationTemporality returns the aggregationtemporality associated with this Histogram.
+func (ms Histogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality((*ms.orig).AggregationTemporality)
 }
 
-// SetAggregationTemporality replaces the aggregationtemporality associated with this DoubleHistogram.
-func (ms DoubleHistogram) SetAggregationTemporality(v AggregationTemporality) {
+// SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
+func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
 	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
-// DataPoints returns the DataPoints associated with this DoubleHistogram.
-func (ms DoubleHistogram) DataPoints() DoubleHistogramDataPointSlice {
-	return newDoubleHistogramDataPointSlice(&(*ms.orig).DataPoints)
+// DataPoints returns the DataPoints associated with this Histogram.
+func (ms Histogram) DataPoints() HistogramDataPointSlice {
+	return newHistogramDataPointSlice(&(*ms.orig).DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleHistogram) CopyTo(dest DoubleHistogram) {
+func (ms Histogram) CopyTo(dest Histogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
@@ -900,8 +924,16 @@ func (es IntDataPointSlice) Resize(newLen int) {
 // given IntDataPoint at that new position.  The original IntDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es IntDataPointSlice) Append(e IntDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty IntDataPoint.
+// It returns the newly added IntDataPoint.
+func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.IntDataPoint{})
+	return es.At(es.Len() - 1)
 }
 
 // IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.
@@ -931,13 +963,13 @@ func (ms IntDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this IntDataPoint.
-func (ms IntDataPoint) StartTime() Timestamp {
+// StartTimestamp returns the starttimestamp associated with this IntDataPoint.
+func (ms IntDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this IntDataPoint.
-func (ms IntDataPoint) SetStartTime(v Timestamp) {
+// SetStartTimestamp replaces the starttimestamp associated with this IntDataPoint.
+func (ms IntDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -969,7 +1001,7 @@ func (ms IntDataPoint) Exemplars() IntExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -1085,8 +1117,16 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 // given DoubleDataPoint at that new position.  The original DoubleDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es DoubleDataPointSlice) Append(e DoubleDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty DoubleDataPoint.
+// It returns the newly added DoubleDataPoint.
+func (es DoubleDataPointSlice) AppendEmpty() DoubleDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleDataPoint{})
+	return es.At(es.Len() - 1)
 }
 
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
@@ -1116,13 +1156,13 @@ func (ms DoubleDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) StartTime() Timestamp {
+// StartTimestamp returns the starttimestamp associated with this DoubleDataPoint.
+func (ms DoubleDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetStartTime(v Timestamp) {
+// SetStartTimestamp replaces the starttimestamp associated with this DoubleDataPoint.
+func (ms DoubleDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1147,14 +1187,14 @@ func (ms DoubleDataPoint) SetValue(v float64) {
 }
 
 // Exemplars returns the Exemplars associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) Exemplars() DoubleExemplarSlice {
-	return newDoubleExemplarSlice(&(*ms.orig).Exemplars)
+func (ms DoubleDataPoint) Exemplars() ExemplarSlice {
+	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -1270,8 +1310,16 @@ func (es IntHistogramDataPointSlice) Resize(newLen int) {
 // given IntHistogramDataPoint at that new position.  The original IntHistogramDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es IntHistogramDataPointSlice) Append(e IntHistogramDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty IntHistogramDataPoint.
+// It returns the newly added IntHistogramDataPoint.
+func (es IntHistogramDataPointSlice) AppendEmpty() IntHistogramDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.IntHistogramDataPoint{})
+	return es.At(es.Len() - 1)
 }
 
 // IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.
@@ -1301,13 +1349,13 @@ func (ms IntHistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) StartTime() Timestamp {
+// StartTimestamp returns the starttimestamp associated with this IntHistogramDataPoint.
+func (ms IntHistogramDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) SetStartTime(v Timestamp) {
+// SetStartTimestamp replaces the starttimestamp associated with this IntHistogramDataPoint.
+func (ms IntHistogramDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1369,7 +1417,7 @@ func (ms IntHistogramDataPoint) Exemplars() IntExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
@@ -1378,34 +1426,34 @@ func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
 	ms.Exemplars().CopyTo(dest.Exemplars())
 }
 
-// DoubleHistogramDataPointSlice logically represents a slice of DoubleHistogramDataPoint.
+// HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleHistogramDataPointSlice function to create new instances.
+// Must use NewHistogramDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleHistogramDataPointSlice struct {
+type HistogramDataPointSlice struct {
 	// orig points to the slice otlpmetrics.DoubleHistogramDataPoint field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.DoubleHistogramDataPoint
 }
 
-func newDoubleHistogramDataPointSlice(orig *[]*otlpmetrics.DoubleHistogramDataPoint) DoubleHistogramDataPointSlice {
-	return DoubleHistogramDataPointSlice{orig}
+func newHistogramDataPointSlice(orig *[]*otlpmetrics.DoubleHistogramDataPoint) HistogramDataPointSlice {
+	return HistogramDataPointSlice{orig}
 }
 
-// NewDoubleHistogramDataPointSlice creates a DoubleHistogramDataPointSlice with 0 elements.
+// NewHistogramDataPointSlice creates a HistogramDataPointSlice with 0 elements.
 // Can use "Resize" to initialize with a given length.
-func NewDoubleHistogramDataPointSlice() DoubleHistogramDataPointSlice {
+func NewHistogramDataPointSlice() HistogramDataPointSlice {
 	orig := []*otlpmetrics.DoubleHistogramDataPoint(nil)
-	return DoubleHistogramDataPointSlice{&orig}
+	return HistogramDataPointSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewDoubleHistogramDataPointSlice()".
-func (es DoubleHistogramDataPointSlice) Len() int {
+// Returns "0" for a newly instance created with "NewHistogramDataPointSlice()".
+func (es HistogramDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -1416,13 +1464,13 @@ func (es DoubleHistogramDataPointSlice) Len() int {
 //     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es DoubleHistogramDataPointSlice) At(ix int) DoubleHistogramDataPoint {
-	return newDoubleHistogramDataPoint((*es.orig)[ix])
+func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
+	return newHistogramDataPoint((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es DoubleHistogramDataPointSlice) MoveAndAppendTo(dest DoubleHistogramDataPointSlice) {
+func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -1433,13 +1481,13 @@ func (es DoubleHistogramDataPointSlice) MoveAndAppendTo(dest DoubleHistogramData
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es DoubleHistogramDataPointSlice) CopyTo(dest DoubleHistogramDataPointSlice) {
+func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newDoubleHistogramDataPoint((*es.orig)[i]).CopyTo(newDoubleHistogramDataPoint((*dest.orig)[i]))
+			newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1447,7 +1495,7 @@ func (es DoubleHistogramDataPointSlice) CopyTo(dest DoubleHistogramDataPointSlic
 	wrappers := make([]*otlpmetrics.DoubleHistogramDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newDoubleHistogramDataPoint((*es.orig)[i]).CopyTo(newDoubleHistogramDataPoint(wrappers[i]))
+		newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1456,14 +1504,14 @@ func (es DoubleHistogramDataPointSlice) CopyTo(dest DoubleHistogramDataPointSlic
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
-// Here is how a new DoubleHistogramDataPointSlice can be initialized:
-// es := NewDoubleHistogramDataPointSlice()
+// Here is how a new HistogramDataPointSlice can be initialized:
+// es := NewHistogramDataPointSlice()
 // es.Resize(4)
 // for i := 0; i < es.Len(); i++ {
 //     e := es.At(i)
 //     // Here should set all the values for e.
 // }
-func (es DoubleHistogramDataPointSlice) Resize(newLen int) {
+func (es HistogramDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
@@ -1484,110 +1532,118 @@ func (es DoubleHistogramDataPointSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the DoubleHistogramDataPointSlice by one and set the
-// given DoubleHistogramDataPoint at that new position.  The original DoubleHistogramDataPoint
+// Append will increase the length of the HistogramDataPointSlice by one and set the
+// given HistogramDataPoint at that new position.  The original HistogramDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es DoubleHistogramDataPointSlice) Append(e DoubleHistogramDataPoint) {
+// Deprecated: Use AppendEmpty.
+func (es HistogramDataPointSlice) Append(e HistogramDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
 }
 
-// DoubleHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of double values.
+// AppendEmpty will append to the end of the slice an empty HistogramDataPoint.
+// It returns the newly added HistogramDataPoint.
+func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleHistogramDataPoint{})
+	return es.At(es.Len() - 1)
+}
+
+// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleHistogramDataPoint function to create new instances.
+// Must use NewHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleHistogramDataPoint struct {
+type HistogramDataPoint struct {
 	orig *otlpmetrics.DoubleHistogramDataPoint
 }
 
-func newDoubleHistogramDataPoint(orig *otlpmetrics.DoubleHistogramDataPoint) DoubleHistogramDataPoint {
-	return DoubleHistogramDataPoint{orig: orig}
+func newHistogramDataPoint(orig *otlpmetrics.DoubleHistogramDataPoint) HistogramDataPoint {
+	return HistogramDataPoint{orig: orig}
 }
 
-// NewDoubleHistogramDataPoint creates a new empty DoubleHistogramDataPoint.
+// NewHistogramDataPoint creates a new empty HistogramDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleHistogramDataPoint() DoubleHistogramDataPoint {
-	return newDoubleHistogramDataPoint(&otlpmetrics.DoubleHistogramDataPoint{})
+func NewHistogramDataPoint() HistogramDataPoint {
+	return newHistogramDataPoint(&otlpmetrics.DoubleHistogramDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) LabelsMap() StringMap {
+// LabelsMap returns the Labels associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) StartTime() Timestamp {
+// StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetStartTime(v Timestamp) {
+// SetStartTimestamp replaces the starttimestamp associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
-// Timestamp returns the timestamp associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) Timestamp() Timestamp {
+// Timestamp returns the timestamp associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Timestamp() Timestamp {
 	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetTimestamp(v Timestamp) {
+// SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Count returns the count associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) Count() uint64 {
+// Count returns the count associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Count() uint64 {
 	return (*ms.orig).Count
 }
 
-// SetCount replaces the count associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetCount(v uint64) {
+// SetCount replaces the count associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetCount(v uint64) {
 	(*ms.orig).Count = v
 }
 
-// Sum returns the sum associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) Sum() float64 {
+// Sum returns the sum associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Sum() float64 {
 	return (*ms.orig).Sum
 }
 
-// SetSum replaces the sum associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetSum(v float64) {
+// SetSum replaces the sum associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetSum(v float64) {
 	(*ms.orig).Sum = v
 }
 
-// BucketCounts returns the bucketcounts associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) BucketCounts() []uint64 {
+// BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) BucketCounts() []uint64 {
 	return (*ms.orig).BucketCounts
 }
 
-// SetBucketCounts replaces the bucketcounts associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetBucketCounts(v []uint64) {
+// SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetBucketCounts(v []uint64) {
 	(*ms.orig).BucketCounts = v
 }
 
-// ExplicitBounds returns the explicitbounds associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) ExplicitBounds() []float64 {
+// ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) ExplicitBounds() []float64 {
 	return (*ms.orig).ExplicitBounds
 }
 
-// SetExplicitBounds replaces the explicitbounds associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetExplicitBounds(v []float64) {
+// SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
 	(*ms.orig).ExplicitBounds = v
 }
 
-// Exemplars returns the Exemplars associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) Exemplars() DoubleExemplarSlice {
-	return newDoubleExemplarSlice(&(*ms.orig).Exemplars)
+// Exemplars returns the Exemplars associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
+	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleHistogramDataPoint) CopyTo(dest DoubleHistogramDataPoint) {
+func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
@@ -1706,8 +1762,16 @@ func (es SummaryDataPointSlice) Resize(newLen int) {
 // given SummaryDataPoint at that new position.  The original SummaryDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SummaryDataPointSlice) Append(e SummaryDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty SummaryDataPoint.
+// It returns the newly added SummaryDataPoint.
+func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint{})
+	return es.At(es.Len() - 1)
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
@@ -1737,13 +1801,13 @@ func (ms SummaryDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) StartTime() Timestamp {
+// StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetStartTime(v Timestamp) {
+// SetStartTimestamp replaces the starttimestamp associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1785,7 +1849,7 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
@@ -1902,8 +1966,16 @@ func (es ValueAtQuantileSlice) Resize(newLen int) {
 // given ValueAtQuantile at that new position.  The original ValueAtQuantile
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ValueAtQuantileSlice) Append(e ValueAtQuantile) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ValueAtQuantile.
+// It returns the newly added ValueAtQuantile.
+func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
+	return es.At(es.Len() - 1)
 }
 
 // ValueAtQuantile is a quantile value within a Summary data point
@@ -2059,8 +2131,16 @@ func (es IntExemplarSlice) Resize(newLen int) {
 // given IntExemplar at that new position.  The original IntExemplar
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es IntExemplarSlice) Append(e IntExemplar) {
 	*es.orig = append(*es.orig, *e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty IntExemplar.
+// It returns the newly added IntExemplar.
+func (es IntExemplarSlice) AppendEmpty() IntExemplar {
+	*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
+	return es.At(es.Len() - 1)
 }
 
 // IntExemplar is a sample input int measurement.
@@ -2120,34 +2200,34 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
 }
 
-// DoubleExemplarSlice logically represents a slice of DoubleExemplar.
+// ExemplarSlice logically represents a slice of Exemplar.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleExemplarSlice function to create new instances.
+// Must use NewExemplarSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleExemplarSlice struct {
+type ExemplarSlice struct {
 	// orig points to the slice otlpmetrics.DoubleExemplar field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]otlpmetrics.DoubleExemplar
 }
 
-func newDoubleExemplarSlice(orig *[]otlpmetrics.DoubleExemplar) DoubleExemplarSlice {
-	return DoubleExemplarSlice{orig}
+func newExemplarSlice(orig *[]otlpmetrics.DoubleExemplar) ExemplarSlice {
+	return ExemplarSlice{orig}
 }
 
-// NewDoubleExemplarSlice creates a DoubleExemplarSlice with 0 elements.
+// NewExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "Resize" to initialize with a given length.
-func NewDoubleExemplarSlice() DoubleExemplarSlice {
+func NewExemplarSlice() ExemplarSlice {
 	orig := []otlpmetrics.DoubleExemplar(nil)
-	return DoubleExemplarSlice{&orig}
+	return ExemplarSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewDoubleExemplarSlice()".
-func (es DoubleExemplarSlice) Len() int {
+// Returns "0" for a newly instance created with "NewExemplarSlice()".
+func (es ExemplarSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -2158,13 +2238,13 @@ func (es DoubleExemplarSlice) Len() int {
 //     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es DoubleExemplarSlice) At(ix int) DoubleExemplar {
-	return newDoubleExemplar(&(*es.orig)[ix])
+func (es ExemplarSlice) At(ix int) Exemplar {
+	return newExemplar(&(*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es DoubleExemplarSlice) MoveAndAppendTo(dest DoubleExemplarSlice) {
+func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -2175,7 +2255,7 @@ func (es DoubleExemplarSlice) MoveAndAppendTo(dest DoubleExemplarSlice) {
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
+func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
@@ -2185,7 +2265,7 @@ func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
 	}
 
 	for i := range *es.orig {
-		newDoubleExemplar(&(*es.orig)[i]).CopyTo(newDoubleExemplar(&(*dest.orig)[i]))
+		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
 	}
 }
 
@@ -2193,14 +2273,14 @@ func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
-// Here is how a new DoubleExemplarSlice can be initialized:
-// es := NewDoubleExemplarSlice()
+// Here is how a new ExemplarSlice can be initialized:
+// es := NewExemplarSlice()
 // es.Resize(4)
 // for i := 0; i < es.Len(); i++ {
 //     e := es.At(i)
 //     // Here should set all the values for e.
 // }
-func (es DoubleExemplarSlice) Resize(newLen int) {
+func (es ExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
@@ -2221,15 +2301,23 @@ func (es DoubleExemplarSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the DoubleExemplarSlice by one and set the
-// given DoubleExemplar at that new position.  The original DoubleExemplar
+// Append will increase the length of the ExemplarSlice by one and set the
+// given Exemplar at that new position.  The original Exemplar
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
+// Deprecated: Use AppendEmpty.
+func (es ExemplarSlice) Append(e Exemplar) {
 	*es.orig = append(*es.orig, *e.orig)
 }
 
-// DoubleExemplar is a sample input double measurement.
+// AppendEmpty will append to the end of the slice an empty Exemplar.
+// It returns the newly added Exemplar.
+func (es ExemplarSlice) AppendEmpty() Exemplar {
+	*es.orig = append(*es.orig, otlpmetrics.DoubleExemplar{})
+	return es.At(es.Len() - 1)
+}
+
+// Exemplar is a sample input double measurement.
 //
 // Exemplars also hold information about the environment when the measurement was recorded,
 // for example the span and trace ID of the active span when the exemplar was recorded.
@@ -2237,50 +2325,50 @@ func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleExemplar function to create new instances.
+// Must use NewExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleExemplar struct {
+type Exemplar struct {
 	orig *otlpmetrics.DoubleExemplar
 }
 
-func newDoubleExemplar(orig *otlpmetrics.DoubleExemplar) DoubleExemplar {
-	return DoubleExemplar{orig: orig}
+func newExemplar(orig *otlpmetrics.DoubleExemplar) Exemplar {
+	return Exemplar{orig: orig}
 }
 
-// NewDoubleExemplar creates a new empty DoubleExemplar.
+// NewExemplar creates a new empty Exemplar.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleExemplar() DoubleExemplar {
-	return newDoubleExemplar(&otlpmetrics.DoubleExemplar{})
+func NewExemplar() Exemplar {
+	return newExemplar(&otlpmetrics.DoubleExemplar{})
 }
 
-// Timestamp returns the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) Timestamp() Timestamp {
+// Timestamp returns the timestamp associated with this Exemplar.
+func (ms Exemplar) Timestamp() Timestamp {
 	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) SetTimestamp(v Timestamp) {
+// SetTimestamp replaces the timestamp associated with this Exemplar.
+func (ms Exemplar) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Value returns the value associated with this DoubleExemplar.
-func (ms DoubleExemplar) Value() float64 {
+// Value returns the value associated with this Exemplar.
+func (ms Exemplar) Value() float64 {
 	return (*ms.orig).Value
 }
 
-// SetValue replaces the value associated with this DoubleExemplar.
-func (ms DoubleExemplar) SetValue(v float64) {
+// SetValue replaces the value associated with this Exemplar.
+func (ms Exemplar) SetValue(v float64) {
 	(*ms.orig).Value = v
 }
 
-// FilteredLabels returns the FilteredLabels associated with this DoubleExemplar.
-func (ms DoubleExemplar) FilteredLabels() StringMap {
+// FilteredLabels returns the FilteredLabels associated with this Exemplar.
+func (ms Exemplar) FilteredLabels() StringMap {
 	return newStringMap(&(*ms.orig).FilteredLabels)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleExemplar) CopyTo(dest DoubleExemplar) {
+func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())

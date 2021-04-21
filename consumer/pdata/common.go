@@ -82,49 +82,37 @@ func newAttributeValue(orig *otlpcommon.AnyValue) AttributeValue {
 
 // NewAttributeValueNull creates a new AttributeValue with a null value.
 func NewAttributeValueNull() AttributeValue {
-	orig := &otlpcommon.AnyValue{}
-	return AttributeValue{orig: orig}
-}
-
-// Deprecated: Use NewAttributeValueNull()
-func NewAttributeValue() AttributeValue {
-	return NewAttributeValueNull()
+	return AttributeValue{orig: &otlpcommon.AnyValue{}}
 }
 
 // NewAttributeValueString creates a new AttributeValue with the given string value.
 func NewAttributeValueString(v string) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}}}
 }
 
 // NewAttributeValueInt creates a new AttributeValue with the given int64 value.
 func NewAttributeValueInt(v int64) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: v}}}
 }
 
 // NewAttributeValueDouble creates a new AttributeValue with the given float64 value.
 func NewAttributeValueDouble(v float64) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: v}}}
 }
 
 // NewAttributeValueBool creates a new AttributeValue with the given bool value.
 func NewAttributeValueBool(v bool) AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: v}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: v}}}
 }
 
 // NewAttributeValueMap creates a new AttributeValue of map type.
 func NewAttributeValueMap() AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}}}
 }
 
 // NewAttributeValueArray creates a new AttributeValue of array type.
 func NewAttributeValueArray() AttributeValue {
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}
-	return AttributeValue{orig: orig}
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
 }
 
 // Type returns the type of the value for this AttributeValue.
@@ -265,6 +253,7 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 	}
 }
 
+// CopyTo copies the attribute to a destination.
 func (a AttributeValue) CopyTo(dest AttributeValue) {
 	a.copyTo(dest.orig)
 }
@@ -390,13 +379,20 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 	return am
 }
 
-// InitEmptyWithCapacity constructs an empty AttributeMap with predefined slice capacity.
-func (am AttributeMap) InitEmptyWithCapacity(cap int) {
-	if cap == 0 {
-		*am.orig = []otlpcommon.KeyValue(nil)
+// Clear erases any existing entries in this AttributeMap instance.
+func (am AttributeMap) Clear() {
+	*am.orig = nil
+}
+
+// EnsureCapacity increases the capacity of this AttributeMap instance, if necessary,
+// to ensure that it can hold at least the number of elements specified by the capacity argument.
+func (am AttributeMap) EnsureCapacity(capacity int) {
+	if capacity <= cap(*am.orig) {
 		return
 	}
-	*am.orig = make([]otlpcommon.KeyValue, 0, cap)
+	oldOrig := *am.orig
+	*am.orig = make([]otlpcommon.KeyValue, 0, capacity)
+	copy(*am.orig, oldOrig)
 }
 
 // Get returns the AttributeValue associated with the key and true. Returned
@@ -602,22 +598,24 @@ func (am AttributeMap) Sort() AttributeMap {
 // Len returns the length of this map.
 //
 // Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
-// it is possible that when iterating using "ForEach" to get access to fewer elements because nil elements are skipped.
+// it is possible that when iterating using "Range" to get access to fewer elements because nil elements are skipped.
 func (am AttributeMap) Len() int {
 	return len(*am.orig)
 }
 
-// ForEach iterates over the every elements in the map by calling the provided func.
+// Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
 //
 // Example:
 //
-// it := sm.ForEach(func(k string, v AttributeValue) {
+// it := sm.Range(func(k string, v AttributeValue) {
 //   ...
 // })
-func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
+func (am AttributeMap) Range(f func(k string, v AttributeValue) bool) {
 	for i := range *am.orig {
 		kv := &(*am.orig)[i]
-		f(kv.Key, AttributeValue{&kv.Value})
+		if !f(kv.Key, AttributeValue{&kv.Value}) {
+			break
+		}
 	}
 }
 
@@ -683,13 +681,20 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	return sm
 }
 
-// InitEmptyWithCapacity constructs an empty StringMap with predefined slice capacity.
-func (sm StringMap) InitEmptyWithCapacity(cap int) {
-	if cap == 0 {
-		*sm.orig = []otlpcommon.StringKeyValue(nil)
+// Clear erases any existing entries in this StringMap instance.
+func (sm StringMap) Clear() {
+	*sm.orig = nil
+}
+
+// EnsureCapacity increases the capacity of this StringMap instance, if necessary,
+// to ensure that it can hold at least the number of elements specified by the capacity argument.
+func (sm StringMap) EnsureCapacity(capacity int) {
+	if capacity <= cap(*sm.orig) {
 		return
 	}
-	*sm.orig = make([]otlpcommon.StringKeyValue, 0, cap)
+	oldOrig := *sm.orig
+	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity)
+	copy(*sm.orig, oldOrig)
 }
 
 // Get returns the StringValue associated with the key and true,
@@ -745,22 +750,24 @@ func (sm StringMap) Upsert(k, v string) {
 // Len returns the length of this map.
 //
 // Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
-// it is possible that when iterating using "ForEach" to get access to fewer elements because nil elements are skipped.
+// it is possible that when iterating using "Range" to get access to fewer elements because nil elements are skipped.
 func (sm StringMap) Len() int {
 	return len(*sm.orig)
 }
 
-// ForEach iterates over the every elements in the map by calling the provided func.
+// Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
 //
 // Example:
 //
-// it := sm.ForEach(func(k string, v StringValue) {
+// it := sm.Range(func(k string, v StringValue) {
 //   ...
 // })
-func (sm StringMap) ForEach(f func(k string, v string)) {
+func (sm StringMap) Range(f func(k string, v string) bool) {
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
-		f(skv.Key, skv.Value)
+		if !f(skv.Key, skv.Value) {
+			break
+		}
 	}
 }
 

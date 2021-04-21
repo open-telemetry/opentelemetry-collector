@@ -14,7 +14,7 @@
 
 package regexp
 
-// RegexpConfig represents the options for a NewFilterSet.
+// Config represents the options for a NewFilterSet.
 type Config struct {
 	// CacheEnabled determines whether match results are LRU cached to make subsequent matches faster.
 	// Cache size is unlimited unless CacheMaxNumEntries is also specified.

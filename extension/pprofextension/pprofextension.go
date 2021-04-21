@@ -34,6 +34,8 @@ import (
 // Tracks that only a single instance is active per process.
 // See comment on Start method for the reasons for that.
 var activeInstance *pprofExtension
+
+// #nosec G103
 var activeInstancePtr = (*unsafe.Pointer)(unsafe.Pointer(&activeInstance))
 
 type pprofExtension struct {
@@ -50,6 +52,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// the settings of the last started instance will prevail. In order to avoid
 	// this issue we will allow the start of a single instance once per process
 	// Summary: only a single instance can be running in the same process.
+	// #nosec G103
 	if !atomic.CompareAndSwapPointer(activeInstancePtr, nil, unsafe.Pointer(p)) {
 		return errors.New("only a single pprof extension instance can be running per process")
 	}
@@ -65,7 +68,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	var ln net.Listener
-	ln, startErr = net.Listen("tcp", p.config.Endpoint)
+	ln, startErr = p.config.TCPAddr.Listen()
 	if startErr != nil {
 		return startErr
 	}

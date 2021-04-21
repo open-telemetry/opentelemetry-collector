@@ -21,13 +21,13 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
@@ -46,11 +46,11 @@ type DataReceiver interface {
 	Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error
 	Stop() error
 
-	// Generate a config string to place in exporter part of collector config
+	// GenConfigYAMLStr generates a config string to place in exporter part of collector config
 	// so that it can send data to this receiver.
 	GenConfigYAMLStr() string
 
-	// Return exporterType name to use in collector config pipeline.
+	// ProtocolName returns exporterType name to use in collector config pipeline.
 	ProtocolName() string
 }
 
@@ -66,17 +66,15 @@ func (mb *DataReceiverBase) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)
 }
 
-// GetFactory of the specified kind. Returns the factory for a component type.
-func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ configmodels.Type) component.Factory {
+func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ config.Type) component.Factory {
 	return nil
 }
 
-// Return map of extensions. Only enabled and created extensions will be returned.
-func (mb *DataReceiverBase) GetExtensions() map[configmodels.NamedEntity]component.Extension {
+func (mb *DataReceiverBase) GetExtensions() map[config.NamedEntity]component.Extension {
 	return nil
 }
 
-func (mb *DataReceiverBase) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
+func (mb *DataReceiverBase) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
 	return nil
 }
 
@@ -278,7 +276,7 @@ func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
 	}
 }
 
-// NewOTLPDataReceiver creates a new OTLP/HTTP DataReceiver that will listen on the specified port after Start
+// NewOTLPHTTPDataReceiver creates a new OTLP/HTTP DataReceiver that will listen on the specified port after Start
 // is called.
 func NewOTLPHTTPDataReceiver(port int) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
@@ -349,8 +347,8 @@ func (dr *PrometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
-	cfg.PrometheusConfig = &config.Config{
-		ScrapeConfigs: []*config.ScrapeConfig{{
+	cfg.PrometheusConfig = &promconfig.Config{
+		ScrapeConfigs: []*promconfig.ScrapeConfig{{
 			JobName:        "testbed-job",
 			ScrapeInterval: model.Duration(100 * time.Millisecond),
 			ScrapeTimeout:  model.Duration(time.Second),
@@ -380,7 +378,6 @@ func (dr *PrometheusDataReceiver) Stop() error {
 	return dr.receiver.Shutdown(context.Background())
 }
 
-// Generate exporter yaml
 func (dr *PrometheusDataReceiver) GenConfigYAMLStr() string {
 	format := `
   prometheus:

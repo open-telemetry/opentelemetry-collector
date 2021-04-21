@@ -17,6 +17,8 @@ The following settings can be optionally configured:
 - `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying
   metric sample in the response.
 - `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
+- `resource_to_telemetry_conversion`
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 
 Example:
 
@@ -30,4 +32,6 @@ exporters:
       "another label": spaced value
     send_timestamps: true
     metric_expiration: 180m
+    resource_to_telemetry_conversion:
+      enabled: true
 ```

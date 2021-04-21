@@ -19,6 +19,7 @@ import (
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opencensus.io/resource/resourcekeys"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -79,7 +80,8 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	attrs := dest.Attributes()
-	attrs.InitEmptyWithCapacity(maxTotalAttrCount)
+	attrs.Clear()
+	attrs.EnsureCapacity(maxTotalAttrCount)
 
 	if ocNode != nil {
 		// Copy all Attributes.
@@ -122,7 +124,12 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocResource != nil {
 		// Copy resource Labels.
 		for k, v := range ocResource.Labels {
-			attrs.InsertString(k, v)
+			switch k {
+			case resourcekeys.CloudKeyZone:
+				attrs.InsertString(conventions.AttributeCloudAvailabilityZone, v)
+			default:
+				attrs.InsertString(k, v)
+			}
 		}
 		// Add special fields.
 		if ocResource.Type != "" {

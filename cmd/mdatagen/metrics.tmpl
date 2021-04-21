@@ -17,12 +17,12 @@
 package {{ .Package }}
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Type is the component type name.
-const Type configmodels.Type = "{{ .Name }}"
+const Type config.Type = "{{ .Name }}"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -79,10 +79,10 @@ func (m *metricStruct) ByName(n string) MetricIntf {
     return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
-    return map[string]func() pdata.Metric {
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+    return map[string]func(pdata.Metric) {
     {{- range $name, $metric := .Metrics }}
-      Metrics.{{ $name.Render }}.Name(): Metrics.{{ $name.Render }}.New,
+      Metrics.{{ $name.Render }}.Name(): Metrics.{{ $name.Render }}.Init,
     {{- end }}
     }
 }

@@ -40,6 +40,7 @@ fpm -s dir -t deb -n $PKG_NAME -v ${VERSION#v} -f -p "$OUTPUT_DIR" \
     --license "$PKG_LICENSE" \
     --url "$PKG_URL" \
     --architecture "$ARCH" \
+    --config-files /etc/otel-collector/otel-collector.conf \
     --config-files /etc/otel-collector/config.yaml \
     --deb-dist "stable" \
     --deb-user "$PKG_USER" \
@@ -49,4 +50,5 @@ fpm -s dir -t deb -n $PKG_NAME -v ${VERSION#v} -f -p "$OUTPUT_DIR" \
     --pre-uninstall "$PREUNINSTALL_PATH" \
     $OTELCOL_PATH=/usr/bin/$PROCESS_NAME \
     $SERVICE_PATH=/lib/systemd/system/$SERVICE_NAME.service \
+    $ENVFILE_PATH=/etc/otel-collector/otel-collector.conf \
     $CONFIG_PATH=/etc/otel-collector/config.yaml

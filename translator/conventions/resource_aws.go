@@ -22,6 +22,7 @@ const (
 	AttributeAWSECSLaunchType   = "aws.ecs.launchtype"
 	AttributeAWSECSTaskARN      = "aws.ecs.task.arn"
 	AttributeAWSECSTaskFamily   = "aws.ecs.task.family"
+	AttributeAWSECSTaskRevision = "aws.ecs.task.revision"
 	AttributeAWSLogGroupNames   = "aws.log.group.names"
 	AttributeAWSLogGroupARNs    = "aws.log.group.arns"
 	AttributeAWSLogStreamNames  = "aws.log.stream.names"

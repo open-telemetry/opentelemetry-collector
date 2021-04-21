@@ -19,7 +19,7 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // createSingleSchemaFile creates a config schema yaml file for a single component
@@ -32,8 +32,8 @@ func createSingleSchemaFile(components component.Factories, componentType, compo
 	createSchemaFile(cfg, env)
 }
 
-func getConfig(components component.Factories, componentType, componentName string) (configmodels.NamedEntity, error) {
-	t := configmodels.Type(componentName)
+func getConfig(components component.Factories, componentType, componentName string) (config.NamedEntity, error) {
+	t := config.Type(componentName)
 	switch componentType {
 	case "receiver":
 		c := components.Receivers[t]

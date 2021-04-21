@@ -24,10 +24,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -43,25 +43,23 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	config := cfg.(*Config)
-	config.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	config.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, new(consumertest.TracesSink))
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, new(consumertest.MetricsSink))
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := configmodels.ReceiverSettings{
+	defaultReceiverSettings := config.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
@@ -93,7 +91,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_port",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -112,7 +110,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "invalid_http_port",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -146,7 +144,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := configmodels.ReceiverSettings{
+	defaultReceiverSettings := config.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
@@ -178,7 +176,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -197,7 +195,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -231,7 +229,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 
 func TestCreateLogReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := configmodels.ReceiverSettings{
+	defaultReceiverSettings := config.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
@@ -266,7 +264,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -286,7 +284,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -303,7 +301,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "no_next_consumer",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
@@ -320,7 +318,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},

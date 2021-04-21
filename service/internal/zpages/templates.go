@@ -56,7 +56,7 @@ type HeaderData struct {
 	Title string
 }
 
-// WriteHTMLFooter writes the header.
+// WriteHTMLHeader writes the header.
 func WriteHTMLHeader(w io.Writer, hd HeaderData) {
 	if err := headerTemplate.Execute(w, hd); err != nil {
 		log.Printf("zpages: executing template: %v", err)
@@ -69,13 +69,13 @@ type SummaryExtensionsTableData struct {
 	Rows              []SummaryExtensionsTableRowData
 }
 
-// SummaryExtensionsTableData contains data for one row in extensions summary table template.
+// SummaryExtensionsTableRowData contains data for one row in extensions summary table template.
 type SummaryExtensionsTableRowData struct {
 	FullName string
 	Enabled  bool
 }
 
-// WriteHTMLSummaryTable writes the summary table for one component type (receivers, processors, exporters).
+// WriteHTMLExtensionsSummaryTable writes the summary table for one component type (receivers, processors, exporters).
 // Id does not write the header or footer.
 func WriteHTMLExtensionsSummaryTable(w io.Writer, spd SummaryExtensionsTableData) {
 	if err := extensionsTableTemplate.Execute(w, spd); err != nil {
@@ -99,7 +99,7 @@ type SummaryPipelinesTableRowData struct {
 	Exporters           []string
 }
 
-// WriteHTMLSummaryTable writes the summary table for one component type (receivers, processors, exporters).
+// WriteHTMLPipelinesSummaryTable writes the summary table for one component type (receivers, processors, exporters).
 // Id does not write the header or footer.
 func WriteHTMLPipelinesSummaryTable(w io.Writer, spd SummaryPipelinesTableData) {
 	if err := pipelinesTableTemplate.Execute(w, spd); err != nil {
@@ -114,7 +114,7 @@ type ComponentHeaderData struct {
 	Link              bool
 }
 
-// WriteHTMLFooter writes the footer.
+// WriteHTMLComponentHeader writes the header for components.
 func WriteHTMLComponentHeader(w io.Writer, chd ComponentHeaderData) {
 	if err := componentHeaderTemplate.Execute(w, chd); err != nil {
 		log.Printf("zpages: executing template: %v", err)
@@ -127,7 +127,7 @@ type PropertiesTableData struct {
 	Properties [][2]string
 }
 
-// WriteHTMLFooter writes the footer.
+// WriteHTMLPropertiesTable writes the HTML for properties table.
 func WriteHTMLPropertiesTable(w io.Writer, chd PropertiesTableData) {
 	if err := propertiesTableTemplate.Execute(w, chd); err != nil {
 		log.Printf("zpages: executing template: %v", err)

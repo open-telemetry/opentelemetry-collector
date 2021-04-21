@@ -33,6 +33,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -52,6 +53,7 @@ func TestNew(t *testing.T) {
 			name: "createExporter",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -68,6 +70,7 @@ func TestNew(t *testing.T) {
 			name: "createExporterWithHeaders",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     map[string]string{"extra-header": "header-value"},
 						Endpoint:    "foo.bar",
@@ -81,6 +84,7 @@ func TestNew(t *testing.T) {
 			name: "createBasicSecureExporter",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -94,6 +98,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithClientTLS",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -113,6 +118,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithKeepAlive",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -137,6 +143,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithMissingFile",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -156,9 +163,9 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTraceExporter(&tt.args.config, zap.NewNop())
+			got, err := newTracesExporter(&tt.args.config, zap.NewNop())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("newTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newTracesExporter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got == nil {
@@ -230,16 +237,13 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), nil)
 	require.NoError(t, err)
-	defer exporter.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
 	traceID := pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 	spanID := pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 
@@ -275,8 +279,8 @@ func TestConnectionStateChange(t *testing.T) {
 		wg.Done()
 	})
 
-	sender.start(context.Background(), componenttest.NewNopHost())
-	defer sender.shutdown(context.Background())
+	require.NoError(t, sender.start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, sender.shutdown(context.Background())) })
 	wg.Wait() // wait for the initial state to be propagated
 
 	// test

@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// CLI defines the command-line interface for the schemagen util.
 func CLI(c component.Factories) {
 	prepUsage()
 

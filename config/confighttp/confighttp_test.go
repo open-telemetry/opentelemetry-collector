@@ -477,7 +477,8 @@ func TestHttpHeaders(t *testing.T) {
 			client, _ := setting.ToClient()
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
-			client.Do(req)
+			_, err = client.Do(req)
+			assert.NoError(t, err)
 		})
 	}
 }

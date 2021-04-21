@@ -134,7 +134,7 @@ service:
 	)
 }
 
-// Run 10k data items/sec test using specified sender and receiver protocols.
+// Scenario10kItemsPerSecond runs 10k data items/sec test using specified sender and receiver protocols.
 func Scenario10kItemsPerSecond(
 	t *testing.T,
 	sender testbed.DataSender,

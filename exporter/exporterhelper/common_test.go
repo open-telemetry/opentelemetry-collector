@@ -19,20 +19,29 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
-var okStatus = trace.Status{Code: trace.StatusCodeOK}
+var (
+	okStatus = trace.Status{Code: trace.StatusCodeOK}
 
-var defaultExporterCfg = &configmodels.ExporterSettings{
-	TypeVal: "test",
-	NameVal: "test",
-}
+	defaultExporterName = "test"
+	defaultExporterCfg  = &config.ExporterSettings{
+		TypeVal: "test",
+		NameVal: defaultExporterName,
+	}
+
+	exporterTag, _      = tag.NewKey("exporter")
+	defaultExporterTags = []tag.Tag{
+		{Key: exporterTag, Value: defaultExporterName},
+	}
+)
 
 func TestErrorToStatus(t *testing.T) {
 	require.Equal(t, okStatus, errToStatus(nil))

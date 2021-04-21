@@ -31,7 +31,7 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-func TestNewTraceProcessor(t *testing.T) {
+func TestNewTracesProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Traces
@@ -45,23 +45,23 @@ func TestNewTraceProcessor(t *testing.T) {
 		},
 		{
 			name:         "happy_path",
-			nextConsumer: consumertest.NewTracesNop(),
+			nextConsumer: consumertest.NewNop(),
 			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: consumertest.NewTracesNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
 			name:         "happy_path_hash_seed",
-			nextConsumer: consumertest.NewTracesNop(),
+			nextConsumer: consumertest.NewNop(),
 			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: consumertest.NewTracesNop(),
+				nextConsumer: consumertest.NewNop(),
 				hashSeed:     4321,
 			},
 		},
@@ -72,13 +72,13 @@ func TestNewTraceProcessor(t *testing.T) {
 				// The truncation below with uint32 cannot be defined at initialization (compiler error), performing it at runtime.
 				tt.want.(*tracesamplerprocessor).scaledSamplingRate = uint32(tt.cfg.SamplingPercentage * percentageScaleFactor)
 			}
-			got, err := newTraceProcessor(tt.nextConsumer, tt.cfg)
+			got, err := newTracesProcessor(tt.nextConsumer, tt.cfg)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("newTraceProcessor() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newTracesProcessor() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newTraceProcessor() = %v, want %v", got, tt.want)
+				t.Errorf("newTracesProcessor() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -144,7 +144,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTraceProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
@@ -203,7 +203,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTraceProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
@@ -223,11 +223,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
 		traces := pdata.NewTraces()
-		traces.ResourceSpans().Resize(1)
-		rs := traces.ResourceSpans().At(0)
-		rs.InstrumentationLibrarySpans().Resize(1)
-		instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
-		instrLibrarySpans.Spans().Append(getSpanWithAttributes(key, attribValue))
+		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
 		return traces
 	}
 	tests := []struct {
@@ -316,7 +312,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTraceProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 
 			err = tsp.ConsumeTraces(context.Background(), tt.td)
@@ -412,9 +408,13 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 
 func getSpanWithAttributes(key string, value pdata.AttributeValue) pdata.Span {
 	span := pdata.NewSpan()
-	span.SetName("spanName")
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{key: value})
+	initSpanWithAttributes(key, value, span)
 	return span
+}
+
+func initSpanWithAttributes(key string, value pdata.AttributeValue, dest pdata.Span) {
+	dest.SetName("spanName")
+	dest.Attributes().InitFromMap(map[string]pdata.AttributeValue{key: value})
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
@@ -449,8 +449,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			rs.Resource().Attributes().InsertBool("bool", true)
 			rs.Resource().Attributes().InsertString("string", "yes")
 			rs.Resource().Attributes().InsertInt("int64", 10000000)
-			rs.InstrumentationLibrarySpans().Resize(1)
-			ils := rs.InstrumentationLibrarySpans().At(0)
+			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 			ils.Spans().Resize(numTracesPerBatch)
 
 			for k := 0; k < numTracesPerBatch; k++ {

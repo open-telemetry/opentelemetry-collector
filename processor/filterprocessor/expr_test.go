@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
@@ -38,7 +38,7 @@ const filteredLblKey = "pt-label-key-1"
 const filteredLblVal = "pt-label-val-1"
 
 func TestExprError(t *testing.T) {
-	for mdType := pdata.MetricDataTypeIntGauge; mdType <= pdata.MetricDataTypeDoubleHistogram; mdType++ {
+	for mdType := pdata.MetricDataTypeIntGauge; mdType <= pdata.MetricDataTypeHistogram; mdType++ {
 		testMatchError(t, mdType)
 	}
 }
@@ -61,7 +61,7 @@ func TestExprProcessor(t *testing.T) {
 	testFilter(t, pdata.MetricDataTypeIntSum)
 	testFilter(t, pdata.MetricDataTypeDoubleSum)
 	testFilter(t, pdata.MetricDataTypeIntHistogram)
-	testFilter(t, pdata.MetricDataTypeDoubleHistogram)
+	testFilter(t, pdata.MetricDataTypeHistogram)
 }
 
 func testFilter(t *testing.T, mdType pdata.MetricDataType) {
@@ -115,8 +115,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
-						case pdata.MetricDataTypeDoubleHistogram:
-							pts := metric.DoubleHistogram().DataPoints()
+						case pdata.MetricDataTypeHistogram:
+							pts := metric.Histogram().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
@@ -130,10 +130,12 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 }
 
 func assertFiltered(t *testing.T, lm pdata.StringMap) {
-	lm.ForEach(func(k string, v string) {
+	lm.Range(func(k string, v string) bool {
 		if k == filteredLblKey && v == filteredLblVal {
 			assert.Fail(t, "found metric that should have been filtered out")
+			return false
 		}
+		return true
 	})
 }
 
@@ -165,7 +167,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	return proc, next, logs
 }
 
-func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) configmodels.Processor {
+func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) config.Processor {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

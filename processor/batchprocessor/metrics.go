@@ -20,10 +20,10 @@ import (
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/processor"
 )
 
 var (
+	processorTagKey          = tag.MustNewKey(obsreport.ProcessorKey)
 	statBatchSizeTriggerSend = stats.Int64("batch_size_trigger_send", "Number of times the batch was sent due to a size trigger", stats.UnitDimensionless)
 	statTimeoutTriggerSend   = stats.Int64("timeout_trigger_send", "Number of times the batch was sent due to a timeout trigger", stats.UnitDimensionless)
 	statBatchSendSize        = stats.Int64("batch_send_size", "Number of units in the batch", stats.UnitDimensionless)
@@ -32,7 +32,7 @@ var (
 
 // MetricViews returns the metrics views related to batching
 func MetricViews() []*view.View {
-	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
+	processorTagKeys := []tag.Key{processorTagKey}
 
 	countBatchSizeTriggerSendView := &view.View{
 		Name:        statBatchSizeTriggerSend.Name(),

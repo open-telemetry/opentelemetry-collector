@@ -99,25 +99,22 @@ linters:
   disable:
     - errcheck
   enable:
+    - exportloopref
+    - gocritic
     - gofmt
     - goimports
     - golint
     - gosec
     - govet
-    - staticcheck
     - misspell
-    - scopelint
+    - staticcheck
     - unconvert
-    - gocritic
     - unparam
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - scopelint
     - path: otlp_test.go
       linters:
         # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
@@ -132,3 +129,27 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    # Exclude internal and testbed packages for now.
+    - path: ".*internal.*|.*testbed.*"
+      text: "should have comment|should be of the form"
+      linters:
+        - golint
+    # Exclude documenting constant blocks.
+    - text: "or a comment on this block"
+      linters:
+        - golint
+
+  # The list of ids of default excludes to include or disable. By default it's empty.
+  # See the list of default excludes here https://golangci-lint.run/usage/configuration.
+  include:
+    - EXC0001
+    - EXC0002
+    - EXC0003
+    - EXC0004
+    - EXC0005
+    - EXC0006
+    - EXC0007
+    # - EXC0008 - Duplicated errcheck checks
+    - EXC0009
+    - EXC0010
+    - EXC0011

@@ -17,7 +17,6 @@ package trace
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"testing"
 
@@ -33,7 +32,6 @@ import (
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
 )
 
 var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
@@ -96,10 +94,10 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 
-	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
@@ -109,10 +107,10 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewTracesErr(errors.New("my error")))
+	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
@@ -137,9 +135,8 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func(), error) {
-	addr := fmt.Sprintf(":%d", port)
-	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func makeTraceServiceClient(addr net.Addr) (collectortrace.TraceServiceClient, func(), error) {
+	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -150,7 +147,7 @@ func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func()
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (int, func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -159,12 +156,6 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (int, func()) {
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
-	}
-
-	_, port, err := testutil.HostPortFromAddr(ln.Addr())
-	if err != nil {
-		done()
-		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
 	r := New(receiverTagValue, tc)
@@ -177,120 +168,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (int, func()) {
 		_ = srv.Serve(ln)
 	}()
 
-	return port, done
-}
-
-func TestDeprecatedStatusCode(t *testing.T) {
-	traceSink := new(consumertest.TracesSink)
-
-	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
-	defer doneFn()
-
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
-	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
-	defer traceClientDoneFn()
-
-	// See specification for handling status code here:
-	// https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231
-	tests := []struct {
-		sendCode               otlptrace.Status_StatusCode
-		sendDeprecatedCode     otlptrace.Status_DeprecatedStatusCode
-		expectedRcvCode        otlptrace.Status_StatusCode
-		expectedDeprecatedCode otlptrace.Status_DeprecatedStatusCode
-	}{
-		{
-			// If code==STATUS_CODE_UNSET then the value of `deprecated_code` is the
-			//   carrier of the overall status according to these rules:
-			//
-			//     if deprecated_code==DEPRECATED_STATUS_CODE_OK then the receiver MUST interpret
-			//     the overall status to be STATUS_CODE_UNSET.
-			sendCode:               otlptrace.Status_STATUS_CODE_UNSET,
-			sendDeprecatedCode:     otlptrace.Status_DEPRECATED_STATUS_CODE_OK,
-			expectedRcvCode:        otlptrace.Status_STATUS_CODE_UNSET,
-			expectedDeprecatedCode: otlptrace.Status_DEPRECATED_STATUS_CODE_OK,
-		},
-		{
-			//     if deprecated_code!=DEPRECATED_STATUS_CODE_OK then the receiver MUST interpret
-			//     the overall status to be STATUS_CODE_ERROR.
-			sendCode:               otlptrace.Status_STATUS_CODE_UNSET,
-			sendDeprecatedCode:     otlptrace.Status_DEPRECATED_STATUS_CODE_ABORTED,
-			expectedRcvCode:        otlptrace.Status_STATUS_CODE_ERROR,
-			expectedDeprecatedCode: otlptrace.Status_DEPRECATED_STATUS_CODE_ABORTED,
-		},
-		{
-			//   If code!=STATUS_CODE_UNSET then the value of `deprecated_code` MUST be
-			//   overwritten, the `code` field is the sole carrier of the status.
-			sendCode:               otlptrace.Status_STATUS_CODE_OK,
-			sendDeprecatedCode:     otlptrace.Status_DEPRECATED_STATUS_CODE_OK,
-			expectedRcvCode:        otlptrace.Status_STATUS_CODE_OK,
-			expectedDeprecatedCode: otlptrace.Status_DEPRECATED_STATUS_CODE_OK,
-		},
-		{
-			//   If code!=STATUS_CODE_UNSET then the value of `deprecated_code` MUST be
-			//   overwritten, the `code` field is the sole carrier of the status.
-			sendCode:               otlptrace.Status_STATUS_CODE_OK,
-			sendDeprecatedCode:     otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR,
-			expectedRcvCode:        otlptrace.Status_STATUS_CODE_OK,
-			expectedDeprecatedCode: otlptrace.Status_DEPRECATED_STATUS_CODE_OK,
-		},
-		{
-			//   If code!=STATUS_CODE_UNSET then the value of `deprecated_code` MUST be
-			//   overwritten, the `code` field is the sole carrier of the status.
-			sendCode:               otlptrace.Status_STATUS_CODE_ERROR,
-			sendDeprecatedCode:     otlptrace.Status_DEPRECATED_STATUS_CODE_OK,
-			expectedRcvCode:        otlptrace.Status_STATUS_CODE_ERROR,
-			expectedDeprecatedCode: otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR,
-		},
-		{
-			//   If code!=STATUS_CODE_UNSET then the value of `deprecated_code` MUST be
-			//   overwritten, the `code` field is the sole carrier of the status.
-			sendCode:               otlptrace.Status_STATUS_CODE_ERROR,
-			sendDeprecatedCode:     otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR,
-			expectedRcvCode:        otlptrace.Status_STATUS_CODE_ERROR,
-			expectedDeprecatedCode: otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.sendCode.String()+"/"+test.sendDeprecatedCode.String(), func(t *testing.T) {
-			resourceSpans := []*otlptrace.ResourceSpans{
-				{
-					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-						{
-							Spans: []*otlptrace.Span{
-								{
-									Status: otlptrace.Status{
-										Code:           test.sendCode,
-										DeprecatedCode: test.sendDeprecatedCode,
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			req := &collectortrace.ExportTraceServiceRequest{
-				ResourceSpans: resourceSpans,
-			}
-
-			traceSink.Reset()
-
-			resp, err := traceClient.Export(context.Background(), req)
-			require.NoError(t, err, "Failed to export trace: %v", err)
-			require.NotNil(t, resp, "The response is missing")
-
-			require.Equal(t, 1, len(traceSink.AllTraces()), "unexpected length: %v", len(traceSink.AllTraces()))
-
-			rcvdStatus := traceSink.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Status()
-
-			// Check that Code is as expected.
-			assert.EqualValues(t, rcvdStatus.Code(), test.expectedRcvCode)
-
-			spanProto := internal.TracesToOtlp(traceSink.AllTraces()[0].InternalRep()).ResourceSpans[0].InstrumentationLibrarySpans[0].Spans[0]
-
-			// Check that DeprecatedCode is passed as is.
-			assert.EqualValues(t, spanProto.Status.DeprecatedCode, test.expectedDeprecatedCode)
-		})
-	}
+	return ln.Addr(), done
 }

@@ -48,11 +48,12 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
-	expectedAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+	expectedAttrs.Range(func(k string, v pdata.AttributeValue) bool {
 		// Set all except "attr1" which is not a hard-coded field to some bogus values.
 		if !strings.Contains(k, "-attr") {
 			ocNode.Attributes[k] = "this will be overridden 1"
 		}
+		return true
 	})
 	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
 

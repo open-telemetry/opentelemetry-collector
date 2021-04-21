@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -129,7 +128,7 @@ func testReceivers(
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.getTraceExporter().(*testcomponents.ExampleExporterConsumer)
+		consumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
@@ -160,7 +159,7 @@ func testReceivers(
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.getTraceExporter().(*testcomponents.ExampleExporterConsumer)
+			traceConsumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
@@ -243,7 +242,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			// Send one data.
 			log := pdata.Logs{}
 			producer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
-			producer.ConsumeLogs(context.Background(), log)
+			require.NoError(t, producer.ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
 			for _, name := range exporterNames {
@@ -261,8 +260,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 func TestBuildReceivers_StartAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &configmodels.ReceiverSettings{}
-
+	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
@@ -280,8 +278,7 @@ func TestBuildReceivers_StartAll(t *testing.T) {
 
 func TestBuildReceivers_StopAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &configmodels.ReceiverSettings{}
-
+	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
@@ -337,7 +334,8 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 		t.Run(test.configFile, func(t *testing.T) {
 
 			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
-			require.Nil(t, err)
+			assert.NoError(t, err)
+			require.NotNil(t, cfg)
 
 			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
 			assert.NoError(t, err)
