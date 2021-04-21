@@ -414,7 +414,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan pdata.Span, recdSpan 
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	sentAttrs pdata.AttributeMap, recdAttrs pdata.AttributeMap, fmtStr string) {
-	sentAttrs.ForEach(func(sentKey string, sentVal pdata.AttributeValue) {
+	sentAttrs.Range(func(sentKey string, sentVal pdata.AttributeValue) bool {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {
 			af := &TraceAssertionFailure{
@@ -425,7 +425,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 				actualValue:   nil,
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
-			return
+			return true
 		}
 		switch sentVal.Type() {
 		case pdata.AttributeValueMAP:
@@ -433,6 +433,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 		default:
 			v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentKey)
 		}
+		return true
 	})
 }
 

@@ -261,7 +261,7 @@ func (mg *metricGroup) sortPoints() {
 }
 
 func (mg *metricGroup) toDistributionTimeSeries(orderedLabelKeys []string) *metricspb.TimeSeries {
-	if !(mg.hasCount && mg.hasSum) || len(mg.complexValue) == 0 {
+	if !(mg.hasCount) || len(mg.complexValue) == 0 {
 		return nil
 	}
 	mg.sortPoints()
@@ -308,10 +308,10 @@ func (mg *metricGroup) toDistributionTimeSeries(orderedLabelKeys []string) *metr
 }
 
 func (mg *metricGroup) toSummaryTimeSeries(orderedLabelKeys []string) *metricspb.TimeSeries {
-	// expecting count and sum to be provided, however, in the following two cases, they can be missed.
+	// expecting count to be provided, however, in the following two cases, they can be missed.
 	// 1. data is corrupted
 	// 2. ignored by startValue evaluation
-	if !(mg.hasCount && mg.hasSum) {
+	if !(mg.hasCount) {
 		return nil
 	}
 	mg.sortPoints()

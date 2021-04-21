@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"testing"
 
@@ -25,13 +26,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/experimental/configsource"
 )
 
 func TestConfigSourceManager_Simple(t *testing.T) {
 	ctx := context.Background()
 	manager, err := NewManager(nil)
 	require.NoError(t, err)
-	manager.configSources = map[string]ConfigSource{
+	manager.configSources = map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
 			ValueMap: map[string]valueEntry{
 				"test_selector": {Value: "test_value"},
@@ -54,10 +56,9 @@ func TestConfigSourceManager_Simple(t *testing.T) {
 
 	cp := config.NewParserFromStringMap(originalCfg)
 
-	res, err := manager.Resolve(ctx, cp)
+	actualParser, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
-	actualCfg := res.Viper().AllSettings()
-	assert.Equal(t, expectedCfg, actualCfg)
+	assert.Equal(t, expectedCfg, actualParser.ToStringMap())
 
 	doneCh := make(chan struct{})
 	var errWatcher error
@@ -69,7 +70,7 @@ func TestConfigSourceManager_Simple(t *testing.T) {
 	manager.WaitForWatcher()
 	assert.NoError(t, manager.Close(ctx))
 	<-doneCh
-	assert.ErrorIs(t, errWatcher, ErrSessionClosed)
+	assert.ErrorIs(t, errWatcher, configsource.ErrSessionClosed)
 }
 
 func TestConfigSourceManager_ResolveErrors(t *testing.T) {
@@ -79,23 +80,14 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 	tests := []struct {
 		name            string
 		config          map[string]interface{}
-		configSourceMap map[string]ConfigSource
+		configSourceMap map[string]configsource.ConfigSource
 	}{
-		{
-			name: "not_found_config_source",
-			config: map[string]interface{}{
-				"cfgsrc": "$unknown:test_selector",
-			},
-			configSourceMap: map[string]ConfigSource{
-				"tstcfgsrc": &testConfigSource{},
-			},
-		},
 		{
 			name: "incorrect_cfgsrc_ref",
 			config: map[string]interface{}{
 				"cfgsrc": "$tstcfgsrc:selector?{invalid}",
 			},
-			configSourceMap: map[string]ConfigSource{
+			configSourceMap: map[string]configsource.ConfigSource{
 				"tstcfgsrc": &testConfigSource{},
 			},
 		},
@@ -104,7 +96,7 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 			config: map[string]interface{}{
 				"cfgsrc": "$tstcfgsrc:selector",
 			},
-			configSourceMap: map[string]ConfigSource{
+			configSourceMap: map[string]configsource.ConfigSource{
 				"tstcfgsrc": &testConfigSource{ErrOnNewSession: testErr},
 			},
 		},
@@ -113,7 +105,7 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 			config: map[string]interface{}{
 				"cfgsrc": "$tstcfgsrc:selector",
 			},
-			configSourceMap: map[string]ConfigSource{
+			configSourceMap: map[string]configsource.ConfigSource{
 				"tstcfgsrc": &testConfigSource{ErrOnRetrieve: testErr},
 			},
 		},
@@ -122,7 +114,7 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 			config: map[string]interface{}{
 				"cfgsrc": "$tstcfgsrc:selector",
 			},
-			configSourceMap: map[string]ConfigSource{
+			configSourceMap: map[string]configsource.ConfigSource{
 				"tstcfgsrc": &testConfigSource{
 					ErrOnRetrieveEnd: testErr,
 					ValueMap: map[string]valueEntry{
@@ -150,7 +142,7 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 	ctx := context.Background()
 	manager, err := NewManager(nil)
 	require.NoError(t, err)
-	manager.configSources = map[string]ConfigSource{
+	manager.configSources = map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
 			ValueMap: map[string]valueEntry{
 				"elem0": {Value: "elem0_value"},
@@ -168,12 +160,10 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 	expectedFile := path.Join("testdata", "arrays_and_maps_expected.yaml")
 	expectedParser, err := config.NewParserFromFile(expectedFile)
 	require.NoError(t, err)
-	expectedCfg := expectedParser.Viper().AllSettings()
 
-	res, err := manager.Resolve(ctx, cp)
+	actualParser, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
-	actualCfg := res.Viper().AllSettings()
-	assert.Equal(t, expectedCfg, actualCfg)
+	assert.Equal(t, expectedParser.ToStringMap(), actualParser.ToStringMap())
 	assert.NoError(t, manager.Close(ctx))
 }
 
@@ -211,7 +201,7 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 
 	manager, err := NewManager(nil)
 	require.NoError(t, err)
-	manager.configSources = map[string]ConfigSource{
+	manager.configSources = map[string]configsource.ConfigSource{
 		"tstcfgsrc": &tstCfgSrc,
 	}
 
@@ -222,12 +212,10 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 	expectedFile := path.Join("testdata", "params_handling_expected.yaml")
 	expectedParser, err := config.NewParserFromFile(expectedFile)
 	require.NoError(t, err)
-	expectedCfg := expectedParser.Viper().AllSettings()
 
-	res, err := manager.Resolve(ctx, cp)
+	actualParser, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
-	actualCfg := res.Viper().AllSettings()
-	assert.Equal(t, expectedCfg, actualCfg)
+	assert.Equal(t, expectedParser.ToStringMap(), actualParser.ToStringMap())
 	assert.NoError(t, manager.Close(ctx))
 }
 
@@ -237,7 +225,7 @@ func TestConfigSourceManager_WatchForUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	watchForUpdateCh := make(chan error, 1)
-	manager.configSources = map[string]ConfigSource{
+	manager.configSources = map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
 			ValueMap: map[string]valueEntry{
 				"test_selector": {
@@ -268,10 +256,10 @@ func TestConfigSourceManager_WatchForUpdate(t *testing.T) {
 	}()
 
 	manager.WaitForWatcher()
-	watchForUpdateCh <- ErrValueUpdated
+	watchForUpdateCh <- configsource.ErrValueUpdated
 
 	<-doneCh
-	assert.ErrorIs(t, errWatcher, ErrValueUpdated)
+	assert.ErrorIs(t, errWatcher, configsource.ErrValueUpdated)
 	assert.NoError(t, manager.Close(ctx))
 }
 
@@ -288,11 +276,11 @@ func TestConfigSourceManager_MultipleWatchForUpdate(t *testing.T) {
 		case errFromWatchForUpdate := <-watchForUpdateCh:
 			return errFromWatchForUpdate
 		case <-watchDoneCh:
-			return ErrSessionClosed
+			return configsource.ErrSessionClosed
 		}
 	}
 
-	manager.configSources = map[string]ConfigSource{
+	manager.configSources = map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
 			ValueMap: map[string]valueEntry{
 				"test_selector": {
@@ -326,47 +314,162 @@ func TestConfigSourceManager_MultipleWatchForUpdate(t *testing.T) {
 	manager.WaitForWatcher()
 
 	for i := 0; i < watchForUpdateChSize; i++ {
-		watchForUpdateCh <- ErrValueUpdated
+		watchForUpdateCh <- configsource.ErrValueUpdated
 	}
 
 	<-doneCh
-	assert.ErrorIs(t, errWatcher, ErrValueUpdated)
+	assert.ErrorIs(t, errWatcher, configsource.ErrValueUpdated)
 	close(watchForUpdateCh)
 	assert.NoError(t, manager.Close(ctx))
 }
 
-func TestConfigSourceManager_expandConfigSources(t *testing.T) {
+func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
+	require.NoError(t, os.Setenv("envvar", "envvar_value"))
+	defer func() {
+		assert.NoError(t, os.Unsetenv("envvar"))
+	}()
+
+	ctx := context.Background()
+	tstCfgSrc := testConfigSource{
+		ValueMap: map[string]valueEntry{
+			"int_key": {Value: 42},
+		},
+	}
+
+	// Intercept "params_key" and create an entry with the params themselves.
+	tstCfgSrc.OnRetrieve = func(ctx context.Context, selector string, params interface{}) error {
+		if selector == "params_key" {
+			tstCfgSrc.ValueMap[selector] = valueEntry{Value: params}
+		}
+		return nil
+	}
+
+	manager, err := NewManager(nil)
+	require.NoError(t, err)
+	manager.configSources = map[string]configsource.ConfigSource{
+		"tstcfgsrc": &tstCfgSrc,
+	}
+
+	file := path.Join("testdata", "envvar_cfgsrc_mix.yaml")
+	cp, err := config.NewParserFromFile(file)
+	require.NoError(t, err)
+
+	expectedFile := path.Join("testdata", "envvar_cfgsrc_mix_expected.yaml")
+	expectedParser, err := config.NewParserFromFile(expectedFile)
+	require.NoError(t, err)
+
+	actualParser, err := manager.Resolve(ctx, cp)
+	require.NoError(t, err)
+	assert.Equal(t, expectedParser.ToStringMap(), actualParser.ToStringMap())
+	assert.NoError(t, manager.Close(ctx))
+}
+
+func TestManager_expandString(t *testing.T) {
 	ctx := context.Background()
 	csp, err := NewManager(nil)
 	require.NoError(t, err)
-	csp.configSources = map[string]ConfigSource{
+	csp.configSources = map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
 			ValueMap: map[string]valueEntry{
-				"test_selector": {Value: "test_value"},
+				"str_key": {Value: "test_value"},
+				"int_key": {Value: 1},
 			},
 		},
 	}
 
-	v, err := csp.expandConfigSources(ctx, "")
-	assert.NoError(t, err)
-	assert.Equal(t, "", v)
+	require.NoError(t, os.Setenv("envvar", "envvar_value"))
+	defer func() {
+		assert.NoError(t, os.Unsetenv("envvar"))
+	}()
+	require.NoError(t, os.Setenv("envvar_str_key", "str_key"))
+	defer func() {
+		assert.NoError(t, os.Unsetenv("envvar_str_key"))
+	}()
 
-	v, err = csp.expandConfigSources(ctx, "no_cfgsrc")
-	assert.NoError(t, err)
-	assert.Equal(t, "no_cfgsrc", v)
-
-	// Not found config source.
-	v, err = csp.expandConfigSources(ctx, "$cfgsrc:selector")
-	assert.Error(t, err)
-	assert.Nil(t, v)
-
-	v, err = csp.expandConfigSources(ctx, "$tstcfgsrc:test_selector")
-	assert.NoError(t, err)
-	assert.Equal(t, "test_value", v)
-
-	v, err = csp.expandConfigSources(ctx, "$tstcfgsrc:invalid_selector")
-	assert.Error(t, err)
-	assert.Nil(t, v)
+	tests := []struct {
+		name    string
+		input   string
+		want    interface{}
+		wantErr error
+	}{
+		{
+			name:  "literal_string",
+			input: "literal_string",
+			want:  "literal_string",
+		},
+		{
+			name:  "escaped_$",
+			input: "$$tstcfgsrc:int_key$$envvar",
+			want:  "$tstcfgsrc:int_key$envvar",
+		},
+		{
+			name:  "cfgsrc_int",
+			input: "$tstcfgsrc:int_key",
+			want:  1,
+		},
+		{
+			name:  "concatenate_cfgsrc_string",
+			input: "prefix-$tstcfgsrc:str_key",
+			want:  "prefix-test_value",
+		},
+		{
+			name:  "concatenate_cfgsrc_non_string",
+			input: "prefix-$tstcfgsrc:int_key",
+			want:  "prefix-1",
+		},
+		{
+			name:  "envvar",
+			input: "$envvar",
+			want:  "envvar_value",
+		},
+		{
+			name:  "prefixed_envvar",
+			input: "prefix-$envvar",
+			want:  "prefix-envvar_value",
+		},
+		{
+			name:    "envvar_treated_as_cfgsrc",
+			input:   "$envvar:suffix",
+			wantErr: &errUnknownConfigSource{},
+		},
+		{
+			name:  "cfgsrc_using_envvar",
+			input: "$tstcfgsrc:$envvar_str_key",
+			want:  "test_value",
+		},
+		{
+			name:  "envvar_cfgsrc_using_envvar",
+			input: "$envvar/$tstcfgsrc:$envvar_str_key",
+			want:  "envvar_value/test_value",
+		},
+		{
+			name:  "delimited_cfgsrc",
+			input: "${tstcfgsrc:int_key}",
+			want:  1,
+		},
+		{
+			name:    "unknown_delimited_cfgsrc",
+			input:   "${cfgsrc:int_key}",
+			wantErr: &errUnknownConfigSource{},
+		},
+		{
+			name:  "delimited_cfgsrc_with_spaces",
+			input: "${ tstcfgsrc: int_key }",
+			want:  1,
+		},
+		{
+			name:  "interpolated_and_delimited_cfgsrc",
+			input: "0/${ tstcfgsrc: $envvar_str_key }/2/${tstcfgsrc:int_key}",
+			want:  "0/test_value/2/1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := csp.expandString(ctx, tt.input)
+			require.IsType(t, tt.wantErr, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
 }
 
 func Test_parseCfgSrc(t *testing.T) {
@@ -398,6 +501,17 @@ func Test_parseCfgSrc(t *testing.T) {
 				"p0": 1,
 				"p1": "a_string",
 				"p2": true,
+			},
+		},
+		{
+			name:       "query_pass_nil",
+			str:        "cfgsrc:selector?p0&p1&p2",
+			cfgSrcName: "cfgsrc",
+			selector:   "selector",
+			params: map[string]interface{}{
+				"p0": nil,
+				"p1": nil,
+				"p2": nil,
 			},
 		},
 		{
@@ -462,17 +576,17 @@ type valueEntry struct {
 	WatchForUpdateFn func() error
 }
 
-var _ (ConfigSource) = (*testConfigSource)(nil)
-var _ (Session) = (*testConfigSource)(nil)
+var _ (configsource.ConfigSource) = (*testConfigSource)(nil)
+var _ (configsource.Session) = (*testConfigSource)(nil)
 
-func (t *testConfigSource) NewSession(context.Context) (Session, error) {
+func (t *testConfigSource) NewSession(context.Context) (configsource.Session, error) {
 	if t.ErrOnNewSession != nil {
 		return nil, t.ErrOnNewSession
 	}
 	return t, nil
 }
 
-func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params interface{}) (Retrieved, error) {
+func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params interface{}) (configsource.Retrieved, error) {
 	if t.OnRetrieve != nil {
 		if err := t.OnRetrieve(ctx, selector, params); err != nil {
 			return nil, err
@@ -489,7 +603,7 @@ func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params
 	}
 
 	watchForUpdateFn := func() error {
-		return ErrWatcherNotSupported
+		return configsource.ErrWatcherNotSupported
 	}
 
 	if entry.WatchForUpdateFn != nil {
@@ -515,7 +629,7 @@ type retrieved struct {
 	watchForUpdateFn func() error
 }
 
-var _ (Retrieved) = (*retrieved)(nil)
+var _ (configsource.Retrieved) = (*retrieved)(nil)
 
 func (r *retrieved) Value() interface{} {
 	return r.value

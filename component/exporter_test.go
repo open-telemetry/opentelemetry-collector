@@ -38,7 +38,7 @@ func (f *TestExporterFactory) CreateDefaultConfig() config.Exporter {
 	return nil
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
+// CreateTracesExporter creates a trace exporter based on this config.
 func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, config.Exporter) (TracesExporter, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }

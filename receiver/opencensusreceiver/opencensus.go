@@ -57,7 +57,7 @@ type ocReceiver struct {
 
 	stopOnce                 sync.Once
 	startServerOnce          sync.Once
-	startTraceReceiverOnce   sync.Once
+	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
 	instanceName string
@@ -106,7 +106,7 @@ func (ocr *ocReceiver) Start(_ context.Context, host component.Host) error {
 func (ocr *ocReceiver) registerTraceConsumer() error {
 	var err = componenterror.ErrAlreadyStarted
 
-	ocr.startTraceReceiverOnce.Do(func() {
+	ocr.startTracesReceiverOnce.Do(func() {
 		ocr.traceReceiver, err = octrace.New(
 			ocr.instanceName, ocr.traceConsumer, ocr.traceReceiverOpts...)
 		if err == nil {

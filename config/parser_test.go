@@ -78,10 +78,8 @@ func TestToStringMap(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			v := NewViper()
-			v.SetConfigFile(test.fileName)
-			require.NoError(t, v.ReadInConfig(), "Unable to read configuration file '%s'", test.fileName)
-			parser := ParserFromViper(v)
+			parser, err := NewParserFromFile(test.fileName)
+			require.NoError(t, err, "Unable to read configuration file '%s'", test.fileName)
 			assert.Equal(t, test.stringMap, parser.ToStringMap())
 		})
 	}

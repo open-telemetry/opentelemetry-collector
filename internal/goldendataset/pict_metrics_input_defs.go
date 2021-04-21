@@ -51,7 +51,7 @@ const (
 	LabelsMany PICTNumPtLabels = "ManyLabels"
 )
 
-// Enumerates the number of points on each metric.
+// PICTNumPtsPerMetric enum for the number of points on each metric.
 type PICTNumPtsPerMetric string
 
 const (
@@ -59,7 +59,7 @@ const (
 	NumPtsPerMetricMany PICTNumPtsPerMetric = "ManyPts"
 )
 
-// Enumerates the number of attributes on each resource.
+// PICTNumResourceAttrs enum for the number of attributes on each resource.
 type PICTNumResourceAttrs string
 
 const (

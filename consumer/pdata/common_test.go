@@ -266,12 +266,12 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.False(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueArray()
-	av1.ArrayVal().Append(NewAttributeValueInt(123))
+	av1.ArrayVal().AppendEmpty().SetIntVal(123)
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewAttributeValueArray()
-	av2.ArrayVal().Append(NewAttributeValueDouble(123))
+	av2.ArrayVal().AppendEmpty().SetDoubleVal(123)
 	assert.False(t, av1.Equal(av2))
 
 	NewAttributeValueInt(123).CopyTo(av2.ArrayVal().At(0))
@@ -540,13 +540,14 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 }
 
 func TestAttributeMapIterationNil(t *testing.T) {
-	NewAttributeMap().ForEach(func(k string, v AttributeValue) {
+	NewAttributeMap().Range(func(k string, v AttributeValue) bool {
 		// Fail if any element is returned
 		t.Fail()
+		return true
 	})
 }
 
-func TestAttributeMap_ForEach(t *testing.T) {
+func TestAttributeMap_Range(t *testing.T) {
 	rawMap := map[string]AttributeValue{
 		"k_string": NewAttributeValueString("123"),
 		"k_int":    NewAttributeValueInt(123),
@@ -555,11 +556,19 @@ func TestAttributeMap_ForEach(t *testing.T) {
 		"k_null":   NewAttributeValueNull(),
 	}
 	am := NewAttributeMap().InitFromMap(rawMap)
-	assert.EqualValues(t, 5, am.Len())
+	assert.Equal(t, 5, am.Len())
 
-	am.ForEach(func(k string, v AttributeValue) {
+	calls := 0
+	am.Range(func(k string, v AttributeValue) bool {
+		calls++
+		return false
+	})
+	assert.Equal(t, 1, calls)
+
+	am.Range(func(k string, v AttributeValue) bool {
 		assert.True(t, v.Equal(rawMap[k]))
 		delete(rawMap, k)
+		return true
 	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
@@ -669,11 +678,35 @@ func TestAttributeMap_Update(t *testing.T) {
 	assert.EqualValues(t, 123, av2.IntVal())
 }
 
-func TestAttributeMap_InitEmptyWithCapacity(t *testing.T) {
+func TestAttributeMap_EnsureCapacity_Zero(t *testing.T) {
 	am := NewAttributeMap()
-	am.InitEmptyWithCapacity(0)
-	assert.Equal(t, NewAttributeMap(), am)
+	am.EnsureCapacity(0)
 	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 0, cap(*am.orig))
+}
+
+func TestAttributeMap_EnsureCapacity(t *testing.T) {
+	am := NewAttributeMap()
+	am.EnsureCapacity(5)
+	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 5, cap(*am.orig))
+	am.EnsureCapacity(3)
+	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 5, cap(*am.orig))
+	am.EnsureCapacity(8)
+	assert.Equal(t, 0, am.Len())
+	assert.Equal(t, 8, cap(*am.orig))
+}
+
+func TestAttributeMap_Clear(t *testing.T) {
+	am := NewAttributeMap()
+	assert.Nil(t, *am.orig)
+	am.Clear()
+	assert.Nil(t, *am.orig)
+	am.EnsureCapacity(5)
+	assert.NotNil(t, *am.orig)
+	am.Clear()
+	assert.Nil(t, *am.orig)
 }
 
 func TestNilStringMap(t *testing.T) {
@@ -813,20 +846,29 @@ func TestStringMap(t *testing.T) {
 }
 
 func TestStringMapIterationNil(t *testing.T) {
-	NewStringMap().ForEach(func(k string, v string) {
+	NewStringMap().Range(func(k string, v string) bool {
 		// Fail if any element is returned
 		t.Fail()
+		return true
 	})
 }
 
-func TestStringMap_ForEach(t *testing.T) {
+func TestStringMap_Range(t *testing.T) {
 	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
 	sm := NewStringMap().InitFromMap(rawMap)
 	assert.EqualValues(t, 3, sm.Len())
 
-	sm.ForEach(func(k string, v string) {
+	calls := 0
+	sm.Range(func(k string, v string) bool {
+		calls++
+		return false
+	})
+	assert.Equal(t, 1, calls)
+
+	sm.Range(func(k string, v string) bool {
 		assert.EqualValues(t, rawMap[k], v)
 		delete(rawMap, k)
+		return true
 	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
@@ -846,11 +888,35 @@ func TestStringMap_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestStringMap(), dest)
 }
 
-func TestStringMap_InitEmptyWithCapacity(t *testing.T) {
+func TestStringMap_EnsureCapacity_Zero(t *testing.T) {
 	sm := NewStringMap()
-	sm.InitEmptyWithCapacity(0)
-	assert.Equal(t, NewStringMap(), sm)
+	sm.EnsureCapacity(0)
 	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 0, cap(*sm.orig))
+}
+
+func TestStringMap_EnsureCapacity(t *testing.T) {
+	sm := NewStringMap()
+	sm.EnsureCapacity(5)
+	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 5, cap(*sm.orig))
+	sm.EnsureCapacity(3)
+	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 5, cap(*sm.orig))
+	sm.EnsureCapacity(8)
+	assert.Equal(t, 0, sm.Len())
+	assert.Equal(t, 8, cap(*sm.orig))
+}
+
+func TestStringMap_Clear(t *testing.T) {
+	sm := NewStringMap()
+	assert.Nil(t, *sm.orig)
+	sm.Clear()
+	assert.Nil(t, *sm.orig)
+	sm.EnsureCapacity(5)
+	assert.NotNil(t, *sm.orig)
+	sm.Clear()
+	assert.Nil(t, *sm.orig)
 }
 
 func TestStringMap_InitFromMap(t *testing.T) {
@@ -901,7 +967,7 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeMap_ForEach(b *testing.B) {
+func BenchmarkAttributeMap_Range(b *testing.B) {
 	const numElements = 20
 	rawOrig := make([]otlpcommon.KeyValue, numElements)
 	for i := 0; i < numElements; i++ {
@@ -916,8 +982,9 @@ func BenchmarkAttributeMap_ForEach(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
-		am.ForEach(func(k string, v AttributeValue) {
+		am.Range(func(k string, v AttributeValue) bool {
 			numEls++
+			return true
 		})
 		if numEls != numElements {
 			b.Fail()
@@ -947,7 +1014,7 @@ func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
 	}
 }
 
-func BenchmarkStringMap_ForEach(b *testing.B) {
+func BenchmarkStringMap_Range(b *testing.B) {
 	const numElements = 20
 	rawOrig := make([]otlpcommon.StringKeyValue, numElements)
 	for i := 0; i < numElements; i++ {
@@ -962,8 +1029,9 @@ func BenchmarkStringMap_ForEach(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
-		sm.ForEach(func(s string, value string) {
+		sm.Range(func(s string, value string) bool {
 			numEls++
+			return true
 		})
 		if numEls != numElements {
 			b.Fail()
@@ -1088,8 +1156,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
 	assert.EqualValues(t, 0, a1.ArrayVal().Len())
 
-	a1.ArrayVal().Resize(1)
-	v := a1.ArrayVal().At(0)
+	v := a1.ArrayVal().AppendEmpty()
 	v.SetDoubleVal(123)
 	assertArrayJSON(t, `[123]`, a1)
 	assert.EqualValues(t, 1, a1.ArrayVal().Len())
@@ -1101,8 +1168,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assertArrayJSON(t, `[]`, a2)
 	assert.EqualValues(t, 0, a2.ArrayVal().Len())
 
-	a2.ArrayVal().Resize(1)
-	a2.ArrayVal().At(0).SetStringVal("somestr")
+	a2.ArrayVal().AppendEmpty().SetStringVal("somestr")
 	assertArrayJSON(t, `["somestr"]`, a2)
 	assert.EqualValues(t, 1, a2.ArrayVal().Len())
 
@@ -1142,7 +1208,7 @@ func TestAnyValueArrayWithNilValues(t *testing.T) {
 	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "test_value", val.StringVal())
 
-	sm.Append(NewAttributeValueString("other_value"))
+	sm.AppendEmpty().SetStringVal("other_value")
 	val = sm.At(2)
 	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())

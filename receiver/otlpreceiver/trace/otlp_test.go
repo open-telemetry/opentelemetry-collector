@@ -17,7 +17,6 @@ package trace
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"testing"
 
@@ -33,7 +32,6 @@ import (
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
 )
 
 var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
@@ -96,10 +94,10 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 
-	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
@@ -109,10 +107,10 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
+	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
@@ -137,9 +135,8 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func(), error) {
-	addr := fmt.Sprintf(":%d", port)
-	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func makeTraceServiceClient(addr net.Addr) (collectortrace.TraceServiceClient, func(), error) {
+	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -150,7 +147,7 @@ func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func()
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (int, func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -159,12 +156,6 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (int, func()) {
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
-	}
-
-	_, port, err := testutil.HostPortFromAddr(ln.Addr())
-	if err != nil {
-		done()
-		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
 	r := New(receiverTagValue, tc)
@@ -177,5 +168,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (int, func()) {
 		_ = srv.Serve(ln)
 	}()
 
-	return port, done
+	return ln.Addr(), done
 }

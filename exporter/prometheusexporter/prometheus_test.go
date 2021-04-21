@@ -121,7 +121,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err)
 	})
 
 	assert.NotNil(t, exp)
@@ -198,7 +199,8 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err)
 	})
 
 	assert.NotNil(t, exp)

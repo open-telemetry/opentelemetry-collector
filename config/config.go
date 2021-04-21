@@ -76,6 +76,27 @@ func (cfg *Config) Validate() error {
 		return errMissingExporters
 	}
 
+	// Validate the exporter configuration.
+	for exp, expCfg := range cfg.Exporters {
+		if err := expCfg.Validate(); err != nil {
+			return fmt.Errorf("exporter \"%s\" has invalid configuration: %w", exp, err)
+		}
+	}
+
+	// Validate the processor configuration.
+	for proc, procCfg := range cfg.Processors {
+		if err := procCfg.Validate(); err != nil {
+			return fmt.Errorf("processor \"%s\" has invalid configuration: %w", proc, err)
+		}
+	}
+
+	// Validate the extension configuration.
+	for ext, extCfg := range cfg.Extensions {
+		if err := extCfg.Validate(); err != nil {
+			return fmt.Errorf("extension \"%s\" has invalid configuration: %w", ext, err)
+		}
+	}
+
 	// Check that all enabled extensions in the service are configured
 	if err := cfg.validateServiceExtensions(); err != nil {
 		return err
@@ -166,6 +187,15 @@ type NamedEntity interface {
 type validatable interface {
 	// Validate validates the configuration and returns an error if invalid.
 	Validate() error
+}
+
+// CustomUnmarshable defines an optional interface for custom configuration unmarshaling.
+// A configuration struct can implement this interface to override the default unmarshaling.
+type CustomUnmarshable interface {
+	// Unmarshal is a function that un-marshals a Parser into the unmarshable struct in a custom way.
+	// componentSection *Parser
+	//   The config for this specific component. May be nil or empty if no config available.
+	Unmarshal(componentSection *Parser) error
 }
 
 // DataType is the data type that is supported for collection. We currently support

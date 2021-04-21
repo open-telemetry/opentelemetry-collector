@@ -45,3 +45,10 @@ type Config struct {
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 }
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

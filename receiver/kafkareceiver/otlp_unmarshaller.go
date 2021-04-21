@@ -21,12 +21,25 @@ import (
 type otlpTracesPbUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*otlpTracesPbUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*otlpTracesPbUnmarshaller)(nil)
 
 func (p *otlpTracesPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	return pdata.TracesFromOtlpProtoBytes(bytes)
 }
 
 func (*otlpTracesPbUnmarshaller) Encoding() string {
+	return defaultEncoding
+}
+
+type otlpLogsPbUnmarshaller struct {
+}
+
+var _ LogsUnmarshaller = (*otlpLogsPbUnmarshaller)(nil)
+
+func (p *otlpLogsPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Logs, error) {
+	return pdata.LogsFromOtlpProtoBytes(bytes)
+}
+
+func (*otlpLogsPbUnmarshaller) Encoding() string {
 	return defaultEncoding
 }

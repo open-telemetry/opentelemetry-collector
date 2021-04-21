@@ -72,10 +72,7 @@ func (dp *PerfTestDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomi
 func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 	traceData := pdata.NewTraces()
-	traceData.ResourceSpans().Resize(1)
-	ilss := traceData.ResourceSpans().At(0).InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	spans := ilss.At(0).Spans()
+	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
 	spans.Resize(dp.options.ItemsPerBatch)
 
 	traceID := dp.batchesGenerated.Inc()
@@ -124,16 +121,15 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	const dataPointsPerMetric = 7
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(1)
-	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
+	rm := md.ResourceMetrics().AppendEmpty()
 	if dp.options.Attributes != nil {
-		attrs := md.ResourceMetrics().At(0).Resource().Attributes()
-		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		attrs := rm.Resource().Attributes()
+		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 	metrics.Resize(dp.options.ItemsPerBatch)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
@@ -164,16 +160,15 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	rl := logs.ResourceLogs().AppendEmpty()
 	if dp.options.Attributes != nil {
-		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
-		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		attrs := rl.Resource().Attributes()
+		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
 	}
-	logRecords := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
 	logRecords.Resize(dp.options.ItemsPerBatch)
 
 	now := pdata.TimestampFromTime(time.Now())

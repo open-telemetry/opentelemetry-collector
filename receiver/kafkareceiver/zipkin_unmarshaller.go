@@ -29,7 +29,7 @@ import (
 type zipkinProtoSpanUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*zipkinProtoSpanUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*zipkinProtoSpanUnmarshaller)(nil)
 
 func (z zipkinProtoSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	parseSpans, err := zipkin_proto3.ParseSpans(bytes, false)
@@ -46,7 +46,7 @@ func (z zipkinProtoSpanUnmarshaller) Encoding() string {
 type zipkinJSONSpanUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*zipkinJSONSpanUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*zipkinJSONSpanUnmarshaller)(nil)
 
 func (z zipkinJSONSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	var spans []*zipkinmodel.SpanModel
@@ -63,7 +63,7 @@ func (z zipkinJSONSpanUnmarshaller) Encoding() string {
 type zipkinThriftSpanUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*zipkinThriftSpanUnmarshaller)(nil)
+var _ TracesUnmarshaller = (*zipkinThriftSpanUnmarshaller)(nil)
 
 func (z zipkinThriftSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	spans, err := deserializeZipkinThrift(bytes)

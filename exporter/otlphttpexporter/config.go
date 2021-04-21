@@ -40,3 +40,10 @@ type Config struct {
 	// collector. Currently the only supported mode is `gzip`.
 	Compression string `mapstructure:"compression"`
 }
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

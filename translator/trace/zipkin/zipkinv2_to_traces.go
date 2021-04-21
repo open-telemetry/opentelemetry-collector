@@ -143,7 +143,8 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	attrs := dest.Attributes()
-	attrs.InitEmptyWithCapacity(len(tags))
+	attrs.Clear()
+	attrs.EnsureCapacity(len(tags))
 	if err := zTagsToInternalAttrs(zspan, tags, attrs, parseStringTags); err != nil {
 		return err
 	}
@@ -216,7 +217,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.TraceID(rawTrace))
+		link.SetTraceID(pdata.NewTraceID(rawTrace.Bytes()))
 
 		// Convert span id.
 		rawSpan := data.SpanID{}
@@ -224,7 +225,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.SpanID(rawSpan))
+		link.SetSpanID(pdata.NewSpanID(rawSpan.Bytes()))
 
 		link.SetTraceState(pdata.TraceState(parts[2]))
 
@@ -344,7 +345,7 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 		}
 
 		if parseStringTags {
-			switch tracetranslator.DetermineValueType(val, false) {
+			switch tracetranslator.DetermineValueType(val) {
 			case pdata.AttributeValueINT:
 				iValue, _ := strconv.ParseInt(val, 10, 64)
 				dest.UpsertInt(key, iValue)

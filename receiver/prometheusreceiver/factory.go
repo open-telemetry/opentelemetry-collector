@@ -17,12 +17,8 @@ package prometheusreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -35,9 +31,6 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus"
-
-	// The key for Prometheus scraping configs.
-	prometheusConfigKey = "config"
 )
 
 var (
@@ -49,42 +42,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
-}
-
-func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	componentParser := config.ParserFromViper(componentViperSection)
-	if componentParser == nil {
-		return nil
-	}
-	// We need custom unmarshaling because prometheus "config" subkey defines its own
-	// YAML unmarshaling routines so we need to do it explicitly.
-
-	err := componentParser.UnmarshalExact(intoCfg)
-	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to parse config: %s", err)
-	}
-
-	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
-	promCfgMap := cast.ToStringMap(componentParser.Get(prometheusConfigKey))
-	if len(promCfgMap) == 0 {
-		return nil
-	}
-	out, err := yaml.Marshal(promCfgMap)
-	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
-	}
-	config := intoCfg.(*Config)
-
-	err = yaml.UnmarshalStrict(out, &config.PrometheusConfig)
-	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
-	}
-	if len(config.PrometheusConfig.ScrapeConfigs) == 0 {
-		return errNilScrapeConfig
-	}
-	return nil
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
 func createDefaultConfig() config.Receiver {

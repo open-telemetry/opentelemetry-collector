@@ -21,7 +21,6 @@ import (
 
 const (
 	// flags
-	configCfg      = "config"
 	memBallastFlag = "mem-ballast-size-mib"
 
 	zapKindKey         = "kind"
@@ -33,21 +32,14 @@ const (
 )
 
 var (
-	configFile     *string
 	memBallastSize *uint
 )
 
 // Flags adds flags related to basic building of the collector application to the given flagset.
 func Flags(flags *flag.FlagSet) {
-	configFile = flags.String(configCfg, "", "Path to the config file")
 	memBallastSize = flags.Uint(memBallastFlag, 0,
 		fmt.Sprintf("Flag to specify size of memory (MiB) ballast to set. Ballast is not used when this is not specified. "+
 			"default settings: 0"))
-}
-
-// GetConfigFile gets the config file from the config file flag.
-func GetConfigFile() string {
-	return *configFile
 }
 
 // MemBallastSize returns the size of memory ballast to use in MBs

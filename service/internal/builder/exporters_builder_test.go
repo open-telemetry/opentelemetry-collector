@@ -69,7 +69,7 @@ func TestBuildExporters(t *testing.T) {
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
-	assert.NotNil(t, e1.getTraceExporter())
+	assert.NotNil(t, e1.getTracesExporter())
 	assert.Nil(t, e1.getMetricExporter())
 	assert.Nil(t, e1.getLogExporter())
 
@@ -98,7 +98,7 @@ func TestBuildExporters(t *testing.T) {
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
-	assert.Nil(t, e1.getTraceExporter())
+	assert.Nil(t, e1.getTracesExporter())
 	assert.Nil(t, e1.getMetricExporter())
 	assert.Nil(t, e1.getLogExporter())
 
@@ -140,7 +140,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
 	assert.NotNil(t, e1.getLogExporter())
-	assert.Nil(t, e1.getTraceExporter())
+	assert.Nil(t, e1.getTracesExporter())
 	assert.Nil(t, e1.getMetricExporter())
 
 	// Ensure it can be started.
@@ -164,7 +164,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
-	assert.Nil(t, e1.getTraceExporter())
+	assert.Nil(t, e1.getTracesExporter())
 	assert.Nil(t, e1.getMetricExporter())
 	assert.Nil(t, e1.getLogExporter())
 }

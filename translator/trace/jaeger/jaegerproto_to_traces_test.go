@@ -774,9 +774,9 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetKind(pdata.SpanKindCONSUMER)
 	span.Status().SetCode(pdata.StatusCodeOk)
 	span.Status().SetMessage("status-ok")
-	span.Links().Resize(1)
-	span.Links().At(0).SetTraceID(span.TraceID())
-	span.Links().At(0).SetSpanID(spans.At(0).SpanID())
+	link := span.Links().AppendEmpty()
+	link.SetTraceID(span.TraceID())
+	link.SetSpanID(spans.At(0).SpanID())
 	return td
 }
 
@@ -842,8 +842,7 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
 	rs0ils0.InstrumentationLibrary().SetName("library1")
 	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
-	rs0ils0.Spans().Resize(1)
-	span1 := rs0ils0.Spans().At(0)
+	span1 := rs0ils0.Spans().AppendEmpty()
 	span1.SetTraceID(tracetranslator.UInt64ToTraceID(0, 0))
 	span1.SetSpanID(tracetranslator.UInt64ToSpanID(0))
 	span1.SetName("operation1")
@@ -853,8 +852,7 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	rs0ils1 := rs0.InstrumentationLibrarySpans().At(1)
 	rs0ils1.InstrumentationLibrary().SetName("library2")
 	rs0ils1.InstrumentationLibrary().SetVersion("0.42.0")
-	rs0ils1.Spans().Resize(1)
-	span2 := rs0ils1.Spans().At(0)
+	span2 := rs0ils1.Spans().AppendEmpty()
 	span2.SetTraceID(span1.TraceID())
 	span2.SetSpanID(span1.SpanID())
 	span2.SetName("operation2")

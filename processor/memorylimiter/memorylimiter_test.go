@@ -188,7 +188,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		}),
 		logger: zap.NewNop(),
 	}
-	tp, err := processorhelper.NewTraceProcessor(
+	tp, err := processorhelper.NewTracesProcessor(
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		},

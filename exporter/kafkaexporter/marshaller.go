@@ -36,9 +36,19 @@ type MetricsMarshaller interface {
 	Encoding() string
 }
 
+// LogsMarshaller marshals logs into Message array
+type LogsMarshaller interface {
+	// Marshal serializes logs into Messages
+	Marshal(logs pdata.Logs) ([]Message, error)
+
+	// Encoding returns encoding name
+	Encoding() string
+}
+
 // Message encapsulates Kafka's message payload.
 type Message struct {
 	Value []byte
+	Key   []byte
 }
 
 // tracesMarshallers returns map of supported encodings with TracesMarshaller.
@@ -57,6 +67,14 @@ func tracesMarshallers() map[string]TracesMarshaller {
 func metricsMarshallers() map[string]MetricsMarshaller {
 	otlppb := &otlpMetricsPbMarshaller{}
 	return map[string]MetricsMarshaller{
+		otlppb.Encoding(): otlppb,
+	}
+}
+
+// logsMarshallers returns map of supported encodings and LogsMarshaller
+func logsMarshallers() map[string]LogsMarshaller {
+	otlppb := &otlpLogsPbMarshaller{}
+	return map[string]LogsMarshaller{
 		otlppb.Encoding(): otlppb,
 	}
 }

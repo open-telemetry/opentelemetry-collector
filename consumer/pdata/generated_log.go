@@ -18,7 +18,6 @@
 package pdata
 
 import (
-	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
@@ -132,8 +131,16 @@ func (es ResourceLogsSlice) Resize(newLen int) {
 // given ResourceLogs at that new position.  The original ResourceLogs
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ResourceLogsSlice) Append(e ResourceLogs) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ResourceLogs.
+// It returns the newly added ResourceLogs.
+func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
+	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
+	return es.At(es.Len() - 1)
 }
 
 // ResourceLogs is a collection of logs from a Resource.
@@ -284,8 +291,16 @@ func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
 // given InstrumentationLibraryLogs at that new position.  The original InstrumentationLibraryLogs
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es InstrumentationLibraryLogsSlice) Append(e InstrumentationLibraryLogs) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty InstrumentationLibraryLogs.
+// It returns the newly added InstrumentationLibraryLogs.
+func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLogs {
+	*es.orig = append(*es.orig, &otlplogs.InstrumentationLibraryLogs{})
+	return es.At(es.Len() - 1)
 }
 
 // InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
@@ -436,8 +451,16 @@ func (es LogSlice) Resize(newLen int) {
 // given LogRecord at that new position.  The original LogRecord
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es LogSlice) Append(e LogRecord) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty LogRecord.
+// It returns the newly added LogRecord.
+func (es LogSlice) AppendEmpty() LogRecord {
+	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
+	return es.At(es.Len() - 1)
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
@@ -475,22 +498,22 @@ func (ms LogRecord) SetTimestamp(v Timestamp) {
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() TraceID {
-	return TraceID((*ms.orig).TraceId)
+	return TraceID{orig: ((*ms.orig).TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = data.TraceID(v)
+	(*ms.orig).TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() SpanID {
-	return SpanID((*ms.orig).SpanId)
+	return SpanID{orig: ((*ms.orig).SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = data.SpanID(v)
+	(*ms.orig).SpanId = v.orig
 }
 
 // Flags returns the flags associated with this LogRecord.

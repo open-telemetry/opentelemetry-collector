@@ -187,7 +187,7 @@ func expandExeFileName(exeName string) string {
 	return buf.String()
 }
 
-// start a child process.
+// Start a child process.
 //
 // cp.AgentExePath defines the executable to run. If unspecified
 // "../../bin/otelcol_{{.GOOS}}_{{.GOARCH}}" will be used.

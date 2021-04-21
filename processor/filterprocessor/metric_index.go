@@ -70,8 +70,7 @@ func (idx metricIndex) extract(pdm pdata.Metrics) pdata.Metrics {
 			ilmIn := ilmSliceIn.At(ilmIdx)
 			mSliceIn := ilmIn.Metrics()
 
-			ilmOut := pdata.NewInstrumentationLibraryMetrics()
-			ilmSliceOut.Append(ilmOut)
+			ilmOut := ilmSliceOut.AppendEmpty()
 			ilOut := ilmOut.InstrumentationLibrary()
 			ilmIn.InstrumentationLibrary().CopyTo(ilOut)
 			mSliceOut := ilmOut.Metrics()

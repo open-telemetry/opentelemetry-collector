@@ -49,43 +49,23 @@ type commandMetadata struct {
 
 func (m *processMetadata) initializeResource(resource pdata.Resource) {
 	attr := resource.Attributes()
-	attr.InitEmptyWithCapacity(6)
-	m.insertPid(attr)
-	m.insertExecutable(attr)
-	m.insertCommand(attr)
-	m.insertUsername(attr)
-}
-
-func (m *processMetadata) insertPid(attr pdata.AttributeMap) {
+	attr.EnsureCapacity(6)
 	attr.InsertInt(conventions.AttributeProcessID, int64(m.pid))
-}
-
-func (m *processMetadata) insertExecutable(attr pdata.AttributeMap) {
 	attr.InsertString(conventions.AttributeProcessExecutableName, m.executable.name)
 	attr.InsertString(conventions.AttributeProcessExecutablePath, m.executable.path)
-}
-
-func (m *processMetadata) insertCommand(attr pdata.AttributeMap) {
-	if m.command == nil {
-		return
+	if m.command != nil {
+		attr.InsertString(conventions.AttributeProcessCommand, m.command.command)
+		if m.command.commandLineSlice != nil {
+			// TODO insert slice here once this is supported by the data model
+			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
+			attr.InsertString(conventions.AttributeProcessCommandLine, strings.Join(m.command.commandLineSlice, " "))
+		} else {
+			attr.InsertString(conventions.AttributeProcessCommandLine, m.command.commandLine)
+		}
 	}
-
-	attr.InsertString(conventions.AttributeProcessCommand, m.command.command)
-	if m.command.commandLineSlice != nil {
-		// TODO insert slice here once this is supported by the data model
-		// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-		attr.InsertString(conventions.AttributeProcessCommandLine, strings.Join(m.command.commandLineSlice, " "))
-	} else {
-		attr.InsertString(conventions.AttributeProcessCommandLine, m.command.commandLine)
+	if m.username != "" {
+		attr.InsertString(conventions.AttributeProcessOwner, m.username)
 	}
-}
-
-func (m *processMetadata) insertUsername(attr pdata.AttributeMap) {
-	if m.username == "" {
-		return
-	}
-
-	attr.InsertString(conventions.AttributeProcessOwner, m.username)
 }
 
 // processHandles provides a wrapper around []*process.Process

@@ -42,3 +42,10 @@ type Config struct {
 	// Collector starts and is saved to the file when the Collector is terminated.
 	SaveToFile string `mapstructure:"save_to_file"`
 }
+
+var _ config.Extension = (*Config)(nil)
+
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}
