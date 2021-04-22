@@ -20,7 +20,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"go.uber.org/zap"
 
@@ -507,18 +506,12 @@ func (s *loggingExporter) pushLogData(
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
 	return func(context.Context) error {
-		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
-		// respectively:
-		//
-		// - sync /dev/stdout: invalid argument
-		// - sync /dev/stdout: inappropriate ioctl for device
-		//
+		// Currently Sync() return a different error depending on the OS.
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
 		if osErr, ok := err.(*os.PathError); ok {
 			wrappedErr := osErr.Unwrap()
-			switch wrappedErr {
-			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
+			if knownSyncError(wrappedErr) {
 				err = nil
 			}
 		}
