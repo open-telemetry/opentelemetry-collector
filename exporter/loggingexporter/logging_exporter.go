@@ -17,19 +17,15 @@ package loggingexporter
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-	"syscall"
-
-	"go.uber.org/zap"
-	"golang.org/x/sys/windows"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.uber.org/zap"
+	"os"
+	"strconv"
+	"strings"
 )
 
 type logDataBuffer struct {
@@ -508,23 +504,12 @@ func (s *loggingExporter) pushLogData(
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
 	return func(context.Context) error {
-		// Currently Sync() return a different error depending on the OS:
-		//
-		// Linux:
-		// - sync /dev/stdout: invalid argument
-		//
-		// macOS:
-		// - sync /dev/stdout: inappropriate ioctl for device
-		//
-		// Windows:
-		// - sync /dev/stderr: The handle is invalid.
-		//
+		// Currently Sync() return a different error depending on the OS.
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
 		if osErr, ok := err.(*os.PathError); ok {
 			wrappedErr := osErr.Unwrap()
-			switch wrappedErr {
-			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY, windows.ERROR_INVALID_HANDLE:
+			if knownSyncError(wrappedErr) {
 				err = nil
 			}
 		}
