@@ -23,6 +23,7 @@ import (
 	"syscall"
 
 	"go.uber.org/zap"
+	"golang.org/x/sys/windows"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -507,18 +508,23 @@ func (s *loggingExporter) pushLogData(
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
 	return func(context.Context) error {
-		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
-		// respectively:
+		// Currently Sync() return a different error depending on the OS:
 		//
+		// Linux:
 		// - sync /dev/stdout: invalid argument
+		//
+		// macOS:
 		// - sync /dev/stdout: inappropriate ioctl for device
+		//
+		// Windows:
+		// - sync /dev/stderr: The handle is invalid.
 		//
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
 		if osErr, ok := err.(*os.PathError); ok {
 			wrappedErr := osErr.Unwrap()
 			switch wrappedErr {
-			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
+			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY, windows.ERROR_INVALID_HANDLE:
 				err = nil
 			}
 		}
