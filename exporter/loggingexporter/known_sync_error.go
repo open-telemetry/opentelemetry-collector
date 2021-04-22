@@ -16,6 +16,10 @@
 
 package loggingexporter
 
+import (
+	"syscall"
+)
+
 // knownSyncError returns true if the given error is one of the known
 // non-actionable errors returned by Sync on Linux and macOS:
 //

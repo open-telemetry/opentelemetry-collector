@@ -17,15 +17,17 @@ package loggingexporter
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"go.uber.org/zap"
-	"os"
-	"strconv"
-	"strings"
 )
 
 type logDataBuffer struct {
