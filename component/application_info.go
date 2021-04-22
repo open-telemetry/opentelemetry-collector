@@ -22,9 +22,6 @@ type ApplicationStartInfo struct {
 
 	// Version string.
 	Version string
-
-	// Git hash of the source code.
-	GitHash string
 }
 
 // DefaultApplicationStartInfo returns the default ApplicationStartInfo.
@@ -32,6 +29,5 @@ func DefaultApplicationStartInfo() ApplicationStartInfo {
 	return ApplicationStartInfo{
 		ExeName: "otelcol",
 		Version: "latest",
-		GitHash: "<NOT PROPERLY GENERATED>",
 	}
 }

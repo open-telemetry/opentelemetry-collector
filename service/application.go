@@ -280,7 +280,6 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 func (app *Application) execute(ctx context.Context) error {
 	app.logger.Info("Starting "+app.info.ExeName+"...",
 		zap.String("Version", app.info.Version),
-		zap.String("GitHash", app.info.GitHash),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 	app.stateChannel <- Starting
