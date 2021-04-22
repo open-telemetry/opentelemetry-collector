@@ -284,10 +284,10 @@ func Test_getPromMetricName(t *testing.T) {
 			validDoubleGauge,
 		},
 		{
-			"total_suffix",
+			"no_counter_suffix",
 			validMetrics1[validIntSum],
 			ns1,
-			"test_ns_" + validIntSum + counterSuffix,
+			"test_ns_" + validIntSum,
 		},
 		{
 			"already_has_total_suffix",

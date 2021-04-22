@@ -31,16 +31,15 @@ import (
 )
 
 const (
-	nameStr       = "__name__"
-	sumStr        = "_sum"
-	countStr      = "_count"
-	bucketStr     = "_bucket"
-	leStr         = "le"
-	quantileStr   = "quantile"
-	pInfStr       = "+Inf"
-	counterSuffix = "_total"
-	delimiter     = "_"
-	keyStr        = "key"
+	nameStr     = "__name__"
+	sumStr      = "_sum"
+	countStr    = "_count"
+	bucketStr   = "_bucket"
+	leStr       = "le"
+	quantileStr = "quantile"
+	pInfStr     = "+Inf"
+	delimiter   = "_"
+	keyStr      = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -178,34 +177,14 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 		return ""
 	}
 
-	// if the metric is counter, _total suffix should be applied
-	_, isCounter1 := metric.Data.(*otlp.Metric_DoubleSum)
-	_, isCounter2 := metric.Data.(*otlp.Metric_IntSum)
-	isCounter := isCounter1 || isCounter2
-
-	b := strings.Builder{}
-
-	b.WriteString(ns)
-
-	if b.Len() > 0 {
-		b.WriteString(delimiter)
+	var name string
+	if len(ns) > 0 {
+		name = ns + delimiter + metric.GetName()
+	} else {
+		name = metric.GetName()
 	}
-	name := metric.GetName()
-	b.WriteString(name)
 
-	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
-	// units are different.
-	/*
-		if b.Len() > 0 && len(desc.GetUnit()) > 0{
-			fmt.Fprintf(&b, delimeter)
-			fmt.Fprintf(&b, desc.GetUnit())
-		}
-	*/
-
-	if b.Len() > 0 && isCounter && !strings.HasSuffix(name, counterSuffix) {
-		b.WriteString(counterSuffix)
-	}
-	return sanitize(b.String())
+	return sanitize(name)
 }
 
 // batchTimeSeries splits series into multiple batch write requests.
