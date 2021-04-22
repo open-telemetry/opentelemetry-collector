@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver
+package kafkaexporter
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-func TestUnmarshallJaeger(t *testing.T) {
+func TestJaegerMarshaler(t *testing.T) {
 	td := pdata.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
@@ -37,49 +37,56 @@ func TestUnmarshallJaeger(t *testing.T) {
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	require.NoError(t, err)
 
-	protoBytes, err := batches[0].Spans[0].Marshal()
+	batches[0].Spans[0].Process = batches[0].Process
+	jaegerProtoBytes, err := batches[0].Spans[0].Marshal()
+	messageKey := []byte(batches[0].Spans[0].TraceID.String())
 	require.NoError(t, err)
+	require.NotNil(t, jaegerProtoBytes)
 
-	jsonMarshaller := &jsonpb.Marshaler{}
-	jsonBytes := new(bytes.Buffer)
-	require.NoError(t, jsonMarshaller.Marshal(jsonBytes, batches[0].Spans[0]))
+	jsonMarshaler := &jsonpb.Marshaler{}
+	jsonByteBuffer := new(bytes.Buffer)
+	require.NoError(t, jsonMarshaler.Marshal(jsonByteBuffer, batches[0].Spans[0]))
 
 	tests := []struct {
-		unmarshaller TracesUnmarshaller
-		encoding     string
-		bytes        []byte
+		unmarshaler TracesMarshaler
+		encoding    string
+		messages    []Message
 	}{
 		{
-			unmarshaller: jaegerProtoSpanUnmarshaller{},
-			encoding:     "jaeger_proto",
-			bytes:        protoBytes,
+			unmarshaler: jaegerMarshaler{
+				marshaler: jaegerProtoSpanMarshaler{},
+			},
+			encoding: "jaeger_proto",
+			messages: []Message{{Value: jaegerProtoBytes, Key: messageKey}},
 		},
 		{
-			unmarshaller: jaegerJSONSpanUnmarshaller{},
-			encoding:     "jaeger_json",
-			bytes:        jsonBytes.Bytes(),
+			unmarshaler: jaegerMarshaler{
+				marshaler: jaegerJSONSpanMarshaler{
+					pbMarshaler: &jsonpb.Marshaler{},
+				},
+			},
+			encoding: "jaeger_json",
+			messages: []Message{{Value: jsonByteBuffer.Bytes(), Key: messageKey}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			got, err := test.unmarshaller.Unmarshal(test.bytes)
+			messages, err := test.unmarshaler.Marshal(td)
 			require.NoError(t, err)
-			assert.Equal(t, td, got)
-			assert.Equal(t, test.encoding, test.unmarshaller.Encoding())
+			assert.Equal(t, test.messages, messages)
+			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
 }
 
-func TestUnmarshallJaegerProto_error(t *testing.T) {
-	p := jaegerProtoSpanUnmarshaller{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
-	assert.Error(t, err)
-}
-
-func TestUnmarshallJaegerJSON_error(t *testing.T) {
-	p := jaegerJSONSpanUnmarshaller{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
-	assert.Error(t, err)
+func TestJaegerMarshaler_error_covert_traceID(t *testing.T) {
+	marshaler := jaegerMarshaler{
+		marshaler: jaegerProtoSpanMarshaler{},
+	}
+	td := pdata.NewTraces()
+	td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	// fails in zero traceID
+	messages, err := marshaler.Marshal(td)
+	require.Error(t, err)
+	assert.Nil(t, messages)
 }
