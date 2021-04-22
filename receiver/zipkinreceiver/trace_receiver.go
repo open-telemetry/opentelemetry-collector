@@ -268,6 +268,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// Gets the data transfer type
 func transportType(r *http.Request, asZipkinv1 bool) string {
 	if asZipkinv1 {
 		if r.Header.Get("Content-Type") == "application/x-thrift" {
