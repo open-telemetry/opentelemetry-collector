@@ -64,31 +64,6 @@ func TestAnyValueArray(t *testing.T) {
 	}
 }
 
-func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestAnyValueArray()
-	dest := NewAnyValueArray()
-	src := generateTestAnyValueArray()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestAnyValueArray(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestAnyValueArray(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestAnyValueArray().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
 func TestAnyValueArray_CopyTo(t *testing.T) {
 	dest := NewAnyValueArray()
 	// Test CopyTo to empty
@@ -157,6 +132,31 @@ func TestAnyValueArray_Append(t *testing.T) {
 	assert.EqualValues(t, value, es.At(8))
 
 	assert.Equal(t, 9, es.Len())
+}
+
+func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestAnyValueArray()
+	dest := NewAnyValueArray()
+	src := generateTestAnyValueArray()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestAnyValueArray(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestAnyValueArray(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestAnyValueArray().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
 }
 
 func generateTestInstrumentationLibrary() InstrumentationLibrary {
