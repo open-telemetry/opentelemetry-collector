@@ -36,10 +36,9 @@ var (
 type Authenticator interface {
 	component.Extension
 
-	// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
-	// Implementations should add the derived subject (user, principal) to a new context built based on the given context under the key configauth.SubjectKey.
-	// If group/membership information is available, it should also be added, under the key configauth.GroupsKey.
-	Authenticate(context.Context, map[string][]string) (context.Context, error)
+	// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error.
+	// When the authentication fails, an error must be returned and the caller must not retry.
+	Authenticate(context.Context, map[string][]string) error
 
 	// UnaryInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
 	UnaryInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error)
@@ -49,7 +48,7 @@ type Authenticator interface {
 }
 
 // AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the context data.
-type AuthenticateFunc func(context.Context, map[string][]string) (context.Context, error)
+type AuthenticateFunc func(context.Context, map[string][]string) error
 
 // UnaryInterceptorFunc defines the signature for the function intercepting unary gRPC calls.
 type UnaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error)
@@ -64,8 +63,7 @@ func DefaultUnaryInterceptor(ctx context.Context, req interface{}, _ *grpc.Unary
 		return nil, errMetadataNotFound
 	}
 
-	ctx, err := authenticate(ctx, headers)
-	if err != nil {
+	if err := authenticate(ctx, headers); err != nil {
 		return nil, err
 	}
 
@@ -80,9 +78,7 @@ func DefaultStreamInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc
 		return errMetadataNotFound
 	}
 
-	// TODO: how to replace the context from the stream?
-	_, err := authenticate(ctx, headers)
-	if err != nil {
+	if err := authenticate(ctx, headers); err != nil {
 		return err
 	}
 

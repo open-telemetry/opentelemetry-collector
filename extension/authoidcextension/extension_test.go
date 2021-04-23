@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -70,20 +69,12 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.NoError(t, err)
 
-	subject, ok := configauth.SubjectFromContext(ctx)
-	assert.True(t, ok)
-	assert.EqualValues(t, "jdoe@example.com", subject)
-
-	groups, ok := configauth.GroupsFromContext(ctx)
-	assert.True(t, ok)
-	assert.Contains(t, groups, "department-1")
-	assert.Contains(t, groups, "department-2")
+	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
 }
 
 func TestOIDCProviderForConfigWithTLS(t *testing.T) {
@@ -218,10 +209,9 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
+	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.Equal(t, errInvalidAuthenticationHeaderFormat, err)
 }
 
@@ -234,10 +224,9 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), make(map[string][]string))
+	err = p.Authenticate(context.Background(), make(map[string][]string))
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.Equal(t, errNotAuthenticated, err)
 }
 
@@ -273,10 +262,9 @@ func TestFailedToVerifyToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
+	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.Error(t, err)
 }
 
@@ -337,11 +325,10 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			require.NoError(t, err)
 
 			// test
-			ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			err = p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 			// verify
-			assert.NotNil(t, ctx)
-			assert.True(t, errors.Is(err, tt.expectedError))
+			assert.ErrorIs(t, err, tt.expectedError)
 		})
 	}
 }
