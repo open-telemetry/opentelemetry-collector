@@ -137,6 +137,24 @@ func TestResourceMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestResourceMetricsSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewResourceMetricsSlice()
+	emptySlice.Filter(func(el ResourceMetrics) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestResourceMetricsSlice()
+	pos := 0
+	filtered.Filter(func(el ResourceMetrics) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestResourceMetrics_CopyTo(t *testing.T) {
 	ms := NewResourceMetrics()
 	generateTestResourceMetrics().CopyTo(ms)
@@ -269,6 +287,24 @@ func TestInstrumentationLibraryMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestInstrumentationLibraryMetricsSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewInstrumentationLibraryMetricsSlice()
+	emptySlice.Filter(func(el InstrumentationLibraryMetrics) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestInstrumentationLibraryMetricsSlice()
+	pos := 0
+	filtered.Filter(func(el InstrumentationLibraryMetrics) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
 	generateTestInstrumentationLibraryMetrics().CopyTo(ms)
@@ -399,6 +435,24 @@ func TestMetricSlice_MoveAndAppendTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func TestMetricSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewMetricSlice()
+	emptySlice.Filter(func(el Metric) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestMetricSlice()
+	pos := 0
+	filtered.Filter(func(el Metric) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }
 
 func TestMetric_CopyTo(t *testing.T) {
@@ -689,6 +743,24 @@ func TestIntDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestIntDataPointSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewIntDataPointSlice()
+	emptySlice.Filter(func(el IntDataPoint) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestIntDataPointSlice()
+	pos := 0
+	filtered.Filter(func(el IntDataPoint) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestIntDataPoint_CopyTo(t *testing.T) {
 	ms := NewIntDataPoint()
 	generateTestIntDataPoint().CopyTo(ms)
@@ -847,6 +919,24 @@ func TestDoubleDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestDoubleDataPointSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewDoubleDataPointSlice()
+	emptySlice.Filter(func(el DoubleDataPoint) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestDoubleDataPointSlice()
+	pos := 0
+	filtered.Filter(func(el DoubleDataPoint) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestDoubleDataPoint_CopyTo(t *testing.T) {
 	ms := NewDoubleDataPoint()
 	generateTestDoubleDataPoint().CopyTo(ms)
@@ -1003,6 +1093,24 @@ func TestIntHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func TestIntHistogramDataPointSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewIntHistogramDataPointSlice()
+	emptySlice.Filter(func(el IntHistogramDataPoint) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestIntHistogramDataPointSlice()
+	pos := 0
+	filtered.Filter(func(el IntHistogramDataPoint) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }
 
 func TestIntHistogramDataPoint_CopyTo(t *testing.T) {
@@ -1187,6 +1295,24 @@ func TestHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestHistogramDataPointSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewHistogramDataPointSlice()
+	emptySlice.Filter(func(el HistogramDataPoint) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestHistogramDataPointSlice()
+	pos := 0
+	filtered.Filter(func(el HistogramDataPoint) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	generateTestHistogramDataPoint().CopyTo(ms)
@@ -1369,6 +1495,24 @@ func TestSummaryDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestSummaryDataPointSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewSummaryDataPointSlice()
+	emptySlice.Filter(func(el SummaryDataPoint) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestSummaryDataPointSlice()
+	pos := 0
+	filtered.Filter(func(el SummaryDataPoint) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	generateTestSummaryDataPoint().CopyTo(ms)
@@ -1535,6 +1679,24 @@ func TestValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestValueAtQuantileSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewValueAtQuantileSlice()
+	emptySlice.Filter(func(el ValueAtQuantile) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestValueAtQuantileSlice()
+	pos := 0
+	filtered.Filter(func(el ValueAtQuantile) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestValueAtQuantile_CopyTo(t *testing.T) {
 	ms := NewValueAtQuantile()
 	generateTestValueAtQuantile().CopyTo(ms)
@@ -1667,6 +1829,24 @@ func TestIntExemplarSlice_MoveAndAppendTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func TestIntExemplarSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewIntExemplarSlice()
+	emptySlice.Filter(func(el IntExemplar) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestIntExemplarSlice()
+	pos := 0
+	filtered.Filter(func(el IntExemplar) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }
 
 func TestIntExemplar_CopyTo(t *testing.T) {
@@ -1809,6 +1989,24 @@ func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func TestExemplarSlice_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewExemplarSlice()
+	emptySlice.Filter(func(el Exemplar) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestExemplarSlice()
+	pos := 0
+	filtered.Filter(func(el Exemplar) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }
 
 func TestExemplar_CopyTo(t *testing.T) {

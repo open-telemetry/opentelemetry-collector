@@ -143,6 +143,25 @@ func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
 	*es.orig = nil
 }
 
+// Filter calls f sequentially for each element present in the slice.
+// If f returns true, filter deletes the given element from the slice.
+func (es ResourceLogsSlice) Filter(f func(ResourceLogs) bool) {
+	newPos := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newPos == i {
+			// Nothing to move, element is at the right place.
+			newPos++
+			continue
+		}
+		(*es.orig)[newPos] = (*es.orig)[i]
+		newPos++
+	}
+	*es.orig = (*es.orig)[:newPos]
+}
+
 // ResourceLogs is a collection of logs from a Resource.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -303,6 +322,25 @@ func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLi
 	*es.orig = nil
 }
 
+// Filter calls f sequentially for each element present in the slice.
+// If f returns true, filter deletes the given element from the slice.
+func (es InstrumentationLibraryLogsSlice) Filter(f func(InstrumentationLibraryLogs) bool) {
+	newPos := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newPos == i {
+			// Nothing to move, element is at the right place.
+			newPos++
+			continue
+		}
+		(*es.orig)[newPos] = (*es.orig)[i]
+		newPos++
+	}
+	*es.orig = (*es.orig)[:newPos]
+}
+
 // InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -461,6 +499,25 @@ func (es LogSlice) MoveAndAppendTo(dest LogSlice) {
 		*dest.orig = append(*dest.orig, *es.orig...)
 	}
 	*es.orig = nil
+}
+
+// Filter calls f sequentially for each element present in the slice.
+// If f returns true, filter deletes the given element from the slice.
+func (es LogSlice) Filter(f func(LogRecord) bool) {
+	newPos := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newPos == i {
+			// Nothing to move, element is at the right place.
+			newPos++
+			continue
+		}
+		(*es.orig)[newPos] = (*es.orig)[i]
+		newPos++
+	}
+	*es.orig = (*es.orig)[:newPos]
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.

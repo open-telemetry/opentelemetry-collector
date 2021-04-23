@@ -159,6 +159,24 @@ func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestAnyValueArray_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := NewAnyValueArray()
+	emptySlice.Filter(func(el AttributeValue) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTestAnyValueArray()
+	pos := 0
+	filtered.Filter(func(el AttributeValue) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func generateTestInstrumentationLibrary() InstrumentationLibrary {
 	tv := NewInstrumentationLibrary()
 	fillTestInstrumentationLibrary(tv)

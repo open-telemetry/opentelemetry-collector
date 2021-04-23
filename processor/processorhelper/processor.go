@@ -141,6 +141,9 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	td, err = tp.processor.ProcessTraces(ctx, td)
 	span.Annotate(tp.traceAttributes, "End processing.")
 	if err != nil {
+		if errors.Is(err, ErrSkipProcessingData) {
+			return nil
+		}
 		return err
 	}
 	return tp.nextConsumer.ConsumeTraces(ctx, td)
@@ -182,7 +185,7 @@ func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics
 	md, err = mp.processor.ProcessMetrics(ctx, md)
 	span.Annotate(mp.traceAttributes, "End processing.")
 	if err != nil {
-		if err == ErrSkipProcessingData {
+		if errors.Is(err, ErrSkipProcessingData) {
 			return nil
 		}
 		return err
@@ -226,6 +229,9 @@ func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	ld, err = lp.processor.ProcessLogs(ctx, ld)
 	span.Annotate(lp.traceAttributes, "End processing.")
 	if err != nil {
+		if errors.Is(err, ErrSkipProcessingData) {
+			return nil
+		}
 		return err
 	}
 	return lp.nextConsumer.ConsumeLogs(ctx, ld)

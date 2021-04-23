@@ -30,6 +30,25 @@ func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
 		*dest.orig = append(*dest.orig, *es.orig...)
 	}
 	*es.orig = nil
+}
+
+// Filter calls f sequentially for each element present in the slice.
+// If f returns true, filter deletes the given element from the slice.
+func (es ${structName}) Filter(f func(${elementName}) bool) {
+	newPos := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newPos == i {
+			// Nothing to move, element is at the right place.
+			newPos++
+			continue
+		}
+		(*es.orig)[newPos] = (*es.orig)[i]
+		newPos++
+	}
+	*es.orig = (*es.orig)[:newPos]
 }`
 
 const commonSliceTestTemplate = `
@@ -57,6 +76,24 @@ func Test${structName}_MoveAndAppendTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func Test${structName}_Filter(t *testing.T) {
+	// Test Filter on empty slice
+	emptySlice := New${structName}()
+	emptySlice.Filter(func (el ${elementName}) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test Filter
+	filtered := generateTest${structName}()
+	pos := 0
+	filtered.Filter(func (el ${elementName}) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }`
 
 const commonSliceGenerateTest = `func generateTest${structName}() ${structName} {

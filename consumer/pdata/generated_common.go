@@ -185,3 +185,22 @@ func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
 	}
 	*es.orig = nil
 }
+
+// Filter calls f sequentially for each element present in the slice.
+// If f returns true, filter deletes the given element from the slice.
+func (es AnyValueArray) Filter(f func(AttributeValue) bool) {
+	newPos := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newPos == i {
+			// Nothing to move, element is at the right place.
+			newPos++
+			continue
+		}
+		(*es.orig)[newPos] = (*es.orig)[i]
+		newPos++
+	}
+	*es.orig = (*es.orig)[:newPos]
+}
