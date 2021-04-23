@@ -70,8 +70,7 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 
 	ava2 := pdata.NewAttributeValueArray()
 	ava2.ArrayVal().AppendEmpty().SetStringVal("bar")
-
-	ava.ArrayVal().Append(ava2)
+	ava2.CopyTo(ava.ArrayVal().AppendEmpty())
 
 	assert.Equal(t, 3, ava.ArrayVal().Len())
 	assert.Equal(t, "[foo, 42, [bar]]", attributeValueToString(ava))
