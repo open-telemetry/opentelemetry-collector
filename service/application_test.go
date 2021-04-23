@@ -88,6 +88,8 @@ func TestApplication_Start(t *testing.T) {
 	}
 	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
 
+	assertZPages(t)
+
 	// Trigger another configuration load.
 	require.NoError(t, app.reloadService(context.Background()))
 	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
@@ -213,6 +215,32 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 				require.Contains(t, labelNames, mandatoryLabel, "mandatory label %q not present", mandatoryLabel)
 			}
 		}
+	}
+}
+
+func assertZPages(t *testing.T) {
+	paths := []string{
+		"/debug/tracez",
+		"/debug/rpcz",
+		"/debug/pipelinez",
+		"/debug/servicez",
+		"/debug/extensionz",
+	}
+
+	const defaultZPagesPort = "55679"
+
+	testZPagePathFn := func(t *testing.T, path string) {
+		client := &http.Client{}
+		resp, err := client.Get("http://localhost:" + defaultZPagesPort + path)
+		if !assert.NoError(t, err, "error retrieving zpage at %q", path) {
+			return
+		}
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
+		assert.NoError(t, resp.Body.Close())
+	}
+
+	for _, path := range paths {
+		testZPagePathFn(t, path)
 	}
 }
 
