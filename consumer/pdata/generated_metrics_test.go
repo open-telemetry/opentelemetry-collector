@@ -137,18 +137,18 @@ func TestResourceMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestResourceMetricsSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewResourceMetricsSlice()
-	emptySlice.Filter(func(el ResourceMetrics) bool {
+	emptySlice.RemoveIf(func(el ResourceMetrics) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestResourceMetricsSlice()
 	pos := 0
-	filtered.Filter(func(el ResourceMetrics) bool {
+	filtered.RemoveIf(func(el ResourceMetrics) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -287,18 +287,18 @@ func TestInstrumentationLibraryMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibraryMetricsSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestInstrumentationLibraryMetricsSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewInstrumentationLibraryMetricsSlice()
-	emptySlice.Filter(func(el InstrumentationLibraryMetrics) bool {
+	emptySlice.RemoveIf(func(el InstrumentationLibraryMetrics) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestInstrumentationLibraryMetricsSlice()
 	pos := 0
-	filtered.Filter(func(el InstrumentationLibraryMetrics) bool {
+	filtered.RemoveIf(func(el InstrumentationLibraryMetrics) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -437,18 +437,18 @@ func TestMetricSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestMetricSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestMetricSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewMetricSlice()
-	emptySlice.Filter(func(el Metric) bool {
+	emptySlice.RemoveIf(func(el Metric) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestMetricSlice()
 	pos := 0
-	filtered.Filter(func(el Metric) bool {
+	filtered.RemoveIf(func(el Metric) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -743,18 +743,18 @@ func TestIntDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestIntDataPointSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestIntDataPointSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewIntDataPointSlice()
-	emptySlice.Filter(func(el IntDataPoint) bool {
+	emptySlice.RemoveIf(func(el IntDataPoint) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestIntDataPointSlice()
 	pos := 0
-	filtered.Filter(func(el IntDataPoint) bool {
+	filtered.RemoveIf(func(el IntDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -919,18 +919,18 @@ func TestDoubleDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestDoubleDataPointSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestDoubleDataPointSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewDoubleDataPointSlice()
-	emptySlice.Filter(func(el DoubleDataPoint) bool {
+	emptySlice.RemoveIf(func(el DoubleDataPoint) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestDoubleDataPointSlice()
 	pos := 0
-	filtered.Filter(func(el DoubleDataPoint) bool {
+	filtered.RemoveIf(func(el DoubleDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -1095,18 +1095,18 @@ func TestIntHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestIntHistogramDataPointSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestIntHistogramDataPointSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewIntHistogramDataPointSlice()
-	emptySlice.Filter(func(el IntHistogramDataPoint) bool {
+	emptySlice.RemoveIf(func(el IntHistogramDataPoint) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestIntHistogramDataPointSlice()
 	pos := 0
-	filtered.Filter(func(el IntHistogramDataPoint) bool {
+	filtered.RemoveIf(func(el IntHistogramDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -1295,18 +1295,18 @@ func TestHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestHistogramDataPointSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewHistogramDataPointSlice()
-	emptySlice.Filter(func(el HistogramDataPoint) bool {
+	emptySlice.RemoveIf(func(el HistogramDataPoint) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestHistogramDataPointSlice()
 	pos := 0
-	filtered.Filter(func(el HistogramDataPoint) bool {
+	filtered.RemoveIf(func(el HistogramDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -1495,18 +1495,18 @@ func TestSummaryDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestSummaryDataPointSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewSummaryDataPointSlice()
-	emptySlice.Filter(func(el SummaryDataPoint) bool {
+	emptySlice.RemoveIf(func(el SummaryDataPoint) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestSummaryDataPointSlice()
 	pos := 0
-	filtered.Filter(func(el SummaryDataPoint) bool {
+	filtered.RemoveIf(func(el SummaryDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -1679,18 +1679,18 @@ func TestValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestValueAtQuantileSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestValueAtQuantileSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewValueAtQuantileSlice()
-	emptySlice.Filter(func(el ValueAtQuantile) bool {
+	emptySlice.RemoveIf(func(el ValueAtQuantile) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestValueAtQuantileSlice()
 	pos := 0
-	filtered.Filter(func(el ValueAtQuantile) bool {
+	filtered.RemoveIf(func(el ValueAtQuantile) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -1831,18 +1831,18 @@ func TestIntExemplarSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestIntExemplarSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestIntExemplarSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewIntExemplarSlice()
-	emptySlice.Filter(func(el IntExemplar) bool {
+	emptySlice.RemoveIf(func(el IntExemplar) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestIntExemplarSlice()
 	pos := 0
-	filtered.Filter(func(el IntExemplar) bool {
+	filtered.RemoveIf(func(el IntExemplar) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -1991,18 +1991,18 @@ func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestExemplarSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestExemplarSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewExemplarSlice()
-	emptySlice.Filter(func(el Exemplar) bool {
+	emptySlice.RemoveIf(func(el Exemplar) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestExemplarSlice()
 	pos := 0
-	filtered.Filter(func(el Exemplar) bool {
+	filtered.RemoveIf(func(el Exemplar) bool {
 		pos++
 		return pos%3 == 0
 	})

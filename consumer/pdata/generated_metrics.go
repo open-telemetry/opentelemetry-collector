@@ -143,23 +143,24 @@ func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es ResourceMetricsSlice) Filter(f func(ResourceMetrics) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -322,23 +323,24 @@ func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest Instrumentatio
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es InstrumentationLibraryMetricsSlice) Filter(f func(InstrumentationLibraryMetrics) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es InstrumentationLibraryMetricsSlice) RemoveIf(f func(InstrumentationLibraryMetrics) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -501,23 +503,24 @@ func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es MetricSlice) Filter(f func(Metric) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es MetricSlice) RemoveIf(f func(Metric) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // Metric represents one metric as a collection of datapoints.
@@ -993,23 +996,24 @@ func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es IntDataPointSlice) Filter(f func(IntDataPoint) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es IntDataPointSlice) RemoveIf(f func(IntDataPoint) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.
@@ -1205,23 +1209,24 @@ func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es DoubleDataPointSlice) Filter(f func(DoubleDataPoint) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es DoubleDataPointSlice) RemoveIf(f func(DoubleDataPoint) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
@@ -1417,23 +1422,24 @@ func (es IntHistogramDataPointSlice) MoveAndAppendTo(dest IntHistogramDataPointS
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es IntHistogramDataPointSlice) Filter(f func(IntHistogramDataPoint) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es IntHistogramDataPointSlice) RemoveIf(f func(IntHistogramDataPoint) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.
@@ -1662,23 +1668,24 @@ func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) 
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es HistogramDataPointSlice) Filter(f func(HistogramDataPoint) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.
@@ -1907,23 +1914,24 @@ func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es SummaryDataPointSlice) Filter(f func(SummaryDataPoint) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
@@ -2130,23 +2138,24 @@ func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es ValueAtQuantileSlice) Filter(f func(ValueAtQuantile) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // ValueAtQuantile is a quantile value within a Summary data point
@@ -2314,23 +2323,24 @@ func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es IntExemplarSlice) Filter(f func(IntExemplar) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es IntExemplarSlice) RemoveIf(f func(IntExemplar) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // IntExemplar is a sample input int measurement.
@@ -2507,23 +2517,24 @@ func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es ExemplarSlice) Filter(f func(Exemplar) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // Exemplar is a sample input double measurement.

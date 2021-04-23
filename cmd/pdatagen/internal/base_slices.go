@@ -32,23 +32,24 @@ func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es ${structName}) Filter(f func(${elementName}) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }`
 
 const commonSliceTestTemplate = `
@@ -78,18 +79,18 @@ func Test${structName}_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func Test${structName}_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func Test${structName}_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := New${structName}()
-	emptySlice.Filter(func (el ${elementName}) bool {
+	emptySlice.RemoveIf(func (el ${elementName}) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTest${structName}()
 	pos := 0
-	filtered.Filter(func (el ${elementName}) bool {
+	filtered.RemoveIf(func (el ${elementName}) bool {
 		pos++
 		return pos%3 == 0
 	})

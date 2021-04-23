@@ -137,18 +137,18 @@ func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestResourceLogsSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestResourceLogsSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewResourceLogsSlice()
-	emptySlice.Filter(func(el ResourceLogs) bool {
+	emptySlice.RemoveIf(func(el ResourceLogs) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestResourceLogsSlice()
 	pos := 0
-	filtered.Filter(func(el ResourceLogs) bool {
+	filtered.RemoveIf(func(el ResourceLogs) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -287,18 +287,18 @@ func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibraryLogsSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestInstrumentationLibraryLogsSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewInstrumentationLibraryLogsSlice()
-	emptySlice.Filter(func(el InstrumentationLibraryLogs) bool {
+	emptySlice.RemoveIf(func(el InstrumentationLibraryLogs) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestInstrumentationLibraryLogsSlice()
 	pos := 0
-	filtered.Filter(func(el InstrumentationLibraryLogs) bool {
+	filtered.RemoveIf(func(el InstrumentationLibraryLogs) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -437,18 +437,18 @@ func TestLogSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestLogSlice_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestLogSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewLogSlice()
-	emptySlice.Filter(func(el LogRecord) bool {
+	emptySlice.RemoveIf(func(el LogRecord) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestLogSlice()
 	pos := 0
-	filtered.Filter(func(el LogRecord) bool {
+	filtered.RemoveIf(func(el LogRecord) bool {
 		pos++
 		return pos%3 == 0
 	})

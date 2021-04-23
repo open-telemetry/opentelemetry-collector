@@ -159,18 +159,18 @@ func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestAnyValueArray_Filter(t *testing.T) {
-	// Test Filter on empty slice
+func TestAnyValueArray_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
 	emptySlice := NewAnyValueArray()
-	emptySlice.Filter(func(el AttributeValue) bool {
+	emptySlice.RemoveIf(func(el AttributeValue) bool {
 		t.Fail()
 		return false
 	})
 
-	// Test Filter
+	// Test RemoveIf
 	filtered := generateTestAnyValueArray()
 	pos := 0
-	filtered.Filter(func(el AttributeValue) bool {
+	filtered.RemoveIf(func(el AttributeValue) bool {
 		pos++
 		return pos%3 == 0
 	})

@@ -143,23 +143,24 @@ func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es ResourceLogsSlice) Filter(f func(ResourceLogs) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // ResourceLogs is a collection of logs from a Resource.
@@ -322,23 +323,24 @@ func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLi
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es InstrumentationLibraryLogsSlice) Filter(f func(InstrumentationLibraryLogs) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es InstrumentationLibraryLogsSlice) RemoveIf(f func(InstrumentationLibraryLogs) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
@@ -501,23 +503,24 @@ func (es LogSlice) MoveAndAppendTo(dest LogSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es LogSlice) Filter(f func(LogRecord) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es LogSlice) RemoveIf(f func(LogRecord) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.

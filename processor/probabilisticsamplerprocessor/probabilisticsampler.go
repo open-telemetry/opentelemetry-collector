@@ -70,9 +70,9 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 }
 
 func (tsp *tracesamplerprocessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
-	td.ResourceSpans().Filter(func(rs pdata.ResourceSpans) bool {
-		rs.InstrumentationLibrarySpans().Filter(func(ils pdata.InstrumentationLibrarySpans) bool {
-			ils.Spans().Filter(func(s pdata.Span) bool {
+	td.ResourceSpans().RemoveIf(func(rs pdata.ResourceSpans) bool {
+		rs.InstrumentationLibrarySpans().RemoveIf(func(ils pdata.InstrumentationLibrarySpans) bool {
+			ils.Spans().RemoveIf(func(s pdata.Span) bool {
 				sp := parseSpanSamplingPriority(s)
 				if sp == doNotSampleSpan {
 					// The OpenTelemetry mentions this as a "hint" we take a stronger

@@ -115,13 +115,13 @@ func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filt
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
-	pdm.ResourceMetrics().Filter(func(rm pdata.ResourceMetrics) bool {
+	pdm.ResourceMetrics().RemoveIf(func(rm pdata.ResourceMetrics) bool {
 		keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
 		if !keepMetricsForResource {
 			return true
 		}
-		rm.InstrumentationLibraryMetrics().Filter(func(ilm pdata.InstrumentationLibraryMetrics) bool {
-			ilm.Metrics().Filter(func(m pdata.Metric) bool {
+		rm.InstrumentationLibraryMetrics().RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
+			ilm.Metrics().RemoveIf(func(m pdata.Metric) bool {
 				keep, err := fmp.shouldKeepMetric(m)
 				if err != nil {
 					fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))

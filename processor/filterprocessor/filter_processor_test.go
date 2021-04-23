@@ -325,7 +325,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.Nil(t, err)
 
 			caps := fmp.GetCapabilities()
-			assert.False(t, caps.MutatesConsumedData)
+			assert.True(t, caps.MutatesConsumedData)
 			ctx := context.Background()
 			assert.NoError(t, fmp.Start(ctx, nil))
 

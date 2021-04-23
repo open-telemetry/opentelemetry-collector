@@ -143,23 +143,24 @@ func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es ResourceSpansSlice) Filter(f func(ResourceSpans) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -322,23 +323,24 @@ func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationL
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es InstrumentationLibrarySpansSlice) Filter(f func(InstrumentationLibrarySpans) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es InstrumentationLibrarySpansSlice) RemoveIf(f func(InstrumentationLibrarySpans) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -501,23 +503,24 @@ func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es SpanSlice) Filter(f func(Span) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es SpanSlice) RemoveIf(f func(Span) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // Span represents a single operation within a trace.
@@ -814,23 +817,24 @@ func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es SpanEventSlice) Filter(f func(SpanEvent) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
@@ -1021,23 +1025,24 @@ func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
 	*es.orig = nil
 }
 
-// Filter calls f sequentially for each element present in the slice.
-// If f returns true, filter deletes the given element from the slice.
-func (es SpanLinkSlice) Filter(f func(SpanLink) bool) {
-	newPos := 0
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
+	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
-		if newPos == i {
+		if newLen == i {
 			// Nothing to move, element is at the right place.
-			newPos++
+			newLen++
 			continue
 		}
-		(*es.orig)[newPos] = (*es.orig)[i]
-		newPos++
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
 	}
-	*es.orig = (*es.orig)[:newPos]
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a
