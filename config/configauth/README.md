@@ -26,6 +26,7 @@ receivers:
           cert_file: /tmp/certs/cert.pem
           key_file: /tmp/certs/cert-key.pem
         auth:
+          ## oidc is the extension name to use as the authenticator for this receiver
           authenticator: oidc
 ```
 
