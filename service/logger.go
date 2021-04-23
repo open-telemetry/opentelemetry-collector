@@ -16,11 +16,10 @@ package service
 
 import (
 	"flag"
+	"fmt"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (
@@ -38,7 +37,7 @@ var (
 
 func loggerFlags(flags *flag.FlagSet) {
 	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
-	loggerProfilePtr = flags.String(logProfileCfg, "", "Logging profile to use (dev, prod)")
+	loggerProfilePtr = flags.String(logProfileCfg, "prod", "Logging profile to use (dev, prod)")
 
 	// Note: we use "console" by default for more human-friendly mode of logging (tab delimited, formatted timestamps).
 	loggerFormatPtr = flags.String(logFormatCfg, "console", "Format of logs to use (json, console)")
@@ -51,7 +50,7 @@ func newLogger(options []zap.Option) (*zap.Logger, error) {
 		return nil, err
 	}
 
-	conf := zap.NewProductionConfig()
+	var conf zap.Config
 
 	// Use logger profile if set on command line before falling back
 	// to default based on build type.
@@ -61,9 +60,7 @@ func newLogger(options []zap.Option) (*zap.Logger, error) {
 	case "prod":
 		conf = zap.NewProductionConfig()
 	default:
-		if version.IsDevBuild() {
-			conf = zap.NewDevelopmentConfig()
-		}
+		return nil, fmt.Errorf("invalid value %s for %s flag", *loggerProfilePtr, logProfileCfg)
 	}
 
 	conf.Encoding = *loggerFormatPtr
