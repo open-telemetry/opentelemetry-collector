@@ -18,28 +18,28 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-type otlpTracesPbUnmarshaller struct {
+type otlpTracesPbUnmarshaler struct {
 }
 
-var _ TracesUnmarshaller = (*otlpTracesPbUnmarshaller)(nil)
+var _ TracesUnmarshaler = (*otlpTracesPbUnmarshaler)(nil)
 
-func (p *otlpTracesPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (p *otlpTracesPbUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	return pdata.TracesFromOtlpProtoBytes(bytes)
 }
 
-func (*otlpTracesPbUnmarshaller) Encoding() string {
+func (*otlpTracesPbUnmarshaler) Encoding() string {
 	return defaultEncoding
 }
 
-type otlpLogsPbUnmarshaller struct {
+type otlpLogsPbUnmarshaler struct {
 }
 
-var _ LogsUnmarshaller = (*otlpLogsPbUnmarshaller)(nil)
+var _ LogsUnmarshaler = (*otlpLogsPbUnmarshaler)(nil)
 
-func (p *otlpLogsPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Logs, error) {
+func (p *otlpLogsPbUnmarshaler) Unmarshal(bytes []byte) (pdata.Logs, error) {
 	return pdata.LogsFromOtlpProtoBytes(bytes)
 }
 
-func (*otlpLogsPbUnmarshaller) Encoding() string {
+func (*otlpLogsPbUnmarshaler) Encoding() string {
 	return defaultEncoding
 }

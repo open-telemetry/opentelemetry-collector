@@ -224,7 +224,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Now deserialize and process the spans.
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
-	transportTag := transportType(r)
+	transportTag := transportType(r, asZipkinv1)
 	ctx = obsreport.ReceiverContext(ctx, zr.instanceName, transportTag)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.instanceName, transportTag)
 
@@ -268,9 +268,8 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func transportType(r *http.Request) string {
-	v1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
-	if v1 {
+func transportType(r *http.Request, asZipkinv1 bool) string {
+	if asZipkinv1 {
 		if r.Header.Get("Content-Type") == "application/x-thrift" {
 			return receiverTransportV1Thrift
 		}

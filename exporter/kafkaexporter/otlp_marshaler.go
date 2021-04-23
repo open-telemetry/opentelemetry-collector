@@ -18,17 +18,17 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-var _ TracesMarshaller = (*otlpTracesPbMarshaller)(nil)
-var _ MetricsMarshaller = (*otlpMetricsPbMarshaller)(nil)
+var _ TracesMarshaler = (*otlpTracesPbMarshaler)(nil)
+var _ MetricsMarshaler = (*otlpMetricsPbMarshaler)(nil)
 
-type otlpTracesPbMarshaller struct {
+type otlpTracesPbMarshaler struct {
 }
 
-func (m *otlpTracesPbMarshaller) Encoding() string {
+func (m *otlpTracesPbMarshaler) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpTracesPbMarshaller) Marshal(td pdata.Traces) ([]Message, error) {
+func (m *otlpTracesPbMarshaler) Marshal(td pdata.Traces) ([]Message, error) {
 	bts, err := td.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
@@ -36,14 +36,14 @@ func (m *otlpTracesPbMarshaller) Marshal(td pdata.Traces) ([]Message, error) {
 	return []Message{{Value: bts}}, nil
 }
 
-type otlpMetricsPbMarshaller struct {
+type otlpMetricsPbMarshaler struct {
 }
 
-func (m *otlpMetricsPbMarshaller) Encoding() string {
+func (m *otlpMetricsPbMarshaler) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpMetricsPbMarshaller) Marshal(md pdata.Metrics) ([]Message, error) {
+func (m *otlpMetricsPbMarshaler) Marshal(md pdata.Metrics) ([]Message, error) {
 	bts, err := md.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
@@ -51,14 +51,14 @@ func (m *otlpMetricsPbMarshaller) Marshal(md pdata.Metrics) ([]Message, error) {
 	return []Message{{Value: bts}}, nil
 }
 
-type otlpLogsPbMarshaller struct {
+type otlpLogsPbMarshaler struct {
 }
 
-func (m *otlpLogsPbMarshaller) Encoding() string {
+func (m *otlpLogsPbMarshaler) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpLogsPbMarshaller) Marshal(ld pdata.Logs) ([]Message, error) {
+func (m *otlpLogsPbMarshaler) Marshal(ld pdata.Logs) ([]Message, error) {
 	bts, err := ld.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
