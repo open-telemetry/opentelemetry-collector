@@ -25,7 +25,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -323,7 +322,7 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	FormatHeaderValues(req, prwe.startInfo.ExeName, prwe.startInfo.Version, prwe.startInfo.GitHash)
-	FormatHeaderValues(req, "go-version", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	AddToUserAgent(req, "X-Prometheus-Remote-Write-Version/0.1.0")
 
 	resp, err := prwe.client.Do(req)
 	if err != nil {
@@ -354,7 +353,7 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 // header. If the extra parameters are provided they will be added as metadata to the
 // name/version pair resulting in the following format.
 // "name/version (extra0; extra1; ...)"
-// The user agent part will be concatenated with this current request's user agent string.
+// The User-Agent part will be concatenated with this current request's User-Agent string.
 func FormatHeaderValues(req *http.Request, name, version string, extra ...string) {
 	ua := fmt.Sprintf("%s/%s", name, version)
 	if len(extra) > 0 {
@@ -363,7 +362,7 @@ func FormatHeaderValues(req *http.Request, name, version string, extra ...string
 	AddToUserAgent(req, ua)
 }
 
-// AddToUserAgent adds the string to the end of the request's current user agent.
+// AddToUserAgent adds the string to the end of the request's current User-Agent.
 func AddToUserAgent(req *http.Request, s string) {
 	curUA := req.Header.Get("User-Agent")
 	if len(curUA) > 0 {
