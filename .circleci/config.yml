@@ -106,12 +106,16 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
+          context:
+            - github-release-and-issues-api-token
           requires:
             - cross-compile
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - correctness:
+          context:
+            - github-release-and-issues-api-token
           requires:
             - cross-compile
           filters:
@@ -124,6 +128,8 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - test:
+          context:
+            - github-release-and-issues-api-token
           requires:
             - setup-environment
           filters:
@@ -153,6 +159,9 @@ workflows:
             - deb-package
             - rpm-package
       - publish-stable:
+          context:
+            - github-release-and-issues-api-token
+            - dockerhub-token
           requires:
             - cross-compile
             - correctness
@@ -169,6 +178,8 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-dev:
+          context:
+            - dockerhub-token
           requires:
             - cross-compile
             - correctness
