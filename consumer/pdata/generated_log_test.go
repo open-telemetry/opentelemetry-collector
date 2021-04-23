@@ -42,31 +42,6 @@ func TestResourceLogsSlice(t *testing.T) {
 	}
 }
 
-func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestResourceLogsSlice()
-	dest := NewResourceLogsSlice()
-	src := generateTestResourceLogsSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestResourceLogsSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestResourceLogsSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestResourceLogsSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
 func TestResourceLogsSlice_CopyTo(t *testing.T) {
 	dest := NewResourceLogsSlice()
 	// Test CopyTo to empty
@@ -137,6 +112,31 @@ func TestResourceLogsSlice_Append(t *testing.T) {
 	assert.Equal(t, 9, es.Len())
 }
 
+func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestResourceLogsSlice()
+	dest := NewResourceLogsSlice()
+	src := generateTestResourceLogsSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestResourceLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestResourceLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestResourceLogsSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
 func TestResourceLogs_CopyTo(t *testing.T) {
 	ms := NewResourceLogs()
 	generateTestResourceLogs().CopyTo(ms)
@@ -171,31 +171,6 @@ func TestInstrumentationLibraryLogsSlice(t *testing.T) {
 		assert.EqualValues(t, emptyVal, es.At(i))
 		fillTestInstrumentationLibraryLogs(es.At(i))
 		assert.EqualValues(t, testVal, es.At(i))
-	}
-}
-
-func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestInstrumentationLibraryLogsSlice()
-	dest := NewInstrumentationLibraryLogsSlice()
-	src := generateTestInstrumentationLibraryLogsSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestInstrumentationLibraryLogsSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
 }
 
@@ -269,6 +244,31 @@ func TestInstrumentationLibraryLogsSlice_Append(t *testing.T) {
 	assert.Equal(t, 9, es.Len())
 }
 
+func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestInstrumentationLibraryLogsSlice()
+	dest := NewInstrumentationLibraryLogsSlice()
+	src := generateTestInstrumentationLibraryLogsSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestInstrumentationLibraryLogsSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
 func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	generateTestInstrumentationLibraryLogs().CopyTo(ms)
@@ -303,31 +303,6 @@ func TestLogSlice(t *testing.T) {
 		assert.EqualValues(t, emptyVal, es.At(i))
 		fillTestLogRecord(es.At(i))
 		assert.EqualValues(t, testVal, es.At(i))
-	}
-}
-
-func TestLogSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestLogSlice()
-	dest := NewLogSlice()
-	src := generateTestLogSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestLogSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestLogSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestLogSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
 }
 
@@ -399,6 +374,31 @@ func TestLogSlice_Append(t *testing.T) {
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
+}
+
+func TestLogSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestLogSlice()
+	dest := NewLogSlice()
+	src := generateTestLogSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestLogSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestLogSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestLogSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {
