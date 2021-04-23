@@ -130,104 +130,9 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - loadtest:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - correctness:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - correctness-metrics:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - test:
-          requires:
-            - setup-environment
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - coverage:
-          requires:
-            - setup-environment
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - windows-msi:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
           requires:
             - cross-compile
-            - correctness
-            - correctness-metrics
-            - loadtest
-            - test
-            - coverage
-            - windows-test
-            - windows-msi
-            - deb-package
-            - rpm-package
-      - publish-stable:
-          requires:
-            - cross-compile
-            - correctness
-            - correctness-metrics
-            - loadtest
-            - test
-            - coverage
-            - windows-test
-            - windows-msi
-            - deb-package
-            - rpm-package
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - publish-dev:
-          requires:
-            - cross-compile
-            - correctness
-            - correctness-metrics
-            - loadtest
-            - test
-            - coverage
-            - windows-test
-            - windows-msi
-            - deb-package
-            - rpm-package
-          filters:
-            branches:
-              only: main
-            tags:
-              ignore: /.*/
-      - build-package:
-          name: deb-package
-          package_type: deb
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - build-package:
-          name: rpm-package
-          package_type: rpm
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
 
 jobs:
   setup-environment:
@@ -341,6 +246,9 @@ jobs:
       - attach_to_workspace
       - setup_remote_docker
       - verify_dist_files_exist
+      - run:
+          name: checksum all binaries
+          command: shasum -a 256 bin/*
       - run:
           name: Check passed
           command: echo "publish check passed meaning release CI jobs should work as expected"
