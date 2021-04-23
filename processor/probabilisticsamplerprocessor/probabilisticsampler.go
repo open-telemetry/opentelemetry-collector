@@ -19,9 +19,9 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -49,82 +49,64 @@ const (
 )
 
 type tracesamplerprocessor struct {
-	nextConsumer       consumer.Traces
 	scaledSamplingRate uint32
 	hashSeed           uint32
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
 // configuration.
-func newTracesProcessor(nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
-	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
-	}
-
-	return &tracesamplerprocessor{
-		nextConsumer: nextConsumer,
+func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.TracesProcessor, error) {
+	tsp := &tracesamplerprocessor{
 		// Adjust sampling percentage on private so recalculations are avoided.
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeed:           cfg.HashSeed,
-	}, nil
-}
-
-func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	rspans := td.ResourceSpans()
-	sampledTraceData := pdata.NewTraces()
-	for i := 0; i < rspans.Len(); i++ {
-		tsp.processTraces(rspans.At(i), sampledTraceData)
 	}
-	return tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData)
+
+	return processorhelper.NewTracesProcessor(
+		cfg,
+		nextConsumer,
+		tsp,
+		processorhelper.WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: false}))
 }
 
-func (tsp *tracesamplerprocessor) processTraces(resourceSpans pdata.ResourceSpans, sampledTraceData pdata.Traces) {
+func (tsp *tracesamplerprocessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	scaledSamplingRate := tsp.scaledSamplingRate
 
-	sampledTraceData.ResourceSpans().Resize(sampledTraceData.ResourceSpans().Len() + 1)
-	rs := sampledTraceData.ResourceSpans().At(sampledTraceData.ResourceSpans().Len() - 1)
-	resourceSpans.Resource().CopyTo(rs.Resource())
-	spns := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	rspans := td.ResourceSpans()
 
-	ilss := resourceSpans.InstrumentationLibrarySpans()
-	for j := 0; j < ilss.Len(); j++ {
-		ils := ilss.At(j)
-		for k := 0; k < ils.Spans().Len(); k++ {
-			span := ils.Spans().At(k)
-			sp := parseSpanSamplingPriority(span)
-			if sp == doNotSampleSpan {
-				// The OpenTelemetry mentions this as a "hint" we take a stronger
-				// approach and do not sample the span since some may use it to
-				// remove specific spans from traces.
-				continue
-			}
+	sampledTraceData := pdata.NewTraces()
+	for i := 0; i < rspans.Len(); i++ {
+		resourceSpans := rspans.At(i)
+		rs := sampledTraceData.ResourceSpans().AppendEmpty()
+		resourceSpans.Resource().CopyTo(rs.Resource())
+		spns := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+		ilss := resourceSpans.InstrumentationLibrarySpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			for k := 0; k < ils.Spans().Len(); k++ {
+				span := ils.Spans().At(k)
+				sp := parseSpanSamplingPriority(span)
+				if sp == doNotSampleSpan {
+					// The OpenTelemetry mentions this as a "hint" we take a stronger
+					// approach and do not sample the span since some may use it to
+					// remove specific spans from traces.
+					continue
+				}
 
-			// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
-			// with various different criteria to generate trace id and perhaps were already sampled without hashing.
-			// Hashing here prevents bias due to such systems.
-			tidBytes := span.TraceID().Bytes()
-			sampled := sp == mustSampleSpan ||
-				hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
+				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
+				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
+				// Hashing here prevents bias due to such systems.
+				tidBytes := span.TraceID().Bytes()
+				sampled := sp == mustSampleSpan ||
+					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
 
-			if sampled {
-				spns.Append(span)
+				if sampled {
+					spns.Append(span)
+				}
 			}
 		}
 	}
-}
-
-func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
-}
-
-// Start is invoked during service startup.
-func (tsp *tracesamplerprocessor) Start(context.Context, component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (tsp *tracesamplerprocessor) Shutdown(context.Context) error {
-	return nil
+	return sampledTraceData, nil
 }
 
 // parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to
