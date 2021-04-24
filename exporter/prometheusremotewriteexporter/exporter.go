@@ -54,7 +54,6 @@ type PrwExporter struct {
 	client          *http.Client
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
-	startInfo       component.ApplicationStartInfo
 	userAgentHeader string
 }
 
@@ -84,7 +83,6 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		client:          client,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
-		startInfo:       startInfo,
 		userAgentHeader: userAgentHeader,
 	}, nil
 }
@@ -362,7 +360,6 @@ func formatHeaderValues(name, version string, extra ...string) string {
 	if len(extra) > 0 {
 		ua = fmt.Sprintf("%s (%s)", ua, strings.Join(extra, "; "))
 	}
-	// AddToUserAgent(req, ua)
 	return ua
 }
 
