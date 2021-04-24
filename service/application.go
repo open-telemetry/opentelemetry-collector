@@ -107,8 +107,8 @@ func New(params Parameters) (*Application, error) {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:  params.ApplicationStartInfo.ExeName,
-		Long: params.ApplicationStartInfo.LongName,
+		Use:     params.ApplicationStartInfo.ExeName,
+		Version: params.ApplicationStartInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			if app.logger, err = newLogger(params.LoggingOptions); err != nil {
@@ -278,7 +278,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 }
 
 func (app *Application) execute(ctx context.Context) error {
-	app.logger.Info("Starting "+app.info.LongName+"...",
+	app.logger.Info("Starting "+app.info.ExeName+"...",
 		zap.String("Version", app.info.Version),
 		zap.String("GitHash", app.info.GitHash),
 		zap.Int("NumCPU", runtime.NumCPU()),
