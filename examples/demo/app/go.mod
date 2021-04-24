@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/examples/demo/app
 
-go 1.15
+go 1.16
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

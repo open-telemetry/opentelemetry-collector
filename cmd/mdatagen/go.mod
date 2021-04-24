@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/cmd/mdatagen
 
-go 1.15
+go 1.16
 
 require (
 	github.com/go-playground/locales v0.13.0
