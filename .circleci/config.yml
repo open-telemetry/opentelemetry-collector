@@ -304,9 +304,10 @@ jobs:
       - run:
           name: Coverage tests
           command: make gotest-with-cover
-      - run:
-          name: Code coverage
-          command: bash <(curl -s https://codecov.io/bash)
+# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
+#      - run:
+#          name: Code coverage
+#          command: bash <(curl -s https://codecov.io/bash)
 
   publish-check:
     docker:
