@@ -146,7 +146,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			assert.NotNil(t, prwe.client)
 			assert.NotNil(t, prwe.closeChan)
 			assert.NotNil(t, prwe.wg)
-			assert.NotNil(t, prwe.startInfo)
+			assert.NotNil(t, prwe.userAgentHeader)
 		})
 	}
 }
