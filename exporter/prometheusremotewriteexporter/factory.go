@@ -56,6 +56,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		client, prwCfg.ExternalLabels,
 		prwCfg.RemoteWriteQueue.NumConsumers,
 		params.BuildInfo,
+		prwCfg.WALConfig,
 	)
 	if err != nil {
 		return nil, err

@@ -123,7 +123,7 @@ func Test_NewPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, 1, tt.buildInfo)
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, 1, tt.buildInfo, nil)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -244,6 +244,7 @@ func Test_export(t *testing.T) {
 			}
 			errs := runExportPipeline(ts1, serverURL)
 			if tt.returnError {
+				require.NotZero(t, len(errs))
 				assert.Error(t, errs[0])
 				return
 			}
@@ -266,7 +267,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, 1, buildInfo)
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, 1, buildInfo, nil)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -521,7 +522,7 @@ func Test_PushMetrics(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, 5, buildInfo)
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, 5, buildInfo, nil)
 			require.NoError(t, nErr)
 			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {

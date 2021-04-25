@@ -36,6 +36,7 @@ type Config struct {
 	// QueueConfig allows users to fine tune the queues
 	// that handle outgoing requests.
 	RemoteWriteQueue RemoteWriteQueue `mapstructure:"remote_write_queue"`
+	WALConfig        *walConfig       `mapstructure:"wal"`
 
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
