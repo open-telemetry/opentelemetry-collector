@@ -56,7 +56,7 @@ type ExporterCreateParams struct {
 	ApplicationStartInfo ApplicationStartInfo
 }
 
-// ExporterFactory can create TracesExporter, MetricsExporter and LogsExporter. This is the
+// ExporterFactory can create TracesExporter, MetricsExporter, and LogsExporter. This is the
 // new factory type that can create new style exporters.
 type ExporterFactory interface {
 	Factory

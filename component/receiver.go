@@ -63,7 +63,7 @@ type ReceiverCreateParams struct {
 	ApplicationStartInfo ApplicationStartInfo
 }
 
-// ReceiverFactory can create TracesReceiver and MetricsReceiver. This is the
+// ReceiverFactory can create TracesReceiver, MetricsReceiver, and LogsReceiver. This is the
 // new factory type that can create new style receivers.
 type ReceiverFactory interface {
 	Factory
