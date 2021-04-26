@@ -30,13 +30,16 @@ const (
 
 var (
 	// Command line pointer to logger level flag configuration.
-	loggerLevelPtr   *string
+	loggerLevelPtr   *zapcore.Level
 	loggerProfilePtr *string
 	loggerFormatPtr  *string
 )
 
 func loggerFlags(flags *flag.FlagSet) {
-	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
+	defaultLevel := zapcore.InfoLevel
+	loggerLevelPtr = &defaultLevel
+	flags.Var(loggerLevelPtr, logLevelCfg, "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
+
 	loggerProfilePtr = flags.String(logProfileCfg, "prod", "Logging profile to use (dev, prod)")
 
 	// Note: we use "console" by default for more human-friendly mode of logging (tab delimited, formatted timestamps).
@@ -44,12 +47,6 @@ func loggerFlags(flags *flag.FlagSet) {
 }
 
 func newLogger(options []zap.Option) (*zap.Logger, error) {
-	var level zapcore.Level
-	err := (&level).UnmarshalText([]byte(*loggerLevelPtr))
-	if err != nil {
-		return nil, err
-	}
-
 	var conf zap.Config
 
 	// Use logger profile if set on command line before falling back
@@ -69,6 +66,6 @@ func newLogger(options []zap.Option) (*zap.Logger, error) {
 		conf.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
 
-	conf.Level.SetLevel(level)
+	conf.Level.SetLevel(*loggerLevelPtr)
 	return conf.Build(options...)
 }
