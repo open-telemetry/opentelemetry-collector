@@ -140,8 +140,7 @@ func TestAttributeValueToString(t *testing.T) {
 	v.ArrayVal().AppendEmpty().SetStringVal(`b"\`)
 	v.ArrayVal().AppendEmpty().SetIntVal(123)
 	v.ArrayVal().AppendEmpty()
-	av := pdata.NewAttributeValueArray()
-	v.ArrayVal().Append(av)
+	pdata.NewAttributeValueArray().CopyTo(v.ArrayVal().AppendEmpty())
 	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, tracetranslator.AttributeValueToString(v, false))
 }
 
