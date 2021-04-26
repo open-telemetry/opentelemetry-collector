@@ -33,7 +33,7 @@ import (
 
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
-// of configmodels.ReceiverSettings, and extend it with more fields if needed.
+// of config.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
 	config.ReceiverSettings `mapstructure:"squash"`
 	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
