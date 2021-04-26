@@ -15,7 +15,6 @@
 package internal
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -108,16 +107,16 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		instanceValue := lm["instance"]
 		switch v {
 		case 1.0: // The instance is up!
-			recordInstanceAsUp(context.Background(), instanceValue)
+			recordInstanceAsUp(instanceValue)
 
 		case 0.0: // The instance is definitely down.
-			recordInstanceAsDown(context.Background(), instanceValue)
+			recordInstanceAsDown(instanceValue)
 			b.logger.Warn("Failed to scrape Prometheus endpoint",
 				zap.Int64("scrape_timestamp", t),
 				zap.String("target_labels", fmt.Sprintf("%v", lm)))
 
 		default: // We got an invalid value for "up"
-			recordInstanceAsDown(context.Background(), instanceValue)
+			recordInstanceAsDown(instanceValue)
 			b.logger.Warn("The 'up' metric contains invalid value",
 				zap.Float64("value", v),
 				zap.Int64("scrape_timestamp", t),

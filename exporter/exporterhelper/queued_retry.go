@@ -34,9 +34,9 @@ import (
 )
 
 var (
-	r = metric.NewRegistry()
+	metricsRegistry = metric.NewRegistry()
 
-	queueSizeGauge, _ = r.AddInt64DerivedGauge(
+	queueSizeGauge, _ = metricsRegistry.AddInt64DerivedGauge(
 		obsreport.ExporterKey+"/queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches)"),
 		metric.WithLabelKeys(obsreport.ExporterKey),
@@ -44,7 +44,7 @@ var (
 )
 
 func init() {
-	metricproducer.GlobalManager().AddProducer(r)
+	metricproducer.GlobalManager().AddProducer(metricsRegistry)
 }
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.

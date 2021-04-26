@@ -15,37 +15,40 @@
 package internal
 
 import (
-	"context"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+	"go.opencensus.io/metric"
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
 )
 
-var tagInstance, _ = tag.NewKey("instance")
+var (
+	metricsRegistry = metric.NewRegistry()
 
-var statUpStatus = stats.Int64("up", "Whether the endpoint is alive or not", stats.UnitDimensionless)
+	upGauge, err = metricsRegistry.AddFloat64Gauge(
+		"exporter/up",
+		metric.WithDescription("Whether the endpoint is alive or not"),
+		metric.WithLabelKeys("instance"),
+		metric.WithUnit(metricdata.UnitDimensionless))
+)
 
-func MetricViews() []*view.View {
-	return []*view.View{
-		{
-			Name:        statUpStatus.Name(),
-			Measure:     statUpStatus,
-			Description: statUpStatus.Description(),
-			TagKeys:     []tag.Key{tagInstance},
-			Aggregation: view.LastValue(),
-		},
+func init() {
+	if err != nil {
+		panic(err)
 	}
+	metricproducer.GlobalManager().AddProducer(metricsRegistry)
 }
 
-func recordInstanceAsUp(ctx context.Context, instanceValue string) context.Context {
-	ctx, _ = tag.New(ctx, tag.Upsert(tagInstance, instanceValue))
-	stats.Record(ctx, statUpStatus.M(1))
-	return ctx
+func recordInstanceAsUp(instanceValue string) {
+	ent, err := upGauge.GetEntry(metricdata.NewLabelValue(instanceValue))
+	if err != nil {
+		panic(err)
+	}
+	ent.Set(1)
 }
 
-func recordInstanceAsDown(ctx context.Context, instanceValue string) context.Context {
-	ctx, _ = tag.New(ctx, tag.Upsert(tagInstance, instanceValue))
-	stats.Record(ctx, statUpStatus.M(0))
-	return ctx
+func recordInstanceAsDown(instanceValue string) {
+	ent, err := upGauge.GetEntry(metricdata.NewLabelValue(instanceValue))
+	if err != nil {
+		panic(err)
+	}
+	ent.Set(0)
 }
