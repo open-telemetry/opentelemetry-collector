@@ -79,7 +79,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	cfg.SendBatchMaxSize = 128
+	cfg.SendBatchMaxSize = 130
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher, err := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelBasic)
 	require.NoError(t, err)
@@ -112,10 +112,10 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
 	for i := 0; i < len(sink.AllTraces())-1; i++ {
-		assert.Equal(t, cfg.SendBatchSize, uint32(sink.AllTraces()[i].SpanCount()))
+		assert.Equal(t, int(cfg.SendBatchMaxSize), sink.AllTraces()[i].SpanCount())
 	}
 	// the last batch has the remaining size
-	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
+	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
