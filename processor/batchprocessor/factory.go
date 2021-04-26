@@ -57,9 +57,8 @@ func createTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	oCfg := cfg.(*Config)
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	return newBatchTracesProcessor(params, nextConsumer, oCfg, level), nil
+	return newBatchTracesProcessor(params, nextConsumer, cfg.(*Config), level)
 }
 
 func createMetricsProcessor(
@@ -68,9 +67,8 @@ func createMetricsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	oCfg := cfg.(*Config)
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	return newBatchMetricsProcessor(params, nextConsumer, oCfg, level), nil
+	return newBatchMetricsProcessor(params, nextConsumer, cfg.(*Config), level)
 }
 
 func createLogsProcessor(
@@ -79,7 +77,6 @@ func createLogsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	oCfg := cfg.(*Config)
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	return newBatchLogsProcessor(params, nextConsumer, oCfg, level), nil
+	return newBatchLogsProcessor(params, nextConsumer, cfg.(*Config), level)
 }
