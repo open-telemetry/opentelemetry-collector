@@ -20,9 +20,6 @@ type ApplicationStartInfo struct {
 	// Executable file name, e.g. "otelcol".
 	ExeName string
 
-	// Long name, used e.g. in the logs.
-	LongName string
-
 	// Version string.
 	Version string
 
@@ -33,9 +30,8 @@ type ApplicationStartInfo struct {
 // DefaultApplicationStartInfo returns the default ApplicationStartInfo.
 func DefaultApplicationStartInfo() ApplicationStartInfo {
 	return ApplicationStartInfo{
-		ExeName:  "otelcol",
-		LongName: "OpenTelemetry Collector",
-		Version:  "latest",
-		GitHash:  "<NOT PROPERLY GENERATED>",
+		ExeName: "otelcol",
+		Version: "latest",
+		GitHash: "<NOT PROPERLY GENERATED>",
 	}
 }

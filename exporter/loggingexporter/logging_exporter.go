@@ -20,7 +20,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"go.uber.org/zap"
 
@@ -50,8 +49,9 @@ func (b *logDataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	}
 
 	b.logEntry("%s:", label)
-	am.ForEach(func(k string, v pdata.AttributeValue) {
+	am.Range(func(k string, v pdata.AttributeValue) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+		return true
 	})
 }
 
@@ -61,8 +61,9 @@ func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
 	}
 
 	b.logEntry("%s:", description)
-	sm.ForEach(func(k string, v string) {
+	sm.Range(func(k string, v string) bool {
 		b.logEntry("     -> %s: %s", k, v)
+		return true
 	})
 }
 
@@ -239,8 +240,9 @@ func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		e.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+			return true
 		})
 	}
 }
@@ -263,8 +265,9 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		l.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+			return true
 		})
 	}
 }
@@ -307,8 +310,9 @@ func attributeMapToString(av pdata.AttributeMap) string {
 	var b strings.Builder
 	b.WriteString("{\n")
 
-	av.Sort().ForEach(func(k string, v pdata.AttributeValue) {
+	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
 		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), tracetranslator.AttributeValueToString(v, false))
+		return true
 	})
 	b.WriteByte('}')
 	return b.String()
@@ -404,15 +408,15 @@ func (s *loggingExporter) pushMetricsData(
 	return nil
 }
 
-// newTraceExporter creates an exporter.TracesExporter that just drops the
+// newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
+func newTracesExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
 		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		logger,
 		s.pushTraceData,
@@ -502,18 +506,12 @@ func (s *loggingExporter) pushLogData(
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
 	return func(context.Context) error {
-		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
-		// respectively:
-		//
-		// - sync /dev/stdout: invalid argument
-		// - sync /dev/stdout: inappropriate ioctl for device
-		//
+		// Currently Sync() return a different error depending on the OS.
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
 		if osErr, ok := err.(*os.PathError); ok {
 			wrappedErr := osErr.Unwrap()
-			switch wrappedErr {
-			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
+			if knownSyncError(wrappedErr) {
 				err = nil
 			}
 		}

@@ -6,7 +6,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
 
 commands:
   verify_dist_files_exist:
@@ -228,6 +228,9 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - run:
+          name: Log checksums to console
+          command: shasum -a 256 bin/*
       - persist_to_workspace:
           root: ~/
           paths: project/bin
@@ -301,13 +304,14 @@ jobs:
       - run:
           name: Coverage tests
           command: make gotest-with-cover
-      - run:
-          name: Code coverage
-          command: bash <(curl -s https://codecov.io/bash)
+# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
+#      - run:
+#          name: Code coverage
+#          command: bash <(curl -s https://codecov.io/bash)
 
   publish-check:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -323,7 +327,7 @@ jobs:
 
   publish-stable:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - verify_dist_files_exist
@@ -344,7 +348,7 @@ jobs:
 
   publish-dev:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - verify_dist_files_exist

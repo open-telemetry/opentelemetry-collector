@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
@@ -133,8 +134,6 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	dest.SetName(zspan.Name)
-	dest.SetStartTimestamp(pdata.TimestampFromTime(zspan.Timestamp))
-	dest.SetEndTimestamp(pdata.TimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
 	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
 
 	populateSpanStatus(tags, dest.Status())
@@ -143,10 +142,13 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	attrs := dest.Attributes()
-	attrs.InitEmptyWithCapacity(len(tags))
+	attrs.Clear()
+	attrs.EnsureCapacity(len(tags))
 	if err := zTagsToInternalAttrs(zspan, tags, attrs, parseStringTags); err != nil {
 		return err
 	}
+
+	setTimestampsV2(zspan, dest, attrs)
 
 	err := populateSpanEvents(zspan, dest.Events())
 	return err
@@ -216,7 +218,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.TraceID(rawTrace))
+		link.SetTraceID(pdata.NewTraceID(rawTrace.Bytes()))
 
 		// Convert span id.
 		rawSpan := data.SpanID{}
@@ -224,7 +226,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.SpanID(rawSpan))
+		link.SetSpanID(pdata.NewSpanID(rawSpan.Bytes()))
 
 		link.SetTraceState(pdata.TraceState(parts[2]))
 
@@ -344,7 +346,7 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 		}
 
 		if parseStringTags {
-			switch tracetranslator.DetermineValueType(val, false) {
+			switch tracetranslator.DetermineValueType(val) {
 			case pdata.AttributeValueINT:
 				iValue, _ := strconv.ParseInt(val, 10, 64)
 				dest.UpsertInt(key, iValue)
@@ -427,4 +429,23 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 		return ""
 	}
 	return zspan.Tags[conventions.InstrumentationLibraryName]
+}
+
+func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pdata.AttributeMap) {
+	// zipkin allows timestamp to be unset, but otel span expects startTimestamp to have a value.
+	// unset gets converted to zero on the zspan object during json deserialization because
+	// time.Time (the type of Timestamp field) cannot be nil.  If timestamp is zero, the
+	// conversion from this internal format back to zipkin format in zipkin exporter fails.
+	// Instead, set to *unix* time zero, and convert back in traces_to_zipkinv2.go
+	if zspan.Timestamp.IsZero() {
+		unixTimeZero := pdata.TimestampFromTime(time.Unix(0, 0))
+		zeroPlusDuration := pdata.TimestampFromTime(time.Unix(0, 0).Add(zspan.Duration))
+		dest.SetStartTimestamp(unixTimeZero)
+		dest.SetEndTimestamp(zeroPlusDuration)
+
+		destAttrs.InsertBool(startTimeAbsent, true)
+	} else {
+		dest.SetStartTimestamp(pdata.TimestampFromTime(zspan.Timestamp))
+		dest.SetEndTimestamp(pdata.TimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
+	}
 }

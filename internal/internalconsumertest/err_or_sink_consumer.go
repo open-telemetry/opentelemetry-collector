@@ -48,7 +48,7 @@ func (esc *ErrOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces
 	return esc.TracesSink.ConsumeTraces(ctx, td)
 }
 
-// ConsumeTraces stores traces to this sink.
+// ConsumeMetrics stores metrics to this sink.
 func (esc *ErrOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()

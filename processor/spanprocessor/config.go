@@ -78,3 +78,10 @@ type ToAttributes struct {
 	// modified span name.
 	BreakAfterMatch bool `mapstructure:"break_after_match"`
 }
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

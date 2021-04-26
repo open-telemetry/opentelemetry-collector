@@ -63,18 +63,6 @@ func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 	return newResourceMetrics((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	srcLen := es.Len()
@@ -131,8 +119,28 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 // given ResourceMetrics at that new position.  The original ResourceMetrics
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ResourceMetricsSlice) Append(e ResourceMetrics) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ResourceMetrics.
+// It returns the newly added ResourceMetrics.
+func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
+	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -215,18 +223,6 @@ func (es InstrumentationLibraryMetricsSlice) At(ix int) InstrumentationLibraryMe
 	return newInstrumentationLibraryMetrics((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest InstrumentationLibraryMetricsSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryMetricsSlice) {
 	srcLen := es.Len()
@@ -283,8 +279,28 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 // given InstrumentationLibraryMetrics at that new position.  The original InstrumentationLibraryMetrics
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es InstrumentationLibraryMetricsSlice) Append(e InstrumentationLibraryMetrics) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty InstrumentationLibraryMetrics.
+// It returns the newly added InstrumentationLibraryMetrics.
+func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibraryMetrics {
+	*es.orig = append(*es.orig, &otlpmetrics.InstrumentationLibraryMetrics{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest InstrumentationLibraryMetricsSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -367,18 +383,6 @@ func (es MetricSlice) At(ix int) Metric {
 	return newMetric((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es MetricSlice) CopyTo(dest MetricSlice) {
 	srcLen := es.Len()
@@ -435,8 +439,28 @@ func (es MetricSlice) Resize(newLen int) {
 // given Metric at that new position.  The original Metric
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es MetricSlice) Append(e Metric) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty Metric.
+// It returns the newly added Metric.
+func (es MetricSlice) AppendEmpty() Metric {
+	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // Metric represents one metric as a collection of datapoints.
@@ -832,18 +856,6 @@ func (es IntDataPointSlice) At(ix int) IntDataPoint {
 	return newIntDataPoint((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
 	srcLen := es.Len()
@@ -900,8 +912,28 @@ func (es IntDataPointSlice) Resize(newLen int) {
 // given IntDataPoint at that new position.  The original IntDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es IntDataPointSlice) Append(e IntDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty IntDataPoint.
+// It returns the newly added IntDataPoint.
+func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.IntDataPoint{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.
@@ -1017,18 +1049,6 @@ func (es DoubleDataPointSlice) At(ix int) DoubleDataPoint {
 	return newDoubleDataPoint((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 	srcLen := es.Len()
@@ -1085,8 +1105,28 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 // given DoubleDataPoint at that new position.  The original DoubleDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es DoubleDataPointSlice) Append(e DoubleDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty DoubleDataPoint.
+// It returns the newly added DoubleDataPoint.
+func (es DoubleDataPointSlice) AppendEmpty() DoubleDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleDataPoint{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
@@ -1202,18 +1242,6 @@ func (es IntHistogramDataPointSlice) At(ix int) IntHistogramDataPoint {
 	return newIntHistogramDataPoint((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es IntHistogramDataPointSlice) MoveAndAppendTo(dest IntHistogramDataPointSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es IntHistogramDataPointSlice) CopyTo(dest IntHistogramDataPointSlice) {
 	srcLen := es.Len()
@@ -1270,8 +1298,28 @@ func (es IntHistogramDataPointSlice) Resize(newLen int) {
 // given IntHistogramDataPoint at that new position.  The original IntHistogramDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es IntHistogramDataPointSlice) Append(e IntHistogramDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty IntHistogramDataPoint.
+// It returns the newly added IntHistogramDataPoint.
+func (es IntHistogramDataPointSlice) AppendEmpty() IntHistogramDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.IntHistogramDataPoint{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es IntHistogramDataPointSlice) MoveAndAppendTo(dest IntHistogramDataPointSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.
@@ -1420,18 +1468,6 @@ func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
 	return newHistogramDataPoint((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	srcLen := es.Len()
@@ -1488,8 +1524,28 @@ func (es HistogramDataPointSlice) Resize(newLen int) {
 // given HistogramDataPoint at that new position.  The original HistogramDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es HistogramDataPointSlice) Append(e HistogramDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty HistogramDataPoint.
+// It returns the newly added HistogramDataPoint.
+func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleHistogramDataPoint{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.
@@ -1638,18 +1694,6 @@ func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
 	return newSummaryDataPoint((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	srcLen := es.Len()
@@ -1706,8 +1750,28 @@ func (es SummaryDataPointSlice) Resize(newLen int) {
 // given SummaryDataPoint at that new position.  The original SummaryDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es SummaryDataPointSlice) Append(e SummaryDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty SummaryDataPoint.
+// It returns the newly added SummaryDataPoint.
+func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
@@ -1834,18 +1898,6 @@ func (es ValueAtQuantileSlice) At(ix int) ValueAtQuantile {
 	return newValueAtQuantile((*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 	srcLen := es.Len()
@@ -1902,8 +1954,28 @@ func (es ValueAtQuantileSlice) Resize(newLen int) {
 // given ValueAtQuantile at that new position.  The original ValueAtQuantile
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ValueAtQuantileSlice) Append(e ValueAtQuantile) {
 	*es.orig = append(*es.orig, e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty ValueAtQuantile.
+// It returns the newly added ValueAtQuantile.
+func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
+	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // ValueAtQuantile is a quantile value within a Summary data point
@@ -1996,18 +2068,6 @@ func (es IntExemplarSlice) At(ix int) IntExemplar {
 	return newIntExemplar(&(*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 	srcLen := es.Len()
@@ -2059,8 +2119,28 @@ func (es IntExemplarSlice) Resize(newLen int) {
 // given IntExemplar at that new position.  The original IntExemplar
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es IntExemplarSlice) Append(e IntExemplar) {
 	*es.orig = append(*es.orig, *e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty IntExemplar.
+// It returns the newly added IntExemplar.
+func (es IntExemplarSlice) AppendEmpty() IntExemplar {
+	*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // IntExemplar is a sample input int measurement.
@@ -2162,18 +2242,6 @@ func (es ExemplarSlice) At(ix int) Exemplar {
 	return newExemplar(&(*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	srcLen := es.Len()
@@ -2225,8 +2293,28 @@ func (es ExemplarSlice) Resize(newLen int) {
 // given Exemplar at that new position.  The original Exemplar
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es ExemplarSlice) Append(e Exemplar) {
 	*es.orig = append(*es.orig, *e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty Exemplar.
+// It returns the newly added Exemplar.
+func (es ExemplarSlice) AppendEmpty() Exemplar {
+	*es.orig = append(*es.orig, otlpmetrics.DoubleExemplar{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
 }
 
 // Exemplar is a sample input double measurement.

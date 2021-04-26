@@ -107,7 +107,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.15 and up)
+2. [go](https://golang.org/) (version 1.16 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -245,6 +245,16 @@ the event happens.
 
 Make log message human readable and also include data that is needed for easier
 understanding of what happened and in what context.
+
+### Observability
+
+Out of the box, your users should be able to observe the state of your component. 
+The collector exposes an OpenMetrics endpoint at `http://localhost:8888/metrics`
+where your data will land.
+
+When using the regular helpers, you should have some metrics added around key 
+events automatically. For instance, exporters should have `otelcol_exporter_sent_spans` 
+tracked without your exporter doing anything.
 
 ### Resource Usage
 

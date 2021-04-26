@@ -79,10 +79,10 @@ func (m *metricStruct) ByName(n string) MetricIntf {
     return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
-    return map[string]func() pdata.Metric {
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+    return map[string]func(pdata.Metric) {
     {{- range $name, $metric := .Metrics }}
-      Metrics.{{ $name.Render }}.Name(): Metrics.{{ $name.Render }}.New,
+      Metrics.{{ $name.Render }}.Name(): Metrics.{{ $name.Render }}.Init,
     {{- end }}
     }
 }

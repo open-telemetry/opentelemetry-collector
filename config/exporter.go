@@ -15,8 +15,10 @@
 package config
 
 // Exporter is the configuration of an exporter.
+// Embedded validatable will force each exporter to implement Validate() function
 type Exporter interface {
 	NamedEntity
+	validatable
 }
 
 // Exporters is a map of names to Exporters.
@@ -50,4 +52,9 @@ func (es *ExporterSettings) SetName(name string) {
 // Type sets the exporter type.
 func (es *ExporterSettings) Type() Type {
 	return es.TypeVal
+}
+
+// Validate validates the configuration and returns an error if invalid.
+func (es *ExporterSettings) Validate() error {
+	return nil
 }

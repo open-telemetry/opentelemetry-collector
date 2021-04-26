@@ -1,0 +1,14 @@
+single_line:
+  ex0:
+  ex1:
+    p0: true
+    p1: a string with spaces
+    p3: 42
+multi_line:
+  k0:
+  k1:
+    p0: true
+    p1: a string with spaces
+    p2:
+      p2_0: a nested map0
+      p2_1: true

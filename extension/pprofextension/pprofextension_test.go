@@ -44,7 +44,7 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	defer pprofExt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(context.Background())) })
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
@@ -88,7 +88,7 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	defer pprofExt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(context.Background())) })
 
 	// The instance is already active it will fail.
 	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))

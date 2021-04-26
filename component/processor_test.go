@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -85,10 +85,10 @@ func TestBaseProcessorFactory(t *testing.T) {
 		bpf.CreateDefaultConfig()
 	})
 	assert.NotPanics(t, bpf.unexportedProcessor)
-	_, err := bpf.CreateTracesProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewTracesNop())
-	assert.ErrorIs(t, err, configerror.ErrDataTypeIsNotSupported)
-	_, err = bpf.CreateMetricsProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewMetricsNop())
-	assert.ErrorIs(t, err, configerror.ErrDataTypeIsNotSupported)
-	_, err = bpf.CreateLogsProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewLogsNop())
-	assert.ErrorIs(t, err, configerror.ErrDataTypeIsNotSupported)
+	_, err := bpf.CreateTracesProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewNop())
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	_, err = bpf.CreateMetricsProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewNop())
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	_, err = bpf.CreateLogsProcessor(context.Background(), ProcessorCreateParams{}, config.NewProcessorSettings("nop"), consumertest.NewNop())
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 }

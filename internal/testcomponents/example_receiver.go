@@ -61,7 +61,7 @@ func createReceiverDefaultConfig() config.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a trace receiver based on this config.
+// CreateTracesReceiver creates a trace receiver based on this config.
 func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,

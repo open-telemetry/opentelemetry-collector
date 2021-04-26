@@ -1,0 +1,12 @@
+top0:
+  array0:
+    - $tstcfgsrc:elem0
+    - $tstcfgsrc:elem1
+  array1:
+    - entry:
+        str: $tstcfgsrc:elem0
+    - entry:
+        str: $tstcfgsrc:elem1
+  map0:
+    k0: $tstcfgsrc:k0
+    k1: $tstcfgsrc:k1

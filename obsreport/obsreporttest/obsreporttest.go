@@ -55,84 +55,84 @@ func SetupRecordedMetricsTest() (func(), error) {
 	}, err
 }
 
-// CheckExporterTracesViews checks that for the current exported values for trace exporter views match given values.
+// CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterTracesViews(t *testing.T, exporter string, acceptedSpans, droppedSpans int64) {
+func CheckExporterTraces(t *testing.T, exporter string, acceptedSpans, droppedSpans int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, acceptedSpans, "exporter/sent_spans")
 	checkValueForView(t, exporterTags, droppedSpans, "exporter/send_failed_spans")
 }
 
-// CheckExporterMetricsViews checks that for the current exported values for metrics exporter views match given values.
+// CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterMetricsViews(t *testing.T, exporter string, acceptedMetricsPoints, droppedMetricsPoints int64) {
+func CheckExporterMetrics(t *testing.T, exporter string, acceptedMetricsPoints, droppedMetricsPoints int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, acceptedMetricsPoints, "exporter/sent_metric_points")
 	checkValueForView(t, exporterTags, droppedMetricsPoints, "exporter/send_failed_metric_points")
 }
 
-// CheckExporterLogsViews checks that for the current exported values for logs exporter views match given values.
+// CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterLogsViews(t *testing.T, exporter string, acceptedLogRecords, droppedLogRecords int64) {
+func CheckExporterLogs(t *testing.T, exporter string, acceptedLogRecords, droppedLogRecords int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, acceptedLogRecords, "exporter/sent_log_records")
 	checkValueForView(t, exporterTags, droppedLogRecords, "exporter/send_failed_log_records")
 }
 
-// CheckProcessorTracesViews checks that for the current exported values for trace exporter views match given values.
+// CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorTracesViews(t *testing.T, processor string, acceptedSpans, refusedSpans, droppedSpans int64) {
+func CheckProcessorTraces(t *testing.T, processor string, acceptedSpans, refusedSpans, droppedSpans int64) {
 	processorTags := tagsForProcessorView(processor)
 	checkValueForView(t, processorTags, acceptedSpans, "processor/accepted_spans")
 	checkValueForView(t, processorTags, refusedSpans, "processor/refused_spans")
 	checkValueForView(t, processorTags, droppedSpans, "processor/dropped_spans")
 }
 
-// CheckProcessorMetricsViews checks that for the current exported values for metrics exporter views match given values.
+// CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorMetricsViews(t *testing.T, processor string, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) {
+func CheckProcessorMetrics(t *testing.T, processor string, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) {
 	processorTags := tagsForProcessorView(processor)
 	checkValueForView(t, processorTags, acceptedMetricPoints, "processor/accepted_metric_points")
 	checkValueForView(t, processorTags, refusedMetricPoints, "processor/refused_metric_points")
 	checkValueForView(t, processorTags, droppedMetricPoints, "processor/dropped_metric_points")
 }
 
-// CheckProcessorLogsViews checks that for the current exported values for logs exporter views match given values.
+// CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorLogsViews(t *testing.T, processor string, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) {
+func CheckProcessorLogs(t *testing.T, processor string, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) {
 	processorTags := tagsForProcessorView(processor)
 	checkValueForView(t, processorTags, acceptedLogRecords, "processor/accepted_log_records")
 	checkValueForView(t, processorTags, refusedLogRecords, "processor/refused_log_records")
 	checkValueForView(t, processorTags, droppedLogRecords, "processor/dropped_log_records")
 }
 
-// CheckReceiverTracesViews checks that for the current exported values for trace receiver views match given values.
+// CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverTracesViews(t *testing.T, receiver, protocol string, acceptedSpans, droppedSpans int64) {
+func CheckReceiverTraces(t *testing.T, receiver, protocol string, acceptedSpans, droppedSpans int64) {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	checkValueForView(t, receiverTags, acceptedSpans, "receiver/accepted_spans")
 	checkValueForView(t, receiverTags, droppedSpans, "receiver/refused_spans")
 }
 
-// CheckReceiverLogsViews checks that for the current exported values for logs receiver views match given values.
+// CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverLogsViews(t *testing.T, receiver, protocol string, acceptedLogRecords, droppedLogRecords int64) {
+func CheckReceiverLogs(t *testing.T, receiver, protocol string, acceptedLogRecords, droppedLogRecords int64) {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	checkValueForView(t, receiverTags, acceptedLogRecords, "receiver/accepted_log_records")
 	checkValueForView(t, receiverTags, droppedLogRecords, "receiver/refused_log_records")
 }
 
-// CheckReceiverMetricsViews checks that for the current exported values for metrics receiver views match given values.
+// CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverMetricsViews(t *testing.T, receiver, protocol string, acceptedMetricPoints, droppedMetricPoints int64) {
+func CheckReceiverMetrics(t *testing.T, receiver, protocol string, acceptedMetricPoints, droppedMetricPoints int64) {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	checkValueForView(t, receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points")
 	checkValueForView(t, receiverTags, droppedMetricPoints, "receiver/refused_metric_points")
 }
 
-// CheckScraperMetricsViews checks that for the current exported values for metrics scraper views match given values.
+// CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckScraperMetricsViews(t *testing.T, receiver, scraper string, scrapedMetricPoints, erroredMetricPoints int64) {
+func CheckScraperMetrics(t *testing.T, receiver, scraper string, scrapedMetricPoints, erroredMetricPoints int64) {
 	scraperTags := tagsForScraperView(receiver, scraper)
 	checkValueForView(t, scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points")
 	checkValueForView(t, scraperTags, erroredMetricPoints, "scraper/errored_metric_points")

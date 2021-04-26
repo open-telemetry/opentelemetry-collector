@@ -27,7 +27,7 @@ import (
 
 type AttributesMatcher []AttributeMatcher
 
-// attributeMatcher is a attribute key/value pair to match to.
+// AttributeMatcher is a attribute key/value pair to match to.
 type AttributeMatcher struct {
 	Key string
 	// If both AttributeValue and StringFilter are nil only check for key existence.
@@ -79,7 +79,7 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 	return rawAttributes, nil
 }
 
-// match attributes specification against a span/log.
+// Match attributes specification against a span/log.
 func (ma AttributesMatcher) Match(attrs pdata.AttributeMap) bool {
 	// If there are no attributes to match against, the span/log matches.
 	if len(ma) == 0 {

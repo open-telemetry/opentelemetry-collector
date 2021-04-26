@@ -33,10 +33,9 @@ func main() {
 	}
 
 	info := component.ApplicationStartInfo{
-		ExeName:  "otelcol",
-		LongName: "OpenTelemetry Collector",
-		Version:  version.Version,
-		GitHash:  version.GitHash,
+		ExeName: "otelcol",
+		Version: version.Version,
+		GitHash: version.GitHash,
 	}
 
 	if err := run(service.Parameters{ApplicationStartInfo: info, Factories: factories}); err != nil {

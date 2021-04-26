@@ -1,0 +1,19 @@
+envvar: $envvar
+escapedDelim: $$envvar
+envvar_bracketed: ${envvar}tests
+envvar_legacy_00: $/not/valid$
+envvar_legacy_01: $not_found_envvar/test
+envvar_legacy_02: ${}/test
+envvar_legacy_03: ${/test
+envvar_legacy_04: ${1}/test
+envvar_legacy_05: $1/test
+cfgsrc_suffix: prefix-$tstcfgsrc:int_key
+cfgsrc_middle: prefix-${tstcfgsrc:int_key}-suffix
+cfgsrc_in_str: integer ${tstcfgsrc:int_key} injected as string
+cfgsrc_params0: ${tstcfgsrc:params_key?p0=true&p1=$envvar&p2=42}
+cfgsrc_params1: "${tstcfgsrc:params_key?p0=false&p1=42&p2=$envvar}"
+cfgsrc_params2: $tstcfgsrc:params_key?p0=$$envvar
+multi_line_envvars: |
+  $tstcfgsrc: params_key
+  p0: $envvar
+  p1: $${envvar}

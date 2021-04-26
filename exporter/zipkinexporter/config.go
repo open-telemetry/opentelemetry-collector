@@ -34,3 +34,10 @@ type Config struct {
 
 	DefaultServiceName string `mapstructure:"default_service_name"`
 }
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

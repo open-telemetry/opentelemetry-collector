@@ -36,8 +36,7 @@ func splitTrace(size int, toSplit pdata.Traces) pdata.Traces {
 
 		for j := rs.InstrumentationLibrarySpans().Len() - 1; j >= 0; j-- {
 			instSpans := rs.InstrumentationLibrarySpans().At(j)
-			destInstSpans := pdata.NewInstrumentationLibrarySpans()
-			destRs.InstrumentationLibrarySpans().Append(destInstSpans)
+			destInstSpans := destRs.InstrumentationLibrarySpans().AppendEmpty()
 			instSpans.InstrumentationLibrary().CopyTo(destInstSpans.InstrumentationLibrary())
 
 			if size-copiedSpans >= instSpans.Spans().Len() {

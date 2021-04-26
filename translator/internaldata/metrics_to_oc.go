@@ -178,8 +178,9 @@ func collectLabelKeysDoubleSummaryDataPoints(dhdp pdata.SummaryDataPointSlice, k
 }
 
 func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
-	labels.ForEach(func(k string, v string) {
+	labels.Range(func(k string, v string) bool {
 		keySet[k] = struct{}{}
+		return true
 	})
 }
 
@@ -482,8 +483,9 @@ func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata
 	var labels map[string]string
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())
-		filteredLabels.ForEach(func(k string, v string) {
+		filteredLabels.Range(func(k string, v string) bool {
 			labels[k] = v
+			return true
 		})
 	}
 
@@ -508,7 +510,7 @@ func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	labels.ForEach(func(k string, v string) {
+	labels.Range(func(k string, v string) bool {
 		// Find the appropriate label value that we need to update
 		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]
@@ -516,6 +518,7 @@ func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.
 		// Update label value
 		labelValue.Value = v
 		labelValue.HasValue = true
+		return true
 	})
 
 	return labelValues

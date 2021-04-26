@@ -58,7 +58,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {

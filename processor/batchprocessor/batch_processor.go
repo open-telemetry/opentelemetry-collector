@@ -217,7 +217,7 @@ func (bp *batchProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) erro
 	return nil
 }
 
-// ConsumeTraces implements MetricsProcessor
+// ConsumeMetrics implements MetricsProcessor
 func (bp *batchProcessor) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	// First thing is convert into a different internal format
 	bp.newItem <- md

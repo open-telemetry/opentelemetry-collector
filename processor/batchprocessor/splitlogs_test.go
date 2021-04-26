@@ -40,10 +40,8 @@ func TestSplitLogs(t *testing.T) {
 		logs.At(i).SetName(getTestLogName(0, i))
 	}
 	cp := pdata.NewLogs()
-	cp.ResourceLogs().Resize(1)
-	cp.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
-	cp.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(5)
-	cpLogs := cp.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	cpLogs := cp.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
+	cpLogs.Resize(5)
 	td.ResourceLogs().At(0).Resource().CopyTo(
 		cp.ResourceLogs().At(0).Resource())
 	td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().CopyTo(

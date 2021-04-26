@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 )
 
-func TestFileTraceExporterNoErrors(t *testing.T) {
+func TestFileTracesExporterNoErrors(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
 	lte := &fileExporter{file: mf}
 	require.NotNil(t, lte)

@@ -34,19 +34,17 @@ func TestSplitMetrics_noop(t *testing.T) {
 }
 
 func TestSplitMetrics(t *testing.T) {
-	td := testdata.GenerateMetricsManyMetricsSameResource(20)
-	metrics := td.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	md := testdata.GenerateMetricsManyMetricsSameResource(20)
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
 	}
 	cp := pdata.NewMetrics()
-	cp.ResourceMetrics().Resize(1)
-	cp.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
-	cp.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(5)
-	cpMetrics := cp.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	td.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary().CopyTo(
+	cpMetrics := cp.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	cpMetrics.Resize(5)
+	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary().CopyTo(
 		cp.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary())
-	td.ResourceMetrics().At(0).Resource().CopyTo(
+	md.ResourceMetrics().At(0).Resource().CopyTo(
 		cp.ResourceMetrics().At(0).Resource())
 	metrics.At(19).CopyTo(cpMetrics.At(0))
 	metrics.At(18).CopyTo(cpMetrics.At(1))
@@ -55,10 +53,10 @@ func TestSplitMetrics(t *testing.T) {
 	metrics.At(15).CopyTo(cpMetrics.At(4))
 
 	splitSize := 5
-	split := splitMetrics(splitSize, td)
+	split := splitMetrics(splitSize, md)
 	assert.Equal(t, splitSize, split.MetricCount())
 	assert.Equal(t, cp, split)
-	assert.Equal(t, 15, td.MetricCount())
+	assert.Equal(t, 15, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-19", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-15", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
 }

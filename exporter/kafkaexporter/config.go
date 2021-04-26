@@ -69,3 +69,10 @@ type MetadataRetry struct {
 	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
 	Backoff time.Duration `mapstructure:"backoff"`
 }
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
+}

@@ -20,6 +20,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	mtu "go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -365,7 +366,7 @@ func (mat *metricsAdjusterTest) dropped() int {
 
 func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
 	l := zap.NewNop()
-	defer l.Sync() // flushes buffer, if any
+	t.Cleanup(func() { require.NoError(t, l.Sync()) }) // flushes buffer, if any
 	ma := NewMetricsAdjuster(tsm, l)
 
 	for _, test := range script {

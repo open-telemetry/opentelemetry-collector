@@ -70,8 +70,8 @@ func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	return texp.sender.send(newTracesRequest(ctx, td, texp.pusher))
 }
 
-// NewTraceExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
-func NewTraceExporter(
+// NewTracesExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
+func NewTracesExporter(
 	cfg config.Exporter,
 	logger *zap.Logger,
 	pusher PushTraces,

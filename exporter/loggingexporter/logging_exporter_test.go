@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte, err := newTraceExporter(&config.ExporterSettings{}, "Debug", zap.NewNop())
+func TestLoggingTracesExporterNoErrors(t *testing.T) {
+	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -65,15 +65,12 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
 	ava := pdata.NewAttributeValueArray()
-	av := ava.ArrayVal()
-	av.Append(pdata.NewAttributeValueString("foo"))
-	av.Append(pdata.NewAttributeValueInt(42))
+	ava.ArrayVal().AppendEmpty().SetStringVal("foo")
+	ava.ArrayVal().AppendEmpty().SetIntVal(42)
 
 	ava2 := pdata.NewAttributeValueArray()
-	av2 := ava2.ArrayVal()
-	av2.Append(pdata.NewAttributeValueString("bar"))
-
-	av.Append(ava2)
+	ava2.ArrayVal().AppendEmpty().SetStringVal("bar")
+	ava2.CopyTo(ava.ArrayVal().AppendEmpty())
 
 	assert.Equal(t, 3, ava.ArrayVal().Len())
 	assert.Equal(t, "[foo, 42, [bar]]", attributeValueToString(ava))

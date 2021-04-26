@@ -19,8 +19,8 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -88,7 +88,7 @@ type ProcessorFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Processor
 
-	// CreateTraceProcessor creates a trace processor based on this config.
+	// CreateTracesProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTracesProcessor(
@@ -139,17 +139,17 @@ func (b BaseProcessorFactory) CreateDefaultConfig() config.Processor {
 
 // CreateTracesProcessor default implemented as not supported date type.
 func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Traces) (TracesProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor default implemented as not supported date type.
 func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateLogsProcessor default implemented as not supported date type.
 func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Logs) (LogsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func (b BaseProcessorFactory) unexportedProcessor() {}

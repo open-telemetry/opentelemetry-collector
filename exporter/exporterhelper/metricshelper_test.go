@@ -188,9 +188,9 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
 	if wantError != nil {
-		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, 0, numPoints)
+		obsreporttest.CheckExporterMetrics(t, fakeMetricsExporterName, 0, numPoints)
 	} else {
-		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, numPoints, 0)
+		obsreporttest.CheckExporterMetrics(t, fakeMetricsExporterName, numPoints, 0)
 	}
 }
 
@@ -204,7 +204,7 @@ func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numReque
 }
 
 func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, numMetricPoints int64) {
-	ocSpansSaver := new(testOCTraceExporter)
+	ocSpansSaver := new(testOCTracesExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 

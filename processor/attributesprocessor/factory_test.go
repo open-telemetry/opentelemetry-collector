@@ -22,9 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -43,7 +43,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
+func TestFactoryCreateTracesProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	ap, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewNop())
@@ -51,7 +51,7 @@ func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
 	assert.Nil(t, ap)
 }
 
-func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
+func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -64,7 +64,7 @@ func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
 	assert.Nil(t, ap)
 }
 
-func TestFactoryCreateTraceProcessor(t *testing.T) {
+func TestFactoryCreateTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -94,7 +94,7 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	require.Nil(t, mp)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
 
 func TestFactoryCreateLogsProcessor_EmptyActions(t *testing.T) {

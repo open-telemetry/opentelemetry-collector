@@ -20,16 +20,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Start specifies the function invoked when the exporter is being started.
-type Start func(context.Context, component.Host) error
+// StartFunc specifies the function invoked when the exporter is being started.
+type StartFunc func(context.Context, component.Host) error
 
-// Shutdown specifies the function invoked when the exporter is being shutdown.
-type Shutdown func(context.Context) error
+// ShutdownFunc specifies the function invoked when the exporter is being shutdown.
+type ShutdownFunc func(context.Context) error
 
 // baseSettings represents a settings struct to create components.
 type baseSettings struct {
-	Start
-	Shutdown
+	StartFunc
+	ShutdownFunc
 }
 
 // Option represents the possible options for New.
@@ -37,23 +37,23 @@ type Option func(*baseSettings)
 
 // WithStart overrides the default Start function for a processor.
 // The default shutdown function does nothing and always returns nil.
-func WithStart(start Start) Option {
+func WithStart(start StartFunc) Option {
 	return func(o *baseSettings) {
-		o.Start = start
+		o.StartFunc = start
 	}
 }
 
 // WithShutdown overrides the default Shutdown function for a processor.
 // The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown Shutdown) Option {
+func WithShutdown(shutdown ShutdownFunc) Option {
 	return func(o *baseSettings) {
-		o.Shutdown = shutdown
+		o.ShutdownFunc = shutdown
 	}
 }
 
 type baseComponent struct {
-	start    Start
-	shutdown Shutdown
+	start    StartFunc
+	shutdown ShutdownFunc
 }
 
 // Start all senders and exporter and is invoked during service start.
@@ -69,8 +69,8 @@ func (be *baseComponent) Shutdown(ctx context.Context) error {
 // fromOptions returns the internal settings starting from the default and applying all options.
 func fromOptions(options []Option) *baseSettings {
 	opts := &baseSettings{
-		Start:    func(ctx context.Context, host component.Host) error { return nil },
-		Shutdown: func(ctx context.Context) error { return nil },
+		StartFunc:    func(ctx context.Context, host component.Host) error { return nil },
+		ShutdownFunc: func(ctx context.Context) error { return nil },
 	}
 
 	for _, op := range options {
@@ -84,7 +84,7 @@ func fromOptions(options []Option) *baseSettings {
 func New(options ...Option) component.Component {
 	bs := fromOptions(options)
 	return &baseComponent{
-		start:    bs.Start,
-		shutdown: bs.Shutdown,
+		start:    bs.StartFunc,
+		shutdown: bs.ShutdownFunc,
 	}
 }

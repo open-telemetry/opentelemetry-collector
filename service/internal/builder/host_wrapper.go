@@ -15,6 +15,8 @@
 package builder
 
 import (
+	"net/http"
+
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -37,4 +39,16 @@ func (hw *hostWrapper) ReportFatalError(err error) {
 	// The logger from the built component already identifies the component.
 	hw.Logger.Error("Component fatal error", zap.Error(err))
 	hw.Host.ReportFatalError(err)
+}
+
+// RegisterZPages is used by zpages extension to register handles from service.
+// When the wrapper is passed to the extension it won't be successful when casting
+// the interface, for the time being expose the interface here.
+// TODO: Find a better way to add the service zpages to the extension. This a temporary fix.
+func (hw *hostWrapper) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	if zpagesHost, ok := hw.Host.(interface {
+		RegisterZPages(mux *http.ServeMux, pathPrefix string)
+	}); ok {
+		zpagesHost.RegisterZPages(mux, pathPrefix)
+	}
 }

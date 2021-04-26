@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
@@ -66,7 +67,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	jr.Shutdown(context.Background())
+	require.NoError(t, jr.Shutdown(context.Background()))
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
@@ -90,7 +91,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
 
 	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
 	assert.Error(t, err, "should not have been able to listen to the port")
@@ -111,7 +112,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	jr.Shutdown(context.Background())
+	require.NoError(t, jr.Shutdown(context.Background()))
 }
 
 func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server), opts ...grpc.ServerOption) (*grpc.Server, net.Addr) {
@@ -151,12 +152,19 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
 	// allow http server to start
-	assert.NoError(t, testutil.WaitForPort(t, port), "WaitForPort failed")
+	assert.Eventually(t, func() bool {
+		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		if err == nil && conn != nil {
+			conn.Close()
+			return true
+		}
+		return false
+	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
 
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
@@ -182,7 +190,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	sink := new(consumertest.TracesSink)
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
-	defer jr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
@@ -198,9 +206,9 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
 	}
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return sink.SpansCount() > 0
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 
 	gotTraces := sink.AllTraces()
 	require.Equal(t, 1, len(gotTraces))
@@ -224,11 +232,9 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 // Cannot use the testdata because timestamps are nanoseconds.
 func generateTraceData() pdata.Traces {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test")
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test")
+	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
 	span.SetTraceID(pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0}))
 	span.SetStartTimestamp(1581452772000000000)
