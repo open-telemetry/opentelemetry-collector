@@ -74,7 +74,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		return nil, errors.New("invalid endpoint")
 	}
 
-	userAgentHeader := formatHeaderValues(startInfo.ExeName, startInfo.Version, startInfo.GitHash) + " " + formatHeaderValues("X-Prometheus-Remote-Write-Version", prwVersion)
+	userAgentHeader := fmt.Sprintf("%s/%s X-Prometheus-Remote-Write-Version/%s", strings.ReplaceAll(strings.ToLower(startInfo.LongName), " ", "-"), startInfo.Version, prwVersion)
 
 	return &PrwExporter{
 		namespace:       namespace,
@@ -349,38 +349,4 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return rerr
 	}
 	return consumererror.Permanent(rerr)
-}
-
-// formatHeaderValues will format the provided name and version to the name/version format.
-// If the extra parameters are provided they will be added as metadata to the
-// name/version pair resulting in the following format.
-// "name/version (extra0; extra1; ...)"
-func formatHeaderValues(name, version string, extra ...string) string {
-	ua := fmt.Sprintf("%s/%s", name, version)
-	if len(extra) > 0 {
-		ua = fmt.Sprintf("%s (%s)", ua, strings.Join(extra, "; "))
-	}
-	return ua
-}
-
-// FormatHeaderValues will add the name/version pair to the User-Agent request
-// header. If the extra parameters are provided they will be added as metadata to the
-// name/version pair resulting in the following format.
-// "name/version (extra0; extra1; ...)"
-// The user agent part will be concatenated with this current request's user agent string.
-func FormatHeaderValues(req *http.Request, name, version string, extra ...string) {
-	ua := fmt.Sprintf("%s/%s", name, version)
-	if len(extra) > 0 {
-		ua += fmt.Sprintf(" (%s)", strings.Join(extra, "; "))
-	}
-	AddToUserAgent(req, ua)
-}
-
-// AddToUserAgent adds the string to the end of the request's current user agent.
-func AddToUserAgent(req *http.Request, s string) {
-	curUA := req.Header.Get("User-Agent")
-	if len(curUA) > 0 {
-		s = curUA + " " + s
-	}
-	req.Header.Set("User-Agent", s)
 }
