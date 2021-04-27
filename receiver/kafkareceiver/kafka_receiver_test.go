@@ -87,8 +87,7 @@ func TestTracesReceiverStart(t *testing.T) {
 		consumerGroup: testClient,
 	}
 
-	err := c.Start(context.Background(), nil)
-	require.NoError(t, err)
+	require.NoError(t, c.Start(context.Background(), nil))
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
@@ -120,13 +119,11 @@ func TestTracesReceiver_error(t *testing.T) {
 		consumerGroup: testClient,
 	}
 
-	err := c.Start(context.Background(), nil)
-	require.NoError(t, err)
+	require.NoError(t, c.Start(context.Background(), nil))
 	require.NoError(t, c.Shutdown(context.Background()))
-	waitUntil(func() bool {
+	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 100, time.Millisecond*100)
-	assert.True(t, logObserver.FilterField(zap.Error(expectedErr)).Len() > 0)
+	}, 10*time.Second, time.Millisecond*100)
 }
 
 func TestTracesConsumerGroupHandler(t *testing.T) {
@@ -142,8 +139,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	}
 
 	testSession := testConsumerGroupSession{}
-	err := c.Setup(testSession)
-	require.NoError(t, err)
+	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
 	viewData, err := view.RetrieveData(statPartitionStart.Name())
@@ -152,8 +148,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	distData := viewData[0].Data.(*view.SumData)
 	assert.Equal(t, float64(1), distData.Value)
 
-	err = c.Cleanup(testSession)
-	require.NoError(t, err)
+	require.NoError(t, c.Cleanup(testSession))
 	viewData, err = view.RetrieveData(statPartitionClose.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
@@ -167,8 +162,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		err = c.ConsumeClaim(testSession, groupClaim)
-		require.NoError(t, err)
+		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -278,9 +272,8 @@ func TestLogsReceiverStart(t *testing.T) {
 		consumerGroup: testClient,
 	}
 
-	err := c.Start(context.Background(), nil)
-	require.NoError(t, err)
-	c.Shutdown(context.Background())
+	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Shutdown(context.Background()))
 }
 
 func TestLogsReceiverStartConsume(t *testing.T) {
@@ -292,7 +285,7 @@ func TestLogsReceiverStartConsume(t *testing.T) {
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
-	c.Shutdown(context.Background())
+	require.NoError(t, c.Shutdown(context.Background()))
 	err := c.consumeLoop(ctx, &logsConsumerGroupHandler{
 		ready: make(chan bool),
 	})
@@ -311,18 +304,16 @@ func TestLogsReceiver_error(t *testing.T) {
 		consumerGroup: testClient,
 	}
 
-	err := c.Start(context.Background(), nil)
-	require.NoError(t, err)
-	c.Shutdown(context.Background())
-	waitUntil(func() bool {
+	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Shutdown(context.Background()))
+	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
-	}, 100, time.Millisecond*100)
-	assert.True(t, logObserver.FilterField(zap.Error(expectedErr)).Len() > 0)
+	}, 10*time.Second, time.Millisecond*100)
 }
 
 func TestLogsConsumerGroupHandler(t *testing.T) {
 	views := MetricViews()
-	view.Register(views...)
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	c := logsConsumerGroupHandler{
@@ -333,8 +324,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	}
 
 	testSession := testConsumerGroupSession{}
-	err := c.Setup(testSession)
-	require.NoError(t, err)
+	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
 	viewData, err := view.RetrieveData(statPartitionStart.Name())
@@ -343,8 +333,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	distData := viewData[0].Data.(*view.SumData)
 	assert.Equal(t, float64(1), distData.Value)
 
-	err = c.Cleanup(testSession)
-	require.NoError(t, err)
+	require.NoError(t, c.Cleanup(testSession))
 	viewData, err = view.RetrieveData(statPartitionClose.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
@@ -358,8 +347,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		err = c.ConsumeClaim(testSession, groupClaim)
-		require.NoError(t, err)
+		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -495,7 +483,7 @@ type testConsumerGroup struct {
 
 var _ sarama.ConsumerGroup = (*testConsumerGroup)(nil)
 
-func (t testConsumerGroup) Consume(ctx context.Context, topics []string, handler sarama.ConsumerGroupHandler) error {
+func (t testConsumerGroup) Consume(_ context.Context, _ []string, handler sarama.ConsumerGroupHandler) error {
 	t.once.Do(func() {
 		t.err = handler.Setup(testConsumerGroupSession{})
 	})
@@ -508,13 +496,4 @@ func (t testConsumerGroup) Errors() <-chan error {
 
 func (t testConsumerGroup) Close() error {
 	return nil
-}
-
-func waitUntil(f func() bool, iterations int, sleepInterval time.Duration) {
-	for i := 0; i < iterations; i++ {
-		if f() {
-			return
-		}
-		time.Sleep(sleepInterval)
-	}
 }
