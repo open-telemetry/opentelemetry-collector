@@ -326,8 +326,13 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			require.NoError(t, err)
 
 			sampledData := sink.AllTraces()
-			require.Equal(t, 1, len(sampledData))
-			assert.Equal(t, tt.sampled, sink.SpansCount() == 1)
+			if tt.sampled {
+				require.Equal(t, 1, len(sampledData))
+				assert.Equal(t, 1, sink.SpansCount())
+			} else {
+				require.Equal(t, 0, len(sampledData))
+				assert.Equal(t, 0, sink.SpansCount())
+			}
 		})
 	}
 }
