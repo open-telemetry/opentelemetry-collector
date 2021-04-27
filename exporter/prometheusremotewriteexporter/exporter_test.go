@@ -54,7 +54,6 @@ func Test_NewPrwExporter(t *testing.T) {
 	startInfo := component.ApplicationStartInfo{
 		LongName: "OpenTelemetry Collector",
 		Version:  "1.0",
-		GitHash:  "beef",
 	}
 
 	tests := []struct {
@@ -116,19 +115,6 @@ func Test_NewPrwExporter(t *testing.T) {
 			http.DefaultClient,
 			false,
 			startInfo,
-		},
-		{
-			"success_case_no_githash",
-			cfg,
-			"test",
-			"http://some.url:9411/api/prom/push",
-			map[string]string{"Key1": "Val1"},
-			http.DefaultClient,
-			false,
-			component.ApplicationStartInfo{
-				LongName: "OpenTelemetry Collector",
-				Version:  "1.0",
-			},
 		},
 	}
 
@@ -194,7 +180,7 @@ func Test_export(t *testing.T) {
 		// Receives the http requests and unzip, unmarshals, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
-		assert.Equal(t, "opentelemetry-collector/1.0 (beef) X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0 X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
 
@@ -275,7 +261,6 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 	startInfo := component.ApplicationStartInfo{
 		LongName: "OpenTelemetry Collector",
 		Version:  "1.0",
-		GitHash:  "beef",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, startInfo)
@@ -539,7 +524,7 @@ func Test_PushMetrics(t *testing.T) {
 		dest, err := snappy.Decode(buf, body)
 		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
 		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
-		assert.Equal(t, "opentelemetry-collector/1.0 (beef) X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0 X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
 		assert.NotNil(t, r.Header.Get("tenant-id"))
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
@@ -733,7 +718,6 @@ func Test_PushMetrics(t *testing.T) {
 			startInfo := component.ApplicationStartInfo{
 				LongName: "OpenTelemetry Collector",
 				Version:  "1.0",
-				GitHash:  "beef",
 			}
 			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, startInfo)
 			require.NoError(t, nErr)

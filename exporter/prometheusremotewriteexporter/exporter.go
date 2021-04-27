@@ -74,7 +74,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		return nil, errors.New("invalid endpoint")
 	}
 
-	userAgentHeader := formatHeaderValues(strings.ReplaceAll(strings.ToLower(startInfo.LongName), " ", "-"), startInfo.Version, startInfo.GitHash) + " " + formatHeaderValues("X-Prometheus-Remote-Write-Version", prwVersion)
+	userAgentHeader := fmt.Sprintf("%s/%s X-Prometheus-Remote-Write-Version/%s", strings.ReplaceAll(strings.ToLower(startInfo.LongName), " ", "-"), startInfo.Version, prwVersion)
 
 	return &PrwExporter{
 		namespace:       namespace,
@@ -349,16 +349,4 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return rerr
 	}
 	return consumererror.Permanent(rerr)
-}
-
-// formatHeaderValues will format the provided name and version to the name/version format.
-// If the extra parameters are provided they will be added as metadata to the
-// name/version pair resulting in the following format.
-// "name/version (extra0; extra1; ...)"
-func formatHeaderValues(name, version string, extra ...string) string {
-	ua := fmt.Sprintf("%s/%s", name, version)
-	if len(extra) > 0 {
-		ua = fmt.Sprintf("%s (%s)", ua, strings.Join(extra, "; "))
-	}
-	return ua
 }
