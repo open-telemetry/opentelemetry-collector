@@ -87,7 +87,7 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 	params := service.Parameters{
 		ApplicationStartInfo: component.ApplicationStartInfo{
 			ExeName:  "otelcol",
-			LongName: "InProcess Collector",
+			LongName: "OpenTelemetry Collector",
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},

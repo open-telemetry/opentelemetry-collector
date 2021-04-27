@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector
 
-go 1.15
+go 1.16
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.3.0

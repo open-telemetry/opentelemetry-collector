@@ -21,20 +21,12 @@ import (
 	"time"
 )
 
-const (
-	buildDev     = "dev"
-	buildRelease = "release"
-)
-
 var (
 	// Version variable will be replaced at link time after `make` has been run.
 	Version = "latest"
 
 	// GitHash variable will be replaced at link time after `make` has been run.
 	GitHash = "<NOT PROPERLY GENERATED>"
-
-	// BuildType should be one of (dev, release).
-	BuildType = buildDev
 
 	// startTime
 	startTime time.Time
@@ -44,21 +36,10 @@ func init() {
 	startTime = time.Now()
 }
 
-// IsDevBuild returns true if this is a development (local) build.
-func IsDevBuild() bool {
-	return BuildType == buildDev
-}
-
-// IsReleaseBuild returns true if this is a release build.
-func IsReleaseBuild() bool {
-	return BuildType == buildRelease
-}
-
 // InfoVar is a singleton instance of the Info struct.
 var InfoVar = Info{
 	{"Version", Version},
 	{"GitHash", GitHash},
-	{"BuildType", BuildType},
 	{"GoVersion", runtime.Version()},
 	{"OS", runtime.GOOS},
 	{"Architecture", runtime.GOARCH},

@@ -52,9 +52,9 @@ func Test_NewPrwExporter(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
 	startInfo := component.ApplicationStartInfo{
-		ExeName: "otel-col",
-		Version: "1.0",
-		GitHash: "beef",
+		LongName: "OpenTelemetry Collector",
+		Version:  "1.0",
+		GitHash:  "beef",
 	}
 
 	tests := []struct {
@@ -126,8 +126,8 @@ func Test_NewPrwExporter(t *testing.T) {
 			http.DefaultClient,
 			false,
 			component.ApplicationStartInfo{
-				ExeName: "otel-col",
-				Version: "1.0",
+				LongName: "OpenTelemetry Collector",
+				Version:  "1.0",
 			},
 		},
 	}
@@ -194,7 +194,7 @@ func Test_export(t *testing.T) {
 		// Receives the http requests and unzip, unmarshals, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
-		assert.Equal(t, "otel-col/1.0 (beef) X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0 (beef) X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
 
@@ -273,9 +273,9 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 	HTTPClient := http.DefaultClient
 
 	startInfo := component.ApplicationStartInfo{
-		ExeName: "otel-col",
-		Version: "1.0",
-		GitHash: "beef",
+		LongName: "OpenTelemetry Collector",
+		Version:  "1.0",
+		GitHash:  "beef",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, startInfo)
@@ -539,7 +539,7 @@ func Test_PushMetrics(t *testing.T) {
 		dest, err := snappy.Decode(buf, body)
 		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
 		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
-		assert.Equal(t, "otel-col/1.0 (beef) X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0 (beef) X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
 		assert.NotNil(t, r.Header.Get("tenant-id"))
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
@@ -731,9 +731,9 @@ func Test_PushMetrics(t *testing.T) {
 			// assert.Nil(t, err)
 			c := http.DefaultClient
 			startInfo := component.ApplicationStartInfo{
-				ExeName: "otel-col",
-				Version: "1.0",
-				GitHash: "beef",
+				LongName: "OpenTelemetry Collector",
+				Version:  "1.0",
+				GitHash:  "beef",
 			}
 			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, startInfo)
 			require.NoError(t, nErr)
