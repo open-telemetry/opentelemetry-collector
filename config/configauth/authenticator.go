@@ -36,15 +36,16 @@ var (
 type Authenticator interface {
 	component.Extension
 
-	// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error.
-	// When the authentication fails, an error must be returned and the caller must not retry.
-	Authenticate(context.Context, map[string][]string) error
+	// Authenticate checks whether the given headers map contains valid auth data. Successfully authenticated calls will always return a nil error.
+	// When the authentication fails, an error must be returned and the caller must not retry. This function is typically called from interceptors,
+	// on behalf of receivers, but receivers can still call this directly if the usage of interceptors isn't suitable.
+	Authenticate(ctx context.Context, headers map[string][]string) error
 
 	// UnaryInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
-	UnaryInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error)
+	UnaryInterceptor(ctx context.Context, req interface{}, srvInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
 
 	// StreamInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
-	StreamInterceptor(interface{}, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error
+	StreamInterceptor(srv interface{}, stream grpc.ServerStream, srvInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error
 }
 
 // AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the context data.
