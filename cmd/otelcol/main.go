@@ -35,7 +35,6 @@ func main() {
 	info := component.ApplicationStartInfo{
 		ExeName: "otelcol",
 		Version: version.Version,
-		GitHash: version.GitHash,
 	}
 
 	if err := run(service.Parameters{ApplicationStartInfo: info, Factories: factories}); err != nil {

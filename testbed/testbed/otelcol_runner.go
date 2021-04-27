@@ -88,7 +88,6 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 		ApplicationStartInfo: component.ApplicationStartInfo{
 			ExeName: "otelcol",
 			Version: version.Version,
-			GitHash: version.GitHash,
 		},
 		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 		Factories:      ipp.factories,
