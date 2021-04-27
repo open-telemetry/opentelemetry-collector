@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package configschema
 
 import (
 	"go/ast"
@@ -23,12 +23,12 @@ import (
 )
 
 // commentsForStruct returns a map of fieldname -> comment for a struct
-func commentsForStruct(v reflect.Value, env env) map[string]string {
+func commentsForStruct(v reflect.Value, env DirResolver) map[string]string {
 	elem := v
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	dir := packageDir(elem.Type(), env)
+	dir := env.PackageDir(elem.Type())
 	name := trimPackage(elem)
 	return commentsForStructName(dir, name)
 }

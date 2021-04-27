@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package configschema
 
 import "time"
 
@@ -35,9 +35,9 @@ type testStruct struct {
 	Ignored       string        `mapstructure:"-"`
 }
 
-func testEnv() env {
-	return env{
-		srcRoot:    "../../..",
-		moduleName: defaultModule,
+func testDR() DirResolver {
+	return DirResolver{
+		SrcRoot:    "../../..",
+		ModuleName: DefaultModule,
 	}
 }

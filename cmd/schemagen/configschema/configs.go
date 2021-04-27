@@ -12,27 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package configschema
 
 import (
 	"fmt"
-	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
-// createSingleSchemaFile creates a config schema yaml file for a single component
-func createSingleSchemaFile(components component.Factories, componentType, componentName string, env env) {
-	cfg, err := getConfig(components, componentType, componentName)
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+// GetAllConfigs accepts a Factories struct, creates and return the default
+// configs for all of its components.
+func GetAllConfigs(components component.Factories) []interface{} {
+	var cfgs []interface{}
+	for _, f := range components.Receivers {
+		cfgs = append(cfgs, f.CreateDefaultConfig())
 	}
-	createSchemaFile(cfg, env)
+	for _, f := range components.Extensions {
+		cfgs = append(cfgs, f.CreateDefaultConfig())
+	}
+	for _, f := range components.Processors {
+		cfgs = append(cfgs, f.CreateDefaultConfig())
+	}
+	for _, f := range components.Exporters {
+		cfgs = append(cfgs, f.CreateDefaultConfig())
+	}
+	return cfgs
 }
 
-func getConfig(components component.Factories, componentType, componentName string) (interface{}, error) {
+// GetConfig accepts a Factories struct, creates and return the default config
+// for the component specified by the passed-in componentType and componentName.
+func GetConfig(components component.Factories, componentType, componentName string) (interface{}, error) {
 	t := config.Type(componentName)
 	switch componentType {
 	case "receiver":

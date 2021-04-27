@@ -12,55 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package configschema
 
 import (
 	"fmt"
-	"io/ioutil"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/fatih/structtag"
-	"gopkg.in/yaml.v2"
 )
 
-type field struct {
+// Field holds attributes and subfields of a config struct.
+type Field struct {
 	Name    string      `yaml:",omitempty"`
 	Type    string      `yaml:",omitempty"`
 	Kind    string      `yaml:",omitempty"`
 	Default interface{} `yaml:",omitempty"`
 	Doc     string      `yaml:",omitempty"`
-	Fields  []*field    `yaml:",omitempty"`
+	Fields  []*Field    `yaml:",omitempty"`
 }
 
-// createSchemaFile creates a `cfg-schema.yaml` file in the directory of the passed-in
-// config instance. The yaml file contains the recursive field names, types,
-// comments, and default values for the config struct.
-func createSchemaFile(cfg interface{}, env env) {
-	v := reflect.ValueOf(cfg)
-	f := topLevelField(v, env)
-	yamlFilename := env.yamlFilename(v.Type().Elem(), env)
-	writeMarshaled(f, yamlFilename)
-}
-
-func topLevelField(v reflect.Value, env env) *field {
+// ReadFields accepts both a config struct's Value, as well as a DirResolver,
+// and returns a Field pointer for the top level struct as well as all of its
+// recursive subfields.
+func ReadFields(v reflect.Value, dr DirResolver) *Field {
 	cfgType := v.Type()
-	field := &field{
+	field := &Field{
 		Type: cfgType.String(),
 	}
-	refl(field, v, env)
+	refl(field, v, dr)
 	return field
 }
 
-func refl(f *field, v reflect.Value, env env) {
+func refl(f *Field, v reflect.Value, dr DirResolver) {
 	if v.Kind() == reflect.Ptr {
-		refl(f, v.Elem(), env)
+		refl(f, v.Elem(), dr)
 	}
 	if v.Kind() != reflect.Struct {
 		return
 	}
-	comments := commentsForStruct(v, env)
+	comments := commentsForStruct(v, dr)
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
 		tagName, options, err := mapstructure(structField.Tag)
@@ -84,7 +76,7 @@ func refl(f *field, v reflect.Value, env env) {
 			if typeStr == kindStr {
 				typeStr = "" // omit if redundant
 			}
-			next = &field{
+			next = &Field{
 				Name: name,
 				Type: typeStr,
 				Kind: kindStr,
@@ -92,26 +84,26 @@ func refl(f *field, v reflect.Value, env env) {
 			}
 			f.Fields = append(f.Fields, next)
 		}
-		handleKinds(fv, next, env)
+		handleKind(fv, next, dr)
 	}
 }
 
-func handleKinds(v reflect.Value, f *field, env env) {
+func handleKind(v reflect.Value, f *Field, dr DirResolver) {
 	switch v.Kind() {
 	case reflect.Struct:
-		refl(f, v, env)
+		refl(f, v, dr)
 	case reflect.Ptr:
 		if v.IsNil() {
-			refl(f, reflect.New(v.Type().Elem()), env)
+			refl(f, reflect.New(v.Type().Elem()), dr)
 		} else {
-			refl(f, v.Elem(), env)
+			refl(f, v.Elem(), dr)
 		}
 	case reflect.Slice:
 		e := v.Type().Elem()
 		if e.Kind() == reflect.Struct {
-			refl(f, reflect.New(e), env)
+			refl(f, reflect.New(e), dr)
 		} else if e.Kind() == reflect.Ptr {
-			refl(f, reflect.New(e.Elem()), env)
+			refl(f, reflect.New(e.Elem()), dr)
 		}
 	case reflect.String:
 		if v.String() != "" {
@@ -159,15 +151,4 @@ func containsSquash(options []string) bool {
 		}
 	}
 	return false
-}
-
-func writeMarshaled(field *field, filename string) {
-	marshaled, err := yaml.Marshal(field)
-	if err != nil {
-		panic(err)
-	}
-	err = ioutil.WriteFile(filename, marshaled, 0600)
-	if err != nil {
-		panic(err)
-	}
 }

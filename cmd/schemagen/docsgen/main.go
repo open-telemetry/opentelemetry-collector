@@ -12,30 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package main
 
 import (
-	"path"
-	"reflect"
-	"strings"
+	"go.opentelemetry.io/collector/cmd/schemagen/docsgen/docsgen"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
-const defaultSrcRoot = "."
-const defaultModule = "go.opentelemetry.io/collector"
-
-type env struct {
-	srcRoot      string
-	moduleName   string
-	yamlFilename func(reflect.Type, env) string
-}
-
-const schemaFilename = "cfg-schema.yaml"
-
-func yamlFilename(t reflect.Type, env env) string {
-	return path.Join(packageDir(t, env), schemaFilename)
-}
-
-func packageDir(t reflect.Type, env env) string {
-	pkg := strings.TrimPrefix(t.PkgPath(), env.moduleName+"/")
-	return path.Join(env.srcRoot, pkg)
+func main() {
+	cmps, err := defaultcomponents.Components()
+	if err != nil {
+		panic(err)
+	}
+	docsgen.CLI(cmps)
 }
