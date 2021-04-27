@@ -1,10 +1,10 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver
+package protocols
 
 import (
 	"bytes"
@@ -37,35 +37,35 @@ func TestUnmarshalJaeger(t *testing.T) {
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	require.NoError(t, err)
 
-	protoBytes, err := batches[0].Spans[0].Marshal()
+	protoBytes, err := batches[0].Marshal()
 	require.NoError(t, err)
 
 	jsonMarshaler := &jsonpb.Marshaler{}
 	jsonBytes := new(bytes.Buffer)
-	require.NoError(t, jsonMarshaler.Marshal(jsonBytes, batches[0].Spans[0]))
+	require.NoError(t, jsonMarshaler.Marshal(jsonBytes, batches[0]))
 
 	tests := []struct {
 		unmarshaler TracesUnmarshaler
-		encoding    string
+		typ         string
 		bytes       []byte
 	}{
 		{
 			unmarshaler: jaegerProtoSpanUnmarshaler{},
-			encoding:    "jaeger_proto",
+			typ:         "jaeger/protobuf",
 			bytes:       protoBytes,
 		},
 		{
 			unmarshaler: jaegerJSONSpanUnmarshaler{},
-			encoding:    "jaeger_json",
+			typ:         "jaeger/json",
 			bytes:       jsonBytes.Bytes(),
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.encoding, func(t *testing.T) {
+		t.Run(test.typ, func(t *testing.T) {
 			got, err := test.unmarshaler.Unmarshal(test.bytes)
 			require.NoError(t, err)
 			assert.Equal(t, td, got)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
+			assert.Equal(t, Type(test.typ), test.unmarshaler.Type())
 		})
 	}
 }

@@ -14,13 +14,7 @@ The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `topic` (default = otlp_spans): The name of the kafka topic to read from
-- `encoding` (default = otlp_proto): The encoding of the payload sent to kafka. Available encodings:
-  - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`.
-  - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
-  - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
-  - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
-  - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
-  - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
+- `encoding` (default = otlp/protobuf): The encoding of the payload sent to kafka. See [protocols](../../protocols/README.md) for available encodings.
 - `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `auth`

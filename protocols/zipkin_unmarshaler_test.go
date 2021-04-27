@@ -1,10 +1,10 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver
+package protocols
 
 import (
 	"testing"
@@ -64,35 +64,35 @@ func TestUnmarshalZipkin(t *testing.T) {
 
 	tests := []struct {
 		unmarshaler TracesUnmarshaler
-		encoding    string
+		typ         string
 		bytes       []byte
 		expected    pdata.Traces
 	}{
 		{
 			unmarshaler: zipkinProtoSpanUnmarshaler{},
-			encoding:    "zipkin_proto",
+			typ:         "zipkin/protobuf",
 			bytes:       protoBytes,
 			expected:    td,
 		},
 		{
 			unmarshaler: zipkinJSONSpanUnmarshaler{},
-			encoding:    "zipkin_json",
+			typ:         "zipkin/json",
 			bytes:       jsonBytes,
 			expected:    td,
 		},
 		{
 			unmarshaler: zipkinThriftSpanUnmarshaler{},
-			encoding:    "zipkin_thrift",
+			typ:         "zipkin/thrift",
 			bytes:       thriftTransport.Buffer.Bytes(),
 			expected:    tdThrift,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.encoding, func(t *testing.T) {
+		t.Run(test.typ, func(t *testing.T) {
 			traces, err := test.unmarshaler.Unmarshal(test.bytes)
 			require.NoError(t, err)
 			assert.Equal(t, test.expected, traces)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
+			assert.Equal(t, Type(test.typ), test.unmarshaler.Type())
 		})
 	}
 }

@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		Topic:    "spans",
-		Encoding: "otlp_proto",
+		Encoding: "otlp/protobuf",
 		Brokers:  []string{"foo:123", "bar:456"},
 		ClientID: "otel-collector",
 		GroupID:  "otel-collector",

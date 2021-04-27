@@ -17,6 +17,7 @@ package kafkareceiver
 import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
+	"go.opentelemetry.io/collector/protocols"
 )
 
 // Config defines configuration for Kafka receiver.
@@ -28,8 +29,8 @@ type Config struct {
 	ProtocolVersion string `mapstructure:"protocol_version"`
 	// The name of the kafka topic to consume from (default "otlp_spans")
 	Topic string `mapstructure:"topic"`
-	// Encoding of the messages (default "otlp_proto")
-	Encoding string `mapstructure:"encoding"`
+	// Encoding of the messages (default "otlp/protobuf")
+	Encoding protocols.Type `mapstructure:"encoding"`
 	// The consumer group that receiver will be consuming messages from (default "otel-collector")
 	GroupID string `mapstructure:"group_id"`
 	// The consumer client ID that receiver will use (default "otel-collector")

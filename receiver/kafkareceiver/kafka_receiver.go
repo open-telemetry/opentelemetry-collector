@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/protocols"
 )
 
 const (
@@ -43,7 +44,7 @@ type kafkaTracesConsumer struct {
 	nextConsumer      consumer.Traces
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaler       TracesUnmarshaler
+	unmarshaler       protocols.TracesUnmarshaler
 
 	logger *zap.Logger
 }
@@ -55,7 +56,7 @@ type kafkaLogsConsumer struct {
 	nextConsumer      consumer.Logs
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaler       LogsUnmarshaler
+	unmarshaler       protocols.LogsUnmarshaler
 
 	logger *zap.Logger
 }
@@ -63,7 +64,12 @@ type kafkaLogsConsumer struct {
 var _ component.Receiver = (*kafkaTracesConsumer)(nil)
 var _ component.Receiver = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+func newTracesReceiver(
+	config Config,
+	params component.ReceiverCreateParams,
+	unmarshalers map[protocols.Type]protocols.TracesUnmarshaler,
+	nextConsumer consumer.Traces,
+) (*kafkaTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -134,7 +140,12 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(
+	config Config,
+	params component.ReceiverCreateParams,
+	unmarshalers map[protocols.Type]protocols.LogsUnmarshaler,
+	nextConsumer consumer.Logs,
+) (*kafkaLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -207,7 +218,7 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 
 type tracesConsumerGroupHandler struct {
 	name         string
-	unmarshaler  TracesUnmarshaler
+	unmarshaler  protocols.TracesUnmarshaler
 	nextConsumer consumer.Traces
 	ready        chan bool
 	readyCloser  sync.Once
@@ -217,7 +228,7 @@ type tracesConsumerGroupHandler struct {
 
 type logsConsumerGroupHandler struct {
 	name         string
-	unmarshaler  LogsUnmarshaler
+	unmarshaler  protocols.LogsUnmarshaler
 	nextConsumer consumer.Logs
 	ready        chan bool
 	readyCloser  sync.Once
@@ -268,7 +279,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 
 		spanCount := traces.SpanCount()
 		err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
-		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
+		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Type().String(), spanCount, err)
 		if err != nil {
 			return err
 		}
@@ -316,7 +327,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 
 		err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
 		// TODO
-		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
+		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Type().String(), logs.LogRecordCount(), err)
 		if err != nil {
 			return err
 		}

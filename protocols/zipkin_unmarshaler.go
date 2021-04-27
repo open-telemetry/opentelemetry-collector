@@ -1,10 +1,10 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver
+package protocols
 
 import (
 	"encoding/json"
@@ -25,6 +25,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 )
+
+// ZipkinProtobuf protocol type.
+const ZipkinProtobuf Type = "zipkin/protobuf"
 
 type zipkinProtoSpanUnmarshaler struct {
 }
@@ -39,9 +42,12 @@ func (z zipkinProtoSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error
 	return zipkintranslator.V2SpansToInternalTraces(parseSpans, false)
 }
 
-func (z zipkinProtoSpanUnmarshaler) Encoding() string {
-	return "zipkin_proto"
+func (z zipkinProtoSpanUnmarshaler) Type() Type {
+	return ZipkinProtobuf
 }
+
+// ZipkinJSON protocol type.
+const ZipkinJSON Type = "zipkin/json"
 
 type zipkinJSONSpanUnmarshaler struct {
 }
@@ -56,12 +62,15 @@ func (z zipkinJSONSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error)
 	return zipkintranslator.V2SpansToInternalTraces(spans, false)
 }
 
-func (z zipkinJSONSpanUnmarshaler) Encoding() string {
-	return "zipkin_json"
+func (z zipkinJSONSpanUnmarshaler) Type() Type {
+	return ZipkinJSON
 }
 
 type zipkinThriftSpanUnmarshaler struct {
 }
+
+// ZipkinThrift protocol type.
+const ZipkinThrift Type = "zipkin/thrift"
 
 var _ TracesUnmarshaler = (*zipkinThriftSpanUnmarshaler)(nil)
 
@@ -74,8 +83,8 @@ func (z zipkinThriftSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, erro
 
 }
 
-func (z zipkinThriftSpanUnmarshaler) Encoding() string {
-	return "zipkin_thrift"
+func (z zipkinThriftSpanUnmarshaler) Type() Type {
+	return ZipkinThrift
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.
