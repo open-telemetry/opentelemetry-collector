@@ -92,6 +92,7 @@ func createDefaultConfig() config.Exporter {
 			Timeout:         exporterhelper.DefaultTimeoutSettings().Timeout,
 			Headers:         map[string]string{},
 		},
+		// TODO(jbd): Adjust the default queue size.
 		QueueConfig: QueueConfig{
 			Size:      10000,
 			MinShards: 5,
