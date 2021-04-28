@@ -53,7 +53,7 @@ type QueueConfig struct {
 	// in the queue at a given time.
 	Size int `mapstructure:"size"`
 
-	// Min shards configures the minimum number of shards used by
+	// MinShards configures the minimum number of shards used by
 	// the collector to fan out remote write requests.
 	MinShards int `mapstructure:"min_shards"`
 }
