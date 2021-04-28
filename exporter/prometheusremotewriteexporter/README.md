@@ -37,7 +37,7 @@ The following settings can be optionally configured:
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `queue_config`: fine tuning for the outgoing request queues.
-  - `capacity`: number of OTLP metrics that can be queued.
+  - `size`: number of OTLP metrics that can be queued.
   - `min_shards`: minimum number of shards to use to fan out the outgoing requests.
 
 Example:
