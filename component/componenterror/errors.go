@@ -21,12 +21,6 @@ import (
 )
 
 var (
-	// ErrAlreadyStarted indicates an error on starting an already-started component.
-	ErrAlreadyStarted = errors.New("already started")
-
-	// ErrAlreadyStopped indicates an error on stoping an already-stopped component.
-	ErrAlreadyStopped = errors.New("already stopped")
-
 	// ErrNilNextConsumer indicates an error on nil next consumer.
 	ErrNilNextConsumer = errors.New("nil nextConsumer")
 
