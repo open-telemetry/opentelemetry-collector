@@ -241,7 +241,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 
 	service, err := newService(&settings{
 		Factories:         app.factories,
-		StartInfo:         app.info,
+		BinaryInfo:        app.info,
 		Config:            cfg,
 		Logger:            app.logger,
 		AsyncErrorChannel: app.asyncErrorChannel,

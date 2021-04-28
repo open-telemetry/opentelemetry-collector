@@ -20,7 +20,7 @@ type BinaryInfo struct {
 	// Executable file name, e.g. "otelcol".
 	Command string
 
-	// Actual full name of the collector, e.g. "OpenTelemetry Collector".
+	// Full name of the collector, e.g. "OpenTelemetry Collector".
 	Description string
 
 	// Version of the collector.

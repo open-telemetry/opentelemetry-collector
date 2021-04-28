@@ -105,10 +105,10 @@ func createExampleService(t *testing.T) *service {
 	require.NoError(t, err)
 
 	srv, err := newService(&settings{
-		Factories: factories,
-		StartInfo: component.DefaultBinaryInfo(),
-		Config:    cfg,
-		Logger:    zap.NewNop(),
+		Factories:  factories,
+		BinaryInfo: component.DefaultBinaryInfo(),
+		Config:     cfg,
+		Logger:     zap.NewNop(),
 	})
 	require.NoError(t, err)
 	return srv

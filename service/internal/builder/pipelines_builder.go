@@ -82,7 +82,7 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 // pipelinesBuilder builds Pipelines from config.
 type pipelinesBuilder struct {
 	logger    *zap.Logger
-	appInfo   component.BinaryInfo
+	binInfo   component.BinaryInfo
 	config    *config.Config
 	exporters Exporters
 	factories map[config.Type]component.ProcessorFactory
@@ -92,12 +92,12 @@ type pipelinesBuilder struct {
 // built via BuildExporters.
 func BuildPipelines(
 	logger *zap.Logger,
-	appInfo component.BinaryInfo,
+	binInfo component.BinaryInfo,
 	config *config.Config,
 	exporters Exporters,
 	factories map[config.Type]component.ProcessorFactory,
 ) (BuiltPipelines, error) {
-	pb := &pipelinesBuilder{logger, appInfo, config, exporters, factories}
+	pb := &pipelinesBuilder{logger, binInfo, config, exporters, factories}
 
 	pipelineProcessors := make(BuiltPipelines)
 	for _, pipeline := range pb.config.Service.Pipelines {
@@ -153,7 +153,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		componentLogger := pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procCfg.Name()))
 		creationParams := component.ProcessorCreateParams{
 			Logger:     componentLogger,
-			BinaryInfo: pb.appInfo,
+			BinaryInfo: pb.binInfo,
 		}
 
 		switch pipelineCfg.InputType {
