@@ -31,6 +31,11 @@ type Config struct {
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
 	Namespace string `mapstructure:"namespace"`
 
+	// QueueConfig allows users to fine tune the queues
+	// that handle outgoing requests.
+	// See https://prometheus.io/docs/practices/remote_write/ for more.
+	QueueConfig QueueConfig `mapstructure:"queue_config"`
+
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
@@ -41,6 +46,19 @@ type Config struct {
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 }
+
+// QueueConfig allows to configure the remote write queue.
+type QueueConfig struct {
+	// Size is the maximum number of OTLP metric batches allowed
+	// in the queue at a given time.
+	Size int `mapstructure:"size"`
+
+	// Min shards configures the minimum number of shards used by
+	// the collector to fan out remote write requests.
+	MinShards int `mapstructure:"min_shards"`
+}
+
+// TODO(jbd): Add capacity, max_shards, max_samples_per_send to QueueConfig.
 
 var _ config.Exporter = (*Config)(nil)
 

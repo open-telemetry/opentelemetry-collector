@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -37,10 +36,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const (
-	maxConcurrentRequests = 5
-	maxBatchByteSize      = 3000000
-)
+const maxBatchByteSize = 3000000
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type PrwExporter struct {
@@ -50,12 +46,13 @@ type PrwExporter struct {
 	client          *http.Client
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
+	minShards       int
 	userAgentHeader string
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, buildInfo component.BuildInfo) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, minShards int, buildInfo component.BuildInfo) (*PrwExporter, error) {
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
 	}
@@ -80,6 +77,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
+		minShards:       minShards,
 	}, nil
 }
 
@@ -285,7 +283,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	concurrencyLimit := int(math.Min(maxConcurrentRequests, float64(len(requests))))
+	concurrencyLimit := prwe.minShards
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	// Run concurrencyLimit of workers until there
