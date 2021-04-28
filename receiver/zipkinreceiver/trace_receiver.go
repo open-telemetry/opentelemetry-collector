@@ -59,8 +59,6 @@ type ZipkinReceiver struct {
 	nextConsumer consumer.Traces
 	instanceName string
 
-	startOnce  sync.Once
-	stopOnce   sync.Once
 	shutdownWG sync.WaitGroup
 	server     *http.Server
 	config     *Config
