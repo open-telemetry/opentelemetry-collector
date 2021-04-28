@@ -42,13 +42,13 @@ func (m *MockAuthenticator) Authenticate(ctx context.Context, headers map[string
 	return m.AuthenticateFunc(ctx, headers)
 }
 
-// UnaryInterceptor isn't currently implemented and always returns nil.
-func (m *MockAuthenticator) UnaryInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error) {
+// GrpcUnaryServerInterceptor isn't currently implemented and always returns nil.
+func (m *MockAuthenticator) GrpcUnaryServerInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error) {
 	return nil, nil
 }
 
-// StreamInterceptor isn't currently implemented and always returns nil.
-func (m *MockAuthenticator) StreamInterceptor(interface{}, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error {
+// GrpcStreamServerInterceptor isn't currently implemented and always returns nil.
+func (m *MockAuthenticator) GrpcStreamServerInterceptor(interface{}, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error {
 	return nil
 }
 

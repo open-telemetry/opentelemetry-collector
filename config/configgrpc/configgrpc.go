@@ -303,8 +303,8 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.NamedEntity]compone
 		}
 
 		opts = append(opts,
-			grpc.UnaryInterceptor(authenticator.UnaryInterceptor),
-			grpc.StreamInterceptor(authenticator.StreamInterceptor),
+			grpc.UnaryInterceptor(authenticator.GrpcUnaryServerInterceptor),
+			grpc.StreamInterceptor(authenticator.GrpcStreamServerInterceptor),
 		)
 	}
 

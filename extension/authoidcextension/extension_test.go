@@ -475,7 +475,7 @@ func TestUnaryInterceptor(t *testing.T) {
 	}
 
 	// test
-	res, err := p.UnaryInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler)
+	res, err := p.GrpcUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler)
 
 	// verify
 	assert.NoError(t, err)
@@ -506,7 +506,7 @@ func TestStreamInterceptor(t *testing.T) {
 	}
 
 	// test
-	err = p.StreamInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
+	err = p.GrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
 
 	// verify
 	assert.NoError(t, err)
