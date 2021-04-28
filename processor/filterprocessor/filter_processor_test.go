@@ -28,8 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
@@ -307,10 +306,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ProcessorSettings: config.NewProcessorSettings(typeStr),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -329,13 +325,13 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.Nil(t, err)
 
 			caps := fmp.GetCapabilities()
-			assert.False(t, caps.MutatesConsumedData)
+			assert.True(t, caps.MutatesConsumedData)
 			ctx := context.Background()
 			assert.NoError(t, fmp.Start(ctx, nil))
 
-			mds := make([]consumerdata.MetricsData, len(test.inMN))
+			mds := make([]internaldata.MetricsData, len(test.inMN))
 			for i, metrics := range test.inMN {
-				mds[i] = consumerdata.MetricsData{
+				mds[i] = internaldata.MetricsData{
 					Metrics: metrics,
 				}
 			}
@@ -456,11 +452,13 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateParams{},
+		component.ProcessorCreateParams{Logger: zap.NewNop()},
 		cfg,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 	)
 	pdms := metricSlice(128)
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, pdm := range pdms {
 			_ = proc.ConsumeMetrics(ctx, pdm)
@@ -491,56 +489,30 @@ func pdm(prefix string, size int) pdata.Metrics {
 	return goldendataset.MetricsFromCfg(c)
 }
 
-func TestMetricIndexSingle(t *testing.T) {
-	metrics := pdm("", 1)
-	idx := newMetricIndex()
-	idx.add(0, 0, 0)
-	extracted := idx.extract(metrics)
-	require.Equal(t, metrics, extracted)
-}
-
-func TestMetricIndexAll(t *testing.T) {
-	metrics := pdm("", 2)
-	idx := newMetricIndex()
-	idx.add(0, 0, 0)
-	idx.add(0, 0, 1)
-	idx.add(0, 1, 0)
-	idx.add(0, 1, 1)
-	idx.add(1, 0, 0)
-	idx.add(1, 0, 1)
-	idx.add(1, 1, 0)
-	idx.add(1, 1, 1)
-	extracted := idx.extract(metrics)
-	require.Equal(t, metrics, extracted)
-}
-
 func TestNilResourceMetrics(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
-	rms.Append(pdata.NewResourceMetrics())
+	rms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
 
 func TestNilILM(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
-	rm := pdata.NewResourceMetrics()
-	rms.Append(rm)
+	rm := rms.AppendEmpty()
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Append(pdata.NewInstrumentationLibraryMetrics())
+	ilms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
 
 func TestNilMetric(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
-	rm := pdata.NewResourceMetrics()
-	rms.Append(rm)
+	rm := rms.AppendEmpty()
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilms.Append(ilm)
+	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
-	ms.Append(pdata.NewMetric())
+	ms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
 
@@ -561,7 +533,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 			Logger: zap.NewNop(),
 		},
 		cfg,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 	)
 	require.NotPanics(t, func() {
 		_ = proc.ConsumeMetrics(ctx, metrics)

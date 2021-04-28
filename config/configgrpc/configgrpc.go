@@ -100,6 +100,7 @@ type GRPCClientSettings struct {
 	BalancerName string `mapstructure:"balancer_name"`
 }
 
+// KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
@@ -133,6 +134,7 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
+// GRPCServerSettings defines common settings for a gRPC server configuration.
 type GRPCServerSettings struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
 	NetAddr confignet.NetAddr `mapstructure:",squash"`
@@ -231,6 +233,7 @@ func validateBalancerName(balancerName string) bool {
 	return false
 }
 
+// ToListener returns the net.Listener constructed from the settings.
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 	return gss.NetAddr.Listen()
 }

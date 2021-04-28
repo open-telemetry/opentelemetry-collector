@@ -29,10 +29,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/version"
@@ -40,8 +42,8 @@ import (
 
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPrwExporter(t *testing.T) {
-	config := &Config{
-		ExporterSettings:   configmodels.ExporterSettings{},
+	cfg := &Config{
+		ExporterSettings:   config.NewExporterSettings(typeStr),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
@@ -60,7 +62,7 @@ func Test_NewPrwExporter(t *testing.T) {
 	}{
 		{
 			"invalid_URL",
-			config,
+			cfg,
 			"test",
 			"invalid URL",
 			map[string]string{"Key1": "Val1"},
@@ -69,7 +71,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"nil_client",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{"Key1": "Val1"},
@@ -78,7 +80,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"invalid_labels_case",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{"Key1": ""},
@@ -87,7 +89,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"success_case",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{"Key1": "Val1"},
@@ -96,7 +98,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		},
 		{
 			"success_case_no_labels",
-			config,
+			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{},
@@ -130,16 +132,14 @@ func Test_Shutdown(t *testing.T) {
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
-	errChan := make(chan error, 5)
 	err := prwe.Shutdown(context.Background())
 	require.NoError(t, err)
-	errChan = make(chan error, 5)
+	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, ok := prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
-			errChan <- ok
+			errChan <- prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
 		}()
 	}
 	wg.Wait()
@@ -158,7 +158,7 @@ func Test_export(t *testing.T) {
 	sample2 := getSample(floatVal2, msTime2)
 	ts1 := getTimeSeries(labels, sample1, sample2)
 	handleFunc := func(w http.ResponseWriter, r *http.Request, code int) {
-		// The following is a handler function that reads the sent httpRequest, unmarshals, and checks if the WriteRequest
+		// The following is a handler function that reads the sent httpRequest, unmarshal, and checks if the WriteRequest
 		// preserves the TimeSeries data correctly
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -264,208 +264,238 @@ func Test_PushMetrics(t *testing.T) {
 	// success cases
 	intSumBatch := testdata.GenerateMetricsManyMetricsSameResource(10)
 
-	doubleSumMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics1[validDoubleSum],
-						validMetrics2[validDoubleSum],
+	doubleSumMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics1[validDoubleSum],
+							validMetrics2[validDoubleSum],
+						},
 					},
 				},
 			},
 		},
 	}
-	doubleSumBatch := pdata.MetricsFromOtlp(doubleSumMetric)
+	doubleSumBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleSumMetric))
 
-	intGaugeMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics1[validIntGauge],
-						validMetrics2[validIntGauge],
+	intGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics1[validIntGauge],
+							validMetrics2[validIntGauge],
+						},
 					},
 				},
 			},
 		},
 	}
-	intGaugeBatch := pdata.MetricsFromOtlp(intGaugeMetric)
+	intGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(intGaugeMetric))
 
-	doubleGaugeMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics1[validDoubleGauge],
-						validMetrics2[validDoubleGauge],
+	doubleGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics1[validDoubleGauge],
+							validMetrics2[validDoubleGauge],
+						},
 					},
 				},
 			},
 		},
 	}
-	doubleGaugeBatch := pdata.MetricsFromOtlp(doubleGaugeMetric)
+	doubleGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleGaugeMetric))
 
-	intHistogramMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics1[validIntHistogram],
-						validMetrics2[validIntHistogram],
+	intHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics1[validIntHistogram],
+							validMetrics2[validIntHistogram],
+						},
 					},
 				},
 			},
 		},
 	}
-	intHistogramBatch := pdata.MetricsFromOtlp(intHistogramMetric)
+	intHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(intHistogramMetric))
 
-	doubleHistogramMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics1[validDoubleHistogram],
-						validMetrics2[validDoubleHistogram],
+	doubleHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics1[validDoubleHistogram],
+							validMetrics2[validDoubleHistogram],
+						},
 					},
 				},
 			},
 		},
 	}
-	doubleHistogramBatch := pdata.MetricsFromOtlp(doubleHistogramMetric)
+	doubleHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleHistogramMetric))
 
-	doubleSummaryMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics1[validDoubleSummary],
-						validMetrics2[validDoubleSummary],
+	doubleSummaryMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics1[validDoubleSummary],
+							validMetrics2[validDoubleSummary],
+						},
 					},
 				},
 			},
 		},
 	}
-	doubleSummaryBatch := pdata.MetricsFromOtlp(doubleSummaryMetric)
+	doubleSummaryBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleSummaryMetric))
 
 	// len(BucketCount) > len(ExplicitBounds)
-	unmatchedBoundBucketIntHistMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics2[unmatchedBoundBucketIntHist],
+	unmatchedBoundBucketIntHistMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics2[unmatchedBoundBucketIntHist],
+						},
 					},
 				},
 			},
 		},
 	}
-	unmatchedBoundBucketIntHistBatch := pdata.MetricsFromOtlp(unmatchedBoundBucketIntHistMetric)
+	unmatchedBoundBucketIntHistBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(unmatchedBoundBucketIntHistMetric))
 
-	unmatchedBoundBucketDoubleHistMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						validMetrics2[unmatchedBoundBucketDoubleHist],
+	unmatchedBoundBucketDoubleHistMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							validMetrics2[unmatchedBoundBucketDoubleHist],
+						},
 					},
 				},
 			},
 		},
 	}
-	unmatchedBoundBucketDoubleHistBatch := pdata.MetricsFromOtlp(unmatchedBoundBucketDoubleHistMetric)
+	unmatchedBoundBucketDoubleHistBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(unmatchedBoundBucketDoubleHistMetric))
 
 	// fail cases
-	nilDataPointIntGaugeMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						errorMetrics[nilDataPointIntGauge],
+	nilDataPointIntGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							errorMetrics[nilDataPointIntGauge],
+						},
 					},
 				},
 			},
 		},
 	}
-	nilDataPointIntGaugeBatch := pdata.MetricsFromOtlp(nilDataPointIntGaugeMetric)
+	nilDataPointIntGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointIntGaugeMetric))
 
-	nilDataPointDoubleGaugeMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						errorMetrics[nilDataPointDoubleGauge],
+	nilDataPointDoubleGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							errorMetrics[nilDataPointDoubleGauge],
+						},
 					},
 				},
 			},
 		},
 	}
-	nilDataPointDoubleGaugeBatch := pdata.MetricsFromOtlp(nilDataPointDoubleGaugeMetric)
+	nilDataPointDoubleGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleGaugeMetric))
 
-	nilDataPointIntSumMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						errorMetrics[nilDataPointIntSum],
+	nilDataPointIntSumMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							errorMetrics[nilDataPointIntSum],
+						},
 					},
 				},
 			},
 		},
 	}
-	nilDataPointIntSumBatch := pdata.MetricsFromOtlp(nilDataPointIntSumMetric)
+	nilDataPointIntSumBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointIntSumMetric))
 
-	nilDataPointDoubleSumMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						errorMetrics[nilDataPointDoubleSum],
+	nilDataPointDoubleSumMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							errorMetrics[nilDataPointDoubleSum],
+						},
 					},
 				},
 			},
 		},
 	}
-	nilDataPointDoubleSumBatch := pdata.MetricsFromOtlp(nilDataPointDoubleSumMetric)
+	nilDataPointDoubleSumBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleSumMetric))
 
-	nilDataPointIntHistogramMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						errorMetrics[nilDataPointIntHistogram],
+	nilDataPointIntHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							errorMetrics[nilDataPointIntHistogram],
+						},
 					},
 				},
 			},
 		},
 	}
-	nilDataPointIntHistogramBatch := pdata.MetricsFromOtlp(nilDataPointIntHistogramMetric)
+	nilDataPointIntHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointIntHistogramMetric))
 
-	nilDataPointDoubleHistogramMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						errorMetrics[nilDataPointDoubleHistogram],
+	nilDataPointDoubleHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							errorMetrics[nilDataPointDoubleHistogram],
+						},
 					},
 				},
 			},
 		},
 	}
-	nilDataPointDoubleHistogramBatch := pdata.MetricsFromOtlp(nilDataPointDoubleHistogramMetric)
+	nilDataPointDoubleHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleHistogramMetric))
 
-	nilDataPointDoubleSummaryMetric := []*otlp.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlp.Metric{
-						errorMetrics[nilDataPointDoubleSummary],
+	nilDataPointDoubleSummaryMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlp.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlp.Metric{
+							errorMetrics[nilDataPointDoubleSummary],
+						},
 					},
 				},
 			},
 		},
 	}
-	nilDataPointDoubleSummaryBatch := pdata.MetricsFromOtlp(nilDataPointDoubleSummaryMetric)
+	nilDataPointDoubleSummaryBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleSummaryMetric))
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int) {
 		body, err := ioutil.ReadAll(r.Body)
@@ -487,13 +517,12 @@ func Test_PushMetrics(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                 string
-		md                   *pdata.Metrics
-		reqTestFunc          func(t *testing.T, r *http.Request, expected int)
-		expectedTimeSeries   int
-		httpResponseCode     int
-		numDroppedTimeSeries int
-		returnErr            bool
+		name               string
+		md                 *pdata.Metrics
+		reqTestFunc        func(t *testing.T, r *http.Request, expected int)
+		expectedTimeSeries int
+		httpResponseCode   int
+		returnErr          bool
 	}{
 		{
 			"invalid_type_case",
@@ -501,7 +530,6 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			invalidTypeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -510,7 +538,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -519,7 +546,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -528,7 +554,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -537,7 +562,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -546,7 +570,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			12,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -555,7 +578,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			12,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -564,7 +586,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			10,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -573,7 +594,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			5,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -582,7 +602,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			5,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -591,7 +610,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			5,
 			http.StatusServiceUnavailable,
-			1,
 			true,
 		},
 		{
@@ -600,7 +618,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -609,7 +626,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointIntGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -618,7 +634,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -627,7 +642,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointIntSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -636,7 +650,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleHistogramBatch.MetricCount(),
 			true,
 		},
 		{
@@ -645,7 +658,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointIntHistogramBatch.MetricCount(),
 			true,
 		},
 		{
@@ -654,7 +666,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleSummaryBatch.MetricCount(),
 			true,
 		},
 	}
@@ -674,11 +685,8 @@ func Test_PushMetrics(t *testing.T) {
 			assert.NoError(t, uErr)
 
 			config := &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: "prometheusremotewrite",
-					NameVal: "prometheusremotewrite",
-				},
-				Namespace: "",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Namespace:        "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://some.url:9411/api/prom/push",
 					// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -692,8 +700,7 @@ func Test_PushMetrics(t *testing.T) {
 			c := http.DefaultClient
 			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{})
 			require.NoError(t, nErr)
-			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
-			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
+			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return

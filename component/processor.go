@@ -19,7 +19,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -35,19 +36,19 @@ type Processor interface {
 // TracesProcessor is a processor that can consume traces.
 type TracesProcessor interface {
 	Processor
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // MetricsProcessor is a processor that can consume metrics.
 type MetricsProcessor interface {
 	Processor
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // LogsProcessor is a processor that can consume logs.
 type LogsProcessor interface {
 	Processor
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 // ProcessorCapabilities describes the capabilities of a Processor.
@@ -72,6 +73,9 @@ type ProcessorCreateParams struct {
 
 // ProcessorFactory is factory interface for processors. This is the
 // new factory type that can create new style processors.
+//
+// This interface cannot be directly implemented, implementations need to embed
+// the BaseProcessorFactory or use the processorhelper.NewFactory to implement it.
 type ProcessorFactory interface {
 	Factory
 
@@ -82,16 +86,16 @@ type ProcessorFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Processor
+	CreateDefaultConfig() config.Processor
 
-	// CreateTraceProcessor creates a trace processor based on this config.
+	// CreateTracesProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTracesProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
-		nextConsumer consumer.TracesConsumer,
+		cfg config.Processor,
+		nextConsumer consumer.Traces,
 	) (TracesProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
@@ -100,8 +104,8 @@ type ProcessorFactory interface {
 	CreateMetricsProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
-		nextConsumer consumer.MetricsConsumer,
+		cfg config.Processor,
+		nextConsumer consumer.Metrics,
 	) (MetricsProcessor, error)
 
 	// CreateLogsProcessor creates a processor based on the config.
@@ -110,7 +114,42 @@ type ProcessorFactory interface {
 	CreateLogsProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
-		cfg configmodels.Processor,
-		nextConsumer consumer.LogsConsumer,
+		cfg config.Processor,
+		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
+
+	// unexportedProcessor is a dummy method to force this interface to not be implemented.
+	unexportedProcessor()
 }
+
+// BaseProcessorFactory is the interface that must be embedded by all ProcessorFactory implementations.
+type BaseProcessorFactory struct{}
+
+var _ ProcessorFactory = (*BaseProcessorFactory)(nil)
+
+// Type must be override.
+func (b BaseProcessorFactory) Type() config.Type {
+	panic("implement me")
+}
+
+// CreateDefaultConfig must be override.
+func (b BaseProcessorFactory) CreateDefaultConfig() config.Processor {
+	panic("implement me")
+}
+
+// CreateTracesProcessor default implemented as not supported date type.
+func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Traces) (TracesProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+// CreateMetricsProcessor default implemented as not supported date type.
+func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+// CreateLogsProcessor default implemented as not supported date type.
+func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Logs) (LogsProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+func (b BaseProcessorFactory) unexportedProcessor() {}

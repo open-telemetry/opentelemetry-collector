@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   # The probabilistic_sampler sets trace sampling by hashing the trace id of
@@ -25,11 +25,11 @@ processors:
     hash_seed: 22
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [probabilistic_sampler]
-      exporters: [exampleexporter]
+      exporters: [nop]

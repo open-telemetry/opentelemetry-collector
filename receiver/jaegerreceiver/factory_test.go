@@ -25,10 +25,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -65,12 +64,12 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, nil)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
 
 func TestCreateReceiverGeneralConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -89,7 +88,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, rCfg, nil)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
 
@@ -127,6 +126,26 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 			},
 		},
 	}
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+
+	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	assert.NoError(t, err, "tls-enabled receiver creation failed")
+}
+
+func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
+		Endpoint: defaultHTTPBindEndpoint,
+		TLSSetting: &configtls.TLSServerSetting{
+			TLSSetting: configtls.TLSSetting{
+				CertFile: "./testdata/server.crt",
+				KeyFile:  "./testdata/server.key",
+			},
+		},
+	}
+
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
@@ -336,17 +355,4 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 
 	assert.Error(t, err, "create trace receiver should error")
-}
-
-func TestCustomUnmarshalErrors(t *testing.T) {
-	factory := NewFactory()
-
-	fu, ok := factory.(component.ConfigUnmarshaler)
-	assert.True(t, ok)
-
-	err := fu.Unmarshal(config.NewViper(), nil)
-	assert.Error(t, err, "should not have been able to marshal to a nil config")
-
-	err = fu.Unmarshal(config.NewViper(), &RemoteSamplingConfig{})
-	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }

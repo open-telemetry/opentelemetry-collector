@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -30,7 +30,7 @@ type Receiver interface {
 
 // A TracesReceiver is an "arbitrary data"-to-"internal format" converter.
 // Its purpose is to translate data from the wild into internal trace format.
-// TracesReceiver feeds a consumer.TracesConsumer with data.
+// TracesReceiver feeds a consumer.Traces with data.
 //
 // For example it could be Zipkin data source which translates Zipkin spans into pdata.Traces.
 type TracesReceiver interface {
@@ -39,7 +39,7 @@ type TracesReceiver interface {
 
 // A MetricsReceiver is an "arbitrary data"-to-"internal format" converter.
 // Its purpose is to translate data from the wild into internal metrics format.
-// MetricsReceiver feeds a consumer.MetricsConsumer with data.
+// MetricsReceiver feeds a consumer.Metrics with data.
 //
 // For example it could be Prometheus data source which translates Prometheus metrics into pdata.Metrics.
 type MetricsReceiver interface {
@@ -48,7 +48,7 @@ type MetricsReceiver interface {
 
 // A LogsReceiver is a "log data"-to-"internal format" converter.
 // Its purpose is to translate data from the wild into internal data format.
-// LogsReceiver feeds a consumer.LogsConsumer with data.
+// LogsReceiver feeds a consumer.Logs with data.
 type LogsReceiver interface {
 	Receiver
 }
@@ -75,23 +75,23 @@ type ReceiverFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Receiver
+	CreateDefaultConfig() config.Receiver
 
-	// CreateTraceReceiver creates a trace receiver based on this config.
+	// CreateTracesReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTracesReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg configmodels.Receiver, nextConsumer consumer.TracesConsumer) (TracesReceiver, error)
+		cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// error will be returned instead.
 	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (MetricsReceiver, error)
+		cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
 
 	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// error will be returned instead.
 	CreateLogsReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg configmodels.Receiver, nextConsumer consumer.LogsConsumer) (LogsReceiver, error)
+		cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
 }

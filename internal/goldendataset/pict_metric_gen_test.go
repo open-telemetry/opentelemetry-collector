@@ -69,13 +69,13 @@ func TestPICTtoCfg(t *testing.T) {
 			inputs: PICTMetricInputs{
 				NumResourceAttrs: AttrsTwo,
 				NumPtsPerMetric:  NumPtsPerMetricMany,
-				MetricType:       MetricTypeDoubleHistogram,
+				MetricType:       MetricTypeHistogram,
 				NumPtLabels:      LabelsMany,
 			},
 			cfg: MetricCfg{
 				NumResourceAttrs:     2,
 				NumPtsPerMetric:      16,
-				MetricDescriptorType: pdata.MetricDataTypeDoubleHistogram,
+				MetricDescriptorType: pdata.MetricDataTypeHistogram,
 				NumPtLabels:          16,
 			},
 		},

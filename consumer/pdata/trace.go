@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"go.opentelemetry.io/collector/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
@@ -23,52 +24,52 @@ import (
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
 type Traces struct {
-	orig *[]*otlptrace.ResourceSpans
+	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
 
 // NewTraces creates a new Traces.
 func NewTraces() Traces {
-	orig := []*otlptrace.ResourceSpans(nil)
-	return Traces{&orig}
+	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
 
-// TracesFromOtlp creates the internal Traces representation from the OTLP.
-func TracesFromOtlp(orig []*otlptrace.ResourceSpans) Traces {
-	return Traces{&orig}
+// TracesFromInternalRep creates Traces from the internal representation.
+// Should not be used outside this module.
+func TracesFromInternalRep(wrapper internal.TracesWrapper) Traces {
+	return Traces{orig: internal.TracesToOtlp(wrapper)}
 }
 
-// TracesToOtlp converts the internal Traces to the OTLP.
-func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
-	return *td.orig
+// TracesFromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
+// ProtoBuf bytes to the internal Traces.
+//
+// Returns an invalid Traces instance if error is not nil.
+func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
+	req := otlpcollectortrace.ExportTraceServiceRequest{}
+	if err := req.Unmarshal(data); err != nil {
+		return Traces{}, err
+	}
+	internal.TracesCompatibilityChanges(&req)
+	return Traces{orig: &req}, nil
 }
 
-// ToOtlpProtoBytes converts the internal Traces to OTLP Collector
-// ExportTraceServiceRequest ProtoBuf bytes.
+// InternalRep returns internal representation of the Traces.
+// Should not be used outside this module.
+func (td Traces) InternalRep() internal.TracesWrapper {
+	return internal.TracesFromOtlp(td.orig)
+}
+
+// ToOtlpProtoBytes converts this Traces to the OTLP Collector ExportTraceServiceRequest
+// ProtoBuf bytes.
+//
+// Returns an nil byte-array if error is not nil.
 func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
-	traces := otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: *td.orig,
-	}
-	return traces.Marshal()
-}
-
-// FromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes to the internal Traces. Overrides current data.
-// Calling this function on zero-initialized structure causes panic.
-// Use it with NewTraces or on existing initialized Traces.
-func (td Traces) FromOtlpProtoBytes(data []byte) error {
-	traces := otlpcollectortrace.ExportTraceServiceRequest{}
-	if err := traces.Unmarshal(data); err != nil {
-		return err
-	}
-	*td.orig = traces.ResourceSpans
-	return nil
+	return td.orig.Marshal()
 }
 
 // Clone returns a copy of Traces.
 func (td Traces) Clone() Traces {
-	rss := NewResourceSpansSlice()
-	td.ResourceSpans().CopyTo(rss)
-	return Traces(rss)
+	cloneTd := NewTraces()
+	td.ResourceSpans().CopyTo(cloneTd.ResourceSpans())
+	return cloneTd
 }
 
 // SpanCount calculates the total number of spans.
@@ -85,45 +86,58 @@ func (td Traces) SpanCount() int {
 	return spanCount
 }
 
-// Size returns size in bytes.
-func (td Traces) Size() int {
-	size := 0
-	for i := 0; i < len(*td.orig); i++ {
-		if (*td.orig)[i] == nil {
-			continue
-		}
-		size += (*td.orig)[i].Size()
-	}
-	return size
+// OtlpProtoSize returns the size in bytes of this Traces encoded as OTLP Collector
+// ExportTraceServiceRequest ProtoBuf bytes.
+func (td Traces) OtlpProtoSize() int {
+	return td.orig.Size()
 }
 
+// ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (td Traces) ResourceSpans() ResourceSpansSlice {
-	return newResourceSpansSlice(td.orig)
+	return newResourceSpansSlice(&td.orig.ResourceSpans)
 }
 
 // TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState string
 
-type SpanKind otlptrace.Span_SpanKind
-
-func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
-
 const (
+	// TraceStateEmpty represents the empty TraceState.
 	TraceStateEmpty TraceState = ""
 )
 
+// SpanKind is the type of span. Can be used to specify additional relationships between spans
+// in addition to a parent/child relationship.
+type SpanKind int32
+
+// String returns the string representation of the SpanKind.
+func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
+
 const (
+	// SpanKindUNSPECIFIED represents that the SpanKind is unspecified, it MUST NOT be used.
 	SpanKindUNSPECIFIED = SpanKind(0)
-	SpanKindINTERNAL    = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)
-	SpanKindSERVER      = SpanKind(otlptrace.Span_SPAN_KIND_SERVER)
-	SpanKindCLIENT      = SpanKind(otlptrace.Span_SPAN_KIND_CLIENT)
-	SpanKindPRODUCER    = SpanKind(otlptrace.Span_SPAN_KIND_PRODUCER)
-	SpanKindCONSUMER    = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
+	// SpanKindINTERNAL indicates that the span represents an internal operation within an application,
+	// as opposed to an operation happening at the boundaries. Default value.
+	SpanKindINTERNAL = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)
+	// SpanKindSERVER indicates that the span covers server-side handling of an RPC or other
+	// remote network request.
+	SpanKindSERVER = SpanKind(otlptrace.Span_SPAN_KIND_SERVER)
+	// SpanKindCLIENT indicates that the span describes a request to some remote service.
+	SpanKindCLIENT = SpanKind(otlptrace.Span_SPAN_KIND_CLIENT)
+	// SpanKindPRODUCER indicates that the span describes a producer sending a message to a broker.
+	// Unlike CLIENT and SERVER, there is often no direct critical path latency relationship
+	// between producer and consumer spans.
+	// A PRODUCER span ends when the message was accepted by the broker while the logical processing of
+	// the message might span a much longer time.
+	SpanKindPRODUCER = SpanKind(otlptrace.Span_SPAN_KIND_PRODUCER)
+	// SpanKindCONSUMER indicates that the span describes consumer receiving a message from a broker.
+	// Like the PRODUCER kind, there is often no direct critical path latency relationship between
+	// producer and consumer spans.
+	SpanKindCONSUMER = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
 )
 
 // StatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-type StatusCode otlptrace.Status_StatusCode
+type StatusCode int32
 
 const (
 	StatusCodeUnset = StatusCode(otlptrace.Status_STATUS_CODE_UNSET)

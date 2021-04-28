@@ -1,13 +1,15 @@
 include ./Makefile.Common
 
-# This is the code that we want to run checklicense, staticcheck, etc.
+# This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/issuegenerator/*' \
 							-not -path './cmd/mdatagen/*' \
 							-not -path './cmd/schemagen/*' \
+							-not -path './cmd/checkdoc/*' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
 							-not -path './internal/data/protogen/*' \
+							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
@@ -31,14 +33,14 @@ GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 VERSION=$(shell git describe --match "v[0-9]*" HEAD)
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-# BUILD_TYPE should be one of (dev, release).
-BUILD_TYPE?=release
-BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
+BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
+
+COMP_REL_PATH=service/defaultcomponents/defaults.go
+MOD_NAME=go.opentelemetry.io/collector
 
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
@@ -51,7 +53,7 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: gochecklicense goimpi golint gomisspell gotest otelcol
+all: gochecklicense checkdoc goimpi golint gomisspell gotest otelcol
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -147,8 +149,8 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
 	cd cmd/mdatagen && go install ./
+	cd cmd/checkdoc && go install ./
 
 .PHONY: otelcol
 otelcol:
@@ -157,7 +159,7 @@ otelcol:
 
 .PHONY: run
 run:
-	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG}
+	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -237,7 +239,7 @@ binaries-windows_amd64:
 
 .PHONY: build-binary-internal
 build-binary-internal:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
 
 
 .PHONY: deb-rpm-package
@@ -356,3 +358,8 @@ certs:
 .PHONY: certs-dryrun
 certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
+
+# Verify existence of READMEs for components specified as default components in the collector.
+.PHONY: checkdoc
+checkdoc:
+	go run cmd/checkdoc/main.go cmd/checkdoc/docs.go --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)

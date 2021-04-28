@@ -23,6 +23,8 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
@@ -30,95 +32,67 @@ func TestSpanCount(t *testing.T) {
 	md := NewTraces()
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().Resize(1)
+	rs := md.ResourceSpans().AppendEmpty()
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	ils.Spans().AppendEmpty()
 	assert.EqualValues(t, 1, md.SpanCount())
 
 	rms := md.ResourceSpans()
 	rms.Resize(3)
-	rms.At(0).InstrumentationLibrarySpans().Resize(1)
-	rms.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	rms.At(1).InstrumentationLibrarySpans().Resize(1)
-	rms.At(2).InstrumentationLibrarySpans().Resize(1)
-	rms.At(2).InstrumentationLibrarySpans().At(0).Spans().Resize(5)
+	rms.At(1).InstrumentationLibrarySpans().AppendEmpty()
+	rms.At(2).InstrumentationLibrarySpans().AppendEmpty().Spans().Resize(5)
+	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.SpanCount())
 }
 
 func TestSize(t *testing.T) {
-	md := NewTraces()
-	assert.Equal(t, 0, md.Size())
-	rms := md.ResourceSpans()
-	rms.Resize(1)
-	rms.At(0).InstrumentationLibrarySpans().Resize(1)
-	rms.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	rms.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
-	otlp := TracesToOtlp(md)
-	size := 0
-	sizeBytes := 0
-	for _, rspans := range otlp {
-		size += rspans.Size()
-		bts, err := rspans.Marshal()
-		require.NoError(t, err)
-		sizeBytes += len(bts)
-	}
-	assert.Equal(t, size, md.Size())
-	assert.Equal(t, sizeBytes, md.Size())
+	td := NewTraces()
+	assert.Equal(t, 0, td.OtlpProtoSize())
+	rms := td.ResourceSpans()
+	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
+	otlp := internal.TracesToOtlp(td.InternalRep())
+	size := otlp.Size()
+	bytes, err := otlp.Marshal()
+	require.NoError(t, err)
+	assert.Equal(t, size, td.OtlpProtoSize())
+	assert.Equal(t, len(bytes), td.OtlpProtoSize())
 }
 
 func TestTracesSizeWithNil(t *testing.T) {
-	assert.Equal(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{nil}).Size())
+	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
-	assert.EqualValues(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{{}}).SpanCount())
-	assert.EqualValues(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{
-		{
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{{}},
+	assert.EqualValues(t, 0, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
+		ResourceSpans: []*otlptrace.ResourceSpans{{}},
+	}}.SpanCount())
+	assert.EqualValues(t, 0, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
+		ResourceSpans: []*otlptrace.ResourceSpans{
+			{
+				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{{}},
+			},
 		},
-	}).SpanCount())
-	assert.EqualValues(t, 1, TracesFromOtlp([]*otlptrace.ResourceSpans{
-		{
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{{}},
+	}}.SpanCount())
+	assert.EqualValues(t, 1, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
+		ResourceSpans: []*otlptrace.ResourceSpans{
+			{
+				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+					{
+						Spans: []*otlptrace.Span{{}},
+					},
 				},
 			},
 		},
-	}).SpanCount())
-}
-
-func TestSpanID(t *testing.T) {
-	sid := InvalidSpanID()
-	assert.EqualValues(t, [8]byte{}, sid.Bytes())
-	assert.True(t, sid.IsEmpty())
-
-	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
-	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
-	assert.False(t, sid.IsEmpty())
-}
-
-func TestTraceID(t *testing.T) {
-	tid := InvalidTraceID()
-	assert.EqualValues(t, [16]byte{}, tid.Bytes())
-	assert.True(t, tid.IsEmpty())
-
-	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.EqualValues(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
-	assert.False(t, tid.IsEmpty())
+	}}.SpanCount())
 }
 
 func TestSpanStatusCode(t *testing.T) {
 	td := NewTraces()
-	rss := td.ResourceSpans()
-	rss.Resize(1)
-	rss.At(0).InstrumentationLibrarySpans().Resize(1)
-	rss.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	status := rss.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Status()
+	status := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().Status()
 
 	// Check handling of deprecated status code, see spec here:
 	// https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231
@@ -146,10 +120,10 @@ func TestSpanStatusCode(t *testing.T) {
 }
 
 func TestToFromOtlp(t *testing.T) {
-	otlp := []*otlptrace.ResourceSpans(nil)
-	td := TracesFromOtlp(otlp)
+	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
+	td := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
 	assert.EqualValues(t, NewTraces(), td)
-	assert.EqualValues(t, otlp, TracesToOtlp(td))
+	assert.EqualValues(t, otlp, internal.TracesToOtlp(td.InternalRep()))
 	// More tests in ./tracedata/trace_test.go. Cannot have them here because of
 	// circular dependency.
 }
@@ -193,14 +167,13 @@ func TestTracesToFromOtlpProtoBytes(t *testing.T) {
 	bytes, err := send.ToOtlpProtoBytes()
 	assert.NoError(t, err)
 
-	recv := NewTraces()
-	err = recv.FromOtlpProtoBytes(bytes)
+	recv, err := TracesFromOtlpProtoBytes(bytes)
 	assert.NoError(t, err)
 	assert.EqualValues(t, send, recv)
 }
 
 func TestTracesFromInvalidOtlpProtoBytes(t *testing.T) {
-	err := NewTraces().FromOtlpProtoBytes([]byte{0xFF})
+	_, err := TracesFromOtlpProtoBytes([]byte{0xFF})
 	assert.EqualError(t, err, "unexpected EOF")
 }
 
@@ -242,8 +215,8 @@ func BenchmarkTracesFromOtlp(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		traces := NewTraces()
-		require.NoError(b, traces.FromOtlpProtoBytes(buf))
+		traces, err := TracesFromOtlpProtoBytes(buf)
+		require.NoError(b, err)
 		assert.Equal(b, baseTraces.ResourceSpans().Len(), traces.ResourceSpans().Len())
 	}
 }

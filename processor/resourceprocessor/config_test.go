@@ -21,13 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factories.Processors[typeStr] = NewFactory()
@@ -37,19 +37,16 @@ func TestLoadConfig(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	assert.Equal(t, cfg.Processors["resource"], &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
 		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
 			{Key: "redundant-attribute", Action: processorhelper.DELETE},
 		},
 	})
 
 	assert.Equal(t, cfg.Processors["resource/invalid"], &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: &config.ProcessorSettings{
 			TypeVal: "resource",
 			NameVal: "resource/invalid",
 		},

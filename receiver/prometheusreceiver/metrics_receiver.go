@@ -24,20 +24,23 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver/internal"
 )
+
+const transport = "http"
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
 	cfg        *Config
-	consumer   consumer.MetricsConsumer
+	consumer   consumer.Metrics
 	cancelFunc context.CancelFunc
 
 	logger *zap.Logger
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumer) *pReceiver {
+func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metrics) *pReceiver {
 	pr := &pReceiver{
 		cfg:      cfg,
 		consumer: next,
@@ -48,7 +51,7 @@ func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metric
 
 // Start is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
-func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
+func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
@@ -73,7 +76,10 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	if !r.cfg.UseStartTimeMetric {
 		jobsMap = internal.NewJobsMap(2 * time.Minute)
 	}
-	ocaStore := internal.NewOcaStore(ctx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex, r.cfg.IncludeResourceLabels, r.cfg.Name())
+	// Per component.Component Start instructions, for async operations we should not use the
+	// incoming context, it may get cancelled.
+	receiverCtx := obsreport.ReceiverContext(context.Background(), r.cfg.Name(), transport)
+	ocaStore := internal.NewOcaStore(receiverCtx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex,r.cfg.IncludeResourceLabels, r.cfg.Name())
 
 	scrapeManager := scrape.NewManager(logger, ocaStore)
 	ocaStore.SetScrapeManager(scrapeManager)

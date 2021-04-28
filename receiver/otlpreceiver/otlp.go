@@ -51,6 +51,7 @@ type otlpReceiver struct {
 
 	stopOnce        sync.Once
 	startServerOnce sync.Once
+	shutdownWG      sync.WaitGroup
 
 	logger *zap.Logger
 }
@@ -96,8 +97,11 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 	if err != nil {
 		return err
 	}
+	r.shutdownWG.Add(1)
 	go func() {
-		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil {
+		defer r.shutdownWG.Done()
+
+		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && errGrpc != grpc.ErrServerStopped {
 			host.ReportFatalError(errGrpc)
 		}
 	}()
@@ -111,8 +115,11 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 	if err != nil {
 		return err
 	}
+	r.shutdownWG.Add(1)
 	go func() {
-		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil {
+		defer r.shutdownWG.Done()
+
+		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -180,11 +187,18 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 		if r.serverGRPC != nil {
 			r.serverGRPC.GracefulStop()
 		}
+
+		r.shutdownWG.Wait()
+
+		// delete the receiver from the map so it doesn't leak and it becomes possible to create
+		// another instance with the same configuration that functions properly. Notice that an
+		// OTLP object can only be started and shutdown once.
+		delete(receivers, r.cfg)
 	})
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TracesConsumer) error {
+func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Traces) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -203,7 +217,7 @@ func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Tr
 	return nil
 }
 
-func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.MetricsConsumer) error {
+func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.Metrics) error {
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -217,7 +231,7 @@ func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.
 	return nil
 }
 
-func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.LogsConsumer) error {
+func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.Logs) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}

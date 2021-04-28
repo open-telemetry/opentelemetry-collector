@@ -21,9 +21,9 @@ import (
 
 	"github.com/shirou/gopsutil/load"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -35,7 +35,7 @@ func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex 
 	now := pdata.TimestampFromTime(time.Now())
 	misc, err := miscFunc()
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, unixMetricsLen)
+		return scrapererror.NewPartialScrapeError(err, unixMetricsLen)
 	}
 
 	metrics.Resize(startIndex + unixMetricsLen)

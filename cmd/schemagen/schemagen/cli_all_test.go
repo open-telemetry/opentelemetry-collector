@@ -17,6 +17,7 @@ package schemagen
 import (
 	"io/ioutil"
 	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestCreateAllSchemaFiles(t *testing.T) {
 	fileInfos, err := ioutil.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.NotNil(t, fileInfos)
-	file, err := ioutil.ReadFile(path.Join(tempDir, "otlpexporter.Config.yaml"))
+	file, err := ioutil.ReadFile(filepath.Clean(path.Join(tempDir, "otlpexporter.Config.yaml")))
 	require.NoError(t, err)
 	fld := field{}
 	err = yaml.Unmarshal(file, &fld)

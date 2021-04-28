@@ -43,7 +43,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	}
 }
 
-// Collector dynamically allocates metrics, describe shoud be noop
+// Describe is a no-op, because the collector dynamically allocates metrics.
 // https://github.com/prometheus/client_golang/blob/v1.9.0/prometheus/collector.go#L28-L40
 func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
 
@@ -68,8 +68,10 @@ func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error
 		return c.convertDoubleSum(metric)
 	case pdata.MetricDataTypeIntHistogram:
 		return c.convertIntHistogram(metric)
-	case pdata.MetricDataTypeDoubleHistogram:
+	case pdata.MetricDataTypeHistogram:
 		return c.convertDoubleHistogram(metric)
+	case pdata.MetricDataTypeSummary:
+		return c.convertSummary(metric)
 	}
 
 	return nil, errUnknownMetricType
@@ -86,9 +88,10 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, labels pdata.StringMa
 	keys := make([]string, 0, labels.Len())
 	values := make([]string, 0, labels.Len())
 
-	labels.ForEach(func(k string, v string) {
-		keys = append(keys, k)
+	labels.Range(func(k string, v string) bool {
+		keys = append(keys, sanitize(k))
 		values = append(values, v)
+		return true
 	})
 
 	return prometheus.NewDesc(
@@ -207,8 +210,32 @@ func (c *collector) convertIntHistogram(metric pdata.Metric) (prometheus.Metric,
 	return m, nil
 }
 
+func (c *collector) convertSummary(metric pdata.Metric) (prometheus.Metric, error) {
+	// TODO: In the off chance that we have multiple points
+	// within the same metric, how should we handle them?
+	point := metric.Summary().DataPoints().At(0)
+
+	quantiles := make(map[float64]float64)
+	qv := point.QuantileValues()
+	for j := 0; j < qv.Len(); j++ {
+		qvj := qv.At(j)
+		// There should be EXACTLY one quantile value lest it is an invalid exposition.
+		quantiles[qvj.Quantile()] = qvj.Value()
+	}
+
+	desc, labelValues := c.getMetricMetadata(metric, point.LabelsMap())
+	m, err := prometheus.NewConstSummary(desc, point.Count(), point.Sum(), quantiles, labelValues...)
+	if err != nil {
+		return nil, err
+	}
+	if c.sendTimestamps {
+		return prometheus.NewMetricWithTimestamp(point.Timestamp().AsTime(), m), nil
+	}
+	return m, nil
+}
+
 func (c *collector) convertDoubleHistogram(metric pdata.Metric) (prometheus.Metric, error) {
-	ip := metric.DoubleHistogram().DataPoints().At(0)
+	ip := metric.Histogram().DataPoints().At(0)
 	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
 
 	indicesMap := make(map[float64]int)

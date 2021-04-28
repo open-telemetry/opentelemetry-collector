@@ -16,7 +16,6 @@ package pprofextension
 
 import (
 	"context"
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,19 +23,17 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
-		Endpoint: "localhost:1777",
+		ExtensionSettings: config.NewExtensionSettings(typeStr),
+		TCPAddr:           confignet.TCPAddr{Endpoint: defaultEndpoint},
 	},
 		cfg)
 
@@ -44,35 +41,13 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
-
-	// Restore instance tracking from factory, for other tests.
-	atomic.StoreInt32(&instanceState, instanceNotCreated)
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
-
-	// Restore instance tracking from factory, for other tests.
-	atomic.StoreInt32(&instanceState, instanceNotCreated)
-}
-
-func TestFactory_CreateExtensionOnlyOnce(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
-
-	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
-
-	ext1, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
-	require.Error(t, err)
-	require.Nil(t, ext1)
-
-	// Restore instance tracking from factory, for other tests.
-	atomic.StoreInt32(&instanceState, instanceNotCreated)
 }

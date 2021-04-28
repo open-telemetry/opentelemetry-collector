@@ -23,15 +23,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["opencensus/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "opencensus/2",
 				TypeVal: "opencensus",
 			},

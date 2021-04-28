@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -57,7 +58,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
@@ -68,6 +69,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "NoEndpoint",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -77,6 +79,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -88,6 +91,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "Headers",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]string{
@@ -100,6 +104,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "CaCert",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -113,6 +118,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{

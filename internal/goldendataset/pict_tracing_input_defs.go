@@ -23,7 +23,7 @@ const (
 	TracesColumnSpans                  = 2
 )
 
-// Enumerates the supported types of resource instances that can be generated.
+// PICTInputResource enum for the supported types of resource instances that can be generated.
 type PICTInputResource string
 
 const (
@@ -37,7 +37,7 @@ const (
 	ResourceExec      PICTInputResource = "Exec"
 )
 
-// Enumerates the number and kind of instrumentation library instances that can be generated.
+// PICTInputInstrumentationLibrary enum for the number and kind of instrumentation library instances that can be generated.
 type PICTInputInstrumentationLibrary string
 
 const (
@@ -46,7 +46,7 @@ const (
 	LibraryTwo  PICTInputInstrumentationLibrary = "Two"
 )
 
-// Enumerates the relative sizes of tracing spans that can be attached to an instrumentation library span instance.
+// PICTInputSpans enum for the relative sizes of tracing spans that can be attached to an instrumentation library span instance.
 type PICTInputSpans string
 
 const (
@@ -79,7 +79,7 @@ const (
 	SpansColumnStatus     = 6
 )
 
-// Enumerates the parent/child types of spans that can be generated.
+// PICTInputParent enum for the parent/child types of spans that can be generated.
 type PICTInputParent string
 
 const (
@@ -87,7 +87,7 @@ const (
 	SpanParentChild PICTInputParent = "Child"
 )
 
-// Enumerates the categories of tracestate values that can be generated for a span.
+// PICTInputTracestate enum for the categories of tracestate values that can be generated for a span.
 type PICTInputTracestate string
 
 const (
@@ -96,7 +96,7 @@ const (
 	TraceStateFour  PICTInputTracestate = "Four"
 )
 
-// Enumerates the span kind values that can be set for a span.
+// PICTInputKind enum for the span kind values that can be set for a span.
 type PICTInputKind string
 
 const (
@@ -108,7 +108,7 @@ const (
 	SpanKindConsumer    PICTInputKind = "Consumer"
 )
 
-// Enumerates the categories of representative attributes a generated span can be populated with.
+// PICTInputAttributes enum for the categories of representative attributes a generated span can be populated with.
 type PICTInputAttributes string
 
 const (
@@ -131,7 +131,7 @@ const (
 	SpanAttrMaxCount          PICTInputAttributes = "MaxCount"
 )
 
-// Enumerates the categories of events and/or links a generated span can be populated with.
+// PICTInputSpanChild enum for the categories of events and/or links a generated span can be populated with.
 type PICTInputSpanChild string
 
 const (
@@ -142,7 +142,7 @@ const (
 	SpanChildCountEight PICTInputSpanChild = "Eight"
 )
 
-// Enumerates the status values a generated span can be populated with.
+// PICTInputStatus enum for the status values a generated span can be populated with.
 type PICTInputStatus string
 
 const (

@@ -61,12 +61,11 @@ func testWithTracingGoldenDataset(
 	dataProvider := testbed.NewGoldenDataProvider(
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
-		"",
-		161803)
+		"")
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories)
-	validator := testbed.NewCorrectTestValidator(dataProvider)
+	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 	config := correctness.CreateConfigYaml(sender, receiver, processors, "traces")
 	configCleanup, cfgErr := runner.PrepareConfig(config)
 	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)

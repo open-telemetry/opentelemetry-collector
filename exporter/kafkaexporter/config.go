@@ -17,13 +17,13 @@ package kafkaexporter
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	configmodels.ExporterSettings  `mapstructure:",squash"`
+	*config.ExporterSettings       `mapstructure:"-"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -68,4 +68,11 @@ type MetadataRetry struct {
 	// How long to wait for leader election to occur before retrying
 	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
 	Backoff time.Duration `mapstructure:"backoff"`
+}
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

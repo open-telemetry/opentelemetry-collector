@@ -25,22 +25,22 @@ import (
 )
 
 const (
-	// Key used to identify exporters in metrics and traces.
+	// ExporterKey used to identify exporters in metrics and traces.
 	ExporterKey = "exporter"
 
-	// Key used to track spans sent by exporters.
+	// SentSpansKey used to track spans sent by exporters.
 	SentSpansKey = "sent_spans"
-	// Key used to track spans that failed to be sent by exporters.
+	// FailedToSendSpansKey used to track spans that failed to be sent by exporters.
 	FailedToSendSpansKey = "send_failed_spans"
 
-	// Key used to track metric points sent by exporters.
+	// SentMetricPointsKey used to track metric points sent by exporters.
 	SentMetricPointsKey = "sent_metric_points"
-	// Key used to track metric points that failed to be sent by exporters.
+	// FailedToSendMetricPointsKey used to track metric points that failed to be sent by exporters.
 	FailedToSendMetricPointsKey = "send_failed_metric_points"
 
-	// Key used to track logs sent by exporters.
+	// SentLogRecordsKey used to track logs sent by exporters.
 	SentLogRecordsKey = "sent_log_records"
-	// Key used to track logs that failed to be sent by exporters.
+	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
 )
 
@@ -83,86 +83,88 @@ var (
 		stats.UnitDimensionless)
 )
 
-// ExporterContext adds the keys used when recording observability metrics to
-// the given context returning the newly created context. This context should
-// be used in related calls to the obsreport functions so metrics are properly
-// recorded.
-func ExporterContext(ctx context.Context, exporterName string) context.Context {
-	ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporter, exporterName, tag.WithTTL(tag.TTLNoPropagation)))
-	return ctx
-}
-
-type ExporterObsReport struct {
+// Exporter is a helper to add observability to a component.Exporter.
+type Exporter struct {
 	level        configtelemetry.Level
 	exporterName string
 	mutators     []tag.Mutator
 }
 
-func NewExporterObsReport(level configtelemetry.Level, exporterName string) *ExporterObsReport {
-	return &ExporterObsReport{
+// ExporterSettings are settings for creating an Exporter.
+type ExporterSettings struct {
+	Level        configtelemetry.Level
+	ExporterName string
+}
+
+// NewExporter creates a new Exporter.
+func NewExporter(cfg ExporterSettings) *Exporter {
+	level, exporterName := cfg.Level, cfg.ExporterName
+	return &Exporter{
 		level:        level,
 		exporterName: exporterName,
-		mutators:     []tag.Mutator{tag.Upsert(tagKeyProcessor, exporterName, tag.WithTTL(tag.TTLNoPropagation))},
+		mutators:     []tag.Mutator{tag.Upsert(tagKeyExporter, exporterName, tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }
 
 // StartTracesExportOp is called at the start of an Export operation.
-// The returned context should be used in other calls to the ExporterObsReport functions
+// The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (eor *ExporterObsReport) StartTracesExportOp(ctx context.Context) context.Context {
+func (eor *Exporter) StartTracesExportOp(ctx context.Context) context.Context {
 	return eor.startSpan(ctx, exportTraceDataOperationSuffix)
 }
 
 // EndTracesExportOp completes the export operation that was started with StartTracesExportOp.
-func (eor *ExporterObsReport) EndTracesExportOp(ctx context.Context, numSpans int, err error) {
+func (eor *Exporter) EndTracesExportOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	recordMetrics(ctx, numSent, numFailedToSend, mExporterSentSpans, mExporterFailedToSendSpans)
+	eor.recordMetrics(ctx, numSent, numFailedToSend, mExporterSentSpans, mExporterFailedToSendSpans)
 	endSpan(ctx, err, numSent, numFailedToSend, SentSpansKey, FailedToSendSpansKey)
 }
 
 // StartMetricsExportOp is called at the start of an Export operation.
-// The returned context should be used in other calls to the ExporterObsReport functions
+// The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (eor *ExporterObsReport) StartMetricsExportOp(ctx context.Context) context.Context {
+func (eor *Exporter) StartMetricsExportOp(ctx context.Context) context.Context {
 	return eor.startSpan(ctx, exportMetricsOperationSuffix)
 }
 
 // EndMetricsExportOp completes the export operation that was started with
 // StartMetricsExportOp.
-func (eor *ExporterObsReport) EndMetricsExportOp(ctx context.Context, numMetricPoints int, err error) {
+func (eor *Exporter) EndMetricsExportOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	recordMetrics(ctx, numSent, numFailedToSend, mExporterSentMetricPoints, mExporterFailedToSendMetricPoints)
+	eor.recordMetrics(ctx, numSent, numFailedToSend, mExporterSentMetricPoints, mExporterFailedToSendMetricPoints)
 	endSpan(ctx, err, numSent, numFailedToSend, SentMetricPointsKey, FailedToSendMetricPointsKey)
 }
 
 // StartLogsExportOp is called at the start of an Export operation.
-// The returned context should be used in other calls to the ExporterObsReport functions
+// The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (eor *ExporterObsReport) StartLogsExportOp(ctx context.Context) context.Context {
+func (eor *Exporter) StartLogsExportOp(ctx context.Context) context.Context {
 	return eor.startSpan(ctx, exportLogsOperationSuffix)
 }
 
 // EndLogsExportOp completes the export operation that was started with StartLogsExportOp.
-func (eor *ExporterObsReport) EndLogsExportOp(ctx context.Context, numLogRecords int, err error) {
+func (eor *Exporter) EndLogsExportOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	recordMetrics(ctx, numSent, numFailedToSend, mExporterSentLogRecords, mExporterFailedToSendLogRecords)
+	eor.recordMetrics(ctx, numSent, numFailedToSend, mExporterSentLogRecords, mExporterFailedToSendLogRecords)
 	endSpan(ctx, err, numSent, numFailedToSend, SentLogRecordsKey, FailedToSendLogRecordsKey)
 }
 
 // startSpan creates the span used to trace the operation. Returning
 // the updated context and the created span.
-func (eor *ExporterObsReport) startSpan(ctx context.Context, operationSuffix string) context.Context {
+func (eor *Exporter) startSpan(ctx context.Context, operationSuffix string) context.Context {
 	spanName := exporterPrefix + eor.exporterName + operationSuffix
 	ctx, _ = trace.StartSpan(ctx, spanName)
 	return ctx
 }
 
-func recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
+func (eor *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
 	if gLevel == configtelemetry.LevelNone {
 		return
 	}
-	stats.Record(
+	// Ignore the error for now. This should not happen.
+	_ = stats.RecordWithTags(
 		ctx,
+		eor.mutators,
 		sentMeasure.M(numSent),
 		failedToSendMeasure.M(numFailedToSend))
 }

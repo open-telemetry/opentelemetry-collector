@@ -35,10 +35,10 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-// newTraceExporter returns a new Jaeger gRPC exporter.
+// newTracesExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func newTraceExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
+func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
 
 	opts, err := cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {
@@ -58,7 +58,7 @@ func newTraceExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter
 		cfg.WaitForReady,
 		conn,
 	)
-	exp, err := exporterhelper.NewTraceExporter(
+	exp, err := exporterhelper.NewTracesExporter(
 		cfg, logger, s.pushTraceData,
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithShutdown(s.shutdown),
@@ -112,30 +112,29 @@ type stateReporter interface {
 func (s *protoGRPCSender) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
-) (droppedSpans int, err error) {
+) error {
 
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
+		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
 	}
 
 	if s.metadata.Len() > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, s.metadata)
 	}
 
-	var sentSpans int
 	for _, batch := range batches {
 		_, err = s.client.PostSpans(
 			ctx,
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
+
 		if err != nil {
 			s.logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
-			return td.SpanCount() - sentSpans, fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)
+			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)
 		}
-		sentSpans += len(batch.Spans)
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (s *protoGRPCSender) shutdown(context.Context) error {

@@ -16,15 +16,12 @@ package zipkin
 
 import (
 	"errors"
-	"io"
-	"math/rand"
 	"testing"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -87,15 +84,11 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 }
 
 func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
-	rscSpans, err := goldendataset.GenerateResourceSpans(
+	tds, err := goldendataset.GenerateTraces(
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
-		io.Reader(rand.New(rand.NewSource(2004))))
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
-	for _, rs := range rscSpans {
-		orig := make([]*otlptrace.ResourceSpans, 1)
-		orig[0] = rs
-		td := pdata.TracesFromOtlp(orig)
+	for _, td := range tds {
 		zipkinSpans, err := InternalTracesToZipkinSpans(td)
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
@@ -103,7 +96,40 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.NoError(t, zErr, zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
+
+		// check that all timestamps converted back and forth without change
+		for i := 0; i < td.ResourceSpans().Len(); i++ {
+			instSpans := td.ResourceSpans().At(i).InstrumentationLibrarySpans()
+			for j := 0; j < instSpans.Len(); j++ {
+				spans := instSpans.At(j).Spans()
+				for k := 0; k < spans.Len(); k++ {
+					span := spans.At(k)
+
+					// search for the span with the same id to compare to
+					spanFromZS := findSpanByID(tdFromZS.ResourceSpans(), span.SpanID())
+
+					assert.Equal(t, span.StartTimestamp().AsTime().UnixNano(), spanFromZS.StartTimestamp().AsTime().UnixNano())
+					assert.Equal(t, span.EndTimestamp().AsTime().UnixNano(), spanFromZS.EndTimestamp().AsTime().UnixNano())
+				}
+			}
+		}
 	}
+}
+
+func findSpanByID(rs pdata.ResourceSpansSlice, spanID pdata.SpanID) *pdata.Span {
+	for i := 0; i < rs.Len(); i++ {
+		instSpans := rs.At(i).InstrumentationLibrarySpans()
+		for j := 0; j < instSpans.Len(); j++ {
+			spans := instSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if span.SpanID() == spanID {
+					return &span
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func generateTraceOneSpanOneTraceID() pdata.Traces {

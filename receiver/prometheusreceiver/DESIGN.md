@@ -103,7 +103,7 @@ an object which manage scrapes for a sets of targets
 a http client to fetch data from remote metrics endpoints
 
 - **[Target](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/target.go):**
-the remote metric endpoint, as well as related relabing settings and other metadata
+the remote metric endpoint, as well as related relabeling settings and other metadata
 
 - **[TextParser](https://github.com/prometheus/prometheus/tree/v2.9.2/pkg/textparse):**
 a DFA style streaming decoder/parser for prometheus text format
@@ -212,7 +212,7 @@ is a metric family change.
 3. Group complex metrics such as histogram together in proper order
 
 In Prometheus, a single aggregated type of metric data such as `histogram` and
-`summary` is represent by multiple metric data points, such as buckets and
+`summary` is represented by multiple metric data points, such as buckets and
 quantiles as well as the additional `_sum` and `_count` data. ScrapeLoop will
 feed them into the appender individually. The appender needs to have a way to
 bundle them together to transform them into a single Metric Datapoint Proto
@@ -228,7 +228,7 @@ of the same metric family before committing the metric family to the sink.
 
 In OpenTelemetry, every metrics of cumulative type is required to have a
 StartTimestamp, which records when a metric is first recorded, however,
-Prometheus dose not provide such data. One of the solutions to tackle this
+Prometheus does not provide such data. One of the solutions to tackle this
 problem is to cache the first observed value of these metrics as well as the
 timestamp, then for any subsequent data of the same metric, use the cached
 timestamp as StartTimestamp and the delta with the first value as value.
@@ -301,7 +301,7 @@ http_requests_total{method="post",code="400"}    5
 
 The Prometheus Receiver will only produce one Metric from the 2nd scrape and
 subsequent ones if any. The 1st scrape, however, is stored as metadata to
-calcualate a delta from.
+calculate a delta from.
 
 The output of the 2nd scrape is as shown below:
 ```go

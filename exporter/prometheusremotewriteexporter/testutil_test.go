@@ -94,6 +94,7 @@ var (
 	validIntHistogram    = "valid_IntHistogram"
 	validDoubleHistogram = "valid_DoubleHistogram"
 	validDoubleSummary   = "valid_DoubleSummary"
+	suffixedCounter      = "valid_IntSum_total"
 
 	validIntGaugeDirty = "*valid_IntGauge$"
 
@@ -126,6 +127,18 @@ var (
 		},
 		validIntSum: {
 			Name: validIntSum,
+			Data: &otlp.Metric_IntSum{
+				IntSum: &otlp.IntSum{
+					DataPoints: []*otlp.IntDataPoint{
+						getIntDataPoint(lbs1, intVal1, time1),
+						nil,
+					},
+					AggregationTemporality: otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+				},
+			},
+		},
+		suffixedCounter: {
+			Name: suffixedCounter,
 			Data: &otlp.Metric_IntSum{
 				IntSum: &otlp.IntSum{
 					DataPoints: []*otlp.IntDataPoint{

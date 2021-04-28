@@ -16,62 +16,103 @@ package pprofextension
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // #nosec Needed to enable the performance profiler
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"sync/atomic"
+	"unsafe"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 )
 
+// Tracks that only a single instance is active per process.
+// See comment on Start method for the reasons for that.
+var activeInstance *pprofExtension
+
+// #nosec G103
+var activeInstancePtr = (*unsafe.Pointer)(unsafe.Pointer(&activeInstance))
+
 type pprofExtension struct {
 	config Config
 	logger *zap.Logger
 	file   *os.File
 	server http.Server
+	stopCh chan struct{}
 }
 
 func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
+	// The runtime settings are global to the application, so while in principle it
+	// is possible to have more than one instance, running multiple will mean that
+	// the settings of the last started instance will prevail. In order to avoid
+	// this issue we will allow the start of a single instance once per process
+	// Summary: only a single instance can be running in the same process.
+	// #nosec G103
+	if !atomic.CompareAndSwapPointer(activeInstancePtr, nil, unsafe.Pointer(p)) {
+		return errors.New("only a single pprof extension instance can be running per process")
+	}
+
+	// Take care that if any error happen when starting the active instance is cleaned.
+	var startErr error
+	defer func() {
+		if startErr != nil {
+			atomic.StorePointer(activeInstancePtr, nil)
+		}
+	}()
+
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := net.Listen("tcp", p.config.Endpoint)
-	if err != nil {
-		return err
+	var ln net.Listener
+	ln, startErr = p.config.TCPAddr.Listen()
+	if startErr != nil {
+		return startErr
 	}
 
 	runtime.SetBlockProfileRate(p.config.BlockProfileFraction)
 	runtime.SetMutexProfileFraction(p.config.MutexProfileFraction)
 
 	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
+	p.stopCh = make(chan struct{})
 	go func() {
+		defer close(p.stopCh)
+
 		// The listener ownership goes to the server.
-		if err := p.server.Serve(ln); err != nil && err != http.ErrServerClosed {
+		err := p.server.Serve(ln)
+		atomic.StorePointer(activeInstancePtr, nil)
+		if err != nil && err != http.ErrServerClosed {
 			host.ReportFatalError(err)
 		}
 	}()
 
 	if p.config.SaveToFile != "" {
-		f, err := os.Create(p.config.SaveToFile)
-		if err != nil {
-			return err
+		var f *os.File
+		f, startErr = os.Create(p.config.SaveToFile)
+		if startErr != nil {
+			return startErr
 		}
 		p.file = f
-		return pprof.StartCPUProfile(f)
+		startErr = pprof.StartCPUProfile(f)
 	}
 
-	return nil
+	return startErr
 }
 
 func (p *pprofExtension) Shutdown(context.Context) error {
+	defer atomic.StorePointer(activeInstancePtr, nil)
 	if p.file != nil {
 		pprof.StopCPUProfile()
-		p.file.Close() // ignore the error
+		_ = p.file.Close() // ignore the error
 	}
-	return p.server.Close()
+	err := p.server.Close()
+	if p.stopCh != nil {
+		<-p.stopCh
+	}
+	return err
 }
 
 func newServer(config Config, logger *zap.Logger) *pprofExtension {

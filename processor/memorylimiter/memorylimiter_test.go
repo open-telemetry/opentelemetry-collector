@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -36,7 +36,7 @@ import (
 
 func TestNew(t *testing.T) {
 	type args struct {
-		nextConsumer        consumer.TracesConsumer
+		nextConsumer        consumer.Traces
 		checkInterval       time.Duration
 		memoryLimitMiB      uint32
 		memorySpikeLimitMiB uint32
@@ -110,17 +110,18 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
+		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
+			Level:         configtelemetry.LevelNone,
+			ProcessorName: "",
+		}),
+
 		logger: zap.NewNop(),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		},
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
@@ -181,17 +182,17 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
+		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
+			Level:         configtelemetry.LevelNone,
+			ProcessorName: "",
+		}),
 		logger: zap.NewNop(),
 	}
-	tp, err := processorhelper.NewTraceProcessor(
+	tp, err := processorhelper.NewTracesProcessor(
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		},
-		consumertest.NewTracesNop(),
+		consumertest.NewNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
@@ -252,17 +253,17 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
+		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
+			Level:         configtelemetry.LevelNone,
+			ProcessorName: "",
+		}),
 		logger: zap.NewNop(),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
 		},
-		consumertest.NewLogsNop(),
+		consumertest.NewNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))

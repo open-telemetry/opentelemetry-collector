@@ -16,6 +16,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 
 	"github.com/prometheus/prometheus/pkg/labels"
@@ -23,7 +24,6 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -41,7 +41,7 @@ type OcaStore struct {
 	ctx context.Context
 
 	running               int32 // access atomically
-	sink                  consumer.MetricsConsumer
+	sink                  consumer.Metrics
 	mc                    *metadataService
 	jobsMap               *JobsMap
 	useStartTimeMetric    bool
@@ -53,7 +53,7 @@ type OcaStore struct {
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, includeResourceLabels bool, receiverName string) *OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.Metrics, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, includeResourceLabels bool, receiverName string) *OcaStore {
 	return &OcaStore{
 		running:               runningStateInit,
 		ctx:                   ctx,
@@ -94,16 +94,18 @@ func (o *OcaStore) Close() error {
 // noopAppender, always return error on any operations
 type noopAppender struct{}
 
+var errAlreadyStopped = errors.New("already stopped")
+
 func (*noopAppender) Add(labels.Labels, int64, float64) (uint64, error) {
-	return 0, componenterror.ErrAlreadyStopped
+	return 0, errAlreadyStopped
 }
 
 func (*noopAppender) AddFast(uint64, int64, float64) error {
-	return componenterror.ErrAlreadyStopped
+	return errAlreadyStopped
 }
 
 func (*noopAppender) Commit() error {
-	return componenterror.ErrAlreadyStopped
+	return errAlreadyStopped
 }
 
 func (*noopAppender) Rollback() error {

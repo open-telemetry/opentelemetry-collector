@@ -60,9 +60,10 @@ func extractLabelsFromResource(resource *pdata.Resource) pdata.StringMap {
 	labelMap := pdata.NewStringMap()
 
 	attrMap := resource.Attributes()
-	attrMap.ForEach(func(k string, av pdata.AttributeValue) {
+	attrMap.Range(func(k string, av pdata.AttributeValue) bool {
 		stringLabel := tracetranslator.AttributeValueToString(av, false)
 		labelMap.Upsert(k, stringLabel)
+		return true
 	})
 	return labelMap
 }
@@ -80,8 +81,8 @@ func addLabelsToMetric(metric *pdata.Metric, labelMap pdata.StringMap) {
 		addLabelsToDoubleDataPoints(metric.DoubleSum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeIntHistogram:
 		addLabelsToIntHistogramDataPoints(metric.IntHistogram().DataPoints(), labelMap)
-	case pdata.MetricDataTypeDoubleHistogram:
-		addLabelsToDoubleHistogramDataPoints(metric.DoubleHistogram().DataPoints(), labelMap)
+	case pdata.MetricDataTypeHistogram:
+		addLabelsToDoubleHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
 	}
 }
 
@@ -103,14 +104,15 @@ func addLabelsToIntHistogramDataPoints(ps pdata.IntHistogramDataPointSlice, newL
 	}
 }
 
-func addLabelsToDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice, newLabelMap pdata.StringMap) {
+func addLabelsToDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice, newLabelMap pdata.StringMap) {
 	for i := 0; i < ps.Len(); i++ {
 		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
 	}
 }
 
 func joinStringMaps(from, to pdata.StringMap) {
-	from.ForEach(func(k, v string) {
+	from.Range(func(k, v string) bool {
 		to.Upsert(k, v)
+		return true
 	})
 }

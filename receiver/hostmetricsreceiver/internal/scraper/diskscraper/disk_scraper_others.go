@@ -25,10 +25,10 @@ import (
 	"github.com/shirou/gopsutil/host"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -87,7 +87,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	now := pdata.TimestampFromTime(time.Now())
 	ioCounters, err := s.ioCounters()
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
@@ -180,7 +180,7 @@ func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata
 	if directionLabel != "" {
 		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
 	}
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
@@ -191,7 +191,7 @@ func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now p
 	if directionLabel != "" {
 		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
 	}
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

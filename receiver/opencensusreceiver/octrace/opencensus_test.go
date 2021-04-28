@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -41,21 +40,19 @@ import (
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
-	address := fmt.Sprintf("localhost:%d", port)
 	expFactory := opencensusexporter.NewFactory()
 	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
-	expCfg.Endpoint = address
+	expCfg.Endpoint = addr.String()
 	expCfg.WaitForReady = true
 	oce, err := expFactory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
@@ -69,9 +66,9 @@ func TestReceiver_endToEnd(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.NoError(t, oce.ConsumeTraces(context.Background(), td))
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(spanSink.AllTraces()) != 0
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	gotTraces := spanSink.AllTraces()
 	require.Len(t, gotTraces, 1)
 	assert.Equal(t, td, gotTraces[0])
@@ -343,9 +340,8 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 }
 
 // Helper functions from here on below
-func makeTraceServiceClient(port int) (agenttracepb.TraceService_ExportClient, func(), error) {
-	addr := fmt.Sprintf(":%d", port)
-	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func makeTraceServiceClient(addr net.Addr) (agenttracepb.TraceService_ExportClient, func(), error) {
+	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -366,7 +362,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TracesConsumer) (int, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -375,12 +371,6 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TracesConsumer) (int, func
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
-	}
-
-	_, port, err := testutil.HostPortFromAddr(ln.Addr())
-	if err != nil {
-		done()
-		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
 	oci, err := New(receiverTagValue, sr)
@@ -393,5 +383,5 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TracesConsumer) (int, func
 		_ = srv.Serve(ln)
 	}()
 
-	return port, done
+	return ln.Addr(), done
 }

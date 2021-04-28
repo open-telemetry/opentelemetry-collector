@@ -31,14 +31,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 const (
-	portAttr   = "port"
-	schemeAttr = "scheme"
+	portAttr     = "port"
+	schemeAttr   = "scheme"
+	jobAttr      = "job"
+	instanceAttr = "instance"
 
 	transport  = "http"
 	dataformat = "prometheus"
@@ -59,7 +60,7 @@ type transaction struct {
 	id                    int64
 	ctx                   context.Context
 	isNew                 bool
-	sink                  consumer.MetricsConsumer
+	sink                  consumer.Metrics
 	job                   string
 	instance              string
 	jobsMap               *JobsMap
@@ -74,7 +75,7 @@ type transaction struct {
 	logger                *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, includeResourceLabels bool, receiverName string, ms *metadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, includeResourceLabels bool, receiverName string, ms *metadataService, sink consumer.Metrics, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                    atomic.AddInt64(&idSeq, 1),
 		ctx:                   ctx,
@@ -93,7 +94,7 @@ func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bo
 // ensure *transaction has implemented the storage.Appender interface
 var _ storage.Appender = (*transaction)(nil)
 
-// always returns 0 to disable label caching
+// Add always returns 0 to disable label caching.
 func (tr *transaction) Add(ls labels.Labels, t int64, v float64) (uint64, error) {
 	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
 	// scrape the remote target,  if the previous scrape was success and some data were cached internally
@@ -117,7 +118,7 @@ func (tr *transaction) Add(ls labels.Labels, t int64, v float64) (uint64, error)
 	return 0, tr.metricBuilder.AddDataPoint(ls, t, v)
 }
 
-// always returns error since caching is not supported by Add() function
+// AddFast always returns error since caching is not supported by Add() function.
 func (tr *transaction) AddFast(_ uint64, _ int64, _ float64) error {
 	return storage.ErrNotFound
 }
@@ -142,7 +143,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 	return nil
 }
 
-// submit metrics data to consumers
+// Commit submits metrics data to consumers.
 func (tr *transaction) Commit() error {
 	if tr.isNew {
 		// In a situation like not able to connect to the remote server, scrapeloop will still commit even if it had
@@ -169,7 +170,7 @@ func (tr *transaction) Commit() error {
 			return err
 		}
 
-		adjustStartTime(tr.metricBuilder.startTime, metrics)
+		adjustStartTimestamp(tr.metricBuilder.startTime, metrics)
 	} else {
 		// AdjustMetrics - jobsMap has to be non-nil in this case.
 		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetrics()
@@ -178,7 +179,7 @@ func (tr *transaction) Commit() error {
 
 	numPoints := 0
 	if len(metrics) > 0 {
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{
+		md := internaldata.OCToMetrics(internaldata.MetricsData{
 			Node:     tr.node,
 			Resource: tr.resource,
 			Metrics:  metrics,
@@ -194,7 +195,7 @@ func (tr *transaction) Rollback() error {
 	return nil
 }
 
-func adjustStartTime(startTime float64, metrics []*metricspb.Metric) {
+func adjustStartTimestamp(startTime float64, metrics []*metricspb.Metric) {
 	startTimeTs := timestampFromFloat64(startTime)
 	for _, metric := range metrics {
 		switch metric.GetMetricDescriptor().GetType() {
@@ -230,8 +231,10 @@ func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resou
 	}
 	resource := &resourcepb.Resource{
 		Labels: map[string]string{
-			portAttr:   port,
-			schemeAttr: scheme,
+			jobAttr:      job,
+			instanceAttr: instance,
+			portAttr:     port,
+			schemeAttr:   scheme,
 		},
 	}
 	return node, resource

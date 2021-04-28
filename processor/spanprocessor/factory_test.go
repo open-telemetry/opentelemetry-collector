@@ -24,15 +24,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), configmodels.Type(typeStr))
+	assert.Equal(t, factory.Type(), config.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
@@ -42,26 +42,26 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 	// Check the values of the default configuration.
 	assert.NotNil(t, cfg)
-	assert.Equal(t, configmodels.Type(typeStr), cfg.Type())
+	assert.Equal(t, config.Type(typeStr), cfg.Type())
 	assert.Equal(t, typeStr, cfg.Name())
 }
 
-func TestFactory_CreateTraceProcessor(t *testing.T) {
+func TestFactory_CreateTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
 	// Name.FromAttributes field needs to be set for the configuration to be valid.
 	oCfg.Rename.FromAttributes = []string{"test-key"}
-	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewNop())
 
 	require.Nil(t, err)
 	assert.NotNil(t, tp)
 }
 
-// TestFactory_CreateTraceProcessor_InvalidConfig ensures the default configuration
+// TestFactory_CreateTracesProcessor_InvalidConfig ensures the default configuration
 // returns an error.
-func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
+func TestFactory_CreateTracesProcessor_InvalidConfig(t *testing.T) {
 	factory := NewFactory()
 
 	testcases := []struct {
@@ -90,7 +90,7 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Rename = test.cfg
 
-			tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
+			tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
 			require.Nil(t, tp)
 			assert.EqualValues(t, err, test.err)
 		})
@@ -103,5 +103,5 @@ func TestFactory_CreateMetricProcessor(t *testing.T) {
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, nil)
 	require.Nil(t, mp)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 }

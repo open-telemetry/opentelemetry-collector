@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/internal"
+	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
@@ -28,37 +29,42 @@ func TestLogRecordCount(t *testing.T) {
 	md := NewLogs()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().Resize(1)
+	rl := md.ResourceLogs().AppendEmpty()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	ill.Logs().AppendEmpty()
 	assert.EqualValues(t, 1, md.LogRecordCount())
 
 	rms := md.ResourceLogs()
 	rms.Resize(3)
-	rms.At(0).InstrumentationLibraryLogs().Resize(1)
-	rms.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
-	rms.At(1).InstrumentationLibraryLogs().Resize(1)
-	rms.At(2).InstrumentationLibraryLogs().Resize(1)
-	rms.At(2).InstrumentationLibraryLogs().At(0).Logs().Resize(5)
+	rms.At(1).InstrumentationLibraryLogs().AppendEmpty()
+	rms.At(2).InstrumentationLibraryLogs().AppendEmpty().Logs().Resize(5)
+	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.LogRecordCount())
 }
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
-	assert.EqualValues(t, 0, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{{}})).LogRecordCount())
-	assert.EqualValues(t, 0, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{
-		{
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
+	assert.Zero(t, NewLogs().LogRecordCount())
+	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{{}},
+	})).LogRecordCount())
+	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
+			},
 		},
 	})).LogRecordCount())
-	assert.EqualValues(t, 1, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{
-		{
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{{}},
+	assert.Equal(t, 1, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{{}},
+					},
 				},
 			},
 		},
@@ -66,10 +72,10 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 }
 
 func TestToFromLogProto(t *testing.T) {
-	otlp := []*otlplogs.ResourceLogs(nil)
-	td := LogsFromInternalRep(internal.LogsFromOtlp(otlp))
-	assert.EqualValues(t, NewLogs(), td)
-	assert.EqualValues(t, otlp, *td.orig)
+	wrapper := internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{})
+	ld := LogsFromInternalRep(wrapper)
+	assert.EqualValues(t, NewLogs(), ld)
+	assert.EqualValues(t, &otlpcollectorlog.ExportLogsServiceRequest{}, ld.orig)
 }
 
 func TestLogsToFromOtlpProtoBytes(t *testing.T) {
@@ -78,14 +84,13 @@ func TestLogsToFromOtlpProtoBytes(t *testing.T) {
 	bytes, err := send.ToOtlpProtoBytes()
 	assert.NoError(t, err)
 
-	recv := NewLogs()
-	err = recv.FromOtlpProtoBytes(bytes)
+	recv, err := LogsFromOtlpProtoBytes(bytes)
 	assert.NoError(t, err)
 	assert.EqualValues(t, send, recv)
 }
 
 func TestLogsFromInvalidOtlpProtoBytes(t *testing.T) {
-	err := NewLogs().FromOtlpProtoBytes([]byte{0xFF})
+	_, err := LogsFromOtlpProtoBytes([]byte{0xFF})
 	assert.EqualError(t, err, "unexpected EOF")
 }
 
@@ -127,8 +132,8 @@ func BenchmarkLogsFromOtlp(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		traces := NewLogs()
-		require.NoError(b, traces.FromOtlpProtoBytes(buf))
-		assert.Equal(b, baseLogs.ResourceLogs().Len(), traces.ResourceLogs().Len())
+		logs, err := LogsFromOtlpProtoBytes(buf)
+		require.NoError(b, err)
+		assert.Equal(b, baseLogs.ResourceLogs().Len(), logs.ResourceLogs().Len())
 	}
 }

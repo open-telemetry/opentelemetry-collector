@@ -26,18 +26,17 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -48,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Receivers["prometheus/customname"].(*Config)
 	assert.Equal(t, r1.ReceiverSettings,
-		configmodels.ReceiverSettings{
+		config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: "prometheus/customname",
 		})
@@ -64,7 +63,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	const jobnamevar = "JOBNAME"
 	os.Setenv(jobnamevar, jobname)
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -75,7 +74,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 
 	r := cfg.Receivers["prometheus"].(*Config)
 	assert.Equal(t, r.ReceiverSettings,
-		configmodels.ReceiverSettings{
+		config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: "prometheus",
 		})
@@ -89,7 +88,7 @@ func TestLoadConfigK8s(t *testing.T) {
 	os.Setenv(nodenamevar, node)
 	defer os.Unsetenv(nodenamevar)
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -100,7 +99,7 @@ func TestLoadConfigK8s(t *testing.T) {
 
 	r := cfg.Receivers["prometheus"].(*Config)
 	assert.Equal(t, r.ReceiverSettings,
-		configmodels.ReceiverSettings{
+		config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: "prometheus",
 		})
@@ -116,7 +115,7 @@ func TestLoadConfigK8s(t *testing.T) {
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -133,7 +132,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 // configuration as a subkey, ensure that invalid configuration
 // within the subkey will also raise an error.
 func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()

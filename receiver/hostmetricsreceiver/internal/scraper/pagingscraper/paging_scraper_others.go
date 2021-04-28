@@ -24,9 +24,9 @@ import (
 	"github.com/shirou/gopsutil/mem"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -63,7 +63,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	var errors consumererror.ScrapeErrors
+	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapeAndAppendPagingUsageMetric(metrics)
 	if err != nil {
@@ -137,7 +137,7 @@ func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingType, typeLabel)
 	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
@@ -153,7 +153,7 @@ func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.Timest
 
 func initializePageFaultDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, typeLabel string, value int64) {
 	dataPoint.LabelsMap().Insert(metadata.Labels.PagingType, typeLabel)
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

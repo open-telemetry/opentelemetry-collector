@@ -17,12 +17,12 @@
 package metadata
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Type is the component type name.
-const Type configmodels.Type = "hostmetricsreceiver"
+const Type config.Type = "hostmetricsreceiver"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -154,36 +154,36 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
-	return map[string]func() pdata.Metric{
-		Metrics.ProcessCPUTime.Name():              Metrics.ProcessCPUTime.New,
-		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.New,
-		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.New,
-		Metrics.ProcessMemoryVirtualUsage.Name():   Metrics.ProcessMemoryVirtualUsage.New,
-		Metrics.SystemCPULoadAverage15m.Name():     Metrics.SystemCPULoadAverage15m.New,
-		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.New,
-		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.New,
-		Metrics.SystemCPUTime.Name():               Metrics.SystemCPUTime.New,
-		Metrics.SystemDiskIo.Name():                Metrics.SystemDiskIo.New,
-		Metrics.SystemDiskIoTime.Name():            Metrics.SystemDiskIoTime.New,
-		Metrics.SystemDiskMerged.Name():            Metrics.SystemDiskMerged.New,
-		Metrics.SystemDiskOperationTime.Name():     Metrics.SystemDiskOperationTime.New,
-		Metrics.SystemDiskOperations.Name():        Metrics.SystemDiskOperations.New,
-		Metrics.SystemDiskPendingOperations.Name(): Metrics.SystemDiskPendingOperations.New,
-		Metrics.SystemDiskWeightedIoTime.Name():    Metrics.SystemDiskWeightedIoTime.New,
-		Metrics.SystemFilesystemInodesUsage.Name(): Metrics.SystemFilesystemInodesUsage.New,
-		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.New,
-		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.New,
-		Metrics.SystemNetworkConnections.Name():    Metrics.SystemNetworkConnections.New,
-		Metrics.SystemNetworkDropped.Name():        Metrics.SystemNetworkDropped.New,
-		Metrics.SystemNetworkErrors.Name():         Metrics.SystemNetworkErrors.New,
-		Metrics.SystemNetworkIo.Name():             Metrics.SystemNetworkIo.New,
-		Metrics.SystemNetworkPackets.Name():        Metrics.SystemNetworkPackets.New,
-		Metrics.SystemPagingFaults.Name():          Metrics.SystemPagingFaults.New,
-		Metrics.SystemPagingOperations.Name():      Metrics.SystemPagingOperations.New,
-		Metrics.SystemPagingUsage.Name():           Metrics.SystemPagingUsage.New,
-		Metrics.SystemProcessesCount.Name():        Metrics.SystemProcessesCount.New,
-		Metrics.SystemProcessesCreated.Name():      Metrics.SystemProcessesCreated.New,
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+	return map[string]func(pdata.Metric){
+		Metrics.ProcessCPUTime.Name():              Metrics.ProcessCPUTime.Init,
+		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.Init,
+		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.Init,
+		Metrics.ProcessMemoryVirtualUsage.Name():   Metrics.ProcessMemoryVirtualUsage.Init,
+		Metrics.SystemCPULoadAverage15m.Name():     Metrics.SystemCPULoadAverage15m.Init,
+		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.Init,
+		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.Init,
+		Metrics.SystemCPUTime.Name():               Metrics.SystemCPUTime.Init,
+		Metrics.SystemDiskIo.Name():                Metrics.SystemDiskIo.Init,
+		Metrics.SystemDiskIoTime.Name():            Metrics.SystemDiskIoTime.Init,
+		Metrics.SystemDiskMerged.Name():            Metrics.SystemDiskMerged.Init,
+		Metrics.SystemDiskOperationTime.Name():     Metrics.SystemDiskOperationTime.Init,
+		Metrics.SystemDiskOperations.Name():        Metrics.SystemDiskOperations.Init,
+		Metrics.SystemDiskPendingOperations.Name(): Metrics.SystemDiskPendingOperations.Init,
+		Metrics.SystemDiskWeightedIoTime.Name():    Metrics.SystemDiskWeightedIoTime.Init,
+		Metrics.SystemFilesystemInodesUsage.Name(): Metrics.SystemFilesystemInodesUsage.Init,
+		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.Init,
+		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.Init,
+		Metrics.SystemNetworkConnections.Name():    Metrics.SystemNetworkConnections.Init,
+		Metrics.SystemNetworkDropped.Name():        Metrics.SystemNetworkDropped.Init,
+		Metrics.SystemNetworkErrors.Name():         Metrics.SystemNetworkErrors.Init,
+		Metrics.SystemNetworkIo.Name():             Metrics.SystemNetworkIo.Init,
+		Metrics.SystemNetworkPackets.Name():        Metrics.SystemNetworkPackets.Init,
+		Metrics.SystemPagingFaults.Name():          Metrics.SystemPagingFaults.Init,
+		Metrics.SystemPagingOperations.Name():      Metrics.SystemPagingOperations.Init,
+		Metrics.SystemPagingUsage.Name():           Metrics.SystemPagingUsage.Init,
+		Metrics.SystemProcessesCount.Name():        Metrics.SystemProcessesCount.Init,
+		Metrics.SystemProcessesCreated.Name():      Metrics.SystemProcessesCreated.Init,
 	}
 }
 

@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -39,13 +40,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
-	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -54,7 +54,7 @@ const zipkinReceiverName = "zipkin_receiver_test"
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string
-		nextConsumer consumer.TracesConsumer
+		nextConsumer consumer.Traces
 	}
 	tests := []struct {
 		name    string
@@ -69,14 +69,14 @@ func TestNew(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				nextConsumer: consumertest.NewTracesNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -101,14 +101,14 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := New(cfg, consumertest.NewTracesNop())
+	traceReceiver, err := New(cfg, consumertest.NewNop())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -207,7 +207,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: consumertest.NewTracesNop()}
+	zi := &ZipkinReceiver{nextConsumer: consumertest.NewNop()}
 	zi.config = &Config{}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
@@ -219,7 +219,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	buf := new(bytes.Buffer)
 	// This will act as the final Zipkin server.
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(buf, r.Body)
+		_, err = io.Copy(buf, r.Body)
+		require.NoError(t, err)
 		_ = r.Body.Close()
 	}))
 	defer backend.Close()
@@ -243,8 +244,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	// fail with error. Use a small hack to transform the multiple arrays into a
 	// single one.
 	accumulatedJSONMsgs := strings.ReplaceAll(buf.String(), "][", ",")
-	gj := testutil.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
-	wj := testutil.GenerateNormalizedJSON(t, string(receiverInputJSON))
+	gj := generateNormalizedJSON(t, accumulatedJSONMsgs)
+	wj := generateNormalizedJSON(t, string(receiverInputJSON))
 	// translation to OTLP sorts spans so do a span-by-span comparison
 	gj = gj[1 : len(gj)-1]
 	wj = wj[1 : len(wj)-1]
@@ -288,7 +289,7 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -386,7 +387,7 @@ func TestReceiverContentTypes(t *testing.T) {
 				ch: make(chan pdata.Traces, 10),
 			}
 			cfg := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -423,7 +424,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -452,7 +453,7 @@ func TestReceiverConsumerError(t *testing.T) {
 		err: errors.New("consumer error"),
 	}
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -556,7 +557,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -598,4 +599,69 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		t.Error("next consumer did not receive the batch")
 		break
 	}
+}
+
+func TestFromBytesWithNoTimestamp(t *testing.T) {
+	noTimestampBytes, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_notimestamp.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+
+	next := &zipkinMockTraceConsumer{
+		ch: make(chan pdata.Traces, 10),
+	}
+	cfg := &Config{
+		ReceiverSettings: config.ReceiverSettings{
+			NameVal: zipkinReceiverName,
+		},
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "",
+		},
+		ParseStringTags: true,
+	}
+	zi, err := New(cfg, next)
+	require.NoError(t, err)
+
+	hdr := make(http.Header)
+	hdr.Set("Content-Type", "application/json")
+
+	// under the hood this calls V2SpansToInternalTraces, the
+	// method we want to test, and this is a better end to end
+	// representation of what happens for the notimestamp case.
+	traces, err := zi.v2ToTraceSpans(noTimestampBytes, hdr)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	gs := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	assert.NotNil(t, gs.StartTimestamp)
+	assert.NotNil(t, gs.EndTimestamp)
+
+	// missing timestamp and duration in the incoming zipkin v2 json
+	// are handled and converted to unix time zero in the internal span
+	// format.
+	fakeStartTimestamp := gs.StartTimestamp().AsTime().UnixNano()
+	assert.Equal(t, int64(0), fakeStartTimestamp)
+
+	fakeEndTimestamp := gs.StartTimestamp().AsTime().UnixNano()
+	assert.Equal(t, int64(0), fakeEndTimestamp)
+
+	wasAbsent, mapContainedKey := gs.Attributes().Get("otel.zipkin.absentField.startTime")
+	assert.True(t, mapContainedKey)
+	assert.True(t, wasAbsent.BoolVal())
+}
+
+// generateNormalizedJSON generates a normalized JSON from the string
+// given to the function. Useful to compare JSON contents that
+// may have differences due to formatting. It returns nil in case of
+// invalid JSON.
+func generateNormalizedJSON(t *testing.T, jsonStr string) string {
+	var i interface{}
+
+	err := json.Unmarshal([]byte(jsonStr), &i)
+	require.NoError(t, err)
+
+	n, err := json.Marshal(i)
+	require.NoError(t, err)
+
+	return string(n)
 }

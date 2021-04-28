@@ -27,7 +27,7 @@ type instrumentationLibraryMatcher struct {
 	Version filterset.FilterSet
 }
 
-// propertiesMatcher allows matching a span against various span properties.
+// PropertiesMatcher allows matching a span against various span properties.
 type PropertiesMatcher struct {
 	// Instrumentation libraries to compare against
 	libraries []instrumentationLibraryMatcher

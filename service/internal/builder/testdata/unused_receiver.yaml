@@ -1,0 +1,12 @@
+receivers:
+  examplereceiver:
+  examplereceiver/2:
+processors:
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      exporters: [exampleexporter]

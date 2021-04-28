@@ -87,8 +87,8 @@ func spanToOC(span pdata.Span) *octrace.Span {
 		ParentSpanId:            spanIDToOC(span.ParentSpanID()),
 		Name:                    stringToTruncatableString(span.Name()),
 		Kind:                    spanKindToOC(span.Kind()),
-		StartTime:               timestampAsTimestampPb(span.StartTime()),
-		EndTime:                 timestampAsTimestampPb(span.EndTime()),
+		StartTime:               timestampAsTimestampPb(span.StartTimestamp()),
+		EndTime:                 timestampAsTimestampPb(span.EndTimestamp()),
 		Attributes:              attributes,
 		TimeEvents:              eventsToOC(span.Events(), span.DroppedEventsCount()),
 		Links:                   linksToOC(span.Links(), span.DroppedLinksCount()),
@@ -115,8 +115,9 @@ func attributesMapToOCAttributeMap(attributes pdata.AttributeMap) map[string]*oc
 	}
 
 	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Len())
-	attributes.ForEach(func(k string, v pdata.AttributeValue) {
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		ocAttributes[k] = attributeValueToOC(v)
+		return true
 	})
 	return ocAttributes
 }

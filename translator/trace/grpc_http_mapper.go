@@ -14,10 +14,6 @@
 
 package tracetranslator
 
-import (
-	"net/http"
-)
-
 // https://github.com/googleapis/googleapis/blob/bee79fbe03254a35db125dc6d2f1e9b752b390fe/google/rpc/code.proto#L33-L186
 const (
 	OCOK                 = 0
@@ -66,33 +62,4 @@ func OCStatusCodeFromHTTP(code int32) int32 {
 		return OCInternal
 	}
 	return OCUnknown
-}
-
-var ocToHTTPCodeMap = map[int32]int32{
-	OCOK:                 http.StatusOK,
-	OCCancelled:          499,
-	OCUnknown:            http.StatusInternalServerError,
-	OCInvalidArgument:    http.StatusBadRequest,
-	OCDeadlineExceeded:   http.StatusGatewayTimeout,
-	OCNotFound:           http.StatusNotFound,
-	OCAlreadyExists:      http.StatusConflict,
-	OCPermissionDenied:   http.StatusForbidden,
-	OCResourceExhausted:  http.StatusTooManyRequests,
-	OCFailedPrecondition: http.StatusPreconditionFailed,
-	OCAborted:            http.StatusConflict,
-	OCOutOfRange:         http.StatusRequestedRangeNotSatisfiable,
-	OCUnimplemented:      http.StatusNotImplemented,
-	OCInternal:           http.StatusInternalServerError,
-	OCUnavailable:        http.StatusServiceUnavailable,
-	OCDataLoss:           http.StatusUnprocessableEntity,
-	OCUnauthenticated:    http.StatusUnauthorized,
-}
-
-// HTTPStatusCodeFromOCStatus takes an OpenTelemetry status code and return the appropriate HTTP status code
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/data-http.md
-func HTTPStatusCodeFromOCStatus(code int32) int32 {
-	if c, ok := ocToHTTPCodeMap[code]; ok {
-		return c
-	}
-	return http.StatusInternalServerError
 }

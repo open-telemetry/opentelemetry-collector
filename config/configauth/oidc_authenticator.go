@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -227,7 +228,7 @@ func getIssuerCACertFromPath(path string) (*x509.Certificate, error) {
 		return nil, nil
 	}
 
-	rawCA, err := ioutil.ReadFile(path)
+	rawCA, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, fmt.Errorf("could not read the CA file %q: %w", path, err)
 	}

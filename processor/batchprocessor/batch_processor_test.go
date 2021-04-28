@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,7 +39,8 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	requestCount := 1000
@@ -77,9 +79,10 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	cfg.SendBatchMaxSize = 128
+	cfg.SendBatchMaxSize = 130
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelBasic)
+	batcher, err := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelBasic)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	requestCount := 1000
@@ -95,7 +98,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 	// Added to test logic that check for empty resources.
 	td := testdata.GenerateTraceDataEmpty()
-	batcher.ConsumeTraces(context.Background(), td)
+	require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	// wait for all spans to be reported
 	for {
@@ -109,10 +112,10 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
 	for i := 0; i < len(sink.AllTraces())-1; i++ {
-		assert.Equal(t, cfg.SendBatchSize, uint32(sink.AllTraces()[i].SpanCount()))
+		assert.Equal(t, int(cfg.SendBatchMaxSize), sink.AllTraces()[i].SpanCount())
 	}
 	// the last batch has the remaining size
-	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
+	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
@@ -126,7 +129,8 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 500 * time.Millisecond
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	requestCount := 100
@@ -136,7 +140,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
-		sizeSum += td.Size()
+		sizeSum += td.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -188,7 +192,8 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	spansPerRequest := 10
 	start := time.Now()
 
-	batcher := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -227,13 +232,15 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
-		SendBatchSize: 1000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           3 * time.Second,
+		SendBatchSize:     1000,
 	}
 	sink := new(consumertest.TracesSink)
 
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchTracesProcessor(creationParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchTracesProcessor(creationParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	requestCount := 10
@@ -253,8 +260,9 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       200 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           200 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -262,7 +270,8 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	metricDataSlice := make([]pdata.Metrics, 0, requestCount)
@@ -304,8 +313,9 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -313,14 +323,15 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	start := time.Now()
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
-		size += md.Size()
+		size += md.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -360,15 +371,17 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 
 func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 100,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     100,
 	}
 	requestCount := 5
 	metricsPerRequest := 10
 	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	start := time.Now()
@@ -407,15 +420,17 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
-		SendBatchSize: 1000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           3 * time.Second,
+		SendBatchSize:     1000,
 	}
 	requestCount := 5
 	metricsPerRequest := 10
 	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -476,7 +491,7 @@ func getTestMetricName(requestNum, index int) string {
 func BenchmarkTraceSizeBytes(b *testing.B) {
 	td := testdata.GenerateTraceDataManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
-		fmt.Println(td.Size())
+		fmt.Println(td.OtlpProtoSize())
 	}
 }
 
@@ -491,8 +506,9 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       200 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           200 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -500,7 +516,8 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	logDataSlice := make([]pdata.Logs, 0, requestCount)
@@ -542,8 +559,9 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 50,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     50,
 	}
 
 	requestCount := 100
@@ -551,14 +569,15 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	start := time.Now()
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
-		size += ld.SizeBytes()
+		size += ld.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -598,15 +617,17 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 100,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     100,
 	}
 	requestCount := 5
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	start := time.Now()
@@ -645,15 +666,17 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
-		SendBatchSize: 1000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Timeout:           3 * time.Second,
+		SendBatchSize:     1000,
 	}
 	requestCount := 5
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -688,4 +711,9 @@ func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
 		}
 	}
 	return logsReceivedByName
+}
+
+func TestShutdown(t *testing.T) {
+	factory := NewFactory()
+	componenttest.VerifyProcessorShutdown(t, factory, factory.CreateDefaultConfig())
 }

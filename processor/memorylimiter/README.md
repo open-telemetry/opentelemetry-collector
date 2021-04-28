@@ -1,6 +1,6 @@
 # Memory Limiter Processor
 
-Supported pipeline types: metrics, traces
+Supported pipeline types: metrics, traces, logs
 
 The memory limiter processor is used to prevent out of memory situations on
 the collector. Given that the amount and type of data the collector processes is

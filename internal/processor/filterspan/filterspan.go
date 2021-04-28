@@ -24,10 +24,10 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-// TODO: Modify Matcher to invoke both the include and exclude properties so
-// calling processors will always have the same logic.
 // Matcher is an interface that allows matching a span against a configuration
 // of a match.
+// TODO: Modify Matcher to invoke both the include and exclude properties so
+//  calling processors will always have the same logic.
 type Matcher interface {
 	MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
 }

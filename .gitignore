@@ -6,7 +6,8 @@ dist/
 *.iml
 
 # VS Code
-.vscode
+.vscode/
+.devcontainer/
 
 # Emacs
 *~

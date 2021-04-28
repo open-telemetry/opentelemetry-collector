@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oterr provides helper functions to create and process
+// Package componenterror provides helper functions to create and process
 // OpenTelemetry specific errors
 package componenterror
 
 import (
 	"errors"
-
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 var (
@@ -31,10 +29,9 @@ var (
 
 	// ErrNilNextConsumer indicates an error on nil next consumer.
 	ErrNilNextConsumer = errors.New("nil nextConsumer")
-)
 
-// CombineErrors converts a list of errors into one error.
-// Deprecated: use consumererror.CombineErrors instead.
-func CombineErrors(errs []error) error {
-	return consumererror.CombineErrors(errs)
-}
+	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor
+	// factory methods that create the entity if the particular telemetry
+	// data type is not supported by the receiver, exporter or processor.
+	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
+)

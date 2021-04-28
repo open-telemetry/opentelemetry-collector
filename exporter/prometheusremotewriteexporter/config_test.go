@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -32,7 +32,7 @@ import (
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
 func Test_loadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -50,7 +50,7 @@ func Test_loadConfig(t *testing.T) {
 	e1 := cfg.Exporters["prometheusremotewrite/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "prometheusremotewrite/2",
 				TypeVal: "prometheusremotewrite",
 			},

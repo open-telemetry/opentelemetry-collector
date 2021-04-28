@@ -108,6 +108,7 @@ type MatchProperties struct {
 	Libraries []InstrumentationLibrary `mapstructure:"libraries"`
 }
 
+// ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
 	if len(mp.LogNames) > 0 {
 		return errors.New("log_names should not be specified for trace spans")
@@ -121,6 +122,7 @@ func (mp *MatchProperties) ValidateForSpans() error {
 	return nil
 }
 
+// ValidateForLogs validates properties for logs.
 func (mp *MatchProperties) ValidateForLogs() error {
 	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 {
 		return errors.New("neither services nor span_names should be specified for log records")
@@ -132,9 +134,6 @@ func (mp *MatchProperties) ValidateForLogs() error {
 
 	return nil
 }
-
-// MatchTypeFieldName is the mapstructure field name for MatchProperties.Attributes field.
-const AttributesFieldName = "attributes"
 
 // Attribute specifies the attribute key and optional value to match against.
 type Attribute struct {

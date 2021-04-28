@@ -56,19 +56,20 @@ type ZipkinReceiver struct {
 
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	instanceName string
 
-	startOnce sync.Once
-	stopOnce  sync.Once
-	server    *http.Server
-	config    *Config
+	startOnce  sync.Once
+	stopOnce   sync.Once
+	shutdownWG sync.WaitGroup
+	server     *http.Server
+	config     *Config
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(config *Config, nextConsumer consumer.TracesConsumer) (*ZipkinReceiver, error) {
+func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -82,7 +83,7 @@ func New(config *Config, nextConsumer consumer.TracesConsumer) (*ZipkinReceiver,
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error {
+func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
@@ -99,13 +100,14 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 		var listener net.Listener
 		listener, err = zr.config.HTTPServerSettings.ToListener()
 		if err != nil {
-			host.ReportFatalError(err)
 			return
 		}
+		zr.shutdownWG.Add(1)
 		go func() {
-			err = zr.server.Serve(listener)
-			if err != nil {
-				host.ReportFatalError(err)
+			defer zr.shutdownWG.Done()
+
+			if errHTTP := zr.server.Serve(listener); errHTTP != http.ErrServerClosed {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 	})
@@ -165,6 +167,7 @@ func (zr *ZipkinReceiver) Shutdown(context.Context) error {
 	var err = componenterror.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()
+		zr.shutdownWG.Wait()
 	})
 	return err
 }
@@ -221,7 +224,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Now deserialize and process the spans.
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
-	transportTag := transportType(r)
+	transportTag := transportType(r, asZipkinv1)
 	ctx = obsreport.ReceiverContext(ctx, zr.instanceName, transportTag)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.instanceName, transportTag)
 
@@ -265,9 +268,8 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func transportType(r *http.Request) string {
-	v1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
-	if v1 {
+func transportType(r *http.Request, asZipkinv1 bool) string {
+	if asZipkinv1 {
 		if r.Header.Get("Content-Type") == "application/x-thrift" {
 			return receiverTransportV1Thrift
 		}

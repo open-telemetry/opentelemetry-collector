@@ -22,37 +22,20 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-type baseErrorConsumer struct {
-	mu           sync.Mutex
-	consumeError error // to be returned by ConsumeTraces, if set
-}
-
-// SetConsumeError sets an error that will be returned by the Consume function.
-// TODO: Remove this when all calls are switched to the new ErrConsumer.
-func (bec *baseErrorConsumer) SetConsumeError(err error) {
-	bec.mu.Lock()
-	defer bec.mu.Unlock()
-	bec.consumeError = err
-}
-
-// TracesSink is a consumer.TracesConsumer that acts like a sink that
+// TracesSink is a consumer.Traces that acts like a sink that
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
-	baseErrorConsumer
+	mu         sync.Mutex
 	traces     []pdata.Traces
 	spansCount int
 }
 
-var _ consumer.TracesConsumer = (*TracesSink)(nil)
+var _ consumer.Traces = (*TracesSink)(nil)
 
 // ConsumeTraces stores traces to this sink.
 func (ste *TracesSink) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
-
-	if ste.consumeError != nil {
-		return ste.consumeError
-	}
 
 	ste.traces = append(ste.traces, td)
 	ste.spansCount += td.SpanCount()
@@ -86,23 +69,20 @@ func (ste *TracesSink) Reset() {
 	ste.spansCount = 0
 }
 
-// MetricsSink is a consumer.MetricsConsumer that acts like a sink that
+// MetricsSink is a consumer.Metrics that acts like a sink that
 // stores all metrics and allows querying them for testing.
 type MetricsSink struct {
-	baseErrorConsumer
+	mu           sync.Mutex
 	metrics      []pdata.Metrics
 	metricsCount int
 }
 
-var _ consumer.MetricsConsumer = (*MetricsSink)(nil)
+var _ consumer.Metrics = (*MetricsSink)(nil)
 
 // ConsumeMetrics stores metrics to this sink.
 func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
-	if sme.consumeError != nil {
-		return sme.consumeError
-	}
 
 	sme.metrics = append(sme.metrics, md)
 	sme.metricsCount += md.MetricCount()
@@ -136,23 +116,20 @@ func (sme *MetricsSink) Reset() {
 	sme.metricsCount = 0
 }
 
-// LogsSink is a consumer.LogsConsumer that acts like a sink that
+// LogsSink is a consumer.Logs that acts like a sink that
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
-	baseErrorConsumer
+	mu              sync.Mutex
 	logs            []pdata.Logs
 	logRecordsCount int
 }
 
-var _ consumer.LogsConsumer = (*LogsSink)(nil)
+var _ consumer.Logs = (*LogsSink)(nil)
 
 // ConsumeLogs stores logs to this sink.
 func (sle *LogsSink) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
-	if sle.consumeError != nil {
-		return sle.consumeError
-	}
 
 	sle.logs = append(sle.logs, ld)
 	sle.logRecordsCount += ld.LogRecordCount()

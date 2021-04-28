@@ -25,16 +25,16 @@ import (
 )
 
 const (
-	// Key used to identify processors in metrics and traces.
+	// ProcessorKey is the key used to identify processors in metrics and traces.
 	ProcessorKey = "processor"
 
-	// Key used to identify spans dropped by the Collector.
+	// DroppedSpansKey is the key used to identify spans dropped by the Collector.
 	DroppedSpansKey = "dropped_spans"
 
-	// Key used to identify metric points dropped by the Collector.
+	// DroppedMetricPointsKey is the key used to identify metric points dropped by the Collector.
 	DroppedMetricPointsKey = "dropped_metric_points"
 
-	// Key used to identify log records dropped by the Collector.
+	// DroppedLogRecordsKey is the key used to identify log records dropped by the Collector.
 	DroppedLogRecordsKey = "dropped_log_records"
 )
 
@@ -114,22 +114,30 @@ func ProcessorMetricViews(configType string, legacyViews []*view.View) []*view.V
 	return allViews
 }
 
-var gProcessorObsReport = &ProcessorObsReport{level: configtelemetry.LevelNone}
+var gProcessor = &Processor{level: configtelemetry.LevelNone}
 
-type ProcessorObsReport struct {
+// Processor is a helper to add observability to a component.Processor.
+type Processor struct {
 	level    configtelemetry.Level
 	mutators []tag.Mutator
 }
 
-func NewProcessorObsReport(level configtelemetry.Level, processorName string) *ProcessorObsReport {
-	return &ProcessorObsReport{
-		level:    level,
-		mutators: []tag.Mutator{tag.Upsert(tagKeyProcessor, processorName, tag.WithTTL(tag.TTLNoPropagation))},
+// ProcessorSettings are settings for creating a Processor.
+type ProcessorSettings struct {
+	Level         configtelemetry.Level
+	ProcessorName string
+}
+
+// NewProcessor creates a new Processor.
+func NewProcessor(cfg ProcessorSettings) *Processor {
+	return &Processor{
+		level:    cfg.Level,
+		mutators: []tag.Mutator{tag.Upsert(tagKeyProcessor, cfg.ProcessorName, tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }
 
 // TracesAccepted reports that the trace data was accepted.
-func (por *ProcessorObsReport) TracesAccepted(ctx context.Context, numSpans int) {
+func (por *Processor) TracesAccepted(ctx context.Context, numSpans int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -142,7 +150,7 @@ func (por *ProcessorObsReport) TracesAccepted(ctx context.Context, numSpans int)
 }
 
 // TracesRefused reports that the trace data was refused.
-func (por *ProcessorObsReport) TracesRefused(ctx context.Context, numSpans int) {
+func (por *Processor) TracesRefused(ctx context.Context, numSpans int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -155,7 +163,7 @@ func (por *ProcessorObsReport) TracesRefused(ctx context.Context, numSpans int) 
 }
 
 // TracesDropped reports that the trace data was dropped.
-func (por *ProcessorObsReport) TracesDropped(ctx context.Context, numSpans int) {
+func (por *Processor) TracesDropped(ctx context.Context, numSpans int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -168,7 +176,7 @@ func (por *ProcessorObsReport) TracesDropped(ctx context.Context, numSpans int) 
 }
 
 // MetricsAccepted reports that the metrics were accepted.
-func (por *ProcessorObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
+func (por *Processor) MetricsAccepted(ctx context.Context, numPoints int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -181,7 +189,7 @@ func (por *ProcessorObsReport) MetricsAccepted(ctx context.Context, numPoints in
 }
 
 // MetricsRefused reports that the metrics were refused.
-func (por *ProcessorObsReport) MetricsRefused(ctx context.Context, numPoints int) {
+func (por *Processor) MetricsRefused(ctx context.Context, numPoints int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -194,7 +202,7 @@ func (por *ProcessorObsReport) MetricsRefused(ctx context.Context, numPoints int
 }
 
 // MetricsDropped reports that the metrics were dropped.
-func (por *ProcessorObsReport) MetricsDropped(ctx context.Context, numPoints int) {
+func (por *Processor) MetricsDropped(ctx context.Context, numPoints int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -207,7 +215,7 @@ func (por *ProcessorObsReport) MetricsDropped(ctx context.Context, numPoints int
 }
 
 // LogsAccepted reports that the logs were accepted.
-func (por *ProcessorObsReport) LogsAccepted(ctx context.Context, numRecords int) {
+func (por *Processor) LogsAccepted(ctx context.Context, numRecords int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -220,7 +228,7 @@ func (por *ProcessorObsReport) LogsAccepted(ctx context.Context, numRecords int)
 }
 
 // LogsRefused reports that the logs were refused.
-func (por *ProcessorObsReport) LogsRefused(ctx context.Context, numRecords int) {
+func (por *Processor) LogsRefused(ctx context.Context, numRecords int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,
@@ -233,7 +241,7 @@ func (por *ProcessorObsReport) LogsRefused(ctx context.Context, numRecords int) 
 }
 
 // LogsDropped reports that the logs were dropped.
-func (por *ProcessorObsReport) LogsDropped(ctx context.Context, numRecords int) {
+func (por *Processor) LogsDropped(ctx context.Context, numRecords int) {
 	if por.level != configtelemetry.LevelNone {
 		stats.RecordWithTags(
 			ctx,

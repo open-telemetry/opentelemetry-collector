@@ -1,0 +1,13 @@
+receivers:
+  examplereceiver:
+processors:
+  bf:
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    logs:
+      receivers: [examplereceiver]
+      processors: [bf]
+      exporters: [exampleexporter]

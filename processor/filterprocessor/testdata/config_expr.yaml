@@ -1,5 +1,5 @@
 receivers:
-    examplereceiver:
+    nop:
 
 processors:
     filter/empty:
@@ -31,11 +31,11 @@ processors:
                 expressions:
                     - HasLabel("bar")
 exporters:
-    exampleexporter:
+    nop:
 
 service:
     pipelines:
         metrics:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [filter/empty]
-            exporters: [exampleexporter]
+            exporters: [nop]

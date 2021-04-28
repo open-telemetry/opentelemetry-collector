@@ -1,0 +1,14 @@
+{
+    "ignorePatterns": [
+        {
+            "pattern": "http(s)?://\\d+\\.\\d+\\.\\d+\\.\\d+"
+        },
+        {
+            "pattern": "http(s)?://localhost"
+        },
+        {
+            "pattern": "http(s)?://example.com"
+        }
+    ],
+    "aliveStatusCodes": [429, 200]
+}

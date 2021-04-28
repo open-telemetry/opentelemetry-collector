@@ -67,9 +67,7 @@ func ProtoBatchToInternalTraces(batch model.Batch) pdata.Traces {
 		return traceData
 	}
 
-	rss := traceData.ResourceSpans()
-	rss.Resize(1)
-	protoBatchToResourceSpans(batch, rss.At(0))
+	protoBatchToResourceSpans(batch, traceData.ResourceSpans().AppendEmpty())
 
 	return traceData
 }
@@ -85,8 +83,13 @@ func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
 
 	groupByLibrary := jSpansToInternal(jSpans)
 	ilss := dest.InstrumentationLibrarySpans()
-	for _, v := range groupByLibrary {
-		ilss.Append(v)
+	for library, spans := range groupByLibrary {
+		ils := ilss.AppendEmpty()
+		if library.name != "" {
+			ils.InstrumentationLibrary().SetName(library.name)
+			ils.InstrumentationLibrary().SetVersion(library.version)
+		}
+		spans.MoveAndAppendTo(ils.Spans())
 	}
 }
 
@@ -102,11 +105,12 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 	}
 
 	attrs := dest.Attributes()
+	attrs.Clear()
 	if serviceName != "" {
-		attrs.InitEmptyWithCapacity(len(tags) + 1)
+		attrs.EnsureCapacity(len(tags) + 1)
 		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
 	} else {
-		attrs.InitEmptyWithCapacity(len(tags))
+		attrs.EnsureCapacity(len(tags))
 	}
 	jTagsToInternalAttributes(tags, attrs)
 
@@ -135,25 +139,20 @@ func translateJaegerVersionAttr(attrs pdata.AttributeMap) {
 	}
 }
 
-func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.InstrumentationLibrarySpans {
-	spansByLibrary := make(map[instrumentationLibrary]pdata.InstrumentationLibrarySpans)
+func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.SpanSlice {
+	spansByLibrary := make(map[instrumentationLibrary]pdata.SpanSlice)
 
 	for _, span := range spans {
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
 			continue
 		}
 		pSpan, library := jSpanToInternal(span)
-		ils, found := spansByLibrary[library]
+		ss, found := spansByLibrary[library]
 		if !found {
-			ils = pdata.NewInstrumentationLibrarySpans()
-			spansByLibrary[library] = ils
-
-			if library.name != "" {
-				ils.InstrumentationLibrary().SetName(library.name)
-				ils.InstrumentationLibrary().SetVersion(library.version)
-			}
+			ss = pdata.NewSpanSlice()
+			spansByLibrary[library] = ss
 		}
-		ils.Spans().Append(pSpan)
+		ss.Append(pSpan)
 	}
 	return spansByLibrary
 }
@@ -167,8 +166,8 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
-	dest.SetStartTime(pdata.TimestampFromTime(span.StartTime))
-	dest.SetEndTime(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
+	dest.SetStartTimestamp(pdata.TimestampFromTime(span.StartTime))
+	dest.SetEndTimestamp(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
@@ -176,7 +175,8 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	}
 
 	attrs := dest.Attributes()
-	attrs.InitEmptyWithCapacity(len(span.Tags))
+	attrs.Clear()
+	attrs.EnsureCapacity(len(span.Tags))
 	jTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
@@ -185,12 +185,12 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	}
 
 	il := instrumentationLibrary{}
-	if libraryName, ok := attrs.Get(tracetranslator.TagInstrumentationName); ok {
+	if libraryName, ok := attrs.Get(conventions.InstrumentationLibraryName); ok {
 		il.name = libraryName.StringVal()
-		attrs.Delete(tracetranslator.TagInstrumentationName)
-		if libraryVersion, ok := attrs.Get(tracetranslator.TagInstrumentationVersion); ok {
+		attrs.Delete(conventions.InstrumentationLibraryName)
+		if libraryVersion, ok := attrs.Get(conventions.InstrumentationLibraryVersion); ok {
 			il.version = libraryVersion.StringVal()
-			attrs.Delete(tracetranslator.TagInstrumentationVersion)
+			attrs.Delete(conventions.InstrumentationLibraryVersion)
 		}
 	}
 
@@ -332,7 +332,8 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		}
 
 		attrs := event.Attributes()
-		attrs.InitEmptyWithCapacity(len(log.Fields))
+		attrs.Clear()
+		attrs.EnsureCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
 			event.SetName(name.StringVal())

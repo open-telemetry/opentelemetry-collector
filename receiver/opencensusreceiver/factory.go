@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -30,17 +30,18 @@ const (
 	typeStr = "opencensus"
 )
 
+// NewFactory creates a new OpenCensus receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver),
+		receiverhelper.WithTraces(createTracesReceiver),
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -55,11 +56,11 @@ func createDefaultConfig() configmodels.Receiver {
 	}
 }
 
-func createTraceReceiver(
+func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Receiver,
+	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg)
 	if err != nil {
@@ -74,8 +75,8 @@ func createTraceReceiver(
 func createMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r, err := createReceiver(cfg)
 	if err != nil {
@@ -87,7 +88,7 @@ func createMetricsReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
+func createReceiver(cfg config.Receiver) (*ocReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of

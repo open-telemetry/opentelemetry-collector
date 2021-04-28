@@ -15,7 +15,7 @@
 package spanprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 )
 
@@ -24,7 +24,7 @@ import (
 // the include properties and then the exclude properties if they are specified.
 // This determines if a span is to be processed or not.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	filterconfig.MatchConfig `mapstructure:",squash"`
 
@@ -32,7 +32,7 @@ type Config struct {
 	// The `from_attributes` field needs to be set for this processor to be properly
 	// configured.
 	// Note: The field name is `Rename` to avoid collision with the Name() method
-	// from configmodels.ProcessorSettings.NamedEntity
+	// from config.NamedEntity
 	Rename Name `mapstructure:"name"`
 }
 
@@ -59,6 +59,7 @@ type Name struct {
 	ToAttributes *ToAttributes `mapstructure:"to_attributes"`
 }
 
+// ToAttributes specifies a configuration to extract attributes from span name.
 type ToAttributes struct {
 	// Rules is a list of rules to extract attribute values from span name. The values
 	// in the span name are replaced by extracted attribute names. Each rule in the list
@@ -76,4 +77,11 @@ type ToAttributes struct {
 	// match. If it is false rule processing will continue to be performed over the
 	// modified span name.
 	BreakAfterMatch bool `mapstructure:"break_after_match"`
+}
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

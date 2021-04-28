@@ -140,9 +140,9 @@ func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.Instrumentati
 			histo := metric.IntHistogram()
 			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntHistogram(cfg, histo)
-		case pdata.MetricDataTypeDoubleHistogram:
-			metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-			histo := metric.DoubleHistogram()
+		case pdata.MetricDataTypeHistogram:
+			metric.SetDataType(pdata.MetricDataTypeHistogram)
+			histo := metric.Histogram()
 			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
 		}
@@ -160,7 +160,7 @@ func populateIntPoints(cfg MetricCfg, pts pdata.IntDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.Timestamp(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(int64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
@@ -171,19 +171,19 @@ func populateDoublePoints(cfg MetricCfg, pts pdata.DoubleDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.Timestamp(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(float64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
 }
 
-func populateDoubleHistogram(cfg MetricCfg, dh pdata.DoubleHistogram) {
+func populateDoubleHistogram(cfg MetricCfg, dh pdata.Histogram) {
 	pts := dh.DataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.Timestamp(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
 		pt.SetTimestamp(ts)
 		populatePtLabels(cfg, pt.LabelsMap())
@@ -196,12 +196,12 @@ func populateDoubleHistogram(cfg MetricCfg, dh pdata.DoubleHistogram) {
 	}
 }
 
-func setDoubleHistogramBounds(hdp pdata.DoubleHistogramDataPoint, bounds ...float64) {
+func setDoubleHistogramBounds(hdp pdata.HistogramDataPoint, bounds ...float64) {
 	hdp.SetBucketCounts(make([]uint64, len(bounds)))
 	hdp.SetExplicitBounds(bounds)
 }
 
-func addDoubleHistogramVal(hdp pdata.DoubleHistogramDataPoint, val float64) {
+func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
 	buckets := hdp.BucketCounts()
@@ -220,7 +220,7 @@ func populateIntHistogram(cfg MetricCfg, dh pdata.IntHistogram) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.Timestamp(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
 		pt.SetTimestamp(ts)
 		populatePtLabels(cfg, pt.LabelsMap())

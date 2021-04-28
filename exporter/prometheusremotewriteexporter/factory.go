@@ -19,8 +19,8 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -29,6 +29,7 @@ const (
 	typeStr = "prometheusremotewrite"
 )
 
+// NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -37,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createMetricsExporter(_ context.Context, params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
+	cfg config.Exporter) (component.MetricsExporter, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
@@ -54,12 +55,24 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, err
 	}
 
+	// Don't support the queue.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/2949.
+	// Prometheus remote write samples needs to be in chronological
+	// order for each timeseries. If we shard the incoming metrics
+	// without considering this limitation, we experience
+	// "out of order samples" errors.
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(prwCfg.QueueSettings),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 1,
+			QueueSize:    10000,
+			// TODO(jbd): Adjust the default queue size
+			// and allow users to modify the queue size.
+		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -67,17 +80,13 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	return prwexp, err
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Namespace:       "",
-		ExternalLabels:  map[string]string{},
-		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Namespace:        "",
+		ExternalLabels:   map[string]string{},
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

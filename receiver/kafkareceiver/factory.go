@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -41,14 +41,23 @@ const (
 	defaultMetadataFull = true
 )
 
-// FactoryOption applies changes to kafkaExporterFactory.
+// FactoryOption applies changes to kafkaReceiverFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
-// WithAddUnmarshallers adds marshallers.
-func WithAddUnmarshallers(encodingMarshaller map[string]Unmarshaller) FactoryOption {
+// WithTracesUnmarshalers adds Unmarshalers.
+func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
-		for encoding, unmarshaller := range encodingMarshaller {
-			factory.unmarshalers[encoding] = unmarshaller
+		for _, unmarshaler := range tracesUnmarshalers {
+			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
+		}
+	}
+}
+
+// WithLogsUnmarshalers adds LogsUnmarshalers.
+func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
+	return func(factory *kafkaReceiverFactory) {
+		for _, unmarshaler := range logsUnmarshalers {
+			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
 		}
 	}
 }
@@ -56,7 +65,8 @@ func WithAddUnmarshallers(encodingMarshaller map[string]Unmarshaller) FactoryOpt
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	f := &kafkaReceiverFactory{
-		unmarshalers: defaultUnmarshallers(),
+		tracesUnmarshalers: defaultTracesUnmarshalers(),
+		logsUnmarshalers:   defaultLogsUnmarshalers(),
 	}
 	for _, o := range options {
 		o(f)
@@ -64,12 +74,14 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(f.createTraceReceiver))
+		receiverhelper.WithTraces(f.createTracesReceiver),
+		receiverhelper.WithLogs(f.createLogsReceiver),
+	)
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -89,17 +101,32 @@ func createDefaultConfig() configmodels.Receiver {
 }
 
 type kafkaReceiverFactory struct {
-	unmarshalers map[string]Unmarshaller
+	tracesUnmarshalers map[string]TracesUnmarshaler
+	logsUnmarshalers   map[string]LogsUnmarshaler
 }
 
-func (f *kafkaReceiverFactory) createTraceReceiver(
+func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Receiver,
+	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newReceiver(*c, params, f.unmarshalers, nextConsumer)
+	r, err := newTracesReceiver(*c, params, f.tracesUnmarshalers, nextConsumer)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func (f *kafkaReceiverFactory) createLogsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
+	cfg config.Receiver,
+	nextConsumer consumer.Logs,
+) (component.LogsReceiver, error) {
+	c := cfg.(*Config)
+	r, err := newLogsReceiver(*c, params, f.logsUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

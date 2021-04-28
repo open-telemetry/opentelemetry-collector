@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 type testInitialize struct {
@@ -200,7 +201,7 @@ func TestScrapeController(t *testing.T) {
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
 
-			var nextConsumer consumer.MetricsConsumer
+			var nextConsumer consumer.Metrics
 			sink := new(consumertest.MetricsSink)
 			if !test.nilNextConsumer {
 				nextConsumer = sink
@@ -326,7 +327,7 @@ func getExpectedShutdownErr(test metricsTestCase) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {
@@ -360,7 +361,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 		_, dpc := md.MetricAndDataPointCount()
 		dataPointCount += dpc
 	}
-	obsreporttest.CheckReceiverMetricsViews(t, "receiver", "", int64(dataPointCount), 0)
+	obsreporttest.CheckReceiverMetrics(t, "receiver", "", int64(dataPointCount), 0)
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData) {
@@ -387,7 +388,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 	expectedScraped := int64(sink.MetricsCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
-		if partialError, isPartial := expectedErr.(consumererror.PartialScrapeError); isPartial {
+		if partialError, isPartial := expectedErr.(scrapererror.PartialScrapeError); isPartial {
 			expectedErrored = int64(partialError.Failed)
 		} else {
 			expectedScraped = int64(0)
@@ -395,24 +396,20 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	obsreporttest.CheckScraperMetricsViews(t, "receiver", "scraper", expectedScraped, expectedErrored)
+	obsreporttest.CheckScraperMetrics(t, "receiver", "scraper", expectedScraped, expectedErrored)
 }
 
 func singleMetric() pdata.MetricSlice {
 	metrics := pdata.NewMetricSlice()
-	metrics.Resize(1)
-	metrics.At(0).SetDataType(pdata.MetricDataTypeIntGauge)
-	metrics.At(0).IntGauge().DataPoints().Resize(1)
+	metric := metrics.AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.IntGauge().DataPoints().AppendEmpty()
 	return metrics
 }
 
 func singleResourceMetric() pdata.ResourceMetricsSlice {
 	rms := pdata.NewResourceMetricsSlice()
-	rms.Resize(1)
-	rm := rms.At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	ilm := ilms.At(0)
+	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	singleMetric().MoveAndAppendTo(ilm.Metrics())
 	return rms
 }

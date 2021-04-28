@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -37,24 +37,21 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ExporterSettings:   config.NewExporterSettings(typeStr),
 		LogLevel:           "info",
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 	}
 }
 
-func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -62,10 +59,10 @@ func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, co
 		return nil, err
 	}
 
-	return newTraceExporter(config, cfg.LogLevel, exporterLogger)
+	return newTracesExporter(config, cfg.LogLevel, exporterLogger)
 }
 
-func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -76,7 +73,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 	return newMetricsExporter(config, cfg.LogLevel, exporterLogger)
 }
 
-func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)

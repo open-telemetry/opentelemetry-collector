@@ -31,7 +31,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -43,7 +45,8 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				Namespace: "test",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Namespace:        "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
 					"code0": "one0",
@@ -55,12 +58,15 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				Endpoint: ":88999",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Endpoint:         ":88999",
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
-			config:  &Config{},
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+			},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
@@ -81,7 +87,7 @@ func TestPrometheusExporter(t *testing.T) {
 			}
 
 			assert.NotNil(t, exp)
-			err = exp.Start(context.Background(), &componenttest.NopHost{})
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
 
 			if tt.wantStartErr != "" {
 				require.Error(t, err)
@@ -96,8 +102,9 @@ func TestPrometheusExporter(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
-	config := &Config{
-		Namespace: "test",
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
@@ -108,25 +115,26 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, config)
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err)
 	})
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
-	md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
+		md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
@@ -156,7 +164,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	// Expired metrics should be removed during first scrape
-	exp.(*prometheusExporter).collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
+	exp.(*wrapMetricsExpoter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
 	res, err := http.Get("http://localhost:7777/metrics")
@@ -171,8 +179,9 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
-	config := &Config{
-		Namespace: "test",
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
@@ -184,25 +193,26 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, config)
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err)
 	})
 
 	assert.NotNil(t, exp)
-	require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
 
-	md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
+		md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
@@ -232,7 +242,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	// Expired metrics should be removed during first scrape
-	exp.(*prometheusExporter).collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
+	exp.(*wrapMetricsExpoter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
 	res, err := http.Get("http://localhost:7777/metrics")
@@ -244,6 +254,65 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	blob, _ := ioutil.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
+}
+
+func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Namespace:        "test",
+		ConstLabels: map[string]string{
+			"foo2":  "bar2",
+			"code2": "one2",
+		},
+		Endpoint:         ":7777",
+		SendTimestamps:   true,
+		MetricExpiration: 120 * time.Minute,
+		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
+			Enabled: true,
+		},
+	}
+
+	factory := NewFactory()
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+		// trigger a get so that the server cleans up our keepalive socket
+		http.Get("http://localhost:7777/metrics")
+	})
+
+	assert.NotNil(t, exp)
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+
+	md := testdata.GenerateMetricsOneMetric()
+	assert.NotNil(t, md)
+
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+
+	rsp, err := http.Get("http://localhost:7777/metrics")
+	require.NoError(t, err, "Failed to perform a scrape")
+
+	if g, w := rsp.StatusCode, 200; g != w {
+		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
+	}
+
+	blob, _ := ioutil.ReadAll(rsp.Body)
+	_ = rsp.Body.Close()
+
+	want := []string{
+		`# HELP test_counter_int`,
+		`# TYPE test_counter_int counter`,
+		`test_counter_int{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
+		`test_counter_int{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
+	}
+
+	for _, w := range want {
+		if !strings.Contains(string(blob), w) {
+			t.Errorf("Missing %v from response:\n%v", w, string(blob))
+		}
+	}
 }
 
 func metricBuilder(delta int64, prefix string) []*metricspb.Metric {

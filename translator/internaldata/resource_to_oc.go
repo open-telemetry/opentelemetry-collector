@@ -87,10 +87,12 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	labels := make(map[string]string, attrs.Len())
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		val := tracetranslator.AttributeValueToString(v, false)
 
 		switch k {
+		case conventions.AttributeCloudAvailabilityZone:
+			labels[resourcekeys.CloudKeyZone] = val
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
@@ -98,7 +100,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		case conventions.OCAttributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
-				return
+				return true
 			}
 			ts := timestamppb.New(t)
 			getProcessIdentifier(ocNode).StartTimestamp = ts
@@ -122,6 +124,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			// Not a special attribute, put it into resource labels
 			labels[k] = val
 		}
+		return true
 	})
 	ocResource.Labels = labels
 

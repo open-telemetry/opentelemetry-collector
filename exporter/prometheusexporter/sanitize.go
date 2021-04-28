@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The code for sanitize is mostly copied from:
-//  https://github.com/census-instrumentation/opencensus-go/blob/950a67f393d867cfbe91414063b69e511f42fefb/internal/sanitize.go#L1-L50
 package prometheusexporter
 
 import (
@@ -22,6 +20,8 @@ import (
 )
 
 // sanitize replaces non-alphanumeric characters with underscores in s.
+// The code for sanitize is mostly copied from:
+//  https://github.com/census-instrumentation/opencensus-go/blob/950a67f393d867cfbe91414063b69e511f42fefb/internal/sanitize.go#L1-L50
 func sanitize(s string) string {
 	if len(s) == 0 {
 		return s

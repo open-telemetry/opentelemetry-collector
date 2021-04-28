@@ -19,27 +19,31 @@ import (
 )
 
 // SpanID is an alias of OTLP SpanID data type.
-type SpanID data.SpanID
-
-func InvalidSpanID() SpanID {
-	return SpanID(data.NewSpanID([8]byte{}))
+type SpanID struct {
+	orig data.SpanID
 }
 
+// InvalidSpanID returns an empty (all zero bytes) SpanID.
+func InvalidSpanID() SpanID {
+	return SpanID{orig: data.NewSpanID([8]byte{})}
+}
+
+// NewSpanID returns a new SpanID from the given byte array.
 func NewSpanID(bytes [8]byte) SpanID {
-	return SpanID(data.NewSpanID(bytes))
+	return SpanID{orig: data.NewSpanID(bytes)}
 }
 
 // Bytes returns the byte array representation of the SpanID.
 func (t SpanID) Bytes() [8]byte {
-	return data.SpanID(t).Bytes()
+	return t.orig.Bytes()
 }
 
 // HexString returns hex representation of the SpanID.
 func (t SpanID) HexString() string {
-	return data.SpanID(t).HexString()
+	return t.orig.HexString()
 }
 
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (t SpanID) IsEmpty() bool {
-	return data.SpanID(t).IsEmpty()
+	return t.orig.IsEmpty()
 }

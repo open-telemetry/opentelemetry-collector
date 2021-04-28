@@ -18,27 +18,21 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// Log is a convenience struct for constructing logs for tests.
+// See Logs for rationale.
 type Log struct {
 	Timestamp  int64
 	Body       pdata.AttributeValue
 	Attributes map[string]pdata.AttributeValue
 }
 
-// A convenience function for constructing logs for tests in a way that is
+// Logs is a convenience function for constructing logs for tests in a way that is
 // relatively easy to read and write declaratively compared to the highly
 // imperative and verbose method of using pdata directly.
 // Attributes are sorted by key name.
 func Logs(recs ...Log) pdata.Logs {
 	out := pdata.NewLogs()
-
-	logs := out.ResourceLogs()
-
-	logs.Resize(1)
-	rls := logs.At(0)
-
-	rls.InstrumentationLibraryLogs().Resize(1)
-	logSlice := rls.InstrumentationLibraryLogs().At(0).Logs()
-
+	logSlice := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 	logSlice.Resize(len(recs))
 	for i := range recs {
 		l := logSlice.At(i)

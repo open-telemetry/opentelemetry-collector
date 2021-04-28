@@ -1,8 +1,8 @@
 receivers:
-    examplereceiver:
+    nop:
   
 processors:
-    exampleprocessor:
+    nop:
  
 exporters:
     prometheusremotewrite:
@@ -30,8 +30,8 @@ exporters:
 service:
     pipelines:
         metrics:
-            receivers: [examplereceiver]
-            processors: [exampleprocessor]
+            receivers: [nop]
+            processors: [nop]
             exporters: [prometheusremotewrite]
     
     

@@ -33,11 +33,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
-	tracev1 "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
@@ -54,6 +53,7 @@ func TestNew(t *testing.T) {
 			name: "createExporter",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -70,6 +70,7 @@ func TestNew(t *testing.T) {
 			name: "createExporterWithHeaders",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     map[string]string{"extra-header": "header-value"},
 						Endpoint:    "foo.bar",
@@ -83,6 +84,7 @@ func TestNew(t *testing.T) {
 			name: "createBasicSecureExporter",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -96,6 +98,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithClientTLS",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -115,6 +118,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithKeepAlive",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -139,6 +143,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithMissingFile",
 			args: args{
 				config: Config{
+					ExporterSettings: config.NewExporterSettings(typeStr),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -158,9 +163,9 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTraceExporter(&tt.args.config, zap.NewNop())
+			got, err := newTracesExporter(&tt.args.config, zap.NewNop())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("newTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newTracesExporter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got == nil {
@@ -232,14 +237,17 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), nil)
 	require.NoError(t, err)
-	defer exporter.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
-	traceID := data.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := data.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
-	traces := pdata.TracesFromOtlp([]*tracev1.ResourceSpans{
-		{InstrumentationLibrarySpans: []*tracev1.InstrumentationLibrarySpans{{Spans: []*tracev1.Span{{TraceId: traceID, SpanId: spanID}}}}},
-	})
-	err = exporter.ConsumeTraces(context.Background(), traces)
+	traceID := pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+
+	td := pdata.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+
+	err = exporter.ConsumeTraces(context.Background(), td)
 	require.NoError(t, err)
 	requestes := spanHandler.getRequests()
 	assert.Equal(t, 1, len(requestes))
@@ -271,8 +279,8 @@ func TestConnectionStateChange(t *testing.T) {
 		wg.Done()
 	})
 
-	sender.start(context.Background(), componenttest.NewNopHost())
-	defer sender.shutdown(context.Background())
+	require.NoError(t, sender.start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, sender.shutdown(context.Background())) })
 	wg.Wait() // wait for the initial state to be propagated
 
 	// test
