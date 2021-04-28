@@ -17,7 +17,6 @@ package kafkareceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -31,6 +30,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -80,11 +80,10 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 }
 
 func TestTracesReceiverStart(t *testing.T) {
-	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        zap.NewNop(),
-		consumerGroup: testClient,
+		consumerGroup: &testConsumerGroup{},
 	}
 
 	require.NoError(t, c.Start(context.Background(), nil))
@@ -92,11 +91,10 @@ func TestTracesReceiverStart(t *testing.T) {
 }
 
 func TestTracesReceiverStartConsume(t *testing.T) {
-	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        zap.NewNop(),
-		consumerGroup: testClient,
+		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
@@ -111,12 +109,11 @@ func TestTracesReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
 
-	expectedErr := fmt.Errorf("handler error")
-	testClient := testConsumerGroup{once: &sync.Once{}, err: expectedErr}
+	expectedErr := errors.New("handler error")
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        logger,
-		consumerGroup: testClient,
+		consumerGroup: &testConsumerGroup{err: expectedErr},
 	}
 
 	require.NoError(t, c.Start(context.Background(), nil))
@@ -265,11 +262,10 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 }
 
 func TestLogsReceiverStart(t *testing.T) {
-	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        zap.NewNop(),
-		consumerGroup: testClient,
+		consumerGroup: &testConsumerGroup{},
 	}
 
 	require.NoError(t, c.Start(context.Background(), nil))
@@ -277,11 +273,10 @@ func TestLogsReceiverStart(t *testing.T) {
 }
 
 func TestLogsReceiverStartConsume(t *testing.T) {
-	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        zap.NewNop(),
-		consumerGroup: testClient,
+		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
@@ -296,15 +291,14 @@ func TestLogsReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
 
-	expectedErr := fmt.Errorf("handler error")
-	testClient := testConsumerGroup{once: &sync.Once{}, err: expectedErr}
+	expectedErr := errors.New("handler error")
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
 		logger:        logger,
-		consumerGroup: testClient,
+		consumerGroup: &testConsumerGroup{err: expectedErr},
 	}
 
-	require.NoError(t, c.Start(context.Background(), nil))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, c.Shutdown(context.Background()))
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
@@ -469,31 +463,30 @@ func (t testConsumerGroupSession) ResetOffset(string, int32, int64, string) {
 	panic("implement me")
 }
 
-func (t testConsumerGroupSession) MarkMessage(*sarama.ConsumerMessage, string) {
-}
+func (t testConsumerGroupSession) MarkMessage(*sarama.ConsumerMessage, string) {}
 
 func (t testConsumerGroupSession) Context() context.Context {
 	return context.Background()
 }
 
 type testConsumerGroup struct {
-	once *sync.Once
+	once sync.Once
 	err  error
 }
 
 var _ sarama.ConsumerGroup = (*testConsumerGroup)(nil)
 
-func (t testConsumerGroup) Consume(_ context.Context, _ []string, handler sarama.ConsumerGroupHandler) error {
+func (t *testConsumerGroup) Consume(_ context.Context, _ []string, handler sarama.ConsumerGroupHandler) error {
 	t.once.Do(func() {
-		t.err = handler.Setup(testConsumerGroupSession{})
+		handler.Setup(testConsumerGroupSession{})
 	})
 	return t.err
 }
 
-func (t testConsumerGroup) Errors() <-chan error {
+func (t *testConsumerGroup) Errors() <-chan error {
 	panic("implement me")
 }
 
-func (t testConsumerGroup) Close() error {
+func (t *testConsumerGroup) Close() error {
 	return nil
 }
