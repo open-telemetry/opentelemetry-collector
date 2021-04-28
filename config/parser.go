@@ -29,46 +29,40 @@ const (
 	KeyDelimiter = "::"
 )
 
-// newViper creates a new Viper instance with key delimiter KeyDelimiter instead of the
-// default ".". This way configs can have keys that contain ".".
-func newViper() *viper.Viper {
-	return viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter))
-}
-
 // NewParser creates a new empty Parser instance.
 func NewParser() *Parser {
 	return &Parser{
-		v: newViper(),
+		v: viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter)),
 	}
 }
 
 // NewParserFromFile creates a new Parser by reading the given file.
 func NewParserFromFile(fileName string) (*Parser, error) {
 	// Read yaml config from file
-	v := newViper()
-	v.SetConfigFile(fileName)
-	if err := v.ReadInConfig(); err != nil {
+	p := NewParser()
+	p.v.SetConfigFile(fileName)
+	if err := p.v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
 	}
-	return &Parser{v: v}, nil
+	return p, nil
 }
 
 // NewParserFromBuffer creates a new Parser by reading the given yaml buffer.
 func NewParserFromBuffer(buf io.Reader) (*Parser, error) {
-	v := newViper()
-	v.SetConfigType("yaml")
-	if err := v.ReadConfig(buf); err != nil {
+	p := NewParser()
+	p.v.SetConfigType("yaml")
+	if err := p.v.ReadConfig(buf); err != nil {
 		return nil, err
 	}
-	return &Parser{v: v}, nil
+	return p, nil
 }
 
 // NewParserFromStringMap creates a parser from a map[string]interface{}.
 func NewParserFromStringMap(data map[string]interface{}) *Parser {
-	v := newViper()
-	// Cannot return error because the subv is empty.
-	_ = v.MergeConfigMap(data)
-	return &Parser{v: v}
+	p := NewParser()
+	// Cannot return error because the viper instance is empty.
+	_ = p.v.MergeConfigMap(data)
+	return p
 }
 
 // Parser loads configuration.
@@ -126,10 +120,10 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv := newViper()
+		subParser := NewParser()
 		// Cannot return error because the subv is empty.
-		_ = subv.MergeConfigMap(cast.ToStringMap(data))
-		return &Parser{v: subv}, nil
+		_ = subParser.v.MergeConfigMap(cast.ToStringMap(data))
+		return subParser, nil
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
