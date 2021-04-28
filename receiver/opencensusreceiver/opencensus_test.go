@@ -241,7 +241,7 @@ func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
-	require.NoError(t, ocr.stop())
+	require.NoError(t, ocr.Shutdown(context.Background()))
 }
 
 func TestNewPortAlreadyUsed(t *testing.T) {

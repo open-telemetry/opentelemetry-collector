@@ -47,7 +47,6 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -82,9 +81,6 @@ type jReceiver struct {
 
 	nextConsumer consumer.Traces
 	instanceName string
-
-	startOnce sync.Once
-	stopOnce  sync.Once
 
 	config *configuration
 
@@ -189,51 +185,42 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
-	var err = componenterror.ErrAlreadyStarted
-	jr.startOnce.Do(func() {
-		if err = jr.startAgent(host); err != nil && err != componenterror.ErrAlreadyStarted {
-			return
-		}
+	if err := jr.startAgent(host); err != nil {
+		return err
+	}
 
-		if err = jr.startCollector(host); err != nil && err != componenterror.ErrAlreadyStarted {
-			return
-		}
+	if err := jr.startCollector(host); err != nil {
+		return err
+	}
 
-		err = nil
-	})
-	return err
+	return nil
 }
 
 func (jr *jReceiver) Shutdown(context.Context) error {
-	var err = componenterror.ErrAlreadyStopped
-	jr.stopOnce.Do(func() {
-		jr.mu.Lock()
-		defer jr.mu.Unlock()
-		var errs []error
+	jr.mu.Lock()
+	defer jr.mu.Unlock()
+	var errs []error
 
-		if jr.agentServer != nil {
-			if aerr := jr.agentServer.Close(); aerr != nil {
-				errs = append(errs, aerr)
-			}
+	if jr.agentServer != nil {
+		if aerr := jr.agentServer.Close(); aerr != nil {
+			errs = append(errs, aerr)
 		}
-		for _, processor := range jr.agentProcessors {
-			processor.Stop()
-		}
+	}
+	for _, processor := range jr.agentProcessors {
+		processor.Stop()
+	}
 
-		if jr.collectorServer != nil {
-			if cerr := jr.collectorServer.Close(); cerr != nil {
-				errs = append(errs, cerr)
-			}
+	if jr.collectorServer != nil {
+		if cerr := jr.collectorServer.Close(); cerr != nil {
+			errs = append(errs, cerr)
 		}
-		if jr.grpc != nil {
-			jr.grpc.Stop()
-		}
+	}
+	if jr.grpc != nil {
+		jr.grpc.Stop()
+	}
 
-		jr.goroutines.Wait()
-		err = consumererror.Combine(errs)
-	})
-
-	return err
+	jr.goroutines.Wait()
+	return consumererror.Combine(errs)
 }
 
 func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.Traces) (int, error) {
