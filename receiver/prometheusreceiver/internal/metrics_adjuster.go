@@ -185,7 +185,7 @@ func (jm *JobsMap) get(job, instance string) *timeseriesMap {
 }
 
 // MetricsAdjuster takes a map from a metric instance to the initial point in the metrics instance
-// and provides AdjustMetrics, which takes a sequence of metrics and adjust their values based on
+// and provides AdjustMetrics, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
 type MetricsAdjuster struct {
 	tsm    *timeseriesMap
@@ -200,7 +200,7 @@ func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.Logger) *MetricsAdjuster
 	}
 }
 
-// AdjustMetrics takes a sequence of metrics and adjust their values based on the initial and
+// AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 // Returns the total number of timeseries that had reset start times.
 func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) ([]*metricspb.Metric, int) {
@@ -274,13 +274,6 @@ func (ma *MetricsAdjuster) adjustPoints(metricType metricspb.MetricDescriptor_Ty
 	return ma.adjustPoint(metricType, current[0], previous[0])
 }
 
-// Note: There is an important, subtle point here. When a new timeseries or a reset is detected,
-// current and initial are the same object. When initial == previous, the previous value/count/sum
-// are all the initial value. When initial != previous, the previous value/count/sum has been
-// adjusted wrt the initial value so both they must be combined to find the actual previous
-// value/count/sum. This happens because the timeseries are updated in-place - if new copies of the
-// timeseries were created instead, previous could be used directly but this would mean reallocating
-// all of the metrics.
 func (ma *MetricsAdjuster) adjustPoint(metricType metricspb.MetricDescriptor_Type,
 	current, previous *metricspb.Point) bool {
 	switch metricType {
@@ -298,7 +291,6 @@ func (ma *MetricsAdjuster) adjustPoint(metricType metricspb.MetricDescriptor_Typ
 			return false
 		}
 	case metricspb.MetricDescriptor_SUMMARY:
-		// note: for summary, we don't adjust the snapshot
 		currentSummary := current.GetSummaryValue()
 		previousSummary := previous.GetSummaryValue()
 		if currentSummary.Count.GetValue() < previousSummary.Count.GetValue() || currentSummary.Sum.GetValue() < previousSummary.Sum.GetValue() {
