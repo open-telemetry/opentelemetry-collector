@@ -32,7 +32,7 @@ type settings struct {
 	Factories component.Factories
 
 	// StartInfo provides application start information.
-	StartInfo component.ApplicationStartInfo
+	StartInfo component.BinaryInfo
 
 	// Config represents the configuration of the service.
 	Config *config.Config
@@ -47,7 +47,7 @@ type settings struct {
 // service represents the implementation of a component.Host.
 type service struct {
 	factories         component.Factories
-	startInfo         component.ApplicationStartInfo
+	startInfo         component.BinaryInfo
 	config            *config.Config
 	logger            *zap.Logger
 	asyncErrorChannel chan error

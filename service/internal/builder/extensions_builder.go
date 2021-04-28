@@ -113,7 +113,7 @@ func (exts Extensions) ToMap() map[config.NamedEntity]component.Extension {
 // exportersBuilder builds exporters from config.
 type extensionsBuilder struct {
 	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
+	appInfo   component.BinaryInfo
 	config    *config.Config
 	factories map[config.Type]component.ExtensionFactory
 }
@@ -121,7 +121,7 @@ type extensionsBuilder struct {
 // BuildExtensions builds Extensions from config.
 func BuildExtensions(
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	appInfo component.BinaryInfo,
 	config *config.Config,
 	factories map[config.Type]component.ExtensionFactory,
 ) (Extensions, error) {
@@ -146,7 +146,7 @@ func BuildExtensions(
 	return extensions, nil
 }
 
-func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, appInfo component.ApplicationStartInfo, cfg config.Extension) (*builtExtension, error) {
+func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, appInfo component.BinaryInfo, cfg config.Extension) (*builtExtension, error) {
 	factory := eb.factories[cfg.Type()]
 	if factory == nil {
 		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.Type())
@@ -157,8 +157,8 @@ func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, appInfo componen
 	}
 
 	creationParams := component.ExtensionCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
+		Logger:     logger,
+		BinaryInfo: appInfo,
 	}
 
 	ex, err := factory.CreateExtension(context.Background(), creationParams, cfg)

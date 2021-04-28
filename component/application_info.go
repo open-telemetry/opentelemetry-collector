@@ -14,20 +14,24 @@
 
 package component
 
-// ApplicationStartInfo is the information that is logged at the application start and
+// BinaryInfo is the information that is logged at the application start and
 // passed into each component. This information can be overridden in custom builds.
-type ApplicationStartInfo struct {
+type BinaryInfo struct {
 	// Executable file name, e.g. "otelcol".
-	ExeName string
+	Command string
 
-	// Version string.
+	// Actual full name of the collector, e.g. "OpenTelemetry Collector".
+	Description string
+
+	// Version of the collector.
 	Version string
 }
 
-// DefaultApplicationStartInfo returns the default ApplicationStartInfo.
-func DefaultApplicationStartInfo() ApplicationStartInfo {
-	return ApplicationStartInfo{
-		ExeName: "otelcol",
-		Version: "latest",
+// DefaultBinaryInfo returns the default BinaryInfo.
+func DefaultBinaryInfo() BinaryInfo {
+	return BinaryInfo{
+		Command:     "otelcol",
+		Description: "OpenTelemetry Collector",
+		Version:     "latest",
 	}
 }

@@ -143,7 +143,7 @@ type exportersRequiredDataTypes map[config.Exporter]dataTypeRequirements
 // exportersBuilder builds exporters from config.
 type exportersBuilder struct {
 	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
+	appInfo   component.BinaryInfo
 	config    *config.Config
 	factories map[config.Type]component.ExporterFactory
 }
@@ -151,7 +151,7 @@ type exportersBuilder struct {
 // BuildExporters builds Exporters from config.
 func BuildExporters(
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	appInfo component.BinaryInfo,
 	config *config.Config,
 	factories map[config.Type]component.ExporterFactory,
 ) (Exporters, error) {
@@ -212,7 +212,7 @@ func (eb *exportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 func (eb *exportersBuilder) buildExporter(
 	ctx context.Context,
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	appInfo component.BinaryInfo,
 	cfg config.Exporter,
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
@@ -233,8 +233,8 @@ func (eb *exportersBuilder) buildExporter(
 	}
 
 	creationParams := component.ExporterCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
+		Logger:     logger,
+		BinaryInfo: appInfo,
 	}
 
 	var err error
