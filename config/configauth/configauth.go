@@ -33,6 +33,8 @@ type Authentication struct {
 	AuthenticatorName string `mapstructure:"authenticator"`
 }
 
+// GetAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
+// If an authenticator is not found, an error is returned.
 func GetAuthenticator(extensions map[config.NamedEntity]component.Extension, requested string) (Authenticator, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
