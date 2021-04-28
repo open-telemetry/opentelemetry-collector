@@ -3,6 +3,9 @@
 ## Unreleased
 
 - `zipkin` translator: Handle missing starttime case for zipkin json v2 format spans (#2506)
+- Rename `ApplicationStartInfo` to `BinaryInfo`
+- Rename `ApplicationStartInfo.ExeName` to `BinaryInfo.Command`
+- Add `Description` to `ApplicationStartInfo`
 
 ## 🛑 Breaking changes 🛑
 
