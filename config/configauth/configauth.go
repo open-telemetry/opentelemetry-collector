@@ -18,8 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"google.golang.org/grpc"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
@@ -35,30 +33,18 @@ type Authentication struct {
 	AuthenticatorName string `mapstructure:"authenticator"`
 }
 
-// ToServerOption builds a set of server options ready to be used by the gRPC server
-func (a *Authentication) ToServerOption(ext map[config.NamedEntity]component.Extension) ([]grpc.ServerOption, error) {
-	if a.AuthenticatorName == "" {
+func GetAuthenticator(extensions map[config.NamedEntity]component.Extension, requested string) (Authenticator, error) {
+	if requested == "" {
 		return nil, errAuthenticatorNotProvided
 	}
 
-	authenticator := selectAuthenticator(ext, a.AuthenticatorName)
-	if authenticator == nil {
-		return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorName, errAuthenticatorNotFound)
-	}
-
-	return []grpc.ServerOption{
-		grpc.UnaryInterceptor(authenticator.UnaryInterceptor),
-		grpc.StreamInterceptor(authenticator.StreamInterceptor),
-	}, nil
-}
-
-func selectAuthenticator(extensions map[config.NamedEntity]component.Extension, requested string) Authenticator {
 	for name, ext := range extensions {
 		if auth, ok := ext.(Authenticator); ok {
 			if name.Name() == requested {
-				return auth
+				return auth, nil
 			}
 		}
 	}
-	return nil
+
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", requested, errAuthenticatorNotFound)
 }

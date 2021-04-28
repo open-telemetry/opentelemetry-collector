@@ -297,11 +297,15 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.NamedEntity]compone
 	}
 
 	if gss.Auth != nil {
-		authOpts, err := gss.Auth.ToServerOption(ext)
+		authenticator, err := configauth.GetAuthenticator(ext, gss.Auth.AuthenticatorName)
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, authOpts...)
+
+		opts = append(opts,
+			grpc.UnaryInterceptor(authenticator.UnaryInterceptor),
+			grpc.StreamInterceptor(authenticator.StreamInterceptor),
+		)
 	}
 
 	return opts, nil

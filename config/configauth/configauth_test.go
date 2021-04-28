@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestToServerOptions(t *testing.T) {
+func TestGetAuthenticator(t *testing.T) {
 	// prepare
 	cfg := &Authentication{
 		AuthenticatorName: "mock",
@@ -36,15 +36,14 @@ func TestToServerOptions(t *testing.T) {
 	}
 
 	// test
-	opts, err := cfg.ToServerOption(ext)
+	authenticator, err := GetAuthenticator(ext, cfg.AuthenticatorName)
 
 	// verify
 	assert.NoError(t, err)
-	assert.NotNil(t, opts)
-	assert.Len(t, opts, 2) // we have two interceptors
+	assert.NotNil(t, authenticator)
 }
 
-func TestToServerOptionFails(t *testing.T) {
+func TestGetAuthenticatorFails(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		cfg      *Authentication
@@ -68,9 +67,9 @@ func TestToServerOptionFails(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			opts, err := tC.cfg.ToServerOption(tC.ext)
+			authenticator, err := GetAuthenticator(tC.ext, tC.cfg.AuthenticatorName)
 			assert.ErrorIs(t, err, tC.expected)
-			assert.Nil(t, opts)
+			assert.Nil(t, authenticator)
 		})
 	}
 }
