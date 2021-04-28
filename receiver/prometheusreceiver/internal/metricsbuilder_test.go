@@ -1293,7 +1293,7 @@ func Test_isUsefulLabel(t *testing.T) {
 		})
 	}
 
-	// Test with includeResourceLabels = true
+	// Test with includeResourceLabels = true for instance and job labels
 	tests[1].want = true
 	tests[4].want = true
 	for _, tt := range tests {

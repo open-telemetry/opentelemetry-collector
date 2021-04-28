@@ -160,7 +160,7 @@ func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 
 // TODO: move the following helper functions to a proper place, as they are not called directly in this go file
 
-func isUsefulLabel(mType metricspb.MetricDescriptor_Type, labelKey string) bool {
+func isUsefulLabel(mType metricspb.MetricDescriptor_Type, labelKey string, includeResourceLabels bool) bool {
 	switch labelKey {
 	case model.MetricNameLabel, model.SchemeLabel, model.MetricsPathLabel:
 		return false
