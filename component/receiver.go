@@ -46,7 +46,7 @@ type MetricsReceiver interface {
 	Receiver
 }
 
-// A LogsReceiver recieves logs.
+// A LogsReceiver receives logs.
 // Its purpose is to translate data from any format to the collector's internal logs data format.
 // LogsReceiver feeds a consumer.Logs with data.
 //
