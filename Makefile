@@ -62,25 +62,17 @@ all-modules:
 testbed-loadtest: otelcol
 	cd ./testbed/tests && ./runtests.sh
 
-.PHONY: testbed-correctness
-testbed-correctness: otelcol
+.PHONY: testbed-correctness-traces
+testbed-correctness-traces: otelcol
 	cd ./testbed/correctness/traces && ./runtests.sh
-
-.PHONY: testbed-list-loadtest
-testbed-list-loadtest:
-	RUN_TESTBED=1 $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
-
-.PHONY: testbed-list-correctness
-testbed-list-correctness:
-	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness --test.list '.*'| grep "^Test"
-
-.PHONY: testbed-list-correctness-metrics
-testbed-list-correctness-metrics:
-	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness/metrics --test.list '.*'| grep "^TestHarness_"
 
 .PHONY: testbed-correctness-metrics
 testbed-correctness-metrics: otelcol
 	cd ./testbed/correctness/metrics && ./runtests.sh
+
+.PHONY: testbed-list-loadtest
+testbed-list-loadtest:
+	RUN_TESTBED=1 $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
 
 .PHONY: gomoddownload
 gomoddownload:

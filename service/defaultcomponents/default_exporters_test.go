@@ -164,8 +164,8 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	expCreateParams := component.ExporterCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
 	}
 
 	if getConfigFn == nil {

@@ -51,7 +51,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
-	startInfo := component.ApplicationStartInfo{
+	startInfo := component.BuildInfo{
 		LongName: "OpenTelemetry Collector",
 		Version:  "1.0",
 	}
@@ -64,7 +64,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		externalLabels map[string]string
 		client         *http.Client
 		returnError    bool
-		startInfo      component.ApplicationStartInfo
+		startInfo      component.BuildInfo
 	}{
 		{
 			"invalid_URL",
@@ -258,7 +258,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 
 	HTTPClient := http.DefaultClient
 
-	startInfo := component.ApplicationStartInfo{
+	startInfo := component.BuildInfo{
 		LongName: "OpenTelemetry Collector",
 		Version:  "1.0",
 	}
@@ -715,7 +715,7 @@ func Test_PushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			startInfo := component.ApplicationStartInfo{
+			startInfo := component.BuildInfo{
 				LongName: "OpenTelemetry Collector",
 				Version:  "1.0",
 			}

@@ -14,9 +14,9 @@
 
 package component
 
-// ApplicationStartInfo is the information that is logged at the application start and
+// BuildInfo is the information that is logged at the application start and
 // passed into each component. This information can be overridden in custom builds.
-type ApplicationStartInfo struct {
+type BuildInfo struct {
 	// Executable file name, e.g. "otelcol".
 	ExeName string
 
@@ -25,17 +25,12 @@ type ApplicationStartInfo struct {
 
 	// Version string.
 	Version string
-
-	// Git hash of the source code.
-	GitHash string
 }
 
-// DefaultApplicationStartInfo returns the default ApplicationStartInfo.
-func DefaultApplicationStartInfo() ApplicationStartInfo {
-	return ApplicationStartInfo{
-		ExeName:  "otelcol",
-		LongName: "OpenTelemetry Collector",
-		Version:  "latest",
-		GitHash:  "<NOT PROPERLY GENERATED>",
+// DefaultBuildInfo returns the default BuildInfo.
+func DefaultBuildInfo() BuildInfo {
+	return BuildInfo{
+		ExeName: "otelcol",
+		Version: "latest",
 	}
 }

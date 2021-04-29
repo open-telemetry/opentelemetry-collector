@@ -31,8 +31,8 @@ type settings struct {
 	// Factories component factories.
 	Factories component.Factories
 
-	// StartInfo provides application start information.
-	StartInfo component.ApplicationStartInfo
+	// BuildInfo provides application start information.
+	BuildInfo component.BuildInfo
 
 	// Config represents the configuration of the service.
 	Config *config.Config
@@ -47,7 +47,7 @@ type settings struct {
 // service represents the implementation of a component.Host.
 type service struct {
 	factories         component.Factories
-	startInfo         component.ApplicationStartInfo
+	buildInfo         component.BuildInfo
 	config            *config.Config
 	logger            *zap.Logger
 	asyncErrorChannel chan error
@@ -61,7 +61,7 @@ type service struct {
 func newService(settings *settings) (*service, error) {
 	srv := &service{
 		factories:         settings.Factories,
-		startInfo:         settings.StartInfo,
+		buildInfo:         settings.BuildInfo,
 		config:            settings.Config,
 		logger:            settings.Logger,
 		asyncErrorChannel: settings.AsyncErrorChannel,
@@ -144,7 +144,7 @@ func (srv *service) GetExporters() map[config.DataType]map[config.NamedEntity]co
 
 func (srv *service) buildExtensions() error {
 	var err error
-	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.startInfo, srv.config, srv.factories.Extensions)
+	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.buildInfo, srv.config, srv.factories.Extensions)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
@@ -175,20 +175,20 @@ func (srv *service) buildPipelines() error {
 
 	// First create exporters.
 	var err error
-	srv.builtExporters, err = builder.BuildExporters(srv.logger, srv.startInfo, srv.config, srv.factories.Exporters)
+	srv.builtExporters, err = builder.BuildExporters(srv.logger, srv.buildInfo, srv.config, srv.factories.Exporters)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExporters: %w", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	srv.builtPipelines, err = builder.BuildPipelines(srv.logger, srv.startInfo, srv.config, srv.builtExporters, srv.factories.Processors)
+	srv.builtPipelines, err = builder.BuildPipelines(srv.logger, srv.buildInfo, srv.config, srv.builtExporters, srv.factories.Processors)
 	if err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	srv.builtReceivers, err = builder.BuildReceivers(srv.logger, srv.startInfo, srv.config, srv.builtPipelines, srv.factories.Receivers)
+	srv.builtReceivers, err = builder.BuildReceivers(srv.logger, srv.buildInfo, srv.config, srv.builtPipelines, srv.factories.Receivers)
 	if err != nil {
 		return fmt.Errorf("cannot build receivers: %w", err)
 	}

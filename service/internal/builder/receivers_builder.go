@@ -80,7 +80,7 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 // receiversBuilder builds receivers from config.
 type receiversBuilder struct {
 	logger         *zap.Logger
-	appInfo        component.ApplicationStartInfo
+	buildInfo      component.BuildInfo
 	config         *config.Config
 	builtPipelines BuiltPipelines
 	factories      map[config.Type]component.ReceiverFactory
@@ -89,17 +89,17 @@ type receiversBuilder struct {
 // BuildReceivers builds Receivers from config.
 func BuildReceivers(
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	buildInfo component.BuildInfo,
 	config *config.Config,
 	builtPipelines BuiltPipelines,
 	factories map[config.Type]component.ReceiverFactory,
 ) (Receivers, error) {
-	rb := &receiversBuilder{logger.With(zap.String(zapKindKey, zapKindReceiver)), appInfo, config, builtPipelines, factories}
+	rb := &receiversBuilder{logger.With(zap.String(zapKindKey, zapKindReceiver)), buildInfo, config, builtPipelines, factories}
 
 	receivers := make(Receivers)
 	for _, cfg := range rb.config.Receivers {
 		logger := rb.logger.With(zap.String(zapNameKey, cfg.Name()))
-		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg)
+		rcv, err := rb.buildReceiver(context.Background(), logger, rb.buildInfo, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {
 				logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
@@ -161,7 +161,7 @@ func (rb *receiversBuilder) findPipelinesToAttach(cfg config.Receiver) (attached
 func (rb *receiversBuilder) attachReceiverToPipelines(
 	ctx context.Context,
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	buildInfo component.BuildInfo,
 	factory component.ReceiverFactory,
 	dataType config.DataType,
 	cfg config.Receiver,
@@ -174,8 +174,8 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 	var err error
 	var createdReceiver component.Receiver
 	creationParams := component.ReceiverCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
+		Logger:    logger,
+		BuildInfo: buildInfo,
 	}
 
 	switch dataType {
@@ -232,7 +232,7 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *receiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config config.Receiver) (*builtReceiver, error) {
+func (rb *receiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, buildInfo component.BuildInfo, config config.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(config)
@@ -258,7 +258,7 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		err := rb.attachReceiverToPipelines(ctx, logger, appInfo, factory, dataType, config, rcv, pipelines)
+		err := rb.attachReceiverToPipelines(ctx, logger, buildInfo, factory, dataType, config, rcv, pipelines)
 		if err != nil {
 			return nil, err
 		}

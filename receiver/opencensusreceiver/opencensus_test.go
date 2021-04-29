@@ -44,6 +44,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -241,7 +244,7 @@ func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
-	require.NoError(t, ocr.stop())
+	require.NoError(t, ocr.Shutdown(context.Background()))
 }
 
 func TestNewPortAlreadyUsed(t *testing.T) {
@@ -612,4 +615,30 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestInvalidTLSCredentials(t *testing.T) {
+	cfg := Config{
+		ReceiverSettings: config.ReceiverSettings{
+			NameVal: "IncorrectTLS",
+		},
+		GRPCServerSettings: configgrpc.GRPCServerSettings{
+			TLSSetting: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "willfail",
+				},
+			},
+		},
+	}
+	opt := cfg.buildOptions()
+	assert.NotNil(t, opt)
+
+	addr := testutil.GetAvailableLocalAddress(t)
+	ocr, err := newOpenCensusReceiver("invalidtls", "tcp", addr, nil, nil, opt...)
+	assert.NoError(t, err)
+	assert.NotNil(t, ocr)
+
+	srv, err := ocr.grpcServer(componenttest.NewNopHost())
+	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+	assert.Nil(t, srv)
 }

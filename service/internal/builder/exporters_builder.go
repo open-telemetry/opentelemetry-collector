@@ -143,7 +143,7 @@ type exportersRequiredDataTypes map[config.Exporter]dataTypeRequirements
 // exportersBuilder builds exporters from config.
 type exportersBuilder struct {
 	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
+	buildInfo component.BuildInfo
 	config    *config.Config
 	factories map[config.Type]component.ExporterFactory
 }
@@ -151,11 +151,11 @@ type exportersBuilder struct {
 // BuildExporters builds Exporters from config.
 func BuildExporters(
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	buildInfo component.BuildInfo,
 	config *config.Config,
 	factories map[config.Type]component.ExporterFactory,
 ) (Exporters, error) {
-	eb := &exportersBuilder{logger.With(zap.String(zapKindKey, zapKindLogExporter)), appInfo, config, factories}
+	eb := &exportersBuilder{logger.With(zap.String(zapKindKey, zapKindLogExporter)), buildInfo, config, factories}
 
 	// We need to calculate required input data types for each exporter so that we know
 	// which data type must be started for each exporter.
@@ -165,7 +165,7 @@ func BuildExporters(
 	// BuildExporters exporters based on configuration and required input data types.
 	for _, cfg := range eb.config.Exporters {
 		componentLogger := eb.logger.With(zap.String(zapNameKey, cfg.Name()))
-		exp, err := eb.buildExporter(context.Background(), componentLogger, eb.appInfo, cfg, exporterInputDataTypes)
+		exp, err := eb.buildExporter(context.Background(), componentLogger, eb.buildInfo, cfg, exporterInputDataTypes)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +212,7 @@ func (eb *exportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 func (eb *exportersBuilder) buildExporter(
 	ctx context.Context,
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	buildInfo component.BuildInfo,
 	cfg config.Exporter,
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
@@ -233,8 +233,8 @@ func (eb *exportersBuilder) buildExporter(
 	}
 
 	creationParams := component.ExporterCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
+		Logger:    logger,
+		BuildInfo: buildInfo,
 	}
 
 	var err error

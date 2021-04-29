@@ -25,9 +25,6 @@ var (
 	// Version variable will be replaced at link time after `make` has been run.
 	Version = "latest"
 
-	// GitHash variable will be replaced at link time after `make` has been run.
-	GitHash = "<NOT PROPERLY GENERATED>"
-
 	// startTime
 	startTime time.Time
 )
@@ -39,7 +36,6 @@ func init() {
 // InfoVar is a singleton instance of the Info struct.
 var InfoVar = Info{
 	{"Version", Version},
-	{"GitHash", GitHash},
 	{"GoVersion", runtime.Version()},
 	{"OS", runtime.GOOS},
 	{"Architecture", runtime.GOARCH},
