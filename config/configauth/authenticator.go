@@ -43,13 +43,17 @@ type Authenticator interface {
 	Authenticate(ctx context.Context, headers map[string][]string) error
 
 	// GrpcUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryServerInterceptor, typically calling the authenticator's Authenticate method.
+	// While the context is the typical source of authentication data, the interceptor is free to determine where the auth data should come from. For instance, some
+	// receivers might implement an interceptor that looks into the payload instead.
 	// Once the authentication succeeds, the interceptor is expected to call the handler.
-	// See grpc.UnaryServerInterceptor.
+	// See https://pkg.go.dev/google.golang.org/grpc#UnaryServerInterceptor.
 	GrpcUnaryServerInterceptor(ctx context.Context, req interface{}, srvInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
 
 	// GrpcStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamServerInterceptor, typically calling the authenticator's Authenticate method.
+	// While the context is the typical source of authentication data, the interceptor is free to determine where the auth data should come from. For instance, some
+	// receivers might implement an interceptor that looks into the payload instead.
 	// Once the authentication succeeds, the interceptor is expected to call the handler.
-	// See grpc.StreamServerInterceptor.
+	// See https://pkg.go.dev/google.golang.org/grpc#StreamServerInterceptor.
 	GrpcStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, srvInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error
 }
 
