@@ -106,8 +106,8 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	receiverCreateParams := component.ReceiverCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
 	}
 
 	if getConfigFn == nil {
