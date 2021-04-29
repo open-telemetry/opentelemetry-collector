@@ -38,9 +38,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 
 	if len(spans) == 0 {
 		// At least one of the td.Node or td.Resource is not nil. Set the resource and return.
-		rss := traceData.ResourceSpans()
-		rss.Resize(1)
-		ocNodeResourceToInternal(node, resource, rss.At(0).Resource())
+		ocNodeResourceToInternal(node, resource, traceData.ResourceSpans().AppendEmpty().Resource())
 		return traceData
 	}
 
@@ -86,9 +84,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 	ocNodeResourceToInternal(node, resource, rs0.Resource())
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
-	ilss := rs0.InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	ils0 := ilss.At(0)
+	ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
 	combinedSpans := ils0.Spans()
 	combinedSpans.Resize(combinedSpanCount)
 
@@ -125,11 +121,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, dest pdata.ResourceSpans) {
 	ocNodeResourceToInternal(node, ocSpan.Resource, dest.Resource())
 	ilss := dest.InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	ils0 := ilss.At(0)
-	spans := ils0.Spans()
-	spans.Resize(1)
-	ocSpanToInternal(ocSpan, spans.At(0))
+	ocSpanToInternal(ocSpan, ilss.AppendEmpty().Spans().AppendEmpty())
 }
 
 func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
@@ -226,29 +218,24 @@ func ocAttrsToDroppedAttributes(ocAttrs *octrace.Span_Attributes) uint32 {
 
 // initAttributeMapFromOC initialize AttributeMap from OC attributes
 func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.AttributeMap) {
-	if ocAttrs == nil {
+	if ocAttrs == nil || len(ocAttrs.AttributeMap) == 0 {
 		return
 	}
 
-	if len(ocAttrs.AttributeMap) > 0 {
-		dest.InitEmptyWithCapacity(len(ocAttrs.AttributeMap))
-		for key, ocAttr := range ocAttrs.AttributeMap {
-			switch attribValue := ocAttr.Value.(type) {
-			case *octrace.AttributeValue_StringValue:
-				dest.UpsertString(key, attribValue.StringValue.GetValue())
-
-			case *octrace.AttributeValue_IntValue:
-				dest.UpsertInt(key, attribValue.IntValue)
-
-			case *octrace.AttributeValue_BoolValue:
-				dest.UpsertBool(key, attribValue.BoolValue)
-
-			case *octrace.AttributeValue_DoubleValue:
-				dest.UpsertDouble(key, attribValue.DoubleValue)
-
-			default:
-				dest.UpsertString(key, "<Unknown OpenCensus attribute value type>")
-			}
+	dest.Clear()
+	dest.EnsureCapacity(len(ocAttrs.AttributeMap))
+	for key, ocAttr := range ocAttrs.AttributeMap {
+		switch attribValue := ocAttr.Value.(type) {
+		case *octrace.AttributeValue_StringValue:
+			dest.UpsertString(key, attribValue.StringValue.GetValue())
+		case *octrace.AttributeValue_IntValue:
+			dest.UpsertInt(key, attribValue.IntValue)
+		case *octrace.AttributeValue_BoolValue:
+			dest.UpsertBool(key, attribValue.BoolValue)
+		case *octrace.AttributeValue_DoubleValue:
+			dest.UpsertDouble(key, attribValue.DoubleValue)
+		default:
+			dest.UpsertString(key, "<Unknown OpenCensus attribute value type>")
 		}
 	}
 }

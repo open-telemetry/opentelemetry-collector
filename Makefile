@@ -33,10 +33,7 @@ GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 VERSION=$(shell git describe --match "v[0-9]*" HEAD)
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-# BUILD_TYPE should be one of (dev, release).
-BUILD_TYPE?=release
-BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
+BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 
@@ -65,25 +62,17 @@ all-modules:
 testbed-loadtest: otelcol
 	cd ./testbed/tests && ./runtests.sh
 
-.PHONY: testbed-correctness
-testbed-correctness: otelcol
+.PHONY: testbed-correctness-traces
+testbed-correctness-traces: otelcol
 	cd ./testbed/correctness/traces && ./runtests.sh
-
-.PHONY: testbed-list-loadtest
-testbed-list-loadtest:
-	RUN_TESTBED=1 $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
-
-.PHONY: testbed-list-correctness
-testbed-list-correctness:
-	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness --test.list '.*'| grep "^Test"
-
-.PHONY: testbed-list-correctness-metrics
-testbed-list-correctness-metrics:
-	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness/metrics --test.list '.*'| grep "^TestHarness_"
 
 .PHONY: testbed-correctness-metrics
 testbed-correctness-metrics: otelcol
 	cd ./testbed/correctness/metrics && ./runtests.sh
+
+.PHONY: testbed-list-loadtest
+testbed-list-loadtest:
+	RUN_TESTBED=1 $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
 
 .PHONY: gomoddownload
 gomoddownload:
@@ -242,7 +231,7 @@ binaries-windows_amd64:
 
 .PHONY: build-binary-internal
 build-binary-internal:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
 
 
 .PHONY: deb-rpm-package

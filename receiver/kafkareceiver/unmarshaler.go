@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// Unmarshaller deserializes the message body.
-type Unmarshaller interface {
+// TracesUnmarshaler deserializes the message body.
+type TracesUnmarshaler interface {
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (pdata.Traces, error)
 
@@ -27,20 +27,36 @@ type Unmarshaller interface {
 	Encoding() string
 }
 
-// defaultUnmarshallers returns map of supported encodings with Unmarshaller.
-func defaultUnmarshallers() map[string]Unmarshaller {
-	otlp := &otlpTracesPbUnmarshaller{}
-	jaegerProto := jaegerProtoSpanUnmarshaller{}
-	jaegerJSON := jaegerJSONSpanUnmarshaller{}
-	zipkinProto := zipkinProtoSpanUnmarshaller{}
-	zipkinJSON := zipkinJSONSpanUnmarshaller{}
-	zipkinThrift := zipkinThriftSpanUnmarshaller{}
-	return map[string]Unmarshaller{
+// LogsUnmarshaler deserializes the message body.
+type LogsUnmarshaler interface {
+	// Unmarshal deserializes the message body into traces.
+	Unmarshal([]byte) (pdata.Logs, error)
+
+	// Encoding of the serialized messages.
+	Encoding() string
+}
+
+// defaultTracesUnmarshalers returns map of supported encodings with TracesUnmarshaler.
+func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
+	otlp := &otlpTracesPbUnmarshaler{}
+	jaegerProto := jaegerProtoSpanUnmarshaler{}
+	jaegerJSON := jaegerJSONSpanUnmarshaler{}
+	zipkinProto := zipkinProtoSpanUnmarshaler{}
+	zipkinJSON := zipkinJSONSpanUnmarshaler{}
+	zipkinThrift := zipkinThriftSpanUnmarshaler{}
+	return map[string]TracesUnmarshaler{
 		otlp.Encoding():         otlp,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,
 		zipkinProto.Encoding():  zipkinProto,
 		zipkinJSON.Encoding():   zipkinJSON,
 		zipkinThrift.Encoding(): zipkinThrift,
+	}
+}
+
+func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
+	otlp := &otlpLogsPbUnmarshaler{}
+	return map[string]LogsUnmarshaler{
+		otlp.Encoding(): otlp,
 	}
 }

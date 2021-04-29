@@ -401,19 +401,15 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 
 func singleMetric() pdata.MetricSlice {
 	metrics := pdata.NewMetricSlice()
-	metrics.Resize(1)
-	metrics.At(0).SetDataType(pdata.MetricDataTypeIntGauge)
-	metrics.At(0).IntGauge().DataPoints().Resize(1)
+	metric := metrics.AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.IntGauge().DataPoints().AppendEmpty()
 	return metrics
 }
 
 func singleResourceMetric() pdata.ResourceMetricsSlice {
 	rms := pdata.NewResourceMetricsSlice()
-	rms.Resize(1)
-	rm := rms.At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	ilm := ilms.At(0)
+	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	singleMetric().MoveAndAppendTo(ilm.Metrics())
 	return rms
 }

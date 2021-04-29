@@ -39,7 +39,9 @@ type TestCaseValidator interface {
 type PerfTestValidator struct{}
 
 func (v *PerfTestValidator) Validate(tc *TestCase) {
-	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
+	if assert.EqualValues(tc.t,
+		int64(tc.LoadGenerator.DataItemsSent()),
+		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data matches.")
 	}
@@ -89,7 +91,9 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 }
 
 func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
-	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
+	if assert.EqualValues(tc.t,
+		int64(tc.LoadGenerator.DataItemsSent()),
+		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data counters match.")
 	}
@@ -414,7 +418,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan pdata.Span, recdSpan 
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	sentAttrs pdata.AttributeMap, recdAttrs pdata.AttributeMap, fmtStr string) {
-	sentAttrs.ForEach(func(sentKey string, sentVal pdata.AttributeValue) {
+	sentAttrs.Range(func(sentKey string, sentVal pdata.AttributeValue) bool {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {
 			af := &TraceAssertionFailure{
@@ -425,7 +429,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 				actualValue:   nil,
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
-			return
+			return true
 		}
 		switch sentVal.Type() {
 		case pdata.AttributeValueMAP:
@@ -433,6 +437,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 		default:
 			v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentKey)
 		}
+		return true
 	})
 }
 

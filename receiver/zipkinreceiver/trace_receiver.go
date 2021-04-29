@@ -59,8 +59,6 @@ type ZipkinReceiver struct {
 	nextConsumer consumer.Traces
 	instanceName string
 
-	startOnce  sync.Once
-	stopOnce   sync.Once
 	shutdownWG sync.WaitGroup
 	server     *http.Server
 	config     *Config
@@ -91,28 +89,23 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
-	var err = componenterror.ErrAlreadyStarted
+	zr.host = host
+	zr.server = zr.config.HTTPServerSettings.ToServer(zr)
+	var listener net.Listener
+	listener, err := zr.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return err
+	}
+	zr.shutdownWG.Add(1)
+	go func() {
+		defer zr.shutdownWG.Done()
 
-	zr.startOnce.Do(func() {
-		err = nil
-		zr.host = host
-		zr.server = zr.config.HTTPServerSettings.ToServer(zr)
-		var listener net.Listener
-		listener, err = zr.config.HTTPServerSettings.ToListener()
-		if err != nil {
-			return
+		if errHTTP := zr.server.Serve(listener); errHTTP != http.ErrServerClosed {
+			host.ReportFatalError(errHTTP)
 		}
-		zr.shutdownWG.Add(1)
-		go func() {
-			defer zr.shutdownWG.Done()
+	}()
 
-			if errHTTP := zr.server.Serve(listener); errHTTP != http.ErrServerClosed {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-	})
-
-	return err
+	return nil
 }
 
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
@@ -164,11 +157,8 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte) (zs []*zipkinmode
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
 func (zr *ZipkinReceiver) Shutdown(context.Context) error {
-	var err = componenterror.ErrAlreadyStopped
-	zr.stopOnce.Do(func() {
-		err = zr.server.Close()
-		zr.shutdownWG.Wait()
-	})
+	err := zr.server.Close()
+	zr.shutdownWG.Wait()
 	return err
 }
 
@@ -224,7 +214,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Now deserialize and process the spans.
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
-	transportTag := transportType(r)
+	transportTag := transportType(r, asZipkinv1)
 	ctx = obsreport.ReceiverContext(ctx, zr.instanceName, transportTag)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.instanceName, transportTag)
 
@@ -268,9 +258,8 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func transportType(r *http.Request) string {
-	v1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
-	if v1 {
+func transportType(r *http.Request, asZipkinv1 bool) string {
+	if asZipkinv1 {
 		if r.Header.Get("Content-Type") == "application/x-thrift" {
 			return receiverTransportV1Thrift
 		}

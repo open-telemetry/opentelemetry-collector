@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal/builder"
@@ -56,7 +58,7 @@ const (
 
 // Application represents a collector application
 type Application struct {
-	info    component.ApplicationStartInfo
+	info    component.BuildInfo
 	rootCmd *cobra.Command
 	logger  *zap.Logger
 
@@ -81,8 +83,8 @@ type Application struct {
 type Parameters struct {
 	// Factories component factories.
 	Factories component.Factories
-	// ApplicationStartInfo provides application start information.
-	ApplicationStartInfo component.ApplicationStartInfo
+	// BuildInfo provides application start information.
+	BuildInfo component.BuildInfo
 	// ParserProvider provides the configuration's Parser.
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
@@ -99,14 +101,14 @@ func New(params Parameters) (*Application, error) {
 	}
 
 	app := &Application{
-		info:         params.ApplicationStartInfo,
+		info:         params.BuildInfo,
 		factories:    params.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:  params.ApplicationStartInfo.ExeName,
-		Long: params.ApplicationStartInfo.LongName,
+		Use:     params.BuildInfo.ExeName,
+		Version: params.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			if app.logger, err = newLogger(params.LoggingOptions); err != nil {
@@ -239,7 +241,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 
 	service, err := newService(&settings{
 		Factories:         app.factories,
-		StartInfo:         app.info,
+		BuildInfo:         app.info,
 		Config:            cfg,
 		Logger:            app.logger,
 		AsyncErrorChannel: app.asyncErrorChannel,
@@ -254,13 +256,30 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 	}
 
 	app.service = service
+
+	// If provider is watchable start a goroutine watching for updates.
+	if watchable, ok := app.parserProvider.(parserprovider.Watchable); ok {
+		go func() {
+			err := watchable.WatchForUpdate()
+			switch {
+			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
+			case errors.Is(err, configsource.ErrSessionClosed):
+				// This is the case of shutdown of the whole application, nothing to do.
+				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
+				return
+			default:
+				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
+				app.reloadService(context.Background())
+			}
+		}()
+	}
+
 	return nil
 }
 
 func (app *Application) execute(ctx context.Context) error {
-	app.logger.Info("Starting "+app.info.LongName+"...",
+	app.logger.Info("Starting "+app.info.ExeName+"...",
 		zap.String("Version", app.info.Version),
-		zap.String("GitHash", app.info.GitHash),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 	app.stateChannel <- Starting
@@ -291,6 +310,12 @@ func (app *Application) execute(ctx context.Context) error {
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
+	if closable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+		if err := closable.Close(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close config: %w", err))
+		}
+	}
+
 	if app.service != nil {
 		if err := app.service.Shutdown(ctx); err != nil {
 			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
@@ -319,10 +344,16 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 	return nil, 0
 }
 
-// updateService shutdowns the current app.service and setups a new one according
+// reloadService shutdowns the current app.service and setups a new one according
 // to the latest configuration. It requires that app.parserProvider and app.factories
 // are properly populated to finish successfully.
-func (app *Application) updateService(ctx context.Context) error {
+func (app *Application) reloadService(ctx context.Context) error {
+	if closeable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+		if err := closeable.Close(ctx); err != nil {
+			return fmt.Errorf("failed close current config provider: %w", err)
+		}
+	}
+
 	if app.service != nil {
 		retiringService := app.service
 		app.service = nil

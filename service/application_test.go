@@ -51,7 +51,7 @@ func TestApplication_Start(t *testing.T) {
 		return nil
 	}
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: component.DefaultApplicationStartInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
+	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 
@@ -88,8 +88,10 @@ func TestApplication_Start(t *testing.T) {
 	}
 	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
 
+	assertZPages(t)
+
 	// Trigger another configuration load.
-	require.NoError(t, app.updateService(context.Background()))
+	require.NoError(t, app.reloadService(context.Background()))
 	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
 
 	app.signalsChannel <- syscall.SIGTERM
@@ -117,7 +119,7 @@ func TestApplication_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: component.DefaultApplicationStartInfo()})
+	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo()})
 	require.NoError(t, err)
 
 	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
@@ -141,9 +143,9 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	params := Parameters{
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
-		ParserProvider:       new(minimalParserLoader),
-		Factories:            factories,
+		BuildInfo:      component.DefaultBuildInfo(),
+		ParserProvider: new(minimalParserLoader),
+		Factories:      factories,
 	}
 	app, err := New(params)
 	require.NoError(t, err)
@@ -216,6 +218,32 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 	}
 }
 
+func assertZPages(t *testing.T) {
+	paths := []string{
+		"/debug/tracez",
+		"/debug/rpcz",
+		"/debug/pipelinez",
+		"/debug/servicez",
+		"/debug/extensionz",
+	}
+
+	const defaultZPagesPort = "55679"
+
+	testZPagePathFn := func(t *testing.T, path string) {
+		client := &http.Client{}
+		resp, err := client.Get("http://localhost:" + defaultZPagesPort + path)
+		if !assert.NoError(t, err, "error retrieving zpage at %q", path) {
+			return
+		}
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
+		assert.NoError(t, resp.Body.Close())
+	}
+
+	for _, path := range paths {
+		testZPagePathFn(t, path)
+	}
+}
+
 type minimalParserLoader struct{}
 
 func (*minimalParserLoader) Get() (*config.Parser, error) {
@@ -250,7 +278,7 @@ func (epl *errParserLoader) Get() (*config.Parser, error) {
 	return nil, epl.err
 }
 
-func TestApplication_updateService(t *testing.T) {
+func TestApplication_reloadService(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 	ctx := context.Background()
@@ -304,7 +332,7 @@ func TestApplication_updateService(t *testing.T) {
 				service:        tt.service,
 			}
 
-			err := app.updateService(ctx)
+			err := app.reloadService(ctx)
 
 			if err != nil {
 				assert.ErrorIs(t, err, sentinelError)

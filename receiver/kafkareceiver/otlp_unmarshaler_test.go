@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkaexporter
+package kafkareceiver
 
 import (
 	"testing"
@@ -24,26 +24,43 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestOTLPTracesPbMarshaller(t *testing.T) {
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	m := otlpTracesPbMarshaller{}
-	assert.Equal(t, "otlp_proto", m.Encoding())
-	messages, err := m.Marshal(td)
+func TestUnmarshalOTLPTraces(t *testing.T) {
+	td := pdata.NewTraces()
+	td.ResourceSpans().AppendEmpty().Resource().Attributes().InsertString("foo", "bar")
+
+	expected, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	extracted, err := pdata.TracesFromOtlpProtoBytes(messages[0].Value)
+
+	p := otlpTracesPbUnmarshaler{}
+	got, err := p.Unmarshal(expected)
 	require.NoError(t, err)
-	assert.EqualValues(t, td, extracted)
+
+	assert.Equal(t, td, got)
+	assert.Equal(t, "otlp_proto", p.Encoding())
 }
 
-func TestOTLPMetricsPbMarshaller(t *testing.T) {
-	md := testdata.GenerateMetricsTwoMetrics()
-	m := otlpMetricsPbMarshaller{}
-	assert.Equal(t, "otlp_proto", m.Encoding())
-	messages, err := m.Marshal(md)
+func TestUnmarshalOTLPTraces_error(t *testing.T) {
+	p := otlpTracesPbUnmarshaler{}
+	_, err := p.Unmarshal([]byte("+$%"))
+	assert.Error(t, err)
+}
+
+func TestUnmarshalOTLPLogs(t *testing.T) {
+	ld := testdata.GenerateLogDataOneLog()
+
+	expected, err := ld.ToOtlpProtoBytes()
 	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	extracted, err := pdata.MetricsFromOtlpProtoBytes(messages[0].Value)
+
+	p := otlpLogsPbUnmarshaler{}
+	got, err := p.Unmarshal(expected)
 	require.NoError(t, err)
-	assert.EqualValues(t, md, extracted)
+
+	assert.Equal(t, ld, got)
+	assert.Equal(t, "otlp_proto", p.Encoding())
+}
+
+func TestUnmarshalOTLPLogs_error(t *testing.T) {
+	p := otlpLogsPbUnmarshaler{}
+	_, err := p.Unmarshal([]byte("+$%"))
+	assert.Error(t, err)
 }

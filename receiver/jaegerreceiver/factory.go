@@ -103,15 +103,11 @@ func createTracesReceiver(
 	var config configuration
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
+		config.CollectorGRPCServerSettings = *rCfg.Protocols.GRPC
 		var err error
 		config.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
 		if err != nil {
 			return nil, fmt.Errorf("unable to extract port for GRPC: %w", err)
-		}
-
-		config.CollectorGRPCOptions, err = rCfg.Protocols.GRPC.ToServerOption()
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -121,6 +117,8 @@ func createTracesReceiver(
 		if err != nil {
 			return nil, fmt.Errorf("unable to extract port for ThriftHTTP: %w", err)
 		}
+
+		config.CollectorHTTPSettings = *rCfg.ThriftHTTP
 	}
 
 	if rCfg.Protocols.ThriftBinary != nil {

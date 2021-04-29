@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tests
+package ballastextension
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import (
+	"go.opentelemetry.io/collector/config"
+)
 
-func attributesToMap(attributes pdata.AttributeMap) map[string]pdata.AttributeValue {
-	out := map[string]pdata.AttributeValue{}
-	attributes.ForEach(func(k string, v pdata.AttributeValue) {
-		out[k] = v
-	})
-	return out
+// Config has the configuration for the fluentbit extension.
+type Config struct {
+	*config.ExtensionSettings `mapstructure:"-"`
+
+	// SizeMiB is the size, in MiB, of the memory ballast
+	// to be created for this process.
+	SizeMiB uint32 `mapstructure:"size_mib"`
 }

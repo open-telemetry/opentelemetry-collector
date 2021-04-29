@@ -35,8 +35,7 @@ var (
 )
 
 func GenerateTraceDataEmpty() pdata.Traces {
-	td := pdata.NewTraces()
-	return td
+	return pdata.NewTraces()
 }
 
 func generateTraceOtlpEmpty() *otlpcollectortrace.ExportTraceServiceRequest {
@@ -45,7 +44,7 @@ func generateTraceOtlpEmpty() *otlpcollectortrace.ExportTraceServiceRequest {
 
 func GenerateTraceDataOneEmptyResourceSpans() pdata.Traces {
 	td := GenerateTraceDataEmpty()
-	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().AppendEmpty()
 	return td
 }
 
@@ -76,8 +75,7 @@ func generateTraceOtlpNoLibraries() *otlpcollectortrace.ExportTraceServiceReques
 
 func GenerateTraceDataOneEmptyInstrumentationLibrary() pdata.Traces {
 	td := GenerateTraceDataNoLibraries()
-	rs0 := td.ResourceSpans().At(0)
-	rs0.InstrumentationLibrarySpans().Resize(1)
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty()
 	return td
 }
 
@@ -97,10 +95,7 @@ func generateTraceOtlpOneEmptyInstrumentationLibrary() *otlpcollectortrace.Expor
 func GenerateTraceDataOneSpanNoResource() pdata.Traces {
 	td := GenerateTraceDataOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().At(0)
-	rs0.InstrumentationLibrarySpans().Resize(1)
-	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
-	rs0ils0.Spans().Resize(1)
-	fillSpanOne(rs0ils0.Spans().At(0))
+	fillSpanOne(rs0.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
 	return td
 }
 
@@ -123,8 +118,7 @@ func generateTraceOtlpOneSpanNoResource() *otlpcollectortrace.ExportTraceService
 func GenerateTraceDataOneSpan() pdata.Traces {
 	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	rs0ils0.Spans().Resize(1)
-	fillSpanOne(rs0ils0.Spans().At(0))
+	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	return td
 }
 
@@ -148,9 +142,8 @@ func generateTraceOtlpOneSpan() *otlpcollectortrace.ExportTraceServiceRequest {
 func GenerateTraceDataTwoSpansSameResource() pdata.Traces {
 	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	rs0ils0.Spans().Resize(2)
-	fillSpanOne(rs0ils0.Spans().At(0))
-	fillSpanTwo(rs0ils0.Spans().At(1))
+	fillSpanOne(rs0ils0.Spans().AppendEmpty())
+	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
 	return td
 }
 
@@ -175,20 +168,15 @@ func generateTraceOtlpSameResourceTwoSpans() *otlpcollectortrace.ExportTraceServ
 
 func GenerateTraceDataTwoSpansSameResourceOneDifferent() pdata.Traces {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(2)
-	rs0 := td.ResourceSpans().At(0)
+	rs0 := td.ResourceSpans().AppendEmpty()
 	initResource1(rs0.Resource())
-	rs0.InstrumentationLibrarySpans().Resize(1)
-	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
-	rs0ils0.Spans().Resize(2)
-	fillSpanOne(rs0ils0.Spans().At(0))
-	fillSpanTwo(rs0ils0.Spans().At(1))
-	rs1 := td.ResourceSpans().At(1)
+	rs0ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
+	fillSpanOne(rs0ils0.Spans().AppendEmpty())
+	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
+	rs1 := td.ResourceSpans().AppendEmpty()
 	initResource2(rs1.Resource())
-	rs1.InstrumentationLibrarySpans().Resize(1)
-	rs1ils0 := rs1.InstrumentationLibrarySpans().At(0)
-	rs1ils0.Spans().Resize(1)
-	fillSpanThree(rs1ils0.Spans().At(0))
+	rs1ils0 := rs1.InstrumentationLibrarySpans().AppendEmpty()
+	fillSpanThree(rs1ils0.Spans().AppendEmpty())
 	return td
 }
 
@@ -236,13 +224,12 @@ func fillSpanOne(span pdata.Span) {
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	evs := span.Events()
-	evs.Resize(2)
-	ev0 := evs.At(0)
+	ev0 := evs.AppendEmpty()
 	ev0.SetTimestamp(TestSpanEventTimestamp)
 	ev0.SetName("event-with-attr")
 	initSpanEventAttributes(ev0.Attributes())
 	ev0.SetDroppedAttributesCount(2)
-	ev1 := evs.At(1)
+	ev1 := evs.AppendEmpty()
 	ev1.SetTimestamp(TestSpanEventTimestamp)
 	ev1.SetName("event")
 	ev1.SetDroppedAttributesCount(2)
@@ -284,10 +271,11 @@ func fillSpanTwo(span pdata.Span) {
 	span.SetName("operationB")
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
-	span.Links().Resize(2)
-	initSpanLinkAttributes(span.Links().At(0).Attributes())
-	span.Links().At(0).SetDroppedAttributesCount(4)
-	span.Links().At(1).SetDroppedAttributesCount(4)
+	link0 := span.Links().AppendEmpty()
+	initSpanLinkAttributes(link0.Attributes())
+	link0.SetDroppedAttributesCount(4)
+	link1 := span.Links().AppendEmpty()
+	link1.SetDroppedAttributesCount(4)
 	span.SetDroppedLinksCount(3)
 }
 

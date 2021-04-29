@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Prometheus exporter.
@@ -40,6 +41,9 @@ type Config struct {
 
 	// MetricExpiration defines how long metrics are kept without updates
 	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
+
+	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
+	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 }
 
 var _ config.Exporter = (*Config)(nil)

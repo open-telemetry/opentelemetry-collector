@@ -16,6 +16,7 @@ package internal
 
 import (
 	"reflect"
+	"runtime"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -1291,6 +1292,15 @@ func Test_isUsefulLabel(t *testing.T) {
 	}
 }
 
+func Benchmark_dpgSignature(b *testing.B) {
+	knownLabelKeys := []string{"a", "b"}
+	labels := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		runtime.KeepAlive(dpgSignature(knownLabelKeys, labels))
+	}
+}
+
 func Test_dpgSignature(t *testing.T) {
 	knownLabelKeys := []string{"a", "b"}
 
@@ -1299,16 +1309,16 @@ func Test_dpgSignature(t *testing.T) {
 		ls   labels.Labels
 		want string
 	}{
-		{"1st label", labels.FromStrings("a", "va"), `[]string{"a=va"}`},
-		{"2nd label", labels.FromStrings("b", "vb"), `[]string{"b=vb"}`},
-		{"two labels", labels.FromStrings("a", "va", "b", "vb"), `[]string{"a=va", "b=vb"}`},
-		{"extra label", labels.FromStrings("a", "va", "b", "vb", "x", "xa"), `[]string{"a=va", "b=vb"}`},
-		{"different order", labels.FromStrings("b", "vb", "a", "va"), `[]string{"a=va", "b=vb"}`},
+		{"1st label", labels.FromStrings("a", "va"), `"a=va"`},
+		{"2nd label", labels.FromStrings("b", "vb"), `"b=vb"`},
+		{"two labels", labels.FromStrings("a", "va", "b", "vb"), `"a=va""b=vb"`},
+		{"extra label", labels.FromStrings("a", "va", "b", "vb", "x", "xa"), `"a=va""b=vb"`},
+		{"different order", labels.FromStrings("b", "vb", "a", "va"), `"a=va""b=vb"`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := dpgSignature(knownLabelKeys, tt.ls); got != tt.want {
-				t.Errorf("dpgSignature() = %v, want %v", got, tt.want)
+				t.Errorf("dpgSignature() = %q, want %q", got, tt.want)
 			}
 		})
 	}

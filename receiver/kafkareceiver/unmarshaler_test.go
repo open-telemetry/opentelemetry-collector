@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDefaultUnMarshaller(t *testing.T) {
+func TestDefaultTracesUnMarshaler(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 		"jaeger_proto",
@@ -30,11 +30,26 @@ func TestDefaultUnMarshaller(t *testing.T) {
 		"zipkin_json",
 		"zipkin_thrift",
 	}
-	marshallers := defaultUnmarshallers()
-	assert.Equal(t, len(expectedEncodings), len(marshallers))
+	marshalers := defaultTracesUnmarshalers()
+	assert.Equal(t, len(expectedEncodings), len(marshalers))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
-			m, ok := marshallers[e]
+			m, ok := marshalers[e]
+			require.True(t, ok)
+			assert.NotNil(t, m)
+		})
+	}
+}
+
+func TestDefaultLogsUnMarshaler(t *testing.T) {
+	expectedEncodings := []string{
+		"otlp_proto",
+	}
+	marshalers := defaultLogsUnmarshalers()
+	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	for _, e := range expectedEncodings {
+		t.Run(e, func(t *testing.T) {
+			m, ok := marshalers[e]
 			require.True(t, ok)
 			assert.NotNil(t, m)
 		})

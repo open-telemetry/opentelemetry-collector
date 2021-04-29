@@ -29,19 +29,18 @@ import (
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
-func TestUnmarshallZipkin(t *testing.T) {
+func TestUnmarshalZipkin(t *testing.T) {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().InitFromMap(
 		map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString("my_service")})
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTimestamp(pdata.Timestamp(1597759000))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTimestamp(pdata.Timestamp(1597769000))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
+	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("foo")
+	span.SetStartTimestamp(pdata.Timestamp(1597759000))
+	span.SetEndTimestamp(pdata.Timestamp(1597769000))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
 	spans, err := zipkintranslator.InternalTracesToZipkinSpans(td)
 	require.NoError(t, err)
 
@@ -64,56 +63,56 @@ func TestUnmarshallZipkin(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		unmarshaller Unmarshaller
-		encoding     string
-		bytes        []byte
-		expected     pdata.Traces
+		unmarshaler TracesUnmarshaler
+		encoding    string
+		bytes       []byte
+		expected    pdata.Traces
 	}{
 		{
-			unmarshaller: zipkinProtoSpanUnmarshaller{},
-			encoding:     "zipkin_proto",
-			bytes:        protoBytes,
-			expected:     td,
+			unmarshaler: zipkinProtoSpanUnmarshaler{},
+			encoding:    "zipkin_proto",
+			bytes:       protoBytes,
+			expected:    td,
 		},
 		{
-			unmarshaller: zipkinJSONSpanUnmarshaller{},
-			encoding:     "zipkin_json",
-			bytes:        jsonBytes,
-			expected:     td,
+			unmarshaler: zipkinJSONSpanUnmarshaler{},
+			encoding:    "zipkin_json",
+			bytes:       jsonBytes,
+			expected:    td,
 		},
 		{
-			unmarshaller: zipkinThriftSpanUnmarshaller{},
-			encoding:     "zipkin_thrift",
-			bytes:        thriftTransport.Buffer.Bytes(),
-			expected:     tdThrift,
+			unmarshaler: zipkinThriftSpanUnmarshaler{},
+			encoding:    "zipkin_thrift",
+			bytes:       thriftTransport.Buffer.Bytes(),
+			expected:    tdThrift,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			traces, err := test.unmarshaller.Unmarshal(test.bytes)
+			traces, err := test.unmarshaler.Unmarshal(test.bytes)
 			require.NoError(t, err)
 			assert.Equal(t, test.expected, traces)
-			assert.Equal(t, test.encoding, test.unmarshaller.Encoding())
+			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
 }
 
-func TestUnmarshallZipkinThrift_error(t *testing.T) {
-	p := zipkinThriftSpanUnmarshaller{}
+func TestUnmarshalZipkinThrift_error(t *testing.T) {
+	p := zipkinThriftSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)
 }
 
-func TestUnmarshallZipkinJSON_error(t *testing.T) {
-	p := zipkinJSONSpanUnmarshaller{}
+func TestUnmarshalZipkinJSON_error(t *testing.T) {
+	p := zipkinJSONSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)
 }
 
-func TestUnmarshallZipkinProto_error(t *testing.T) {
-	p := zipkinProtoSpanUnmarshaller{}
+func TestUnmarshalZipkinProto_error(t *testing.T) {
+	p := zipkinProtoSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)

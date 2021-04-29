@@ -40,7 +40,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
+	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
 	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	// no available broker
 	require.Error(t, err)
@@ -52,43 +52,98 @@ func TestCreateTracesReceiver_error(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
-	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
+	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
 	r, err := f.createTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
 
-func TestWithUnmarshallers(t *testing.T) {
-	unmarshaller := &customUnamarshaller{}
-	f := NewFactory(WithAddUnmarshallers(map[string]Unmarshaller{unmarshaller.Encoding(): unmarshaller}))
+func TestWithTracesUnmarshalers(t *testing.T) {
+	unmarshaler := &customTracesUnmarshaler{}
+	f := NewFactory(WithTracesUnmarshalers(unmarshaler))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false
 	cfg.ProtocolVersion = "2.0.0"
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg.Encoding = unmarshaller.Encoding()
-		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		cfg.Encoding = unmarshaler.Encoding()
+		receiver, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		require.NoError(t, err)
+		require.NotNil(t, receiver)
+	})
+	t.Run("default_encoding", func(t *testing.T) {
+		cfg.Encoding = new(otlpTracesPbUnmarshaler).Encoding()
+		receiver, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		require.NoError(t, err)
+		assert.NotNil(t, receiver)
+	})
+}
+
+func TestCreateLogsReceiver(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Brokers = []string{"invalid:9092"}
+	cfg.ProtocolVersion = "2.0.0"
+	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	r, err := f.createLogsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	// no available broker
+	require.Error(t, err)
+	assert.Nil(t, r)
+}
+
+func TestCreateLogsReceiver_error(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ProtocolVersion = "2.0.0"
+	// disable contacting broker at startup
+	cfg.Metadata.Full = false
+	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	r, err := f.createLogsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
+func TestWithLogsUnmarshalers(t *testing.T) {
+	unmarshaler := &customLogsUnmarshaler{}
+	f := NewFactory(WithLogsUnmarshalers(unmarshaler))
+	cfg := createDefaultConfig().(*Config)
+	// disable contacting broker
+	cfg.Metadata.Full = false
+	cfg.ProtocolVersion = "2.0.0"
+
+	t.Run("custom_encoding", func(t *testing.T) {
+		cfg.Encoding = unmarshaler.Encoding()
+		exporter, err := f.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = new(otlpTracesPbUnmarshaller).Encoding()
-		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		cfg.Encoding = new(otlpLogsPbUnmarshaler).Encoding()
+		exporter, err := f.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})
 }
 
-type customUnamarshaller struct {
+type customTracesUnmarshaler struct {
 }
 
-var _ Unmarshaller = (*customUnamarshaller)(nil)
+type customLogsUnmarshaler struct {
+}
 
-func (c customUnamarshaller) Unmarshal([]byte) (pdata.Traces, error) {
+var _ TracesUnmarshaler = (*customTracesUnmarshaler)(nil)
+
+func (c customTracesUnmarshaler) Unmarshal([]byte) (pdata.Traces, error) {
 	panic("implement me")
 }
 
-func (c customUnamarshaller) Encoding() string {
+func (c customTracesUnmarshaler) Encoding() string {
+	return "custom"
+}
+
+func (c customLogsUnmarshaler) Unmarshal([]byte) (pdata.Logs, error) {
+	panic("implement me")
+}
+
+func (c customLogsUnmarshaler) Encoding() string {
 	return "custom"
 }

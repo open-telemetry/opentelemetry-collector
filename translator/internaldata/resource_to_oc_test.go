@@ -137,14 +137,10 @@ func TestAttributeValueToString(t *testing.T) {
 	assert.EqualValues(t, `{"a\"\\":"b\"\\","c":123,"d":null,"e":{"a\"\\":"b\"\\","c":123,"d":null}}`, tracetranslator.AttributeValueToString(v, false))
 
 	v = pdata.NewAttributeValueArray()
-	av := pdata.NewAttributeValueString(`b"\`)
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueInt(123)
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueNull()
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueArray()
-	v.ArrayVal().Append(av)
+	v.ArrayVal().AppendEmpty().SetStringVal(`b"\`)
+	v.ArrayVal().AppendEmpty().SetIntVal(123)
+	v.ArrayVal().AppendEmpty()
+	pdata.NewAttributeValueArray().CopyTo(v.ArrayVal().AppendEmpty())
 	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, tracetranslator.AttributeValueToString(v, false))
 }
 
@@ -243,7 +239,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 			// Remove opencensus resource type from actual. This will be added during translation.
 			actual.Attributes().Delete(conventions.OCAttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
-			expected.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			expected.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
@@ -259,6 +255,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 				default:
 					assert.Equal(t, v, a)
 				}
+				return true
 			})
 		})
 	}

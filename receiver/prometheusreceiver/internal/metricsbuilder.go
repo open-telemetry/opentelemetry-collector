@@ -159,35 +159,41 @@ func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 // TODO: move the following helper functions to a proper place, as they are not called directly in this go file
 
 func isUsefulLabel(mType metricspb.MetricDescriptor_Type, labelKey string) bool {
-	result := false
 	switch labelKey {
-	case model.MetricNameLabel:
-	case model.InstanceLabel:
-	case model.SchemeLabel:
-	case model.MetricsPathLabel:
-	case model.JobLabel:
+	case model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel:
+		return false
 	case model.BucketLabel:
-		result = mType != metricspb.MetricDescriptor_GAUGE_DISTRIBUTION &&
+		return mType != metricspb.MetricDescriptor_GAUGE_DISTRIBUTION &&
 			mType != metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 	case model.QuantileLabel:
-		result = mType != metricspb.MetricDescriptor_SUMMARY
-	default:
-		result = true
+		return mType != metricspb.MetricDescriptor_SUMMARY
 	}
-	return result
+	return true
 }
 
 // dpgSignature is used to create a key for data complexValue belong to a same group of a metric family
 func dpgSignature(orderedKnownLabelKeys []string, ls labels.Labels) string {
-	sign := make([]string, 0, len(orderedKnownLabelKeys))
+	size := 0
 	for _, k := range orderedKnownLabelKeys {
 		v := ls.Get(k)
 		if v == "" {
 			continue
 		}
-		sign = append(sign, k+"="+v)
+		// 2 enclosing quotes + 1 equality sign = 3 extra chars.
+		// Note: if any character in the label value requires escaping,
+		// we'll need more space than that, which will lead to some
+		// extra allocation.
+		size += 3 + len(k) + len(v)
 	}
-	return fmt.Sprintf("%#v", sign)
+	sign := make([]byte, 0, size)
+	for _, k := range orderedKnownLabelKeys {
+		v := ls.Get(k)
+		if v == "" {
+			continue
+		}
+		sign = strconv.AppendQuote(sign, k+"="+v)
+	}
+	return string(sign)
 }
 
 func normalizeMetricName(name string) string {

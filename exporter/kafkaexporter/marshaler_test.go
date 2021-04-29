@@ -21,32 +21,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDefaultTracesMarshallers(t *testing.T) {
+func TestDefaultTracesMarshalers(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 		"jaeger_proto",
 		"jaeger_json",
 	}
-	marshallers := tracesMarshallers()
-	assert.Equal(t, len(expectedEncodings), len(marshallers))
+	marshalers := tracesMarshalers()
+	assert.Equal(t, len(expectedEncodings), len(marshalers))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
-			m, ok := marshallers[e]
+			m, ok := marshalers[e]
 			require.True(t, ok)
 			assert.NotNil(t, m)
 		})
 	}
 }
 
-func TestDefaultMetricsMarshallers(t *testing.T) {
+func TestDefaultMetricsMarshalers(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 	}
-	marshallers := metricsMarshallers()
-	assert.Equal(t, len(expectedEncodings), len(marshallers))
+	marshalers := metricsMarshalers()
+	assert.Equal(t, len(expectedEncodings), len(marshalers))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
-			m, ok := marshallers[e]
+			m, ok := marshalers[e]
+			require.True(t, ok)
+			assert.NotNil(t, m)
+		})
+	}
+}
+
+func TestDefaultLogsMarshalers(t *testing.T) {
+	expectedEncodings := []string{
+		"otlp_proto",
+	}
+	marshalers := logsMarshalers()
+	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	for _, e := range expectedEncodings {
+		t.Run(e, func(t *testing.T) {
+			m, ok := marshalers[e]
 			require.True(t, ok)
 			assert.NotNil(t, m)
 		})

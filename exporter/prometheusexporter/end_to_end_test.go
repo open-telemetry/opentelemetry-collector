@@ -27,6 +27,7 @@ import (
 	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
@@ -49,7 +50,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
 			return
 		case waitForScrape <- true:
 			// Serve back the metrics as if they were from DropWizard.
-			rw.Write([]byte(dropWizardResponse))
+			_, err := rw.Write([]byte(dropWizardResponse))
+			require.NoError(t, err)
 		}
 	}))
 	defer dropWizardServer.Close()
@@ -80,7 +82,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err = exporter.Start(ctx, nil); err != nil {
 		t.Fatalf("Failed to start the Prometheus receiver: %v", err)
 	}
-	defer exporter.Shutdown(ctx)
+	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(ctx)) })
 
 	// 3. Create the Prometheus receiver scraping from the DropWizard mock server and
 	// it'll feed scraped and converted metrics then pass them to the Prometheus exporter.
@@ -118,7 +120,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err = prometheusReceiver.Start(ctx, nil); err != nil {
 		t.Fatalf("Failed to start the Prometheus receiver: %v", err)
 	}
-	defer prometheusReceiver.Shutdown(ctx)
+	t.Cleanup(func() { require.NoError(t, prometheusReceiver.Shutdown(ctx)) })
 
 	// 4. Scrape from the Prometheus exporter to ensure that we export summary metrics
 	// We shall let the Prometheus exporter scrape the DropWizard mock server, at least 9 times.

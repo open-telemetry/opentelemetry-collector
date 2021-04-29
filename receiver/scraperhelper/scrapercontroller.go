@@ -33,7 +33,7 @@ import (
 
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
-// of configmodels.ReceiverSettings, and extend it with more fields if needed.
+// of config.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
 	config.ReceiverSettings `mapstructure:"squash"`
 	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
@@ -255,11 +255,7 @@ func (mms *multiMetricScraper) Shutdown(ctx context.Context) error {
 
 func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) (pdata.ResourceMetricsSlice, error) {
 	rms := pdata.NewResourceMetricsSlice()
-	rms.Resize(1)
-	rm := rms.At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	ilm := ilms.At(0)
+	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 	var errs scrapererror.ScrapeErrors
 	for _, scraper := range mms.scrapers {

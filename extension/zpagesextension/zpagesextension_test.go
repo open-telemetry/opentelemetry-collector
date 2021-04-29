@@ -40,7 +40,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
-	defer zpagesExt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
@@ -84,7 +84,7 @@ func TestZPagesMultipleStarts(t *testing.T) {
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
-	defer zpagesExt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
 
 	// Try to start it again, it will fail since it is on the same endpoint.
 	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))

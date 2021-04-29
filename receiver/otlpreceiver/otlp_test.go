@@ -164,7 +164,7 @@ func TestJsonHttp(t *testing.T) {
 	ocr := newHTTPReceiver(t, addr, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
@@ -342,7 +342,7 @@ func TestProtoHttp(t *testing.T) {
 	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
@@ -484,7 +484,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	ocr := newHTTPReceiver(t, addr, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	url := fmt.Sprintf("http://%s/v1/traces", addr)
 
@@ -636,7 +636,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				ocr := newGRPCReceiver(t, exporter.receiverTag, addr, sink, nil)
 				require.NotNil(t, ocr)
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-				defer ocr.Shutdown(context.Background())
+				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 				require.NoError(t, err)
@@ -684,8 +684,10 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	// TLS is resolved during Creation of the receiver for GRPC.
-	_, err := createReceiver(cfg, zap.NewNop())
+	r := createReceiver(cfg, zap.NewNop())
+	assert.NotNil(t, r)
+
+	err := r.startProtocolServers(componenttest.NewNopHost())
 	assert.EqualError(t, err,
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
@@ -732,8 +734,7 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 }
 
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
-	r, err := createReceiver(cfg, zap.NewNop())
-	require.NoError(t, err)
+	r := createReceiver(cfg, zap.NewNop())
 	if tc != nil {
 		params := component.ReceiverCreateParams{}
 		_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
@@ -789,7 +790,7 @@ func TestShutdown(t *testing.T) {
 	senderGrpc := func(msg *collectortrace.ExportTraceServiceRequest) {
 		// Send request via OTLP/gRPC.
 		client := collectortrace.NewTraceServiceClient(conn)
-		client.Export(context.Background(), msg)
+		client.Export(context.Background(), msg) //nolint: errcheck
 	}
 	senderHTTP := func(msg *collectortrace.ExportTraceServiceRequest) {
 		// Send request via OTLP/HTTP.
@@ -802,7 +803,7 @@ func TestShutdown(t *testing.T) {
 		client := &http.Client{}
 		resp, err2 := client.Do(req)
 		if err2 == nil {
-			ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
 		}
 	}
 

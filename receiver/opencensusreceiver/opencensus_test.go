@@ -44,6 +44,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -63,7 +66,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	err = ocr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
@@ -157,7 +160,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 
 	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, consumertest.NewNop(), nil, withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	err = ocr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
@@ -181,7 +184,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 
 	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, consumertest.NewNop(), withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	err = ocr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
@@ -241,7 +244,7 @@ func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
-	ocr.stop()
+	require.NoError(t, ocr.Shutdown(context.Background()))
 }
 
 func TestNewPortAlreadyUsed(t *testing.T) {
@@ -290,7 +293,7 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	defer r.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(context.Background())) })
 
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
@@ -393,7 +396,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		require.NotNil(t, stream)
 
 		err = stream.Send(msg)
-		stream.CloseSend()
+		require.NoError(t, stream.CloseSend())
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
@@ -436,7 +439,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				ocr.traceConsumer = sink
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-				defer ocr.Shutdown(context.Background())
+				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 				if err != nil {
@@ -542,7 +545,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 		require.NotNil(t, stream)
 
 		err = stream.Send(msg)
-		stream.CloseSend()
+		require.NoError(t, stream.CloseSend())
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
@@ -585,7 +588,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 				ocr.metricsConsumer = sink
 				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-				defer ocr.Shutdown(context.Background())
+				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 				if err != nil {
@@ -612,4 +615,30 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestInvalidTLSCredentials(t *testing.T) {
+	cfg := Config{
+		ReceiverSettings: config.ReceiverSettings{
+			NameVal: "IncorrectTLS",
+		},
+		GRPCServerSettings: configgrpc.GRPCServerSettings{
+			TLSSetting: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "willfail",
+				},
+			},
+		},
+	}
+	opt := cfg.buildOptions()
+	assert.NotNil(t, opt)
+
+	addr := testutil.GetAvailableLocalAddress(t)
+	ocr, err := newOpenCensusReceiver("invalidtls", "tcp", addr, nil, nil, opt...)
+	assert.NoError(t, err)
+	assert.NotNil(t, ocr)
+
+	srv, err := ocr.grpcServer(componenttest.NewNopHost())
+	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+	assert.Nil(t, srv)
 }

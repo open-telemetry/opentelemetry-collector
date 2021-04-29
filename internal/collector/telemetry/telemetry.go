@@ -17,8 +17,6 @@ package telemetry
 
 import (
 	"flag"
-
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (
@@ -56,10 +54,6 @@ func Flags(flags *flag.FlagSet) {
 // GetMetricsAddrDefault returns the default metrics bind address and port depending on
 // the current build type.
 func GetMetricsAddrDefault() string {
-	if version.IsDevBuild() {
-		// Listen on localhost by default for dev builds to avoid security prompts.
-		return "localhost:8888"
-	}
 	return ":8888"
 }
 
