@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Receiver allows the collector to recieve metrics, traces and logs.
+// Receiver allows the collector to receive metrics, traces and logs.
 type Receiver interface {
 	Component
 }
