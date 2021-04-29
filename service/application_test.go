@@ -149,9 +149,6 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	}
 	app, err := New(params)
 	require.NoError(t, err)
-	app.Command().SetArgs([]string{
-		"--metrics-level=NONE",
-	})
 
 	appDone := make(chan struct{})
 	go func() {
