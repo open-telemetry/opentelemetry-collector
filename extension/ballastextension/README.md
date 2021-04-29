@@ -13,4 +13,5 @@ Example:
 ```yaml
 extensions:
   memory_ballast:
+    size_mib: 64
 ```
