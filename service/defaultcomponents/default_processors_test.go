@@ -118,8 +118,8 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	processorCreateParams := component.ProcessorCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
 	}
 
 	if getConfigFn == nil {

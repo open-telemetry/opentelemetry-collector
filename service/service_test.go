@@ -106,7 +106,7 @@ func createExampleService(t *testing.T) *service {
 
 	srv, err := newService(&settings{
 		Factories: factories,
-		StartInfo: component.DefaultApplicationStartInfo(),
+		BuildInfo: component.DefaultBuildInfo(),
 		Config:    cfg,
 		Logger:    zap.NewNop(),
 	})

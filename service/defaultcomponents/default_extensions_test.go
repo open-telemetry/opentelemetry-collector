@@ -93,8 +93,8 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	extCreateParams := component.ExtensionCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
 	}
 
 	if getConfigFn == nil {

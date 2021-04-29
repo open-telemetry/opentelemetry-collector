@@ -58,7 +58,7 @@ const (
 
 // Application represents a collector application
 type Application struct {
-	info    component.ApplicationStartInfo
+	info    component.BuildInfo
 	rootCmd *cobra.Command
 	logger  *zap.Logger
 
@@ -83,8 +83,8 @@ type Application struct {
 type Parameters struct {
 	// Factories component factories.
 	Factories component.Factories
-	// ApplicationStartInfo provides application start information.
-	ApplicationStartInfo component.ApplicationStartInfo
+	// BuildInfo provides application start information.
+	BuildInfo component.BuildInfo
 	// ParserProvider provides the configuration's Parser.
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
@@ -101,14 +101,14 @@ func New(params Parameters) (*Application, error) {
 	}
 
 	app := &Application{
-		info:         params.ApplicationStartInfo,
+		info:         params.BuildInfo,
 		factories:    params.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     params.ApplicationStartInfo.ExeName,
-		Version: params.ApplicationStartInfo.Version,
+		Use:     params.BuildInfo.ExeName,
+		Version: params.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			if app.logger, err = newLogger(params.LoggingOptions); err != nil {
@@ -241,7 +241,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 
 	service, err := newService(&settings{
 		Factories:         app.factories,
-		StartInfo:         app.info,
+		BuildInfo:         app.info,
 		Config:            cfg,
 		Logger:            app.logger,
 		AsyncErrorChannel: app.asyncErrorChannel,
