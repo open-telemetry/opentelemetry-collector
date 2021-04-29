@@ -139,13 +139,9 @@ func TestReception(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
-
-	t.Log("Starting")
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-
-	t.Log("Start")
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	// 2. Then send spans to the Jaeger receiver.
 	collectorAddr := fmt.Sprintf("http://localhost:%d/api/traces", port)
@@ -172,9 +168,9 @@ func TestPortsNotOpen(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	// there is a race condition here that we're ignoring.
 	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
@@ -201,9 +197,9 @@ func TestGRPCReception(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
 	require.NoError(t, err)
@@ -257,9 +253,9 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "server.crt"), "localhost")
 	require.NoError(t, err)
@@ -390,10 +386,9 @@ func TestSampling(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Log("Start")
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
 	assert.NoError(t, err)
@@ -442,10 +437,9 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Log("Start")
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
 	assert.NoError(t, err)
@@ -471,8 +465,8 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 }
 
 func TestSamplingStrategiesMutualTLS(t *testing.T) {
@@ -530,8 +524,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	}
 	exp, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	err = exp.Start(context.Background(), newAssertNoErrorHost(t))
-	require.NoError(t, err)
+	require.NoError(t, exp.Start(context.Background(), newAssertNoErrorHost(t)))
 	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
 	<-time.After(200 * time.Millisecond)
 
