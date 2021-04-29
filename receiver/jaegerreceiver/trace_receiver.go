@@ -196,13 +196,13 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (jr *jReceiver) Shutdown(context.Context) error {
+func (jr *jReceiver) Shutdown(ctx context.Context) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 	var errs []error
 
 	if jr.agentServer != nil {
-		if aerr := jr.agentServer.Close(); aerr != nil {
+		if aerr := jr.agentServer.Shutdown(ctx); aerr != nil {
 			errs = append(errs, aerr)
 		}
 	}
@@ -211,12 +211,12 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 	}
 
 	if jr.collectorServer != nil {
-		if cerr := jr.collectorServer.Close(); cerr != nil {
+		if cerr := jr.collectorServer.Shutdown(ctx); cerr != nil {
 			errs = append(errs, cerr)
 		}
 	}
 	if jr.grpc != nil {
-		jr.grpc.Stop()
+		jr.grpc.GracefulStop()
 	}
 
 	jr.goroutines.Wait()
