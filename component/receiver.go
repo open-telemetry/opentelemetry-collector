@@ -37,7 +37,7 @@ type TracesReceiver interface {
 	Receiver
 }
 
-// A MetricsReceiver recieves metrics.
+// A MetricsReceiver receives metrics.
 // Its purpose is to translate data from any format to the collector's internal metrics format.
 // MetricsReceiver feeds a consumer.Metrics with data.
 //
