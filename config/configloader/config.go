@@ -18,6 +18,7 @@
 package configloader
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -517,9 +518,9 @@ func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
 
 // unmarshaler returns an unmarshaling function. It should be removed when deprecatedUnmarshaler is removed.
 func unmarshaler(factory component.Factory) func(componentViperSection *config.Parser, intoCfg interface{}) error {
-	if fu, ok := factory.(deprecatedUnmarshaler); ok {
+	if _, ok := factory.(deprecatedUnmarshaler); ok {
 		return func(componentParser *config.Parser, intoCfg interface{}) error {
-			return fu.Unmarshal(componentParser.Viper(), intoCfg)
+			return errors.New("deprecated way to specify custom unmarshaler no longer supported")
 		}
 	}
 	return unmarshal
