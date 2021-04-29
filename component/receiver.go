@@ -28,7 +28,7 @@ type Receiver interface {
 	Component
 }
 
-// A TracesReceiver recieves traces.
+// A TracesReceiver receives traces.
 // Its purpose is to translate data from any format to the collector's internal trace format.
 // TracesReceiver feeds a consumer.Traces with data.
 //
