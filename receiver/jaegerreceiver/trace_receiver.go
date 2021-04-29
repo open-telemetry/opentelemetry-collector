@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
@@ -54,6 +55,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
+
+var refs = int64(0)
 
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
@@ -185,6 +188,8 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
+	fmt.Printf("===== START %d ===== \n", atomic.AddInt64(&refs, 1))
+
 	if err := jr.startAgent(host); err != nil {
 		return err
 	}
@@ -200,6 +205,8 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 	var errs []error
+
+	fmt.Printf("===== STOP %d ===== \n", atomic.LoadInt64(&refs))
 
 	if jr.agentServer != nil {
 		if aerr := jr.agentServer.Shutdown(ctx); aerr != nil {
