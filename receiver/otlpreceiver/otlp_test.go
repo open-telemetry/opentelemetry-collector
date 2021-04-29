@@ -684,8 +684,10 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	// TLS is resolved during Creation of the receiver for GRPC.
-	_, err := createReceiver(cfg, zap.NewNop())
+	r := createReceiver(cfg, zap.NewNop())
+	assert.NotNil(t, r)
+
+	err := r.startProtocolServers(componenttest.NewNopHost())
 	assert.EqualError(t, err,
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
@@ -732,8 +734,7 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 }
 
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
-	r, err := createReceiver(cfg, zap.NewNop())
-	require.NoError(t, err)
+	r := createReceiver(cfg, zap.NewNop())
 	if tc != nil {
 		params := component.ReceiverCreateParams{}
 		_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, tc)

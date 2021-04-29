@@ -172,25 +172,3 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 }
-
-func TestBuildOptions_TLSCredentials(t *testing.T) {
-	cfg := Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: "IncorrectTLS",
-		},
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
-			TLSSetting: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
-					CertFile: "willfail",
-				},
-			},
-		},
-	}
-	_, err := cfg.buildOptions()
-	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
-
-	cfg.TLSSetting = &configtls.TLSServerSetting{}
-	opt, err := cfg.buildOptions()
-	assert.NoError(t, err)
-	assert.NotNil(t, opt)
-}

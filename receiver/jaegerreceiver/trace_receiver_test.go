@@ -232,22 +232,21 @@ func TestGRPCReception(t *testing.T) {
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
-	var grpcServerOptions []grpc.ServerOption
-	tlsCreds := configtls.TLSServerSetting{
+	tlsCreds := &configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
 			CertFile: path.Join(".", "testdata", "server.crt"),
 			KeyFile:  path.Join(".", "testdata", "server.key"),
 		},
 	}
 
-	tlsCfg, err := tlsCreds.LoadTLSConfig()
-	assert.NoError(t, err)
-	grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
+	grpcServerSettings := configgrpc.GRPCServerSettings{
+		TLSSetting: tlsCreds,
+	}
 
 	port := testutil.GetAvailablePort(t)
 	config := &configuration{
-		CollectorGRPCPort:    int(port),
-		CollectorGRPCOptions: grpcServerOptions,
+		CollectorGRPCPort:           int(port),
+		CollectorGRPCServerSettings: grpcServerSettings,
 	}
 	sink := new(consumertest.TracesSink)
 

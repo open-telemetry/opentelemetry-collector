@@ -27,6 +27,8 @@ import (
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -239,7 +241,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
-func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
+func (gss *GRPCServerSettings) ToServerOption(ext map[config.NamedEntity]component.Extension) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -295,11 +297,15 @@ func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 	}
 
 	if gss.Auth != nil {
-		authOpts, err := gss.Auth.ToServerOptions()
+		authenticator, err := configauth.GetAuthenticator(ext, gss.Auth.AuthenticatorName)
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, authOpts...)
+
+		opts = append(opts,
+			grpc.UnaryInterceptor(authenticator.GrpcUnaryServerInterceptor),
+			grpc.StreamInterceptor(authenticator.GrpcStreamServerInterceptor),
+		)
 	}
 
 	return opts, nil

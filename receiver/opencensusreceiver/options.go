@@ -15,7 +15,7 @@
 package opencensusreceiver
 
 import (
-	"google.golang.org/grpc"
+	"go.opentelemetry.io/collector/config/configgrpc"
 )
 
 // ocOption interface defines for configuration settings to be applied to receivers.
@@ -41,16 +41,12 @@ func withCorsOrigins(origins []string) ocOption {
 	return &corsOrigins{origins: origins}
 }
 
-var _ ocOption = (grpcServerOptions)(nil)
+type grpcServerSettings configgrpc.GRPCServerSettings
 
-type grpcServerOptions []grpc.ServerOption
-
-func (gsvo grpcServerOptions) withReceiver(ocr *ocReceiver) {
-	ocr.grpcServerOptions = gsvo
-}
-
-// withGRPCServerOptions allows one to specify the options for starting a gRPC server.
-func withGRPCServerOptions(gsOpts ...grpc.ServerOption) ocOption {
-	gsvOpts := grpcServerOptions(gsOpts)
+func withGRPCServerSettings(settings configgrpc.GRPCServerSettings) ocOption {
+	gsvOpts := grpcServerSettings(settings)
 	return gsvOpts
+}
+func (gsvo grpcServerSettings) withReceiver(ocr *ocReceiver) {
+	ocr.grpcServerSettings = configgrpc.GRPCServerSettings(gsvo)
 }
