@@ -239,7 +239,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			require.NoError(t, err)
 			defer configCleanup()
 
-			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			options := testbed.LoadOptions{DataItemsPerInterval: 10000, ItemsPerBatch: 10}
 			dataProvider := testbed.NewPerfTestDataProvider(options)
 			tc := testbed.NewTestCase(
 				t,

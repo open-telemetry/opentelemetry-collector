@@ -15,6 +15,8 @@
 package testbed
 
 import (
+	"os"
+	"strconv"
 	"testing"
 
 	"go.opentelemetry.io/collector/testutil"
@@ -22,4 +24,22 @@ import (
 
 func GetAvailablePort(t *testing.T) int {
 	return int(testutil.GetAvailablePort(t))
+}
+
+func GetScrapeInterval() int {
+	scrapeInterval, err := strconv.Atoi(os.Getenv("SCRAPE_INTERVAL"))
+	if err != nil {
+		return 1
+	} else {
+		return scrapeInterval
+	}
+}
+
+func GetItemsPerInterval() int {
+	itemsPerInterval, err := strconv.Atoi(os.Getenv("ITEMS_PER_INTERVAL"))
+	if err != nil {
+		return 10_000
+	} else {
+		return itemsPerInterval
+	}
 }

@@ -51,13 +51,17 @@ type LoadGenerator struct {
 
 // LoadOptions defines the options to use for generating the load.
 type LoadOptions struct {
-	// DataItemsPerSecond specifies how many spans, metric data points, or log
-	// records to generate each second.
-	DataItemsPerSecond int
+	// DataItemsPerInterval specifies how many spans, metric data points, or log
+	// records to generate each interval.
+	DataItemsPerInterval int
+
+	// Interval specifies the number of seconds between generated spans, 
+	// metric data points or log records
+	Interval int
 
 	// ItemsPerBatch specifies how many spans, metric data points, or log
 	// records per batch to generate. Should be greater than zero. The number
-	// of batches generated per second will be DataItemsPerSecond/ItemsPerBatch.
+	// of batches generated per interval will be DataItemsPerInterval/ItemsPerBatch.
 	ItemsPerBatch int
 
 	// Attributes to add to each generated data item. Can be empty.
@@ -65,6 +69,8 @@ type LoadOptions struct {
 
 	// Parallel specifies how many goroutines to send from.
 	Parallel int
+
+	IsScraping bool
 }
 
 // NewLoadGenerator creates a load generator that sends data using specified sender.
@@ -90,8 +96,13 @@ func (lg *LoadGenerator) Start(options LoadOptions) {
 		// 10 items per batch by default.
 		lg.options.ItemsPerBatch = 10
 	}
+	
+	if lg.options.Interval == 0 {
+		// 1 second interval by default
+		lg.options.Interval = 1
+	}
 
-	log.Printf("Starting load generator at %d items/sec.", lg.options.DataItemsPerSecond)
+	log.Printf("Starting load generator at %d items / %d sec.", lg.options.DataItemsPerInterval, lg.options.Interval)
 
 	// Indicate that generation is in progress.
 	lg.stopWait.Add(1)
@@ -137,7 +148,7 @@ func (lg *LoadGenerator) generate() {
 	// Indicate that generation is done at the end
 	defer lg.stopWait.Done()
 
-	if lg.options.DataItemsPerSecond == 0 {
+	if lg.options.DataItemsPerInterval == 0 {
 		return
 	}
 
@@ -162,7 +173,7 @@ func (lg *LoadGenerator) generate() {
 
 		go func() {
 			defer workers.Done()
-			t := time.NewTicker(time.Second / time.Duration(lg.options.DataItemsPerSecond/lg.options.ItemsPerBatch/numWorkers))
+			t := time.NewTicker(time.Second * time.Duration(lg.options.Interval) / time.Duration(lg.options.DataItemsPerInterval/lg.options.ItemsPerBatch/numWorkers))
 			defer t.Stop()
 			for {
 				select {

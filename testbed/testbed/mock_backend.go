@@ -47,10 +47,12 @@ type MockBackend struct {
 
 	// Recording fields.
 	isRecording     bool
+	isScraping      bool
 	recordMutex     sync.Mutex
 	ReceivedTraces  []pdata.Traces
 	ReceivedMetrics []pdata.Metrics
 	ReceivedLogs    []pdata.Logs
+	ReceivedTimestamps []time.Time
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -114,6 +116,13 @@ func (mb *MockBackend) EnableRecording() {
 	mb.isRecording = true
 }
 
+// EnableTimestampRecording enables recording of metric timestamps by MockBackend.
+func (mb *MockBackend) EnableMetricTimestampRecording() {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	mb.isScraping = true
+}
+
 func (mb *MockBackend) GetStats() string {
 	received := mb.DataItemsReceived()
 	return printer.Sprintf("Received:%10d items (%d/sec)", received, int(float64(received)/time.Since(mb.startedAt).Seconds()))
@@ -132,6 +141,7 @@ func (mb *MockBackend) ClearReceivedItems() {
 	mb.ReceivedTraces = nil
 	mb.ReceivedMetrics = nil
 	mb.ReceivedLogs = nil
+	mb.ReceivedTimestamps = nil
 }
 
 func (mb *MockBackend) ConsumeTrace(td pdata.Traces) {
@@ -148,6 +158,74 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 	if mb.isRecording {
 		mb.ReceivedMetrics = append(mb.ReceivedMetrics, md)
 	}
+	if mb.isScraping {
+		mb.getTimestamps(md)
+	}
+}
+
+func (mb *MockBackend) getTimestamps(md pdata.Metrics) {
+	currentTimestamp := time.Time{}
+	rms := md.ResourceMetrics()
+	if rms.Len() > 0 {
+		rm := rms.At(0)
+		ilms := rm.InstrumentationLibraryMetrics()
+	  if ilms.Len() > 0 {
+			ilm := ilms.At(0)
+			ms := ilm.Metrics()
+			if ms.Len() > 0 {
+				m := ms.At(0)
+				switch m.DataType() {
+				case pdata.MetricDataTypeIntGauge:
+					dataPoints := m.IntGauge().DataPoints()
+					if dataPoints.Len() > 0 {
+						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
+						log.Printf(dataPoints.At(0).Timestamp().String())
+					}
+				case pdata.MetricDataTypeDoubleGauge:
+					dataPoints := m.DoubleGauge().DataPoints()
+					if dataPoints.Len() > 0 {
+						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
+						log.Printf(dataPoints.At(0).Timestamp().String())
+					}
+				case pdata.MetricDataTypeIntSum:
+					dataPoints := m.IntSum().DataPoints()
+					if dataPoints.Len() > 0 {
+						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
+						log.Printf(dataPoints.At(0).Timestamp().String())
+					}
+				case pdata.MetricDataTypeDoubleSum:
+					dataPoints := m.DoubleSum().DataPoints()
+					if dataPoints.Len() > 0 {
+						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
+						log.Printf(dataPoints.At(0).Timestamp().String())
+					}
+				case pdata.MetricDataTypeIntHistogram:
+					dataPoints := m.IntHistogram().DataPoints()
+					if dataPoints.Len() > 0 {
+						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
+						log.Printf(dataPoints.At(0).Timestamp().String())
+					}
+				case pdata.MetricDataTypeHistogram:
+					dataPoints := m.Histogram().DataPoints()
+					if dataPoints.Len() > 0 {
+						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
+						log.Printf(dataPoints.At(0).Timestamp().String())
+					}
+				case pdata.MetricDataTypeSummary:
+					dataPoints := m.Summary().DataPoints()
+					if dataPoints.Len() > 0 {
+						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
+						log.Printf(dataPoints.At(0).Timestamp().String())
+					}
+				}
+			}
+		}
+	}
+	length := len(mb.ReceivedTimestamps)
+	if length == 0 || !mb.ReceivedTimestamps[length-1].Equal(currentTimestamp) {
+		mb.ReceivedTimestamps = append(mb.ReceivedTimestamps, currentTimestamp)
+	}
+	return
 }
 
 var _ consumer.Traces = (*MockTraceConsumer)(nil)

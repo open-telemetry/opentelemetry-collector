@@ -36,7 +36,10 @@ type TestCaseValidator interface {
 }
 
 // PerfTestValidator implements TestCaseValidator for test suites using PerformanceResults for summarizing results.
-type PerfTestValidator struct{}
+type PerfTestValidator struct{
+	IsScraping bool
+	ScrapeInterval int
+}
 
 func (v *PerfTestValidator) Validate(tc *TestCase) {
 	if assert.EqualValues(tc.t,
@@ -44,6 +47,17 @@ func (v *PerfTestValidator) Validate(tc *TestCase) {
 		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data matches.")
+	}
+	if v.IsScraping {
+		log.Printf("%v", tc.MockBackend.ReceivedTimestamps)
+		scrapeInterval, _ := time.ParseDuration(fmt.Sprintf("%ds", v.ScrapeInterval+1))
+		for i, timestamp := range tc.MockBackend.ReceivedTimestamps {
+			if i != 0 && !assert.WithinDuration(tc.t, timestamp, tc.MockBackend.ReceivedTimestamps[i-1], scrapeInterval,
+				"Scrape timestamps difference larger than scrape interval") {
+				return
+			}
+		}
+		log.Printf("All timestamp diffs equal to scrape interval")
 	}
 }
 

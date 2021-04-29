@@ -147,7 +147,7 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	case "opencensus":
 		sender = testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "prometheus":
-		sender = testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), 1)
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}

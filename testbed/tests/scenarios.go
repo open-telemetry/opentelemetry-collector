@@ -148,9 +148,9 @@ func Scenario10kItemsPerSecond(
 	require.NoError(t, err)
 
 	options := testbed.LoadOptions{
-		DataItemsPerSecond: 10_000,
-		ItemsPerBatch:      100,
-		Parallel:           1,
+		DataItemsPerInterval: 10_000,
+		ItemsPerBatch:        100,
+		Parallel:             1,
 	}
 	agentProc := &testbed.ChildProcess{}
 
@@ -289,7 +289,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	options := testbed.LoadOptions{DataItemsPerInterval: 10000, ItemsPerBatch: 10}
 	agentProc := &testbed.ChildProcess{}
 	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
@@ -321,7 +321,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 }
 
 func constructLoadOptions(test TestCase) testbed.LoadOptions {
-	options := testbed.LoadOptions{DataItemsPerSecond: 1000, ItemsPerBatch: 10}
+	options := testbed.LoadOptions{DataItemsPerInterval: 1000, ItemsPerBatch: 10}
 	options.Attributes = make(map[string]string)
 
 	// Generate attributes.

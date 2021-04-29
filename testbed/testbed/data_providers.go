@@ -149,10 +149,18 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))
-			dataPoint.LabelsMap().InitFromMap(map[string]string{
-				"item_index":  "item_" + strconv.Itoa(j),
-				"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
-			})
+			var labelsMap map[string]string
+			if dp.options.IsScraping {
+				labelsMap = map[string]string{
+					"item_index":  "item_" + strconv.Itoa(j),
+				}
+			} else {
+				labelsMap = map[string]string{
+					"item_index":  "item_" + strconv.Itoa(j),
+					"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
+				}
+			}
+			dataPoint.LabelsMap().InitFromMap(labelsMap)
 		}
 	}
 	return md, false
