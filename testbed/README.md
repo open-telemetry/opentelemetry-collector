@@ -29,11 +29,13 @@ For instance, if using the existing end-to-end test, the general dataflow can be
   * `OCMetricsDataSender` - Implementation of `DataSender` which sends to `opencensus` receiver.
   * `OTLPTraceDataSender` - Implementation of `DataSender` which sends to `otlp` receiver.
   * `OTLPMetricsDataSender` - Implementation of `DataSender` which sends to `otlp` receiver.
+  * `PrometheusDataSender` - Implementation of `DataSender ` which send sto `prometheus` receiver.
   * `ZipkinDataSender` - Implementation of `DataSender` which sends to `zipkin` receiver.
 * `DataReceiver` - Receives data from the collector instance under test and stores it for use in test assertions.
   * `OCDataReceiver` - Implementation of `DataReceiver` which receives data from `opencensus` exporter.
   * `JaegerDataReceiver` - Implementation of `DataReceiver` which receives data from `jaeger` exporter.
   * `OTLPDataReceiver` - Implementation of `DataReceiver` which receives data from `otlp` exporter.
+  * `PrometheusDataSender` - Implementation of `DataSender ` which receives data `prometheus` exporter.
   * `ZipkinDataReceiver` - Implementation of `DataReceiver` which receives data from `zipkin` exporter.
 * `OtelcolRunner` - Configures, starts and stops one or more instances of otelcol which will be the subject of testing being executed.
   * `ChildProcess` - Implementation of `OtelcolRunner` runs a single otelcol as a child process on the same machine as the test executor.
@@ -44,6 +46,13 @@ For instance, if using the existing end-to-end test, the general dataflow can be
 * `TestResultsSummary` - Records itemized test case results plus a summary of one category of testing.
   * `PerformanceResults` - Implementation of `TestResultsSummary` with fields suitable for reporting performance test results.
   * `CorrectnessResults` - Implementation of `TestResultsSummary` with fields suitable for reporting data translation correctness test results.
+
+## Environment Variables
+* `TESTCASE_DURATION` - Duration to run each test
+* For Prometheus scraping performance tests:
+  * `SCRAPE_INTERVAL` - Duration between each scrape.
+  * `ITEMS_PER_INTERVAL` - Number of timeseries to scrape per scrape interval.
+
 
 ## Adding New Receiver and/or Exporters to the testbed
 

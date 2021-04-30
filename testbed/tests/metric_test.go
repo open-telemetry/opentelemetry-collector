@@ -18,10 +18,16 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
+	"log"
+	"os"
 	"testing"
 	"time"
 
 	"go.opentelemetry.io/collector/testbed/testbed"
+)
+
+var (
+	scrapeIntervalEnvVar = "SCRAPE_INTERVAL"
 )
 
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
@@ -99,6 +105,14 @@ func TestMetric10kDPS(t *testing.T) {
 }
 
 func TestMetrics10kDPSScraped(t *testing.T) {
+	scrapeIntervalString := os.Getenv(scrapeIntervalEnvVar)
+	if scrapeIntervalString == "" {
+		scrapeIntervalString = "15s"
+	}
+	scrapeInterval, err := time.ParseDuration(scrapeIntervalString)
+	if err != nil {
+		log.Fatalf("Invalid "+scrapeIntervalEnvVar+": %v. Expecting a valid duration string.", scrapeInterval)
+	}
 	tests := []struct {
 		name         string
 		sender       testbed.DataSender
@@ -109,7 +123,7 @@ func TestMetrics10kDPSScraped(t *testing.T) {
 	}{
 		{
 			"PrometheusReceiver-OTLPExporter",
-			testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "15s"),
+			testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), scrapeInterval.String()),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 65,
@@ -120,7 +134,7 @@ func TestMetrics10kDPSScraped(t *testing.T) {
     send_batch_max_size: 5000
 `,
 			},
-			time.Second * 15,
+			scrapeInterval,
 		},
 	}
 

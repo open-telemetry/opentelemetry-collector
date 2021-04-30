@@ -20,9 +20,11 @@ package tests
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"log"
 	"path"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -34,6 +36,7 @@ import (
 
 var (
 	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+	itemsPerIntervalEnvVar = "ITEMS_PER_INTERVAL"
 )
 
 // createConfigYaml creates a collector config file that corresponds to the
@@ -192,23 +195,6 @@ func Scenario10kItemsPerSecond(
 	tc.ValidateData()
 }
 
-// TestCase for Scenario1kSPSWithAttrs func.
-type TestCase struct {
-	attrCount      int
-	attrSizeByte   int
-	expectedMaxCPU uint32
-	expectedMaxRAM uint32
-	resultsSummary testbed.TestResultsSummary
-}
-
-func genRandByteString(len int) string {
-	b := make([]byte, len)
-	for i := range b {
-		b[i] = byte(rand.Intn(128))
-	}
-	return string(b)
-}
-
 func Scenario10kScrapeItemsPerSecond(
 	t *testing.T,
 	sender testbed.DataSender,
@@ -224,6 +210,13 @@ func Scenario10kScrapeItemsPerSecond(
 
 	// Because there are 7 datapoints per metric, this amounts to 10k items per second
 	itemsPerInterval := int(10000 * scrapeInterval.Seconds() / 7)
+	itemsPerIntervalString := os.Getenv(itemsPerIntervalEnvVar)
+	if itemsPerIntervalString != "" {
+		itemsPerInterval, err = strconv.Atoi(itemsPerIntervalString)
+		if err != nil {
+			log.Fatalf("Invalid "+itemsPerIntervalEnvVar+": %v. Expecting a valid integer.", itemsPerInterval)
+		}
+	}
 	options := testbed.LoadOptions{
 		DataItemsPerInterval: itemsPerInterval,
 		Interval:             scrapeInterval,
@@ -257,9 +250,13 @@ func Scenario10kScrapeItemsPerSecond(
 	)
 	defer tc.Stop()
 
-	// EnableRecording enables recording of all data received by MockBackend.
+	// EnableMetricTimestampRecording enables recording of the metric timestamps.
 	tc.MockBackend.EnableMetricTimestampRecording()
-	tc.SetResourceLimits(resourceSpec)
+
+	// Not a custom test, so use specified resource limits.
+	if os.Getenv(scrapeIntervalEnvVar) == "" && os.Getenv(itemsPerIntervalEnvVar) == "" {
+		tc.SetResourceLimits(resourceSpec)
+	}
 	tc.StartBackend()
 	tc.StartAgent("--log-level=error")
 
@@ -280,6 +277,24 @@ func Scenario10kScrapeItemsPerSecond(
 
 	tc.ValidateData()
 }
+
+// TestCase for Scenario1kSPSWithAttrs func.
+type TestCase struct {
+	attrCount      int
+	attrSizeByte   int
+	expectedMaxCPU uint32
+	expectedMaxRAM uint32
+	resultsSummary testbed.TestResultsSummary
+}
+
+func genRandByteString(len int) string {
+	b := make([]byte, len)
+	for i := range b {
+		b[i] = byte(rand.Intn(128))
+	}
+	return string(b)
+}
+
 
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
