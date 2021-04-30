@@ -12,9 +12,6 @@ ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
 
-# ALL_PKGS is the list of all packages where ALL_SRC files reside.
-ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
-
 # All source code and documents. Used in spell check.
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
@@ -36,11 +33,14 @@ BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
-
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
-
 COMP_REL_PATH=service/defaultcomponents/defaults.go
 MOD_NAME=go.opentelemetry.io/collector
+
+GO_ACC=go-acc
+ADDLICENCESE=addlicense
+MISSPELL=misspell -error
+MISSPELL_CORRECTION=misspell -w
 
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
@@ -53,7 +53,7 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: gochecklicense checkdoc goimpi golint gomisspell gotest otelcol
+all: checklicense checkdoc misspell goimpi golint gotest otelcol
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -97,22 +97,6 @@ gotest-with-cover:
 	$(GO_ACC) ./...
 	go tool cover -html=coverage.txt -o coverage.html
 
-.PHONY: goaddlicense
-goaddlicense:
-	@$(MAKE) for-all CMD="make addlicense"
-
-.PHONY: gochecklicense
-gochecklicense:
-	@$(MAKE) for-all CMD="make checklicense"
-
-.PHONY: gomisspell
-gomisspell:
-	@$(MAKE) for-all CMD="make misspell"
-
-.PHONY: gomisspell-correction
-gomisspell-correction:
-	@$(MAKE) for-all CMD="make misspell-correction"
-
 .PHONY: golint
 golint:
 	@$(MAKE) for-all CMD="make lint"
@@ -129,6 +113,37 @@ gofmt:
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
 	$(MAKE) for-all CMD="go mod tidy"
+
+.PHONY: addlicense
+addlicense:
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			exit 1; \
+		else \
+			echo "Add License finished successfully"; \
+		fi
+
+.PHONY: checklicense
+checklicense:
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			echo "Use 'make addlicense' to fix this."; \
+			exit 1; \
+		else \
+			echo "Check License finished successfully"; \
+		fi
+
+.PHONY: misspell
+misspell:
+	$(MISSPELL) $(ALL_DOC)
+
+.PHONY: misspell-correction
+misspell-correction:
+	$(MISSPELL_CORRECTION) $(ALL_DOC)
 
 .PHONY: install-tools
 install-tools:
