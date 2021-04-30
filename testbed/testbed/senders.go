@@ -563,12 +563,12 @@ type PrometheusDataSender struct {
 	DataSenderBase
 	consumer.Metrics
 	namespace string
-	scrapeInterval int
+	scrapeInterval string
 }
 
 var _ MetricDataSender = (*PrometheusDataSender)(nil)
 
-func NewPrometheusDataSender(host string, port int, interval int) *PrometheusDataSender {
+func NewPrometheusDataSender(host string, port int, interval string) *PrometheusDataSender {
 	return &PrometheusDataSender{
 		DataSenderBase: DataSenderBase{
 			Port: port,
@@ -599,11 +599,9 @@ func (pds *PrometheusDataSender) GenConfigYAMLStr() string {
     config:
       scrape_configs:
         - job_name: 'testbed'
-          scrape_interval: %ds
+          scrape_interval: %s
           static_configs:
             - targets: ['%s']
-              labels: 
-                metric: 1
 `
 	return fmt.Sprintf(format, pds.scrapeInterval, pds.GetEndpoint())
 }

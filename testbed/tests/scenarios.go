@@ -20,9 +20,11 @@ package tests
 import (
 	"fmt"
 	"math/rand"
+	"log"
 	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -205,6 +207,78 @@ func genRandByteString(len int) string {
 		b[i] = byte(rand.Intn(128))
 	}
 	return string(b)
+}
+
+func Scenario10kScrapeItemsPerSecond(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec,
+	resultsSummary testbed.TestResultsSummary,
+	processors map[string]string,
+	extensions map[string]string,
+	scrapeInterval time.Duration,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	// Because there are 7 datapoints per metric, this amounts to 10k items per second
+	itemsPerInterval := int(10000 * scrapeInterval.Seconds() / 7)
+	options := testbed.LoadOptions{
+		DataItemsPerInterval: itemsPerInterval,
+		Interval:             scrapeInterval,
+		ItemsPerBatch:        itemsPerInterval,
+		Parallel:             1,
+		IsScraping:           true,
+	}
+	agentProc := &testbed.ChildProcess{}
+
+	timeToWait := scrapeInterval
+	if timeToWait < 10 {
+		timeToWait = 10
+	}
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	log.Printf(configStr)
+
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{IsScraping: true, ScrapeInterval: scrapeInterval},
+		performanceResultsSummary,
+	)
+	defer tc.Stop()
+
+	// EnableRecording enables recording of all data received by MockBackend.
+	tc.MockBackend.EnableMetricTimestampRecording()
+	tc.SetResourceLimits(resourceSpec)
+	tc.StartBackend()
+	tc.StartAgent("--log-level=error")
+
+	tc.StartLoad(options)
+
+	tc.Sleep(tc.Duration)
+
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, 
+		time.Second * time.Duration(timeToWait),
+		"load generator started")
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() <= tc.MockBackend.DataItemsReceived() },
+		time.Second * time.Duration(timeToWait),
+		"all data items received")
+
+	tc.StopAgent()
+
+	tc.ValidateData()
 }
 
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
