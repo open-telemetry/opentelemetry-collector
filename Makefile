@@ -26,11 +26,8 @@ GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
 
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 VERSION=$(shell git describe --match "v[0-9]*" HEAD)
-BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
+BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
