@@ -33,8 +33,9 @@ func main() {
 	}
 
 	info := component.BuildInfo{
-		ExeName: "otelcol",
-		Version: version.Version,
+		Command:     "otelcol",
+		Description: "OpenTelemetry Collector",
+		Version:     version.Version,
 	}
 
 	if err := run(service.Parameters{BuildInfo: info, Factories: factories}); err != nil {

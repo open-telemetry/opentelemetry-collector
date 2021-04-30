@@ -10,6 +10,8 @@
 - Rename `marshall` to `marshal` in all the occurrences (#2977)
 - Remove `componenterror.ErrAlreadyStarted` and `componenterror.ErrAlreadyStopped`, components should not protect against this, Service will start/stop once.
 - Rename `ApplicationStartInfo` to `BuildInfo`
+- Rename `ApplicationStartInfo.ExeName` to `BuildInfo.Command`
+- Rename `ApplicationStartInfo.LongName` to `BuildInfo.Description`
 
 ## 💡 Enhancements 💡
 
