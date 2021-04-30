@@ -234,8 +234,8 @@ func Scenario10kScrapeItemsPerSecond(
 	agentProc := &testbed.ChildProcess{}
 
 	timeToWait := scrapeInterval
-	if timeToWait < 10 {
-		timeToWait = 10
+	if timeToWait.Seconds() < 10 {
+		timeToWait = time.Second * 10
 	}
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
@@ -270,10 +270,10 @@ func Scenario10kScrapeItemsPerSecond(
 	tc.StopLoad()
 
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, 
-		time.Second * time.Duration(timeToWait),
+		timeToWait,
 		"load generator started")
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() <= tc.MockBackend.DataItemsReceived() },
-		time.Second * time.Duration(timeToWait),
+		timeToWait,
 		"all data items received")
 
 	tc.StopAgent()

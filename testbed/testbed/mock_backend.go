@@ -179,43 +179,36 @@ func (mb *MockBackend) getTimestamps(md pdata.Metrics) {
 					dataPoints := m.IntGauge().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-						log.Printf(dataPoints.At(0).Timestamp().String())
 					}
 				case pdata.MetricDataTypeDoubleGauge:
 					dataPoints := m.DoubleGauge().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-						log.Printf(dataPoints.At(0).Timestamp().String())
 					}
 				case pdata.MetricDataTypeIntSum:
 					dataPoints := m.IntSum().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-						log.Printf(dataPoints.At(0).Timestamp().String())
 					}
 				case pdata.MetricDataTypeDoubleSum:
 					dataPoints := m.DoubleSum().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-						log.Printf(dataPoints.At(0).Timestamp().String())
 					}
 				case pdata.MetricDataTypeIntHistogram:
 					dataPoints := m.IntHistogram().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-						log.Printf(dataPoints.At(0).Timestamp().String())
 					}
 				case pdata.MetricDataTypeHistogram:
 					dataPoints := m.Histogram().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-						log.Printf(dataPoints.At(0).Timestamp().String())
 					}
 				case pdata.MetricDataTypeSummary:
 					dataPoints := m.Summary().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-						log.Printf(dataPoints.At(0).Timestamp().String())
 					}
 				}
 			}
