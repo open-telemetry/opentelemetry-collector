@@ -20,18 +20,18 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Component is either a receiver, exporter, processor or extension.
+// Component is either a receiver, exporter, processor or an extension.
+//
+// A component's lifecycle has the following phases:
+//
+//   1. Creation: The component is create using the factory, via a Create* call.
+//   2. Start: The component's Start method is called.
+//   3. Running: The component is up and running.
+//   4. Shutdown: The component's Shutdown method is called and the lifecycle is complete.
+//
+// Once the lifecycle is complete it may be repeated, in which case a new component
+// is created, starts, runs and is shutdown again.
 type Component interface {
-	// Components lifecycle goes through the following phases:
-	//
-	// 1. Creation. The component is created using the factory, via Create* call.
-	// 2. Start. The component's Start() method is called.
-	// 3. Running. The component is up and running.
-	// 4. Shutdown. The component's Shutdown() method is called, the lifecycle is complete.
-	//
-	// Once the lifecycle is complete it may be repeated, in which case a new component
-	// is created and goes through the lifecycle.
-
 	// Start tells the component to start. Host parameter can be used for communicating
 	// with the host after Start() has already returned. If error is returned by
 	// Start() then the collector startup will be aborted.
@@ -60,7 +60,7 @@ type Component interface {
 	Shutdown(ctx context.Context) error
 }
 
-// Kind specified one of the 4 components kinds, see consts below.
+// Kind represents component kinds.
 type Kind int
 
 const (
@@ -71,7 +71,7 @@ const (
 	KindExtension
 )
 
-// Factory interface must be implemented by all component factories.
+// Factory is implemented by all component factories.
 type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() config.Type
