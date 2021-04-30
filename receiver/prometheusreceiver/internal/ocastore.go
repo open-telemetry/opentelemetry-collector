@@ -19,6 +19,7 @@ import (
 	"errors"
 	"sync/atomic"
 
+	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
@@ -94,12 +95,12 @@ type noopAppender struct{}
 
 var errAlreadyStopped = errors.New("already stopped")
 
-func (*noopAppender) Add(labels.Labels, int64, float64) (uint64, error) {
+func (*noopAppender) Append(uint64, labels.Labels, int64, float64) (uint64, error) {
 	return 0, errAlreadyStopped
 }
 
-func (*noopAppender) AddFast(uint64, int64, float64) error {
-	return errAlreadyStopped
+func (*noopAppender) AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error) {
+	return 0, errAlreadyStopped
 }
 
 func (*noopAppender) Commit() error {

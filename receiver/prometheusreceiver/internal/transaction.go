@@ -25,6 +25,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
@@ -92,8 +93,8 @@ func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bo
 // ensure *transaction has implemented the storage.Appender interface
 var _ storage.Appender = (*transaction)(nil)
 
-// Add always returns 0 to disable label caching.
-func (tr *transaction) Add(ls labels.Labels, t int64, v float64) (uint64, error) {
+// Append always returns 0 to disable label caching.
+func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) (uint64, error) {
 	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
 	// scrape the remote target,  if the previous scrape was success and some data were cached internally
 	// in our case, we don't need these data, simply drop them shall be good enough. more details:
@@ -114,6 +115,10 @@ func (tr *transaction) Add(ls labels.Labels, t int64, v float64) (uint64, error)
 		}
 	}
 	return 0, tr.metricBuilder.AddDataPoint(ls, t, v)
+}
+
+func (tr *transaction) AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error) {
+	return 0, nil
 }
 
 // AddFast always returns error since caching is not supported by Add() function.
