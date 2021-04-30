@@ -35,18 +35,15 @@ import (
 // configuration. Scraper controller receivers can embed this struct, instead
 // of config.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	config.ReceiverSettings `mapstructure:"squash"`
-	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
+	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	CollectionInterval      time.Duration            `mapstructure:"collection_interval"`
 }
 
 // DefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
 func DefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: string(cfgType),
-			TypeVal: cfgType,
-		},
+		ReceiverSettings:   config.NewReceiverSettings(config.NewID(cfgType)),
 		CollectionInterval: time.Minute,
 	}
 }
@@ -118,7 +115,7 @@ func NewScraperControllerReceiver(
 	}
 
 	sc := &controller{
-		name:               cfg.Name(),
+		name:               cfg.ID().String(),
 		logger:             logger,
 		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,

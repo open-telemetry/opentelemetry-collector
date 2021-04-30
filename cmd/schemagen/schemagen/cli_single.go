@@ -32,7 +32,7 @@ func createSingleSchemaFile(components component.Factories, componentType, compo
 	createSchemaFile(cfg, env)
 }
 
-func getConfig(components component.Factories, componentType, componentName string) (config.NamedEntity, error) {
+func getConfig(components component.Factories, componentType, componentName string) (interface{}, error) {
 	t := config.Type(componentName)
 	switch componentType {
 	case "receiver":

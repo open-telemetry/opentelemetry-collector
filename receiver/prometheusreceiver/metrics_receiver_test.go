@@ -40,6 +40,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -1066,7 +1067,10 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
+	rcvr := newPrometheusReceiver(logger, &Config{
+		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		PrometheusConfig:   cfg,
+		UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
 	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
@@ -1153,7 +1157,11 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric, StartTimeMetricRegex: startTimeMetricRegex}, cms)
+	rcvr := newPrometheusReceiver(logger, &Config{
+		ReceiverSettings:     config.NewReceiverSettings(config.NewID(typeStr)),
+		PrometheusConfig:     cfg,
+		UseStartTimeMetric:   useStartTimeMetric,
+		StartTimeMetricRegex: startTimeMetricRegex}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
 	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })

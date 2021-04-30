@@ -82,7 +82,7 @@ func TestDefaultReceivers(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
-			assert.Equal(t, tt.receiver, factory.CreateDefaultConfig().Type())
+			assert.Equal(t, string(tt.receiver), factory.CreateDefaultConfig().ID().String())
 
 			if tt.skipLifecyle {
 				t.Log("Skipping lifecycle test", tt.receiver)
