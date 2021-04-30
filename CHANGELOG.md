@@ -11,9 +11,9 @@
 - Remove `componenterror.ErrAlreadyStarted` and `componenterror.ErrAlreadyStopped`, components should not protect against this, Service will start/stop once.
 - Rename `ApplicationStartInfo` to `BuildInfo`
 - Rename `ApplicationStartInfo.ExeName` to `BuildInfo.Command`
+- Rename `ApplicationStartInfo.LongName` to `BuildInfo.Description`
 
 ## 💡 Enhancements 💡
- - Add `Description` to `BuildInfo`
 
 ## 🧰 Bug fixes 🧰
 
