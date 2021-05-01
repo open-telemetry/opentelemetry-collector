@@ -111,15 +111,15 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 			ms.Alloc = currentMemAlloc
 		},
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:         configtelemetry.LevelNone,
-			ProcessorName: "",
+			Level:       configtelemetry.LevelNone,
+			ProcessorID: config.NewID(typeStr),
 		}),
 
 		logger: zap.NewNop(),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml,
@@ -183,14 +183,14 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 			ms.Alloc = currentMemAlloc
 		},
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:         configtelemetry.LevelNone,
-			ProcessorName: "",
+			Level:       configtelemetry.LevelNone,
+			ProcessorID: config.NewID(typeStr),
 		}),
 		logger: zap.NewNop(),
 	}
 	tp, err := processorhelper.NewTracesProcessor(
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml,
@@ -254,14 +254,14 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			ms.Alloc = currentMemAlloc
 		},
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:         configtelemetry.LevelNone,
-			ProcessorName: "",
+			Level:       configtelemetry.LevelNone,
+			ProcessorID: config.NewID(typeStr),
 		}),
 		logger: zap.NewNop(),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml,

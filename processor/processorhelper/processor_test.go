@@ -33,10 +33,7 @@ import (
 
 const testFullName = "testFullName"
 
-var testCfg = &config.ProcessorSettings{
-	TypeVal: testFullName,
-	NameVal: testFullName,
-}
+var testCfg = config.NewProcessorSettings(config.MustIDFromString(testFullName))
 
 func TestDefaultOptions(t *testing.T) {
 	bp := newBaseProcessor(testFullName)
@@ -57,7 +54,7 @@ func TestWithOptions(t *testing.T) {
 }
 
 func TestNewTracesProcessor(t *testing.T) {
-	me, err := NewTracesProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(nil))
+	me, err := NewTracesProcessor(&testCfg, consumertest.NewNop(), newTestTProcessor(nil))
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -66,22 +63,22 @@ func TestNewTracesProcessor(t *testing.T) {
 }
 
 func TestNewTracesProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewTracesProcessor(testCfg, consumertest.NewNop(), nil)
+	_, err := NewTracesProcessor(&testCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
-	_, err = NewTracesProcessor(testCfg, nil, newTestTProcessor(nil))
+	_, err = NewTracesProcessor(&testCfg, nil, newTestTProcessor(nil))
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
 func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewTracesProcessor(testCfg, consumertest.NewNop(), newTestTProcessor(want))
+	me, err := NewTracesProcessor(&testCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
 }
 
 func TestNewMetricsProcessor(t *testing.T) {
-	me, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), newTestMProcessor(nil))
+	me, err := NewMetricsProcessor(&testCfg, consumertest.NewNop(), newTestMProcessor(nil))
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -90,28 +87,28 @@ func TestNewMetricsProcessor(t *testing.T) {
 }
 
 func TestNewMetricsProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), nil)
+	_, err := NewMetricsProcessor(&testCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
-	_, err = NewMetricsProcessor(testCfg, nil, newTestMProcessor(nil))
+	_, err = NewMetricsProcessor(&testCfg, nil, newTestMProcessor(nil))
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
 func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), newTestMProcessor(want))
+	me, err := NewMetricsProcessor(&testCfg, consumertest.NewNop(), newTestMProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
 }
 
 func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
-	me, err := NewMetricsProcessor(testCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
+	me, err := NewMetricsProcessor(&testCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.Equal(t, nil, me.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
 }
 
 func TestNewLogsProcessor(t *testing.T) {
-	me, err := NewLogsProcessor(testCfg, consumertest.NewNop(), newTestLProcessor(nil))
+	me, err := NewLogsProcessor(&testCfg, consumertest.NewNop(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -120,16 +117,16 @@ func TestNewLogsProcessor(t *testing.T) {
 }
 
 func TestNewLogsProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewLogsProcessor(testCfg, consumertest.NewNop(), nil)
+	_, err := NewLogsProcessor(&testCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
-	_, err = NewLogsProcessor(testCfg, nil, newTestLProcessor(nil))
+	_, err = NewLogsProcessor(&testCfg, nil, newTestLProcessor(nil))
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
 func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewLogsProcessor(testCfg, consumertest.NewNop(), newTestLProcessor(want))
+	me, err := NewLogsProcessor(&testCfg, consumertest.NewNop(), newTestLProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeLogs(context.Background(), testdata.GenerateLogDataEmpty()))
 }

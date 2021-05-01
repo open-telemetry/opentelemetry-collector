@@ -36,8 +36,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	assert.Equal(t, cfg.Processors["resource"], &Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+	assert.Equal(t, cfg.Processors[config.NewID(typeStr)], &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		AttributesActions: []processorhelper.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
@@ -45,10 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, cfg.Processors["resource/invalid"], &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource/invalid",
-		},
+	assert.Equal(t, cfg.Processors[config.NewIDWithName(typeStr, "invalid")], &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "invalid")),
 	})
 }

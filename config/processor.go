@@ -18,44 +18,38 @@ package config
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.
 // Embedded validatable will force each processor to implement Validate() function
 type Processor interface {
-	NamedEntity
+	identifiable
 	validatable
 }
 
 // Processors is a map of names to Processors.
-type Processors map[string]Processor
+type Processors map[ComponentID]Processor
 
 // ProcessorSettings defines common settings for a processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 // When embedded in the processor config it must be with `mapstructure:"-"` tag.
 type ProcessorSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	id ComponentID `mapstructure:"-"`
 }
 
-// NewProcessorSettings return a new ProcessorSettings with the given type.
-func NewProcessorSettings(typeVal Type) *ProcessorSettings {
-	return &ProcessorSettings{TypeVal: typeVal, NameVal: string(typeVal)}
+// NewProcessorSettings return a new ProcessorSettings with the given ComponentID.
+func NewProcessorSettings(id ComponentID) ProcessorSettings {
+	return ProcessorSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
 var _ Processor = (*ProcessorSettings)(nil)
 
-// Name gets the processor name.
-func (proc *ProcessorSettings) Name() string {
-	return proc.NameVal
+// ID returns the receiver ComponentID.
+func (rs *ProcessorSettings) ID() ComponentID {
+	return rs.id
 }
 
-// SetName sets the processor name.
-func (proc *ProcessorSettings) SetName(name string) {
-	proc.NameVal = name
-}
-
-// Type sets the processor type.
-func (proc *ProcessorSettings) Type() Type {
-	return proc.TypeVal
+// SetIDName sets the receiver name.
+func (rs *ProcessorSettings) SetIDName(idName string) {
+	rs.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (proc *ProcessorSettings) Validate() error {
+func (rs *ProcessorSettings) Validate() error {
 	return nil
 }

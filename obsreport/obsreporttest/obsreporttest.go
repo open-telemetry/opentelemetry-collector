@@ -23,6 +23,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -81,8 +82,8 @@ func CheckExporterLogs(t *testing.T, exporter string, acceptedLogRecords, droppe
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorTraces(t *testing.T, processor string, acceptedSpans, refusedSpans, droppedSpans int64) {
-	processorTags := tagsForProcessorView(processor)
+func CheckProcessorTraces(t *testing.T, processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) {
+	processorTags := tagsForProcessorView(processor.String())
 	checkValueForView(t, processorTags, acceptedSpans, "processor/accepted_spans")
 	checkValueForView(t, processorTags, refusedSpans, "processor/refused_spans")
 	checkValueForView(t, processorTags, droppedSpans, "processor/dropped_spans")
@@ -90,8 +91,8 @@ func CheckProcessorTraces(t *testing.T, processor string, acceptedSpans, refused
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorMetrics(t *testing.T, processor string, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) {
-	processorTags := tagsForProcessorView(processor)
+func CheckProcessorMetrics(t *testing.T, processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) {
+	processorTags := tagsForProcessorView(processor.String())
 	checkValueForView(t, processorTags, acceptedMetricPoints, "processor/accepted_metric_points")
 	checkValueForView(t, processorTags, refusedMetricPoints, "processor/refused_metric_points")
 	checkValueForView(t, processorTags, droppedMetricPoints, "processor/dropped_metric_points")
@@ -99,8 +100,8 @@ func CheckProcessorMetrics(t *testing.T, processor string, acceptedMetricPoints,
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorLogs(t *testing.T, processor string, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) {
-	processorTags := tagsForProcessorView(processor)
+func CheckProcessorLogs(t *testing.T, processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) {
+	processorTags := tagsForProcessorView(processor.String())
 	checkValueForView(t, processorTags, acceptedLogRecords, "processor/accepted_log_records")
 	checkValueForView(t, processorTags, refusedLogRecords, "processor/refused_log_records")
 	checkValueForView(t, processorTags, droppedLogRecords, "processor/dropped_log_records")

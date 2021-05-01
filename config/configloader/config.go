@@ -343,7 +343,6 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(processorsKeyName, key, err)
 		}
-		fullName := id.String()
 
 		// Find processor factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
@@ -353,7 +352,7 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 
 		// Create the default config for this processor.
 		processorCfg := factory.CreateDefaultConfig()
-		processorCfg.SetName(fullName)
+		processorCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(processorCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
@@ -363,11 +362,11 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 			return nil, errorUnmarshalError(processorsKeyName, id, err)
 		}
 
-		if processors[fullName] != nil {
+		if processors[id] != nil {
 			return nil, errorDuplicateName(processorsKeyName, id)
 		}
 
-		processors[fullName] = processorCfg
+		processors[id] = processorCfg
 	}
 
 	return processors, nil
@@ -400,14 +399,12 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipeline
 		}
 
 		pipelineCfg.Name = fullName
-		for _, idRecvStr := range rawPipeline.Receivers {
-			idRecv, err := config.IDFromString(idRecvStr)
-			if err != nil {
-				return nil, fmt.Errorf("pipelines: config for %v contains invalid receiver name %s : %w", id, idRecvStr, err)
-			}
-			pipelineCfg.Receivers = append(pipelineCfg.Receivers, idRecv)
+		if pipelineCfg.Receivers, err = parseIDNames(id, receiversKeyName, rawPipeline.Receivers); err != nil {
+			return nil, err
 		}
-		pipelineCfg.Processors = rawPipeline.Processors
+		if pipelineCfg.Processors, err = parseIDNames(id, processorsKeyName, rawPipeline.Processors); err != nil {
+			return nil, err
+		}
 		pipelineCfg.Exporters = rawPipeline.Exporters
 
 		if pipelines[fullName] != nil {
@@ -418,6 +415,18 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipeline
 	}
 
 	return pipelines, nil
+}
+
+func parseIDNames(pipelineID config.ComponentID, componentType string, names []string) ([]config.ComponentID, error) {
+	var ret []config.ComponentID
+	for _, idProcStr := range names {
+		idRecv, err := config.IDFromString(idProcStr)
+		if err != nil {
+			return nil, fmt.Errorf("pipelines: config for %v contains invalid %s name %s : %w", pipelineID, componentType, idProcStr, err)
+		}
+		ret = append(ret, idRecv)
+	}
+	return ret, nil
 }
 
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).

@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
@@ -124,15 +125,15 @@ type Processor struct {
 
 // ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
-	Level         configtelemetry.Level
-	ProcessorName string
+	Level       configtelemetry.Level
+	ProcessorID config.ComponentID
 }
 
 // NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) *Processor {
 	return &Processor{
 		level:    cfg.Level,
-		mutators: []tag.Mutator{tag.Upsert(tagKeyProcessor, cfg.ProcessorName, tag.WithTTL(tag.TTLNoPropagation))},
+		mutators: []tag.Mutator{tag.Upsert(tagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }
 

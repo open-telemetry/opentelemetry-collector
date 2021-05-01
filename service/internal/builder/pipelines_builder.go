@@ -144,13 +144,13 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
 
-		factory := pb.factories[procCfg.Type()]
+		factory := pb.factories[procCfg.ID().Type()]
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
-		componentLogger := pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procCfg.Name()))
+		componentLogger := pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID()))
 		creationParams := component.ProcessorCreateParams{
 			Logger:    componentLogger,
 			BuildInfo: pb.buildInfo,
@@ -195,7 +195,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		// Check if the factory really created the processor.
 		if tc == nil && mc == nil && lc == nil {
-			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
+			return nil, fmt.Errorf("factory for %v produced a nil processor", procCfg.ID())
 		}
 	}
 

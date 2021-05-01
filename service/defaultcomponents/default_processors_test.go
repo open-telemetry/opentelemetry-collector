@@ -99,7 +99,7 @@ func TestDefaultProcessors(t *testing.T) {
 			factory, ok := procFactories[tt.processor]
 			require.True(t, ok)
 			assert.Equal(t, tt.processor, factory.Type())
-			assert.Equal(t, tt.processor, factory.CreateDefaultConfig().Type())
+			assert.EqualValues(t, tt.processor, factory.CreateDefaultConfig().ID().String())
 
 			verifyProcessorLifecycle(t, factory, tt.getConfigFn)
 		})
