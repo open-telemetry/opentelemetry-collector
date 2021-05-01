@@ -1,0 +1,8 @@
+FROM mcr.microsoft.com/windows/nanoserver:20H2
+
+COPY otelcol.exe .
+COPY config.yaml .
+
+ENTRYPOINT ["otelcol"]
+CMD ["--config", "config.yaml"]
+EXPOSE 4317 55678 55679
