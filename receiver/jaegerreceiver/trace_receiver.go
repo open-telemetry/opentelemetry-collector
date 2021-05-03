@@ -47,7 +47,6 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -59,11 +58,11 @@ import (
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type configuration struct {
-	CollectorThriftPort   int
-	CollectorHTTPPort     int
-	CollectorHTTPSettings confighttp.HTTPServerSettings
-	CollectorGRPCPort     int
-	CollectorGRPCOptions  []grpc.ServerOption
+	CollectorThriftPort         int
+	CollectorHTTPPort           int
+	CollectorHTTPSettings       confighttp.HTTPServerSettings
+	CollectorGRPCPort           int
+	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
 
 	AgentCompactThriftPort       int
 	AgentCompactThriftConfig     ServerConfigUDP
@@ -83,9 +82,6 @@ type jReceiver struct {
 	nextConsumer consumer.Traces
 	instanceName string
 
-	startOnce sync.Once
-	stopOnce  sync.Once
-
 	config *configuration
 
 	grpc            *grpc.Server
@@ -94,6 +90,8 @@ type jReceiver struct {
 	agentSamplingManager *jSamplingConfig.SamplingManager
 	agentProcessors      []processors.Processor
 	agentServer          *http.Server
+
+	goroutines sync.WaitGroup
 
 	logger *zap.Logger
 }
@@ -187,52 +185,42 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
-	var err = componenterror.ErrAlreadyStarted
-	jr.startOnce.Do(func() {
-		if err = jr.startAgent(host); err != nil && err != componenterror.ErrAlreadyStarted {
-			return
-		}
+	if err := jr.startAgent(host); err != nil {
+		return err
+	}
 
-		if err = jr.startCollector(host); err != nil && err != componenterror.ErrAlreadyStarted {
-			return
-		}
+	if err := jr.startCollector(host); err != nil {
+		return err
+	}
 
-		err = nil
-	})
-	return err
+	return nil
 }
 
-func (jr *jReceiver) Shutdown(context.Context) error {
-	var err = componenterror.ErrAlreadyStopped
-	jr.stopOnce.Do(func() {
-		jr.mu.Lock()
-		defer jr.mu.Unlock()
-		var errs []error
+func (jr *jReceiver) Shutdown(ctx context.Context) error {
+	jr.mu.Lock()
+	defer jr.mu.Unlock()
+	var errs []error
 
-		if jr.agentServer != nil {
-			if aerr := jr.agentServer.Close(); aerr != nil {
-				errs = append(errs, aerr)
-			}
-			jr.agentServer = nil
+	if jr.agentServer != nil {
+		if aerr := jr.agentServer.Shutdown(ctx); aerr != nil {
+			errs = append(errs, aerr)
 		}
-		for _, processor := range jr.agentProcessors {
-			processor.Stop()
-		}
+	}
+	for _, processor := range jr.agentProcessors {
+		processor.Stop()
+	}
 
-		if jr.collectorServer != nil {
-			if cerr := jr.collectorServer.Close(); cerr != nil {
-				errs = append(errs, cerr)
-			}
-			jr.collectorServer = nil
+	if jr.collectorServer != nil {
+		if cerr := jr.collectorServer.Shutdown(ctx); cerr != nil {
+			errs = append(errs, cerr)
 		}
-		if jr.grpc != nil {
-			jr.grpc.Stop()
-			jr.grpc = nil
-		}
-		err = consumererror.Combine(errs)
-	})
+	}
+	if jr.grpc != nil {
+		jr.grpc.GracefulStop()
+	}
 
-	return err
+	jr.goroutines.Wait()
+	return consumererror.Combine(errs)
 }
 
 func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.Traces) (int, error) {
@@ -303,7 +291,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	return &api_v2.PostSpansResponse{}, nil
 }
 
-func (jr *jReceiver) startAgent(_ component.Host) error {
+func (jr *jReceiver) startAgent(host component.Host) error {
 	if !jr.agentBinaryThriftEnabled() && !jr.agentCompactThriftEnabled() && !jr.agentHTTPEnabled() {
 		return nil
 	}
@@ -334,8 +322,12 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 		jr.agentProcessors = append(jr.agentProcessors, processor)
 	}
 
+	jr.goroutines.Add(len(jr.agentProcessors))
 	for _, processor := range jr.agentProcessors {
-		go processor.Serve()
+		go func(p processors.Processor) {
+			defer jr.goroutines.Done()
+			p.Serve()
+		}(processor)
 	}
 
 	// Start upstream grpc client before serving sampling endpoints over HTTP
@@ -357,9 +349,11 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	if jr.agentHTTPEnabled() {
 		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPAddr(), jr, metrics.NullFactory)
 
+		jr.goroutines.Add(1)
 		go func() {
+			defer jr.goroutines.Done()
 			if err := jr.agentServer.ListenAndServe(); err != http.ErrServerClosed {
-				jr.logger.Error("http server failure", zap.Error(err))
+				host.ReportFatalError(fmt.Errorf("jaeger agent server error: %w", err))
 			}
 		}()
 	}
@@ -465,13 +459,22 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
 		jr.collectorServer = &http.Server{Handler: nr}
+		jr.goroutines.Add(1)
 		go func() {
-			_ = jr.collectorServer.Serve(cln)
+			defer jr.goroutines.Done()
+			if err := jr.collectorServer.Serve(cln); err != http.ErrServerClosed {
+				host.ReportFatalError(err)
+			}
 		}()
 	}
 
 	if jr.collectorGRPCEnabled() {
-		jr.grpc = grpc.NewServer(jr.config.CollectorGRPCOptions...)
+		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host.GetExtensions())
+		if err != nil {
+			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %v", err)
+		}
+
+		jr.grpc = grpc.NewServer(opts...)
 		gaddr := jr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {
@@ -489,8 +492,10 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		}
 		api_v2.RegisterSamplingManagerServer(jr.grpc, collectorSampling.NewGRPCHandler(ss))
 
+		jr.goroutines.Add(1)
 		go func() {
-			if err := jr.grpc.Serve(gln); err != nil {
+			defer jr.goroutines.Done()
+			if err := jr.grpc.Serve(gln); err != nil && err != grpc.ErrServerStopped {
 				host.ReportFatalError(err)
 			}
 		}()

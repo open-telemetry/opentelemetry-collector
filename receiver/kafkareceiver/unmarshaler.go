@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// TracesUnmarshaller deserializes the message body.
-type TracesUnmarshaller interface {
+// TracesUnmarshaler deserializes the message body.
+type TracesUnmarshaler interface {
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (pdata.Traces, error)
 
@@ -27,8 +27,8 @@ type TracesUnmarshaller interface {
 	Encoding() string
 }
 
-// LogsUnmarshaller deserializes the message body.
-type LogsUnmarshaller interface {
+// LogsUnmarshaler deserializes the message body.
+type LogsUnmarshaler interface {
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (pdata.Logs, error)
 
@@ -36,15 +36,15 @@ type LogsUnmarshaller interface {
 	Encoding() string
 }
 
-// defaultTracesUnmarshallers returns map of supported encodings with TracesUnmarshaller.
-func defaultTracesUnmarshallers() map[string]TracesUnmarshaller {
-	otlp := &otlpTracesPbUnmarshaller{}
-	jaegerProto := jaegerProtoSpanUnmarshaller{}
-	jaegerJSON := jaegerJSONSpanUnmarshaller{}
-	zipkinProto := zipkinProtoSpanUnmarshaller{}
-	zipkinJSON := zipkinJSONSpanUnmarshaller{}
-	zipkinThrift := zipkinThriftSpanUnmarshaller{}
-	return map[string]TracesUnmarshaller{
+// defaultTracesUnmarshalers returns map of supported encodings with TracesUnmarshaler.
+func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
+	otlp := &otlpTracesPbUnmarshaler{}
+	jaegerProto := jaegerProtoSpanUnmarshaler{}
+	jaegerJSON := jaegerJSONSpanUnmarshaler{}
+	zipkinProto := zipkinProtoSpanUnmarshaler{}
+	zipkinJSON := zipkinJSONSpanUnmarshaler{}
+	zipkinThrift := zipkinThriftSpanUnmarshaler{}
+	return map[string]TracesUnmarshaler{
 		otlp.Encoding():         otlp,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,
@@ -54,9 +54,9 @@ func defaultTracesUnmarshallers() map[string]TracesUnmarshaller {
 	}
 }
 
-func defaultLogsUnmarshallers() map[string]LogsUnmarshaller {
-	otlp := &otlpLogsPbUnmarshaller{}
-	return map[string]LogsUnmarshaller{
+func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
+	otlp := &otlpLogsPbUnmarshaler{}
+	return map[string]LogsUnmarshaler{
 		otlp.Encoding(): otlp,
 	}
 }

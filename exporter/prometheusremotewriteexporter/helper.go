@@ -23,11 +23,13 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	common "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
+	resourcev1 "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 )
 
 const (
@@ -125,7 +127,7 @@ func timeSeriesSignature(metric *otlp.Metric, labels *[]prompb.Label) string {
 // createLabelSet creates a slice of Cortex Label with OTLP labels and paris of string values.
 // Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
 // logged. Resultant label names are sanitized.
-func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]string, extras ...string) []prompb.Label {
+func createLabelSet(resource resourcev1.Resource, labels []common.StringKeyValue, externalLabels map[string]string, extras ...string) []prompb.Label {
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
@@ -134,6 +136,15 @@ func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]st
 		l[key] = prompb.Label{
 			Name:  key,
 			Value: value,
+		}
+	}
+
+	for _, attr := range resource.Attributes {
+		if isUsefulResourceAttribute(attr) {
+			l[attr.Key] = prompb.Label{
+				Name:  sanitize(attr.Key),
+				Value: attr.Value.GetStringValue(), // TODO(jbd): Decide what to do with non-string attributes.
+			}
 		}
 	}
 
@@ -169,6 +180,20 @@ func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]st
 	}
 
 	return s
+}
+
+func isUsefulResourceAttribute(attr common.KeyValue) bool {
+	// TODO(jbd): Allow users to configure what other resource
+	// attributes to be included.
+	// Decide what to do with non-string attributes.
+	// We should always output "job" and "instance".
+	switch attr.Key {
+	case model.InstanceLabel:
+		return true
+	case model.JobLabel:
+		return true
+	}
+	return false
 }
 
 // getPromMetricName creates a Prometheus metric name by attaching namespace prefix, and _total suffix for Monotonic
@@ -296,14 +321,14 @@ func getTypeString(metric *otlp.Metric) string {
 
 // addSingleDoubleDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
 // to its corresponding time series in tsMap
-func addSingleDoubleDataPoint(pt *otlp.DoubleDataPoint, metric *otlp.Metric, namespace string,
+func addSingleDoubleDataPoint(pt *otlp.DoubleDataPoint, resource resourcev1.Resource, metric *otlp.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
 	}
 	// create parameters for addSample
 	name := getPromMetricName(metric, namespace)
-	labels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, name)
+	labels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		Value: pt.Value,
 		// convert ns to ms
@@ -314,14 +339,14 @@ func addSingleDoubleDataPoint(pt *otlp.DoubleDataPoint, metric *otlp.Metric, nam
 
 // addSingleIntDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
 // to its corresponding time series in tsMap
-func addSingleIntDataPoint(pt *otlp.IntDataPoint, metric *otlp.Metric, namespace string,
+func addSingleIntDataPoint(pt *otlp.IntDataPoint, resource resourcev1.Resource, metric *otlp.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
 	}
 	// create parameters for addSample
 	name := getPromMetricName(metric, namespace)
-	labels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, name)
+	labels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		Value: float64(pt.Value),
 		// convert ns to ms
@@ -332,7 +357,7 @@ func addSingleIntDataPoint(pt *otlp.IntDataPoint, metric *otlp.Metric, namespace
 
 // addSingleIntHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
-func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp.Metric, namespace string,
+func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, resource resourcev1.Resource, metric *otlp.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
@@ -346,7 +371,7 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 		Timestamp: time,
 	}
 
-	sumlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
+	sumlabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric)
 
 	// treat count as a sample in an individual TimeSeries
@@ -354,7 +379,7 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 		Value:     float64(pt.GetCount()),
 		Timestamp: time,
 	}
-	countlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
+	countlabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
 
 	// cumulative count for conversion to cumulative histogram
@@ -371,7 +396,7 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 			Timestamp: time,
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-		labels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
+		labels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
 		addSample(tsMap, bucket, labels, metric)
 	}
 	// add le=+Inf bucket
@@ -380,13 +405,13 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 		Value:     float64(cumulativeCount),
 		Timestamp: time,
 	}
-	infLabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
+	infLabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	addSample(tsMap, infBucket, infLabels, metric)
 }
 
 // addSingleDoubleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
-func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric *otlp.Metric, namespace string,
+func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, resource resourcev1.Resource, metric *otlp.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
@@ -400,7 +425,7 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 		Timestamp: time,
 	}
 
-	sumlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
+	sumlabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric)
 
 	// treat count as a sample in an individual TimeSeries
@@ -408,7 +433,7 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 		Value:     float64(pt.GetCount()),
 		Timestamp: time,
 	}
-	countlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
+	countlabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
 
 	// cumulative count for conversion to cumulative histogram
@@ -425,7 +450,7 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 			Timestamp: time,
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-		labels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
+		labels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
 		addSample(tsMap, bucket, labels, metric)
 	}
 	// add le=+Inf bucket
@@ -434,12 +459,12 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 		Value:     float64(cumulativeCount),
 		Timestamp: time,
 	}
-	infLabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
+	infLabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	addSample(tsMap, infBucket, infLabels, metric)
 }
 
 // addSingleDoubleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.
-func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *otlp.Metric, namespace string,
+func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, resource resourcev1.Resource, metric *otlp.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
@@ -453,7 +478,7 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		Timestamp: time,
 	}
 
-	sumlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
+	sumlabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric)
 
 	// treat count as a sample in an individual TimeSeries
@@ -461,7 +486,7 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		Value:     float64(pt.GetCount()),
 		Timestamp: time,
 	}
-	countlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
+	countlabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
 
 	// process each percentile/quantile
@@ -471,7 +496,7 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 			Timestamp: time,
 		}
 		percentileStr := strconv.FormatFloat(qt.GetQuantile(), 'f', -1, 64)
-		qtlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
+		qtlabels := createLabelSet(resource, pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric)
 	}
 }

@@ -26,12 +26,12 @@ import (
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
-type zipkinProtoSpanUnmarshaller struct {
+type zipkinProtoSpanUnmarshaler struct {
 }
 
-var _ TracesUnmarshaller = (*zipkinProtoSpanUnmarshaller)(nil)
+var _ TracesUnmarshaler = (*zipkinProtoSpanUnmarshaler)(nil)
 
-func (z zipkinProtoSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (z zipkinProtoSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	parseSpans, err := zipkin_proto3.ParseSpans(bytes, false)
 	if err != nil {
 		return pdata.NewTraces(), err
@@ -39,16 +39,16 @@ func (z zipkinProtoSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, erro
 	return zipkintranslator.V2SpansToInternalTraces(parseSpans, false)
 }
 
-func (z zipkinProtoSpanUnmarshaller) Encoding() string {
+func (z zipkinProtoSpanUnmarshaler) Encoding() string {
 	return "zipkin_proto"
 }
 
-type zipkinJSONSpanUnmarshaller struct {
+type zipkinJSONSpanUnmarshaler struct {
 }
 
-var _ TracesUnmarshaller = (*zipkinJSONSpanUnmarshaller)(nil)
+var _ TracesUnmarshaler = (*zipkinJSONSpanUnmarshaler)(nil)
 
-func (z zipkinJSONSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (z zipkinJSONSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	var spans []*zipkinmodel.SpanModel
 	if err := json.Unmarshal(bytes, &spans); err != nil {
 		return pdata.NewTraces(), err
@@ -56,16 +56,16 @@ func (z zipkinJSONSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error
 	return zipkintranslator.V2SpansToInternalTraces(spans, false)
 }
 
-func (z zipkinJSONSpanUnmarshaller) Encoding() string {
+func (z zipkinJSONSpanUnmarshaler) Encoding() string {
 	return "zipkin_json"
 }
 
-type zipkinThriftSpanUnmarshaller struct {
+type zipkinThriftSpanUnmarshaler struct {
 }
 
-var _ TracesUnmarshaller = (*zipkinThriftSpanUnmarshaller)(nil)
+var _ TracesUnmarshaler = (*zipkinThriftSpanUnmarshaler)(nil)
 
-func (z zipkinThriftSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (z zipkinThriftSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	spans, err := deserializeZipkinThrift(bytes)
 	if err != nil {
 		return pdata.NewTraces(), err
@@ -74,7 +74,7 @@ func (z zipkinThriftSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, err
 
 }
 
-func (z zipkinThriftSpanUnmarshaller) Encoding() string {
+func (z zipkinThriftSpanUnmarshaler) Encoding() string {
 	return "zipkin_thrift"
 }
 

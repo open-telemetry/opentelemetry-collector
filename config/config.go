@@ -218,7 +218,7 @@ const (
 type Pipeline struct {
 	Name       string
 	InputType  DataType
-	Receivers  []string
+	Receivers  []ComponentID
 	Processors []string
 	Exporters  []string
 }

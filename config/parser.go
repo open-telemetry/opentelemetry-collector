@@ -135,11 +135,6 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
 }
 
-// Viper returns the viper.Viper implementation of this Parser.
-func (l *Parser) Viper() *viper.Viper {
-	return l.v
-}
-
 // deepSearch scans deep maps, following the key indexes listed in the
 // sequence "path".
 // The last value is expected to be another map, and is returned.

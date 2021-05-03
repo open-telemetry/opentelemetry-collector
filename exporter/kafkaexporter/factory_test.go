@@ -41,7 +41,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
+	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
@@ -53,7 +53,7 @@ func TestCreateMetricsExport(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	mf := kafkaExporterFactory{metricsMarshallers: metricsMarshallers()}
+	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers()}
 	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, mr)
@@ -65,7 +65,7 @@ func TestCreateLogsExport(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	mf := kafkaExporterFactory{logsMarshallers: logsMarshallers()}
+	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers()}
 	mr, err := mf.createLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, mr)
@@ -75,7 +75,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
+	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	// no available broker
 	require.Error(t, err)
@@ -86,7 +86,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	mf := kafkaExporterFactory{metricsMarshallers: metricsMarshallers()}
+	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers()}
 	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
@@ -96,15 +96,15 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	mf := kafkaExporterFactory{logsMarshallers: logsMarshallers()}
+	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers()}
 	mr, err := mf.createLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
 }
 
-func TestWithMarshallers(t *testing.T) {
-	cm := &customMarshaller{}
-	f := NewFactory(WithTracesMarshallers(cm))
+func TestWithMarshalers(t *testing.T) {
+	cm := &customMarshaler{}
+	f := NewFactory(WithTracesMarshalers(cm))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false
@@ -116,22 +116,22 @@ func TestWithMarshallers(t *testing.T) {
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = new(otlpTracesPbMarshaller).Encoding()
+		cfg.Encoding = new(otlpTracesPbMarshaler).Encoding()
 		exporter, err := f.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})
 }
 
-type customMarshaller struct {
+type customMarshaler struct {
 }
 
-var _ TracesMarshaller = (*customMarshaller)(nil)
+var _ TracesMarshaler = (*customMarshaler)(nil)
 
-func (c customMarshaller) Marshal(_ pdata.Traces) ([]Message, error) {
+func (c customMarshaler) Marshal(_ pdata.Traces) ([]Message, error) {
 	panic("implement me")
 }
 
-func (c customMarshaller) Encoding() string {
+func (c customMarshaler) Encoding() string {
 	return "custom"
 }

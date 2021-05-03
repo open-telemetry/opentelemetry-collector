@@ -16,14 +16,15 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 
+	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -92,16 +93,18 @@ func (o *OcaStore) Close() error {
 // noopAppender, always return error on any operations
 type noopAppender struct{}
 
-func (*noopAppender) Add(labels.Labels, int64, float64) (uint64, error) {
-	return 0, componenterror.ErrAlreadyStopped
+var errAlreadyStopped = errors.New("already stopped")
+
+func (*noopAppender) Append(uint64, labels.Labels, int64, float64) (uint64, error) {
+	return 0, errAlreadyStopped
 }
 
-func (*noopAppender) AddFast(uint64, int64, float64) error {
-	return componenterror.ErrAlreadyStopped
+func (*noopAppender) AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error) {
+	return 0, errAlreadyStopped
 }
 
 func (*noopAppender) Commit() error {
-	return componenterror.ErrAlreadyStopped
+	return errAlreadyStopped
 }
 
 func (*noopAppender) Rollback() error {

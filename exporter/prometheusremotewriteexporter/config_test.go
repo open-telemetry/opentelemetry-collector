@@ -83,5 +83,6 @@ func Test_loadConfig(t *testing.T) {
 					"prometheus-remote-write-version": "0.1.0",
 					"x-scope-orgid":                   "234"},
 			},
+			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
 		})
 }

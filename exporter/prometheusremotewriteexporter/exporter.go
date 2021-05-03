@@ -16,12 +16,12 @@
 package prometheusremotewriteexporter
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
+	resourcev1 "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/internal/version"
 )
 
@@ -107,6 +108,8 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 			if resourceMetric == nil {
 				continue
 			}
+
+			resource := resourceMetric.Resource
 			// TODO: add resource attributes as labels, probably in next PR
 			for _, instrumentationMetrics := range resourceMetric.InstrumentationLibraryMetrics {
 				if instrumentationMetrics == nil {
@@ -124,20 +127,21 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 						errs = append(errs, consumererror.Permanent(errors.New("invalid temporality and type combination")))
 						continue
 					}
+
 					// handle individual metric based on type
 					switch metric.Data.(type) {
 					case *otlp.Metric_DoubleSum, *otlp.Metric_IntSum, *otlp.Metric_DoubleGauge, *otlp.Metric_IntGauge:
-						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
+						if err := prwe.handleScalarMetric(tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, consumererror.Permanent(err))
 						}
 					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
-						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
+						if err := prwe.handleHistogramMetric(tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, consumererror.Permanent(err))
 						}
 					case *otlp.Metric_DoubleSummary:
-						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
+						if err := prwe.handleSummaryMetric(tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, consumererror.Permanent(err))
 						}
@@ -184,7 +188,7 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
-func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, resource resourcev1.Resource, metric *otlp.Metric) error {
 	switch metric.Data.(type) {
 	// int points
 	case *otlp.Metric_DoubleGauge:
@@ -192,28 +196,28 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleGauge().GetDataPoints() {
-			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleDoubleDataPoint(pt, resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_IntGauge:
 		if metric.GetIntGauge().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntGauge().GetDataPoints() {
-			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleIntDataPoint(pt, resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_DoubleSum:
 		if metric.GetDoubleSum().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleSum().GetDataPoints() {
-			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleDoubleDataPoint(pt, resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_IntSum:
 		if metric.GetIntSum().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntSum().GetDataPoints() {
-			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleIntDataPoint(pt, resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	}
 	return nil
@@ -222,21 +226,21 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
-func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, resource resourcev1.Resource, metric *otlp.Metric) error {
 	switch metric.Data.(type) {
 	case *otlp.Metric_IntHistogram:
 		if metric.GetIntHistogram().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntHistogram().GetDataPoints() {
-			addSingleIntHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleIntHistogramDataPoint(pt, resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_DoubleHistogram:
 		if metric.GetDoubleHistogram().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleHistogram().GetDataPoints() {
-			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleDoubleHistogramDataPoint(pt, resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	}
 	return nil
@@ -245,12 +249,12 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 // handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
 // quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
-func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, resource resourcev1.Resource, metric *otlp.Metric) error {
 	if metric.GetDoubleSummary().GetDataPoints() == nil {
 		return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 	}
 	for _, pt := range metric.GetDoubleSummary().GetDataPoints() {
-		addSingleDoubleSummaryDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
+		addSingleDoubleSummaryDataPoint(pt, resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }
@@ -330,17 +334,13 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	// 5xx errors are recoverable and the exporter should retry
 	// Reference for different behavior according to status code:
 	// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
-	if resp.StatusCode/100 != 2 {
-		scanner := bufio.NewScanner(io.LimitReader(resp.Body, 256))
-		var line string
-		if scanner.Scan() {
-			line = scanner.Text()
-		}
-		err := fmt.Errorf("server returned HTTP status %v: %v ", resp.Status, line)
-		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-			return err
-		}
-		return consumererror.Permanent(err)
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return nil
 	}
-	return nil
+	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
+	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %v: %s", resp.Status, err, body)
+	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+		return rerr
+	}
+	return consumererror.Permanent(rerr)
 }

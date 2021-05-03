@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	typeStr         = "kafka"
+	typeStr = "kafka"
+
 	defaultTopic    = "otlp_spans"
 	defaultEncoding = "otlp_proto"
 	defaultBroker   = "localhost:9092"
@@ -41,23 +42,23 @@ const (
 	defaultMetadataFull = true
 )
 
-// FactoryOption applies changes to kafkaReceiverFactory.
+// FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
-// WithTracesUnmarshallers adds Unmarshallers.
-func WithTracesUnmarshallers(tracesUnmarshallers ...TracesUnmarshaller) FactoryOption {
+// WithTracesUnmarshalers adds Unmarshalers.
+func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
-		for _, unmarshaller := range tracesUnmarshallers {
-			factory.tracesUnmarshalers[unmarshaller.Encoding()] = unmarshaller
+		for _, unmarshaler := range tracesUnmarshalers {
+			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
 		}
 	}
 }
 
-// WithLogsUnmarshallers adds LogsUnmarshallers.
-func WithLogsUnmarshallers(logsUnmarshallers ...LogsUnmarshaller) FactoryOption {
+// WithLogsUnmarshalers adds LogsUnmarshalers.
+func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
-		for _, unmarshaller := range logsUnmarshallers {
-			factory.logsUnmarshaller[unmarshaller.Encoding()] = unmarshaller
+		for _, unmarshaler := range logsUnmarshalers {
+			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
 		}
 	}
 }
@@ -65,8 +66,8 @@ func WithLogsUnmarshallers(logsUnmarshallers ...LogsUnmarshaller) FactoryOption 
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	f := &kafkaReceiverFactory{
-		tracesUnmarshalers: defaultTracesUnmarshallers(),
-		logsUnmarshaller:   defaultLogsUnmarshallers(),
+		tracesUnmarshalers: defaultTracesUnmarshalers(),
+		logsUnmarshalers:   defaultLogsUnmarshalers(),
 	}
 	for _, o := range options {
 		o(f)
@@ -81,15 +82,12 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Topic:    defaultTopic,
-		Encoding: defaultEncoding,
-		Brokers:  []string{defaultBroker},
-		ClientID: defaultClientID,
-		GroupID:  defaultGroupID,
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		Topic:            defaultTopic,
+		Encoding:         defaultEncoding,
+		Brokers:          []string{defaultBroker},
+		ClientID:         defaultClientID,
+		GroupID:          defaultGroupID,
 		Metadata: kafkaexporter.Metadata{
 			Full: defaultMetadataFull,
 			Retry: kafkaexporter.MetadataRetry{
@@ -101,8 +99,8 @@ func createDefaultConfig() config.Receiver {
 }
 
 type kafkaReceiverFactory struct {
-	tracesUnmarshalers map[string]TracesUnmarshaller
-	logsUnmarshaller   map[string]LogsUnmarshaller
+	tracesUnmarshalers map[string]TracesUnmarshaler
+	logsUnmarshalers   map[string]LogsUnmarshaler
 }
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
@@ -126,7 +124,7 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newLogsReceiver(*c, params, f.logsUnmarshaller, nextConsumer)
+	r, err := newLogsReceiver(*c, params, f.logsUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

@@ -39,15 +39,11 @@ func TestOcaStore(t *testing.T) {
 }
 
 func TestNoopAppender(t *testing.T) {
-	if _, err := noop.Add(labels.FromStrings("t", "v"), 1, 1); err == nil {
+	if _, err := noop.Append(0, labels.FromStrings("t", "v"), 1, 1); err == nil {
 		t.Error("expecting error from Add method of noopApender")
 	}
-	if _, err := noop.Add(labels.FromStrings("t", "v"), 1, 1); err == nil {
+	if _, err := noop.Append(0, labels.FromStrings("t", "v"), 1, 1); err == nil {
 		t.Error("expecting error from Add method of noopApender")
-	}
-
-	if err := noop.AddFast(0, 1, 1); err == nil {
-		t.Error("expecting error from AddFast method of noopApender")
 	}
 
 	if err := noop.Commit(); err == nil {

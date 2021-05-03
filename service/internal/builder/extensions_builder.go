@@ -113,7 +113,7 @@ func (exts Extensions) ToMap() map[config.NamedEntity]component.Extension {
 // exportersBuilder builds exporters from config.
 type extensionsBuilder struct {
 	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
+	buildInfo component.BuildInfo
 	config    *config.Config
 	factories map[config.Type]component.ExtensionFactory
 }
@@ -121,11 +121,11 @@ type extensionsBuilder struct {
 // BuildExtensions builds Extensions from config.
 func BuildExtensions(
 	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
+	buildInfo component.BuildInfo,
 	config *config.Config,
 	factories map[config.Type]component.ExtensionFactory,
 ) (Extensions, error) {
-	eb := &extensionsBuilder{logger.With(zap.String(zapKindKey, zapKindExtension)), appInfo, config, factories}
+	eb := &extensionsBuilder{logger.With(zap.String(zapKindKey, zapKindExtension)), buildInfo, config, factories}
 
 	extensions := make(Extensions)
 	for _, extName := range eb.config.Service.Extensions {
@@ -135,7 +135,7 @@ func BuildExtensions(
 		}
 
 		componentLogger := eb.logger.With(zap.String(zapNameKey, extCfg.Name()))
-		ext, err := eb.buildExtension(componentLogger, eb.appInfo, extCfg)
+		ext, err := eb.buildExtension(componentLogger, eb.buildInfo, extCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +146,7 @@ func BuildExtensions(
 	return extensions, nil
 }
 
-func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, appInfo component.ApplicationStartInfo, cfg config.Extension) (*builtExtension, error) {
+func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, buildInfo component.BuildInfo, cfg config.Extension) (*builtExtension, error) {
 	factory := eb.factories[cfg.Type()]
 	if factory == nil {
 		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.Type())
@@ -157,8 +157,8 @@ func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, appInfo componen
 	}
 
 	creationParams := component.ExtensionCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
+		Logger:    logger,
+		BuildInfo: buildInfo,
 	}
 
 	ex, err := factory.CreateExtension(context.Background(), creationParams, cfg)

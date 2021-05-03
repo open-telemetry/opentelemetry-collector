@@ -58,7 +58,11 @@ func createTestFactories() component.Factories {
 
 func newBadReceiverFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory("bf", func() config.Receiver {
-		return &config.ReceiverSettings{TypeVal: "bf"}
+		return &struct {
+			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+		}{
+			ReceiverSettings: config.NewReceiverSettings(config.NewID("bf")),
+		}
 	})
 }
 

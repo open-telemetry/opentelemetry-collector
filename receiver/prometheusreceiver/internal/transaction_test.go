@@ -81,7 +81,7 @@ func Test_transaction(t *testing.T) {
 	t.Run("Add One No Target", func(t *testing.T) {
 		nomc := consumertest.NewNop()
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
-		if _, got := tr.Add(badLabels, time.Now().Unix()*1000, 1.0); got == nil {
+		if _, got := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
 	})
@@ -93,7 +93,7 @@ func Test_transaction(t *testing.T) {
 	t.Run("Add One Job not found", func(t *testing.T) {
 		nomc := consumertest.NewNop()
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
-		if _, got := tr.Add(jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
+		if _, got := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
 	})
@@ -104,7 +104,7 @@ func Test_transaction(t *testing.T) {
 	t.Run("Add One Good", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
-		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
+		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		tr.metricBuilder.startTime = 1.0 // set to a non-zero value
@@ -134,7 +134,7 @@ func Test_transaction(t *testing.T) {
 	t.Run("Error when start time is zero", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
-		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
+		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		tr.metricBuilder.startTime = 0 // zero value means the start time metric is missing
@@ -149,7 +149,7 @@ func Test_transaction(t *testing.T) {
 	t.Run("Drop NaN value", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
-		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
+		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		if got := tr.Commit(); got != nil {

@@ -10,7 +10,7 @@ jobs:
   contrib_tests:
     runs-on: ubuntu-latest
     container:
-      image: cimg/go:1.15
+      image: cimg/go:1.16
     steps:
       - name: Setup Permissions
         run: sudo chmod -R 777 $GITHUB_WORKSPACE /github /__w/_temp

@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
 	typeStr = "jaeger"
 
 	// Protocol values.
@@ -60,10 +59,7 @@ func NewFactory() component.ReceiverFactory {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -103,15 +99,11 @@ func createTracesReceiver(
 	var config configuration
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
+		config.CollectorGRPCServerSettings = *rCfg.Protocols.GRPC
 		var err error
 		config.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
 		if err != nil {
 			return nil, fmt.Errorf("unable to extract port for GRPC: %w", err)
-		}
-
-		config.CollectorGRPCOptions, err = rCfg.Protocols.GRPC.ToServerOption()
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -176,13 +168,13 @@ func createTracesReceiver(
 			rCfg.Protocols.ThriftHTTP,
 			rCfg.Protocols.ThriftCompact,
 			rCfg.Protocols.ThriftBinary,
-			typeStr,
+			cfg.ID().String(),
 		)
 		return nil, err
 	}
 
 	// Create the receiver.
-	return newJaegerReceiver(rCfg.Name(), &config, nextConsumer, params), nil
+	return newJaegerReceiver(rCfg.ID().String(), &config, nextConsumer, params), nil
 }
 
 // extract the port number from string in "address:port" format. If the

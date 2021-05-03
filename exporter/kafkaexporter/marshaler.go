@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// TracesMarshaller marshals traces into Message array.
-type TracesMarshaller interface {
+// TracesMarshaler marshals traces into Message array.
+type TracesMarshaler interface {
 	// Marshal serializes spans into Messages
 	Marshal(traces pdata.Traces) ([]Message, error)
 
@@ -27,8 +27,8 @@ type TracesMarshaller interface {
 	Encoding() string
 }
 
-// MetricsMarshaller marshals metrics into Message array
-type MetricsMarshaller interface {
+// MetricsMarshaler marshals metrics into Message array
+type MetricsMarshaler interface {
 	// Marshal serializes metrics into Messages
 	Marshal(metrics pdata.Metrics) ([]Message, error)
 
@@ -36,8 +36,8 @@ type MetricsMarshaller interface {
 	Encoding() string
 }
 
-// LogsMarshaller marshals logs into Message array
-type LogsMarshaller interface {
+// LogsMarshaler marshals logs into Message array
+type LogsMarshaler interface {
 	// Marshal serializes logs into Messages
 	Marshal(logs pdata.Logs) ([]Message, error)
 
@@ -51,30 +51,30 @@ type Message struct {
 	Key   []byte
 }
 
-// tracesMarshallers returns map of supported encodings with TracesMarshaller.
-func tracesMarshallers() map[string]TracesMarshaller {
-	otlppb := &otlpTracesPbMarshaller{}
-	jaegerProto := jaegerMarshaller{marshaller: jaegerProtoSpanMarshaller{}}
-	jaegerJSON := jaegerMarshaller{marshaller: newJaegerJSONMarshaller()}
-	return map[string]TracesMarshaller{
+// tracesMarshalers returns map of supported encodings with TracesMarshaler.
+func tracesMarshalers() map[string]TracesMarshaler {
+	otlppb := &otlpTracesPbMarshaler{}
+	jaegerProto := jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
+	jaegerJSON := jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
+	return map[string]TracesMarshaler{
 		otlppb.Encoding():      otlppb,
 		jaegerProto.Encoding(): jaegerProto,
 		jaegerJSON.Encoding():  jaegerJSON,
 	}
 }
 
-// metricsMarshallers returns map of supported encodings and MetricsMarshaller
-func metricsMarshallers() map[string]MetricsMarshaller {
-	otlppb := &otlpMetricsPbMarshaller{}
-	return map[string]MetricsMarshaller{
+// metricsMarshalers returns map of supported encodings and MetricsMarshaler
+func metricsMarshalers() map[string]MetricsMarshaler {
+	otlppb := &otlpMetricsPbMarshaler{}
+	return map[string]MetricsMarshaler{
 		otlppb.Encoding(): otlppb,
 	}
 }
 
-// logsMarshallers returns map of supported encodings and LogsMarshaller
-func logsMarshallers() map[string]LogsMarshaller {
-	otlppb := &otlpLogsPbMarshaller{}
-	return map[string]LogsMarshaller{
+// logsMarshalers returns map of supported encodings and LogsMarshaler
+func logsMarshalers() map[string]LogsMarshaler {
+	otlppb := &otlpLogsPbMarshaler{}
+	return map[string]LogsMarshaler{
 		otlppb.Encoding(): otlppb,
 	}
 }

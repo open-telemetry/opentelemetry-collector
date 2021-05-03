@@ -49,6 +49,5 @@ func createTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	oCfg := cfg.(*Config)
-	return newTracesProcessor(nextConsumer, *oCfg)
+	return newTracesProcessor(nextConsumer, cfg.(*Config))
 }

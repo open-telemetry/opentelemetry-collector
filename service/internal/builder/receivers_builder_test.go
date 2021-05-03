@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -34,8 +35,8 @@ import (
 
 type testCase struct {
 	name                      string
-	receiverName              string
-	exporterNames             []string
+	receiverID                config.ComponentID
+	exporterIDs               []string
 	spanDuplicationByExporter map[string]int
 	hasTraces                 bool
 	hasMetrics                bool
@@ -44,29 +45,29 @@ type testCase struct {
 func TestBuildReceivers(t *testing.T) {
 	tests := []testCase{
 		{
-			name:          "one-exporter",
-			receiverName:  "examplereceiver",
-			exporterNames: []string{"exampleexporter"},
-			hasTraces:     true,
-			hasMetrics:    true,
+			name:        "one-exporter",
+			receiverID:  config.NewID("examplereceiver"),
+			exporterIDs: []string{"exampleexporter"},
+			hasTraces:   true,
+			hasMetrics:  true,
 		},
 		{
-			name:          "multi-exporter",
-			receiverName:  "examplereceiver/2",
-			exporterNames: []string{"exampleexporter", "exampleexporter/2"},
-			hasTraces:     true,
+			name:        "multi-exporter",
+			receiverID:  config.NewIDWithName("examplereceiver", "2"),
+			exporterIDs: []string{"exampleexporter", "exampleexporter/2"},
+			hasTraces:   true,
 		},
 		{
-			name:          "multi-metrics-receiver",
-			receiverName:  "examplereceiver/3",
-			exporterNames: []string{"exampleexporter", "exampleexporter/2"},
-			hasTraces:     false,
-			hasMetrics:    true,
+			name:        "multi-metrics-receiver",
+			receiverID:  config.NewIDWithName("examplereceiver", "3"),
+			exporterIDs: []string{"exampleexporter", "exampleexporter/2"},
+			hasTraces:   false,
+			hasMetrics:  true,
 		},
 		{
-			name:          "multi-receiver-multi-exporter",
-			receiverName:  "examplereceiver/multi",
-			exporterNames: []string{"exampleexporter", "exampleexporter/2"},
+			name:        "multi-receiver-multi-exporter",
+			receiverID:  config.NewIDWithName("examplereceiver", "multi"),
+			exporterIDs: []string{"exampleexporter", "exampleexporter/2"},
 
 			// Check pipelines_builder.yaml to understand this case.
 			// We have 2 pipelines, one exporting to one exporter, the other
@@ -99,16 +100,16 @@ func testReceivers(
 	require.NoError(t, err)
 
 	// Build the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
+	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
-	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
+	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
 
-	receiver := receivers[cfg.Receivers[test.receiverName]]
+	receiver := receivers[cfg.Receivers[test.receiverID]]
 
 	// Ensure receiver has its fields correctly populated.
 	require.NotNil(t, receiver)
@@ -117,7 +118,7 @@ func testReceivers(
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
-	for _, name := range test.exporterNames {
+	for _, name := range test.exporterIDs {
 		// Ensure exporter is created.
 		exp := allExporters[cfg.Exporters[name]]
 		require.NotNil(t, exp)
@@ -146,7 +147,7 @@ func testReceivers(
 	}
 
 	// Now verify received data.
-	for _, name := range test.exporterNames {
+	for _, name := range test.exporterIDs {
 		// Check that the data is received by exporter.
 		exporter := allExporters[cfg.Exporters[name]]
 
@@ -200,21 +201,21 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			cfg := createExampleConfig(dataType)
 
 			// Build the pipeline
-			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
 			}
 
 			assert.NoError(t, err)
-			pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 			assert.NoError(t, err)
-			receivers, err := BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
+			receivers, err := BuildReceivers(zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 
 			assert.NoError(t, err)
 			require.NotNil(t, receivers)
 
-			receiver := receivers[cfg.Receivers["examplereceiver"]]
+			receiver := receivers[cfg.Receivers[config.NewID("examplereceiver")]]
 
 			// Ensure receiver has its fields correctly populated.
 			require.NotNil(t, receiver)
@@ -301,11 +302,11 @@ func TestBuildReceivers_Unused(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Build the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
+	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
-	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
+	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 	assert.NoError(t, err)
 	assert.NotNil(t, receivers)
 
@@ -337,13 +338,13 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, cfg)
 
-			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 			assert.NoError(t, err)
 
-			pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 			assert.NoError(t, err)
 
-			receivers, err := BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
+			receivers, err := BuildReceivers(zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 			assert.Error(t, err)
 			assert.Zero(t, len(receivers))
 		})

@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestOTLPTracesPbMarshaller(t *testing.T) {
+func TestOTLPTracesPbMarshaler(t *testing.T) {
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	m := otlpTracesPbMarshaller{}
+	m := otlpTracesPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(td)
 	require.NoError(t, err)
@@ -36,9 +36,9 @@ func TestOTLPTracesPbMarshaller(t *testing.T) {
 	assert.EqualValues(t, td, extracted)
 }
 
-func TestOTLPMetricsPbMarshaller(t *testing.T) {
+func TestOTLPMetricsPbMarshaler(t *testing.T) {
 	md := testdata.GenerateMetricsTwoMetrics()
-	m := otlpMetricsPbMarshaller{}
+	m := otlpMetricsPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(md)
 	require.NoError(t, err)
@@ -48,9 +48,9 @@ func TestOTLPMetricsPbMarshaller(t *testing.T) {
 	assert.EqualValues(t, md, extracted)
 }
 
-func TestOTLPLogsPbMarshaller(t *testing.T) {
+func TestOTLPLogsPbMarshaler(t *testing.T) {
 	ld := testdata.GenerateLogDataOneLog()
-	m := otlpLogsPbMarshaller{}
+	m := otlpLogsPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(ld)
 	require.NoError(t, err)

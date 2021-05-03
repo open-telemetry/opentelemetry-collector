@@ -24,14 +24,14 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestUnmarshallOTLPTraces(t *testing.T) {
+func TestUnmarshalOTLPTraces(t *testing.T) {
 	td := pdata.NewTraces()
 	td.ResourceSpans().AppendEmpty().Resource().Attributes().InsertString("foo", "bar")
 
 	expected, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)
 
-	p := otlpTracesPbUnmarshaller{}
+	p := otlpTracesPbUnmarshaler{}
 	got, err := p.Unmarshal(expected)
 	require.NoError(t, err)
 
@@ -39,19 +39,19 @@ func TestUnmarshallOTLPTraces(t *testing.T) {
 	assert.Equal(t, "otlp_proto", p.Encoding())
 }
 
-func TestUnmarshallOTLPTraces_error(t *testing.T) {
-	p := otlpTracesPbUnmarshaller{}
+func TestUnmarshalOTLPTraces_error(t *testing.T) {
+	p := otlpTracesPbUnmarshaler{}
 	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }
 
-func TestUnmarshallOTLPLogs(t *testing.T) {
+func TestUnmarshalOTLPLogs(t *testing.T) {
 	ld := testdata.GenerateLogDataOneLog()
 
 	expected, err := ld.ToOtlpProtoBytes()
 	require.NoError(t, err)
 
-	p := otlpLogsPbUnmarshaller{}
+	p := otlpLogsPbUnmarshaler{}
 	got, err := p.Unmarshal(expected)
 	require.NoError(t, err)
 
@@ -59,8 +59,8 @@ func TestUnmarshallOTLPLogs(t *testing.T) {
 	assert.Equal(t, "otlp_proto", p.Encoding())
 }
 
-func TestUnmarshallOTLPLogs_error(t *testing.T) {
-	p := otlpLogsPbUnmarshaller{}
+func TestUnmarshalOTLPLogs_error(t *testing.T) {
+	p := otlpLogsPbUnmarshaler{}
 	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }
