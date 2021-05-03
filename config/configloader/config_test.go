@@ -38,12 +38,12 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(cfg.Extensions))
-	assert.Equal(t, "some string", cfg.Extensions["exampleextension/1"].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
+	assert.Equal(t, "some string", cfg.Extensions[config.NewIDWithName("exampleextension", "1")].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
 
 	// Verify service.
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, "exampleextension/0", cfg.Service.Extensions[0])
-	assert.Equal(t, "exampleextension/1", cfg.Service.Extensions[1])
+	assert.Equal(t, config.NewIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
 
 	// Verify receivers
 	assert.Equal(t, 2, len(cfg.Receivers), "Incorrect receivers count")
@@ -199,20 +199,17 @@ func TestSimpleConfig(t *testing.T) {
 			assert.Equalf(t, 1, len(cfg.Extensions), "TEST[%s]", test.name)
 			assert.Equalf(t,
 				&testcomponents.ExampleExtensionCfg{
-					ExtensionSettings: config.ExtensionSettings{
-						TypeVal: "exampleextension",
-						NameVal: "exampleextension",
-					},
-					ExtraSetting:     extensionExtra,
-					ExtraMapSetting:  map[string]string{"ext-1": extensionExtraMapValue + "_1", "ext-2": extensionExtraMapValue + "_2"},
-					ExtraListSetting: []string{extensionExtraListElement + "_1", extensionExtraListElement + "_2"},
+					ExtensionSettings: config.NewExtensionSettings(config.NewID("exampleextension")),
+					ExtraSetting:      extensionExtra,
+					ExtraMapSetting:   map[string]string{"ext-1": extensionExtraMapValue + "_1", "ext-2": extensionExtraMapValue + "_2"},
+					ExtraListSetting:  []string{extensionExtraListElement + "_1", extensionExtraListElement + "_2"},
 				},
-				cfg.Extensions["exampleextension"],
+				cfg.Extensions[config.NewID("exampleextension")],
 				"TEST[%s] Did not load extension config correctly", test.name)
 
 			// Verify service.
 			assert.Equalf(t, 1, len(cfg.Service.Extensions), "TEST[%s]", test.name)
-			assert.Equalf(t, "exampleextension", cfg.Service.Extensions[0], "TEST[%s]", test.name)
+			assert.Equalf(t, config.NewID("exampleextension"), cfg.Service.Extensions[0], "TEST[%s]", test.name)
 
 			// Verify receivers
 			assert.Equalf(t, 1, len(cfg.Receivers), "TEST[%s]", test.name)
@@ -295,20 +292,17 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.Equal(t, 1, len(cfg.Extensions))
 	assert.Equal(t,
 		&testcomponents.ExampleExtensionCfg{
-			ExtensionSettings: config.ExtensionSettings{
-				TypeVal: "exampleextension",
-				NameVal: "exampleextension",
-			},
-			ExtraSetting:     "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}",
-			ExtraMapSetting:  map[string]string{"ext-1": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1}", "ext-2": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2}"},
-			ExtraListSetting: []string{"${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1}", "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2}"},
+			ExtensionSettings: config.NewExtensionSettings(config.NewID("exampleextension")),
+			ExtraSetting:      "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}",
+			ExtraMapSetting:   map[string]string{"ext-1": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1}", "ext-2": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2}"},
+			ExtraListSetting:  []string{"${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1}", "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2}"},
 		},
-		cfg.Extensions["exampleextension"],
+		cfg.Extensions[config.NewID("exampleextension")],
 		"Did not load extension config correctly")
 
 	// Verify service.
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, "exampleextension", cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewID("exampleextension"), cfg.Service.Extensions[0])
 
 	// Verify receivers
 	assert.Equal(t, 1, len(cfg.Receivers))

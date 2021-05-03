@@ -88,8 +88,10 @@ func newBadExtensionFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		"bf",
 		func() config.Extension {
-			return &config.ExtensionSettings{
-				TypeVal: "bf",
+			return &struct {
+				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			}{
+				ExtensionSettings: config.NewExtensionSettings(config.NewID("bf")),
 			}
 		},
 		func(ctx context.Context, params component.ExtensionCreateParams, extension config.Extension) (component.Extension, error) {

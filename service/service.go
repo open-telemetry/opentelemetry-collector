@@ -134,7 +134,7 @@ func (srv *service) GetFactory(kind component.Kind, componentType config.Type) c
 	return nil
 }
 
-func (srv *service) GetExtensions() map[config.NamedEntity]component.Extension {
+func (srv *service) GetExtensions() map[config.ComponentID]component.Extension {
 	return srv.builtExtensions.ToMap()
 }
 

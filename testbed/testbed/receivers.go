@@ -70,7 +70,7 @@ func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ config.Type) componen
 	return nil
 }
 
-func (mb *DataReceiverBase) GetExtensions() map[config.NamedEntity]component.Extension {
+func (mb *DataReceiverBase) GetExtensions() map[config.ComponentID]component.Extension {
 	return nil
 }
 

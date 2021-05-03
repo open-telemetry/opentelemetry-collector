@@ -37,20 +37,17 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	ext0 := cfg.Extensions["memory_ballast"]
+	ext0 := cfg.Extensions[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions["memory_ballast/1"]
+	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: &config.ExtensionSettings{
-				TypeVal: "memory_ballast",
-				NameVal: "memory_ballast/1",
-			},
-			SizeMiB: 123,
+			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+			SizeMiB:           123,
 		},
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, "memory_ballast/1", cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
 }

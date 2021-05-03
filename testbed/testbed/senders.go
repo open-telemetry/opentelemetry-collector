@@ -96,7 +96,7 @@ func (dsb *DataSenderBase) GetFactory(_ component.Kind, _ config.Type) component
 	return nil
 }
 
-func (dsb *DataSenderBase) GetExtensions() map[config.NamedEntity]component.Extension {
+func (dsb *DataSenderBase) GetExtensions() map[config.ComponentID]component.Extension {
 	return nil
 }
 
