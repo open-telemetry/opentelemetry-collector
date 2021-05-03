@@ -22,7 +22,7 @@ import (
 // Config has the configuration for the extension enabling the golang
 // net/http/pprof (Performance Profiler) extension.
 type Config struct {
-	*config.ExtensionSettings `mapstructure:"-"`
+	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// TCPAddr is the address and port in which the pprof will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to

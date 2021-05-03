@@ -76,7 +76,7 @@ func TestService_GetExtensions(t *testing.T) {
 	extMap := srv.GetExtensions()
 
 	assert.Len(t, extMap, 1)
-	assert.Contains(t, extMap, &config.ExtensionSettings{TypeVal: "nop", NameVal: "nop"})
+	assert.Contains(t, extMap, config.NewID("nop"))
 }
 
 func TestService_GetExporters(t *testing.T) {

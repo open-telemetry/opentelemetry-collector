@@ -241,7 +241,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
-func (gss *GRPCServerSettings) ToServerOption(ext map[config.NamedEntity]component.Extension) ([]grpc.ServerOption, error) {
+func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]component.Extension) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {

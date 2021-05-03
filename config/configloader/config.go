@@ -198,7 +198,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 
 		// Create the default config for this extension
 		extensionCfg := factory.CreateDefaultConfig()
-		extensionCfg.SetName(id.String())
+		extensionCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(extensionCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
@@ -208,12 +208,11 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 			return nil, errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
-		fullName := id.String()
-		if extensions[fullName] != nil {
+		if extensions[id] != nil {
 			return nil, errorDuplicateName(extensionsKeyName, id)
 		}
 
-		extensions[fullName] = extensionCfg
+		extensions[id] = extensionCfg
 	}
 
 	return extensions, nil
@@ -221,7 +220,14 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 
 func loadService(rawService serviceSettings) (config.Service, error) {
 	var ret config.Service
-	ret.Extensions = rawService.Extensions
+	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))
+	for _, extIDStr := range rawService.Extensions {
+		id, err := config.IDFromString(extIDStr)
+		if err != nil {
+			return ret, err
+		}
+		ret.Extensions = append(ret.Extensions, id)
+	}
 
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.
