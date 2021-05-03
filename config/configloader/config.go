@@ -305,7 +305,6 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(exportersKeyName, key, err)
 		}
-		fullName := id.String()
 
 		// Find exporter factory based on "type" that we read from config source
 		factory := factories[id.Type()]
@@ -315,7 +314,7 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 
 		// Create the default config for this exporter
 		exporterCfg := factory.CreateDefaultConfig()
-		exporterCfg.SetName(fullName)
+		exporterCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(exporterCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
@@ -325,11 +324,11 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 			return nil, errorUnmarshalError(exportersKeyName, id, err)
 		}
 
-		if exporters[fullName] != nil {
+		if exporters[id] != nil {
 			return nil, errorDuplicateName(exportersKeyName, id)
 		}
 
-		exporters[fullName] = exporterCfg
+		exporters[id] = exporterCfg
 	}
 
 	return exporters, nil
@@ -411,7 +410,9 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipeline
 		if pipelineCfg.Processors, err = parseIDNames(id, processorsKeyName, rawPipeline.Processors); err != nil {
 			return nil, err
 		}
-		pipelineCfg.Exporters = rawPipeline.Exporters
+		if pipelineCfg.Exporters, err = parseIDNames(id, exportersKeyName, rawPipeline.Exporters); err != nil {
+			return nil, err
+		}
 
 		if pipelines[fullName] != nil {
 			return nil, errorDuplicateName(pipelinesKeyName, id)

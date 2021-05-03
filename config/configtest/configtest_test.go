@@ -43,8 +43,8 @@ func TestLoadConfigFile(t *testing.T) {
 
 	// Verify exporters
 	assert.Len(t, cfg.Exporters, 2)
-	assert.Contains(t, cfg.Exporters, "nop")
-	assert.Contains(t, cfg.Exporters, "nop/myexporter")
+	assert.Contains(t, cfg.Exporters, config.NewID("nop"))
+	assert.Contains(t, cfg.Exporters, config.NewIDWithName("nop", "myexporter"))
 
 	// Verify Processors
 	assert.Len(t, cfg.Processors, 2)
@@ -61,7 +61,7 @@ func TestLoadConfigFile(t *testing.T) {
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewID("nop")},
 			Processors: []config.ComponentID{config.NewID("nop")},
-			Exporters:  []string{"nop"},
+			Exporters:  []config.ComponentID{config.NewID("nop")},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")

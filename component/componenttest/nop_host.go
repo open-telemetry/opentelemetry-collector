@@ -39,6 +39,6 @@ func (nh *nopHost) GetExtensions() map[config.ComponentID]component.Extension {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (nh *nopHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return nil
 }

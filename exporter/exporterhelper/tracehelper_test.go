@@ -34,16 +34,12 @@ import (
 )
 
 const (
-	fakeTracesExporterType  = "fake_traces_exporter"
 	fakeTracesExporterName  = "fake_traces_exporter/with_name"
 	fakeTraceParentSpanName = "fake_trace_parent_span_name"
 )
 
 var (
-	fakeTracesExporterConfig = &config.ExporterSettings{
-		TypeVal: fakeTracesExporterType,
-		NameVal: fakeTracesExporterName,
-	}
+	fakeTracesExporterConfig = config.NewExporterSettings(config.MustIDFromString(fakeTracesExporterName))
 )
 
 func TestTracesRequest(t *testing.T) {
@@ -72,20 +68,20 @@ func TestTracesExporter_InvalidName(t *testing.T) {
 }
 
 func TestTracesExporter_NilLogger(t *testing.T) {
-	te, err := NewTracesExporter(fakeTracesExporterConfig, nil, newTraceDataPusher(nil))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, nil, newTraceDataPusher(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilLogger, err)
 }
 
 func TestTracesExporter_NilPushTraceData(t *testing.T) {
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), nil)
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, te)
 	require.Equal(t, errNilPushTraceData, err)
 }
 
 func TestTracesExporter_Default(t *testing.T) {
 	td := pdata.NewTraces()
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -96,7 +92,7 @@ func TestTracesExporter_Default(t *testing.T) {
 func TestTracesExporter_Default_ReturnError(t *testing.T) {
 	td := pdata.NewTraces()
 	want := errors.New("my_error")
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -105,7 +101,7 @@ func TestTracesExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestTracesExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -114,7 +110,7 @@ func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 
 func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -122,7 +118,7 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTracesExporter_WithSpan(t *testing.T) {
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -131,7 +127,7 @@ func TestTracesExporter_WithSpan(t *testing.T) {
 
 func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -142,7 +138,7 @@ func TestTracesExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdown))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -154,7 +150,7 @@ func TestTracesExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	te, err := NewTracesExporter(fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdownErr))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 

@@ -75,24 +75,18 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.ExporterSettings{
-				NameVal: "exampleexporter",
-				TypeVal: "exampleexporter",
-			},
-			ExtraSetting: "some export string",
+			ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
+			ExtraSetting:     "some export string",
 		},
-		cfg.Exporters["exampleexporter"],
+		cfg.Exporters[config.NewID("exampleexporter")],
 		"Did not load exporter config correctly")
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.ExporterSettings{
-				NameVal: "exampleexporter/myexporter",
-				TypeVal: "exampleexporter",
-			},
-			ExtraSetting: "some export string 2",
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName("exampleexporter", "myexporter")),
+			ExtraSetting:     "some export string 2",
 		},
-		cfg.Exporters["exampleexporter/myexporter"],
+		cfg.Exporters[config.NewIDWithName("exampleexporter", "myexporter")],
 		"Did not load exporter config correctly")
 
 	// Verify Processors
@@ -115,7 +109,7 @@ func TestDecodeConfig(t *testing.T) {
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
 			Processors: []config.ComponentID{config.NewID("exampleprocessor")},
-			Exporters:  []string{"exampleexporter"},
+			Exporters:  []config.ComponentID{config.NewID("exampleexporter")},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
@@ -232,16 +226,13 @@ func TestSimpleConfig(t *testing.T) {
 
 			assert.Equalf(t,
 				&testcomponents.ExampleExporter{
-					ExporterSettings: config.ExporterSettings{
-						NameVal: "exampleexporter",
-						TypeVal: "exampleexporter",
-					},
+					ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
 					ExtraInt:         65,
 					ExtraSetting:     exporterExtra,
 					ExtraMapSetting:  map[string]string{"exp_1": exporterExtraMapValue + "_1", "exp_2": exporterExtraMapValue + "_2"},
 					ExtraListSetting: []string{exporterExtraListElement + "_1", exporterExtraListElement + "_2"},
 				},
-				cfg.Exporters["exampleexporter"],
+				cfg.Exporters[config.NewID("exampleexporter")],
 				"TEST[%s] Did not load exporter config correctly", test.name)
 
 			// Verify Processors
@@ -266,7 +257,7 @@ func TestSimpleConfig(t *testing.T) {
 					InputType:  config.TracesDataType,
 					Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
 					Processors: []config.ComponentID{config.NewID("exampleprocessor")},
-					Exporters:  []string{"exampleexporter"},
+					Exporters:  []config.ComponentID{config.NewID("exampleexporter")},
 				},
 				cfg.Service.Pipelines["traces"],
 				"TEST[%s] Did not load pipeline config correctly", test.name)
@@ -340,15 +331,12 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.ExporterSettings{
-				NameVal: "exampleexporter",
-				TypeVal: "exampleexporter",
-			},
+			ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
 			ExtraSetting:     "${EXPORTERS_EXAMPLEEXPORTER_EXTRA}",
 			ExtraMapSetting:  map[string]string{"exp_1": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1}", "exp_2": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2}"},
 			ExtraListSetting: []string{"${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1}", "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2}"},
 		},
-		cfg.Exporters["exampleexporter"],
+		cfg.Exporters[config.NewID("exampleexporter")],
 		"Did not load exporter config correctly")
 
 	// Verify Processors
@@ -373,7 +361,7 @@ func TestEscapedEnvVars(t *testing.T) {
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
 			Processors: []config.ComponentID{config.NewID("exampleprocessor")},
-			Exporters:  []string{"exampleexporter"},
+			Exporters:  []config.ComponentID{config.NewID("exampleexporter")},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
@@ -503,10 +491,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type("test"),
-			NameVal: "test",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -525,10 +510,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	replacedTestString := "replaced_ptr_value"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type("test"),
-			NameVal: "test",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
@@ -557,10 +539,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	testString := "$$ESCAPED_PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type("test"),
-			NameVal: "test",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -579,10 +558,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	replacedTestString := "$ESCAPED_PTR_VALUE"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type("test"),
-			NameVal: "test",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
@@ -607,10 +583,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type("test"),
-			NameVal: "test",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -629,10 +602,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	replacedTestString := ""
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type("test"),
-			NameVal: "test",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,

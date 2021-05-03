@@ -37,17 +37,17 @@ func TestBuildPipelines(t *testing.T) {
 	tests := []struct {
 		name          string
 		pipelineName  string
-		exporterNames []string
+		exporterNames []config.ComponentID
 	}{
 		{
 			name:          "one-exporter",
 			pipelineName:  "traces",
-			exporterNames: []string{"exampleexporter"},
+			exporterNames: []config.ComponentID{config.NewID("exampleexporter")},
 		},
 		{
 			name:          "multi-exporter",
 			pipelineName:  "traces/2",
-			exporterNames: []string{"exampleexporter", "exampleexporter/2"},
+			exporterNames: []config.ComponentID{config.NewID("exampleexporter"), config.NewIDWithName("exampleexporter", "2")},
 		},
 	}
 
@@ -70,8 +70,8 @@ func createExampleConfig(dataType string) *config.Config {
 		Processors: map[config.ComponentID]config.Processor{
 			config.NewID(exampleProcessorFactory.Type()): exampleProcessorFactory.CreateDefaultConfig(),
 		},
-		Exporters: map[string]config.Exporter{
-			string(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
+		Exporters: map[config.ComponentID]config.Exporter{
+			config.NewID(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
 		},
 		Service: config.Service{
 			Pipelines: map[string]*config.Pipeline{
@@ -80,7 +80,7 @@ func createExampleConfig(dataType string) *config.Config {
 					InputType:  config.DataType(dataType),
 					Receivers:  []config.ComponentID{config.NewID(exampleReceiverFactory.Type())},
 					Processors: []config.ComponentID{config.NewID(exampleProcessorFactory.Type())},
-					Exporters:  []string{string(exampleExporterFactory.Type())},
+					Exporters:  []config.ComponentID{config.NewID(exampleExporterFactory.Type())},
 				},
 			},
 		},
@@ -139,7 +139,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			assert.NotNil(t, processor.firstLC)
 
 			// Compose the list of created exporters.
-			exporterNames := []string{"exampleexporter"}
+			exporterNames := []config.ComponentID{config.NewID("exampleexporter")}
 			var exporters []*builtExporter
 			for _, name := range exporterNames {
 				// Ensure exporter is created.
@@ -177,7 +177,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 	}
 }
 
-func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
+func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.ComponentID) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
@@ -203,7 +203,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
-	for _, name := range exporterNames {
+	for _, name := range exporterIDs {
 		// Ensure exporter is created.
 		exp := allExporters[cfg.Exporters[name]]
 		require.NotNil(t, exp)

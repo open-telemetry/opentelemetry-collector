@@ -74,7 +74,7 @@ func (mb *DataReceiverBase) GetExtensions() map[config.ComponentID]component.Ext
 	return nil
 }
 
-func (mb *DataReceiverBase) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (mb *DataReceiverBase) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return nil
 }
 

@@ -32,7 +32,7 @@ type nopRecvConfig struct {
 }
 
 func (nc *nopRecvConfig) Validate() error {
-	if nc.ID().Type() != NewID("nop").Type() {
+	if nc.ID() != NewID("nop") {
 		return errInvalidRecvConfig
 	}
 	return nil
@@ -43,7 +43,7 @@ type nopExpConfig struct {
 }
 
 func (nc *nopExpConfig) Validate() error {
-	if nc.TypeVal != NewID("nop").Type() {
+	if nc.ID() != NewID("nop") {
 		return errInvalidExpConfig
 	}
 	return nil
@@ -54,7 +54,7 @@ type nopProcConfig struct {
 }
 
 func (nc *nopProcConfig) Validate() error {
-	if nc.ID().Type() != NewID("nop").Type() {
+	if nc.ID() != NewID("nop") {
 		return errInvalidProcConfig
 	}
 	return nil
@@ -65,7 +65,7 @@ type nopExtConfig struct {
 }
 
 func (nc *nopExtConfig) Validate() error {
-	if nc.ID().Type() != NewID("nop").Type() {
+	if nc.ID() != NewID("nop") {
 		return errInvalidExtConfig
 	}
 	return nil
@@ -134,7 +134,7 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				pipe := cfg.Service.Pipelines["traces"]
-				pipe.Exporters = append(pipe.Exporters, "nop/2")
+				pipe.Exporters = append(pipe.Exporters, NewIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references exporter "nop/2" which does not exist`),
@@ -183,10 +183,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Exporters["nop"] = &nopExpConfig{
-					ExporterSettings: ExporterSettings{
-						TypeVal: "invalid_exp_type",
-					},
+				cfg.Exporters[NewID("nop")] = &nopExpConfig{
+					ExporterSettings: NewExporterSettings(NewID("invalid_rec_type")),
 				}
 				return cfg
 			},
@@ -231,11 +229,9 @@ func generateConfig() *Config {
 				ReceiverSettings: NewReceiverSettings(NewID("nop")),
 			},
 		},
-		Exporters: map[string]Exporter{
-			"nop": &nopExpConfig{
-				ExporterSettings: ExporterSettings{
-					TypeVal: "nop",
-				},
+		Exporters: map[ComponentID]Exporter{
+			NewID("nop"): &nopExpConfig{
+				ExporterSettings: NewExporterSettings(NewID("nop")),
 			},
 		},
 		Processors: map[ComponentID]Processor{
@@ -256,7 +252,7 @@ func generateConfig() *Config {
 					InputType:  TracesDataType,
 					Receivers:  []ComponentID{NewID("nop")},
 					Processors: []ComponentID{NewID("nop")},
-					Exporters:  []string{"nop"},
+					Exporters:  []ComponentID{NewID("nop")},
 				},
 			},
 		},

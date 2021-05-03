@@ -78,8 +78,10 @@ func newBadProcessorFactory() component.ProcessorFactory {
 
 func newBadExporterFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory("bf", func() config.Exporter {
-		return &config.ExporterSettings{
-			TypeVal: "bf",
+		return &struct {
+			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+		}{
+			ExporterSettings: config.NewExporterSettings(config.NewID("bf")),
 		}
 	})
 }

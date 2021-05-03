@@ -220,7 +220,7 @@ type Pipeline struct {
 	InputType  DataType
 	Receivers  []ComponentID
 	Processors []ComponentID
-	Exporters  []string
+	Exporters  []ComponentID
 }
 
 // Pipelines is a map of names to Pipelines.

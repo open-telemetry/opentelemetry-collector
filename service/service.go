@@ -138,7 +138,7 @@ func (srv *service) GetExtensions() map[config.ComponentID]component.Extension {
 	return srv.builtExtensions.ToMap()
 }
 
-func (srv *service) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (srv *service) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return srv.builtExporters.ToMapByDataType()
 }
 
