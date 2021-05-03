@@ -48,8 +48,8 @@ func TestLoadConfigFile(t *testing.T) {
 
 	// Verify Processors
 	assert.Len(t, cfg.Processors, 2)
-	assert.Contains(t, cfg.Processors, "nop")
-	assert.Contains(t, cfg.Processors, "nop/myprocessor")
+	assert.Contains(t, cfg.Processors, config.NewID("nop"))
+	assert.Contains(t, cfg.Processors, config.NewIDWithName("nop", "myprocessor"))
 
 	// Verify service.
 	require.Len(t, cfg.Service.Extensions, 1)
@@ -60,7 +60,7 @@ func TestLoadConfigFile(t *testing.T) {
 			Name:       "traces",
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewID("nop")},
-			Processors: []string{"nop"},
+			Processors: []config.ComponentID{config.NewID("nop")},
 			Exporters:  []string{"nop"},
 		},
 		cfg.Service.Pipelines["traces"],

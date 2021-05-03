@@ -219,7 +219,7 @@ type Pipeline struct {
 	Name       string
 	InputType  DataType
 	Receivers  []ComponentID
-	Processors []string
+	Processors []ComponentID
 	Exporters  []string
 }
 

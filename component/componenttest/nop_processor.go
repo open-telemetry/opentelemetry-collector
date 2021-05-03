@@ -24,6 +24,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
+type nopProcessorConfig struct {
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+}
+
 // nopProcessorFactory is factory for nopProcessor.
 type nopProcessorFactory struct {
 	component.BaseProcessorFactory
@@ -43,8 +47,8 @@ func (f *nopProcessorFactory) Type() config.Type {
 
 // CreateDefaultConfig creates the default configuration for the Processor.
 func (f *nopProcessorFactory) CreateDefaultConfig() config.Processor {
-	return &config.ProcessorSettings{
-		TypeVal: f.Type(),
+	return &nopProcessorConfig{
+		ProcessorSettings: config.NewProcessorSettings(config.NewID("nop")),
 	}
 }
 

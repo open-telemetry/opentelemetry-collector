@@ -100,13 +100,10 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleProcessorCfg{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: "exampleprocessor",
-				NameVal: "exampleprocessor",
-			},
-			ExtraSetting: "some export string",
+			ProcessorSettings: config.NewProcessorSettings(config.NewID("exampleprocessor")),
+			ExtraSetting:      "some export string",
 		},
-		cfg.Processors["exampleprocessor"],
+		cfg.Processors[config.NewID("exampleprocessor")],
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
@@ -117,7 +114,7 @@ func TestDecodeConfig(t *testing.T) {
 			Name:       "traces",
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
-			Processors: []string{"exampleprocessor"},
+			Processors: []config.ComponentID{config.NewID("exampleprocessor")},
 			Exporters:  []string{"exampleexporter"},
 		},
 		cfg.Service.Pipelines["traces"],
@@ -230,7 +227,7 @@ func TestSimpleConfig(t *testing.T) {
 					ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
 					ExtraListSetting: []string{receiverExtraListElement + "_1", receiverExtraListElement + "_2"},
 				},
-				cfg.Receivers[config.MustIDFromString("examplereceiver")],
+				cfg.Receivers[config.NewID("examplereceiver")],
 				"TEST[%s] Did not load receiver config correctly", test.name)
 
 			// Verify exporters
@@ -255,15 +252,12 @@ func TestSimpleConfig(t *testing.T) {
 
 			assert.Equalf(t,
 				&testcomponents.ExampleProcessorCfg{
-					ProcessorSettings: config.ProcessorSettings{
-						TypeVal: "exampleprocessor",
-						NameVal: "exampleprocessor",
-					},
-					ExtraSetting:     processorExtra,
-					ExtraMapSetting:  map[string]string{"proc_1": processorExtraMapValue + "_1", "proc_2": processorExtraMapValue + "_2"},
-					ExtraListSetting: []string{processorExtraListElement + "_1", processorExtraListElement + "_2"},
+					ProcessorSettings: config.NewProcessorSettings(config.NewID("exampleprocessor")),
+					ExtraSetting:      processorExtra,
+					ExtraMapSetting:   map[string]string{"proc_1": processorExtraMapValue + "_1", "proc_2": processorExtraMapValue + "_2"},
+					ExtraListSetting:  []string{processorExtraListElement + "_1", processorExtraListElement + "_2"},
 				},
-				cfg.Processors["exampleprocessor"],
+				cfg.Processors[config.NewID("exampleprocessor")],
 				"TEST[%s] Did not load processor config correctly", test.name)
 
 			// Verify Pipelines
@@ -273,8 +267,8 @@ func TestSimpleConfig(t *testing.T) {
 				&config.Pipeline{
 					Name:       "traces",
 					InputType:  config.TracesDataType,
-					Receivers:  []config.ComponentID{config.MustIDFromString("examplereceiver")},
-					Processors: []string{"exampleprocessor"},
+					Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
+					Processors: []config.ComponentID{config.NewID("exampleprocessor")},
 					Exporters:  []string{"exampleexporter"},
 				},
 				cfg.Service.Pipelines["traces"],
@@ -344,7 +338,7 @@ func TestEscapedEnvVars(t *testing.T) {
 			},
 			ExtraListSetting: []string{"$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", "$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2"},
 		},
-		cfg.Receivers[config.MustIDFromString("examplereceiver")],
+		cfg.Receivers[config.NewID("examplereceiver")],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
@@ -368,15 +362,12 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleProcessorCfg{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: "exampleprocessor",
-				NameVal: "exampleprocessor",
-			},
-			ExtraSetting:     "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA",
-			ExtraMapSetting:  map[string]string{"proc_1": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", "proc_2": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2"},
-			ExtraListSetting: []string{"$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2"},
+			ProcessorSettings: config.NewProcessorSettings(config.NewID("exampleprocessor")),
+			ExtraSetting:      "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA",
+			ExtraMapSetting:   map[string]string{"proc_1": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", "proc_2": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2"},
+			ExtraListSetting:  []string{"$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2"},
 		},
-		cfg.Processors["exampleprocessor"],
+		cfg.Processors[config.NewID("exampleprocessor")],
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
@@ -387,7 +378,7 @@ func TestEscapedEnvVars(t *testing.T) {
 			Name:       "traces",
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
-			Processors: []string{"exampleprocessor"},
+			Processors: []config.ComponentID{config.NewID("exampleprocessor")},
 			Exporters:  []string{"exampleexporter"},
 		},
 		cfg.Service.Pipelines["traces"],

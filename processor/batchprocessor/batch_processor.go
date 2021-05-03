@@ -74,7 +74,7 @@ var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
 func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.Name()))
+	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.ID().String()))
 	if err != nil {
 		return nil, err
 	}

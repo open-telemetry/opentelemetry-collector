@@ -77,12 +77,12 @@ func TestDefault(t *testing.T) {
 
 		var processors []string
 		for k := range cfg.Processors {
-			processors = append(processors, k)
+			processors = append(processors, k.String())
 		}
 		sort.Strings(processors)
 		// batch/foo is not added to the pipeline
 		assert.Equal(t, []string{"attributes", "batch", "batch/foo"}, processors)
-		assert.Equal(t, []string{"attributes", "batch"}, cfg.Service.Pipelines["traces"].Processors)
+		assert.Equal(t, []config.ComponentID{config.NewID("attributes"), config.NewID("batch")}, cfg.Service.Pipelines["traces"].Processors)
 	})
 	t.Run("ok", func(t *testing.T) {
 		flags := new(flag.FlagSet)
@@ -112,11 +112,11 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(cfg.Processors))
-		batch := cfg.Processors["batch"].(*batchprocessor.Config)
+		batch := cfg.Processors[config.NewID("batch")].(*batchprocessor.Config)
 		assert.Equal(t, time.Second*2, batch.Timeout)
 		jaeger := cfg.Receivers[config.NewID("jaeger")].(*jaegerreceiver.Config)
 		assert.Equal(t, "localhost:12345", jaeger.GRPC.NetAddr.Endpoint)
-		attributes := cfg.Processors["attributes"].(*attributesprocessor.Config)
+		attributes := cfg.Processors[config.NewID("attributes")].(*attributesprocessor.Config)
 		require.Equal(t, 1, len(attributes.Actions))
 		assert.Equal(t, "foo", attributes.Actions[0].Key)
 		assert.Equal(t, "bar", attributes.Actions[0].Value)

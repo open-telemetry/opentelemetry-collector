@@ -54,7 +54,7 @@ type nopProcConfig struct {
 }
 
 func (nc *nopProcConfig) Validate() error {
-	if nc.TypeVal != NewID("nop").Type() {
+	if nc.ID().Type() != NewID("nop").Type() {
 		return errInvalidProcConfig
 	}
 	return nil
@@ -124,7 +124,7 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				pipe := cfg.Service.Pipelines["traces"]
-				pipe.Processors = append(pipe.Processors, "nop/2")
+				pipe.Processors = append(pipe.Processors, NewIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references processor "nop/2" which does not exist`),
@@ -196,10 +196,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Processors["nop"] = &nopProcConfig{
-					ProcessorSettings: ProcessorSettings{
-						TypeVal: "invalid_proc_type",
-					},
+				cfg.Processors[NewID("nop")] = &nopProcConfig{
+					ProcessorSettings: NewProcessorSettings(NewID("invalid_rec_type")),
 				}
 				return cfg
 			},
@@ -242,11 +240,9 @@ func generateConfig() *Config {
 				},
 			},
 		},
-		Processors: map[string]Processor{
-			"nop": &nopProcConfig{
-				ProcessorSettings: ProcessorSettings{
-					TypeVal: "nop",
-				},
+		Processors: map[ComponentID]Processor{
+			NewID("nop"): &nopProcConfig{
+				ProcessorSettings: NewProcessorSettings(NewID("nop")),
 			},
 		},
 		Extensions: map[string]Extension{
@@ -263,7 +259,7 @@ func generateConfig() *Config {
 					Name:       "traces",
 					InputType:  TracesDataType,
 					Receivers:  []ComponentID{NewID("nop")},
-					Processors: []string{"nop"},
+					Processors: []ComponentID{NewID("nop")},
 					Exporters:  []string{"nop"},
 				},
 			},

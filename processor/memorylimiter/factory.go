@@ -44,7 +44,7 @@ func NewFactory() component.ProcessorFactory {
 // that the default configuration is expected to fail for this processor.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	}
 }
 

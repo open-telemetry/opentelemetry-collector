@@ -65,10 +65,10 @@ func createExampleConfig(dataType string) *config.Config {
 
 	cfg := &config.Config{
 		Receivers: map[config.ComponentID]config.Receiver{
-			config.NewID("examplereceiver"): exampleReceiverFactory.CreateDefaultConfig(),
+			config.NewID(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
 		},
-		Processors: map[string]config.Processor{
-			string(exampleProcessorFactory.Type()): exampleProcessorFactory.CreateDefaultConfig(),
+		Processors: map[config.ComponentID]config.Processor{
+			config.NewID(exampleProcessorFactory.Type()): exampleProcessorFactory.CreateDefaultConfig(),
 		},
 		Exporters: map[string]config.Exporter{
 			string(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
@@ -78,8 +78,8 @@ func createExampleConfig(dataType string) *config.Config {
 				dataType: {
 					Name:       dataType,
 					InputType:  config.DataType(dataType),
-					Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
-					Processors: []string{string(exampleProcessorFactory.Type())},
+					Receivers:  []config.ComponentID{config.NewID(exampleReceiverFactory.Type())},
+					Processors: []config.ComponentID{config.NewID(exampleProcessorFactory.Type())},
 					Exporters:  []string{string(exampleExporterFactory.Type())},
 				},
 			},

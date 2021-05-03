@@ -68,8 +68,10 @@ func newBadReceiverFactory() component.ReceiverFactory {
 
 func newBadProcessorFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory("bf", func() config.Processor {
-		return &config.ProcessorSettings{
-			TypeVal: "bf",
+		return &struct {
+			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+		}{
+			ProcessorSettings: config.NewProcessorSettings(config.NewID("bf")),
 		}
 	})
 }
