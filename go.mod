@@ -31,7 +31,7 @@ require (
 	github.com/prometheus/common v0.23.0
 	github.com/prometheus/prometheus v1.8.2-0.20210430082741-2a4b8e12bbf2
 	github.com/rs/cors v1.7.0
-	github.com/shirou/gopsutil v3.21.3+incompatible
+	github.com/shirou/gopsutil v3.21.4+incompatible
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
