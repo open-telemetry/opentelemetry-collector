@@ -51,10 +51,9 @@ func Test_NewPrwExporter(t *testing.T) {
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
-	startInfo := component.ApplicationStartInfo{
-		ExeName: "otel-col",
-		Version: "1.0",
-		GitHash: "beef",
+	startInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
 	}
 
 	tests := []struct {
@@ -65,7 +64,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		externalLabels map[string]string
 		client         *http.Client
 		returnError    bool
-		startInfo      component.ApplicationStartInfo
+		startInfo      component.BuildInfo
 	}{
 		{
 			"invalid_URL",
@@ -259,9 +258,9 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 
 	HTTPClient := http.DefaultClient
 
-	startInfo := component.ApplicationStartInfo{
-		LongName: "OpenTelemetry Collector",
-		Version:  "1.0",
+	startInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, startInfo)
@@ -716,9 +715,9 @@ func Test_PushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			startInfo := component.ApplicationStartInfo{
-				LongName: "OpenTelemetry Collector",
-				Version:  "1.0",
+			startInfo := component.BuildInfo{
+				Description: "OpenTelemetry Collector",
+				Version:     "1.0",
 			}
 			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, startInfo)
 			require.NoError(t, nErr)
