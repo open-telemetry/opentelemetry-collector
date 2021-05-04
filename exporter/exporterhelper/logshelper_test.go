@@ -33,12 +33,13 @@ import (
 )
 
 const (
-	fakeLogsExporterName   = "fake_logs_exporter/with_name"
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
+var fakeLogsExporterName = config.MustIDFromString("fake_logs_exporter/with_name")
+
 var (
-	fakeLogsExporterConfig = config.NewExporterSettings(config.MustIDFromString(fakeLogsExporterName))
+	fakeLogsExporterConfig = config.NewExporterSettings(fakeLogsExporterName)
 )
 
 func TestLogsRequest(t *testing.T) {

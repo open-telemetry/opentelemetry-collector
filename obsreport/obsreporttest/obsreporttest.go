@@ -58,24 +58,24 @@ func SetupRecordedMetricsTest() (func(), error) {
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterTraces(t *testing.T, exporter string, acceptedSpans, droppedSpans int64) {
-	exporterTags := tagsForExporterView(exporter)
+func CheckExporterTraces(t *testing.T, exporter config.ComponentID, acceptedSpans, droppedSpans int64) {
+	exporterTags := tagsForExporterView(exporter.String())
 	checkValueForView(t, exporterTags, acceptedSpans, "exporter/sent_spans")
 	checkValueForView(t, exporterTags, droppedSpans, "exporter/send_failed_spans")
 }
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterMetrics(t *testing.T, exporter string, acceptedMetricsPoints, droppedMetricsPoints int64) {
-	exporterTags := tagsForExporterView(exporter)
+func CheckExporterMetrics(t *testing.T, exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) {
+	exporterTags := tagsForExporterView(exporter.String())
 	checkValueForView(t, exporterTags, acceptedMetricsPoints, "exporter/sent_metric_points")
 	checkValueForView(t, exporterTags, droppedMetricsPoints, "exporter/send_failed_metric_points")
 }
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterLogs(t *testing.T, exporter string, acceptedLogRecords, droppedLogRecords int64) {
-	exporterTags := tagsForExporterView(exporter)
+func CheckExporterLogs(t *testing.T, exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) {
+	exporterTags := tagsForExporterView(exporter.String())
 	checkValueForView(t, exporterTags, acceptedLogRecords, "exporter/sent_log_records")
 	checkValueForView(t, exporterTags, droppedLogRecords, "exporter/send_failed_log_records")
 }

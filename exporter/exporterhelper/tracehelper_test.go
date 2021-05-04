@@ -34,12 +34,12 @@ import (
 )
 
 const (
-	fakeTracesExporterName  = "fake_traces_exporter/with_name"
 	fakeTraceParentSpanName = "fake_trace_parent_span_name"
 )
 
 var (
-	fakeTracesExporterConfig = config.NewExporterSettings(config.MustIDFromString(fakeTracesExporterName))
+	fakeTracesExporterName   = config.MustIDFromString("fake_traces_exporter/with_name")
+	fakeTracesExporterConfig = config.NewExporterSettings(fakeTracesExporterName)
 )
 
 func TestTracesRequest(t *testing.T) {
