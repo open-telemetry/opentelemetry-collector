@@ -31,12 +31,10 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-const testFullName = "testFullName"
-
-var testCfg = config.NewProcessorSettings(config.MustIDFromString(testFullName))
+var testCfg = config.NewProcessorSettings(config.NewID(typeStr))
 
 func TestDefaultOptions(t *testing.T) {
-	bp := newBaseProcessor(testFullName)
+	bp := newBaseProcessor(config.NewID(typeStr))
 	assert.True(t, bp.GetCapabilities().MutatesConsumedData)
 	assert.NoError(t, bp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, bp.Shutdown(context.Background()))
@@ -44,7 +42,7 @@ func TestDefaultOptions(t *testing.T) {
 
 func TestWithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	bp := newBaseProcessor(testFullName,
+	bp := newBaseProcessor(config.NewID(typeStr),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: false}))
