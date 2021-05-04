@@ -113,8 +113,8 @@ func (b *dataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
 		b.logEntry("IntDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
-		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
+		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Value: %d", p.Value())
 	}
 }
@@ -125,8 +125,8 @@ func (b *dataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 		b.logEntry("DoubleDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
-		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
+		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Value: %f", p.Value())
 	}
 }
@@ -137,8 +137,8 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
-		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
+		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 
@@ -164,8 +164,8 @@ func (b *dataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPointSli
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
-		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
+		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %d", p.Sum())
 
@@ -191,8 +191,8 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 		b.logEntry("SummaryDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		b.logEntry("StartTimestamp: %d", p.StartTimestamp())
-		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
+		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 
@@ -209,7 +209,7 @@ func (b *dataBuffer) logDataPointLabels(labels pdata.StringMap) {
 }
 
 func (b *dataBuffer) logLogRecord(lr pdata.LogRecord) {
-	b.logEntry("Timestamp: %d", lr.Timestamp())
+	b.logEntry("Timestamp: %s", lr.Timestamp())
 	b.logEntry("Severity: %s", lr.SeverityText())
 	b.logEntry("ShortName: %s", lr.Name())
 	b.logEntry("Body: %s", attributeValueToString(lr.Body()))
@@ -226,7 +226,7 @@ func (b *dataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 		e := se.At(i)
 		b.logEntry("SpanEvent #%d", i)
 		b.logEntry("     -> Name: %s", e.Name())
-		b.logEntry("     -> Timestamp: %d", e.Timestamp())
+		b.logEntry("     -> Timestamp: %s", e.Timestamp())
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
 
 		if e.Attributes().Len() == 0 {
