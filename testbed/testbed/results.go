@@ -61,14 +61,13 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	r.perTestResults = []*PerformanceTestResult{}
 
 	// Create resultsSummary file
-	var err error
-	err = os.MkdirAll(resultsDir, os.FileMode(0755))
-	if err != nil {
-		log.Fatalf(err.Error())
+	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
+		log.Fatal(err)
 	}
+	var err error
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "TESTRESULTS.md"))
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	// Write the header
@@ -149,12 +148,12 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 
 	// Create resultsSummary file
 	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 	var err error
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "CORRECTNESSRESULTS.md"))
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	// Write the header

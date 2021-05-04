@@ -207,8 +207,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 
 // StopAgent stops agent process.
 func (tc *TestCase) StopAgent() {
-	_, err := tc.agentProc.Stop()
-	if err != nil {
+	if _, err := tc.agentProc.Stop(); err != nil {
 		tc.indicateError(err)
 	}
 }
