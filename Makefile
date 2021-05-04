@@ -222,12 +222,17 @@ delete-tag:
 docker-otelcol:
 	COMPONENT=otelcol $(MAKE) docker-component
 
+# build collector binaries with different OS and Architecture
 .PHONY: binaries-all-sys
-binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
+binaries-all-sys: binaries-darwin_amd64 binaries-darwin_arm64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
 
 .PHONY: binaries-darwin_amd64
 binaries-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal
+
+.PHONY: binaries-darwin_arm64
+binaries-darwin_arm64:
+	GOOS=darwin  GOARCH=arm64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-linux_amd64
 binaries-linux_amd64:
