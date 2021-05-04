@@ -73,7 +73,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
-	opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
+	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
 	assert.Len(t, opts, 0)
 }
@@ -106,7 +106,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
+	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
 	assert.Len(t, opts, 7)
 }
@@ -115,18 +115,15 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 
 	// sanity check
-	_, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
+	_, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	require.NoError(t, err)
 
 	// test
 	gss.Auth = &configauth.Authentication{
 		AuthenticatorName: "mock",
 	}
-	ext := map[config.NamedEntity]component.Extension{
-		&config.ExtensionSettings{
-			NameVal: "mock",
-			TypeVal: "mock",
-		}: &configauth.MockAuthenticator{},
+	ext := map[config.ComponentID]component.Extension{
+		config.NewID("mock"): &configauth.MockAuthenticator{},
 	}
 	opts, err := gss.ToServerOption(ext)
 
@@ -267,7 +264,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToServerOption(map[config.NamedEntity]component.Extension{})
+			_, err := test.settings.ToServerOption(map[config.ComponentID]component.Extension{})
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -420,7 +417,7 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)
-			opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
+			opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 			assert.NoError(t, err)
 			s := grpc.NewServer(opts...)
 			otelcol.RegisterTraceServiceServer(s, &grpcTraceServer{})
@@ -465,7 +462,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	ln, err := gss.ToListener()
 	assert.NoError(t, err)
-	opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
+	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
 	s := grpc.NewServer(opts...)
 	otelcol.RegisterTraceServiceServer(s, &grpcTraceServer{})

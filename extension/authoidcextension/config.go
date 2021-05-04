@@ -18,7 +18,7 @@ import "go.opentelemetry.io/collector/config"
 
 // Config has the configuration for the OIDC Authenticator extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
+	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// The attribute (header name) to look for auth data. Optional, default value: "authentication".
 	Attribute string `mapstructure:"attribute"`

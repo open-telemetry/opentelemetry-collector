@@ -210,7 +210,6 @@ func TestScrapeController(t *testing.T) {
 			cfg := &defaultCfg
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
-				cfg.NameVal = "receiver"
 			}
 
 			mr, err := NewScraperControllerReceiver(cfg, zap.NewNop(), nextConsumer, options...)

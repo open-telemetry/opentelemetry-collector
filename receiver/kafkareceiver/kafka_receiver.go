@@ -89,7 +89,7 @@ func newTracesReceiver(config Config, params component.ReceiverCreateParams, unm
 		return nil, err
 	}
 	return &kafkaTracesConsumer{
-		name:          config.Name(),
+		name:          config.ID().String(),
 		consumerGroup: client,
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
@@ -160,7 +160,7 @@ func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmar
 		return nil, err
 	}
 	return &kafkaLogsConsumer{
-		name:          config.Name(),
+		name:          config.ID().String(),
 		consumerGroup: client,
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,

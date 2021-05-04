@@ -38,10 +38,10 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["batch"]
+	p0 := cfg.Processors[config.NewID(typeStr)]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := cfg.Processors["batch/2"]
+	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
 
 	timeout := time.Second * 10
 	sendBatchSize := uint32(10000)
@@ -49,12 +49,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: &config.ProcessorSettings{
-				TypeVal: "batch",
-				NameVal: "batch/2",
-			},
-			SendBatchSize:    sendBatchSize,
-			SendBatchMaxSize: sendBatchMaxSize,
-			Timeout:          timeout,
+			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+			SendBatchSize:     sendBatchSize,
+			SendBatchMaxSize:  sendBatchMaxSize,
+			Timeout:           timeout,
 		})
 }

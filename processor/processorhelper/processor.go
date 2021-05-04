@@ -166,7 +166,7 @@ func NewTracesProcessor(
 	}
 
 	return &tracesProcessor{
-		baseProcessor: newBaseProcessor(config.Name(), options...),
+		baseProcessor: newBaseProcessor(config.ID().String(), options...),
 		processor:     processor,
 		nextConsumer:  nextConsumer,
 	}, nil
@@ -210,7 +210,7 @@ func NewMetricsProcessor(
 	}
 
 	return &metricsProcessor{
-		baseProcessor: newBaseProcessor(config.Name(), options...),
+		baseProcessor: newBaseProcessor(config.ID().String(), options...),
 		processor:     processor,
 		nextConsumer:  nextConsumer,
 	}, nil
@@ -254,7 +254,7 @@ func NewLogsProcessor(
 	}
 
 	return &logProcessor{
-		baseProcessor: newBaseProcessor(config.Name(), options...),
+		baseProcessor: newBaseProcessor(config.ID().String(), options...),
 		processor:     processor,
 		nextConsumer:  nextConsumer,
 	}, nil

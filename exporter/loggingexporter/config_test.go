@@ -37,16 +37,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["logging"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters["logging/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: &config.ExporterSettings{
-				NameVal: "logging/2",
-				TypeVal: "logging",
-			},
+			ExporterSettings:   config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 			LogLevel:           "debug",
 			SamplingInitial:    10,
 			SamplingThereafter: 50,

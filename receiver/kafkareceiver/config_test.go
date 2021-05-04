@@ -39,17 +39,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Receivers))
 
-	r := cfg.Receivers[typeStr].(*Config)
+	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
-		Topic:    "spans",
-		Encoding: "otlp_proto",
-		Brokers:  []string{"foo:123", "bar:456"},
-		ClientID: "otel-collector",
-		GroupID:  "otel-collector",
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		Topic:            "spans",
+		Encoding:         "otlp_proto",
+		Brokers:          []string{"foo:123", "bar:456"},
+		ClientID:         "otel-collector",
+		GroupID:          "otel-collector",
 		Authentication: kafkaexporter.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{

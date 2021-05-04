@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -79,7 +80,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	rCfg, ok := cfg.Receivers["jaeger/customname"]
+	rCfg, ok := cfg.Receivers[config.NewIDWithName(typeStr, "customname")]
 	require.True(t, ok)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}

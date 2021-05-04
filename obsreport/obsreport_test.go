@@ -28,6 +28,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -36,7 +37,6 @@ import (
 
 const (
 	exporter  = "fakeExporter"
-	processor = "fakeProcessor"
 	receiver  = "fakeReicever"
 	scraper   = "fakeScraper"
 	transport = "fakeTransport"
@@ -44,6 +44,8 @@ const (
 )
 
 var (
+	processor = config.NewID("fakeProcessor")
+
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
 )
@@ -338,7 +340,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterName: exporter})
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
@@ -385,7 +387,7 @@ func TestExportMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterName: exporter})
 
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
@@ -434,7 +436,7 @@ func TestExportLogsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterName: exporter})
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {
@@ -547,7 +549,7 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
+	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
 	obsrep.TracesAccepted(context.Background(), acceptedSpans)
 	obsrep.TracesRefused(context.Background(), refusedSpans)
 	obsrep.TracesDropped(context.Background(), droppedSpans)
@@ -564,7 +566,7 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
+	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
 	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 	obsrep.MetricsRefused(context.Background(), refusedPoints)
 	obsrep.MetricsDropped(context.Background(), droppedPoints)
@@ -635,7 +637,7 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
+	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
 	obsrep.LogsAccepted(context.Background(), acceptedRecords)
 	obsrep.LogsRefused(context.Background(), refusedRecords)
 	obsrep.LogsDropped(context.Background(), droppedRecords)

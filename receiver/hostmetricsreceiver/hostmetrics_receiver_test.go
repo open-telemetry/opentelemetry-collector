@@ -28,6 +28,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -100,8 +101,9 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 
-	config := &Config{
+	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{
@@ -117,10 +119,10 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	}
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
-		config.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
+		cfg.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
 	}
 
-	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
+	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 

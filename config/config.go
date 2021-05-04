@@ -167,7 +167,7 @@ func (cfg *Config) validateServicePipelines() error {
 // Service defines the configurable components of the service.
 type Service struct {
 	// Extensions is the ordered list of extensions configured for the service.
-	Extensions []string
+	Extensions []ComponentID
 
 	// Pipelines is the set of data pipelines configured for the service.
 	Pipelines Pipelines
@@ -218,9 +218,9 @@ const (
 type Pipeline struct {
 	Name       string
 	InputType  DataType
-	Receivers  []string
-	Processors []string
-	Exporters  []string
+	Receivers  []ComponentID
+	Processors []ComponentID
+	Exporters  []ComponentID
 }
 
 // Pipelines is a map of names to Pipelines.
