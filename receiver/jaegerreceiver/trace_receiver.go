@@ -76,9 +76,6 @@ type configuration struct {
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
 // This receiver is basically a Jaeger collector.
 type jReceiver struct {
-	// mu protects the fields of this type
-	mu sync.Mutex
-
 	nextConsumer consumer.Traces
 	instanceName string
 
