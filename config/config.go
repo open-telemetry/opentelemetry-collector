@@ -176,13 +176,6 @@ type Service struct {
 // Type is the component type as it is used in the config.
 type Type string
 
-// NamedEntity is a configuration entity that has a type and a name.
-type NamedEntity interface {
-	Type() Type
-	Name() string
-	SetName(name string)
-}
-
 // validatable defines the interface for the configuration validation.
 type validatable interface {
 	// Validate validates the configuration and returns an error if invalid.
