@@ -59,7 +59,7 @@ type PrwExporter struct {
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, startInfo component.BuildInfo) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, buildInfo component.BuildInfo) (*PrwExporter, error) {
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
 	}
@@ -74,7 +74,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		return nil, errors.New("invalid endpoint")
 	}
 
-	userAgentHeader := fmt.Sprintf("%s/%s X-Prometheus-Remote-Write-Version/%s", strings.ReplaceAll(strings.ToLower(startInfo.Description), " ", "-"), startInfo.Version, prwVersion)
+	userAgentHeader := fmt.Sprintf("%s/%s X-Prometheus-Remote-Write-Version/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version, prwVersion)
 
 	return &PrwExporter{
 		namespace:       namespace,
