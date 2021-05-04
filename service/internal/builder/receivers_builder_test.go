@@ -36,8 +36,8 @@ import (
 type testCase struct {
 	name                      string
 	receiverID                config.ComponentID
-	exporterIDs               []string
-	spanDuplicationByExporter map[string]int
+	exporterIDs               []config.ComponentID
+	spanDuplicationByExporter map[config.ComponentID]int
 	hasTraces                 bool
 	hasMetrics                bool
 }
@@ -47,34 +47,34 @@ func TestBuildReceivers(t *testing.T) {
 		{
 			name:        "one-exporter",
 			receiverID:  config.NewID("examplereceiver"),
-			exporterIDs: []string{"exampleexporter"},
+			exporterIDs: []config.ComponentID{config.NewID("exampleexporter")},
 			hasTraces:   true,
 			hasMetrics:  true,
 		},
 		{
 			name:        "multi-exporter",
 			receiverID:  config.NewIDWithName("examplereceiver", "2"),
-			exporterIDs: []string{"exampleexporter", "exampleexporter/2"},
+			exporterIDs: []config.ComponentID{config.NewID("exampleexporter"), config.NewIDWithName("exampleexporter", "2")},
 			hasTraces:   true,
 		},
 		{
 			name:        "multi-metrics-receiver",
 			receiverID:  config.NewIDWithName("examplereceiver", "3"),
-			exporterIDs: []string{"exampleexporter", "exampleexporter/2"},
+			exporterIDs: []config.ComponentID{config.NewID("exampleexporter"), config.NewIDWithName("exampleexporter", "2")},
 			hasTraces:   false,
 			hasMetrics:  true,
 		},
 		{
 			name:        "multi-receiver-multi-exporter",
 			receiverID:  config.NewIDWithName("examplereceiver", "multi"),
-			exporterIDs: []string{"exampleexporter", "exampleexporter/2"},
+			exporterIDs: []config.ComponentID{config.NewID("exampleexporter"), config.NewIDWithName("exampleexporter", "2")},
 
 			// Check pipelines_builder.yaml to understand this case.
 			// We have 2 pipelines, one exporting to one exporter, the other
 			// exporting to both exporters, so we expect a duplication on
 			// one of the exporters, but not on the other.
-			spanDuplicationByExporter: map[string]int{
-				"exampleexporter": 2, "exampleexporter/2": 1,
+			spanDuplicationByExporter: map[config.ComponentID]int{
+				config.NewID("exampleexporter"): 2, config.NewIDWithName("exampleexporter", "2"): 1,
 			},
 			hasTraces: true,
 		},
@@ -223,7 +223,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			assert.NotNil(t, receiver.receiver)
 
 			// Compose the list of created exporters.
-			exporterNames := []string{"exampleexporter"}
+			exporterNames := []config.ComponentID{config.NewID("exampleexporter")}
 			var exporters []*builtExporter
 			for _, name := range exporterNames {
 				// Ensure exporter is created.

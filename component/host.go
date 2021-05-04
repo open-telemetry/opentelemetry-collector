@@ -52,5 +52,5 @@ type Host interface {
 	// Note that an exporter with the same name may be attached to multiple pipelines and
 	// thus we may have an instance of the exporter for multiple data types.
 	// This is an experimental function that may change or even be removed completely.
-	GetExporters() map[config.DataType]map[config.NamedEntity]Exporter
+	GetExporters() map[config.DataType]map[config.ComponentID]Exporter
 }

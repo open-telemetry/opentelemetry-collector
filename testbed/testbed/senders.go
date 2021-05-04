@@ -100,7 +100,7 @@ func (dsb *DataSenderBase) GetExtensions() map[config.ComponentID]component.Exte
 	return nil
 }
 
-func (dsb *DataSenderBase) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (dsb *DataSenderBase) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return nil
 }
 

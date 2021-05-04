@@ -33,16 +33,12 @@ import (
 )
 
 const (
-	fakeLogsExporterType   = "fake_logs_exporter"
 	fakeLogsExporterName   = "fake_logs_exporter/with_name"
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
 var (
-	fakeLogsExporterConfig = &config.ExporterSettings{
-		TypeVal: fakeLogsExporterType,
-		NameVal: fakeLogsExporterName,
-	}
+	fakeLogsExporterConfig = config.NewExporterSettings(config.MustIDFromString(fakeLogsExporterName))
 )
 
 func TestLogsRequest(t *testing.T) {
@@ -63,20 +59,20 @@ func TestLogsExporter_InvalidName(t *testing.T) {
 }
 
 func TestLogsExporter_NilLogger(t *testing.T) {
-	le, err := NewLogsExporter(fakeLogsExporterConfig, nil, newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, nil, newPushLogsData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilLogger, err)
 }
 
 func TestLogsExporter_NilPushLogsData(t *testing.T) {
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), nil)
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, le)
 	require.Equal(t, errNilPushLogsData, err)
 }
 
 func TestLogsExporter_Default(t *testing.T) {
 	ld := testdata.GenerateLogDataEmpty()
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -87,14 +83,14 @@ func TestLogsExporter_Default(t *testing.T) {
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	ld := testdata.GenerateLogDataEmpty()
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
@@ -103,7 +99,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
@@ -111,7 +107,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogsExporter(t, le, nil, 1)
@@ -119,7 +115,7 @@ func TestLogsExporter_WithSpan(t *testing.T) {
 
 func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogsExporter(t, le, want, 1)
@@ -129,7 +125,7 @@ func TestLogsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdown))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -141,7 +137,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdownErr))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 

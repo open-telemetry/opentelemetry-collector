@@ -17,44 +17,38 @@ package config
 // Exporter is the configuration of an exporter.
 // Embedded validatable will force each exporter to implement Validate() function
 type Exporter interface {
-	NamedEntity
+	identifiable
 	validatable
 }
 
 // Exporters is a map of names to Exporters.
-type Exporters map[string]Exporter
+type Exporters map[ComponentID]Exporter
 
 // ExporterSettings defines common settings for an exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
-// When embedded in the exporter config it must be with `mapstructure:"-"` tag.
+// When embedded in the exporter config it must be with `mapstructure:",squash"` tag.
 type ExporterSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	id ComponentID `mapstructure:"-"`
 }
 
-// NewExporterSettings return a new ExporterSettings with the given type.
-func NewExporterSettings(typeVal Type) *ExporterSettings {
-	return &ExporterSettings{TypeVal: typeVal, NameVal: string(typeVal)}
+// NewExporterSettings return a new ExporterSettings with the given ComponentID.
+func NewExporterSettings(id ComponentID) ExporterSettings {
+	return ExporterSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
 var _ Exporter = (*ExporterSettings)(nil)
 
-// Name gets the exporter name.
-func (es *ExporterSettings) Name() string {
-	return es.NameVal
+// ID returns the receiver ComponentID.
+func (rs *ExporterSettings) ID() ComponentID {
+	return rs.id
 }
 
-// SetName sets the exporter name.
-func (es *ExporterSettings) SetName(name string) {
-	es.NameVal = name
-}
-
-// Type sets the exporter type.
-func (es *ExporterSettings) Type() Type {
-	return es.TypeVal
+// SetIDName sets the receiver name.
+func (rs *ExporterSettings) SetIDName(idName string) {
+	rs.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (es *ExporterSettings) Validate() error {
+func (rs *ExporterSettings) Validate() error {
 	return nil
 }

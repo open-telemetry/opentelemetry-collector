@@ -53,10 +53,7 @@ var ExampleExporterFactory = exporterhelper.NewFactory(
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporter{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: expType,
-			NameVal: expType,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(expType)),
 		ExtraSetting:     "some export string",
 		ExtraMapSetting:  nil,
 		ExtraListSetting: nil,

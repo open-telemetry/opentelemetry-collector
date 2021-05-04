@@ -31,7 +31,7 @@ func TestNewNopExporterFactory(t *testing.T) {
 	require.NotNil(t, factory)
 	assert.Equal(t, config.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &config.ExporterSettings{TypeVal: factory.Type()}, cfg)
+	assert.Equal(t, &nopExporterConfig{ExporterSettings: config.NewExporterSettings(config.NewID("nop"))}, cfg)
 
 	traces, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{}, cfg)
 	require.NoError(t, err)

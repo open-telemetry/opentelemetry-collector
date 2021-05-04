@@ -67,7 +67,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
-		ExporterSettings: config.NewExporterSettings("prometheus"),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Namespace:        "test",
 		Endpoint:         ":8787",
 		SendTimestamps:   true,

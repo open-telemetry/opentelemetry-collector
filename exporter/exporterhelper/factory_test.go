@@ -30,17 +30,14 @@ import (
 const typeStr = "test"
 
 var (
-	defaultCfg = &config.ExporterSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
-	nopTracesExporter, _ = NewTracesExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
+	defaultCfg           = config.NewExporterSettings(config.NewID(typeStr))
+	nopTracesExporter, _ = NewTracesExporter(&defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
 		return nil
 	})
-	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) error {
+	nopMetricsExporter, _ = NewMetricsExporter(&defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) error {
 		return nil
 	})
-	nopLogsExporter, _ = NewLogsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Logs) error {
+	nopLogsExporter, _ = NewLogsExporter(&defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Logs) error {
 		return nil
 	})
 )
@@ -50,12 +47,12 @@ func TestNewFactory(t *testing.T) {
 		typeStr,
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, &defaultCfg)
 	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
-	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, &defaultCfg)
 	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
-	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
+	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, &defaultCfg)
 	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 }
 
@@ -67,23 +64,23 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 		WithMetrics(createMetricsExporter),
 		WithLogs(createLogsExporter))
 	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	te, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
+	te, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopTracesExporter, te)
 
-	me, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopMetricsExporter, me)
 
-	le, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
+	le, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopLogsExporter, le)
 }
 
 func defaultConfig() config.Exporter {
-	return defaultCfg
+	return &defaultCfg
 }
 
 func createTracesExporter(context.Context, component.ExporterCreateParams, config.Exporter) (component.TracesExporter, error) {
