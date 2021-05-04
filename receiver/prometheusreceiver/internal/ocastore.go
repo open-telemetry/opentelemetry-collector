@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -47,13 +48,13 @@ type OcaStore struct {
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
-	receiverName         string
+	receiverID           config.ComponentID
 
 	logger *zap.Logger
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.Metrics, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string) *OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.Metrics, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverID config.ComponentID) *OcaStore {
 	return &OcaStore{
 		running:              runningStateInit,
 		ctx:                  ctx,
@@ -62,7 +63,7 @@ func NewOcaStore(ctx context.Context, sink consumer.Metrics, logger *zap.Logger,
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverName:         receiverName,
+		receiverID:           receiverID,
 	}
 }
 
@@ -77,7 +78,7 @@ func (o *OcaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *OcaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverName, o.mc, o.sink, o.logger)
+		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverID, o.mc, o.sink, o.logger)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}

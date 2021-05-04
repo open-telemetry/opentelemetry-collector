@@ -47,6 +47,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -80,7 +81,7 @@ type jReceiver struct {
 	mu sync.Mutex
 
 	nextConsumer consumer.Traces
-	instanceName string
+	id           config.ComponentID
 
 	config *configuration
 
@@ -116,7 +117,7 @@ var (
 // newJaegerReceiver creates a TracesReceiver that receives traffic as a Jaeger collector, and
 // also as a Jaeger agent.
 func newJaegerReceiver(
-	instanceName string,
+	id config.ComponentID,
 	config *configuration,
 	nextConsumer consumer.Traces,
 	params component.ReceiverCreateParams,
@@ -124,7 +125,7 @@ func newJaegerReceiver(
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
-		instanceName: instanceName,
+		id:           id,
 		logger:       params.Logger,
 	}
 }
@@ -236,7 +237,7 @@ var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 
 type agentHandler struct {
-	name         string
+	id           config.ComponentID
 	transport    string
 	nextConsumer consumer.Traces
 }
@@ -249,8 +250,8 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // EmitBatch implements thrift-gen/agent/Agent and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
-	ctx = obsreport.ReceiverContext(ctx, h.name, h.transport)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, h.name, h.transport)
+	ctx = obsreport.ReceiverContext(ctx, h.id, h.transport)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, h.id, h.transport)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
 	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
@@ -277,8 +278,8 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.ReceiverContext(ctx, jr.instanceName, grpcTransport)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, grpcTransport)
+	ctx = obsreport.ReceiverContext(ctx, jr.id, grpcTransport)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.id, grpcTransport)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
 
@@ -298,7 +299,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	if jr.agentBinaryThriftEnabled() {
 		h := &agentHandler{
-			name:         jr.instanceName,
+			id:           jr.id,
 			transport:    agentTransportBinary,
 			nextConsumer: jr.nextConsumer,
 		}
@@ -311,7 +312,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	if jr.agentCompactThriftEnabled() {
 		h := &agentHandler{
-			name:         jr.instanceName,
+			id:           jr.id,
 			transport:    agentTransportCompact,
 			nextConsumer: jr.nextConsumer,
 		}
@@ -425,8 +426,8 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.ReceiverContext(ctx, jr.instanceName, collectorHTTPTransport)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, collectorHTTPTransport)
+	ctx = obsreport.ReceiverContext(ctx, jr.id, collectorHTTPTransport)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.id, collectorHTTPTransport)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {

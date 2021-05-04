@@ -35,6 +35,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
@@ -373,7 +374,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces) (net.Addr, func())
 		}
 	}
 
-	oci, err := New(receiverTagValue, sr)
+	oci, err := New(config.NewID("opencensus"), sr)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

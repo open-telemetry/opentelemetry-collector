@@ -21,6 +21,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -45,20 +46,19 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 func (f *Factory) CreateResourceMetricsScraper(
 	_ context.Context,
 	_ *zap.Logger,
-	config internal.Config,
+	cfg internal.Config,
 ) (scraperhelper.ResourceMetricsScraper, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		return nil, errors.New("process scraper only available on Linux or Windows")
 	}
 
-	cfg := config.(*Config)
-	s, err := newProcessScraper(cfg)
+	s, err := newProcessScraper(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
 
 	ms := scraperhelper.NewResourceMetricsScraper(
-		TypeStr,
+		config.NewID(TypeStr),
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

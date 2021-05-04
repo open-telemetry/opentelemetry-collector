@@ -22,11 +22,13 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestOcaStore(t *testing.T) {
 
-	o := NewOcaStore(context.Background(), nil, nil, nil, false, "", "prometheus")
+	o := NewOcaStore(context.Background(), nil, nil, nil, false, "", config.NewID("prometheus"))
 	o.SetScrapeManager(&scrape.Manager{})
 
 	app := o.Appender(context.Background())
