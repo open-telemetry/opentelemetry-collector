@@ -44,6 +44,6 @@ func createDefaultConfig() config.Extension {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
-	return newExtension(cfg.(*Config), params.Logger)
+func createExtension(_ context.Context, componentSettings component.ComponentSettings, cfg config.Extension) (component.Extension, error) {
+	return newExtension(cfg.(*Config), componentSettings.Logger)
 }

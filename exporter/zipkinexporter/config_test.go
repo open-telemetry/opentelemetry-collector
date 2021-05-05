@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 		Format:             "proto",
 		DefaultServiceName: "test_name",
 	}, e1)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err = factory.CreateTracesExporter(context.Background(), params, e1)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err = factory.CreateTracesExporter(context.Background(), componentSettings, e1)
 	require.NoError(t, err)
 }

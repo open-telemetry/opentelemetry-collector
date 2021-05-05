@@ -71,8 +71,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := factory.CreateTracesExporter(context.Background(), params, e1)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	te, err := factory.CreateTracesExporter(context.Background(), componentSettings, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }

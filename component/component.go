@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
+	"go.uber.org/zap"
 )
 
 // Component is either a receiver, exporter, processor or an extension.
@@ -60,7 +61,17 @@ type Component interface {
 	Shutdown(ctx context.Context) error
 }
 
-// Kind represents component kinds.
+// ComponentSettings is passed to ReceiverFactory.Create* functions.
+type ComponentSettings struct {
+	// Logger that the factory can use during creation and can pass to the created
+	// component to be used later as well.
+	Logger *zap.Logger
+
+	// BuildInfo can be used by components for informational purposes
+	BuildInfo BuildInfo
+}
+
+// Kind specified one of the 4 components kinds, see consts below.
 type Kind int
 
 const (

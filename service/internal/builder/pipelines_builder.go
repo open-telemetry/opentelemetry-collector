@@ -151,7 +151,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		// which we will build in the next loop iteration).
 		var err error
 		componentLogger := pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID()))
-		creationParams := component.ProcessorCreateParams{
+		creationSettings := component.ComponentSettings{
 			Logger:    componentLogger,
 			BuildInfo: pb.buildInfo,
 		}
@@ -159,7 +159,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		switch pipelineCfg.InputType {
 		case config.TracesDataType:
 			var proc component.TracesProcessor
-			proc, err = factory.CreateTracesProcessor(ctx, creationParams, procCfg, tc)
+			proc, err = factory.CreateTracesProcessor(ctx, creationSettings, procCfg, tc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -167,7 +167,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			tc = proc
 		case config.MetricsDataType:
 			var proc component.MetricsProcessor
-			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, procCfg, mc)
+			proc, err = factory.CreateMetricsProcessor(ctx, creationSettings, procCfg, mc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -176,7 +176,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		case config.LogsDataType:
 			var proc component.LogsProcessor
-			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, lc)
+			proc, err = factory.CreateLogsProcessor(ctx, creationSettings, procCfg, lc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}

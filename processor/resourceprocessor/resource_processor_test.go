@@ -100,7 +100,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := &testTraceConsumer{}
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
+			rtp, err := factory.CreateTracesProcessor(context.Background(), component.ComponentSettings{}, tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
@@ -112,7 +112,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := &testMetricsConsumer{}
-			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tmn)
+			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ComponentSettings{}, tt.config, tmn)
 			require.NoError(t, err)
 			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
@@ -124,7 +124,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test logs consumer
 			tln := &testLogsConsumer{}
-			rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tln)
+			rlp, err := factory.CreateLogsProcessor(context.Background(), component.ComponentSettings{}, tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
@@ -146,19 +146,19 @@ func TestResourceProcessorError(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, ttn)
+	rtp, err := factory.CreateTracesProcessor(context.Background(), component.ComponentSettings{}, badCfg, ttn)
 	require.Error(t, err)
 	require.Nil(t, rtp)
 
 	// Test metrics consumer
 	tmn := &testMetricsConsumer{}
-	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, tmn)
+	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ComponentSettings{}, badCfg, tmn)
 	require.Error(t, err)
 	require.Nil(t, rmp)
 
 	// Test logs consumer
 	tln := &testLogsConsumer{}
-	rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, tln)
+	rlp, err := factory.CreateLogsProcessor(context.Background(), component.ComponentSettings{}, badCfg, tln)
 	require.Error(t, err)
 	require.Nil(t, rlp)
 }

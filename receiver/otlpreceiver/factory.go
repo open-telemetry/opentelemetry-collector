@@ -69,11 +69,11 @@ func createDefaultConfig() config.Receiver {
 // CreateTracesReceiver creates a  trace receiver based on provided config.
 func createTracesReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
-	r := createReceiver(cfg, params.Logger)
+	r := createReceiver(cfg, componentSettings.Logger)
 
 	if err := r.registerTraceConsumer(ctx, nextConsumer); err != nil {
 		return nil, err
@@ -84,11 +84,11 @@ func createTracesReceiver(
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	r := createReceiver(cfg, params.Logger)
+	r := createReceiver(cfg, componentSettings.Logger)
 
 	if err := r.registerMetricsConsumer(ctx, consumer); err != nil {
 		return nil, err
@@ -99,11 +99,11 @@ func createMetricsReceiver(
 // CreateLogReceiver creates a log receiver based on provided config.
 func createLogReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-	r := createReceiver(cfg, params.Logger)
+	r := createReceiver(cfg, componentSettings.Logger)
 
 	if err := r.registerLogsConsumer(ctx, consumer); err != nil {
 		return nil, err

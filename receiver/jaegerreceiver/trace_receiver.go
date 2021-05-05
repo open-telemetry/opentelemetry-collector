@@ -119,13 +119,13 @@ func newJaegerReceiver(
 	instanceName string,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 ) *jReceiver {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		instanceName: instanceName,
-		logger:       params.Logger,
+		logger:       componentSettings.Logger,
 	}
 }
 

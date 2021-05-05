@@ -208,8 +208,8 @@ func TestSendTraces(t *testing.T) {
 			"header": "header-value",
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -278,8 +278,8 @@ func TestSendMetrics(t *testing.T) {
 			"header": "header-value",
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), componentSettings, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -348,8 +348,8 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		// Do not rely on external retry logic here, if that is intended set InitialInterval to 100ms.
 		WaitForReady: true,
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -405,8 +405,8 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -481,8 +481,8 @@ func TestSendLogData(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateLogsExporter(context.Background(), componentSettings, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {

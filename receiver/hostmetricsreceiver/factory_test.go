@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-var creationParams = component.ReceiverCreateParams{Logger: zap.NewNop()}
+var creationParams = component.ComponentSettings{Logger: zap.NewNop()}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()

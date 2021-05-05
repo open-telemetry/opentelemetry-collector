@@ -73,13 +73,13 @@ var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
-func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
+func newBatchProcessor(componentSettings component.ComponentSettings, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
 	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.ID().String()))
 	if err != nil {
 		return nil, err
 	}
 	return &batchProcessor{
-		logger:         params.Logger,
+		logger:         componentSettings.Logger,
 		exportCtx:      exportCtx,
 		telemetryLevel: telemetryLevel,
 
@@ -205,18 +205,18 @@ func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(params component.ProcessorCreateParams, next consumer.Traces, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	return newBatchProcessor(params, cfg, newBatchTraces(next), telemetryLevel)
+func newBatchTracesProcessor(componentSettings component.ComponentSettings, trace consumer.Traces, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
+	return newBatchProcessor(componentSettings, cfg, newBatchTraces(trace), telemetryLevel)
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(params component.ProcessorCreateParams, next consumer.Metrics, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	return newBatchProcessor(params, cfg, newBatchMetrics(next), telemetryLevel)
+func newBatchMetricsProcessor(componentSettings component.ComponentSettings, metrics consumer.Metrics, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
+	return newBatchProcessor(componentSettings, cfg, newBatchMetrics(metrics), telemetryLevel)
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(params component.ProcessorCreateParams, next consumer.Logs, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	return newBatchProcessor(params, cfg, newBatchLogs(next), telemetryLevel)
+func newBatchLogsProcessor(componentSettings component.ComponentSettings, logs consumer.Logs, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
+	return newBatchProcessor(componentSettings, cfg, newBatchLogs(logs), telemetryLevel)
 }
 
 type batchTraces struct {

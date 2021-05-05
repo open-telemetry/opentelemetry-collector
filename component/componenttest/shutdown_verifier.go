@@ -34,7 +34,7 @@ func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory compo
 	nextSink := new(consumertest.TracesSink)
 	processor, err := factory.CreateTracesProcessor(
 		context.Background(),
-		component.ProcessorCreateParams{Logger: zap.NewNop()},
+		component.ComponentSettings{Logger: zap.NewNop()},
 		cfg,
 		nextSink,
 	)

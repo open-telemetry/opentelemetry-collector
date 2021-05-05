@@ -97,20 +97,20 @@ type kafkaExporterFactory struct {
 
 func (f *kafkaExporterFactory) createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	exp, err := newTracesExporter(*oCfg, params, f.tracesMarshalers)
+	exp, err := newTracesExporter(*oCfg, componentSettings, f.tracesMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		exp.traceDataPusher,
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
@@ -122,20 +122,20 @@ func (f *kafkaExporterFactory) createTracesExporter(
 
 func (f *kafkaExporterFactory) createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	exp, err := newMetricsExporter(*oCfg, params, f.metricsMarshalers)
+	exp, err := newMetricsExporter(*oCfg, componentSettings, f.metricsMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		exp.metricsDataPusher,
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
@@ -147,7 +147,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 
 func (f *kafkaExporterFactory) createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oCfg := cfg.(*Config)

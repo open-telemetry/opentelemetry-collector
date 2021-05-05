@@ -17,8 +17,6 @@ package component
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -61,16 +59,6 @@ type ProcessorCapabilities struct {
 	MutatesConsumedData bool
 }
 
-// ProcessorCreateParams is passed to Create* functions in ProcessorFactory.
-type ProcessorCreateParams struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// BuildInfo can be used by components for informational purposes
-	BuildInfo BuildInfo
-}
-
 // ProcessorFactory is factory interface for processors. This is the
 // new factory type that can create new style processors.
 //
@@ -93,7 +81,7 @@ type ProcessorFactory interface {
 	// error will be returned instead.
 	CreateTracesProcessor(
 		ctx context.Context,
-		params ProcessorCreateParams,
+		settings ComponentSettings,
 		cfg config.Processor,
 		nextConsumer consumer.Traces,
 	) (TracesProcessor, error)
@@ -103,7 +91,7 @@ type ProcessorFactory interface {
 	// error will be returned instead.
 	CreateMetricsProcessor(
 		ctx context.Context,
-		params ProcessorCreateParams,
+		settings ComponentSettings,
 		cfg config.Processor,
 		nextConsumer consumer.Metrics,
 	) (MetricsProcessor, error)
@@ -113,7 +101,7 @@ type ProcessorFactory interface {
 	// error will be returned instead.
 	CreateLogsProcessor(
 		ctx context.Context,
-		params ProcessorCreateParams,
+		settings ComponentSettings,
 		cfg config.Processor,
 		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
@@ -138,17 +126,17 @@ func (b BaseProcessorFactory) CreateDefaultConfig() config.Processor {
 }
 
 // CreateTracesProcessor default implemented as not supported date type.
-func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Traces) (TracesProcessor, error) {
+func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ComponentSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor default implemented as not supported date type.
-func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ComponentSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateLogsProcessor default implemented as not supported date type.
-func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Logs) (LogsProcessor, error) {
+func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ComponentSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 

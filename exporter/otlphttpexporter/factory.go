@@ -73,10 +73,10 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	oce, err := newExporter(cfg, params.Logger)
+	oce, err := newExporter(cfg, componentSettings.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func createTracesExporter(
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		oce.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -99,10 +99,10 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	oce, err := newExporter(cfg, params.Logger)
+	oce, err := newExporter(cfg, componentSettings.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		oce.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -125,10 +125,10 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	oce, err := newExporter(cfg, params.Logger)
+	oce, err := newExporter(cfg, componentSettings.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		oce.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

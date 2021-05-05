@@ -18,6 +18,6 @@ package main
 
 import "go.opentelemetry.io/collector/service"
 
-func run(params service.Parameters) error {
+func run(params service.Settings) error {
 	return runInteractive(params)
 }

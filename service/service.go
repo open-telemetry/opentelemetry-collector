@@ -24,21 +24,27 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
-// settings holds configuration for building a new service.
-type settings struct {
+// Settings holds configuration for building a new service.
+type Settings struct {
 	// Factories component factories.
 	Factories component.Factories
 
-	// BuildInfo provides application start information.
-	BuildInfo component.BuildInfo
+	// ComponentSettings contains logger and build info configuration
+	ComponentSettings component.ComponentSettings
 
 	// Config represents the configuration of the service.
 	Config *config.Config
 
-	// Logger represents the logger used for all the components.
-	Logger *zap.Logger
+	// ParserProvider provides the configuration's Parser.
+	// If it is not provided a default provider is used. The default provider loads the configuration
+	// from a config file define by the --config command line flag and overrides component's configuration
+	// properties supplied via --set command line flag.
+	ParserProvider parserprovider.ParserProvider
+	// LoggingOptions provides a way to change behavior of zap logging.
+	LoggingOptions []zap.Option
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -58,12 +64,12 @@ type service struct {
 	builtExtensions builder.Extensions
 }
 
-func newService(settings *settings) (*service, error) {
+func newService(settings *Settings) (*service, error) {
 	srv := &service{
 		factories:         settings.Factories,
-		buildInfo:         settings.BuildInfo,
+		buildInfo:         settings.ComponentSettings.BuildInfo,
 		config:            settings.Config,
-		logger:            settings.Logger,
+		logger:            settings.ComponentSettings.Logger,
 		asyncErrorChannel: settings.AsyncErrorChannel,
 	}
 

@@ -315,7 +315,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				component.ProcessorCreateParams{
+				component.ComponentSettings{
 					Logger: zap.NewNop(),
 				},
 				cfg,
@@ -452,7 +452,7 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateParams{Logger: zap.NewNop()},
+		component.ComponentSettings{Logger: zap.NewNop()},
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -529,7 +529,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateParams{
+		component.ComponentSettings{
 			Logger: zap.NewNop(),
 		},
 		cfg,

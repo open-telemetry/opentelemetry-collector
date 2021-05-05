@@ -156,12 +156,12 @@ func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, buildInfo compon
 		logger: logger,
 	}
 
-	creationParams := component.ExtensionCreateParams{
+	creationSettings := component.ComponentSettings{
 		Logger:    logger,
 		BuildInfo: buildInfo,
 	}
 
-	ex, err := factory.CreateExtension(context.Background(), creationParams, cfg)
+	ex, err := factory.CreateExtension(context.Background(), creationSettings, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create extension %v: %w", cfg.ID(), err)
 	}

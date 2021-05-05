@@ -732,13 +732,13 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
 	r := createReceiver(cfg, zap.NewNop())
 	if tc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
+		componentSettingsTraces := component.ComponentSettings{}
+		_, err := factory.CreateTracesReceiver(context.Background(), componentSettingsTraces, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
+		componentSettingsMetrics := component.ComponentSettings{}
+		_, err := factory.CreateMetricsReceiver(context.Background(), componentSettingsMetrics, cfg, mc)
 		require.NoError(t, err)
 	}
 	return r

@@ -49,8 +49,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	oexp, err := factory.CreateMetricsExporter(context.Background(), componentSettings, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }
@@ -176,8 +176,8 @@ func TestCreateTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
+			componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+			consumer, err := factory.CreateTracesExporter(context.Background(), componentSettings, &tt.config)
 
 			if tt.mustFail {
 				assert.NotNil(t, err)
@@ -201,8 +201,8 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	oexp, err := factory.CreateLogsExporter(context.Background(), componentSettings, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }

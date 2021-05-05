@@ -62,8 +62,8 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	config := &configuration{
 		AgentCompactThriftPort: port,
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerAgent, config, nil, componentSettings)
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
@@ -87,8 +87,8 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 		AgentBinaryThriftPort:   int(port),
 		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerAgent, config, nil, componentSettings)
 
 	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -107,8 +107,8 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	config := &configuration{
 		AgentBinaryThriftPort: port,
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerAgent, config, nil, componentSettings)
 
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
@@ -150,8 +150,8 @@ func TestJaegerHTTP(t *testing.T) {
 			},
 		},
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerAgent, config, nil, componentSettings)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
@@ -188,8 +188,8 @@ func TestJaegerHTTP(t *testing.T) {
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, componentSettings)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")

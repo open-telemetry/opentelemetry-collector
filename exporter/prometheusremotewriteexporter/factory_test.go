@@ -53,27 +53,27 @@ func Test_createMetricsExporter(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         config.Exporter
-		params      component.ExporterCreateParams
+		params      component.ComponentSettings
 		returnError bool
 	}{
 		{"success_case",
 			createDefaultConfig(),
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ComponentSettings{Logger: zap.NewNop()},
 			false,
 		},
 		{"fail_case",
 			nil,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ComponentSettings{Logger: zap.NewNop()},
 			true,
 		},
 		{"invalid_config_case",
 			invalidConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ComponentSettings{Logger: zap.NewNop()},
 			true,
 		},
 		{"invalid_tls_config_case",
 			invalidTLSConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ComponentSettings{Logger: zap.NewNop()},
 			true,
 		},
 	}

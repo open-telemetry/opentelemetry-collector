@@ -38,7 +38,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	oCfg.Endpoint = ""
 	exp, err := createMetricsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ComponentSettings{Logger: zap.NewNop()},
 		cfg)
 	require.Equal(t, errBlankPrometheusAddress, err)
 	require.Nil(t, exp)
@@ -53,7 +53,7 @@ func TestCreateMetricsExporterExportHelperError(t *testing.T) {
 	// Should give us an exporterhelper.errNilLogger
 	exp, err := createMetricsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: nil},
+		component.ComponentSettings{Logger: nil},
 		cfg)
 
 	assert.Nil(t, exp)

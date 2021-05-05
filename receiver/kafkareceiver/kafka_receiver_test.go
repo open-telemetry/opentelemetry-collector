@@ -43,7 +43,7 @@ func TestNewTracesReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newTracesReceiver(c, component.ReceiverCreateParams{}, defaultTracesUnmarshalers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, component.ComponentSettings{}, defaultTracesUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -52,7 +52,7 @@ func TestNewTracesReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newTracesReceiver(c, component.ReceiverCreateParams{}, defaultTracesUnmarshalers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, component.ComponentSettings{}, defaultTracesUnmarshalers(), consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -73,7 +73,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newTracesReceiver(c, component.ReceiverCreateParams{}, defaultTracesUnmarshalers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, component.ComponentSettings{}, defaultTracesUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -225,7 +225,7 @@ func TestNewLogsReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newLogsReceiver(c, component.ReceiverCreateParams{}, defaultLogsUnmarshalers(), consumertest.NewNop())
+	r, err := newLogsReceiver(c, component.ComponentSettings{}, defaultLogsUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -234,7 +234,7 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newLogsReceiver(c, component.ReceiverCreateParams{}, defaultLogsUnmarshalers(), consumertest.NewNop())
+	r, err := newLogsReceiver(c, component.ComponentSettings{}, defaultLogsUnmarshalers(), consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -255,7 +255,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newLogsReceiver(c, component.ReceiverCreateParams{}, defaultLogsUnmarshalers(), consumertest.NewNop())
+	r, err := newLogsReceiver(c, component.ComponentSettings{}, defaultLogsUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)

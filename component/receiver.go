@@ -17,8 +17,6 @@ package component
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -55,16 +53,6 @@ type LogsReceiver interface {
 	Receiver
 }
 
-// ReceiverCreateParams configures Receiver creators.
-type ReceiverCreateParams struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// BuildInfo can be used by components for informational purposes
-	BuildInfo BuildInfo
-}
-
 // ReceiverFactory can create TracesReceiver and MetricsReceiver. This is the
 // new preferred factory type to create receivers.
 type ReceiverFactory interface {
@@ -82,18 +70,30 @@ type ReceiverFactory interface {
 	// CreateTracesReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTracesReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
+	CreateTracesReceiver(
+		ctx context.Context,
+		settings ComponentSettings,
+		cfg config.Receiver,
+		nextConsumer consumer.Traces,
+	) (TracesReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
+	CreateMetricsReceiver(
+		ctx context.Context,
+		settings ComponentSettings,
+		cfg config.Receiver,
+		nextConsumer consumer.Metrics,
+	) (MetricsReceiver, error)
 
 	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// error will be returned instead.
-	CreateLogsReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
+	CreateLogsReceiver(
+		ctx context.Context,
+		settings ComponentSettings,
+		cfg config.Receiver,
+		nextConsumer consumer.Logs,
+	) (LogsReceiver, error)
 }
