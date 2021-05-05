@@ -122,7 +122,7 @@ func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 		return string(jsonStr)
 
 	case pdata.AttributeValueARRAY:
-		jsonStr, _ := json.Marshal(AttributeArrayToSlice(attr.ArrayVal()))
+		jsonStr, _ := json.Marshal(attributeArrayToSlice(attr.ArrayVal()))
 		return string(jsonStr)
 
 	default:
@@ -148,15 +148,15 @@ func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 		case pdata.AttributeValueMAP:
 			rawMap[k] = AttributeMapToMap(v.MapVal())
 		case pdata.AttributeValueARRAY:
-			rawMap[k] = AttributeArrayToSlice(v.ArrayVal())
+			rawMap[k] = attributeArrayToSlice(v.ArrayVal())
 		}
 		return true
 	})
 	return rawMap
 }
 
-// AttributeArrayToSlice creates a slice out of a pdata.AnyValueArray.
-func AttributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
+// attributeArrayToSlice creates a slice out of a pdata.AnyValueArray.
+func attributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 	rawSlice := make([]interface{}, 0, attrArray.Len())
 	for i := 0; i < attrArray.Len(); i++ {
 		v := attrArray.At(i)
