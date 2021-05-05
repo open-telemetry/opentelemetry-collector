@@ -12,6 +12,8 @@
 - Rename `ApplicationStartInfo` to `BuildInfo`
 - Rename `ApplicationStartInfo.ExeName` to `BuildInfo.Command`
 - Rename `ApplicationStartInfo.LongName` to `BuildInfo.Description`
+- Rename `service.Parameters` to `service.Settings` (#2650)
+- Rename `component.ExporterCreateParams`, `component.ExtensionCreateParams`, `component.ProcessorCreateParams`, `component.ReceiverCreateParams` to `component.ComponentSettings` (#2650)
 
 ## 💡 Enhancements 💡
 

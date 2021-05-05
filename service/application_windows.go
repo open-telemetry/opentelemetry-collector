@@ -27,12 +27,12 @@ import (
 )
 
 type WindowsService struct {
-	params Parameters
-	app    *Application
+	settings Settings
+	app      *Application
 }
 
-func NewWindowsService(params Parameters) *WindowsService {
-	return &WindowsService{params: params}
+func NewWindowsService(settings Settings) *WindowsService {
+	return &WindowsService{settings: settings}
 }
 
 // Execute implements https://godoc.org/golang.org/x/sys/windows/svc#Handler
@@ -81,7 +81,7 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 
 func (s *WindowsService) start(elog *eventlog.Log, appErrorChannel chan error) error {
 	var err error
-	s.app, err = newWithEventViewerLoggingHook(s.params, elog)
+	s.app, err = newWithEventViewerLoggingHook(s.settings, elog)
 	if err != nil {
 		return err
 	}
@@ -120,9 +120,9 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithEventViewerLoggingHook(params Parameters, elog *eventlog.Log) (*Application, error) {
-	params.LoggingOptions = append(
-		params.LoggingOptions,
+func newWithEventViewerLoggingHook(settings Settings, elog *eventlog.Log) (*Application, error) {
+	settings.LoggingOptions = append(
+		settings.LoggingOptions,
 		zap.Hooks(func(entry zapcore.Entry) error {
 			msg := fmt.Sprintf("%v\r\n\r\nStack Trace:\r\n%v", entry.Message, entry.Stack)
 
@@ -143,5 +143,5 @@ func newWithEventViewerLoggingHook(params Parameters, elog *eventlog.Log) (*Appl
 		}),
 	)
 
-	return New(params)
+	return New(settings)
 }
