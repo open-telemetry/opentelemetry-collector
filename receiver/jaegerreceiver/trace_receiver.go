@@ -76,9 +76,6 @@ type configuration struct {
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
 // This receiver is basically a Jaeger collector.
 type jReceiver struct {
-	// mu protects the fields of this type
-	mu sync.Mutex
-
 	nextConsumer consumer.Traces
 	instanceName string
 
@@ -182,9 +179,6 @@ func (jr *jReceiver) collectorHTTPEnabled() bool {
 }
 
 func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
-	jr.mu.Lock()
-	defer jr.mu.Unlock()
-
 	if err := jr.startAgent(host); err != nil {
 		return err
 	}
@@ -197,8 +191,6 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 func (jr *jReceiver) Shutdown(ctx context.Context) error {
-	jr.mu.Lock()
-	defer jr.mu.Unlock()
 	var errs []error
 
 	if jr.agentServer != nil {

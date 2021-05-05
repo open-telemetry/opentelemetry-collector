@@ -36,7 +36,6 @@ import (
 )
 
 const (
-	exporter  = "fakeExporter"
 	receiver  = "fakeReicever"
 	scraper   = "fakeScraper"
 	transport = "fakeTransport"
@@ -45,6 +44,7 @@ const (
 
 var (
 	processor = config.NewID("fakeProcessor")
+	exporter  = config.NewID("fakeExporter")
 
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
@@ -340,7 +340,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterName: exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
@@ -354,7 +354,7 @@ func TestExportTraceDataOp(t *testing.T) {
 
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/traces", span.Name)
+		assert.Equal(t, "exporter/"+exporter.String()+"/traces", span.Name)
 		switch errs[i] {
 		case nil:
 			sentSpans += numExportedSpans[i]
@@ -387,7 +387,7 @@ func TestExportMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterName: exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
 
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
@@ -403,7 +403,7 @@ func TestExportMetricsOp(t *testing.T) {
 
 	var sentMetricPoints, failedToSendMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/metrics", span.Name)
+		assert.Equal(t, "exporter/"+exporter.String()+"/metrics", span.Name)
 		switch errs[i] {
 		case nil:
 			sentMetricPoints += toSendMetricPoints[i]
@@ -436,7 +436,7 @@ func TestExportLogsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterName: exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {
@@ -451,7 +451,7 @@ func TestExportLogsOp(t *testing.T) {
 
 	var sentLogRecords, failedToSendLogRecords int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/logs", span.Name)
+		assert.Equal(t, "exporter/"+exporter.String()+"/logs", span.Name)
 		switch errs[i] {
 		case nil:
 			sentLogRecords += toSendLogRecords[i]

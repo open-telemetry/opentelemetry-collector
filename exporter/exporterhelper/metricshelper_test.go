@@ -33,12 +33,12 @@ import (
 )
 
 const (
-	fakeMetricsExporterName   = "fake_metrics_exporter/with_name"
 	fakeMetricsParentSpanName = "fake_metrics_parent_span_name"
 )
 
 var (
-	fakeMetricsExporterConfig = config.NewExporterSettings(config.MustIDFromString(fakeMetricsExporterName))
+	fakeMetricsExporterName   = config.MustIDFromString("fake_metrics_exporter/with_name")
+	fakeMetricsExporterConfig = config.NewExporterSettings(fakeMetricsExporterName)
 )
 
 func TestMetricsRequest(t *testing.T) {

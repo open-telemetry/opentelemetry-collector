@@ -97,8 +97,8 @@ func NewMetricsExporter(
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
 			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
-				Level:        configtelemetry.GetMetricsLevelFlagValue(),
-				ExporterName: cfg.ID().String(),
+				Level:      configtelemetry.GetMetricsLevelFlagValue(),
+				ExporterID: cfg.ID(),
 			}),
 			nextSender: nextSender,
 		}
