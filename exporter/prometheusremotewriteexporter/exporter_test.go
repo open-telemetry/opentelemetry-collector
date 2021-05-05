@@ -143,6 +143,7 @@ func Test_NewPrwExporter(t *testing.T) {
 // Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
 func Test_Shutdown(t *testing.T) {
 	prwe := &PrwExporter{
+		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
