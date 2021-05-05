@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove `tracetranslator.AttributeArrayToSlice`, not used in core or contrib (#3109)
+
+
 ## v0.26.0 Beta
 
 ## 🛑 Breaking changes 🛑
