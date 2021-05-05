@@ -26,44 +26,44 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 	totalCopiedMetrics := 0
 	dest := pdata.NewMetrics()
 
-	src.ResourceMetrics().RemoveIf(func(srcRm pdata.ResourceMetrics) bool {
+	src.ResourceMetrics().RemoveIf(func(srcRs pdata.ResourceMetrics) bool {
 		// If we are done skip everything else.
 		if totalCopiedMetrics == size {
 			return false
 		}
 
 		destRs := dest.ResourceMetrics().AppendEmpty()
-		srcRm.Resource().CopyTo(destRs.Resource())
+		srcRs.Resource().CopyTo(destRs.Resource())
 
-		srcRm.InstrumentationLibraryMetrics().RemoveIf(func(srcIm pdata.InstrumentationLibraryMetrics) bool {
+		srcRs.InstrumentationLibraryMetrics().RemoveIf(func(srcIlm pdata.InstrumentationLibraryMetrics) bool {
 			// If we are done skip everything else.
 			if totalCopiedMetrics == size {
 				return false
 			}
 
-			destIms := destRs.InstrumentationLibraryMetrics().AppendEmpty()
-			srcIm.InstrumentationLibrary().CopyTo(destIms.InstrumentationLibrary())
+			destIlm := destRs.InstrumentationLibraryMetrics().AppendEmpty()
+			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
 
 			// If possible to move all metrics do that.
-			srcMetricsLen := srcIm.Metrics().Len()
+			srcMetricsLen := srcIlm.Metrics().Len()
 			if size-totalCopiedMetrics >= srcMetricsLen {
 				totalCopiedMetrics += srcMetricsLen
-				srcIm.Metrics().MoveAndAppendTo(destIms.Metrics())
+				srcIlm.Metrics().MoveAndAppendTo(destIlm.Metrics())
 				return true
 			}
 
-			srcIm.Metrics().RemoveIf(func(srcMetric pdata.Metric) bool {
+			srcIlm.Metrics().RemoveIf(func(srcMetric pdata.Metric) bool {
 				// If we are done skip everything else.
 				if totalCopiedMetrics == size {
 					return false
 				}
-				srcMetric.CopyTo(destIms.Metrics().AppendEmpty())
+				srcMetric.CopyTo(destIlm.Metrics().AppendEmpty())
 				totalCopiedMetrics++
 				return true
 			})
 			return false
 		})
-		return srcRm.InstrumentationLibraryMetrics().Len() == 0
+		return srcRs.InstrumentationLibraryMetrics().Len() == 0
 	})
 
 	return dest
