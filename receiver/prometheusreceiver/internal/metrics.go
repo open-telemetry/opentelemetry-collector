@@ -24,7 +24,7 @@ var (
 	metricsRegistry = metric.NewRegistry()
 
 	upGauge, err = metricsRegistry.AddFloat64Gauge(
-		"exporter/up",
+		"up",
 		metric.WithDescription("Whether the endpoint is alive or not"),
 		metric.WithLabelKeys("instance"),
 		metric.WithUnit(metricdata.UnitDimensionless))

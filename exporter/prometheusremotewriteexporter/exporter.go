@@ -128,7 +128,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 						continue
 					}
 
-					println("\033[32mmetricName", metric.GetName(), "\033[00m")
 					// handle individual metric based on type
 					switch metric.Data.(type) {
 					case *otlp.Metric_DoubleSum, *otlp.Metric_IntSum, *otlp.Metric_DoubleGauge, *otlp.Metric_IntGauge:

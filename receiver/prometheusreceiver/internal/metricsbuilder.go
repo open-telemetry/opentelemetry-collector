@@ -127,7 +127,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
 		b.startTime = v
 	}
-
 	b.hasData = true
 
 	if b.currentMf != nil && !b.currentMf.IsSameFamily(metricName) {
