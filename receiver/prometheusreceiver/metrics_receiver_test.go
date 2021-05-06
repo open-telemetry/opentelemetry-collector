@@ -255,8 +255,9 @@ rpc_duration_seconds_count 1001
 func verifyTarget1(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
-	if l := len(m1.Metrics); l != 4 {
-		t.Errorf("want 1, but got %v\n", l)
+	// m1 has 4 metrics + 5 internal scraper metrics
+	if l := len(m1.Metrics); l != 9 {
+		t.Errorf("want 9, but got %v\n", l)
 	}
 
 	ts1 := m1.Metrics[0].Timeseries[0].Points[0].Timestamp
@@ -588,8 +589,9 @@ http_requests_total{method="post",code="500"} 5
 func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
-	if l := len(m1.Metrics); l != 2 {
-		t.Errorf("want 1, but got %v\n", l)
+	// m1 has 2 metrics + 5 internal scraper metrics
+	if l := len(m1.Metrics); l != 7 {
+		t.Errorf("want 7, but got %v\n", l)
 	}
 
 	ts1 := m1.Metrics[0].Timeseries[0].Points[0].Timestamp
@@ -988,8 +990,9 @@ rpc_duration_seconds_count{foo="no_quantile"} 55
 func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
-	if l := len(m1.Metrics); l != 3 {
-		t.Errorf("want 1, but got %v\n", l)
+	// m1 has 3 metrics + 5 internal scraper metrics
+	if l := len(m1.Metrics); l != 8 {
+		t.Errorf("want 8, but got %v\n", l)
 	}
 
 	ts1 := m1.Metrics[1].Timeseries[0].Points[0].Timestamp
