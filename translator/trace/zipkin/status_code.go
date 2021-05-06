@@ -108,7 +108,7 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 	case tracetranslator.TagHTTPStatusCode:
 		httpCode, err := attribToStatusCode(attrib)
 		if err == nil {
-			code := tracetranslator.OCStatusCodeFromHTTP(httpCode)
+			code := ocStatusCodeFromHTTP(httpCode)
 			m.fromHTTP.codePtr = &code
 		}
 

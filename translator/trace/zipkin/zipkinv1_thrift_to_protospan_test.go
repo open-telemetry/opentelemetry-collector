@@ -419,7 +419,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 
 func TestThriftHTTPToGRPCStatusCode(t *testing.T) {
 	for i := int32(100); i <= 600; i++ {
-		wantStatus := tracetranslator.OCStatusCodeFromHTTP(i)
+		wantStatus := ocStatusCodeFromHTTP(i)
 		gb, err := v1ThriftBatchToOCProto([]*zipkincore.Span{{
 			ID:      1,
 			TraceID: 1,
