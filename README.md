@@ -39,6 +39,8 @@
     <a href="docs/security.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/roadmap.md">Roadmap</a>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="https://pkg.go.dev/go.opentelemetry.io/collector">Package</a>
   </strong>
 </p>
 
