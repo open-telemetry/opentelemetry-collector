@@ -30,6 +30,12 @@ type status struct {
 	message string
 }
 
+const (
+	tagZipkinCensusCode    = "census.status_code"
+	tagZipkinCensusMsg     = "census.status_description"
+	tagZipkinOpenCensusMsg = "opencensus.status_description"
+)
+
 // statusMapper contains codes translated from different sources to OC status codes
 type statusMapper struct {
 	// oc status code extracted from "status.code" tags
@@ -84,14 +90,14 @@ func (m *statusMapper) ocStatus() *tracepb.Status {
 
 func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue) bool {
 	switch key {
-	case tracetranslator.TagZipkinCensusCode:
+	case tagZipkinCensusCode:
 		code, err := attribToStatusCode(attrib)
 		if err == nil {
 			m.fromCensus.codePtr = &code
 		}
 		return true
 
-	case tracetranslator.TagZipkinCensusMsg, tracetranslator.TagZipkinOpenCensusMsg:
+	case tagZipkinCensusMsg, tagZipkinOpenCensusMsg:
 		m.fromCensus.message = attrib.GetStringValue().GetValue()
 		return true
 

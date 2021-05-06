@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove OpenCensus conventions, should not be used (#3113)
+- Remove Zipkin specific translation constants, move to internal (#3112)
 - Remove tracetranslator.TagHTTPStatusCode, use conventions.AttributeHTTPStatusCode (#3111)
 - Remove OpenCensus status constants and transformation (#3110)
 - Remove `tracetranslator.AttributeArrayToSlice`, not used in core or contrib (#3109)

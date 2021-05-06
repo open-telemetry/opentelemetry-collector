@@ -29,13 +29,10 @@ const (
 
 	TagSpanKind = "span.kind"
 
-	TagStatusCode          = "status.code"
-	TagStatusMsg           = "status.message"
-	TagError               = "error"
-	TagHTTPStatusMsg       = "http.status_message"
-	TagZipkinCensusCode    = "census.status_code"
-	TagZipkinCensusMsg     = "census.status_description"
-	TagZipkinOpenCensusMsg = "opencensus.status_description"
+	TagStatusCode    = "status.code"
+	TagStatusMsg     = "status.message"
+	TagError         = "error"
+	TagHTTPStatusMsg = "http.status_message"
 
 	TagW3CTraceState     = "w3c.tracestate"
 	TagServiceNameSource = "otlp.service.name.source"
@@ -60,11 +57,6 @@ const (
 	OpenTracingSpanKindConsumer    OpenTracingSpanKind = "consumer"
 	OpenTracingSpanKindProducer    OpenTracingSpanKind = "producer"
 	OpenTracingSpanKindInternal    OpenTracingSpanKind = "internal"
-)
-
-const (
-	SpanLinkDataFormat  = "%s|%s|%s|%s|%d"
-	SpanEventDataFormat = "%s|%s|%d"
 )
 
 type attrValDescript struct {
