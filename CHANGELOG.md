@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove OpenCensus conventions, should not be used (#3113)
+
 ## v0.26.0 Beta
 
 ## 🛑 Breaking changes 🛑
