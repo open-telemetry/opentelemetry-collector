@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
 - Remove OpenCensus conventions, should not be used (#3113)
+- Remove tracetranslator.TagHTTPStatusCode, use conventions.AttributeHTTPStatusCode (#3111)
+- Remove OpenCensus status constants and transformation (#3110)
 
 ## v0.26.0 Beta
 
