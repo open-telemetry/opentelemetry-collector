@@ -35,7 +35,7 @@ COMP_REL_PATH=service/defaultcomponents/defaults.go
 MOD_NAME=go.opentelemetry.io/collector
 
 GO_ACC=go-acc
-ADDLICENCESE=addlicense
+ADDLICENSE=addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 
@@ -113,10 +113,10 @@ gotidy:
 
 .PHONY: addlicense
 addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			exit 1; \
 		else \
 			echo "Add License finished successfully"; \
@@ -124,10 +124,10 @@ addlicense:
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			echo "Use 'make addlicense' to fix this."; \
 			exit 1; \
 		else \
