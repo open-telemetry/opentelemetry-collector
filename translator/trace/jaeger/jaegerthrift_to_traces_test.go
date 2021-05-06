@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -228,7 +229,7 @@ func generateThriftChildSpan() *jaeger.Span {
 		Duration:      spanEndTs - spanStartTs,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   tracetranslator.TagHTTPStatusCode,
+				Key:   conventions.AttributeHTTPStatusCode,
 				VType: jaeger.TagType_LONG,
 				VLong: &notFoundAttrVal,
 			},

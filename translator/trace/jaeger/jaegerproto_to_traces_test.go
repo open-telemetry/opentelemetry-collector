@@ -382,7 +382,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "http.status_code tag is set as string",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueString("404"),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueString("404"),
 			}),
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -390,9 +390,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "http.status_code, http.status_message and error tags are set",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
-				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("HTTP 404: Not Found"),
+				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
+				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("HTTP 404: Not Found"),
 			}),
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
@@ -400,9 +400,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code has precedence over http.status_code.",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagStatusCode:     pdata.NewAttributeValueInt(1),
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(500),
-				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("Server Error"),
+				tracetranslator.TagStatusCode:       pdata.NewAttributeValueInt(1),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(500),
+				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("Server Error"),
 			}),
 			status:           okStatus,
 			attrsModifiedLen: 2,
@@ -410,8 +410,8 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(200),
+				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(200),
 			}),
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -721,7 +721,7 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(pdata.StatusCodeError)
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
+		conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
 	})
 
 	return td
@@ -740,7 +740,7 @@ func generateProtoChildSpan() *model.Span {
 		Duration:      testSpanEndTime.Sub(testSpanStartTime),
 		Tags: []model.KeyValue{
 			{
-				Key:    tracetranslator.TagHTTPStatusCode,
+				Key:    conventions.AttributeHTTPStatusCode,
 				VType:  model.ValueType_INT64,
 				VInt64: 404,
 			},

@@ -250,7 +250,7 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 			statusMessage = msgAttr.StringVal()
 			attrs.Delete(tracetranslator.TagStatusMsg)
 		}
-	} else if httpCodeAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusCode); ok {
+	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); ok {
 		statusExists = true
 		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
 
