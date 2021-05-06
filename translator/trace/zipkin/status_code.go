@@ -21,6 +21,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -105,7 +106,7 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 		m.fromStatus.message = attrib.GetStringValue().GetValue()
 		return true
 
-	case tracetranslator.TagHTTPStatusCode:
+	case conventions.AttributeHTTPStatusCode:
 		httpCode, err := attribToStatusCode(attrib)
 		if err == nil {
 			code := ocStatusCodeFromHTTP(httpCode)

@@ -31,6 +31,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -278,7 +279,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -318,7 +319,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -354,7 +355,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -389,7 +390,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -456,7 +457,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
