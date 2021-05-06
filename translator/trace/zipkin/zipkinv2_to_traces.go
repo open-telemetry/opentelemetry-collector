@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -40,10 +41,10 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[tracetranslator.TagServiceNameSource] = struct{}{}
 	attrs[conventions.InstrumentationLibraryName] = struct{}{}
 	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
-	attrs[conventions.OCAttributeProcessStartTime] = struct{}{}
-	attrs[conventions.OCAttributeExporterVersion] = struct{}{}
+	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
+	attrs[occonventions.AttributeExporterVersion] = struct{}{}
 	attrs[conventions.AttributeProcessID] = struct{}{}
-	attrs[conventions.OCAttributeResourceType] = struct{}{}
+	attrs[occonventions.AttributeResourceType] = struct{}{}
 	return attrs
 }()
 
