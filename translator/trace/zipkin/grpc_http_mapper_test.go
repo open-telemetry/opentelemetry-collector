@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package zipkin
 
 import (
 	"testing"
@@ -22,7 +22,7 @@ import (
 
 func TestOTStatusFromHTTPStatus(t *testing.T) {
 	for httpStatus := int32(100); httpStatus <= 604; httpStatus++ {
-		otelStatus := OCStatusCodeFromHTTP(httpStatus)
-		assert.True(t, otelStatus >= OCOK && otelStatus <= OCUnauthenticated)
+		otelStatus := ocStatusCodeFromHTTP(httpStatus)
+		assert.True(t, otelStatus >= ocOK && otelStatus <= ocUnauthenticated)
 	}
 }

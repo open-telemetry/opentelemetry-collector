@@ -12,54 +12,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package zipkin
 
 // https://github.com/googleapis/googleapis/blob/bee79fbe03254a35db125dc6d2f1e9b752b390fe/google/rpc/code.proto#L33-L186
 const (
-	OCOK                 = 0
-	OCCancelled          = 1
-	OCUnknown            = 2
-	OCInvalidArgument    = 3
-	OCDeadlineExceeded   = 4
-	OCNotFound           = 5
-	OCAlreadyExists      = 6
-	OCPermissionDenied   = 7
-	OCResourceExhausted  = 8
-	OCFailedPrecondition = 9
-	OCAborted            = 10
-	OCOutOfRange         = 11
-	OCUnimplemented      = 12
-	OCInternal           = 13
-	OCUnavailable        = 14
-	OCDataLoss           = 15
-	OCUnauthenticated    = 16
+	ocOK               = 0
+	ocCancelled        = 1
+	ocUnknown          = 2
+	ocInvalidArgument  = 3
+	ocDeadlineExceeded = 4
+	ocNotFound         = 5
+	// ocAlreadyExists     = 6
+	ocPermissionDenied  = 7
+	ocResourceExhausted = 8
+	// ocFailedPrecondition = 9
+	// ocAborted            = 10
+	// ocOutOfRange      = 11
+	ocUnimplemented = 12
+	ocInternal      = 13
+	ocUnavailable   = 14
+	// ocDataLoss        = 15
+	ocUnauthenticated = 16
 )
 
 var httpToOCCodeMap = map[int32]int32{
-	401: OCUnauthenticated,
-	403: OCPermissionDenied,
-	404: OCNotFound,
-	429: OCResourceExhausted,
-	499: OCCancelled,
-	501: OCUnimplemented,
-	503: OCUnavailable,
-	504: OCDeadlineExceeded,
+	401: ocUnauthenticated,
+	403: ocPermissionDenied,
+	404: ocNotFound,
+	429: ocResourceExhausted,
+	499: ocCancelled,
+	501: ocUnimplemented,
+	503: ocUnavailable,
+	504: ocDeadlineExceeded,
 }
 
-// OCStatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
+// ocStatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/data-http.md
-func OCStatusCodeFromHTTP(code int32) int32 {
+func ocStatusCodeFromHTTP(code int32) int32 {
 	if code >= 100 && code < 400 {
-		return OCOK
+		return ocOK
 	}
 	if c, ok := httpToOCCodeMap[code]; ok {
 		return c
 	}
 	if code >= 400 && code < 500 {
-		return OCInvalidArgument
+		return ocInvalidArgument
 	}
 	if code >= 500 && code < 600 {
-		return OCInternal
+		return ocInternal
 	}
-	return OCUnknown
+	return ocUnknown
 }
