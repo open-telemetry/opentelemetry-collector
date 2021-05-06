@@ -62,11 +62,18 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 			metadata.Metric = familyName
 			metadata.Type = textparse.MetricTypeUnknown
 		}
-	}
+	} else if !ok && isInternalMetric(metricName) {
+               metadata = defineInternalMetric(metricName, metadata)
+        }
+        //TODO convert it to OtelMetrics ?
+        ocaMetricType := convToOCAMetricType(metadata.Type)
+        if ocaMetricType == metricspb.MetricDescriptor_UNSPECIFIED {
+                //b.logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
+        }
 
 	return &metricFamily{
 		name:              familyName,
-		mtype:             convToOCAMetricType(metadata.Type),
+		mtype:             ocaMetricType,
 		mc:                mc,
 		droppedTimeseries: 0,
 		labelKeys:         make(map[string]bool),
@@ -75,6 +82,40 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 		groupOrders:       make(map[string]int),
 		groups:            make(map[string]*metricGroup),
 	}
+}
+
+// Define manualy the metadata of prometheus scrapper internal metrics
+func defineInternalMetric(metricName string, metadata scrape.MetricMetadata) (scrape.MetricMetadata) {
+        if metadata.Metric != "" && metadata.Type != "" && metadata.Unit != "" && metadata.Help != "" {
+                //b.logger.Debug("Internal metric seems already fully defined")
+                return metadata
+        }
+        metadata.Metric = metricName
+
+        switch metricName {
+        case scrapeUpMetricName:
+                metadata.Unit = "bool"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The scraping was sucessful"
+        case "scrape_duration_seconds":
+                metadata.Unit = "seconds"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "Duration of the scrape"
+        case "scrape_samples_scraped":
+                metadata.Unit = "count"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The number of samples the target exposed"
+        case "scrape_series_added":
+                metadata.Unit = "count"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The approximate number of new series in this scrape"
+        case "scrape_samples_post_metric_relabeling":
+                metadata.Unit = "count"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The number of samples remaining after metric relabeling was applied"
+        }
+        //b.logger.Info("Internal metric defined", zap.String("metadata", fmt.Sprintf("%+v", metadata)))
+        return metadata
 }
 
 func (mf *metricFamily) IsSameFamily(metricName string) bool {
