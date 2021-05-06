@@ -114,7 +114,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
 		lm := ls.Map()
-		delete(lm, model.MetricNameLabel)
+		b.defineInternalMetric(metricName)
 		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 		if metricName == scrapeUpMetricName && v != 1.0 {
@@ -129,7 +129,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 					zap.String("target_labels", fmt.Sprintf("%v", lm)))
 			}
 		}
-		return nil
 	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
 		b.startTime = v
 	}
@@ -149,6 +148,42 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)
+}
+
+func (b *metricBuilder) defineInternalMetric(metricName string) {
+        metadata, ok := b.mc.Metadata(metricName)
+        if ok {
+                b.logger.Debug("Internal metric seems correct")
+                return
+        }
+        if metadata.Metric != "" && metadata.Type != "" && metadata.Unit != "" && metadata.Help != "" {
+                b.logger.Debug("Internal metric seems already fully defined")
+        }
+        metadata.Metric = metricName
+
+        switch metricName {
+        case scrapeUpMetricName:
+                metadata.Unit = "bool"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The scraping was sucessful"
+        case "scrape_duration_seconds":
+                metadata.Unit = "seconds"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "Duration of the scrape"
+        case "scrape_samples_scraped":
+                metadata.Unit = "count"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The number of samples the target exposed"
+        case "scrape_series_added":
+                metadata.Unit = "count"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The approximate number of new series in this scrape"
+        case "scrape_samples_post_metric_relabeling":
+                metadata.Unit = "count"
+                metadata.Type = textparse.MetricTypeGauge
+                metadata.Help = "The number of samples remaining after metric relabeling was applied"
+        }
+        b.logger.Info("Internal metric defined", zap.String("metadata", fmt.Sprintf("%+v", metadata)))
 }
 
 // Build an opencensus data.MetricsData based on all added data complexValue.
