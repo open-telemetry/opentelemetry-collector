@@ -946,7 +946,9 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "scrape_duration_seconds",
 					Description: "Duration of the scrape",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					Unit:        "seconds",
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
@@ -957,9 +959,11 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_samples_post_metric_relabeling",
-					Description: "The number of samples remaining after metric relabeling was applied",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
+					Name:        "scrape_samples_scraped",
+					Description: "The number of samples the target exposed",
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					Unit:        "count",
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
@@ -970,9 +974,11 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_samples_scraped",
-					Description: "The number of samples the target exposed",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
+					Name:        "scrape_samples_post_metric_relabeling",
+					Description: "The number of samples remaining after metric relabeling was applied",
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					Unit:        "count",
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
@@ -985,24 +991,13 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "scrape_series_added",
 					Description: "The approximate number of new series in this scrape",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					Unit:        "count",
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
 							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "up",
-					Description: "The scraping was sucessful",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 1.0}},
 						},
 					},
 				},
@@ -1021,54 +1016,30 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "go_threads",
-					Description: "Number of OS threads created",
+					Name:        "up",
+					Description: "The scraping was sucessful",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					Unit:        "bool",
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
-							{Timestamp: ts4, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
+							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 1.0}},
 						},
 					},
 				},
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "http_requests_total",
-					Description: "The total number of HTTP requests.",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "code"}, {Key: "method"}},
+					Name:        "scrape_series_added",
+					Description: "The approximate number of new series in this scrape",
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					Unit:        "count",
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: ts4,
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "200", HasValue: true},
-							{Value: "post", HasValue: true},
-						},
 						Points: []*metricspb.Point{
-							{Timestamp: ts4, Value: &metricspb.Point_DoubleValue{DoubleValue: 49.0}},
-						},
-					},
-					{
-						StartTimestamp: ts4,
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "400", HasValue: true},
-							{Value: "post", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{Timestamp: ts4, Value: &metricspb.Point_DoubleValue{DoubleValue: 59.0}},
-						},
-					},
-					{
-						StartTimestamp: ts4,
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "500", HasValue: true},
-							{Value: "post", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{Timestamp: ts4, Value: &metricspb.Point_DoubleValue{DoubleValue: 3.0}},
+							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
 						},
 					},
 				},
@@ -1683,58 +1654,6 @@ func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					Unit:        "count",
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_duration_seconds",
-					Description: "Duration of the scrape",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 0.0123456}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_samples_post_metric_relabeling",
-					Description: "The number of samples remaining after metric relabeling was applied",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_samples_scraped",
-					Description: "The number of samples the target exposed",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_series_added",
-					Description: "The approximate number of new series in this scrape",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						Points: []*metricspb.Point{
