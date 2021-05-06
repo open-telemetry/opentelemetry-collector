@@ -17,7 +17,6 @@ package tracetranslator
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -58,32 +57,6 @@ const (
 	OpenTracingSpanKindProducer    OpenTracingSpanKind = "producer"
 	OpenTracingSpanKindInternal    OpenTracingSpanKind = "internal"
 )
-
-type attrValDescript struct {
-	regex    *regexp.Regexp
-	attrType pdata.AttributeValueType
-}
-
-var attrValDescriptions = getAttrValDescripts()
-
-func getAttrValDescripts() []*attrValDescript {
-	descriptions := make([]*attrValDescript, 0, 5)
-	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueNULL))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueINT))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
-	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
-	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueMAP))
-	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueARRAY))
-	return descriptions
-}
-
-func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *attrValDescript {
-	regexc := regexp.MustCompile(regex)
-	return &attrValDescript{
-		regex:    regexc,
-		attrType: attrType,
-	}
-}
 
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
 func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
@@ -167,16 +140,6 @@ func attributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 		}
 	}
 	return rawSlice
-}
-
-// DetermineValueType returns the native OTLP attribute type the string translates to.
-func DetermineValueType(value string) pdata.AttributeValueType {
-	for _, desc := range attrValDescriptions {
-		if desc.regex.MatchString(value) {
-			return desc.attrType
-		}
-	}
-	return pdata.AttributeValueSTRING
 }
 
 // StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
