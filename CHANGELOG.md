@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove tracetranslator.TagHTTPStatusCode, use conventions.AttributeHTTPStatusCode #3111
+
 ## v0.26.0 Beta
 
 ## 🛑 Breaking changes 🛑
