@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -67,7 +68,7 @@ type transaction struct {
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
-	receiverName         string
+	receiverID           config.ComponentID
 	ms                   *metadataService
 	node                 *commonpb.Node
 	resource             *resourcepb.Resource
@@ -75,7 +76,7 @@ type transaction struct {
 	logger               *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms *metadataService, sink consumer.Metrics, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverID config.ComponentID, ms *metadataService, sink consumer.Metrics, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -84,7 +85,7 @@ func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bo
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverName:         receiverName,
+		receiverID:           receiverID,
 		ms:                   ms,
 		logger:               logger,
 	}
@@ -154,7 +155,7 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
-	ctx := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverName, transport)
+	ctx := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverID, transport)
 	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {
 		// Only error by Build() is errNoDataToBuild, with numReceivedPoints set to zero.

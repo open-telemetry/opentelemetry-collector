@@ -43,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -54,7 +55,7 @@ import (
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-const jaegerReceiver = "jaeger_receiver_test"
+var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}

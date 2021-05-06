@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/obsreport"
@@ -38,7 +39,7 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
-	name              string
+	id                config.ComponentID
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Traces
 	topics            []string
@@ -50,7 +51,7 @@ type kafkaTracesConsumer struct {
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaLogsConsumer struct {
-	name              string
+	id                config.ComponentID
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Logs
 	topics            []string
@@ -89,7 +90,7 @@ func newTracesReceiver(config Config, params component.ReceiverCreateParams, unm
 		return nil, err
 	}
 	return &kafkaTracesConsumer{
-		name:          config.ID().String(),
+		id:            config.ID(),
 		consumerGroup: client,
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
@@ -102,7 +103,7 @@ func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	consumerGroup := &tracesConsumerGroupHandler{
-		name:         c.name,
+		id:           c.id,
 		logger:       c.logger,
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
@@ -160,7 +161,7 @@ func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmar
 		return nil, err
 	}
 	return &kafkaLogsConsumer{
-		name:          config.ID().String(),
+		id:            config.ID(),
 		consumerGroup: client,
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
@@ -173,7 +174,7 @@ func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	logsConsumerGroup := &logsConsumerGroupHandler{
-		name:         c.name,
+		id:           c.id,
 		logger:       c.logger,
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
@@ -206,7 +207,7 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 }
 
 type tracesConsumerGroupHandler struct {
-	name         string
+	id           config.ComponentID
 	unmarshaler  TracesUnmarshaler
 	nextConsumer consumer.Traces
 	ready        chan bool
@@ -216,7 +217,7 @@ type tracesConsumerGroupHandler struct {
 }
 
 type logsConsumerGroupHandler struct {
-	name         string
+	id           config.ComponentID
 	unmarshaler  LogsUnmarshaler
 	nextConsumer consumer.Logs
 	ready        chan bool
@@ -232,13 +233,13 @@ func (c *tracesConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) 
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.Name())}
 	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionStart.M(1))
 	return nil
 }
 
 func (c *tracesConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.Name())}
 	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionClose.M(1))
 	return nil
 }
@@ -252,9 +253,9 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			zap.String("topic", message.Topic))
 		session.MarkMessage(message, "")
 
-		ctx := obsreport.ReceiverContext(session.Context(), c.name, transport)
-		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.name, transport)
-		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
+		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
+		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.id, transport)
+		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.String())}
 		_ = stats.RecordWithTags(ctx, statsTags,
 			statMessageCount.M(1),
 			statMessageOffset.M(message.Offset),
@@ -280,14 +281,18 @@ func (c *logsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) er
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
-	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionStart.M(1))
+	_ = stats.RecordWithTags(
+		session.Context(),
+		[]tag.Mutator{tag.Insert(tagInstanceName, c.id.String())},
+		statPartitionStart.M(1))
 	return nil
 }
 
 func (c *logsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
-	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionClose.M(1))
+	_ = stats.RecordWithTags(
+		session.Context(),
+		[]tag.Mutator{tag.Insert(tagInstanceName, c.id.String())},
+		statPartitionClose.M(1))
 	return nil
 }
 
@@ -300,10 +305,11 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			zap.String("topic", message.Topic))
 		session.MarkMessage(message, "")
 
-		ctx := obsreport.ReceiverContext(session.Context(), c.name, transport)
-		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.name, transport)
-		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
-		_ = stats.RecordWithTags(ctx, statsTags,
+		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
+		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.id, transport)
+		_ = stats.RecordWithTags(
+			ctx,
+			[]tag.Mutator{tag.Insert(tagInstanceName, c.id.String())},
 			statMessageCount.M(1),
 			statMessageOffset.M(message.Offset),
 			statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))

@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -58,7 +59,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTraces(t, "oc_trace", "grpc", int64(n), 0)
+	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", int64(n), 0)
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
@@ -79,7 +80,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTraces(t, "oc_trace", "grpc", 0, 0)
+	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", 0, 0)
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
@@ -145,7 +146,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	if g, w := receiverSpanData.Links[0], wantLink; !reflect.DeepEqual(g, w) {
 		t.Errorf("Link:\nGot: %#v\nWant: %#v\n", g, w)
 	}
-	if g, w := receiverSpanData.Name, "receiver/oc_trace/TraceDataReceived"; g != w {
+	if g, w := receiverSpanData.Name, "receiver/opencensus/TraceDataReceived"; g != w {
 		t.Errorf("ReceiverExport span's SpanData.Name:\nGot:  %q\nWant: %q\n", g, w)
 	}
 

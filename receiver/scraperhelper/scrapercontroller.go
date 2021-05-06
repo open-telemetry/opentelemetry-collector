@@ -84,7 +84,7 @@ func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
 }
 
 type controller struct {
-	name               string
+	id                 config.ComponentID
 	logger             *zap.Logger
 	collectionInterval time.Duration
 	nextConsumer       consumer.Metrics
@@ -115,7 +115,7 @@ func NewScraperControllerReceiver(
 	}
 
 	sc := &controller{
-		name:               cfg.ID().String(),
+		id:                 cfg.ID(),
 		logger:             logger,
 		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,
@@ -193,12 +193,11 @@ func (sc *controller) startScraping() {
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
 func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
-	ctx = obsreport.ReceiverContext(ctx, sc.name, "")
-
+	ctx = obsreport.ReceiverContext(ctx, sc.id, "")
 	metrics := pdata.NewMetrics()
 
 	for _, rms := range sc.resourceMetricScrapers {
-		resourceMetrics, err := rms.Scrape(ctx, sc.name)
+		resourceMetrics, err := rms.Scrape(ctx, sc.id)
 		if err != nil {
 			sc.logger.Error("Error scraping metrics", zap.Error(err))
 
@@ -211,7 +210,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 
 	_, dataPointCount := metrics.MetricAndDataPointCount()
 
-	ctx = obsreport.StartMetricsReceiveOp(ctx, sc.name, "")
+	ctx = obsreport.StartMetricsReceiveOp(ctx, sc.id, "")
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
 	obsreport.EndMetricsReceiveOp(ctx, "", dataPointCount, err)
 }
@@ -227,8 +226,8 @@ type multiMetricScraper struct {
 	scrapers []MetricsScraper
 }
 
-func (mms *multiMetricScraper) Name() string {
-	return ""
+func (mms *multiMetricScraper) ID() config.ComponentID {
+	return config.NewID("")
 }
 
 func (mms *multiMetricScraper) Start(ctx context.Context, host component.Host) error {
@@ -250,13 +249,13 @@ func (mms *multiMetricScraper) Shutdown(ctx context.Context) error {
 	return consumererror.Combine(errs)
 }
 
-func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) (pdata.ResourceMetricsSlice, error) {
+func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.ResourceMetricsSlice, error) {
 	rms := pdata.NewResourceMetricsSlice()
 	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 	var errs scrapererror.ScrapeErrors
 	for _, scraper := range mms.scrapers {
-		metrics, err := scraper.Scrape(ctx, receiverName)
+		metrics, err := scraper.Scrape(ctx, receiverID)
 		if err != nil {
 			partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 			if isPartial {
