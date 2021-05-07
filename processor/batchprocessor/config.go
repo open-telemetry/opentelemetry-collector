@@ -42,7 +42,7 @@ var _ config.Processor = (*Config)(nil)
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.SendBatchMaxSize > 0 && cfg.SendBatchMaxSize < cfg.SendBatchSize {
-		return errors.New("send_batch_max_size must be larger than send_batch_size")
+		return errors.New("send_batch_max_size must be larger or equal to send_batch_size")
 	}
 	return nil
 }
