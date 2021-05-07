@@ -197,7 +197,7 @@ Collector as it runs. This is an advanced use-case that should not be needed in 
 To see logs for the Collector:
 
 On a Linux systemd system, logs can be found using `journalctl`:  
-`journalctl | grep otel`
+`journalctl | grep otelcol`
 
 or to find only errors:  
 `journalctl | grep otelcol | grep Error`
