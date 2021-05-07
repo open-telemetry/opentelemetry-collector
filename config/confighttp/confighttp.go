@@ -54,7 +54,7 @@ type HTTPClientSettings struct {
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
 	// Authenticator for the exporter referred from extensions.
-	Auth *configauth.Authentication `mapstructure:"authorization,omitempty"`
+	Auth *configauth.Authentication `mapstructure:"authentication,omitempty"`
 }
 
 // ToClient creates an HTTP client.
