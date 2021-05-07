@@ -182,7 +182,7 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []internaldata.Metri
 	}
 }
 
-func doCompare(name string, t *testing.T, want, got interface{}) {
+func doCompare(name string, t *testing.T, want, got *internaldata.MetricsData) {
 	t.Run(name, func(t *testing.T) {
 		assert.EqualValues(t, want, got)
 	})
@@ -279,8 +279,18 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
-	doCompare("scrape1", t, wantG1, gotG1)
-
+	doCompare("scrape1", t,
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{wantG1},
+		},
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{gotG1},
+		},
+	)
 	// verify the 2nd metricData
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
@@ -505,8 +515,18 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
-	doCompare("scrape1", t, wantG1, gotG1)
-
+	doCompare("scrape1", t,
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{wantG1},
+		},
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{gotG1},
+		},
+	)
 	// verify the 2nd metricData
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
@@ -822,8 +842,18 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
-	doCompare("scrape1", t, wantG1, gotG1)
-
+	doCompare("scrape1", t,
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{wantG1},
+		},
+		&internaldata.MetricsData{
+			Node:     td.node,
+			Resource: td.resource,
+			Metrics:  []*metricspb.Metric{gotG1},
+		},
+	)
 	// verify the 2nd metricData
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
