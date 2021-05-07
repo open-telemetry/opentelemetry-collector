@@ -43,6 +43,7 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
+	golang.org/x/oauth2 v0.0.0-20210210192628-66670185b0cd // indirect
 	golang.org/x/sys v0.0.0-20210316164454-77fc1eacc6aa
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881

@@ -16,6 +16,9 @@ package confighttp
 
 import (
 	"crypto/tls"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 	"net"
 	"net/http"
 	"time"
@@ -49,6 +52,9 @@ type HTTPClientSettings struct {
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+
+	// Auth for the exporter
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 // ToClient creates an HTTP client.
@@ -88,6 +94,15 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 		Timeout:   hcs.Timeout,
 	}, nil
 }
+
+func (hcs *HTTPClientSettings) AuthRoundTripper(clientBaseTransport http.RoundTripper, ext map[config.NamedEntity]component.Extension) (http.RoundTripper, error) {
+	httpCustomAuthRoundTripper, err := configauth.GetHTTPClientAuth(ext, hcs.Auth.AuthenticatorName)
+	if err != nil {
+		return nil, err
+	}
+	return httpCustomAuthRoundTripper.RoundTripper(clientBaseTransport), nil
+}
+
 
 // Custom RoundTripper that add headers
 type headerRoundTripper struct {

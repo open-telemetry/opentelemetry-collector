@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/extension/authoidcextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
+	"go.opentelemetry.io/collector/extension/oauth2clientextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
@@ -61,6 +62,7 @@ func Components() (
 		healthcheckextension.NewFactory(),
 		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
+		oauth2clientextension.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

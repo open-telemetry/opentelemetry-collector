@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/component"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -83,6 +84,21 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporterImp, error) 
 		client: client,
 		logger: logger,
 	}, nil
+}
+
+
+func (e *exporterImp) start(_ context.Context, host component.Host) error {
+	for k, _ := range host.GetExtensions() {
+		e.logger.Info(k.Name())
+	}
+    if e.config.HTTPClientSettings.Auth != nil {
+		transport, err := e.config.HTTPClientSettings.AuthRoundTripper(e.client.Transport, host.GetExtensions())
+		if err != nil {
+			return err
+		}
+		e.client.Transport = transport
+	}
+	return nil
 }
 
 func (e *exporterImp) pushTraceData(ctx context.Context, traces pdata.Traces) error {
