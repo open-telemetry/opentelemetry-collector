@@ -53,8 +53,8 @@ type HTTPClientSettings struct {
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
-	// Auth for the exporter
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+	// Authenticator for the exporter referred from extensions.
+	Auth *configauth.Authentication `mapstructure:"authorization,omitempty"`
 }
 
 // ToClient creates an HTTP client.
@@ -102,7 +102,6 @@ func (hcs *HTTPClientSettings) AuthRoundTripper(clientBaseTransport http.RoundTr
 	}
 	return httpCustomAuthRoundTripper.RoundTripper(clientBaseTransport), nil
 }
-
 
 // Custom RoundTripper that add headers
 type headerRoundTripper struct {

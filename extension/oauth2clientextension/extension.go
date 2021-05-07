@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -32,10 +33,18 @@ var (
 	errNoClientSecretProvided = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
 )
 
+// OAuth2Authenticator provides implementation for providing client authentication using OAuth2 client credentials
+// workflow for both gRPC and HTTP clients.
 type OAuth2Authenticator struct {
 	clientCredentials *clientcredentials.Config
-	logger *zap.Logger
+	logger            *zap.Logger
 }
+
+// OAuth2Authenticator implements both HTTPClientAuth and GRPCClientAuth
+var (
+	_ configauth.HTTPClientAuth = (*OAuth2Authenticator)(nil)
+	_ configauth.GRPCClientAuth = (*OAuth2Authenticator)(nil)
+)
 
 func newOAuth2Extension(cfg *OAuth2ClientSettings, logger *zap.Logger) (*OAuth2Authenticator, error) {
 	if cfg.ClientID == "" {
@@ -48,7 +57,7 @@ func newOAuth2Extension(cfg *OAuth2ClientSettings, logger *zap.Logger) (*OAuth2A
 		return nil, errNoTokenURLProvided
 	}
 	return &OAuth2Authenticator{
-		clientCredentials:    &clientcredentials.Config{
+		clientCredentials: &clientcredentials.Config{
 			ClientID:     cfg.ClientID,
 			ClientSecret: cfg.ClientSecret,
 			TokenURL:     cfg.TokenURL,
@@ -78,7 +87,7 @@ func (O *OAuth2Authenticator) RoundTripper(base http.RoundTripper) http.RoundTri
 // PerRPCCredential returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
 // oauth2.clientcredentials.Config instance will manage tokens performing auto refresh as necessary.
 func (O *OAuth2Authenticator) PerRPCCredential() (credentials.PerRPCCredentials, error) {
-	 return grpcOAuth.TokenSource{
-	 	TokenSource: O.clientCredentials.TokenSource(context.Background()),
-	 }, nil
+	return grpcOAuth.TokenSource{
+		TokenSource: O.clientCredentials.TokenSource(context.Background()),
+	}, nil
 }

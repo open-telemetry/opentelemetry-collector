@@ -86,12 +86,10 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporterImp, error) 
 	}, nil
 }
 
-
+// start overrides defaults base exporters start (no op) to attach auth transport to the http client.
+// This is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporterImp) start(_ context.Context, host component.Host) error {
-	for k, _ := range host.GetExtensions() {
-		e.logger.Info(k.Name())
-	}
-    if e.config.HTTPClientSettings.Auth != nil {
+	if e.config.HTTPClientSettings.Auth != nil {
 		transport, err := e.config.HTTPClientSettings.AuthRoundTripper(e.client.Transport, host.GetExtensions())
 		if err != nil {
 			return err
