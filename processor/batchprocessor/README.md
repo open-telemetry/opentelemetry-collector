@@ -19,9 +19,10 @@ The following configuration options can be modified:
 batch will be sent.
 - `timeout` (default = 200ms): Time duration after which a batch will be sent
 regardless of size.
-- `send_batch_max_size` (default = 0): The maximum number of items in a batch.
- This property ensures that larger batches are split into smaller units.
- By default (`0`), there is no upper limit of the batch size.
+- `send_batch_max_size` (default = 0): The upper limit of the batch size.
+  `0` means no upper limit of the batch size.
+  This property ensures that larger batches are split into smaller units.
+  It must be larger than `send_batch_size`.
 
 Examples:
 
