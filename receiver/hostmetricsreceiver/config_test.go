@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["hostmetrics"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	defaultConfigCPUScraper := factory.CreateDefaultConfig()
 	defaultConfigCPUScraper.(*Config).Scrapers = map[string]internal.Config{
 		cpuscraper.TypeStr: (&cpuscraper.Factory{}).CreateDefaultConfig(),
@@ -60,13 +60,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, defaultConfigCPUScraper, r0)
 
-	r1 := cfg.Receivers["hostmetrics/customname"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
 	expectedConfig := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "hostmetrics/customname",
-			},
+			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
 			CollectionInterval: 30 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{

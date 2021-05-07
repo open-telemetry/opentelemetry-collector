@@ -18,51 +18,53 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// splitTrace removes spans from the input trace and returns a new trace of the specified size.
-func splitTrace(size int, toSplit pdata.Traces) pdata.Traces {
-	if toSplit.SpanCount() <= size {
-		return toSplit
+// splitTraces removes spans from the input trace and returns a new trace of the specified size.
+func splitTraces(size int, src pdata.Traces) pdata.Traces {
+	if src.SpanCount() <= size {
+		return src
 	}
-	copiedSpans := 0
-	result := pdata.NewTraces()
-	rss := toSplit.ResourceSpans()
-	result.ResourceSpans().Resize(rss.Len())
-	rssCount := 0
-	for i := rss.Len() - 1; i >= 0; i-- {
-		rssCount++
-		rs := rss.At(i)
-		destRs := result.ResourceSpans().At(result.ResourceSpans().Len() - 1 - i)
-		rs.Resource().CopyTo(destRs.Resource())
+	totalCopiedSpans := 0
+	dest := pdata.NewTraces()
 
-		for j := rs.InstrumentationLibrarySpans().Len() - 1; j >= 0; j-- {
-			instSpans := rs.InstrumentationLibrarySpans().At(j)
-			destInstSpans := destRs.InstrumentationLibrarySpans().AppendEmpty()
-			instSpans.InstrumentationLibrary().CopyTo(destInstSpans.InstrumentationLibrary())
+	src.ResourceSpans().RemoveIf(func(srcRs pdata.ResourceSpans) bool {
+		// If we are done skip everything else.
+		if totalCopiedSpans == size {
+			return false
+		}
 
-			if size-copiedSpans >= instSpans.Spans().Len() {
-				destInstSpans.Spans().Resize(instSpans.Spans().Len())
-			} else {
-				destInstSpans.Spans().Resize(size - copiedSpans)
+		destRs := dest.ResourceSpans().AppendEmpty()
+		srcRs.Resource().CopyTo(destRs.Resource())
+
+		srcRs.InstrumentationLibrarySpans().RemoveIf(func(srcIls pdata.InstrumentationLibrarySpans) bool {
+			// If we are done skip everything else.
+			if totalCopiedSpans == size {
+				return false
 			}
-			for k, destIdx := instSpans.Spans().Len()-1, 0; k >= 0 && copiedSpans < size; k, destIdx = k-1, destIdx+1 {
-				span := instSpans.Spans().At(k)
-				span.CopyTo(destInstSpans.Spans().At(destIdx))
-				copiedSpans++
-				// remove span
-				instSpans.Spans().Resize(instSpans.Spans().Len() - 1)
+
+			destIls := destRs.InstrumentationLibrarySpans().AppendEmpty()
+			srcIls.InstrumentationLibrary().CopyTo(destIls.InstrumentationLibrary())
+
+			// If possible to move all metrics do that.
+			srcSpansLen := srcIls.Spans().Len()
+			if size-totalCopiedSpans >= srcSpansLen {
+				totalCopiedSpans += srcSpansLen
+				srcIls.Spans().MoveAndAppendTo(destIls.Spans())
+				return true
 			}
-			if instSpans.Spans().Len() == 0 {
-				rs.InstrumentationLibrarySpans().Resize(rs.InstrumentationLibrarySpans().Len() - 1)
-			}
-			if copiedSpans == size {
-				result.ResourceSpans().Resize(rssCount)
-				return result
-			}
-		}
-		if rs.InstrumentationLibrarySpans().Len() == 0 {
-			rss.Resize(rss.Len() - 1)
-		}
-	}
-	result.ResourceSpans().Resize(rssCount)
-	return result
+
+			srcIls.Spans().RemoveIf(func(srcSpan pdata.Span) bool {
+				// If we are done skip everything else.
+				if totalCopiedSpans == size {
+					return false
+				}
+				srcSpan.CopyTo(destIls.Spans().AppendEmpty())
+				totalCopiedSpans++
+				return true
+			})
+			return false
+		})
+		return srcRs.InstrumentationLibrarySpans().Len() == 0
+	})
+
+	return dest
 }

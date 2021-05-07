@@ -23,6 +23,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -57,7 +58,7 @@ func SetupRecordedMetricsTest() (func(), error) {
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterTraces(t *testing.T, exporter string, acceptedSpans, droppedSpans int64) {
+func CheckExporterTraces(t *testing.T, exporter config.ComponentID, acceptedSpans, droppedSpans int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, acceptedSpans, "exporter/sent_spans")
 	checkValueForView(t, exporterTags, droppedSpans, "exporter/send_failed_spans")
@@ -65,7 +66,7 @@ func CheckExporterTraces(t *testing.T, exporter string, acceptedSpans, droppedSp
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterMetrics(t *testing.T, exporter string, acceptedMetricsPoints, droppedMetricsPoints int64) {
+func CheckExporterMetrics(t *testing.T, exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, acceptedMetricsPoints, "exporter/sent_metric_points")
 	checkValueForView(t, exporterTags, droppedMetricsPoints, "exporter/send_failed_metric_points")
@@ -73,7 +74,7 @@ func CheckExporterMetrics(t *testing.T, exporter string, acceptedMetricsPoints, 
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterLogs(t *testing.T, exporter string, acceptedLogRecords, droppedLogRecords int64) {
+func CheckExporterLogs(t *testing.T, exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, acceptedLogRecords, "exporter/sent_log_records")
 	checkValueForView(t, exporterTags, droppedLogRecords, "exporter/send_failed_log_records")
@@ -81,7 +82,7 @@ func CheckExporterLogs(t *testing.T, exporter string, acceptedLogRecords, droppe
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorTraces(t *testing.T, processor string, acceptedSpans, refusedSpans, droppedSpans int64) {
+func CheckProcessorTraces(t *testing.T, processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) {
 	processorTags := tagsForProcessorView(processor)
 	checkValueForView(t, processorTags, acceptedSpans, "processor/accepted_spans")
 	checkValueForView(t, processorTags, refusedSpans, "processor/refused_spans")
@@ -90,7 +91,7 @@ func CheckProcessorTraces(t *testing.T, processor string, acceptedSpans, refused
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorMetrics(t *testing.T, processor string, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) {
+func CheckProcessorMetrics(t *testing.T, processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) {
 	processorTags := tagsForProcessorView(processor)
 	checkValueForView(t, processorTags, acceptedMetricPoints, "processor/accepted_metric_points")
 	checkValueForView(t, processorTags, refusedMetricPoints, "processor/refused_metric_points")
@@ -99,7 +100,7 @@ func CheckProcessorMetrics(t *testing.T, processor string, acceptedMetricPoints,
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorLogs(t *testing.T, processor string, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) {
+func CheckProcessorLogs(t *testing.T, processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) {
 	processorTags := tagsForProcessorView(processor)
 	checkValueForView(t, processorTags, acceptedLogRecords, "processor/accepted_log_records")
 	checkValueForView(t, processorTags, refusedLogRecords, "processor/refused_log_records")
@@ -108,7 +109,7 @@ func CheckProcessorLogs(t *testing.T, processor string, acceptedLogRecords, refu
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverTraces(t *testing.T, receiver, protocol string, acceptedSpans, droppedSpans int64) {
+func CheckReceiverTraces(t *testing.T, receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	checkValueForView(t, receiverTags, acceptedSpans, "receiver/accepted_spans")
 	checkValueForView(t, receiverTags, droppedSpans, "receiver/refused_spans")
@@ -116,7 +117,7 @@ func CheckReceiverTraces(t *testing.T, receiver, protocol string, acceptedSpans,
 
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverLogs(t *testing.T, receiver, protocol string, acceptedLogRecords, droppedLogRecords int64) {
+func CheckReceiverLogs(t *testing.T, receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	checkValueForView(t, receiverTags, acceptedLogRecords, "receiver/accepted_log_records")
 	checkValueForView(t, receiverTags, droppedLogRecords, "receiver/refused_log_records")
@@ -124,7 +125,7 @@ func CheckReceiverLogs(t *testing.T, receiver, protocol string, acceptedLogRecor
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverMetrics(t *testing.T, receiver, protocol string, acceptedMetricPoints, droppedMetricPoints int64) {
+func CheckReceiverMetrics(t *testing.T, receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	checkValueForView(t, receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points")
 	checkValueForView(t, receiverTags, droppedMetricPoints, "receiver/refused_metric_points")
@@ -132,7 +133,7 @@ func CheckReceiverMetrics(t *testing.T, receiver, protocol string, acceptedMetri
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckScraperMetrics(t *testing.T, receiver, scraper string, scrapedMetricPoints, erroredMetricPoints int64) {
+func CheckScraperMetrics(t *testing.T, receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) {
 	scraperTags := tagsForScraperView(receiver, scraper)
 	checkValueForView(t, scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points")
 	checkValueForView(t, scraperTags, erroredMetricPoints, "scraper/errored_metric_points")
@@ -161,10 +162,10 @@ func checkValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName stri
 }
 
 // tagsForReceiverView returns the tags that are needed for the receiver views.
-func tagsForReceiverView(receiver, transport string) []tag.Tag {
+func tagsForReceiverView(receiver config.ComponentID, transport string) []tag.Tag {
 	tags := make([]tag.Tag, 0, 2)
 
-	tags = append(tags, tag.Tag{Key: receiverTag, Value: receiver})
+	tags = append(tags, tag.Tag{Key: receiverTag, Value: receiver.String()})
 	if transport != "" {
 		tags = append(tags, tag.Tag{Key: transportTag, Value: transport})
 	}
@@ -173,28 +174,24 @@ func tagsForReceiverView(receiver, transport string) []tag.Tag {
 }
 
 // tagsForScraperView returns the tags that are needed for the scraper views.
-func tagsForScraperView(receiver, scraper string) []tag.Tag {
-	tags := make([]tag.Tag, 0, 2)
-
-	tags = append(tags, tag.Tag{Key: receiverTag, Value: receiver})
-	if scraper != "" {
-		tags = append(tags, tag.Tag{Key: scraperTag, Value: scraper})
+func tagsForScraperView(receiver config.ComponentID, scraper config.ComponentID) []tag.Tag {
+	return []tag.Tag{
+		{Key: receiverTag, Value: receiver.String()},
+		{Key: scraperTag, Value: scraper.String()},
 	}
-
-	return tags
 }
 
 // tagsForProcessorView returns the tags that are needed for the processor views.
-func tagsForProcessorView(processor string) []tag.Tag {
+func tagsForProcessorView(processor config.ComponentID) []tag.Tag {
 	return []tag.Tag{
-		{Key: processorTag, Value: processor},
+		{Key: processorTag, Value: processor.String()},
 	}
 }
 
 // tagsForExporterView returns the tags that are needed for the exporter views.
-func tagsForExporterView(exporter string) []tag.Tag {
+func tagsForExporterView(exporter config.ComponentID) []tag.Tag {
 	return []tag.Tag{
-		{Key: exporterTag, Value: exporter},
+		{Key: exporterTag, Value: exporter.String()},
 	}
 }
 

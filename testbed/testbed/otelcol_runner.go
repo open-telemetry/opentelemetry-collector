@@ -85,10 +85,9 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 
 func (ipp *InProcessCollector) Start(args StartParams) error {
 	params := service.Parameters{
-		ApplicationStartInfo: component.ApplicationStartInfo{
-			ExeName: "otelcol",
+		BuildInfo: component.BuildInfo{
+			Command: "otelcol",
 			Version: version.Version,
-			GitHash: version.GitHash,
 		},
 		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 		Factories:      ipp.factories,

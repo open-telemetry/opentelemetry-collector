@@ -12,13 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conventions
+package component
 
-// OTLP attributes to map certain OpenCensus proto fields. These fields don't have
-// corresponding fields in OTLP, nor are defined in OTLP semantic conventions.
-const (
-	OCAttributeProcessStartTime        = "opencensus.starttime"
-	OCAttributeExporterVersion         = "opencensus.exporterversion"
-	OCAttributeResourceType            = "opencensus.resourcetype"
-	OCAttributeSameProcessAsParentSpan = "opencensus.same_process_as_parent_span"
-)
+// BuildInfo is the information that is logged at the application start and
+// passed into each component. This information can be overridden in custom builds.
+type BuildInfo struct {
+	// Executable file name, e.g. "otelcol".
+	Command string
+
+	// Full name of the collector, e.g. "OpenTelemetry Collector".
+	Description string
+
+	// Version string.
+	Version string
+}
+
+// DefaultBuildInfo returns the default BuildInfo.
+func DefaultBuildInfo() BuildInfo {
+	return BuildInfo{
+		Command:     "otelcol",
+		Description: "OpenTelemetry Collector",
+		Version:     "latest",
+	}
+}

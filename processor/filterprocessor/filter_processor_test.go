@@ -306,7 +306,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,

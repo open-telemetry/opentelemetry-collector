@@ -42,7 +42,7 @@ func TestIdleMode(t *testing.T) {
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 55})
+	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 70})
 	tc.StartAgent()
 
 	tc.Sleep(tc.Duration)

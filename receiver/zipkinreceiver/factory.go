@@ -27,7 +27,6 @@ import (
 // This file implements factory for Zipkin receiver.
 
 const (
-	// The value of "type" key in configuration.
 	typeStr = "zipkin"
 
 	defaultBindEndpoint = "0.0.0.0:9411"
@@ -45,10 +44,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig creates the default configuration for Zipkin receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultBindEndpoint,
 		},

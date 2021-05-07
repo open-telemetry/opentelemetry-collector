@@ -111,18 +111,6 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - correctness:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - correctness-metrics:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - test:
           requires:
             - setup-environment
@@ -144,8 +132,6 @@ workflows:
       - publish-check:
           requires:
             - cross-compile
-            - correctness
-            - correctness-metrics
             - loadtest
             - test
             - coverage
@@ -155,8 +141,6 @@ workflows:
       - publish-stable:
           requires:
             - cross-compile
-            - correctness
-            - correctness-metrics
             - loadtest
             - test
             - coverage
@@ -171,8 +155,6 @@ workflows:
       - publish-dev:
           requires:
             - cross-compile
-            - correctness
-            - correctness-metrics
             - loadtest
             - test
             - coverage
@@ -251,29 +233,6 @@ jobs:
       - store_test_results:
           path: testbed/tests/results/junit
       - github_issue_generator
-
-  correctness:
-    executor: golang
-    environment:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
-    parallelism: 4
-    resource_class: medium+
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness
-      - github_issue_generator
-
-  correctness-metrics:
-    executor: golang
-    parallelism: 4
-    resource_class: medium+
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Metrics correctness tests
-          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness-metrics | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness-metrics
 
   test:
     executor: golang

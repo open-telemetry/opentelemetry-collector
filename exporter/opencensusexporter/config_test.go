@@ -41,16 +41,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["opencensus"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters["opencensus/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: &config.ExporterSettings{
-				NameVal: "opencensus/2",
-				TypeVal: "opencensus",
-			},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,

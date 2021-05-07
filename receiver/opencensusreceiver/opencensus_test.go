@@ -44,6 +44,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -51,7 +54,7 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-const ocReceiverName = "oc_receiver_test"
+var ocReceiverName = config.NewIDWithName(typeStr, "receiver_test")
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -241,7 +244,7 @@ func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
-	require.NoError(t, ocr.stop())
+	require.NoError(t, ocr.Shutdown(context.Background()))
 }
 
 func TestNewPortAlreadyUsed(t *testing.T) {
@@ -409,20 +412,20 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	exporters := []struct {
-		receiverTag string
-		exportFn    func(
+		receiverID config.ComponentID
+		exportFn   func(
 			t *testing.T,
 			cc *grpc.ClientConn,
 			msg *agenttracepb.ExportTraceServiceRequest) error
 	}{
 		{
-			receiverTag: "oc_trace",
-			exportFn:    exportBidiFn,
+			receiverID: config.NewIDWithName(typeStr, "traces"),
+			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
-			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
+			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 				require.NoError(t, err)
 				defer doneFn()
@@ -430,7 +433,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
+				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -459,7 +462,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
-				obsreporttest.CheckReceiverTraces(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				obsreporttest.CheckReceiverTraces(t, exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}
@@ -558,20 +561,20 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	exporters := []struct {
-		receiverTag string
-		exportFn    func(
+		receiverID config.ComponentID
+		exportFn   func(
 			t *testing.T,
 			cc *grpc.ClientConn,
 			msg *agentmetricspb.ExportMetricsServiceRequest) error
 	}{
 		{
-			receiverTag: "oc_metrics",
-			exportFn:    exportBidiFn,
+			receiverID: config.NewIDWithName(typeStr, "metrics"),
+			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
-			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
+			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 				require.NoError(t, err)
 				defer doneFn()
@@ -579,7 +582,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				sink := &internalconsumertest.ErrOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
+				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -608,8 +611,32 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
-				obsreporttest.CheckReceiverMetrics(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				obsreporttest.CheckReceiverMetrics(t, exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}
+}
+
+func TestInvalidTLSCredentials(t *testing.T) {
+	cfg := Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		GRPCServerSettings: configgrpc.GRPCServerSettings{
+			TLSSetting: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "willfail",
+				},
+			},
+		},
+	}
+	opt := cfg.buildOptions()
+	assert.NotNil(t, opt)
+
+	addr := testutil.GetAvailableLocalAddress(t)
+	ocr, err := newOpenCensusReceiver(config.NewIDWithName(typeStr, "invalidtls"), "tcp", addr, nil, nil, opt...)
+	assert.NoError(t, err)
+	assert.NotNil(t, ocr)
+
+	srv, err := ocr.grpcServer(componenttest.NewNopHost())
+	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+	assert.Nil(t, srv)
 }

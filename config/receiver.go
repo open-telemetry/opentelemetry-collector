@@ -18,37 +18,36 @@ package config
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
 // Embedded validatable will force each receiver to implement Validate() function
 type Receiver interface {
-	NamedEntity
+	identifiable
 	validatable
 }
 
 // Receivers is a map of names to Receivers.
-type Receivers map[string]Receiver
+type Receivers map[ComponentID]Receiver
 
 // ReceiverSettings defines common settings for a receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 // It is highly recommended to "override" the Validate() function.
-// When embedded in the processor config it must be with `mapstructure:"-"` tag.
+// When embedded in the receiver config it must be with `mapstructure:",squash"` tag.
 type ReceiverSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	id ComponentID `mapstructure:"-"`
+}
+
+// NewReceiverSettings return a new ReceiverSettings with the given ComponentID.
+func NewReceiverSettings(id ComponentID) ReceiverSettings {
+	return ReceiverSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
 var _ Receiver = (*ReceiverSettings)(nil)
 
-// Name gets the receiver name.
-func (rs *ReceiverSettings) Name() string {
-	return rs.NameVal
+// ID returns the receiver ComponentID.
+func (rs *ReceiverSettings) ID() ComponentID {
+	return rs.id
 }
 
-// SetName sets the receiver name.
-func (rs *ReceiverSettings) SetName(name string) {
-	rs.NameVal = name
-}
-
-// Type sets the receiver type.
-func (rs *ReceiverSettings) Type() Type {
-	return rs.TypeVal
+// SetIDName sets the receiver name.
+func (rs *ReceiverSettings) SetIDName(idName string) {
+	rs.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
