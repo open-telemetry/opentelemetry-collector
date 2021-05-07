@@ -43,7 +43,6 @@ import (
 const (
 	maxConcurrentRequests = 5
 	maxBatchByteSize      = 3000000
-	prwVersion            = "0.1.0"
 )
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
@@ -74,7 +73,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		return nil, errors.New("invalid endpoint")
 	}
 
-	userAgentHeader := fmt.Sprintf("%s/%s X-Prometheus-Remote-Write-Version/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version, prwVersion)
+	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
 	return &PrwExporter{
 		namespace:       namespace,
@@ -327,7 +326,7 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	// https://cortexmetrics.io/docs/apis/#remote-api
 	req.Header.Add("Content-Encoding", "snappy")
 	req.Header.Set("Content-Type", "application/x-protobuf")
-	req.Header.Set("X-Prometheus-Remote-Write-Version", prwVersion)
+	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 	resp, err := prwe.client.Do(req)

@@ -180,7 +180,7 @@ func Test_export(t *testing.T) {
 		// Receives the http requests and unzip, unmarshals, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
-		assert.Equal(t, "opentelemetry-collector/1.0 X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
 
@@ -524,7 +524,7 @@ func Test_PushMetrics(t *testing.T) {
 		dest, err := snappy.Decode(buf, body)
 		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
 		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
-		assert.Equal(t, "opentelemetry-collector/1.0 X-Prometheus-Remote-Write-Version/0.1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		assert.NotNil(t, r.Header.Get("tenant-id"))
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
