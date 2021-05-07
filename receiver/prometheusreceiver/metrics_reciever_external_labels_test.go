@@ -50,12 +50,12 @@ func TestExternalLabels(t *testing.T) {
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	reciever := newPrometheusReceiver(logger, &Config{
+	receiver := newPrometheusReceiver(logger, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		PrometheusConfig: cfg}, cms)
 
-	require.NoError(t, reciever.Start(ctx, componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() { require.NoError(t, reciever.Shutdown(ctx)) })
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
+	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
 
 	mp.wg.Wait()
 	metrics := cms.AllMetrics()
