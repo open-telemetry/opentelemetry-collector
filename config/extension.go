@@ -19,44 +19,38 @@ package config
 // struct or a struct that extends it.
 // Embedded validatable will force each extension to implement Validate() function
 type Extension interface {
-	NamedEntity
+	identifiable
 	validatable
 }
 
 // Extensions is a map of names to extensions.
-type Extensions map[string]Extension
+type Extensions map[ComponentID]Extension
 
-// ExtensionSettings defines common settings for a extension configuration.
-// Specific extensions can embed this struct and extend it with more fields if needed.
-// When embedded in the extension config it must be with `mapstructure:"-"` tag.
+// ExtensionSettings defines common settings for an extension configuration.
+// Specific processors can embed this struct and extend it with more fields if needed.
+// When embedded in the extension config it must be with `mapstructure:",squash"` tag.
 type ExtensionSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	id ComponentID `mapstructure:"-"`
 }
 
-// NewExtensionSettings return a new ExtensionSettings with the given type.
-func NewExtensionSettings(typeVal Type) *ExtensionSettings {
-	return &ExtensionSettings{TypeVal: typeVal, NameVal: string(typeVal)}
+// NewExtensionSettings return a new ExtensionSettings with the given ComponentID.
+func NewExtensionSettings(id ComponentID) ExtensionSettings {
+	return ExtensionSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
 var _ Extension = (*ExtensionSettings)(nil)
 
-// Name gets the extension name.
-func (ext *ExtensionSettings) Name() string {
-	return ext.NameVal
+// ID returns the receiver ComponentID.
+func (rs *ExtensionSettings) ID() ComponentID {
+	return rs.id
 }
 
-// SetName sets the extension name.
-func (ext *ExtensionSettings) SetName(name string) {
-	ext.NameVal = name
-}
-
-// Type sets the extension type.
-func (ext *ExtensionSettings) Type() Type {
-	return ext.TypeVal
+// SetIDName sets the receiver name.
+func (rs *ExtensionSettings) SetIDName(idName string) {
+	rs.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (ext *ExtensionSettings) Validate() error {
+func (rs *ExtensionSettings) Validate() error {
 	return nil
 }

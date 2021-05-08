@@ -167,7 +167,7 @@ func (cfg *Config) validateServicePipelines() error {
 // Service defines the configurable components of the service.
 type Service struct {
 	// Extensions is the ordered list of extensions configured for the service.
-	Extensions []string
+	Extensions []ComponentID
 
 	// Pipelines is the set of data pipelines configured for the service.
 	Pipelines Pipelines
@@ -175,13 +175,6 @@ type Service struct {
 
 // Type is the component type as it is used in the config.
 type Type string
-
-// NamedEntity is a configuration entity that has a type and a name.
-type NamedEntity interface {
-	Type() Type
-	Name() string
-	SetName(name string)
-}
 
 // validatable defines the interface for the configuration validation.
 type validatable interface {
@@ -218,9 +211,9 @@ const (
 type Pipeline struct {
 	Name       string
 	InputType  DataType
-	Receivers  []string
-	Processors []string
-	Exporters  []string
+	Receivers  []ComponentID
+	Processors []ComponentID
+	Exporters  []ComponentID
 }
 
 // Pipelines is a map of names to Pipelines.

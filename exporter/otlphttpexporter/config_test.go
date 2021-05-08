@@ -41,16 +41,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["otlphttp"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters["otlphttp/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: &config.ExporterSettings{
-				NameVal: "otlphttp/2",
-				TypeVal: "otlphttp",
-			},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,

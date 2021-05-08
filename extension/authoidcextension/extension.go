@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package authoidcextension
 
 import (
 	"context"
@@ -29,23 +29,28 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 )
 
-type oidcAuthenticator struct {
-	attribute string
-	config    OIDC
-	provider  *oidc.Provider
-	verifier  *oidc.IDTokenVerifier
+type oidcExtension struct {
+	cfg               *Config
+	unaryInterceptor  configauth.GrpcUnaryInterceptorFunc
+	streamInterceptor configauth.GrpcStreamInterceptorFunc
 
-	unaryInterceptor  unaryInterceptorFunc
-	streamInterceptor streamInterceptorFunc
+	provider *oidc.Provider
+	verifier *oidc.IDTokenVerifier
+
+	logger *zap.Logger
 }
 
 var (
-	_ Authenticator = (*oidcAuthenticator)(nil)
+	_ configauth.Authenticator = (*oidcExtension)(nil)
 
-	errNoClientIDProvided                = errors.New("no ClientID provided for the OIDC configuration")
+	errNoAudienceProvided                = errors.New("no Audience provided for the OIDC configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
 	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the OIDC provider")
@@ -55,40 +60,61 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newOIDCAuthenticator(cfg Authentication) (*oidcAuthenticator, error) {
-	if cfg.OIDC.Audience == "" {
-		return nil, errNoClientIDProvided
+func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
+	if cfg.Audience == "" {
+		return nil, errNoAudienceProvided
 	}
-	if cfg.OIDC.IssuerURL == "" {
+	if cfg.IssuerURL == "" {
 		return nil, errNoIssuerURL
 	}
+
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}
 
-	return &oidcAuthenticator{
-		attribute:         cfg.Attribute,
-		config:            *cfg.OIDC,
-		unaryInterceptor:  defaultUnaryInterceptor,
-		streamInterceptor: defaultStreamInterceptor,
+	return &oidcExtension{
+		cfg:               cfg,
+		logger:            logger,
+		unaryInterceptor:  configauth.DefaultGrpcUnaryServerInterceptor,
+		streamInterceptor: configauth.DefaultGrpcStreamServerInterceptor,
 	}, nil
 }
 
-func (o *oidcAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	authHeaders := headers[o.attribute]
+func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
+	provider, err := getProviderForConfig(e.cfg)
+	if err != nil {
+		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
+	}
+	e.provider = provider
+
+	e.verifier = e.provider.Verifier(&oidc.Config{
+		ClientID: e.cfg.Audience,
+	})
+
+	return nil
+}
+
+// Shutdown is invoked during service shutdown.
+func (e *oidcExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
+func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) error {
+	authHeaders := headers[e.cfg.Attribute]
 	if len(authHeaders) == 0 {
-		return ctx, errNotAuthenticated
+		return errNotAuthenticated
 	}
 
 	// we only use the first header, if multiple values exist
 	parts := strings.Split(authHeaders[0], " ")
 	if len(parts) != 2 {
-		return ctx, errInvalidAuthenticationHeaderFormat
+		return errInvalidAuthenticationHeaderFormat
 	}
 
-	idToken, err := o.verifier.Verify(ctx, parts[1])
+	idToken, err := e.verifier.Verify(ctx, parts[1])
 	if err != nil {
-		return ctx, fmt.Errorf("failed to verify token: %w", err)
+		return fmt.Errorf("failed to verify token: %w", err)
 	}
 
 	claims := map[string]interface{}{}
@@ -99,50 +125,30 @@ func (o *oidcAuthenticator) Authenticate(ctx context.Context, headers map[string
 		// to read the claims. It could fail if we were using a custom struct. Instead of
 		// swalling the error, it's better to make this future-proof, in case the underlying
 		// code changes
-		return ctx, errFailedToObtainClaimsFromToken
+		return errFailedToObtainClaimsFromToken
 	}
 
-	sub, err := getSubjectFromClaims(claims, o.config.UsernameClaim, idToken.Subject)
+	_, err = getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
 	if err != nil {
-		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
+		return fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
-	ctx = context.WithValue(ctx, subjectKey, sub)
 
-	gr, err := getGroupsFromClaims(claims, o.config.GroupsClaim)
+	_, err = getGroupsFromClaims(claims, e.cfg.GroupsClaim)
 	if err != nil {
-		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
+		return fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
-	ctx = context.WithValue(ctx, groupsKey, gr)
-
-	return ctx, nil
-}
-
-func (o *oidcAuthenticator) Start(context.Context) error {
-	provider, err := getProviderForConfig(o.config)
-	if err != nil {
-		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
-	}
-	o.provider = provider
-
-	o.verifier = o.provider.Verifier(&oidc.Config{
-		ClientID: o.config.Audience,
-	})
 
 	return nil
 }
 
-func (o *oidcAuthenticator) Close() error {
-	// no-op at the moment
-	// once we implement caching of the tokens we might need this
-	return nil
+// GrpcUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
+func (e *oidcExtension) GrpcUnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return e.unaryInterceptor(ctx, req, info, handler, e.Authenticate)
 }
 
-func (o *oidcAuthenticator) UnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return o.unaryInterceptor(ctx, req, info, handler, o.Authenticate)
-}
-
-func (o *oidcAuthenticator) StreamInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	return o.streamInterceptor(srv, str, info, handler, o.Authenticate)
+// GrpcStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
+func (e *oidcExtension) GrpcStreamServerInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return e.streamInterceptor(srv, str, info, handler, e.Authenticate)
 }
 
 func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, fallback string) (string, error) {
@@ -188,7 +194,7 @@ func getGroupsFromClaims(claims map[string]interface{}, groupsClaim string) ([]s
 	return []string{}, nil
 }
 
-func getProviderForConfig(config OIDC) (*oidc.Provider, error) {
+func getProviderForConfig(config *Config) (*oidc.Provider, error) {
 	t := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{

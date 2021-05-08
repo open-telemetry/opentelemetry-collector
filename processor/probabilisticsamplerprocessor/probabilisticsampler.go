@@ -66,47 +66,39 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 		cfg,
 		nextConsumer,
 		tsp,
-		processorhelper.WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: false}))
+		processorhelper.WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: true}))
 }
 
 func (tsp *tracesamplerprocessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
-	scaledSamplingRate := tsp.scaledSamplingRate
-
-	rspans := td.ResourceSpans()
-
-	sampledTraceData := pdata.NewTraces()
-	for i := 0; i < rspans.Len(); i++ {
-		resourceSpans := rspans.At(i)
-		rs := sampledTraceData.ResourceSpans().AppendEmpty()
-		resourceSpans.Resource().CopyTo(rs.Resource())
-		spns := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
-		ilss := resourceSpans.InstrumentationLibrarySpans()
-		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-			for k := 0; k < ils.Spans().Len(); k++ {
-				span := ils.Spans().At(k)
-				sp := parseSpanSamplingPriority(span)
+	td.ResourceSpans().RemoveIf(func(rs pdata.ResourceSpans) bool {
+		rs.InstrumentationLibrarySpans().RemoveIf(func(ils pdata.InstrumentationLibrarySpans) bool {
+			ils.Spans().RemoveIf(func(s pdata.Span) bool {
+				sp := parseSpanSamplingPriority(s)
 				if sp == doNotSampleSpan {
 					// The OpenTelemetry mentions this as a "hint" we take a stronger
 					// approach and do not sample the span since some may use it to
 					// remove specific spans from traces.
-					continue
+					return true
 				}
 
 				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 				// Hashing here prevents bias due to such systems.
-				tidBytes := span.TraceID().Bytes()
+				tidBytes := s.TraceID().Bytes()
 				sampled := sp == mustSampleSpan ||
-					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
-
-				if sampled {
-					spns.Append(span)
-				}
-			}
-		}
+					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
+				return !sampled
+			})
+			// Filter out empty InstrumentationLibraryMetrics
+			return ils.Spans().Len() == 0
+		})
+		// Filter out empty ResourceMetrics
+		return rs.InstrumentationLibrarySpans().Len() == 0
+	})
+	if td.ResourceSpans().Len() == 0 {
+		return td, processorhelper.ErrSkipProcessingData
 	}
-	return sampledTraceData, nil
+	return td, nil
 }
 
 // parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to

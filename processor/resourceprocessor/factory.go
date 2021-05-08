@@ -44,7 +44,7 @@ func NewFactory() component.ProcessorFactory {
 // Note: This isn't a valid configuration because the processor would do no work.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	}
 }
 
@@ -98,11 +98,11 @@ func createLogsProcessor(
 
 func createAttrProcessor(cfg *Config) (*processorhelper.AttrProc, error) {
 	if len(cfg.AttributesActions) == 0 {
-		return nil, fmt.Errorf("error creating \"%q\" processor due to missing required field \"attributes\"", cfg.Name())
+		return nil, fmt.Errorf("error creating \"%v\" processor due to missing required field \"attributes\"", cfg.ID())
 	}
 	attrProc, err := processorhelper.NewAttrProc(&processorhelper.Settings{Actions: cfg.AttributesActions})
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"%q\" processor: %w", cfg.Name(), err)
+		return nil, fmt.Errorf("error creating \"%v\" processor: %w", cfg.ID(), err)
 	}
 	return attrProc, nil
 }

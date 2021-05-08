@@ -26,6 +26,8 @@ exporters:
         external_labels:
             key1: value1
             key2: value2
+        resource_to_telemetry_conversion:
+            enabled: true
 
 service:
     pipelines:

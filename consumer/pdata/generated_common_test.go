@@ -159,6 +159,24 @@ func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestAnyValueArray_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewAnyValueArray()
+	emptySlice.RemoveIf(func(el AttributeValue) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestAnyValueArray()
+	pos := 0
+	filtered.RemoveIf(func(el AttributeValue) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func generateTestInstrumentationLibrary() InstrumentationLibrary {
 	tv := NewInstrumentationLibrary()
 	fillTestInstrumentationLibrary(tv)

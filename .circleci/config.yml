@@ -6,7 +6,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
 
 commands:
   verify_dist_files_exist:
@@ -113,20 +113,6 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - correctness:
-          context:
-            - github-release-and-issues-api-token
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - correctness-metrics:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - test:
           context:
             - github-release-and-issues-api-token
@@ -150,8 +136,6 @@ workflows:
       - publish-check:
           requires:
             - cross-compile
-            - correctness
-            - correctness-metrics
             - loadtest
             - test
             - coverage
@@ -164,8 +148,6 @@ workflows:
             - dockerhub-token
           requires:
             - cross-compile
-            - correctness
-            - correctness-metrics
             - loadtest
             - test
             - coverage
@@ -182,8 +164,6 @@ workflows:
             - dockerhub-token
           requires:
             - cross-compile
-            - correctness
-            - correctness-metrics
             - loadtest
             - test
             - coverage
@@ -263,29 +243,6 @@ jobs:
           path: testbed/tests/results/junit
       - github_issue_generator
 
-  correctness:
-    executor: golang
-    environment:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
-    parallelism: 4
-    resource_class: medium+
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness
-      - github_issue_generator
-
-  correctness-metrics:
-    executor: golang
-    parallelism: 4
-    resource_class: medium+
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Metrics correctness tests
-          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness-metrics | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness-metrics
-
   test:
     executor: golang
     environment:
@@ -315,13 +272,14 @@ jobs:
       - run:
           name: Coverage tests
           command: make gotest-with-cover
-      - run:
-          name: Code coverage
-          command: bash <(curl -s https://codecov.io/bash)
+# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
+#      - run:
+#          name: Code coverage
+#          command: bash <(curl -s https://codecov.io/bash)
 
   publish-check:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -337,7 +295,7 @@ jobs:
 
   publish-stable:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - verify_dist_files_exist
@@ -358,7 +316,7 @@ jobs:
 
   publish-dev:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - verify_dist_files_exist

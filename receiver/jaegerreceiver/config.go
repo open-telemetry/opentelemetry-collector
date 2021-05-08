@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	// The config field name to load the protocol map from
+	// The config field id to load the protocol map from
 	protocolsFieldName = "protocols"
 
 	// Default UDP server options

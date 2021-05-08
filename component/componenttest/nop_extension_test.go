@@ -30,7 +30,7 @@ func TestNewNopExtensionFactory(t *testing.T) {
 	require.NotNil(t, factory)
 	assert.Equal(t, config.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &config.ExtensionSettings{TypeVal: factory.Type()}, cfg)
+	assert.Equal(t, &nopExtensionConfig{ExtensionSettings: config.NewExtensionSettings(config.NewID("nop"))}, cfg)
 
 	traces, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{}, cfg)
 	require.NoError(t, err)

@@ -39,9 +39,9 @@ func TestBuildExporters(t *testing.T) {
 	oceFactory := opencensusexporter.NewFactory()
 	factories.Exporters[oceFactory.Type()] = oceFactory
 	cfg := &config.Config{
-		Exporters: map[string]config.Exporter{
-			"opencensus": &opencensusexporter.Config{
-				ExporterSettings: config.NewExporterSettings("opencensus"),
+		Exporters: map[config.ComponentID]config.Exporter{
+			config.NewID("opencensus"): &opencensusexporter.Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID("opencensus")),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "0.0.0.0:12345",
 				},
@@ -54,18 +54,18 @@ func TestBuildExporters(t *testing.T) {
 				"trace": {
 					Name:      "trace",
 					InputType: config.TracesDataType,
-					Exporters: []string{"opencensus"},
+					Exporters: []config.ComponentID{config.NewID("opencensus")},
 				},
 			},
 		},
 	}
 
-	exporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+	exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[cfg.Exporters["opencensus"]]
+	e1 := exporters[cfg.Exporters[config.NewID("opencensus")]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -89,11 +89,11 @@ func TestBuildExporters(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "trace")
-	exporters, err = BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+	exporters, err = BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
-	e1 = exporters[cfg.Exporters["opencensus"]]
+	e1 = exporters[cfg.Exporters[config.NewID("opencensus")]]
 
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
@@ -110,12 +110,9 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	assert.Nil(t, err)
 
 	cfg := &config.Config{
-		Exporters: map[string]config.Exporter{
-			"exampleexporter": &testcomponents.ExampleExporter{
-				ExporterSettings: config.ExporterSettings{
-					NameVal: "exampleexporter",
-					TypeVal: "exampleexporter",
-				},
+		Exporters: map[config.ComponentID]config.Exporter{
+			config.NewID("exampleexporter"): &testcomponents.ExampleExporter{
+				ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
 			},
 		},
 
@@ -124,18 +121,18 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 				"logs": {
 					Name:      "logs",
 					InputType: "logs",
-					Exporters: []string{"exampleexporter"},
+					Exporters: []config.ComponentID{config.NewID("exampleexporter")},
 				},
 			},
 		},
 	}
 
-	exporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+	exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[cfg.Exporters["exampleexporter"]]
+	e1 := exporters[cfg.Exporters[config.NewID("exampleexporter")]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -155,11 +152,11 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "logs")
-	exporters, err = BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+	exporters, err = BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
-	e1 = exporters[cfg.Exporters["exampleexporter"]]
+	e1 = exporters[cfg.Exporters[config.NewID("exampleexporter")]]
 
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
@@ -241,7 +238,7 @@ func TestBuildExporters_NotSupportedDataType(t *testing.T) {
 			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
-			exporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+			exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 			assert.Error(t, err)
 			assert.Zero(t, len(exporters))
 		})

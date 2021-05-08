@@ -159,7 +159,7 @@ func checkStructFieldTags(f reflect.StructField) error {
 
 	if squash {
 		// Field was squashed.
-		if f.Type.Kind() != reflect.Struct {
+		if (f.Type.Kind() != reflect.Struct) && (f.Type.Kind() != reflect.Ptr || f.Type.Elem().Kind() != reflect.Struct) {
 			return fmt.Errorf(
 				"attempt to squash non-struct type on field %q", f.Name)
 		}

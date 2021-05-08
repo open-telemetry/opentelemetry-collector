@@ -45,7 +45,7 @@ func NewFactory() component.ProcessorFactory {
 // Note: This isn't a valid configuration because the processor would do no work.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	}
 }
 
@@ -57,11 +57,11 @@ func createTracesProcessor(
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", cfg.Name())
+		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
 	}
 	attrProc, err := processorhelper.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %q", err, cfg.Name())
+		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
 	}
 	include, err := filterspan.NewMatcher(oCfg.Include)
 	if err != nil {
@@ -87,11 +87,11 @@ func createLogProcessor(
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
 	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", cfg.Name())
+		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
 	}
 	attrProc, err := processorhelper.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %q", err, cfg.Name())
+		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
 	}
 	include, err := filterlog.NewMatcher(oCfg.Include)
 	if err != nil {

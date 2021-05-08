@@ -30,6 +30,26 @@ func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
 		*dest.orig = append(*dest.orig, *es.orig...)
 	}
 	*es.orig = nil
+}
+
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
+	newLen := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }`
 
 const commonSliceTestTemplate = `
@@ -57,6 +77,24 @@ func Test${structName}_MoveAndAppendTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func Test${structName}_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := New${structName}()
+	emptySlice.RemoveIf(func (el ${elementName}) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTest${structName}()
+	pos := 0
+	filtered.RemoveIf(func (el ${elementName}) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }`
 
 const commonSliceGenerateTest = `func generateTest${structName}() ${structName} {

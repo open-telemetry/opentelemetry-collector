@@ -38,9 +38,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Exporters))
 
-	c := cfg.Exporters[typeStr].(*Config)
+	c := cfg.Exporters[config.NewID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},

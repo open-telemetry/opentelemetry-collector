@@ -74,6 +74,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 			// and allow users to modify the queue size.
 		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
+		exporterhelper.WithResourceToTelemetryConversion(prwCfg.ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
 
@@ -82,7 +83,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),

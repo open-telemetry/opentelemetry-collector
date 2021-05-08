@@ -1,28 +1,12 @@
-# SRC_ROOT is the top of the source tree.
-SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-
-ALL_SRC := $(shell find . -name '*.go' \
-                                -not -path '*/third_party/*' \
-                                -type f | sort)
-
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
-ALL_PKGS := $(shell go list ./...)
+ALL_PKGS := $(sort $(shell go list ./...))
 
-# All source code and documents. Used in spell check.
-ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
-                                -type f | sort)
-
-GOTEST_OPT?= -v -race -timeout 180s
-GO_ACC=go-acc
+# Use a single process (-p 1) on go test to avoid tests clashing on machine
+# wide resources, e.g. ports.
+GOTEST_OPT?= -v -p 1 -race -timeout 180s
 GOTEST=go test
-ADDLICENCESE=addlicense
-MISSPELL=misspell -error
-MISSPELL_CORRECTION=misspell -w
 LINT=golangci-lint
 IMPI=impi
-
-all-license-srcs:
-	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
 .PHONY: test
 test:
@@ -32,29 +16,6 @@ test:
 benchmark:
 	$(GOTEST) -bench=. -run=notests ./...
 
-.PHONY: addlicense
-addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
-			exit 1; \
-		else \
-			echo "Add License finished successfully"; \
-		fi
-
-.PHONY: checklicense
-checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
-			echo "Use 'make addlicense' to fix this."; \
-			exit 1; \
-		else \
-			echo "Check License finished successfully"; \
-		fi
-
 .PHONY: fmt
 fmt:
 	gofmt -w -s ./
@@ -63,18 +24,6 @@ fmt:
 .PHONY: lint
 lint:
 	$(LINT) run --allow-parallel-runners
-
-.PHONY: misspell
-misspell:
-ifdef ALL_DOC
-	$(MISSPELL) $(ALL_DOC)
-endif
-
-.PHONY: misspell-correction
-misspell-correction:
-ifdef ALL_DOC
-	$(MISSPELL_CORRECTION) $(ALL_DOC)
-endif
 
 .PHONY: impi
 impi:
