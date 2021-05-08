@@ -23,7 +23,7 @@ receivers:
 exporters:
   otlphttp/withauth:
     endpoint: http://localhost:9000
-    authentication:
+    auth:
       authenticator: oauth2
 
 service:

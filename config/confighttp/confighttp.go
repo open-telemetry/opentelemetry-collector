@@ -16,6 +16,7 @@ package confighttp
 
 import (
 	"crypto/tls"
+	"fmt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -54,7 +55,7 @@ type HTTPClientSettings struct {
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
 	// Authenticator for the exporter referred from extensions.
-	Auth *configauth.Authentication `mapstructure:"authentication,omitempty"`
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 // ToClient creates an HTTP client.
@@ -95,7 +96,12 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	}, nil
 }
 
+// AuthRoundTripper intercepts base transport and returns a new authenticated transport.
 func (hcs *HTTPClientSettings) AuthRoundTripper(clientBaseTransport http.RoundTripper, ext map[config.NamedEntity]component.Extension) (http.RoundTripper, error) {
+	if hcs.Auth != nil {
+		return nil, fmt.Errorf("configuration for auth absent")
+	}
+
 	httpCustomAuthRoundTripper, err := configauth.GetHTTPClientAuth(ext, hcs.Auth.AuthenticatorName)
 	if err != nil {
 		return nil, err
