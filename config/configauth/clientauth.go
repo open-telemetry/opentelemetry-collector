@@ -20,7 +20,7 @@ type ClientAuth interface {
 // clients.
 type HTTPClientAuth interface {
 	ClientAuth
-	RoundTripper(base http.RoundTripper) http.RoundTripper
+	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
 }
 
 // GRPCClientAuth is a ClientAuth that can be used as an authenticator for the configauth.Authentication option for gRPC

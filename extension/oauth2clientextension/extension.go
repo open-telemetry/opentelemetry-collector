@@ -67,21 +67,21 @@ func newOAuth2Extension(cfg *OAuth2ClientSettings, logger *zap.Logger) (*OAuth2A
 	}, nil
 }
 
-func (O *OAuth2Authenticator) Start(ctx context.Context, host component.Host) error {
+func (O *OAuth2Authenticator) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (O *OAuth2Authenticator) Shutdown(ctx context.Context) error {
+func (O *OAuth2Authenticator) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
 // also auto refreshes OAuth tokens as needed.
-func (O *OAuth2Authenticator) RoundTripper(base http.RoundTripper) http.RoundTripper {
+func (O *OAuth2Authenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &oauth2.Transport{
 		Source: O.clientCredentials.TokenSource(context.Background()),
 		Base:   base,
-	}
+	}, nil
 }
 
 // PerRPCCredential returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath

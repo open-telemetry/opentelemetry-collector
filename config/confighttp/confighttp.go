@@ -106,7 +106,7 @@ func (hcs *HTTPClientSettings) AuthRoundTripper(clientBaseTransport http.RoundTr
 	if err != nil {
 		return nil, err
 	}
-	return httpCustomAuthRoundTripper.RoundTripper(clientBaseTransport), nil
+	return httpCustomAuthRoundTripper.RoundTripper(clientBaseTransport)
 }
 
 // Custom RoundTripper that add headers
