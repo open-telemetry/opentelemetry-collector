@@ -1,6 +1,7 @@
-# Authenticator - OIDC
+# Authenticator - OAuth2 Client Credentials
 
-This extension implements a `configauth.Authenticator`, to be used in exporter inside the `auth` settings. The authenticator type has to be set to `oauth2`.
+This extension implements a `configauth.Authenticator`, to be used based exporter (HTTP and gRPC based)
+inside the `auth` settings. The authenticator type has to be set to `oauth2`.
 
 ## Configuration
 
