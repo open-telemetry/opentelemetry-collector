@@ -205,15 +205,15 @@ func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.Logger) *MetricsAdjuster
 // Returns the total number of timeseries that had reset start times.
 func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) ([]*metricspb.Metric, int) {
 	var adjusted = make([]*metricspb.Metric, 0, len(metrics))
-	reset := 0
+	resets := 0
 	ma.tsm.Lock()
 	defer ma.tsm.Unlock()
 	for _, metric := range metrics {
 		d := ma.adjustMetric(metric)
-		reset += d
+		resets += d
 		adjusted = append(adjusted, metric)
 	}
-	return adjusted, reset
+	return adjusted, resets
 }
 
 // Returns the number of timeseries with reset start times.
@@ -236,20 +236,20 @@ func (ma *MetricsAdjuster) adjustMetric(metric *metricspb.Metric) int {
 
 // Returns  the number of timeseries that had reset start times.
 func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) int {
-	reset := 0
+	resets := 0
 	filtered := make([]*metricspb.TimeSeries, 0, len(metric.GetTimeseries()))
 	for _, current := range metric.GetTimeseries() {
 		tsi := ma.tsm.get(metric, current.GetLabelValues())
 		if tsi.initial == nil || !ma.adjustTimeseries(metric.MetricDescriptor.Type, current, tsi.initial, tsi.previous) {
 			// initial || reset timeseries
 			tsi.initial = current
-			reset++
+			resets++
 		}
 		tsi.previous = current
 		filtered = append(filtered, current)
 	}
 	metric.Timeseries = filtered
-	return reset
+	return resets
 }
 
 // Returns true if 'current' was adjusted and false if 'current' is an the initial occurrence or a

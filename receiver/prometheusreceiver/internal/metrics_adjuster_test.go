@@ -401,7 +401,7 @@ type metricsAdjusterTest struct {
 	description string
 	metrics     []*metricspb.Metric
 	adjusted    []*metricspb.Metric
-	reset       int
+	resets      int
 }
 
 func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
@@ -410,9 +410,9 @@ func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) 
 	ma := NewMetricsAdjuster(tsm, l)
 
 	for _, test := range script {
-		expectedDropped := test.reset
-		adjusted, dropped := ma.AdjustMetrics(test.metrics)
+		expectedResets := test.resets
+		adjusted, resets := ma.AdjustMetrics(test.metrics)
 		assert.EqualValuesf(t, test.adjusted, adjusted, "Test: %v - expected: %v, actual: %v", test.description, test.adjusted, adjusted)
-		assert.Equalf(t, expectedDropped, dropped, "Test: %v", test.description)
+		assert.Equalf(t, expectedResets, resets, "Test: %v", test.description)
 	}
 }

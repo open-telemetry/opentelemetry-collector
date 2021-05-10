@@ -142,45 +142,42 @@ together. It has a very simple interface which is defined below:
 
 ```go
 type Appender interface {
-  Add(l labels.Labels, t int64, v float64) (uint64, error)
-
-
-  AddFast(l labels.Labels, ref uint64, t int64, v float64) error
-
+  Append(ref uint64, l labels.Labels, t int64, v float64) (uint64, error)
 
   // Commit submits the collected samples and purges the batch.
   Commit() error
 
-
   Rollback() error
+
+  ExemplarAppender
+}
+
+type ExemplarAppender interface {
+	AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error)
 }
 ```
 
-*Note: the above code belongs to the Prometheus project, its license can be found [here](https://github.com/prometheus/prometheus/blob/v2.9.2/LICENSE)*
+*Note: the above code belongs to the Prometheus project, its license can be found [here](https://github.com/prometheus/prometheus/blob/v2.26.0/LICENSE)*
 
-One can see that the interface is very simple, it only has 4 methods: `Add`,
-`AddFast`, `Commit` and `Rollback`. The last two methods are easy to
-understand: `Commit` is called when the processing of the scraped page is
-completed and successful, whereas `Rollback` is called if an error occurs during
-the process.
+One can see that the interface is very simple, it only has 4 methods (once we
+account for the embedded `ExemplarAppender` interface): `Append`, `AppendExemplar`,
+`Commit` and `Rollback`. The two lifecycle methods are easy to understand: `Commit`
+is called when the processing of the scraped page is completed and successful,
+whereas `Rollback` is called if an error occurs during the process.
 
-However, for the two methods starting with 'Add', there's no document on the
-Prometheus project for how they should be used. By examining the scrapeLoop
-source code, as well as some storage.Appender implementations. It indicates
-that the first method `Add` is always used for the first time when a unique
-combination of metric name and tags are seen for the first time. The `Add`
-method can return a non-zero reference number, then the scrapeLoop can cache
-this number with the metric's signature. The next time, such as the next
-scrape cycle of the same target, when the metric is seen again by matching
-its signature, it will call the `AddFast` method with the cached reference
-number. This reference number might make sense to databases which have unique
-key as numbers, however, in our use case, it's not necessary, thus we can
-always return 0 ref number from the `Add` method to skip this caching mechanism.
+However, for the two methods starting with 'Append', the behavior is somewhat
+more complicated.  The documentation indicates that calls to 'Append' may return
+an optional 'reference number' which may be used to add further samples in the
+same or later transactions.  A reference value of `0` is used to indicate that
+no such caching should occur.  The documentation indicates that current implementations
+of `AppendExemplar` do not generate reference numbers and their doing so should
+be considered erroneous and logged.  In our system we do not generate any reference
+numbers and always return `0` from `Append` and `AppendExemplar` to skip caching.
 
 ### Challenges and solutions
 Even though the definition of this interface is very simple, to
 implement it properly is a bit challenging given that every time the
-Add/AddFast method is called it only provides the information about the
+Append/AppendExemplar method is called it only provides the information about the
 current data point. The context of what metric group this data point belonging
 to is not provided; we have to keep track of it internally within the appender.
 This is not the whole story, there are a couple other issues we need to
@@ -188,7 +185,7 @@ address, including:
 
 1. Have a way to link the Target with the current appender instance
 
-The labels provided to the Add/AddFast methods do not include some target
+The labels provided to the Append/AppendExemplar methods do not include some target
 specified information such as `job name` which is important in constructing the [Node
 proto](https://github.com/census-instrumentation/opencensus-proto/blob/e2601ef16f8a085a69d94ace5133f97438f8945f/src/opencensus/proto/agent/common/v1/common.proto#L36-L51)
 object of OpenTelemetry. The target object is not accessible from the Appender
@@ -201,7 +198,7 @@ instance.
 In OpenTelemetry, metric points of the same name are usually grouped together
 as one timeseries but different data points. It's important for the appender to
 keep track of the metric family changes, and group metrics of the same family
-together Keep in mind that the Add/AddFast method is operated in a streaming
+together Keep in mind that the Append/AppendExemplar method is operated in a streaming
 manner, ScrapeLoop does not provide any direct hints on metric name change, the
 appender itself need to keep track of it. It's also important to know that for
 some special types such as `histogram` and `summary`, not all the data points
