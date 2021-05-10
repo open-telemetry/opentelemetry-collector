@@ -22,13 +22,31 @@ import (
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
+// identifiable is an interface that all components configurations MUST embed.
+type identifiable interface {
+	// ID returns the ID of the component that this configuration belongs to.
+	ID() ComponentID
+	// SetIDName updates the name part of the ID for the component that this configuration belongs to.
+	SetIDName(idName string)
+}
+
 // ComponentID represents the identity for a component. It combines two values:
 // * type - the Type of the component.
 // * name - the name of that component.
 // The component ComponentID (combination type + name) is unique for a given component.Kind.
 type ComponentID struct {
-	typeVal Type
-	nameVal string
+	typeVal Type   `mapstructure:"-"`
+	nameVal string `mapstructure:"-"`
+}
+
+// NewID returns a new ComponentID with the given Type and empty name.
+func NewID(typeVal Type) ComponentID {
+	return ComponentID{typeVal: typeVal}
+}
+
+// NewIDWithName returns a new ComponentID with the given Type and name.
+func NewIDWithName(typeVal Type, nameVal string) ComponentID {
+	return ComponentID{typeVal: typeVal, nameVal: nameVal}
 }
 
 // IDFromString decodes a string in type[/name] format into ComponentID.

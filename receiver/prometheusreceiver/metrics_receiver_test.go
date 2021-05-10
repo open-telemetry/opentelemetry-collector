@@ -30,6 +30,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	gokitlog "github.com/go-kit/kit/log"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -164,7 +166,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	}
 
 	cfgStr := strings.ReplaceAll(string(cfg), srvPlaceHolder, u.Host)
-	pCfg, err := promcfg.Load(cfgStr)
+	pCfg, err := promcfg.Load(cfgStr, false, gokitlog.NewNopLogger())
 	return mp, pCfg, err
 }
 
@@ -180,7 +182,7 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []internaldata.Metri
 	}
 }
 
-func doCompare(name string, t *testing.T, want, got interface{}) {
+func doCompare(name string, t *testing.T, want, got *internaldata.MetricsData) {
 	t.Run(name, func(t *testing.T) {
 		assert.EqualValues(t, want, got)
 	})
@@ -1361,7 +1363,10 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
+	rcvr := newPrometheusReceiver(logger, &Config{
+		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		PrometheusConfig:   cfg,
+		UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
 	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
@@ -1450,7 +1455,11 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric, StartTimeMetricRegex: startTimeMetricRegex}, cms)
+	rcvr := newPrometheusReceiver(logger, &Config{
+		ReceiverSettings:     config.NewReceiverSettings(config.NewID(typeStr)),
+		PrometheusConfig:     cfg,
+		UseStartTimeMetric:   useStartTimeMetric,
+		StartTimeMetricRegex: startTimeMetricRegex}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
 	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })

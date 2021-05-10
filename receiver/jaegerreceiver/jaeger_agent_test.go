@@ -36,6 +36,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -45,7 +46,7 @@ import (
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-const jaegerAgent = "jaeger_agent_test"
+var jaegerAgent = config.NewIDWithName(typeStr, "agent_test")
 
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	port := testutil.GetAvailablePort(t)

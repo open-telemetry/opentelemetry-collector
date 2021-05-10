@@ -93,9 +93,9 @@ type grpcSender struct {
 	traceExporter  otlptrace.TraceServiceClient
 	metricExporter otlpmetrics.MetricsServiceClient
 	logExporter    otlplogs.LogsServiceClient
-	grpcClientConn *grpc.ClientConn
+	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
-	waitForReady   bool
+	callOptions    []grpc.CallOption
 }
 
 func newGrpcSender(config *Config) (*grpcSender, error) {
@@ -113,29 +113,31 @@ func newGrpcSender(config *Config) (*grpcSender, error) {
 		traceExporter:  otlptrace.NewTraceServiceClient(clientConn),
 		metricExporter: otlpmetrics.NewMetricsServiceClient(clientConn),
 		logExporter:    otlplogs.NewLogsServiceClient(clientConn),
-		grpcClientConn: clientConn,
+		clientConn:     clientConn,
 		metadata:       metadata.New(config.GRPCClientSettings.Headers),
-		waitForReady:   config.GRPCClientSettings.WaitForReady,
+		callOptions: []grpc.CallOption{
+			grpc.WaitForReady(config.GRPCClientSettings.WaitForReady),
+		},
 	}
 	return gs, nil
 }
 
 func (gs *grpcSender) stop() error {
-	return gs.grpcClientConn.Close()
+	return gs.clientConn.Close()
 }
 
 func (gs *grpcSender) exportTrace(ctx context.Context, request *otlptrace.ExportTraceServiceRequest) error {
-	_, err := gs.traceExporter.Export(gs.enhanceContext(ctx), request, grpc.WaitForReady(gs.waitForReady))
+	_, err := gs.traceExporter.Export(gs.enhanceContext(ctx), request, gs.callOptions...)
 	return processError(err)
 }
 
 func (gs *grpcSender) exportMetrics(ctx context.Context, request *otlpmetrics.ExportMetricsServiceRequest) error {
-	_, err := gs.metricExporter.Export(gs.enhanceContext(ctx), request, grpc.WaitForReady(gs.waitForReady))
+	_, err := gs.metricExporter.Export(gs.enhanceContext(ctx), request, gs.callOptions...)
 	return processError(err)
 }
 
 func (gs *grpcSender) exportLogs(ctx context.Context, request *otlplogs.ExportLogsServiceRequest) error {
-	_, err := gs.logExporter.Export(gs.enhanceContext(ctx), request, grpc.WaitForReady(gs.waitForReady))
+	_, err := gs.logExporter.Export(gs.enhanceContext(ctx), request, gs.callOptions...)
 	return processError(err)
 }
 

@@ -76,7 +76,7 @@ func TestService_GetExtensions(t *testing.T) {
 	extMap := srv.GetExtensions()
 
 	assert.Len(t, extMap, 1)
-	assert.Contains(t, extMap, &config.ExtensionSettings{TypeVal: "nop", NameVal: "nop"})
+	assert.Contains(t, extMap, config.NewID("nop"))
 }
 
 func TestService_GetExporters(t *testing.T) {
@@ -90,11 +90,11 @@ func TestService_GetExporters(t *testing.T) {
 	expMap := srv.GetExporters()
 	assert.Len(t, expMap, 3)
 	assert.Len(t, expMap[config.TracesDataType], 1)
-	assert.Contains(t, expMap[config.TracesDataType], &config.ExporterSettings{TypeVal: "nop", NameVal: "nop"})
+	assert.Contains(t, expMap[config.TracesDataType], config.NewID("nop"))
 	assert.Len(t, expMap[config.MetricsDataType], 1)
-	assert.Contains(t, expMap[config.MetricsDataType], &config.ExporterSettings{TypeVal: "nop", NameVal: "nop"})
+	assert.Contains(t, expMap[config.MetricsDataType], config.NewID("nop"))
 	assert.Len(t, expMap[config.LogsDataType], 1)
-	assert.Contains(t, expMap[config.LogsDataType], &config.ExporterSettings{TypeVal: "nop", NameVal: "nop"})
+	assert.Contains(t, expMap[config.LogsDataType], config.NewID("nop"))
 }
 
 func createExampleService(t *testing.T) *service {
@@ -106,7 +106,7 @@ func createExampleService(t *testing.T) *service {
 
 	srv, err := newService(&settings{
 		Factories: factories,
-		StartInfo: component.DefaultApplicationStartInfo(),
+		BuildInfo: component.DefaultBuildInfo(),
 		Config:    cfg,
 		Logger:    zap.NewNop(),
 	})

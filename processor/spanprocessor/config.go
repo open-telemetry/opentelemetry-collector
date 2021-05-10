@@ -24,7 +24,7 @@ import (
 // the include properties and then the exclude properties if they are specified.
 // This determines if a span is to be processed or not.
 type Config struct {
-	*config.ProcessorSettings `mapstructure:"-"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	filterconfig.MatchConfig `mapstructure:",squash"`
 

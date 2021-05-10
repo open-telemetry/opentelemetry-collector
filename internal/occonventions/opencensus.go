@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package occonventions
 
-// These constants are the attribute keys used when translating from zipkin
-// format to the internal collector data format.
+// OTLP attributes to map certain OpenCensus proto fields. These fields don't have
+// corresponding fields in OTLP, nor are defined in OTLP semantic conventions.
 const (
-	startTimeAbsent = "otel.zipkin.absentField.startTime"
+	AttributeProcessStartTime        = "opencensus.starttime"
+	AttributeExporterVersion         = "opencensus.exporterversion"
+	AttributeResourceType            = "opencensus.resourcetype"
+	AttributeSameProcessAsParentSpan = "opencensus.same_process_as_parent_span"
 )

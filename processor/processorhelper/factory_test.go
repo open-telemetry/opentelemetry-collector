@@ -27,22 +27,19 @@ import (
 
 const typeStr = "test"
 
-var defaultCfg = &config.ProcessorSettings{
-	TypeVal: typeStr,
-	NameVal: typeStr,
-}
+var defaultCfg = config.NewProcessorSettings(config.NewID(typeStr))
 
 func TestNewTrace(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
 	assert.Error(t, err)
 }
 
@@ -54,20 +51,20 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 		WithMetrics(createMetricsProcessor),
 		WithLogs(createLogsProcessor))
 	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
 func defaultConfig() config.Processor {
-	return defaultCfg
+	return &defaultCfg
 }
 
 func createTracesProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error) {

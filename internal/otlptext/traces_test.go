@@ -12,17 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package otlptext
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestOTStatusFromHTTPStatus(t *testing.T) {
-	for httpStatus := int32(100); httpStatus <= 604; httpStatus++ {
-		otelStatus := OCStatusCodeFromHTTP(httpStatus)
-		assert.True(t, otelStatus >= OCOK && otelStatus <= OCUnauthenticated)
+func TestTraces(t *testing.T) {
+	type args struct {
+		td pdata.Traces
+	}
+	tests := []struct {
+		name  string
+		args  args
+		empty bool
+	}{
+		{"empty traces", args{testdata.GenerateTraceDataEmpty()}, true},
+		{"traces with two spans", args{testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			traces := Traces(tt.args.td)
+			if !tt.empty {
+				assert.NotEmpty(t, traces)
+			}
+		})
 	}
 }

@@ -36,11 +36,11 @@ type ExampleReceiver struct {
 	ExtraListSetting []string          `mapstructure:"extra_list"`
 }
 
-const recvType = "examplereceiver"
+var receiverType = config.Type("examplereceiver")
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
 var ExampleReceiverFactory = receiverhelper.NewFactory(
-	recvType,
+	receiverType,
 	createReceiverDefaultConfig,
 	receiverhelper.WithTraces(createTracesReceiver),
 	receiverhelper.WithMetrics(createMetricsReceiver),
@@ -48,10 +48,7 @@ var ExampleReceiverFactory = receiverhelper.NewFactory(
 
 func createReceiverDefaultConfig() config.Receiver {
 	return &ExampleReceiver{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: recvType,
-			NameVal: recvType,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(receiverType)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:1000",
 		},

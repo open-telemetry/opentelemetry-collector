@@ -52,8 +52,8 @@ type ExtensionCreateParams struct {
 	// component to be used later as well.
 	Logger *zap.Logger
 
-	// ApplicationStartInfo can be used by components for informational purposes
-	ApplicationStartInfo ApplicationStartInfo
+	// BuildInfo can be used by components for informational purposes
+	BuildInfo BuildInfo
 }
 
 // ExtensionFactory is a factory interface for extensions to the service.
