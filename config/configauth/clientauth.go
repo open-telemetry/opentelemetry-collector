@@ -50,7 +50,7 @@ func GetHTTPClientAuth(extensions map[config.NamedEntity]component.Extension, re
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", requested, errAuthenticatorNotFound)
 }
 
-// GetGRPCClientAuth attempts to select the appropriate HTTPClientAuth from the list of extensions,
+// GetGRPCClientAuth attempts to select the appropriate GRPCClientAuth from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned. This shold only be used
 // by gRPC clients
 func GetGRPCClientAuth(extensions map[config.NamedEntity]component.Extension, requested string) (GRPCClientAuth, error) {
