@@ -82,7 +82,7 @@ func TestDefaultReceivers(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
-			assert.Equal(t, tt.receiver, factory.CreateDefaultConfig().Type())
+			assert.Equal(t, config.NewID(tt.receiver), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecyle {
 				t.Log("Skipping lifecycle test", tt.receiver)
@@ -106,8 +106,8 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	receiverCreateParams := component.ReceiverCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
 	}
 
 	if getConfigFn == nil {

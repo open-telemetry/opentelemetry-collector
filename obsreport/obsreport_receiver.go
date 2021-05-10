@@ -148,13 +148,13 @@ func WithLongLivedCtx() StartReceiveOption {
 // dealing with the same receive operation.
 func StartTraceDataReceiveOp(
 	operationCtx context.Context,
-	receiver string,
+	receiverID config.ComponentID,
 	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
 	return traceReceiveOp(
 		operationCtx,
-		receiver,
+		receiverID,
 		transport,
 		receiveTraceDataOperationSuffix,
 		opt...)
@@ -182,13 +182,13 @@ func EndTraceDataReceiveOp(
 // dealing with the same receive operation.
 func StartLogsReceiveOp(
 	operationCtx context.Context,
-	receiver string,
+	receiverID config.ComponentID,
 	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
 	return traceReceiveOp(
 		operationCtx,
-		receiver,
+		receiverID,
 		transport,
 		receiverLogsOperationSuffix,
 		opt...)
@@ -216,13 +216,13 @@ func EndLogsReceiveOp(
 // dealing with the same receive operation.
 func StartMetricsReceiveOp(
 	operationCtx context.Context,
-	receiver string,
+	receiverID config.ComponentID,
 	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
 	return traceReceiveOp(
 		operationCtx,
-		receiver,
+		receiverID,
 		transport,
 		receiverMetricsOperationSuffix,
 		opt...)
@@ -251,11 +251,11 @@ func EndMetricsReceiveOp(
 // recorded.
 func ReceiverContext(
 	ctx context.Context,
-	receiver string,
+	receiverID config.ComponentID,
 	transport string,
 ) context.Context {
 	ctx, _ = tag.New(ctx,
-		tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)),
+		tag.Upsert(tagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 		tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
@@ -265,7 +265,7 @@ func ReceiverContext(
 // the updated context with the created span.
 func traceReceiveOp(
 	receiverCtx context.Context,
-	receiverName string,
+	receiverID config.ComponentID,
 	transport string,
 	operationSuffix string,
 	opt ...StartReceiveOption,
@@ -277,7 +277,7 @@ func traceReceiveOp(
 
 	var ctx context.Context
 	var span *trace.Span
-	spanName := receiverPrefix + receiverName + operationSuffix
+	spanName := receiverPrefix + receiverID.String() + operationSuffix
 	if !opts.LongLivedCtx {
 		ctx, span = trace.StartSpan(receiverCtx, spanName)
 	} else {

@@ -24,7 +24,7 @@ import (
 // the include properties and then the exclude properties if they are specified.
 // This determines if a span is to be processed or not.
 type Config struct {
-	*config.ProcessorSettings `mapstructure:"-"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	filterconfig.MatchConfig `mapstructure:",squash"`
 
@@ -32,7 +32,7 @@ type Config struct {
 	// The `from_attributes` field needs to be set for this processor to be properly
 	// configured.
 	// Note: The field name is `Rename` to avoid collision with the Name() method
-	// from configmodels.ProcessorSettings.NamedEntity
+	// from config.NamedEntity
 	Rename Name `mapstructure:"name"`
 }
 

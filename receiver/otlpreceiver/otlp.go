@@ -59,17 +59,10 @@ type otlpReceiver struct {
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, logger *zap.Logger) (*otlpReceiver, error) {
+func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
 	r := &otlpReceiver{
 		cfg:    cfg,
 		logger: logger,
-	}
-	if cfg.GRPC != nil {
-		opts, err := cfg.GRPC.ToServerOption()
-		if err != nil {
-			return nil, err
-		}
-		r.serverGRPC = grpc.NewServer(opts...)
 	}
 	if cfg.HTTP != nil {
 		// Use our custom JSON marshaler instead of default Protobuf JSON marshaler.
@@ -87,12 +80,12 @@ func newOtlpReceiver(cfg *Config, logger *zap.Logger) (*otlpReceiver, error) {
 		)
 	}
 
-	return r, nil
+	return r
 }
 
 func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host component.Host) error {
 	r.logger.Info("Starting GRPC server on endpoint " + cfg.NetAddr.Endpoint)
-	var gln net.Listener
+
 	gln, err := cfg.ToListener()
 	if err != nil {
 		return err
@@ -129,6 +122,25 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 	var err error
 	if r.cfg.GRPC != nil {
+		var opts []grpc.ServerOption
+		opts, err = r.cfg.GRPC.ToServerOption(host.GetExtensions())
+		if err != nil {
+			return err
+		}
+		r.serverGRPC = grpc.NewServer(opts...)
+
+		if r.traceReceiver != nil {
+			collectortrace.RegisterTraceServiceServer(r.serverGRPC, r.traceReceiver)
+		}
+
+		if r.metricsReceiver != nil {
+			collectormetrics.RegisterMetricsServiceServer(r.serverGRPC, r.metricsReceiver)
+		}
+
+		if r.logReceiver != nil {
+			collectorlog.RegisterLogsServiceServer(r.serverGRPC, r.logReceiver)
+		}
+
 		err = r.startGRPCServer(r.cfg.GRPC, host)
 		if err != nil {
 			return err
@@ -202,10 +214,7 @@ func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Tr
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.traceReceiver = trace.New(r.cfg.Name(), tc)
-	if r.serverGRPC != nil {
-		collectortrace.RegisterTraceServiceServer(r.serverGRPC, r.traceReceiver)
-	}
+	r.traceReceiver = trace.New(r.cfg.ID(), tc)
 	if r.gatewayMux != nil {
 		err := collectortrace.RegisterTraceServiceHandlerServer(ctx, r.gatewayMux, r.traceReceiver)
 		if err != nil {
@@ -221,10 +230,7 @@ func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.metricsReceiver = metrics.New(r.cfg.Name(), mc)
-	if r.serverGRPC != nil {
-		collectormetrics.RegisterMetricsServiceServer(r.serverGRPC, r.metricsReceiver)
-	}
+	r.metricsReceiver = metrics.New(r.cfg.ID(), mc)
 	if r.gatewayMux != nil {
 		return collectormetrics.RegisterMetricsServiceHandlerServer(ctx, r.gatewayMux, r.metricsReceiver)
 	}
@@ -235,10 +241,7 @@ func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.Log
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.logReceiver = logs.New(r.cfg.Name(), tc)
-	if r.serverGRPC != nil {
-		collectorlog.RegisterLogsServiceServer(r.serverGRPC, r.logReceiver)
-	}
+	r.logReceiver = logs.New(r.cfg.ID(), tc)
 	if r.gatewayMux != nil {
 		return collectorlog.RegisterLogsServiceHandlerServer(ctx, r.gatewayMux, r.logReceiver)
 	}

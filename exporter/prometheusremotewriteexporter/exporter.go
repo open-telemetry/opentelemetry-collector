@@ -16,12 +16,12 @@
 package prometheusremotewriteexporter
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
@@ -334,17 +334,13 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	// 5xx errors are recoverable and the exporter should retry
 	// Reference for different behavior according to status code:
 	// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
-	if resp.StatusCode/100 != 2 {
-		scanner := bufio.NewScanner(io.LimitReader(resp.Body, 256))
-		var line string
-		if scanner.Scan() {
-			line = scanner.Text()
-		}
-		err := fmt.Errorf("server returned HTTP status %v: %v ", resp.Status, line)
-		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-			return err
-		}
-		return consumererror.Permanent(err)
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return nil
 	}
-	return nil
+	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
+	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %v: %s", resp.Status, err, body)
+	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+		return rerr
+	}
+	return consumererror.Permanent(rerr)
 }

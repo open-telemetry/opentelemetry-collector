@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
@@ -92,17 +93,16 @@ type Exporter struct {
 
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
-	Level        configtelemetry.Level
-	ExporterName string
+	Level      configtelemetry.Level
+	ExporterID config.ComponentID
 }
 
 // NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) *Exporter {
-	level, exporterName := cfg.Level, cfg.ExporterName
 	return &Exporter{
-		level:        level,
-		exporterName: exporterName,
-		mutators:     []tag.Mutator{tag.Upsert(tagKeyExporter, exporterName, tag.WithTTL(tag.TTLNoPropagation))},
+		level:        cfg.Level,
+		exporterName: cfg.ExporterID.String(),
+		mutators:     []tag.Mutator{tag.Upsert(tagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }
 

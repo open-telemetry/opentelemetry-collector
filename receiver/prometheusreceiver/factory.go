@@ -29,7 +29,6 @@ import (
 // This file implements config for Prometheus receiver.
 
 const (
-	// The value of "type" key in configuration.
 	typeStr = "prometheus"
 )
 
@@ -47,10 +46,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 	}
 }
 
@@ -60,6 +56,5 @@ func createMetricsReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	config := cfg.(*Config)
-	return newPrometheusReceiver(params.Logger, config, nextConsumer), nil
+	return newPrometheusReceiver(params.Logger, cfg.(*Config), nextConsumer), nil
 }

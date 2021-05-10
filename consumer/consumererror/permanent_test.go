@@ -22,6 +22,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type testErrorType struct {
+	s string
+}
+
+func (t testErrorType) Error() string {
+	return ""
+}
+
 func TestPermanent(t *testing.T) {
 	err := errors.New("testError")
 	require.False(t, IsPermanent(err))
@@ -36,4 +44,21 @@ func TestPermanent(t *testing.T) {
 func TestIsPermanent_NilError(t *testing.T) {
 	var err error
 	require.False(t, IsPermanent(err))
+}
+
+func TestPermanent_Unwrap(t *testing.T) {
+	var err error = testErrorType{"testError"}
+	require.False(t, IsPermanent(err))
+
+	// Wrapping testErrorType err with permanent error.
+	permanentErr := Permanent(err)
+	require.True(t, IsPermanent(permanentErr))
+
+	target := testErrorType{}
+	require.NotEqual(t, err, target)
+
+	isTestErrorTypeWrapped := errors.As(permanentErr, &target)
+	require.True(t, isTestErrorTypeWrapped)
+
+	require.Equal(t, err, target)
 }

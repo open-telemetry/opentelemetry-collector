@@ -53,7 +53,7 @@ func TestNew(t *testing.T) {
 			name: "createExporter",
 			args: args{
 				config: Config{
-					ExporterSettings: config.NewExporterSettings(typeStr),
+					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -70,7 +70,7 @@ func TestNew(t *testing.T) {
 			name: "createExporterWithHeaders",
 			args: args{
 				config: Config{
-					ExporterSettings: config.NewExporterSettings(typeStr),
+					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     map[string]string{"extra-header": "header-value"},
 						Endpoint:    "foo.bar",
@@ -84,7 +84,7 @@ func TestNew(t *testing.T) {
 			name: "createBasicSecureExporter",
 			args: args{
 				config: Config{
-					ExporterSettings: config.NewExporterSettings(typeStr),
+					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -98,7 +98,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithClientTLS",
 			args: args{
 				config: Config{
-					ExporterSettings: config.NewExporterSettings(typeStr),
+					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -118,7 +118,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithKeepAlive",
 			args: args{
 				config: Config{
-					ExporterSettings: config.NewExporterSettings(typeStr),
+					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",
@@ -143,7 +143,7 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithMissingFile",
 			args: args{
 				config: Config{
-					ExporterSettings: config.NewExporterSettings(typeStr),
+					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
 						Headers:     nil,
 						Endpoint:    "foo.bar",

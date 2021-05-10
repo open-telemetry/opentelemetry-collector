@@ -95,8 +95,8 @@ func NewTracesExporter(
 		return &tracesExporterWithObservability{
 			obsrep: obsreport.NewExporter(
 				obsreport.ExporterSettings{
-					Level:        configtelemetry.GetMetricsLevelFlagValue(),
-					ExporterName: cfg.Name(),
+					Level:      configtelemetry.GetMetricsLevelFlagValue(),
+					ExporterID: cfg.ID(),
 				}),
 			nextSender: nextSender,
 		}

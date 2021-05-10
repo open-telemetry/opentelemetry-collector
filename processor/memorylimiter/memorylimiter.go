@@ -76,7 +76,6 @@ type memoryLimiter struct {
 	readMemStatsFn func(m *runtime.MemStats)
 
 	// Fields used for logging.
-	procName               string
 	logger                 *zap.Logger
 	configMismatchedLogged bool
 
@@ -114,11 +113,10 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		ballastSize:    ballastSize,
 		ticker:         time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn: runtime.ReadMemStats,
-		procName:       cfg.Name(),
 		logger:         logger,
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:         configtelemetry.GetMetricsLevelFlagValue(),
-			ProcessorName: cfg.Name(),
+			Level:       configtelemetry.GetMetricsLevelFlagValue(),
+			ProcessorID: cfg.ID(),
 		}),
 	}
 

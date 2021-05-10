@@ -111,18 +111,6 @@ func (es AnyValueArray) At(ix int) AttributeValue {
 	return newAttributeValue(&(*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 	srcLen := es.Len()
@@ -184,4 +172,36 @@ func (es AnyValueArray) Append(e AttributeValue) {
 func (es AnyValueArray) AppendEmpty() AttributeValue {
 	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
+}
+
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es AnyValueArray) RemoveIf(f func(AttributeValue) bool) {
+	newLen := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }

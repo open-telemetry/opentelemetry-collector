@@ -104,20 +104,18 @@ func fromOptions(options []Option) *baseSettings {
 // internalOptions contains internalOptions concerning how an Processor is configured.
 type baseProcessor struct {
 	component.Component
-	fullName        string
 	capabilities    component.ProcessorCapabilities
 	traceAttributes []trace.Attribute
 }
 
 // Construct the internalOptions from multiple Option.
-func newBaseProcessor(fullName string, options ...Option) baseProcessor {
+func newBaseProcessor(id config.ComponentID, options ...Option) baseProcessor {
 	bs := fromOptions(options)
 	be := baseProcessor{
 		Component:    componenthelper.New(bs.componentOptions...),
-		fullName:     fullName,
 		capabilities: bs.capabilities,
 		traceAttributes: []trace.Attribute{
-			trace.StringAttribute(obsreport.ProcessorKey, fullName),
+			trace.StringAttribute(obsreport.ProcessorKey, id.String()),
 		},
 	}
 
@@ -141,6 +139,9 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	td, err = tp.processor.ProcessTraces(ctx, td)
 	span.Annotate(tp.traceAttributes, "End processing.")
 	if err != nil {
+		if errors.Is(err, ErrSkipProcessingData) {
+			return nil
+		}
 		return err
 	}
 	return tp.nextConsumer.ConsumeTraces(ctx, td)
@@ -149,7 +150,7 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 // NewTracesProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewTracesProcessor(
-	config config.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Traces,
 	processor TProcessor,
 	options ...Option,
@@ -163,7 +164,7 @@ func NewTracesProcessor(
 	}
 
 	return &tracesProcessor{
-		baseProcessor: newBaseProcessor(config.Name(), options...),
+		baseProcessor: newBaseProcessor(cfg.ID(), options...),
 		processor:     processor,
 		nextConsumer:  nextConsumer,
 	}, nil
@@ -182,7 +183,7 @@ func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics
 	md, err = mp.processor.ProcessMetrics(ctx, md)
 	span.Annotate(mp.traceAttributes, "End processing.")
 	if err != nil {
-		if err == ErrSkipProcessingData {
+		if errors.Is(err, ErrSkipProcessingData) {
 			return nil
 		}
 		return err
@@ -193,7 +194,7 @@ func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics
 // NewMetricsProcessor creates a MetricsProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewMetricsProcessor(
-	config config.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 	processor MProcessor,
 	options ...Option,
@@ -207,7 +208,7 @@ func NewMetricsProcessor(
 	}
 
 	return &metricsProcessor{
-		baseProcessor: newBaseProcessor(config.Name(), options...),
+		baseProcessor: newBaseProcessor(cfg.ID(), options...),
 		processor:     processor,
 		nextConsumer:  nextConsumer,
 	}, nil
@@ -226,6 +227,9 @@ func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	ld, err = lp.processor.ProcessLogs(ctx, ld)
 	span.Annotate(lp.traceAttributes, "End processing.")
 	if err != nil {
+		if errors.Is(err, ErrSkipProcessingData) {
+			return nil
+		}
 		return err
 	}
 	return lp.nextConsumer.ConsumeLogs(ctx, ld)
@@ -234,7 +238,7 @@ func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 // NewLogsProcessor creates a LogsProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewLogsProcessor(
-	config config.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Logs,
 	processor LProcessor,
 	options ...Option,
@@ -248,7 +252,7 @@ func NewLogsProcessor(
 	}
 
 	return &logProcessor{
-		baseProcessor: newBaseProcessor(config.Name(), options...),
+		baseProcessor: newBaseProcessor(cfg.ID(), options...),
 		processor:     processor,
 		nextConsumer:  nextConsumer,
 	}, nil

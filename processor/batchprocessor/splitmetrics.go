@@ -19,56 +19,52 @@ import (
 )
 
 // splitMetrics removes metrics from the input data and returns a new data of the specified size.
-func splitMetrics(size int, toSplit pdata.Metrics) pdata.Metrics {
-	if toSplit.MetricCount() <= size {
-		return toSplit
+func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
+	if src.MetricCount() <= size {
+		return src
 	}
-	copiedMetrics := 0
-	result := pdata.NewMetrics()
-	result.ResourceMetrics().Resize(toSplit.ResourceMetrics().Len())
-	rms := toSplit.ResourceMetrics()
+	totalCopiedMetrics := 0
+	dest := pdata.NewMetrics()
 
-	rmsCount := 0
-	for i := rms.Len() - 1; i >= 0; i-- {
-		rmsCount++
-		rm := rms.At(i)
-		destRs := result.ResourceMetrics().At(result.ResourceMetrics().Len() - 1 - i)
-		rm.Resource().CopyTo(destRs.Resource())
-
-		destRs.InstrumentationLibraryMetrics().Resize(rm.InstrumentationLibraryMetrics().Len())
-
-		ilmCount := 0
-		for j := rm.InstrumentationLibraryMetrics().Len() - 1; j >= 0; j-- {
-			ilmCount++
-			instMetrics := rm.InstrumentationLibraryMetrics().At(j)
-			destInstMetrics := destRs.InstrumentationLibraryMetrics().At(destRs.InstrumentationLibraryMetrics().Len() - 1 - j)
-			instMetrics.InstrumentationLibrary().CopyTo(destInstMetrics.InstrumentationLibrary())
-
-			if size-copiedMetrics >= instMetrics.Metrics().Len() {
-				destInstMetrics.Metrics().Resize(instMetrics.Metrics().Len())
-			} else {
-				destInstMetrics.Metrics().Resize(size - copiedMetrics)
-			}
-			for k, destIdx := instMetrics.Metrics().Len()-1, 0; k >= 0 && copiedMetrics < size; k, destIdx = k-1, destIdx+1 {
-				metric := instMetrics.Metrics().At(k)
-				metric.CopyTo(destInstMetrics.Metrics().At(destIdx))
-				copiedMetrics++
-				// remove metric
-				instMetrics.Metrics().Resize(instMetrics.Metrics().Len() - 1)
-			}
-			if instMetrics.Metrics().Len() == 0 {
-				rm.InstrumentationLibraryMetrics().Resize(rm.InstrumentationLibraryMetrics().Len() - 1)
-			}
-			if copiedMetrics == size {
-				result.ResourceMetrics().Resize(rmsCount)
-				return result
-			}
+	src.ResourceMetrics().RemoveIf(func(srcRs pdata.ResourceMetrics) bool {
+		// If we are done skip everything else.
+		if totalCopiedMetrics == size {
+			return false
 		}
-		destRs.InstrumentationLibraryMetrics().Resize(ilmCount)
-		if rm.InstrumentationLibraryMetrics().Len() == 0 {
-			rms.Resize(rms.Len() - 1)
-		}
-	}
-	result.ResourceMetrics().Resize(rmsCount)
-	return result
+
+		destRs := dest.ResourceMetrics().AppendEmpty()
+		srcRs.Resource().CopyTo(destRs.Resource())
+
+		srcRs.InstrumentationLibraryMetrics().RemoveIf(func(srcIlm pdata.InstrumentationLibraryMetrics) bool {
+			// If we are done skip everything else.
+			if totalCopiedMetrics == size {
+				return false
+			}
+
+			destIlm := destRs.InstrumentationLibraryMetrics().AppendEmpty()
+			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
+
+			// If possible to move all metrics do that.
+			srcMetricsLen := srcIlm.Metrics().Len()
+			if size-totalCopiedMetrics >= srcMetricsLen {
+				totalCopiedMetrics += srcMetricsLen
+				srcIlm.Metrics().MoveAndAppendTo(destIlm.Metrics())
+				return true
+			}
+
+			srcIlm.Metrics().RemoveIf(func(srcMetric pdata.Metric) bool {
+				// If we are done skip everything else.
+				if totalCopiedMetrics == size {
+					return false
+				}
+				srcMetric.CopyTo(destIlm.Metrics().AppendEmpty())
+				totalCopiedMetrics++
+				return true
+			})
+			return false
+		})
+		return srcRs.InstrumentationLibraryMetrics().Len() == 0
+	})
+
+	return dest
 }

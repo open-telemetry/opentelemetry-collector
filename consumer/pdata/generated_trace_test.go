@@ -42,31 +42,6 @@ func TestResourceSpansSlice(t *testing.T) {
 	}
 }
 
-func TestResourceSpansSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestResourceSpansSlice()
-	dest := NewResourceSpansSlice()
-	src := generateTestResourceSpansSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestResourceSpansSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestResourceSpansSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestResourceSpansSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
 func TestResourceSpansSlice_CopyTo(t *testing.T) {
 	dest := NewResourceSpansSlice()
 	// Test CopyTo to empty
@@ -137,6 +112,49 @@ func TestResourceSpansSlice_Append(t *testing.T) {
 	assert.Equal(t, 9, es.Len())
 }
 
+func TestResourceSpansSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestResourceSpansSlice()
+	dest := NewResourceSpansSlice()
+	src := generateTestResourceSpansSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestResourceSpansSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestResourceSpansSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestResourceSpansSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
+func TestResourceSpansSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewResourceSpansSlice()
+	emptySlice.RemoveIf(func(el ResourceSpans) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestResourceSpansSlice()
+	pos := 0
+	filtered.RemoveIf(func(el ResourceSpans) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestResourceSpans_CopyTo(t *testing.T) {
 	ms := NewResourceSpans()
 	generateTestResourceSpans().CopyTo(ms)
@@ -171,31 +189,6 @@ func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 		assert.EqualValues(t, emptyVal, es.At(i))
 		fillTestInstrumentationLibrarySpans(es.At(i))
 		assert.EqualValues(t, testVal, es.At(i))
-	}
-}
-
-func TestInstrumentationLibrarySpansSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestInstrumentationLibrarySpansSlice()
-	dest := NewInstrumentationLibrarySpansSlice()
-	src := generateTestInstrumentationLibrarySpansSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestInstrumentationLibrarySpansSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
 }
 
@@ -269,6 +262,49 @@ func TestInstrumentationLibrarySpansSlice_Append(t *testing.T) {
 	assert.Equal(t, 9, es.Len())
 }
 
+func TestInstrumentationLibrarySpansSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestInstrumentationLibrarySpansSlice()
+	dest := NewInstrumentationLibrarySpansSlice()
+	src := generateTestInstrumentationLibrarySpansSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestInstrumentationLibrarySpansSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
+func TestInstrumentationLibrarySpansSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewInstrumentationLibrarySpansSlice()
+	emptySlice.RemoveIf(func(el InstrumentationLibrarySpans) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestInstrumentationLibrarySpansSlice()
+	pos := 0
+	filtered.RemoveIf(func(el InstrumentationLibrarySpans) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	generateTestInstrumentationLibrarySpans().CopyTo(ms)
@@ -303,31 +339,6 @@ func TestSpanSlice(t *testing.T) {
 		assert.EqualValues(t, emptyVal, es.At(i))
 		fillTestSpan(es.At(i))
 		assert.EqualValues(t, testVal, es.At(i))
-	}
-}
-
-func TestSpanSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestSpanSlice()
-	dest := NewSpanSlice()
-	src := generateTestSpanSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestSpanSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestSpanSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestSpanSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
 }
 
@@ -399,6 +410,49 @@ func TestSpanSlice_Append(t *testing.T) {
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
+}
+
+func TestSpanSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestSpanSlice()
+	dest := NewSpanSlice()
+	src := generateTestSpanSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestSpanSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestSpanSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestSpanSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
+func TestSpanSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewSpanSlice()
+	emptySlice.RemoveIf(func(el Span) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestSpanSlice()
+	pos := 0
+	filtered.RemoveIf(func(el Span) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }
 
 func TestSpan_CopyTo(t *testing.T) {
@@ -542,31 +596,6 @@ func TestSpanEventSlice(t *testing.T) {
 	}
 }
 
-func TestSpanEventSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestSpanEventSlice()
-	dest := NewSpanEventSlice()
-	src := generateTestSpanEventSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestSpanEventSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestSpanEventSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestSpanEventSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
 func TestSpanEventSlice_CopyTo(t *testing.T) {
 	dest := NewSpanEventSlice()
 	// Test CopyTo to empty
@@ -637,6 +666,49 @@ func TestSpanEventSlice_Append(t *testing.T) {
 	assert.Equal(t, 9, es.Len())
 }
 
+func TestSpanEventSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestSpanEventSlice()
+	dest := NewSpanEventSlice()
+	src := generateTestSpanEventSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestSpanEventSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestSpanEventSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestSpanEventSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
+func TestSpanEventSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewSpanEventSlice()
+	emptySlice.RemoveIf(func(el SpanEvent) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestSpanEventSlice()
+	pos := 0
+	filtered.RemoveIf(func(el SpanEvent) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestSpanEvent_CopyTo(t *testing.T) {
 	ms := NewSpanEvent()
 	generateTestSpanEvent().CopyTo(ms)
@@ -689,31 +761,6 @@ func TestSpanLinkSlice(t *testing.T) {
 		assert.EqualValues(t, emptyVal, es.At(i))
 		fillTestSpanLink(es.At(i))
 		assert.EqualValues(t, testVal, es.At(i))
-	}
-}
-
-func TestSpanLinkSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestSpanLinkSlice()
-	dest := NewSpanLinkSlice()
-	src := generateTestSpanLinkSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestSpanLinkSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestSpanLinkSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestSpanLinkSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
 }
 
@@ -785,6 +832,49 @@ func TestSpanLinkSlice_Append(t *testing.T) {
 	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
+}
+
+func TestSpanLinkSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestSpanLinkSlice()
+	dest := NewSpanLinkSlice()
+	src := generateTestSpanLinkSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestSpanLinkSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestSpanLinkSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestSpanLinkSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
+func TestSpanLinkSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewSpanLinkSlice()
+	emptySlice.RemoveIf(func(el SpanLink) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestSpanLinkSlice()
+	pos := 0
+	filtered.RemoveIf(func(el SpanLink) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }
 
 func TestSpanLink_CopyTo(t *testing.T) {

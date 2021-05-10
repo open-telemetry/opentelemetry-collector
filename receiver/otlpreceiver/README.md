@@ -44,8 +44,6 @@ gRPC. The HTTP/JSON address is the same as gRPC as the protocol is recognized
 and processed accordingly. Note the format needs to be [protobuf JSON
 serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
-IMPORTANT: bytes fields are encoded as base64 strings.
-
 To write traces with HTTP/JSON, `POST` to `[address]/v1/traces` for traces,
 to `[address]/v1/metrics` for metrics, to `[address]/v1/logs` for logs. The default
 port is `55681`.

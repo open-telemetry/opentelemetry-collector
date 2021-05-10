@@ -29,7 +29,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
 	typeStr = "otlp"
 
 	defaultGRPCEndpoint = "0.0.0.0:4317"
@@ -50,10 +49,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -77,11 +73,9 @@ func createTracesReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
-	r, err := createReceiver(cfg, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-	if err = r.registerTraceConsumer(ctx, nextConsumer); err != nil {
+	r := createReceiver(cfg, params.Logger)
+
+	if err := r.registerTraceConsumer(ctx, nextConsumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -94,11 +88,9 @@ func createMetricsReceiver(
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	r, err := createReceiver(cfg, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-	if err = r.registerMetricsConsumer(ctx, consumer); err != nil {
+	r := createReceiver(cfg, params.Logger)
+
+	if err := r.registerMetricsConsumer(ctx, consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -111,17 +103,15 @@ func createLogReceiver(
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-	r, err := createReceiver(cfg, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-	if err = r.registerLogsConsumer(ctx, consumer); err != nil {
+	r := createReceiver(cfg, params.Logger)
+
+	if err := r.registerLogsConsumer(ctx, consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-func createReceiver(cfg config.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
+func createReceiver(cfg config.Receiver, logger *zap.Logger) *otlpReceiver {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -130,16 +120,11 @@ func createReceiver(cfg config.Receiver, logger *zap.Logger) (*otlpReceiver, err
 	// Check to see if there is already a receiver for this config.
 	receiver, ok := receivers[rCfg]
 	if !ok {
-		var err error
 		// We don't have a receiver, so create one.
-		receiver, err = newOtlpReceiver(rCfg, logger)
-		if err != nil {
-			return nil, err
-		}
-		// Remember the receiver in the map
+		receiver = newOtlpReceiver(rCfg, logger)
 		receivers[rCfg] = receiver
 	}
-	return receiver, nil
+	return receiver
 }
 
 // This is the map of already created OTLP receivers for particular configurations.

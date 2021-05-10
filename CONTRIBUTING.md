@@ -107,7 +107,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.15 and up)
+2. [go](https://golang.org/) (version 1.16 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -116,13 +116,13 @@ Working with the project sources requires the following tools:
 Fork the repo, checkout the upstream repo to your GOPATH by:
 
 ```
-$ GO111MODULE="" go get -d go.opentelemetry.io/collector
+$ git clone git@github.com:open-telemetry/opentelemetry-collector.git
 ```
 
 Add your fork as an origin:
 
 ```shell
-$ cd $(go env GOPATH)/src/go.opentelemetry.io/collector
+$ cd opentelemetry-collector
 $ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collector.git
 ```
 
@@ -152,7 +152,7 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.14.* and CircleCI.
+This project uses Go 1.16.* and CircleCI.
 
 CircleCI uses the Makefile with the `ci` target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.

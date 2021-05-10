@@ -224,13 +224,12 @@ func fillSpanOne(span pdata.Span) {
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	evs := span.Events()
-	evs.Resize(2)
-	ev0 := evs.At(0)
+	ev0 := evs.AppendEmpty()
 	ev0.SetTimestamp(TestSpanEventTimestamp)
 	ev0.SetName("event-with-attr")
 	initSpanEventAttributes(ev0.Attributes())
 	ev0.SetDroppedAttributesCount(2)
-	ev1 := evs.At(1)
+	ev1 := evs.AppendEmpty()
 	ev1.SetTimestamp(TestSpanEventTimestamp)
 	ev1.SetName("event")
 	ev1.SetDroppedAttributesCount(2)
@@ -272,10 +271,11 @@ func fillSpanTwo(span pdata.Span) {
 	span.SetName("operationB")
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
-	span.Links().Resize(2)
-	initSpanLinkAttributes(span.Links().At(0).Attributes())
-	span.Links().At(0).SetDroppedAttributesCount(4)
-	span.Links().At(1).SetDroppedAttributesCount(4)
+	link0 := span.Links().AppendEmpty()
+	initSpanLinkAttributes(link0.Attributes())
+	link0.SetDroppedAttributesCount(4)
+	link1 := span.Links().AppendEmpty()
+	link1.SetDroppedAttributesCount(4)
 	span.SetDroppedLinksCount(3)
 }
 
@@ -313,4 +313,14 @@ func generateOtlpSpanThree() *otlptrace.Span {
 		Attributes:             generateOtlpSpanAttributes(),
 		DroppedAttributesCount: 5,
 	}
+}
+
+func GenerateTracesManySpansSameResource(spansCount int) pdata.Traces {
+	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
+	rs0ilm0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	rs0ilm0.Spans().Resize(spansCount)
+	for i := 0; i < spansCount; i++ {
+		fillSpanOne(rs0ilm0.Spans().At(i))
+	}
+	return td
 }

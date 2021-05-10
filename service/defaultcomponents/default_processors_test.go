@@ -99,7 +99,7 @@ func TestDefaultProcessors(t *testing.T) {
 			factory, ok := procFactories[tt.processor]
 			require.True(t, ok)
 			assert.Equal(t, tt.processor, factory.Type())
-			assert.Equal(t, tt.processor, factory.CreateDefaultConfig().Type())
+			assert.EqualValues(t, config.NewID(tt.processor), factory.CreateDefaultConfig().ID())
 
 			verifyProcessorLifecycle(t, factory, tt.getConfigFn)
 		})
@@ -118,8 +118,8 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	processorCreateParams := component.ProcessorCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
 	}
 
 	if getConfigFn == nil {

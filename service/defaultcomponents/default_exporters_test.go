@@ -140,7 +140,7 @@ func TestDefaultExporters(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
-			assert.Equal(t, tt.exporter, factory.CreateDefaultConfig().Type())
+			assert.Equal(t, config.NewID(tt.exporter), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
 				t.Log("Skipping lifecycle test", tt.exporter)
@@ -164,8 +164,8 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	expCreateParams := component.ExporterCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
 	}
 
 	if getConfigFn == nil {

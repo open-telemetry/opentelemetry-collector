@@ -29,12 +29,16 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
+const (
+	spanEventDataFormat = "%s|%s|%d"
+	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
+)
+
 var sampled = true
 
 // InternalTracesToZipkinSpans translates internal trace data into Zipkin v2 spans.
 // Returns a slice of Zipkin SpanModel's.
 func InternalTracesToZipkinSpans(td pdata.Traces) ([]*zipkinmodel.SpanModel, error) {
-
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil, nil
@@ -196,7 +200,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 				}
 				zAnnos[i] = zipkinmodel.Annotation{
 					Timestamp: event.Timestamp().AsTime(),
-					Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
+					Value: fmt.Sprintf(spanEventDataFormat, event.Name(), jsonStr,
 						event.DroppedAttributesCount()),
 				}
 			}
@@ -214,7 +218,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 		if err != nil {
 			return err
 		}
-		zTags[key] = fmt.Sprintf(tracetranslator.SpanLinkDataFormat, link.TraceID().HexString(),
+		zTags[key] = fmt.Sprintf(spanLinkDataFormat, link.TraceID().HexString(),
 			link.SpanID().HexString(), link.TraceState(), jsonStr, link.DroppedAttributesCount())
 	}
 	return nil

@@ -32,12 +32,12 @@ const (
 
 // Config defines configuration for Prometheus receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	PrometheusConfig        *promconfig.Config `mapstructure:"-"`
-	BufferPeriod            time.Duration      `mapstructure:"buffer_period"`
-	BufferCount             int                `mapstructure:"buffer_count"`
-	UseStartTimeMetric      bool               `mapstructure:"use_start_time_metric"`
-	StartTimeMetricRegex    string             `mapstructure:"start_time_metric_regex"`
+	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	PrometheusConfig        *promconfig.Config       `mapstructure:"-"`
+	BufferPeriod            time.Duration            `mapstructure:"buffer_period"`
+	BufferCount             int                      `mapstructure:"buffer_count"`
+	UseStartTimeMetric      bool                     `mapstructure:"use_start_time_metric"`
+	StartTimeMetricRegex    string                   `mapstructure:"start_time_metric_regex"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
