@@ -47,13 +47,13 @@ func main() {
 		log.Fatalf("failed to build components: %v", err)
 	}
 
-	info := component.ApplicationStartInfo{
-		ExeName:  "{{ .Distribution.ExeName }}",
-		LongName: "{{ .Distribution.LongName }}",
+	info := component.BuildInfo{
+		Command:  "{{ .Distribution.ExeName }}",
+		Description: "{{ .Distribution.LongName }}",
 		Version:  "{{ .Distribution.Version }}",
 	}
 
-	app, err := service.New(service.Parameters{ApplicationStartInfo: info, Factories: factories})
+	app, err := service.New(service.Parameters{BuildInfo: info, Factories: factories})
 	if err != nil {
 		log.Fatalf("failed to construct the application: %v", err)
 	}

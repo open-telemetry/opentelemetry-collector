@@ -7,7 +7,7 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 $ GO111MODULE=on go get github.com/open-telemetry/opentelemetry-collector-builder
 $ cat > ~/.otelcol-builder.yaml <<EOF
 exporters:
-  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.26.0"
 EOF
 $ opentelemetry-collector-builder --output-path=/tmp/dist
 $ cat > /tmp/otelcol.yaml <<EOF
@@ -72,16 +72,16 @@ dist:
     name: otelcol-custom # the binary name. Optional.
     description: "Custom OpenTelemetry Collector distribution" # a long name for the application. Optional.
     include_core: true # whether the core components should be included in the distribution. Optional.
-    otelcol_version: "0.25.0" # the OpenTelemetry Collector version to use as base for the distribution. Optional.
+    otelcol_version: "0.26.0" # the OpenTelemetry Collector version to use as base for the distribution. Optional.
     output_path: /tmp/otelcol-distributionNNN # the path to write the output (sources and binary). Optional.
     version: "1.0.0" # the version for your custom OpenTelemetry Collector. Optional.
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
 exporters:
-  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.25.0" # the Go module for the component. Required.
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.26.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.
     name: "alibabacloudlogserviceexporter" # package name to use in the generated sources. Optional.
     path: "./alibabacloudlogserviceexporter" # in case a local version should be used for the module, the path relative to the current dir, or a full path can be specified. Optional.
 replaces:
   # a list of "replaces" directives that will be part of the resulting go.mod
-  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.25.0
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.26.0
 ```
