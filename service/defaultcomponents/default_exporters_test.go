@@ -140,7 +140,7 @@ func TestDefaultExporters(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
-			assert.Equal(t, tt.exporter, factory.CreateDefaultConfig().Type())
+			assert.Equal(t, config.NewID(tt.exporter), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
 				t.Log("Skipping lifecycle test", tt.exporter)

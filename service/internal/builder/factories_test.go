@@ -68,16 +68,20 @@ func newBadReceiverFactory() component.ReceiverFactory {
 
 func newBadProcessorFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory("bf", func() config.Processor {
-		return &config.ProcessorSettings{
-			TypeVal: "bf",
+		return &struct {
+			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+		}{
+			ProcessorSettings: config.NewProcessorSettings(config.NewID("bf")),
 		}
 	})
 }
 
 func newBadExporterFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory("bf", func() config.Exporter {
-		return &config.ExporterSettings{
-			TypeVal: "bf",
+		return &struct {
+			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+		}{
+			ExporterSettings: config.NewExporterSettings(config.NewID("bf")),
 		}
 	})
 }
@@ -86,8 +90,10 @@ func newBadExtensionFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		"bf",
 		func() config.Extension {
-			return &config.ExtensionSettings{
-				TypeVal: "bf",
+			return &struct {
+				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			}{
+				ExtensionSettings: config.NewExtensionSettings(config.NewID("bf")),
 			}
 		},
 		func(ctx context.Context, params component.ExtensionCreateParams, extension config.Extension) (component.Extension, error) {

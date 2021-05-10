@@ -27,6 +27,7 @@ exporters:
     logLevel: debug
 
 service:
+  extensions: [oidc]
   pipelines:
     traces:
       receivers: [otlp]

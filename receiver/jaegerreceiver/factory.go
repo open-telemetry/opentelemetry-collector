@@ -174,7 +174,7 @@ func createTracesReceiver(
 	}
 
 	// Create the receiver.
-	return newJaegerReceiver(rCfg.ID().String(), &config, nextConsumer, params), nil
+	return newJaegerReceiver(rCfg.ID(), &config, nextConsumer, params), nil
 }
 
 // extract the port number from string in "address:port" format. If the

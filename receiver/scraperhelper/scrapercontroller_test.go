@@ -28,6 +28,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -307,7 +308,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		testScrapeResourceMetricsChs[i] = make(chan int)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper("scraper", tsrm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
@@ -360,7 +361,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 		_, dpc := md.MetricAndDataPointCount()
 		dataPointCount += dpc
 	}
-	obsreporttest.CheckReceiverMetrics(t, "receiver", "", int64(dataPointCount), 0)
+	obsreporttest.CheckReceiverMetrics(t, config.NewID("receiver"), "", int64(dataPointCount), 0)
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData) {
@@ -395,7 +396,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	obsreporttest.CheckScraperMetrics(t, "receiver", "scraper", expectedScraped, expectedErrored)
+	obsreporttest.CheckScraperMetrics(t, config.NewID("receiver"), config.NewID("scraper"), expectedScraped, expectedErrored)
 }
 
 func singleMetric() pdata.MetricSlice {
@@ -430,7 +431,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 		zap.NewNop(),
 		new(consumertest.MetricsSink),
 		AddMetricsScraper(NewMetricsScraper("", tsm.scrape)),
-		AddResourceMetricsScraper(NewResourceMetricsScraper("", tsrm.scrape)),
+		AddResourceMetricsScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)

@@ -20,7 +20,7 @@ import (
 
 // Config has the configuration for the fluentbit extension.
 type Config struct {
-	*config.ExtensionSettings `mapstructure:"-"`
+	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// SizeMiB is the size, in MiB, of the memory ballast
 	// to be created for this process.

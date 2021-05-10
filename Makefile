@@ -26,11 +26,8 @@ GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
 
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 VERSION=$(shell git describe --match "v[0-9]*" HEAD)
-BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
+BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
@@ -38,7 +35,7 @@ COMP_REL_PATH=service/defaultcomponents/defaults.go
 MOD_NAME=go.opentelemetry.io/collector
 
 GO_ACC=go-acc
-ADDLICENCESE=addlicense
+ADDLICENSE=addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 
@@ -116,10 +113,10 @@ gotidy:
 
 .PHONY: addlicense
 addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			exit 1; \
 		else \
 			echo "Add License finished successfully"; \
@@ -127,10 +124,10 @@ addlicense:
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			echo "Use 'make addlicense' to fix this."; \
 			exit 1; \
 		else \
@@ -226,12 +223,17 @@ delete-tag:
 docker-otelcol:
 	COMPONENT=otelcol $(MAKE) docker-component
 
+# build collector binaries with different OS and Architecture
 .PHONY: binaries-all-sys
-binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
+binaries-all-sys: binaries-darwin_amd64 binaries-darwin_arm64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
 
 .PHONY: binaries-darwin_amd64
 binaries-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal
+
+.PHONY: binaries-darwin_arm64
+binaries-darwin_arm64:
+	GOOS=darwin  GOARCH=arm64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-linux_amd64
 binaries-linux_amd64:

@@ -39,11 +39,8 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Attribute: defaultAttribute,
+		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		Attribute:         defaultAttribute,
 	}
 }
 

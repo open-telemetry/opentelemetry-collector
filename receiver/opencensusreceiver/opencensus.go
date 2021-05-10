@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -60,14 +61,14 @@ type ocReceiver struct {
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	instanceName string
+	id config.ComponentID
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOpenCensusReceiver(
-	instanceName string,
+	id config.ComponentID,
 	transport string,
 	addr string,
 	tc consumer.Traces,
@@ -81,18 +82,17 @@ func newOpenCensusReceiver(
 	}
 
 	ocr := &ocReceiver{
-		ln:          ln,
-		corsOrigins: []string{}, // Disable CORS by default.
-		gatewayMux:  gatewayruntime.NewServeMux(),
+		id:              id,
+		ln:              ln,
+		corsOrigins:     []string{}, // Disable CORS by default.
+		gatewayMux:      gatewayruntime.NewServeMux(),
+		traceConsumer:   tc,
+		metricsConsumer: mc,
 	}
 
 	for _, opt := range opts {
 		opt.withReceiver(ocr)
 	}
-
-	ocr.instanceName = instanceName
-	ocr.traceConsumer = tc
-	ocr.metricsConsumer = mc
 
 	return ocr, nil
 }
@@ -132,7 +132,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.instanceName, ocr.traceConsumer, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.traceReceiverOpts...)
 		if err != nil {
 			return
 		}
@@ -154,7 +154,7 @@ func (ocr *ocReceiver) registerMetricsConsumer(host component.Host) error {
 	var err error
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.instanceName, ocr.metricsConsumer)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer)
 		if err != nil {
 			return
 		}

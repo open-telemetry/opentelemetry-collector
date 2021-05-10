@@ -24,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -378,5 +379,5 @@ func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata
 	if spaps == nil {
 		return
 	}
-	dest.Attributes().UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, spaps.Value)
+	dest.Attributes().UpsertBool(occonventions.AttributeSameProcessAsParentSpan, spaps.Value)
 }

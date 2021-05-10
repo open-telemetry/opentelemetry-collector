@@ -32,6 +32,7 @@ import (
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -112,7 +113,7 @@ func TestContainerResourceToOC(t *testing.T) {
 	}
 
 	// Also test that the explicit resource type is preserved if present
-	resource.Attributes().InsertString(conventions.OCAttributeResourceType, "other-type")
+	resource.Attributes().InsertString(occonventions.AttributeResourceType, "other-type")
 	want.Type = "other-type"
 
 	_, ocResource = internalResourceToOC(resource)
@@ -237,7 +238,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 			actual := pdata.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
 			// Remove opencensus resource type from actual. This will be added during translation.
-			actual.Attributes().Delete(conventions.OCAttributeResourceType)
+			actual.Attributes().Delete(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
 			expected.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 				a, ok := actual.Attributes().Get(k)

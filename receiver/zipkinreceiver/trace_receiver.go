@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -57,7 +58,7 @@ type ZipkinReceiver struct {
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
 	nextConsumer consumer.Traces
-	instanceName string
+	id           config.ComponentID
 
 	shutdownWG sync.WaitGroup
 	server     *http.Server
@@ -74,7 +75,7 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 
 	zr := &ZipkinReceiver{
 		nextConsumer: nextConsumer,
-		instanceName: config.ID().String(),
+		id:           config.ID(),
 		config:       config,
 	}
 	return zr, nil
@@ -215,8 +216,8 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
 	transportTag := transportType(r, asZipkinv1)
-	ctx = obsreport.ReceiverContext(ctx, zr.instanceName, transportTag)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.instanceName, transportTag)
+	ctx = obsreport.ReceiverContext(ctx, zr.id, transportTag)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.id, transportTag)
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)

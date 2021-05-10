@@ -52,7 +52,7 @@ func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporte
 
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(conn)
 	s := newProtoGRPCSender(logger,
-		cfg.NameVal,
+		cfg.ID().String(),
 		collectorServiceClient,
 		metadata.New(cfg.GRPCClientSettings.Headers),
 		cfg.WaitForReady,

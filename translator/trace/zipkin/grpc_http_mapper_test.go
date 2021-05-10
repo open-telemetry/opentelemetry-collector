@@ -14,8 +14,15 @@
 
 package zipkin
 
-// These constants are the attribute keys used when translating from zipkin
-// format to the internal collector data format.
-const (
-	startTimeAbsent = "otel.zipkin.absentField.startTime"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+func TestOTStatusFromHTTPStatus(t *testing.T) {
+	for httpStatus := int32(100); httpStatus <= 604; httpStatus++ {
+		otelStatus := ocStatusCodeFromHTTP(httpStatus)
+		assert.True(t, otelStatus >= ocOK && otelStatus <= ocUnauthenticated)
+	}
+}

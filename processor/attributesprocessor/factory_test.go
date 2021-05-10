@@ -38,7 +38,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	})
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }

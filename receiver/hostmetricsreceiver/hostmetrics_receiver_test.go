@@ -215,10 +215,10 @@ func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, interna
 	return args.Get(0).(scraperhelper.MetricsScraper), args.Error(1)
 }
 
-func (m *mockScraper) Name() string                                { return "" }
+func (m *mockScraper) ID() config.ComponentID                      { return config.NewID("") }
 func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockScraper) Scrape(context.Context, string) (pdata.MetricSlice, error) {
+func (m *mockScraper) Scrape(context.Context, config.ComponentID) (pdata.MetricSlice, error) {
 	return pdata.NewMetricSlice(), errors.New("err1")
 }
 
@@ -231,10 +231,10 @@ func (m *mockResourceFactory) CreateResourceMetricsScraper(context.Context, *zap
 	return args.Get(0).(scraperhelper.ResourceMetricsScraper), args.Error(1)
 }
 
-func (m *mockResourceScraper) Name() string                                { return "" }
+func (m *mockResourceScraper) ID() config.ComponentID                      { return config.NewID("") }
 func (m *mockResourceScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockResourceScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockResourceScraper) Scrape(context.Context, string) (pdata.ResourceMetricsSlice, error) {
+func (m *mockResourceScraper) Scrape(context.Context, config.ComponentID) (pdata.ResourceMetricsSlice, error) {
 	return pdata.NewResourceMetricsSlice(), errors.New("err2")
 }
 
@@ -243,8 +243,8 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 	resourceScraperFactories = map[string]internal.ResourceScraperFactory{}
 
 	sink := new(consumertest.MetricsSink)
-	config := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
+	cfg := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
 	require.Error(t, err)
 }
 
@@ -255,8 +255,8 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 	resourceScraperFactories = map[string]internal.ResourceScraperFactory{}
 
 	sink := new(consumertest.MetricsSink)
-	config := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
+	cfg := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
 	require.Error(t, err)
 }
 
@@ -267,8 +267,8 @@ func TestGatherMetrics_CreateMetricsResourceScraperError(t *testing.T) {
 	resourceScraperFactories = map[string]internal.ResourceScraperFactory{mockResourceTypeStr: mResourceFactory}
 
 	sink := new(consumertest.MetricsSink)
-	config := &Config{Scrapers: map[string]internal.Config{mockResourceTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
+	cfg := &Config{Scrapers: map[string]internal.Config{mockResourceTypeStr: &mockConfig{}}}
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
 	require.Error(t, err)
 }
 

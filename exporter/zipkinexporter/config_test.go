@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["zipkin"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	// URL doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
@@ -51,12 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, defaultCfg, e0)
 	assert.Equal(t, "json", e0.(*Config).Format)
 
-	e1 := cfg.Exporters["zipkin/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, &Config{
-		ExporterSettings: config.ExporterSettings{
-			NameVal: "zipkin/2",
-			TypeVal: "zipkin",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 10 * time.Second,
