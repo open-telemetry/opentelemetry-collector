@@ -40,7 +40,6 @@ const (
 	leStr       = "le"
 	quantileStr = "quantile"
 	pInfStr     = "+Inf"
-	delimiter   = "_"
 	keyStr      = "key"
 )
 
@@ -202,11 +201,9 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 		return ""
 	}
 
-	var name string
+	name := metric.GetName()
 	if len(ns) > 0 {
-		name = ns + delimiter + metric.GetName()
-	} else {
-		name = metric.GetName()
+		name = ns + "_" + name
 	}
 
 	return sanitize(name)
@@ -262,7 +259,7 @@ func sanitize(s string) string {
 	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
 	s = strings.Map(sanitizeRune, s)
 	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + delimiter + s
+		s = keyStr + "_" + s
 	}
 	if s[0] == '_' {
 		s = keyStr + s
