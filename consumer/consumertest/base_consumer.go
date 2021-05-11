@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-type baseConsumer struct{}
+type nonMutatingConsumer struct{}
 
-func (bc baseConsumer) Capabilities() consumer.Capabilities {
+func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }

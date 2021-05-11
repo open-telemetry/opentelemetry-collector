@@ -25,7 +25,7 @@ var (
 )
 
 type nopConsumer struct {
-	baseConsumer
+	nonMutatingConsumer
 }
 
 func (nc *nopConsumer) unexported() {}

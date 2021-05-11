@@ -21,7 +21,7 @@ import (
 )
 
 type errConsumer struct {
-	baseConsumer
+	nonMutatingConsumer
 	err error
 }
 

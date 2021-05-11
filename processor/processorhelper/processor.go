@@ -104,7 +104,6 @@ func fromOptions(options []Option) *baseSettings {
 // internalOptions contains internalOptions concerning how an Processor is configured.
 type baseProcessor struct {
 	component.Component
-	fullName        string
 	capabilities    consumer.Capabilities
 	traceAttributes []trace.Attribute
 }
