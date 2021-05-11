@@ -152,6 +152,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd cmd/mdatagen && go install ./
 	cd cmd/checkdoc && go install ./
@@ -372,3 +373,13 @@ certs-dryrun:
 .PHONY: checkdoc
 checkdoc:
 	go run cmd/checkdoc/main.go cmd/checkdoc/docs.go --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+
+# Construct new API state snapshots
+.PHONY: apidiff-build
+apidiff-build:
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
+
+# Compare API state snapshots
+.PHONY: apidiff-compare
+apidiff-compare:
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
