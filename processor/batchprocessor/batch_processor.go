@@ -263,9 +263,9 @@ func (bt *batchTraces) size() int {
 }
 
 type batchMetrics struct {
-	nextConsumer consumer.Metrics
-	metricData   pdata.Metrics
-	metricCount  int
+	nextConsumer   consumer.Metrics
+	metricData     pdata.Metrics
+	dataPointCount int
 }
 
 func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
@@ -274,19 +274,19 @@ func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
 
 func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int) error {
 	var req pdata.Metrics
-	if sendBatchMaxSize > 0 && bm.metricCount > sendBatchMaxSize {
+	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
 		req = splitMetrics(sendBatchMaxSize, bm.metricData)
-		bm.metricCount -= sendBatchMaxSize
+		bm.dataPointCount -= sendBatchMaxSize
 	} else {
 		req = bm.metricData
 		bm.metricData = pdata.NewMetrics()
-		bm.metricCount = 0
+		bm.dataPointCount = 0
 	}
 	return bm.nextConsumer.ConsumeMetrics(ctx, req)
 }
 
 func (bm *batchMetrics) itemCount() int {
-	return bm.metricCount
+	return bm.dataPointCount
 }
 
 func (bm *batchMetrics) size() int {
@@ -296,11 +296,11 @@ func (bm *batchMetrics) size() int {
 func (bm *batchMetrics) add(item interface{}) {
 	md := item.(pdata.Metrics)
 
-	newMetricsCount := md.MetricCount()
-	if newMetricsCount == 0 {
+	_, newDataPointCount := md.MetricAndDataPointCount()
+	if newDataPointCount == 0 {
 		return
 	}
-	bm.metricCount += newMetricsCount
+	bm.dataPointCount += newDataPointCount
 	md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
 }
 

@@ -11,6 +11,7 @@
 - Rename `configtest.LoadConfigFile` to `configtest.LoadConfigAndValidate` (#3306)
 - Replace `ExtensionCreateParams` with `ExtensionCreateSettings` (#3294)
 - Replace `ExporterCreateParams` with `ExporterCreateSettings` (#3164)
+- Change `batchprocessor` logic to limit data points rather than metrics (#3141)
 
 ## 💡 Enhancements 💡
 
