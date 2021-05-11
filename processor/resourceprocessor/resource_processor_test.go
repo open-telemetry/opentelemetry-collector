@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -97,68 +98,74 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test trace consumer
-			ttn := &testTraceConsumer{}
+			ttn := new(consumertest.TracesSink)
 
 			factory := NewFactory()
 			rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
 			require.NoError(t, err)
-			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceTraceData := generateTraceData(tt.sourceAttributes)
 			wantTraceData := generateTraceData(tt.wantAttributes)
 			err = rtp.ConsumeTraces(context.Background(), sourceTraceData)
 			require.NoError(t, err)
-			assert.EqualValues(t, wantTraceData, ttn.td)
+			traces := ttn.AllTraces()
+			require.Len(t, traces, 1)
+			traces[0].ResourceSpans().At(0).Resource().Attributes().Sort()
+			assert.EqualValues(t, wantTraceData, traces[0])
 
 			// Test metrics consumer
-			tmn := &testMetricsConsumer{}
+			tmn := new(consumertest.MetricsSink)
 			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tmn)
 			require.NoError(t, err)
-			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceMetricData := generateMetricData(tt.sourceAttributes)
 			wantMetricData := generateMetricData(tt.wantAttributes)
 			err = rmp.ConsumeMetrics(context.Background(), sourceMetricData)
 			require.NoError(t, err)
-			assert.EqualValues(t, wantMetricData, tmn.md)
+			metrics := tmn.AllMetrics()
+			require.Len(t, metrics, 1)
+			metrics[0].ResourceMetrics().At(0).Resource().Attributes().Sort()
+			assert.EqualValues(t, wantMetricData, metrics[0])
 
 			// Test logs consumer
-			tln := &testLogsConsumer{}
+			tln := new(consumertest.LogsSink)
 			rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tln)
 			require.NoError(t, err)
-			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceLogData := generateLogData(tt.sourceAttributes)
 			wantLogData := generateLogData(tt.wantAttributes)
 			err = rlp.ConsumeLogs(context.Background(), sourceLogData)
 			require.NoError(t, err)
-			assert.EqualValues(t, wantLogData, tln.ld)
+			logs := tln.AllLogs()
+			require.Len(t, logs, 1)
+			logs[0].ResourceLogs().At(0).Resource().Attributes().Sort()
+			assert.EqualValues(t, wantLogData, logs[0])
 		})
 	}
 }
 
 func TestResourceProcessorError(t *testing.T) {
-	ttn := &testTraceConsumer{}
-
 	badCfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		AttributesActions: nil,
 	}
 
+	// Test traces consumer
 	factory := NewFactory()
-	rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, ttn)
+	rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, rtp)
 
 	// Test metrics consumer
-	tmn := &testMetricsConsumer{}
-	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, tmn)
+	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, rmp)
 
 	// Test logs consumer
-	tln := &testLogsConsumer{}
-	rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, tln)
+	rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, rlp)
 }
@@ -200,43 +207,4 @@ func generateLogData(attributes map[string]string) pdata.Logs {
 	}
 	resource.Attributes().Sort()
 	return ld
-}
-
-type testTraceConsumer struct {
-	td pdata.Traces
-}
-
-func (ttn *testTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	// sort attributes to be able to compare traces
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		td.ResourceSpans().At(i).Resource().Attributes().Sort()
-	}
-	ttn.td = td
-	return nil
-}
-
-type testMetricsConsumer struct {
-	md pdata.Metrics
-}
-
-func (tmn *testMetricsConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
-	// sort attributes to be able to compare traces
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		md.ResourceMetrics().At(i).Resource().Attributes().Sort()
-	}
-	tmn.md = md
-	return nil
-}
-
-type testLogsConsumer struct {
-	ld pdata.Logs
-}
-
-func (tln *testLogsConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	// sort attributes to be able to compare traces
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		ld.ResourceLogs().At(i).Resource().Attributes().Sort()
-	}
-	tln.ld = ld
-	return nil
 }

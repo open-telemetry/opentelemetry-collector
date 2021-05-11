@@ -66,7 +66,7 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 		cfg,
 		nextConsumer,
 		tsp,
-		processorhelper.WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: true}))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
 func (tsp *tracesamplerprocessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {

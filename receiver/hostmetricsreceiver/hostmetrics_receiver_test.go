@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -278,7 +279,11 @@ type notifyingSink struct {
 	ch              chan int
 }
 
-func (s *notifyingSink) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (s *notifyingSink) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (s *notifyingSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	if md.MetricCount() > 0 {
 		s.receivedMetrics = true
 	}

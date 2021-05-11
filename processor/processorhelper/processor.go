@@ -76,7 +76,7 @@ func WithShutdown(shutdown componenthelper.ShutdownFunc) Option {
 
 // WithCapabilities overrides the default GetCapabilities function for an processor.
 // The default GetCapabilities function returns mutable capabilities.
-func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
+func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
 		o.capabilities = capabilities
 	}
@@ -84,14 +84,14 @@ func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
 
 type baseSettings struct {
 	componentOptions []componenthelper.Option
-	capabilities     component.ProcessorCapabilities
+	capabilities     consumer.Capabilities
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
 func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		capabilities: component.ProcessorCapabilities{MutatesConsumedData: true},
+		capabilities: consumer.Capabilities{MutatesData: true},
 	}
 
 	for _, op := range options {
@@ -104,7 +104,7 @@ func fromOptions(options []Option) *baseSettings {
 // internalOptions contains internalOptions concerning how an Processor is configured.
 type baseProcessor struct {
 	component.Component
-	capabilities    component.ProcessorCapabilities
+	capabilities    consumer.Capabilities
 	traceAttributes []trace.Attribute
 }
 
@@ -122,7 +122,7 @@ func newBaseProcessor(id config.ComponentID, options ...Option) baseProcessor {
 	return be
 }
 
-func (bp *baseProcessor) GetCapabilities() component.ProcessorCapabilities {
+func (bp *baseProcessor) Capabilities() consumer.Capabilities {
 	return bp.capabilities
 }
 

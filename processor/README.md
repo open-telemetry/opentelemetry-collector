@@ -62,8 +62,8 @@ From data ownership perspective pipelines can work in 2 modes:
 * Shared data ownership
 
 The mode is defined during startup based on data modification intent reported by the
-processors. The intent is reported by each processor via `MutatesConsumedData` field of
-the struct returned by `GetCapabilities` function. If any processor in the pipeline
+processors. The intent is reported by each processor via `MutatesData` field of
+the struct returned by `Capabilities` function. If any processor in the pipeline
 declares an intent to modify the data then that pipeline will work in exclusive ownership
 mode. In addition, any other pipeline that receives data from a receiver that is attached
 to a pipeline with exclusive ownership mode will be also operating in exclusive ownership
@@ -112,7 +112,7 @@ the processor can implement copy-on-write approach for individual sub-parts of
 mutate the original `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` is allowed.
 
 If the processor uses such technique it should declare that it does not intend
-to modify the original data by setting `MutatesConsumedData=false` in its capabilities
+to modify the original data by setting `MutatesData=false` in its capabilities
 to avoid marking the pipeline for Exclusive ownership and to avoid the cost of
 data cloning described in Exclusive Ownership section.
 
