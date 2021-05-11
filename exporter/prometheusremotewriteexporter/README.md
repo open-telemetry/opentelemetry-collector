@@ -32,7 +32,6 @@ As a result, the following parameters are also required:
 
 The following settings can be optionally configured:
 
-- `external_labels`: list of labels to be attached to each metric data point
 - `headers`: additional headers attached to each HTTP request. 
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
