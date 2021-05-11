@@ -1,5 +1,17 @@
 #!/bin/bash
 
+GOBIN=$(go env GOBIN)
+if [[ "$GO" == "" ]]; then
+    GOBIN=$(which go)
+fi
+
+if [[ "$GOBIN" == "" ]]; then
+    echo "Could not determine which Go binary to use."
+    exit 1
+fi
+
+echo "Using ${GOBIN} to compile the distributions."
+
 # each attempt pauses for 100ms before retrying
 max_retries=50
 
@@ -20,7 +32,7 @@ do
 
     echo "Starting test '${test}' at `date`" >> "${out}/test.log"
 
-    go run . --config "./test/${test}.builder.yaml" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
+    go run . --go "${GOBIN}" --config "./test/${test}.builder.yaml" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
     if [ $? != 0 ]; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"

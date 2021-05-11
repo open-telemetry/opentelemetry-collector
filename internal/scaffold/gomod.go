@@ -17,7 +17,7 @@ package scaffold
 const Gomod = `
 module {{.Distribution.Module}}
 
-go 1.15
+go 1.16
 
 require (
 	{{- range .Extensions}}

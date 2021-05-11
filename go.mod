@@ -14,7 +14,7 @@
 
 module github.com/open-telemetry/opentelemetry-collector-builder
 
-go 1.14
+go 1.16
 
 require (
 	github.com/go-logr/logr v0.2.1
