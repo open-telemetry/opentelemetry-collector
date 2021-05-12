@@ -167,9 +167,8 @@ type GRPCServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
-
 type clientOptions struct {
-	ext  map[config.ComponentID]component.Extension
+	ext map[config.ComponentID]component.Extension
 }
 
 // ToClientSettingOption is an option to add/change additional configuration on top of GRPCClientSettings

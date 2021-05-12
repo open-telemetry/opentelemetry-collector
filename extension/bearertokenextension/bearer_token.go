@@ -17,10 +17,12 @@ package bearertokenextension
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 )
 
 var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
@@ -42,7 +44,7 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 
 type BearerTokenAuth struct {
 	tokenString string
-	logger *zap.Logger
+	logger      *zap.Logger
 }
 
 var _ configauth.GRPCClientAuth = (*BearerTokenAuth)(nil)
@@ -50,7 +52,7 @@ var _ configauth.GRPCClientAuth = (*BearerTokenAuth)(nil)
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	return &BearerTokenAuth{
 		tokenString: cfg.BearerToken,
-		logger: logger,
+		logger:      logger,
 	}
 }
 

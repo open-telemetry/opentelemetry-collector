@@ -62,7 +62,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	tests := []struct {
 		name            string
 		config          Config
-		mustFail		bool
+		mustFail        bool
 		mustFailOnStart bool
 	}{
 		{
@@ -185,12 +185,12 @@ func TestCreateTracesExporter(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, consumer)
-                err = consumer.Start(context.Background(), componenttest.NewNopHost())
-                if tt.mustFailOnStart {
-                	assert.Error(t, err)
+				err = consumer.Start(context.Background(), componenttest.NewNopHost())
+				if tt.mustFailOnStart {
+					assert.Error(t, err)
 					return
 				}
-                assert.NoError(t, err)
+				assert.NoError(t, err)
 				err = consumer.Shutdown(context.Background())
 				if err != nil {
 					// Since the endpoint of OTLP exporter doesn't actually exist,

@@ -211,7 +211,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"):  &mockHTTPClientAuth{forceError: true, err: errors.New("dummy extension")},
+				config.NewID("mock"): &mockHTTPClientAuth{forceError: true, err: errors.New("dummy extension")},
 			},
 		},
 	}

@@ -493,4 +493,3 @@ type grpcTraceServer struct{}
 func (gts *grpcTraceServer) Export(context.Context, *otelcol.ExportTraceServiceRequest) (*otelcol.ExportTraceServiceResponse, error) {
 	return &otelcol.ExportTraceServiceResponse{}, nil
 }
-

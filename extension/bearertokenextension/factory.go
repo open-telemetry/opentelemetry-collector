@@ -15,11 +15,11 @@
 package bearertokenextension
 
 import (
-"context"
+	"context"
 
-"go.opentelemetry.io/collector/component"
-"go.opentelemetry.io/collector/config"
-"go.opentelemetry.io/collector/extension/extensionhelper"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
@@ -44,4 +44,3 @@ func createDefaultConfig() config.Extension {
 func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
 	return newBearerTokenAuth(cfg.(*Config), params.Logger), nil
 }
-

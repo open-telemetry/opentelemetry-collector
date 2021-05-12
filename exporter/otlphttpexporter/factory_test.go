@@ -16,10 +16,11 @@ package otlphttpexporter
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configauth"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,9 +65,9 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		name     string
-		config   Config
-		mustFail bool
+		name            string
+		config          Config
+		mustFail        bool
 		mustFailOnStart bool
 	}{
 		{
@@ -131,7 +132,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail: false,
+			mustFail:        false,
 			mustFailOnStart: true,
 		},
 		{
@@ -140,10 +141,10 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
-					Auth:  &configauth.Authentication{AuthenticatorName: "dummy"},
+					Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
 				},
 			},
-			mustFail: false,
+			mustFail:        false,
 			mustFailOnStart: true,
 		},
 	}

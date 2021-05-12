@@ -106,7 +106,7 @@ type grpcSender struct {
 	callOptions    []grpc.CallOption
 }
 
-func newGrpcSender(config *Config,  ext map[config.ComponentID]component.Extension) (*grpcSender, error) {
+func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extension) (*grpcSender, error) {
 	dialOpts, err := config.GRPCClientSettings.ToDialOptions(configgrpc.WithExtensionsConfiguration(ext))
 	if err != nil {
 		return nil, err
