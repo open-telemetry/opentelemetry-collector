@@ -137,7 +137,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "ErrorWithAuthAndNoExtensionConfiguration",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					Auth:  &configauth.Authentication{AuthenticatorName: "dummy"},

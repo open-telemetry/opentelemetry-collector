@@ -48,13 +48,18 @@ type GRPCClientAuth interface {
 // GetHTTPClientAuth attempts to select the appropriate HTTPClientAuth from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned. This should be only
 // used by HTTP clients.
-func GetHTTPClientAuth(extensions map[config.NamedEntity]component.Extension, requested string) (HTTPClientAuth, error) {
+func GetHTTPClientAuth(extensions map[config.ComponentID]component.Extension, requested string) (HTTPClientAuth, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
 	}
 
+	reqID, err := config.IDFromString(requested)
+	if err != nil {
+		return nil, err
+	}
+
 	for name, ext := range extensions {
-		if name.Name() == requested {
+		if name == reqID {
 			if auth, ok := ext.(HTTPClientAuth); ok {
 				return auth, nil
 			}
@@ -67,13 +72,18 @@ func GetHTTPClientAuth(extensions map[config.NamedEntity]component.Extension, re
 // GetGRPCClientAuth attempts to select the appropriate GRPCClientAuth from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned. This shold only be used
 // by gRPC clients
-func GetGRPCClientAuth(extensions map[config.NamedEntity]component.Extension, requested string) (GRPCClientAuth, error) {
+func GetGRPCClientAuth(extensions map[config.ComponentID]component.Extension, requested string) (GRPCClientAuth, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
 	}
 
+	reqID, err := config.IDFromString(requested)
+	if err != nil {
+		return nil, err
+	}
+
 	for name, ext := range extensions {
-		if name.Name() == requested {
+		if name == reqID {
 			if auth, ok := ext.(GRPCClientAuth); ok {
 				return auth, nil
 			}

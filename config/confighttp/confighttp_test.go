@@ -161,7 +161,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		name         string
 		shouldErr    bool
 		settings     HTTPClientSettings
-		extensionMap map[config.NamedEntity]component.Extension
+		extensionMap map[config.ComponentID]component.Extension
 	}{
 		{
 			name: "no_auth_extension_enabled",
@@ -170,11 +170,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     nil,
 			},
 			shouldErr: false,
-			extensionMap: map[config.NamedEntity]component.Extension{
-				&config.ExtensionSettings{
-					NameVal: "mock",
-					TypeVal: "mock",
-				}: &mockHTTPClientAuth{},
+			extensionMap: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &mockHTTPClientAuth{},
 			},
 		},
 		{
@@ -184,11 +181,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
 			},
 			shouldErr: true,
-			extensionMap: map[config.NamedEntity]component.Extension{
-				&config.ExtensionSettings{
-					NameVal: "mock",
-					TypeVal: "mock",
-				}: &mockHTTPClientAuth{},
+			extensionMap: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &mockHTTPClientAuth{},
 			},
 		},
 		{
@@ -206,11 +200,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
 			},
 			shouldErr: false,
-			extensionMap: map[config.NamedEntity]component.Extension{
-				&config.ExtensionSettings{
-					NameVal: "mock",
-					TypeVal: "mock",
-				}: &mockHTTPClientAuth{},
+			extensionMap: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &mockHTTPClientAuth{},
 			},
 		},
 		{
@@ -220,11 +211,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
 			},
 			shouldErr: true,
-			extensionMap: map[config.NamedEntity]component.Extension{
-				&config.ExtensionSettings{
-					NameVal: "mock",
-					TypeVal: "mock",
-				}: &mockHTTPClientAuth{forceError: true, err: errors.New("dummy extension")},
+			extensionMap: map[config.ComponentID]component.Extension{
+				config.NewID("mock"):  &mockHTTPClientAuth{forceError: true, err: errors.New("dummy extension")},
 			},
 		},
 	}

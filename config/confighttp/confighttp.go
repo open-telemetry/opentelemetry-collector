@@ -60,7 +60,7 @@ type HTTPClientSettings struct {
 }
 
 type toClientOptions struct {
-	extensionsMap map[config.NamedEntity]component.Extension
+	extensionsMap map[config.ComponentID]component.Extension
 }
 
 // ToClientOption is an option to add/change additional configuration on top of HTTPClientSettings
@@ -70,7 +70,7 @@ type ToClientOption func(options *toClientOptions)
 // WithExtensionsConfiguration is passed to HTTPClientSettings.ToClient() in order to
 // extend HTTPClientSettings with the configuration provided through extensions
 // e.g Authenticator configuration via extensions
-func WithExtensionsConfiguration(ext map[config.NamedEntity]component.Extension) ToClientOption {
+func WithExtensionsConfiguration(ext map[config.ComponentID]component.Extension) ToClientOption {
 	return func(opts *toClientOptions) {
 		opts.extensionsMap = ext
 	}

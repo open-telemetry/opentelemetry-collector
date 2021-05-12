@@ -37,10 +37,7 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &OAuth2ClientSettings{
-		ExtensionSettings: config.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 	}
 }
 
