@@ -80,7 +80,7 @@ func TestGetBoundaryEquivalence(t *testing.T) {
 			},
 			wantErr: "QuantileLabel is empty",
 		},
-                {
+		{
 			name:   "other data types without matches",
 			mtype:  metricspb.MetricDescriptor_GAUGE_DOUBLE,
 			pmtype: pdata.MetricDataTypeDoubleGauge,
