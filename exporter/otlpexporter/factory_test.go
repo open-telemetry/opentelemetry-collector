@@ -16,7 +16,6 @@ package otlpexporter
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
