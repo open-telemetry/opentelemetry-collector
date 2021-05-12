@@ -81,7 +81,7 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 
 func (s *WindowsService) start(elog *eventlog.Log, appErrorChannel chan error) error {
 	var err error
-	s.app, err = newWithEventViewerLoggingHook(s.params, elog)
+	s.app, err = newWithWindowsEventLogCore(s.params, elog)
 	if err != nil {
 		return err
 	}
@@ -120,28 +120,69 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithEventViewerLoggingHook(params Parameters, elog *eventlog.Log) (*Application, error) {
+func newWithWindowsEventLogCore(params Parameters, elog *eventlog.Log) (*Application, error) {
 	params.LoggingOptions = append(
 		params.LoggingOptions,
-		zap.Hooks(func(entry zapcore.Entry) error {
-			msg := fmt.Sprintf("%v\r\n\r\nStack Trace:\r\n%v", entry.Message, entry.Stack)
-
-			switch entry.Level {
-			case zapcore.FatalLevel, zapcore.PanicLevel, zapcore.DPanicLevel:
-				// golang.org/x/sys/windows/svc/eventlog does not support Critical level event logs
-				return elog.Error(3, msg)
-			case zapcore.ErrorLevel:
-				return elog.Error(3, msg)
-			case zapcore.WarnLevel:
-				return elog.Warning(2, msg)
-			case zapcore.InfoLevel:
-				return elog.Info(1, msg)
-			}
-
-			// ignore Debug level logs
-			return nil
-		}),
+		zap.WrapCore(withWindowsCore(elog)),
 	)
-
 	return New(params)
+}
+
+var _ zapcore.Core = (*windowsEventLogCore)(nil)
+
+type windowsEventLogCore struct {
+	core    zapcore.Core
+	elog    *eventlog.Log
+	encoder zapcore.Encoder
+}
+
+func (w windowsEventLogCore) Enabled(level zapcore.Level) bool {
+	return w.core.Enabled(level)
+}
+
+func (w windowsEventLogCore) With(fields []zapcore.Field) zapcore.Core {
+	return withWindowsCore(w.elog)(w.core.With(fields))
+}
+
+func (w windowsEventLogCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if w.Enabled(ent.Level) {
+		return ce.AddCore(ent, w)
+	}
+	return ce
+}
+
+func (w windowsEventLogCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
+	buf, err := w.encoder.EncodeEntry(ent, fields)
+	if err != nil {
+		w.elog.Warning(2, fmt.Sprintf("failed encoding log entry %v\r\n", err))
+		return err
+	}
+	msg := buf.String()
+	buf.Free()
+
+	switch ent.Level {
+	case zapcore.FatalLevel, zapcore.PanicLevel, zapcore.DPanicLevel:
+		// golang.org/x/sys/windows/svc/eventlog does not support Critical level event logs
+		return w.elog.Error(3, msg)
+	case zapcore.ErrorLevel:
+		return w.elog.Error(3, msg)
+	case zapcore.WarnLevel:
+		return w.elog.Warning(2, msg)
+	case zapcore.InfoLevel:
+		return w.elog.Info(1, msg)
+	}
+	// We would not be here if debug were disabled so log as info to not drop.
+	return w.elog.Info(1, msg)
+}
+
+func (w windowsEventLogCore) Sync() error {
+	return w.core.Sync()
+}
+
+func withWindowsCore(elog *eventlog.Log) func(zapcore.Core) zapcore.Core {
+	return func(core zapcore.Core) zapcore.Core {
+		encoderConfig := zap.NewProductionEncoderConfig()
+		encoderConfig.LineEnding = "\r\n"
+		return windowsEventLogCore{core, elog, zapcore.NewConsoleEncoder(encoderConfig)}
+	}
 }
