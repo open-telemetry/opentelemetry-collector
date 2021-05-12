@@ -21,12 +21,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rs/cors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
-
-	"github.com/rs/cors"
-
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/middleware"
 )
