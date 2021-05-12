@@ -21,10 +21,10 @@ Supported processors (sorted alphabetically):
 - [Probabilistic Sampling Processor](probabilisticsamplerprocessor/README.md)
 - [Span Processor](spanprocessor/README.md)
 
-The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
- has more processors that can be added to custom builds of the Collector.
+The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+ has more processors that can be added to a custom build of the Collector.
 
-## <a name="recommended-processors"></a>Recommended Processors
+## Recommended Processors
 
 By default, no processors are enabled. Depending on the data source, it may be recommended that multiple processors be enabled. Processors must be
 enabled for every data source: Not all processors support all data sources.
@@ -47,7 +47,7 @@ processor documentation for more information.
 3. [batch](batchprocessor/README.md)
 4. *any other processors*
 
-## <a name="data-ownership"></a>Data Ownership
+## Data Ownership
 
 The ownership of the `pdata.Traces`, `pdata.Metrics` and `pdata.Logs` data in a pipeline
 is passed as the data travels through the pipeline. The data is created by the receiver
@@ -69,16 +69,16 @@ mode. In addition, any other pipeline that receives data from a receiver that is
 to a pipeline with exclusive ownership mode will be also operating in exclusive ownership
 mode.
 
-### <a name="exclusive-ownership"></a>Exclusive Ownership
+### Exclusive Ownership
 
 In exclusive ownership mode the data is owned exclusively by a particular processor at a
-given moment of time and the processor is free to modify the data it owns.
+given moment of time, and the processor is free to modify the data it owns.
 
 Exclusive ownership mode is only applicable for pipelines that receive data from the
 same receiver. If a pipeline is marked to be in exclusive ownership mode then any data
 received from a shared receiver will be cloned at the fan-out connector before passing
 further to each pipeline. This ensures that each pipeline has its own exclusive copy of
-data and the data can be safely modified in the pipeline.
+data, and the data can be safely modified in the pipeline.
 
 The exclusive ownership of data allows processors to freely modify the data while
 they own it (e.g. see `attributesprocessor`). The duration of ownership of the data
@@ -91,7 +91,7 @@ new owner.
 Exclusive Ownership mode allows to easily implement processors that need to modify
 the data by simply declaring such intent.
 
-### <a name="shared-ownership"></a>Shared Ownership
+### Shared Ownership
 
 In shared ownership mode no particular processor owns the data and no processor is
 allowed the modify the shared data.
@@ -116,7 +116,7 @@ to modify the original data by setting `MutatesData=false` in its capabilities
 to avoid marking the pipeline for Exclusive ownership and to avoid the cost of
 data cloning described in Exclusive Ownership section.
 
-## <a name="ordering-processors"></a>Ordering Processors
+## Ordering Processors
 
 The order processors are specified in a pipeline is important as this is the
 order in which each processor is applied to traces and metrics.
