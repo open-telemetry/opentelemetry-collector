@@ -271,10 +271,10 @@ func (ma *MetricsAdjuster) adjustPoints(metricType metricspb.MetricDescriptor_Ty
 			zap.Int("len(current)", len(current)), zap.Int("len(initial)", len(initial)), zap.Int("len(previous)", len(previous)))
 		return true
 	}
-	return ma.adjustPoint(metricType, current[0], previous[0])
+	return ma.isReset(metricType, current[0], previous[0])
 }
 
-func (ma *MetricsAdjuster) adjustPoint(metricType metricspb.MetricDescriptor_Type,
+func (ma *MetricsAdjuster) isReset(metricType metricspb.MetricDescriptor_Type,
 	current, previous *metricspb.Point) bool {
 	switch metricType {
 	case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
