@@ -15,16 +15,11 @@
 package internal
 
 import (
-	"sort"
 	"testing"
-	"unsafe"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/testing/protocmp"
+	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -47,28 +42,8 @@ func TestCreateNodeAndResourceConversion(t *testing.T) {
 		},
 	})
 
-	fromOCResource := protoResource(mdFromOC.ResourceMetrics().At(0).Resource())
-	byDirectOTLPResource := protoResource(createNodeAndResourcePdata(job, instance, scheme))
+	fromOCResource := mdFromOC.ResourceMetrics().At(0).Resource().Attributes().Sort()
+	byDirectOTLPResource := createNodeAndResourcePdata(job, instance, scheme).Attributes().Sort()
 
-	if diff := cmp.Diff(byDirectOTLPResource, fromOCResource, protocmp.Transform()); diff != "" {
-		t.Fatalf("Resource mismatch: got: - want: +\n%s", diff)
-	}
-}
-
-// Unfortunately pdata doesn't expose a way for us to retrieve the underlying resource,
-// yet we need to compare the resources which are hidden by an unexported value.
-func protoResource(presource pdata.Resource) *otlpresource.Resource {
-	type extract struct {
-		orig *otlpresource.Resource
-	}
-	extracted := (*extract)(unsafe.Pointer(&presource))
-	if extracted == nil {
-		return nil
-	}
-	// Ensure that the attributes are sorted so that we can properly compare the raw values.
-	resource := extracted.orig
-	sort.Slice(resource.Attributes, func(i, j int) bool {
-		return resource.Attributes[i].Key < resource.Attributes[j].Key
-	})
-	return resource
+	require.Equal(t, byDirectOTLPResource, fromOCResource)
 }
