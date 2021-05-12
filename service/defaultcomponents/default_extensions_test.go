@@ -16,7 +16,7 @@ package defaultcomponents
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/extension/oauth2clientextension"
+	"go.opentelemetry.io/collector/extension/bearertokenextension"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,13 +68,10 @@ func TestDefaultExtensions(t *testing.T) {
 			},
 		},
 		{
-			extension: "oauth2",
+			extension: "bearer",
 			getConfigFn: func() config.Extension {
-				cfg := extFactories["oauth2"].CreateDefaultConfig().(*oauth2clientextension.OAuth2ClientSettings)
-				cfg.ClientSecret = "dummysecret"
-				cfg.ClientID = "dummyid"
-				cfg.TokenURL = endpoint
-				cfg.Scopes = []string{"read"}
+				cfg := extFactories["bearer"].CreateDefaultConfig().(*bearertokenextension.Config)
+				cfg.BearerToken = "dummysecret"
 				return cfg
 			},
 		},

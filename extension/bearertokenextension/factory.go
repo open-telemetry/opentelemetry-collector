@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oauth2clientextension
+package bearertokenextension
 
 import (
-	"context"
+"context"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/extensionhelper"
+"go.opentelemetry.io/collector/component"
+"go.opentelemetry.io/collector/config"
+"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "oauth2"
+	typeStr = "bearer"
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.
@@ -36,11 +36,12 @@ func NewFactory() component.ExtensionFactory {
 }
 
 func createDefaultConfig() config.Extension {
-	return &OAuth2ClientSettings{
+	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 	}
 }
 
 func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
-	return newOAuth2Extension(cfg.(*OAuth2ClientSettings), params.Logger)
+	return newBearerTokenAuth(cfg.(*Config), params.Logger), nil
 }
+
