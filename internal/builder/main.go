@@ -93,6 +93,11 @@ func Generate(cfg Config) error {
 
 // Compile generates a binary from the sources based on the configuration
 func Compile(cfg Config) error {
+	if cfg.SkipCompilation {
+		cfg.Logger.Info("Generating source codes only, the distribution will not be compiled.")
+		return nil
+	}
+
 	// first, we test to check if we have Go at all
 	goBinary, err := getGoPath(cfg)
 	if err != nil {

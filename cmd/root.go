@@ -68,6 +68,7 @@ func Execute() error {
 	cmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.otelcol-builder.yaml)")
 
 	// the distribution parameters, which we accept as CLI flags as well
+	cmd.Flags().BoolVar(&cfg.SkipCompilation, "skip-compilation", false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().StringVar(&cfg.Distribution.ExeName, "name", "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.LongName, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Version, "version", "1.0.0", "The version for the OpenTelemetry Collector distribution")
