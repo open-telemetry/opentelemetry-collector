@@ -48,7 +48,7 @@ func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCre
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
-// CreateMetricsExporter creates a logs exporter based on this config.
+// CreateLogsExporter creates a logs exporter based on this config.
 func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, config.Exporter) (LogsExporter, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }

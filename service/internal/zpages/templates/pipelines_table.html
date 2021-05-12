@@ -4,7 +4,7 @@
         <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
         <td colspan=1 align=center><b>InputType</b></td>
         <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
-        <td colspan=1 align=center><b>MutatesConsumedData</b></td>
+        <td colspan=1 align=center><b>MutatesData</b></td>
         <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
         <td colspan=1 align=center><b>Receivers</b></td>
         <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
@@ -20,7 +20,7 @@
             <tr>{{end -}}
         <td>{{$row.FullName}}</td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
         <td>{{$row.InputType}}</td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
-        <td>{{$row.MutatesConsumedData}}</td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td>{{$row.MutatesData}}</td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
         <td align="center">
             {{range $recindex, $rec := $row.Receivers}}
                 <a href="{{$a}}?zpipelinename={{$row.FullName}}&zcomponentname={{$rec}}&zcomponentkind=receiver">{{$rec}}</a>

@@ -21,9 +21,24 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// Capabilities describes the capabilities of a Processor.
+type Capabilities struct {
+	// MutatesData is set to true if Consume* function of the
+	// processor modifies the input TraceData or MetricsData argument.
+	// Processors which modify the input data MUST set this flag to true. If the processor
+	// does not modify the data it MUST set this flag to false. If the processor creates
+	// a copy of the data before modifying then this flag can be safely set to false.
+	MutatesData bool
+}
+
+type baseConsumer interface {
+	Capabilities() Capabilities
+}
+
 // Metrics is the new metrics consumer interface that receives pdata.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
+	baseConsumer
 	// ConsumeMetrics receives pdata.Metrics for consumption.
 	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
 }
@@ -31,6 +46,7 @@ type Metrics interface {
 // Traces is an interface that receives pdata.Traces, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Traces interface {
+	baseConsumer
 	// ConsumeTraces receives pdata.Traces for consumption.
 	ConsumeTraces(ctx context.Context, td pdata.Traces) error
 }
@@ -38,6 +54,7 @@ type Traces interface {
 // Logs is an interface that receives pdata.Logs, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Logs interface {
+	baseConsumer
 	// ConsumeLogs receives pdata.Logs for consumption.
 	ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 }

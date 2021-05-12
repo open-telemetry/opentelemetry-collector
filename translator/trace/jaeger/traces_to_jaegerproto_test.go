@@ -83,10 +83,10 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 }
 
 func TestGetTagFromStatusMsg(t *testing.T) {
-	got, ok := getTagFromStatusMsg("")
+	_, ok := getTagFromStatusMsg("")
 	assert.False(t, ok)
 
-	got, ok = getTagFromStatusMsg("test-error")
+	got, ok := getTagFromStatusMsg("test-error")
 	assert.True(t, ok)
 	assert.EqualValues(t, model.KeyValue{
 		Key:   tracetranslator.TagStatusMsg,

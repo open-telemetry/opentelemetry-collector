@@ -281,7 +281,7 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.Traces {
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)
-		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
+		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesData
 	}
 
 	// Create a junction point that fans out to all pipelines.
@@ -306,7 +306,7 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.Metrics {
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstMC)
-		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
+		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesData
 	}
 
 	// Create a junction point that fans out to all pipelines.
@@ -331,7 +331,7 @@ func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.Logs {
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstLC)
-		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
+		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesData
 	}
 
 	// Create a junction point that fans out to all pipelines.

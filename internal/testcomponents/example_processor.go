@@ -78,6 +78,6 @@ func (ep *exampleProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (ep *exampleProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (ep *exampleProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }

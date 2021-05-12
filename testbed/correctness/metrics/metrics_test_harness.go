@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
@@ -57,6 +58,10 @@ func newTestHarness(
 		diffConsumer:       diffConsumer,
 		allMetricsReceived: make(chan struct{}),
 	}
+}
+
+func (h *testHarness) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pdata.Metrics) error {

@@ -28,7 +28,7 @@ const (
 	typeStr = "memory_limiter"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: false}
+var processorCapabilities = consumer.Capabilities{MutatesData: false}
 
 // NewFactory returns a new factory for the Memory Limiter processor.
 func NewFactory() component.ProcessorFactory {

@@ -36,9 +36,9 @@ type builtPipeline struct {
 	firstMC consumer.Metrics
 	firstLC consumer.Logs
 
-	// MutatesConsumedData is set to true if any processors in the pipeline
+	// MutatesData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
-	MutatesConsumedData bool
+	MutatesData bool
 
 	processors []component.Processor
 }
@@ -161,7 +161,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			var proc component.TracesProcessor
 			proc, err = factory.CreateTracesProcessor(ctx, creationParams, procCfg, tc)
 			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
 			processors[i] = proc
 			tc = proc
@@ -169,7 +169,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			var proc component.MetricsProcessor
 			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, procCfg, mc)
 			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
 			processors[i] = proc
 			mc = proc
@@ -178,7 +178,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			var proc component.LogsProcessor
 			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, lc)
 			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
 			processors[i] = proc
 			lc = proc

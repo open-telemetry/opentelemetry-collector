@@ -65,8 +65,8 @@ type ReceiverCreateParams struct {
 	BuildInfo BuildInfo
 }
 
-// ReceiverFactory can create TracesReceiver and MetricsReceiver. This is the
-// new preferred factory type to create receivers.
+// ReceiverFactory can create TracesReceiver, MetricsReceiver and
+// and LogsReceiver. This is the new preferred factory type to create receivers.
 type ReceiverFactory interface {
 	Factory
 
