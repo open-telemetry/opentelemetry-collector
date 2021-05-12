@@ -92,7 +92,3 @@ type nopProcessor struct {
 	component.Component
 	consumertest.Consumer
 }
-
-func (*nopProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
