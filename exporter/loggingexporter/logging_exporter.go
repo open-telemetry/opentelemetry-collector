@@ -33,34 +33,21 @@ type loggingExporter struct {
 	debug  bool
 }
 
-func (s *loggingExporter) pushTraceData(
-	_ context.Context,
-	td pdata.Traces,
-) error {
-
+func (s *loggingExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 
-	if !s.debug {
-		return nil
+	if s.debug {
+		s.logger.Debug(otlptext.Traces(td))
 	}
-
-	s.logger.Debug(otlptext.Traces(td))
-
 	return nil
 }
 
-func (s *loggingExporter) pushMetricsData(
-	_ context.Context,
-	md pdata.Metrics,
-) error {
+func (s *loggingExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
-	if !s.debug {
-		return nil
+	if s.debug {
+		s.logger.Debug(otlptext.Metrics(md))
 	}
-
-	s.logger.Debug(otlptext.Metrics(md))
-
 	return nil
 }
 
@@ -124,18 +111,12 @@ func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (
 	)
 }
 
-func (s *loggingExporter) pushLogData(
-	_ context.Context,
-	ld pdata.Logs,
-) error {
+func (s *loggingExporter) pushLogData(_ context.Context, ld pdata.Logs) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
-	if !s.debug {
-		return nil
+	if s.debug {
+		s.logger.Debug(otlptext.Logs(ld))
 	}
-
-	s.logger.Debug(otlptext.Logs(ld))
-
 	return nil
 }
 
@@ -147,7 +128,7 @@ func loggerSync(logger *zap.Logger) func(context.Context) error {
 		if osErr, ok := err.(*os.PathError); ok {
 			wrappedErr := osErr.Unwrap()
 			if knownSyncError(wrappedErr) {
-				err = nil
+				return nil
 			}
 		}
 		return err
