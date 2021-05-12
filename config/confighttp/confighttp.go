@@ -16,6 +16,7 @@ package confighttp
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -106,7 +107,10 @@ func (hcs *HTTPClientSettings) ToClient(opts ...ToClientOption) (*http.Client, e
 		}
 	}
 
-	if clientOptions.extensionsMap != nil && hcs.Auth != nil {
+	if hcs.Auth != nil {
+		if clientOptions.extensionsMap == nil {
+			return nil, fmt.Errorf("extensions configuration not found")
+		}
 		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuth(clientOptions.extensionsMap, hcs.Auth.AuthenticatorName)
 		if aerr != nil {
 			return nil, aerr

@@ -130,13 +130,7 @@ type mockHTTPClientAuth struct {
 	err        error
 }
 
-func (m *mockHTTPClientAuth) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (m *mockHTTPClientAuth) Shutdown(_ context.Context) error {
-	return nil
-}
+var _ configauth.HTTPClientAuth = (*mockHTTPClientAuth)(nil)
 
 type customRoundTripper struct {
 }
@@ -147,14 +141,20 @@ func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 	return nil, nil
 }
 
+func (m *mockHTTPClientAuth) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (m *mockHTTPClientAuth) Shutdown(_ context.Context) error {
+	return nil
+}
+
 func (m *mockHTTPClientAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	if m.forceError {
 		return nil, m.err
 	}
 	return &customRoundTripper{}, nil
 }
-
-var _ configauth.HTTPClientAuth = (*mockHTTPClientAuth)(nil)
 
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	tests := []struct {
@@ -178,7 +178,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "with_auth_configuration_has_no_extension",
+			name: "with_auth_configuration_and_no_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
@@ -190,6 +190,14 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 					TypeVal: "mock",
 				}: &mockHTTPClientAuth{},
 			},
+		},
+		{
+			name: "with_auth_configuration_and_no_extension_map",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+			},
+			shouldErr: true,
 		},
 		{
 			name: "with_auth_configuration_has_extension",

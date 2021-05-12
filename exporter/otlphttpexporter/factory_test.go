@@ -16,6 +16,8 @@ package otlphttpexporter
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"testing"
 	"time"
 
@@ -65,6 +67,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		name     string
 		config   Config
 		mustFail bool
+		mustFailOnStart bool
 	}{
 		{
 			name: "NoEndpoint",
@@ -128,7 +131,20 @@ func TestCreateTracesExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail: true,
+			mustFail: false,
+			mustFailOnStart: true,
+		},
+		{
+			name: "ErrorWithAuthAndNoExtensionConfiguration",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: endpoint,
+					Auth:  &configauth.Authentication{AuthenticatorName: "dummy"},
+				},
+			},
+			mustFail: false,
+			mustFailOnStart: true,
 		},
 	}
 
@@ -143,6 +159,10 @@ func TestCreateTracesExporter(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, consumer)
+				err = consumer.Start(context.Background(), componenttest.NewNopHost())
+				if tt.mustFailOnStart {
+					assert.Error(t, err)
+				}
 
 				err = consumer.Shutdown(context.Background())
 				if err != nil {
