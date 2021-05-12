@@ -29,9 +29,11 @@ type nopProcessorFactory struct {
 	component.BaseProcessorFactory
 }
 
+var nopProcessorFactoryInstance = &nopProcessorFactory{}
+
 // NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopProcessorFactory() component.ProcessorFactory {
-	return &nopProcessorFactory{}
+	return nopProcessorFactoryInstance
 }
 
 // Type gets the type of the Processor config created by this factory.

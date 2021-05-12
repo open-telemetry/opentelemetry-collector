@@ -26,9 +26,11 @@ import (
 // nopReceiverFactory is factory for nopReceiver.
 type nopReceiverFactory struct{}
 
+var nopReceiverFactoryInstance = &nopReceiverFactory{}
+
 // NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop receivers.
 func NewNopReceiverFactory() component.ReceiverFactory {
-	return &nopReceiverFactory{}
+	return nopReceiverFactoryInstance
 }
 
 // Type gets the type of the Receiver config created by this factory.

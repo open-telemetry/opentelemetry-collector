@@ -26,9 +26,11 @@ import (
 // nopExporterFactory is factory for nopExporter.
 type nopExporterFactory struct{}
 
+var nopExporterFactoryInstance = &nopExporterFactory{}
+
 // NewNopExporterFactory returns a component.ExporterFactory that constructs nop exporters.
 func NewNopExporterFactory() component.ExporterFactory {
-	return &nopExporterFactory{}
+	return nopExporterFactoryInstance
 }
 
 // Type gets the type of the Exporter config created by this factory.
