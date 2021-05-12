@@ -65,3 +65,12 @@ receivers:
               regex: "(request_duration_seconds.*|response_duration_seconds.*)"
               action: keep
 ```
+
+To include `job` and `instance` as regular labels, use the setting `include_resource_labels: true` (defaults to `false`). For example: 
+
+```yaml
+receivers:
+  prometheus:
+    include_resource_labels: true
+    config:
+```

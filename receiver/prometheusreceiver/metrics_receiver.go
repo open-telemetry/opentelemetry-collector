@@ -79,7 +79,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	// Per component.Component Start instructions, for async operations we should not use the
 	// incoming context, it may get cancelled.
 	receiverCtx := obsreport.ReceiverContext(context.Background(), r.cfg.Name(), transport)
-	ocaStore := internal.NewOcaStore(receiverCtx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex,r.cfg.IncludeResourceLabels, r.cfg.Name())
+	ocaStore := internal.NewOcaStore(receiverCtx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex, r.cfg.IncludeResourceLabels, r.cfg.Name())
 
 	scrapeManager := scrape.NewManager(logger, ocaStore)
 	ocaStore.SetScrapeManager(scrapeManager)
