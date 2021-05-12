@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -66,6 +67,10 @@ type traceExporter struct {
 	pusher PushTraces
 }
 
+func (texp *traceExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return texp.sender.send(newTracesRequest(ctx, td, texp.pusher))
 }
@@ -95,8 +100,8 @@ func NewTracesExporter(
 		return &tracesExporterWithObservability{
 			obsrep: obsreport.NewExporter(
 				obsreport.ExporterSettings{
-					Level:        configtelemetry.GetMetricsLevelFlagValue(),
-					ExporterName: cfg.Name(),
+					Level:      configtelemetry.GetMetricsLevelFlagValue(),
+					ExporterID: cfg.ID(),
 				}),
 			nextSender: nextSender,
 		}

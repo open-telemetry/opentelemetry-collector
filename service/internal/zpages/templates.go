@@ -91,12 +91,12 @@ type SummaryPipelinesTableData struct {
 
 // SummaryPipelinesTableRowData contains data for one row in pipelines summary table template.
 type SummaryPipelinesTableRowData struct {
-	FullName            string
-	InputType           string
-	MutatesConsumedData bool
-	Receivers           []string
-	Processors          []string
-	Exporters           []string
+	FullName    string
+	InputType   string
+	MutatesData bool
+	Receivers   []string
+	Processors  []string
+	Exporters   []string
 }
 
 // WriteHTMLPipelinesSummaryTable writes the summary table for one component type (receivers, processors, exporters).

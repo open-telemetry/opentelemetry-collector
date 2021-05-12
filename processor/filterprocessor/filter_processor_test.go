@@ -306,7 +306,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -324,8 +324,8 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
-			caps := fmp.GetCapabilities()
-			assert.True(t, caps.MutatesConsumedData)
+			caps := fmp.Capabilities()
+			assert.True(t, caps.MutatesData)
 			ctx := context.Background()
 			assert.NoError(t, fmp.Start(ctx, nil))
 

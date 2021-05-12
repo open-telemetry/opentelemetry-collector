@@ -12,22 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+package zipkin
 
-// ApplicationStartInfo is the information that is logged at the application start and
-// passed into each component. This information can be overridden in custom builds.
-type ApplicationStartInfo struct {
-	// Executable file name, e.g. "otelcol".
-	ExeName string
+import (
+	"testing"
 
-	// Version string.
-	Version string
-}
+	"github.com/stretchr/testify/assert"
+)
 
-// DefaultApplicationStartInfo returns the default ApplicationStartInfo.
-func DefaultApplicationStartInfo() ApplicationStartInfo {
-	return ApplicationStartInfo{
-		ExeName: "otelcol",
-		Version: "latest",
+func TestOTStatusFromHTTPStatus(t *testing.T) {
+	for httpStatus := int32(100); httpStatus <= 604; httpStatus++ {
+		otelStatus := ocStatusCodeFromHTTP(httpStatus)
+		assert.True(t, otelStatus >= ocOK && otelStatus <= ocUnauthenticated)
 	}
 }

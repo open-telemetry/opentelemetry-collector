@@ -27,17 +27,14 @@ import (
 
 const typeStr = "test"
 
-var defaultCfg = &config.ReceiverSettings{
-	TypeVal: typeStr,
-	NameVal: typeStr,
-}
+var defaultCfg = config.NewReceiverSettings(config.NewID(typeStr))
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
 	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
@@ -54,7 +51,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 		WithMetrics(createMetricsReceiver),
 		WithLogs(createLogsReceiver))
 	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
@@ -67,7 +64,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 }
 
 func defaultConfig() config.Receiver {
-	return defaultCfg
+	return &defaultCfg
 }
 
 func createTracesReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {

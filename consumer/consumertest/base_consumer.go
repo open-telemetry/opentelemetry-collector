@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conventions
+package consumertest
 
-// OTLP attributes to map certain OpenCensus proto fields. These fields don't have
-// corresponding fields in OTLP, nor are defined in OTLP semantic conventions.
-const (
-	OCAttributeProcessStartTime        = "opencensus.starttime"
-	OCAttributeExporterVersion         = "opencensus.exporterversion"
-	OCAttributeResourceType            = "opencensus.resourcetype"
-	OCAttributeSameProcessAsParentSpan = "opencensus.same_process_as_parent_span"
+import (
+	"go.opentelemetry.io/collector/consumer"
 )
+
+type nonMutatingConsumer struct{}
+
+func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}

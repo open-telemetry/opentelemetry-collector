@@ -43,13 +43,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 4)
 
-	r1 := cfg.Receivers["jaeger/customname"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "jaeger/customname",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -88,13 +85,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
+	rDefaults := cfg.Receivers[config.NewIDWithName(typeStr, "defaults")].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "jaeger/defaults",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "defaults")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -116,13 +110,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	rMixed := cfg.Receivers["jaeger/mixed"].(*Config)
+	rMixed := cfg.Receivers[config.NewIDWithName(typeStr, "mixed")].(*Config)
 	assert.Equal(t, rMixed,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "jaeger/mixed",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "mixed")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -137,14 +128,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	tlsConfig := cfg.Receivers["jaeger/tls"].(*Config)
+	tlsConfig := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
 
 	assert.Equal(t, tlsConfig,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "jaeger/tls",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{

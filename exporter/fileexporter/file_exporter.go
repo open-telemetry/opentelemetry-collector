@@ -23,6 +23,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 )
@@ -37,6 +38,10 @@ type fileExporter struct {
 	mutex sync.Mutex
 }
 
+func (e *fileExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	return exportMessageAsLine(e, internal.TracesToOtlp(td.InternalRep()))
 }
@@ -46,8 +51,7 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	request := internal.LogsToOtlp(ld.InternalRep())
-	return exportMessageAsLine(e, request)
+	return exportMessageAsLine(e, internal.LogsToOtlp(ld.InternalRep()))
 }
 
 func exportMessageAsLine(e *fileExporter, message proto.Message) error {

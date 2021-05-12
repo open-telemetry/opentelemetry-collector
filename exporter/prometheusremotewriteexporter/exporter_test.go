@@ -43,7 +43,7 @@ import (
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPrwExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(typeStr),
+		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
@@ -685,7 +685,7 @@ func Test_PushMetrics(t *testing.T) {
 			assert.NoError(t, uErr)
 
 			config := &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				Namespace:        "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://some.url:9411/api/prom/push",

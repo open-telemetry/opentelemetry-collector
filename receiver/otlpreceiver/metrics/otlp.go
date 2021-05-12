@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
@@ -31,27 +32,28 @@ const (
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
-	instanceName string
+	id           config.ComponentID
 	nextConsumer consumer.Metrics
 }
 
 // New creates a new Receiver reference.
-func New(instanceName string, nextConsumer consumer.Metrics) *Receiver {
+func New(id config.ComponentID, nextConsumer consumer.Metrics) *Receiver {
 	r := &Receiver{
-		instanceName: instanceName,
+		id:           id,
 		nextConsumer: nextConsumer,
 	}
 	return r
 }
 
 const (
-	receiverTagValue  = "otlp_metrics"
 	receiverTransport = "grpc"
 )
 
+var receiverID = config.NewIDWithName("otlp", "metrics")
+
 // Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
-	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
+	receiverCtx := obsreport.ReceiverContext(ctx, r.id, receiverTransport)
 
 	md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(req))
 
@@ -73,7 +75,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md pdata.Metrics) err
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.id, receiverTransport)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, err)
 

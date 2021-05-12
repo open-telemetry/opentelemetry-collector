@@ -28,6 +28,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -35,15 +36,16 @@ import (
 )
 
 const (
-	exporter  = "fakeExporter"
-	processor = "fakeProcessor"
-	receiver  = "fakeReicever"
-	scraper   = "fakeScraper"
 	transport = "fakeTransport"
 	format    = "fakeFormat"
 )
 
 var (
+	receiver  = config.NewID("fakeReicever")
+	scraper   = config.NewID("fakeScraper")
+	processor = config.NewID("fakeProcessor")
+	exporter  = config.NewID("fakeExporter")
+
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
 )
@@ -122,7 +124,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 
 	var acceptedSpans, refusedSpans int
 	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver+"/TraceDataReceived", span.Name)
+		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name)
 		switch params[i].err {
 		case nil:
 			acceptedSpans += rcvdSpans[i]
@@ -182,7 +184,7 @@ func TestReceiveLogsOp(t *testing.T) {
 
 	var acceptedLogRecords, refusedLogRecords int
 	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver+"/LogsReceived", span.Name)
+		assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name)
 		switch params[i].err {
 		case nil:
 			acceptedLogRecords += rcvdLogRecords[i]
@@ -242,7 +244,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 
 	var acceptedMetricPoints, refusedMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver+"/MetricsReceived", span.Name)
+		assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name)
 		switch params[i].err {
 		case nil:
 			acceptedMetricPoints += rcvdMetricPts[i]
@@ -299,7 +301,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 
 	var scrapedMetricPoints, erroredMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "scraper/"+receiver+"/"+scraper+"/MetricsScraped", span.Name)
+		assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name)
 		switch errParams[i] {
 		case nil:
 			scrapedMetricPoints += scrapedMetricPts[i]
@@ -338,7 +340,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
@@ -352,7 +354,7 @@ func TestExportTraceDataOp(t *testing.T) {
 
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/traces", span.Name)
+		assert.Equal(t, "exporter/"+exporter.String()+"/traces", span.Name)
 		switch errs[i] {
 		case nil:
 			sentSpans += numExportedSpans[i]
@@ -385,7 +387,7 @@ func TestExportMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
 
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
@@ -401,7 +403,7 @@ func TestExportMetricsOp(t *testing.T) {
 
 	var sentMetricPoints, failedToSendMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/metrics", span.Name)
+		assert.Equal(t, "exporter/"+exporter.String()+"/metrics", span.Name)
 		switch errs[i] {
 		case nil:
 			sentMetricPoints += toSendMetricPoints[i]
@@ -434,7 +436,7 @@ func TestExportLogsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {
@@ -449,7 +451,7 @@ func TestExportLogsOp(t *testing.T) {
 
 	var sentLogRecords, failedToSendLogRecords int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/logs", span.Name)
+		assert.Equal(t, "exporter/"+exporter.String()+"/logs", span.Name)
 		switch errs[i] {
 		case nil:
 			sentLogRecords += toSendLogRecords[i]
@@ -521,7 +523,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		assert.Equal(t, trace.LinkTypeParent, link.Type)
 		assert.Equal(t, parentSpan.SpanContext().TraceID, link.TraceID)
 		assert.Equal(t, parentSpan.SpanContext().SpanID, link.SpanID)
-		assert.Equal(t, "receiver/"+receiver+"/TraceDataReceived", span.Name)
+		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name)
 		assert.Equal(t, transport, span.Attributes[obsreport.TransportKey])
 		switch ops[i].err {
 		case nil:
@@ -547,7 +549,7 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
+	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
 	obsrep.TracesAccepted(context.Background(), acceptedSpans)
 	obsrep.TracesRefused(context.Background(), refusedSpans)
 	obsrep.TracesDropped(context.Background(), droppedSpans)
@@ -564,7 +566,7 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
+	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
 	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 	obsrep.MetricsRefused(context.Background(), refusedPoints)
 	obsrep.MetricsDropped(context.Background(), droppedPoints)
@@ -635,7 +637,7 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{configtelemetry.LevelNormal, processor})
+	obsrep := obsreport.NewProcessor(obsreport.ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
 	obsrep.LogsAccepted(context.Background(), acceptedRecords)
 	obsrep.LogsRefused(context.Background(), refusedRecords)
 	obsrep.LogsDropped(context.Background(), droppedRecords)

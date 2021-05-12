@@ -24,36 +24,13 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func TestNewAuthenticator(t *testing.T) {
-	// test
-	p, err := NewAuthenticator(Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com",
-		},
-	})
-
-	// verify
-	assert.NotNil(t, p)
-	assert.NoError(t, err)
-}
-
-func TestMissingOIDC(t *testing.T) {
-	// test
-	p, err := NewAuthenticator(Authentication{})
-
-	// verify
-	assert.Nil(t, p)
-	assert.Equal(t, errNoOIDCProvided, err)
-}
-
 func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	// prepare
 	handlerCalled := false
 	authCalled := false
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	authFunc := func(context.Context, map[string][]string) error {
 		authCalled = true
-		return context.Background(), nil
+		return nil
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		handlerCalled = true
@@ -62,7 +39,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := defaultUnaryInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := DefaultGrpcUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Nil(t, res)
@@ -75,9 +52,9 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	// prepare
 	authCalled := false
 	expectedErr := fmt.Errorf("not authenticated")
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	authFunc := func(context.Context, map[string][]string) error {
 		authCalled = true
-		return context.Background(), expectedErr
+		return expectedErr
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
@@ -86,7 +63,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := defaultUnaryInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := DefaultGrpcUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Nil(t, res)
@@ -96,9 +73,9 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 
 func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	// prepare
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	authFunc := func(context.Context, map[string][]string) error {
 		assert.FailNow(t, "the auth func should not have been called!")
-		return context.Background(), nil
+		return nil
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		assert.FailNow(t, "the handler should not have been called!")
@@ -106,7 +83,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := defaultUnaryInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := DefaultGrpcUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Nil(t, res)
@@ -117,9 +94,9 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	// prepare
 	handlerCalled := false
 	authCalled := false
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	authFunc := func(context.Context, map[string][]string) error {
 		authCalled = true
-		return context.Background(), nil
+		return nil
 	}
 	handler := func(srv interface{}, stream grpc.ServerStream) error {
 		handlerCalled = true
@@ -131,7 +108,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := defaultStreamInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := DefaultGrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.NoError(t, err)
@@ -143,9 +120,9 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	// prepare
 	authCalled := false
 	expectedErr := fmt.Errorf("not authenticated")
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	authFunc := func(context.Context, map[string][]string) error {
 		authCalled = true
-		return context.Background(), expectedErr
+		return expectedErr
 	}
 	handler := func(srv interface{}, stream grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
@@ -157,7 +134,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := defaultStreamInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := DefaultGrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Equal(t, expectedErr, err)
@@ -166,9 +143,9 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 
 func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	// prepare
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	authFunc := func(context.Context, map[string][]string) error {
 		assert.FailNow(t, "the auth func should not have been called!")
-		return context.Background(), nil
+		return nil
 	}
 	handler := func(srv interface{}, stream grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called!")
@@ -179,7 +156,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := defaultStreamInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := DefaultGrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)

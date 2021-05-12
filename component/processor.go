@@ -28,9 +28,6 @@ import (
 // and MetricsProcessor.
 type Processor interface {
 	Component
-
-	// GetCapabilities must return the capabilities of the processor.
-	GetCapabilities() ProcessorCapabilities
 }
 
 // TracesProcessor is a processor that can consume traces.
@@ -51,24 +48,14 @@ type LogsProcessor interface {
 	consumer.Logs
 }
 
-// ProcessorCapabilities describes the capabilities of a Processor.
-type ProcessorCapabilities struct {
-	// MutatesConsumedData is set to true if Consume* function of the
-	// processor modifies the input TraceData or MetricsData argument.
-	// Processors which modify the input data MUST set this flag to true. If the processor
-	// does not modify the data it MUST set this flag to false. If the processor creates
-	// a copy of the data before modifying then this flag can be safely set to false.
-	MutatesConsumedData bool
-}
-
 // ProcessorCreateParams is passed to Create* functions in ProcessorFactory.
 type ProcessorCreateParams struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
 
-	// ApplicationStartInfo can be used by components for informational purposes
-	ApplicationStartInfo ApplicationStartInfo
+	// BuildInfo can be used by components for informational purposes
+	BuildInfo BuildInfo
 }
 
 // ProcessorFactory is factory interface for processors. This is the
