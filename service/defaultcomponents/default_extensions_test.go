@@ -16,7 +16,6 @@ package defaultcomponents
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/extension/bearertokenextension"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/bearertokenextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
