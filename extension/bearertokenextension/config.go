@@ -14,7 +14,11 @@
 
 package bearertokenextension
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"errors"
+
+	"go.opentelemetry.io/collector/config"
+)
 
 // Config specifies how the Per-RPC bearer token based authentication data should be obtained.
 type Config struct {
@@ -22,4 +26,15 @@ type Config struct {
 
 	// BearerToken specifies the bearer token to use for every RPC.
 	BearerToken string `mapstructure:"bearer_token,omitempty"`
+}
+
+var _ config.Extension = (*Config)(nil)
+var errNoTokenProvided = errors.New("no bearer token provided")
+
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	if cfg.BearerToken == "" {
+		return errNoTokenProvided
+	}
+	return nil
 }

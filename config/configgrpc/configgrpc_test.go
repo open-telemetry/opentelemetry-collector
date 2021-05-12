@@ -65,9 +65,51 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		WaitForReady:    true,
 		BalancerName:    "round_robin",
 	}
-	opts, err := gcs.ToDialOptions()
-	assert.NoError(t, err)
-	assert.Len(t, opts, 6)
+
+	gcsWithAuth := *gcs
+	gcsWithAuth.Auth = &configauth.Authentication{AuthenticatorName: "bearer"}
+
+	ext := map[config.ComponentID]component.Extension{
+		config.NewID("bearer"): &configauth.MockClientAuthenticator{},
+	}
+
+	testcases := []struct {
+		name             string
+		mustError        bool
+		gc               *GRPCClientSettings
+		withClientOption bool
+		expectedOpts     int
+	}{
+		{
+			name:         "all_setting_except_auth",
+			mustError:    false,
+			gc:           gcs,
+			expectedOpts: 6,
+		},
+		{
+			name:             "auth_with_to_client_option",
+			mustError:        false,
+			gc:               &gcsWithAuth,
+			expectedOpts:     7, // all of the above + 1 PerRPCCredentials
+			withClientOption: true,
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			var opts []grpc.DialOption
+			var err error
+
+			if tt.withClientOption {
+				opts, err = tt.gc.ToDialOptions(WithExtensionsConfiguration(ext))
+			} else {
+				opts, err = tt.gc.ToDialOptions()
+			}
+
+			assert.NoError(t, err)
+			assert.Len(t, opts, tt.expectedOpts)
+		})
+	}
+
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
@@ -190,10 +232,21 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				BalancerName:    "test",
 			},
 		},
+		{
+			err: "no extensions configuration available",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions()
+			var copts []ToClientSettingOption
+			if test.settings.Auth != nil {
+				copts = []ToClientSettingOption{WithExtensionsConfiguration(nil)}
+			}
+			opts, err := test.settings.ToDialOptions(copts...)
 			assert.Nil(t, opts)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)

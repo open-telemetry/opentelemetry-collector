@@ -1,0 +1,21 @@
+extensions:
+  bearer:
+    bearer_token: "sometoken"
+  bearer/1:
+    bearer_token: "sometesttoken"
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [bearer/1]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

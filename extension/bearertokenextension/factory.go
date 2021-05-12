@@ -27,7 +27,7 @@ const (
 	typeStr = "bearer"
 )
 
-// NewFactory creates a factory for the OIDC Authenticator extension.
+// NewFactory creates a factory for the static bearer token Authenticator extension.
 func NewFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		typeStr,

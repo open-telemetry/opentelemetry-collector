@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configauth"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -58,7 +60,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
-
 	tests := []struct {
 		name            string
 		config          Config
@@ -169,6 +170,28 @@ func TestCreateTracesExporter(t *testing.T) {
 							CAFile: "nosuchfile",
 						},
 					},
+				},
+			},
+			mustFailOnStart: true,
+		},
+		{
+			name: "AuthenticatorError",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint: endpoint,
+					Auth:     &configauth.Authentication{AuthenticatorName: "bearer"},
+				},
+			},
+			mustFailOnStart: true,
+		},
+		{
+			name: "AuthenticatorError",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint: endpoint,
+					Auth:     &configauth.Authentication{AuthenticatorName: "bearer"},
 				},
 			},
 			mustFailOnStart: true,

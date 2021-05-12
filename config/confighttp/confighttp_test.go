@@ -15,7 +15,6 @@
 package confighttp
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -124,35 +123,12 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 }
 
-type mockHTTPClientAuth struct {
-	forceError bool
-	err        error
-}
-
-var _ configauth.HTTPClientAuth = (*mockHTTPClientAuth)(nil)
-
-type customRoundTripper struct {
-}
+type customRoundTripper struct{}
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
 func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	return nil, nil
-}
-
-func (m *mockHTTPClientAuth) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (m *mockHTTPClientAuth) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (m *mockHTTPClientAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	if m.forceError {
-		return nil, m.err
-	}
-	return &customRoundTripper{}, nil
 }
 
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
@@ -170,7 +146,9 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: false,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &mockHTTPClientAuth{},
+				config.NewID("mock"): &configauth.MockClientAuthenticator{
+					ResultRoundTripper: &customRoundTripper{},
+				},
 			},
 		},
 		{
@@ -181,7 +159,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &mockHTTPClientAuth{},
+				config.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 			},
 		},
 		{
@@ -200,7 +178,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: false,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &mockHTTPClientAuth{},
+				config.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 			},
 		},
 		{
@@ -211,7 +189,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &mockHTTPClientAuth{forceError: true, err: errors.New("dummy extension")},
+				config.NewID("mock"): &configauth.MockClientAuthenticator{
+					ResultRoundTripper: &customRoundTripper{}, MustError: true},
 			},
 		},
 	}

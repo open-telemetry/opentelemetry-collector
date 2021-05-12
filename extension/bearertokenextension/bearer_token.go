@@ -42,6 +42,7 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
 
+// BearerTokenAuth is an implementation of configauth.GRPCClientAuth. It passes a static bearer token per every rpc call.
 type BearerTokenAuth struct {
 	tokenString string
 	logger      *zap.Logger
@@ -56,14 +57,17 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	}
 }
 
+// Start of BearerTokenAuth does nothing and returns nil
 func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+// Shutdown of BearerTokenAuth does nothing and returns nil
 func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// PerRPCCredential returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredential() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
 		metadata: map[string]string{"authorization": fmt.Sprintf("Bearer %s", b.tokenString)},
