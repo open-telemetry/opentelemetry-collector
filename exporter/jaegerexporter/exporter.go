@@ -39,7 +39,6 @@ import (
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
-
 	opts, err := cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
@@ -58,7 +57,7 @@ func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporte
 		cfg.WaitForReady,
 		conn,
 	)
-	exp, err := exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg, logger, s.pushTraceData,
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithShutdown(s.shutdown),
@@ -66,8 +65,6 @@ func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporte
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	)
-
-	return exp, err
 }
 
 // protoGRPCSender forwards spans encoded in the jaeger proto
