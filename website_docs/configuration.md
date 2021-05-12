@@ -43,7 +43,7 @@ processors:
 
 exporters:
   otlp:
-    endpoint: otelcol:55680
+    endpoint: otelcol:4317
 
 extensions:
   health_check:
