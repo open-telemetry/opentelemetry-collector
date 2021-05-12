@@ -24,21 +24,18 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushTraces is a helper function that is similar to ConsumeTraces but also
-// returns the number of dropped spans.
-type PushTraces func(ctx context.Context, td pdata.Traces) error
-
 type tracesRequest struct {
 	baseRequest
 	td     pdata.Traces
-	pusher PushTraces
+	pusher consumerhelper.ConsumeTracesFunc
 }
 
-func newTracesRequest(ctx context.Context, td pdata.Traces, pusher PushTraces) request {
+func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumerhelper.ConsumeTracesFunc) request {
 	return &tracesRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		td:          td,
@@ -64,7 +61,7 @@ func (req *tracesRequest) count() int {
 
 type traceExporter struct {
 	*baseExporter
-	pusher PushTraces
+	pusher consumerhelper.ConsumeTracesFunc
 }
 
 func (texp *traceExporter) Capabilities() consumer.Capabilities {
@@ -79,7 +76,7 @@ func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 func NewTracesExporter(
 	cfg config.Exporter,
 	logger *zap.Logger,
-	pusher PushTraces,
+	pusher consumerhelper.ConsumeTracesFunc,
 	options ...Option,
 ) (component.TracesExporter, error) {
 
