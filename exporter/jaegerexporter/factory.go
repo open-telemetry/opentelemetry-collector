@@ -59,16 +59,10 @@ func createTracesExporter(
 	expCfg := config.(*Config)
 	if expCfg.Endpoint == "" {
 		// TODO: Improve error message, see #215
-		err := fmt.Errorf(
+		return nil, fmt.Errorf(
 			"%q config requires a non-empty \"endpoint\"",
 			expCfg.ID().String())
-		return nil, err
 	}
 
-	exp, err := newTracesExporter(expCfg, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return exp, nil
+	return newTracesExporter(expCfg, params.Logger)
 }
