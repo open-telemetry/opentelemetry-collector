@@ -31,20 +31,16 @@ func TestService_setupExtensions(t *testing.T) {
 	errExtensionFactory := extensionhelper.NewFactory(
 		"err",
 		func() config.Extension {
-			return &config.ExporterSettings{
-				TypeVal: "err",
-			}
+			cfg := config.NewExtensionSettings(config.NewID("err"))
+			return &cfg
 		},
 		func(ctx context.Context, params component.ExtensionCreateParams, extension config.Extension) (component.Extension, error) {
 			return nil, fmt.Errorf("cannot create \"err\" extension type")
 		},
 	)
 	errExtensionConfig := errExtensionFactory.CreateDefaultConfig()
-	errExtensionConfig.SetName(string(errExtensionFactory.Type()))
-
 	badExtensionFactory := newBadExtensionFactory()
 	badExtensionCfg := badExtensionFactory.CreateDefaultConfig()
-	badExtensionCfg.SetName(string(badExtensionFactory.Type()))
 
 	tests := []struct {
 		name       string
@@ -56,8 +52,8 @@ func TestService_setupExtensions(t *testing.T) {
 			name: "extension_not_configured",
 			config: &config.Config{
 				Service: config.Service{
-					Extensions: []string{
-						"myextension",
+					Extensions: []config.ComponentID{
+						config.NewID("myextension"),
 					},
 				},
 			},
@@ -66,12 +62,12 @@ func TestService_setupExtensions(t *testing.T) {
 		{
 			name: "missing_extension_factory",
 			config: &config.Config{
-				Extensions: map[string]config.Extension{
-					string(errExtensionFactory.Type()): errExtensionConfig,
+				Extensions: map[config.ComponentID]config.Extension{
+					config.NewID(errExtensionFactory.Type()): errExtensionConfig,
 				},
 				Service: config.Service{
-					Extensions: []string{
-						string(errExtensionFactory.Type()),
+					Extensions: []config.ComponentID{
+						config.NewID(errExtensionFactory.Type()),
 					},
 				},
 			},
@@ -85,16 +81,16 @@ func TestService_setupExtensions(t *testing.T) {
 				},
 			},
 			config: &config.Config{
-				Extensions: map[string]config.Extension{
-					string(errExtensionFactory.Type()): errExtensionConfig,
+				Extensions: map[config.ComponentID]config.Extension{
+					config.NewID(errExtensionFactory.Type()): errExtensionConfig,
 				},
 				Service: config.Service{
-					Extensions: []string{
-						string(errExtensionFactory.Type()),
+					Extensions: []config.ComponentID{
+						config.NewID(errExtensionFactory.Type()),
 					},
 				},
 			},
-			wantErrMsg: "failed to create extension \"err\": cannot create \"err\" extension type",
+			wantErrMsg: "failed to create extension err: cannot create \"err\" extension type",
 		},
 		{
 			name: "bad_factory",
@@ -104,16 +100,16 @@ func TestService_setupExtensions(t *testing.T) {
 				},
 			},
 			config: &config.Config{
-				Extensions: map[string]config.Extension{
-					string(badExtensionFactory.Type()): badExtensionCfg,
+				Extensions: map[config.ComponentID]config.Extension{
+					config.NewID(badExtensionFactory.Type()): badExtensionCfg,
 				},
 				Service: config.Service{
-					Extensions: []string{
-						string(badExtensionFactory.Type()),
+					Extensions: []config.ComponentID{
+						config.NewID(badExtensionFactory.Type()),
 					},
 				},
 			},
-			wantErrMsg: "factory for \"bf\" produced a nil extension",
+			wantErrMsg: "factory for bf produced a nil extension",
 		},
 	}
 

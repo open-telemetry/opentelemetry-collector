@@ -102,7 +102,7 @@ func fromOptions(options []Option) *baseSettings {
 type Option func(*baseSettings)
 
 // WithStart overrides the default Start function for an exporter.
-// The default shutdown function does nothing and always returns nil.
+// The default start function does nothing and always returns nil.
 func WithStart(start componenthelper.StartFunc) Option {
 	return func(o *baseSettings) {
 		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
@@ -166,7 +166,7 @@ func newBaseExporter(cfg config.Exporter, logger *zap.Logger, options ...Option)
 		convertResourceToTelemetry: bs.ResourceToTelemetrySettings.Enabled,
 	}
 
-	be.qrSender = newQueuedRetrySender(cfg.Name(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
+	be.qrSender = newQueuedRetrySender(cfg.ID().String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
 	return be

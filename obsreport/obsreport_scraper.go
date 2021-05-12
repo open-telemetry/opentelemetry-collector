@@ -62,13 +62,13 @@ var (
 // recorded.
 func ScraperContext(
 	ctx context.Context,
-	receiver string,
-	scraper string,
+	receiverID config.ComponentID,
+	scraper config.ComponentID,
 ) context.Context {
-	ctx, _ = tag.New(ctx, tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)))
-	if scraper != "" {
-		ctx, _ = tag.New(ctx, tag.Upsert(tagKeyScraper, scraper, tag.WithTTL(tag.TTLNoPropagation)))
-	}
+	ctx, _ = tag.New(
+		ctx,
+		tag.Upsert(tagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
+		tag.Upsert(tagKeyScraper, scraper.String(), tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
 }
@@ -78,15 +78,10 @@ func ScraperContext(
 // dealing with the same scrape operation.
 func StartMetricsScrapeOp(
 	scraperCtx context.Context,
-	receiver string,
-	scraper string,
+	receiverID config.ComponentID,
+	scraper config.ComponentID,
 ) context.Context {
-	scraperName := receiver
-	if scraper != "" {
-		scraperName += "/" + scraper
-	}
-
-	spanName := scraperPrefix + scraperName + scraperMetricsOperationSuffix
+	spanName := scraperPrefix + receiverID.String() + nameSep + scraper.String() + scraperMetricsOperationSuffix
 	ctx, _ := trace.StartSpan(scraperCtx, spanName)
 	return ctx
 }

@@ -33,35 +33,35 @@ func TestLoadConfigFile(t *testing.T) {
 
 	// Verify extensions.
 	require.Len(t, cfg.Extensions, 2)
-	assert.Contains(t, cfg.Extensions, "nop")
-	assert.Contains(t, cfg.Extensions, "nop/myextension")
+	assert.Contains(t, cfg.Extensions, config.NewID("nop"))
+	assert.Contains(t, cfg.Extensions, config.NewIDWithName("nop", "myextension"))
 
 	// Verify receivers
 	require.Len(t, cfg.Receivers, 2)
-	assert.Contains(t, cfg.Receivers, "nop")
-	assert.Contains(t, cfg.Receivers, "nop/myreceiver")
+	assert.Contains(t, cfg.Receivers, config.NewID("nop"))
+	assert.Contains(t, cfg.Receivers, config.NewIDWithName("nop", "myreceiver"))
 
 	// Verify exporters
 	assert.Len(t, cfg.Exporters, 2)
-	assert.Contains(t, cfg.Exporters, "nop")
-	assert.Contains(t, cfg.Exporters, "nop/myexporter")
+	assert.Contains(t, cfg.Exporters, config.NewID("nop"))
+	assert.Contains(t, cfg.Exporters, config.NewIDWithName("nop", "myexporter"))
 
 	// Verify Processors
 	assert.Len(t, cfg.Processors, 2)
-	assert.Contains(t, cfg.Processors, "nop")
-	assert.Contains(t, cfg.Processors, "nop/myprocessor")
+	assert.Contains(t, cfg.Processors, config.NewID("nop"))
+	assert.Contains(t, cfg.Processors, config.NewIDWithName("nop", "myprocessor"))
 
 	// Verify service.
 	require.Len(t, cfg.Service.Extensions, 1)
-	assert.Contains(t, cfg.Service.Extensions, "nop")
+	assert.Contains(t, cfg.Service.Extensions, config.NewID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
 		&config.Pipeline{
 			Name:       "traces",
 			InputType:  config.TracesDataType,
-			Receivers:  []string{"nop"},
-			Processors: []string{"nop"},
-			Exporters:  []string{"nop"},
+			Receivers:  []config.ComponentID{config.NewID("nop")},
+			Processors: []config.ComponentID{config.NewID("nop")},
+			Exporters:  []config.ComponentID{config.NewID("nop")},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")

@@ -28,7 +28,7 @@ const (
 	typeStr = "memory_limiter"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: false}
+var processorCapabilities = consumer.Capabilities{MutatesData: false}
 
 // NewFactory returns a new factory for the Memory Limiter processor.
 func NewFactory() component.ProcessorFactory {
@@ -44,7 +44,7 @@ func NewFactory() component.ProcessorFactory {
 // that the default configuration is expected to fail for this processor.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	}
 }
 

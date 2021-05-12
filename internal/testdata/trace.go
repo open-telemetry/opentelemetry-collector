@@ -314,3 +314,13 @@ func generateOtlpSpanThree() *otlptrace.Span {
 		DroppedAttributesCount: 5,
 	}
 }
+
+func GenerateTracesManySpansSameResource(spansCount int) pdata.Traces {
+	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
+	rs0ilm0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	rs0ilm0.Spans().Resize(spansCount)
+	for i := 0; i < spansCount; i++ {
+		fillSpanOne(rs0ilm0.Spans().At(i))
+	}
+	return td
+}

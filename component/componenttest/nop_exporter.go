@@ -20,8 +20,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
+
+type nopExporterConfig struct {
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+}
 
 // nopExporterFactory is factory for nopExporter.
 type nopExporterFactory struct{}
@@ -40,8 +45,8 @@ func (f *nopExporterFactory) Type() config.Type {
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func (f *nopExporterFactory) CreateDefaultConfig() config.Exporter {
-	return &config.ExporterSettings{
-		TypeVal: f.Type(),
+	return &nopExporterConfig{
+		ExporterSettings: config.NewExporterSettings(config.NewID("nop")),
 	}
 }
 
@@ -81,4 +86,8 @@ var nopExporterInstance = &nopExporter{
 type nopExporter struct {
 	component.Component
 	consumertest.Consumer
+}
+
+func (ne *nopExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }

@@ -201,7 +201,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func
 		}
 	}
 
-	r := New(receiverTagValue, mc)
+	r := New(receiverID, mc)
 	// Now run it as a gRPC server
 	srv := obsreport.GRPCServerWithObservabilityEnabled()
 	collectormetrics.RegisterMetricsServiceServer(srv, r)

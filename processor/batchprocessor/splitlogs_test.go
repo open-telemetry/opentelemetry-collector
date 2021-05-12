@@ -34,31 +34,46 @@ func TestSplitLogs_noop(t *testing.T) {
 }
 
 func TestSplitLogs(t *testing.T) {
-	td := testdata.GenerateLogDataManyLogsSameResource(20)
-	logs := td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	ld := testdata.GenerateLogDataManyLogsSameResource(20)
+	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(0, i))
 	}
 	cp := pdata.NewLogs()
 	cpLogs := cp.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 	cpLogs.Resize(5)
-	td.ResourceLogs().At(0).Resource().CopyTo(
+	ld.ResourceLogs().At(0).Resource().CopyTo(
 		cp.ResourceLogs().At(0).Resource())
-	td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().CopyTo(
+	ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().CopyTo(
 		cp.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary())
-	logs.At(19).CopyTo(cpLogs.At(0))
-	logs.At(18).CopyTo(cpLogs.At(1))
-	logs.At(17).CopyTo(cpLogs.At(2))
-	logs.At(16).CopyTo(cpLogs.At(3))
-	logs.At(15).CopyTo(cpLogs.At(4))
+	logs.At(0).CopyTo(cpLogs.At(0))
+	logs.At(1).CopyTo(cpLogs.At(1))
+	logs.At(2).CopyTo(cpLogs.At(2))
+	logs.At(3).CopyTo(cpLogs.At(3))
+	logs.At(4).CopyTo(cpLogs.At(4))
 
 	splitSize := 5
-	split := splitLogs(splitSize, td)
+	split := splitLogs(splitSize, ld)
 	assert.Equal(t, splitSize, split.LogRecordCount())
 	assert.Equal(t, cp, split)
-	assert.Equal(t, 15, td.LogRecordCount())
-	assert.Equal(t, "test-log-int-0-19", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	assert.Equal(t, "test-log-int-0-15", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+	assert.Equal(t, 15, ld.LogRecordCount())
+	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-0-4", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+
+	split = splitLogs(splitSize, ld)
+	assert.Equal(t, 10, ld.LogRecordCount())
+	assert.Equal(t, "test-log-int-0-5", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-0-9", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+
+	split = splitLogs(splitSize, ld)
+	assert.Equal(t, 5, ld.LogRecordCount())
+	assert.Equal(t, "test-log-int-0-10", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-0-14", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+
+	split = splitLogs(splitSize, ld)
+	assert.Equal(t, 5, ld.LogRecordCount())
+	assert.Equal(t, "test-log-int-0-15", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-0-19", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
 }
 
 func TestSplitLogsMultipleResourceLogs(t *testing.T) {
@@ -80,8 +95,8 @@ func TestSplitLogsMultipleResourceLogs(t *testing.T) {
 	split := splitLogs(splitSize, td)
 	assert.Equal(t, splitSize, split.LogRecordCount())
 	assert.Equal(t, 35, td.LogRecordCount())
-	assert.Equal(t, "test-log-int-1-19", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	assert.Equal(t, "test-log-int-1-15", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-0-4", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
 }
 
 func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testing.T) {
@@ -104,8 +119,51 @@ func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testi
 	assert.Equal(t, splitSize, split.LogRecordCount())
 	assert.Equal(t, 40-splitSize, td.LogRecordCount())
 	assert.Equal(t, 1, td.ResourceLogs().Len())
-	assert.Equal(t, "test-log-int-1-19", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	assert.Equal(t, "test-log-int-1-0", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(19).Name())
-	assert.Equal(t, "test-log-int-0-19", split.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	assert.Equal(t, "test-log-int-0-15", split.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-0-19", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(19).Name())
+	assert.Equal(t, "test-log-int-1-0", split.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-1-4", split.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+}
+
+func BenchmarkSplitLogs(b *testing.B) {
+	md := pdata.NewLogs()
+	rms := md.ResourceLogs()
+	for i := 0; i < 20; i++ {
+		testdata.GenerateLogDataManyLogsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
+		ms := rms.At(rms.Len() - 1).InstrumentationLibraryLogs().At(0).Logs()
+		for i := 0; i < ms.Len(); i++ {
+			ms.At(i).SetName(getTestLogName(1, i))
+		}
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		cloneReq := md.Clone()
+		split := splitLogs(128, cloneReq)
+		if split.LogRecordCount() != 128 || cloneReq.LogRecordCount() != 400-128 {
+			b.Fail()
+		}
+	}
+}
+
+func BenchmarkCloneLogs(b *testing.B) {
+	md := pdata.NewLogs()
+	rms := md.ResourceLogs()
+	for i := 0; i < 20; i++ {
+		testdata.GenerateLogDataManyLogsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
+		ms := rms.At(rms.Len() - 1).InstrumentationLibraryLogs().At(0).Logs()
+		for i := 0; i < ms.Len(); i++ {
+			ms.At(i).SetName(getTestLogName(1, i))
+		}
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		cloneReq := md.Clone()
+		if cloneReq.LogRecordCount() != 400 {
+			b.Fail()
+		}
+	}
 }

@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	*config.ExporterSettings       `mapstructure:"-"`
+	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -35,6 +35,11 @@ type Config struct {
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+
+	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
+	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
+	// If enabled, all the resource attributes will be converted to metric labels by default.
+	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 }
 
 var _ config.Exporter = (*Config)(nil)

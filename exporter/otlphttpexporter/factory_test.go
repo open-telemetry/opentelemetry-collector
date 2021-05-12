@@ -72,7 +72,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoEndpoint",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -82,7 +82,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -94,7 +94,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Headers",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]string{
@@ -107,7 +107,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CaCert",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -121,7 +121,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{

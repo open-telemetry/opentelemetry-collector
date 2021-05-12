@@ -107,7 +107,7 @@ func New(params Parameters) (*Application, error) {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     params.BuildInfo.ExeName,
+		Use:     params.BuildInfo.Command,
 		Version: params.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
@@ -278,7 +278,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 }
 
 func (app *Application) execute(ctx context.Context) error {
-	app.logger.Info("Starting "+app.info.ExeName+"...",
+	app.logger.Info("Starting "+app.info.Command+"...",
 		zap.String("Version", app.info.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)

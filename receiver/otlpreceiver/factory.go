@@ -29,7 +29,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
 	typeStr = "otlp"
 
 	defaultGRPCEndpoint = "0.0.0.0:4317"
@@ -50,10 +49,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{

@@ -355,7 +355,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(addr string, defaultCfg config.Exporter) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg config.Receiver) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
 	cfg.HTTP.Endpoint = addr
 	cfg.GRPC = nil
@@ -445,7 +445,7 @@ func TestErrorResponses(t *testing.T) {
 			}()
 
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.

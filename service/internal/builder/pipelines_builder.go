@@ -36,9 +36,9 @@ type builtPipeline struct {
 	firstMC consumer.Metrics
 	firstLC consumer.Logs
 
-	// MutatesConsumedData is set to true if any processors in the pipeline
+	// MutatesData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
-	MutatesConsumedData bool
+	MutatesData bool
 
 	processors []component.Processor
 }
@@ -144,13 +144,13 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
 
-		factory := pb.factories[procCfg.Type()]
+		factory := pb.factories[procCfg.ID().Type()]
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
-		componentLogger := pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procCfg.Name()))
+		componentLogger := pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID()))
 		creationParams := component.ProcessorCreateParams{
 			Logger:    componentLogger,
 			BuildInfo: pb.buildInfo,
@@ -161,7 +161,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			var proc component.TracesProcessor
 			proc, err = factory.CreateTracesProcessor(ctx, creationParams, procCfg, tc)
 			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
 			processors[i] = proc
 			tc = proc
@@ -169,7 +169,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			var proc component.MetricsProcessor
 			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, procCfg, mc)
 			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
 			processors[i] = proc
 			mc = proc
@@ -178,7 +178,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			var proc component.LogsProcessor
 			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, lc)
 			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
 			processors[i] = proc
 			lc = proc
@@ -195,7 +195,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		// Check if the factory really created the processor.
 		if tc == nil && mc == nil && lc == nil {
-			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
+			return nil, fmt.Errorf("factory for %v produced a nil processor", procCfg.ID())
 		}
 	}
 
@@ -216,9 +216,9 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 }
 
 // Converts the list of exporter names to a list of corresponding builtExporters.
-func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*builtExporter {
+func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterIDs []config.ComponentID) []*builtExporter {
 	var result []*builtExporter
-	for _, name := range exporterNames {
+	for _, name := range exporterIDs {
 		exporter := pb.exporters[pb.config.Exporters[name]]
 		result = append(result, exporter)
 	}
@@ -226,8 +226,8 @@ func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 	return result
 }
 
-func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.Traces {
-	builtExporters := pb.getBuiltExportersByNames(exporterNames)
+func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterIDs []config.ComponentID) consumer.Traces {
+	builtExporters := pb.getBuiltExportersByNames(exporterIDs)
 
 	var exporters []consumer.Traces
 	for _, builtExp := range builtExporters {
@@ -238,8 +238,8 @@ func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	return fanoutconsumer.NewTraces(exporters)
 }
 
-func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.Metrics {
-	builtExporters := pb.getBuiltExportersByNames(exporterNames)
+func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterIDs []config.ComponentID) consumer.Metrics {
+	builtExporters := pb.getBuiltExportersByNames(exporterIDs)
 
 	var exporters []consumer.Metrics
 	for _, builtExp := range builtExporters {
@@ -250,8 +250,8 @@ func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 	return fanoutconsumer.NewMetrics(exporters)
 }
 
-func (pb *pipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.Logs {
-	builtExporters := pb.getBuiltExportersByNames(exporterNames)
+func (pb *pipelinesBuilder) buildFanoutExportersLogConsumer(exporterIDs []config.ComponentID) consumer.Logs {
+	builtExporters := pb.getBuiltExportersByNames(exporterIDs)
 
 	exporters := make([]consumer.Logs, len(builtExporters))
 	for i, builtExp := range builtExporters {
