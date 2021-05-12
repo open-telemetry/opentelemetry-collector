@@ -322,7 +322,7 @@ exporters:
 
   # Data sources: traces, metrics, logs
   otlp:
-    endpoint: otelcol2:55680
+    endpoint: otelcol2:4317
     insecure: true
 
   # Data sources: traces, metrics
