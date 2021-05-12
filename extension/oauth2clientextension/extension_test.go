@@ -16,9 +16,10 @@ package oauth2clientextension
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"net/http"
 	"testing"
+
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -27,9 +28,9 @@ import (
 
 func TestOAuthClientSettings(t *testing.T) {
 	tests := []struct {
-		name        string
-		settings    *OAuth2ClientSettings
-		shouldError bool
+		name          string
+		settings      *OAuth2ClientSettings
+		shouldError   bool
 		expectedError error
 	}{
 		{
@@ -40,7 +41,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 			},
-			shouldError: false,
+			shouldError:   false,
 			expectedError: nil,
 		},
 		{
@@ -50,7 +51,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 			},
-			shouldError: true,
+			shouldError:   true,
 			expectedError: errNoClientIDProvided,
 		},
 		{
@@ -60,7 +61,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL: "https://example.com/v1/token",
 				Scopes:   []string{"resource.read"},
 			},
-			shouldError: true,
+			shouldError:   true,
 			expectedError: errNoClientSecretProvided,
 		},
 		{
@@ -70,7 +71,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				ClientSecret: "testsecret",
 				Scopes:       []string{"resource.read"},
 			},
-			shouldError: true,
+			shouldError:   true,
 			expectedError: errNoTokenURLProvided,
 		},
 	}
@@ -192,10 +193,10 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			perRpcCredentials, err := oauth2Authenticator.PerRPCCredential()
+			perRPCCredentials, err := oauth2Authenticator.PerRPCCredential()
 			assert.Nil(t, err)
-			// test perRpcCredentials is an grpc OAuthTokenSource
-			_, ok := perRpcCredentials.(grpcOAuth.TokenSource)
+			// test perRPCCredentials is an grpc OAuthTokenSource
+			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
 			assert.True(t, ok)
 		})
 	}

@@ -15,6 +15,7 @@
 package confighttp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -24,6 +25,10 @@ import (
 	"path"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -116,6 +121,118 @@ func TestHTTPClientSettingsError(t *testing.T) {
 		t.Run(test.err, func(t *testing.T) {
 			_, err := test.settings.ToClient()
 			assert.Regexp(t, test.err, err)
+		})
+	}
+}
+
+type mockHTTPClientAuth struct {
+	forceError bool
+	err        error
+}
+
+func (m *mockHTTPClientAuth) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (m *mockHTTPClientAuth) Shutdown(_ context.Context) error {
+	return nil
+}
+
+type customRoundTripper struct {
+}
+
+var _ http.RoundTripper = (*customRoundTripper)(nil)
+
+func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	return nil, nil
+}
+
+func (m *mockHTTPClientAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	if m.forceError {
+		return nil, m.err
+	}
+	return &customRoundTripper{}, nil
+}
+
+var _ configauth.HTTPClientAuth = (*mockHTTPClientAuth)(nil)
+
+func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		shouldErr    bool
+		settings     HTTPClientSettings
+		extensionMap map[config.NamedEntity]component.Extension
+	}{
+		{
+			name: "no_auth_extension_enabled",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     nil,
+			},
+			shouldErr: false,
+			extensionMap: map[config.NamedEntity]component.Extension{
+				&config.ExtensionSettings{
+					NameVal: "mock",
+					TypeVal: "mock",
+				}: &mockHTTPClientAuth{},
+			},
+		},
+		{
+			name: "with_auth_configuration_has_no_extension",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+			},
+			shouldErr: true,
+			extensionMap: map[config.NamedEntity]component.Extension{
+				&config.ExtensionSettings{
+					NameVal: "mock",
+					TypeVal: "mock",
+				}: &mockHTTPClientAuth{},
+			},
+		},
+		{
+			name: "with_auth_configuration_has_extension",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
+			},
+			shouldErr: false,
+			extensionMap: map[config.NamedEntity]component.Extension{
+				&config.ExtensionSettings{
+					NameVal: "mock",
+					TypeVal: "mock",
+				}: &mockHTTPClientAuth{},
+			},
+		},
+		{
+			name: "with_auth_configuration_has_err_extension",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
+			},
+			shouldErr: true,
+			extensionMap: map[config.NamedEntity]component.Extension{
+				&config.ExtensionSettings{
+					NameVal: "mock",
+					TypeVal: "mock",
+				}: &mockHTTPClientAuth{forceError: true, err: errors.New("dummy extension")},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := test.settings.ToClient(WithExtensionsConfiguration(test.extensionMap))
+			if test.shouldErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.NotNil(t, client)
+			if test.settings.Auth != nil {
+				_, ok := client.Transport.(*customRoundTripper)
+				assert.True(t, ok)
+			}
 		})
 	}
 }

@@ -16,13 +16,13 @@ package confighttp
 
 import (
 	"crypto/tls"
-	"fmt"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configauth"
 	"net"
 	"net/http"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 
 	"github.com/rs/cors"
 
@@ -58,8 +58,31 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
+type toClientOptions struct {
+	extensionsMap map[config.NamedEntity]component.Extension
+}
+
+// ToClientOption is an option to add/change additional configuration on top of HTTPClientSettings
+// to construct HTTPClientSettings.ToClient().
+type ToClientOption func(options *toClientOptions)
+
+// WithExtensionsConfiguration is passed to HTTPClientSettings.ToClient() in order to
+// extend HTTPClientSettings with the configuration provided through extensions
+// e.g Authenticator configuration via extensions
+func WithExtensionsConfiguration(ext map[config.NamedEntity]component.Extension) ToClientOption {
+	return func(opts *toClientOptions) {
+		opts.extensionsMap = ext
+	}
+}
+
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(opts ...ToClientOption) (*http.Client, error) {
+	// apply client options
+	clientOptions := &toClientOptions{}
+	for _, opt := range opts {
+		opt(clientOptions)
+	}
+
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -83,6 +106,17 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 		}
 	}
 
+	if clientOptions.extensionsMap != nil && hcs.Auth != nil {
+		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuth(clientOptions.extensionsMap, hcs.Auth.AuthenticatorName)
+		if aerr != nil {
+			return nil, aerr
+		}
+		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if hcs.CustomRoundTripper != nil {
 		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
 		if err != nil {
@@ -94,19 +128,6 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
 	}, nil
-}
-
-// AuthRoundTripper intercepts base transport and returns a new authenticated transport.
-func (hcs *HTTPClientSettings) AuthRoundTripper(clientBaseTransport http.RoundTripper, ext map[config.NamedEntity]component.Extension) (http.RoundTripper, error) {
-	if hcs.Auth != nil {
-		return nil, fmt.Errorf("configuration for auth absent")
-	}
-
-	httpCustomAuthRoundTripper, err := configauth.GetHTTPClientAuth(ext, hcs.Auth.AuthenticatorName)
-	if err != nil {
-		return nil, err
-	}
-	return httpCustomAuthRoundTripper.RoundTripper(clientBaseTransport)
 }
 
 // Custom RoundTripper that add headers

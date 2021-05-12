@@ -16,11 +16,14 @@ package oauth2clientextension
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 	"testing"
 
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
@@ -44,7 +47,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*OAuth2ClientSettings)
-
 
 	tests := []struct {
 		name        string
@@ -90,7 +92,6 @@ func TestCreateExtension(t *testing.T) {
 		})
 	}
 }
-
 
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()

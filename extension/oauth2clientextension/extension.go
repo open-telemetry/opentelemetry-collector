@@ -17,14 +17,16 @@ package oauth2clientextension
 import (
 	"context"
 	"errors"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+	"net/http"
+
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 	"google.golang.org/grpc/credentials"
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
-	"net/http"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 )
 
 var (
@@ -67,27 +69,29 @@ func newOAuth2Extension(cfg *OAuth2ClientSettings, logger *zap.Logger) (*OAuth2A
 	}, nil
 }
 
-func (O *OAuth2Authenticator) Start(_ context.Context, _ component.Host) error {
+// Start for OAuth2Authenticator extension does nothing
+func (o *OAuth2Authenticator) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (O *OAuth2Authenticator) Shutdown(_ context.Context) error {
+// Shutdown for OAuth2Authenticator extension does nothing
+func (o *OAuth2Authenticator) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
 // also auto refreshes OAuth tokens as needed.
-func (O *OAuth2Authenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (o *OAuth2Authenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &oauth2.Transport{
-		Source: O.clientCredentials.TokenSource(context.Background()),
+		Source: o.clientCredentials.TokenSource(context.Background()),
 		Base:   base,
 	}, nil
 }
 
 // PerRPCCredential returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
 // oauth2.clientcredentials.Config instance will manage tokens performing auto refresh as necessary.
-func (O *OAuth2Authenticator) PerRPCCredential() (credentials.PerRPCCredentials, error) {
+func (o *OAuth2Authenticator) PerRPCCredential() (credentials.PerRPCCredentials, error) {
 	return grpcOAuth.TokenSource{
-		TokenSource: O.clientCredentials.TokenSource(context.Background()),
+		TokenSource: o.clientCredentials.TokenSource(context.Background()),
 	}, nil
 }

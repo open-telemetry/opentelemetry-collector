@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/component"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -28,16 +27,19 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/internal/middleware"
+
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 type exporterImp struct {
@@ -66,41 +68,29 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporterImp, error) 
 		}
 	}
 
-	client, err := oCfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
-	if oCfg.Compression != "" {
-		if strings.ToLower(oCfg.Compression) == configgrpc.CompressionGzip {
-			client.Transport = middleware.NewCompressRoundTripper(client.Transport)
-		} else {
-			return nil, fmt.Errorf("unsupported compression type %q", oCfg.Compression)
-		}
-	}
-
+	// client construction is deferred to start
 	return &exporterImp{
 		config: oCfg,
-		client: client,
 		logger: logger,
 	}, nil
 }
 
-// start overrides defaults base exporters start (no op) to attach auth transport to the http client.
-// This is the only place we get hold of Extensions which are required to construct auth round tripper.
+// start actually creates the HTTP client. The client construction is deferred till this point as this
+// is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporterImp) start(_ context.Context, host component.Host) error {
-	// nothing to do if auth is not specified
-	if e.config.Auth == nil {
-		return nil
+	client, err := e.config.HTTPClientSettings.ToClient(confighttp.WithExtensionsConfiguration(host.GetExtensions()))
+	if err != nil {
+		return err
 	}
 
-	if e.config.HTTPClientSettings.Auth != nil {
-		transport, err := e.config.HTTPClientSettings.AuthRoundTripper(e.client.Transport, host.GetExtensions())
-		if err != nil {
-			return err
+	if e.config.Compression != "" {
+		if strings.ToLower(e.config.Compression) == configgrpc.CompressionGzip {
+			client.Transport = middleware.NewCompressRoundTripper(client.Transport)
+		} else {
+			return fmt.Errorf("unsupported compression type %q", e.config.Compression)
 		}
-		e.client.Transport = transport
 	}
+	e.client = client
 	return nil
 }
 
