@@ -40,6 +40,10 @@ type metricsConsumer []consumer.Metrics
 
 var _ consumer.Metrics = (*metricsConsumer)(nil)
 
+func (mfc metricsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 // ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
 func (mfc metricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
@@ -64,6 +68,10 @@ type traceConsumer []consumer.Traces
 
 var _ consumer.Traces = (*traceConsumer)(nil)
 
+func (tfc traceConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 // ConsumeTraces exports the pdata.Traces to all consumers wrapped by the current one.
 func (tfc traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
@@ -87,6 +95,10 @@ func NewLogs(lcs []consumer.Logs) consumer.Logs {
 type logsConsumer []consumer.Logs
 
 var _ consumer.Logs = (*logsConsumer)(nil)
+
+func (lfc logsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
 
 // ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
 func (lfc logsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {

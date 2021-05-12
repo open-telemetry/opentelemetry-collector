@@ -214,7 +214,7 @@ func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Tr
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.traceReceiver = trace.New(r.cfg.ID().String(), tc)
+	r.traceReceiver = trace.New(r.cfg.ID(), tc)
 	if r.gatewayMux != nil {
 		err := collectortrace.RegisterTraceServiceHandlerServer(ctx, r.gatewayMux, r.traceReceiver)
 		if err != nil {
@@ -230,7 +230,7 @@ func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.metricsReceiver = metrics.New(r.cfg.ID().String(), mc)
+	r.metricsReceiver = metrics.New(r.cfg.ID(), mc)
 	if r.gatewayMux != nil {
 		return collectormetrics.RegisterMetricsServiceHandlerServer(ctx, r.gatewayMux, r.metricsReceiver)
 	}
@@ -241,7 +241,7 @@ func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.Log
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.logReceiver = logs.New(r.cfg.ID().String(), tc)
+	r.logReceiver = logs.New(r.cfg.ID(), tc)
 	if r.gatewayMux != nil {
 		return collectorlog.RegisterLogsServiceHandlerServer(ctx, r.gatewayMux, r.logReceiver)
 	}

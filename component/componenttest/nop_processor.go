@@ -35,7 +35,7 @@ type nopProcessorFactory struct {
 
 var nopProcessorFactoryInstance = &nopProcessorFactory{}
 
-// NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop exporters.
+// NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopProcessorFactory() component.ProcessorFactory {
 	return nopProcessorFactoryInstance
 }
@@ -91,8 +91,4 @@ var nopProcessorInstance = &nopProcessor{
 type nopProcessor struct {
 	component.Component
 	consumertest.Consumer
-}
-
-func (*nopProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }

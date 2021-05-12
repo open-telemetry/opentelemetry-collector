@@ -28,12 +28,12 @@ import (
 )
 
 const (
-	receiver  = "fakeReicever"
 	transport = "fakeTransport"
 	format    = "fakeFormat"
 )
 
 var (
+	receiver = config.NewID("fakeReicever")
 	exporter = config.NewID("fakeExporter")
 )
 

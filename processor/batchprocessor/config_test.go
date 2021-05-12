@@ -55,3 +55,31 @@ func TestLoadConfig(t *testing.T) {
 			Timeout:           timeout,
 		})
 }
+
+func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
+	cfg := &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+		SendBatchSize:     100,
+		SendBatchMaxSize:  0,
+	}
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidateConfig_ValidBatchSizes(t *testing.T) {
+	cfg := &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+		SendBatchSize:     100,
+		SendBatchMaxSize:  1000,
+	}
+	assert.NoError(t, cfg.Validate())
+
+}
+
+func TestValidateConfig_InvalidBatchSize(t *testing.T) {
+	cfg := &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+		SendBatchSize:     1000,
+		SendBatchMaxSize:  100,
+	}
+	assert.Error(t, cfg.Validate())
+}

@@ -92,8 +92,8 @@ func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batc
 	}, nil
 }
 
-func (bp *batchProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+func (bp *batchProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.
@@ -244,7 +244,7 @@ func (bt *batchTraces) add(item interface{}) {
 func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int) error {
 	var req pdata.Traces
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
-		req = splitTrace(sendBatchMaxSize, bt.traceData)
+		req = splitTraces(sendBatchMaxSize, bt.traceData)
 		bt.spanCount -= sendBatchMaxSize
 	} else {
 		req = bt.traceData

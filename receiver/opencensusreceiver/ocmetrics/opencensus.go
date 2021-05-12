@@ -24,6 +24,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -32,17 +33,17 @@ import (
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
 	agentmetricspb.UnimplementedMetricsServiceServer
-	instanceName string
+	id           config.ComponentID
 	nextConsumer consumer.Metrics
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(instanceName string, nextConsumer consumer.Metrics) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Metrics) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 	ocr := &Receiver{
-		instanceName: instanceName,
+		id:           id,
 		nextConsumer: nextConsumer,
 	}
 	return ocr, nil
@@ -53,7 +54,6 @@ var _ agentmetricspb.MetricsServiceServer = (*Receiver)(nil)
 var errMetricsExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
 const (
-	receiverTagValue   = "oc_metrics"
 	receiverTransport  = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
 	receiverDataFormat = "protobuf"
 )
@@ -61,7 +61,7 @@ const (
 // Export is the gRPC method that receives streamed metrics from
 // OpenCensus-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
-	longLivedRPCCtx := obsreport.ReceiverContext(mes.Context(), ocr.instanceName, receiverTransport)
+	longLivedRPCCtx := obsreport.ReceiverContext(mes.Context(), ocr.id, receiverTransport)
 
 	// Retrieve the first message. It MUST have a non-nil Node.
 	recv, err := mes.Recv()
@@ -129,7 +129,7 @@ func (ocr *Receiver) processReceivedMsg(
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md internaldata.MetricsData) error {
 	ctx := obsreport.StartMetricsReceiveOp(
 		longLivedRPCCtx,
-		ocr.instanceName,
+		ocr.id,
 		receiverTransport,
 		obsreport.WithLongLivedCtx())
 

@@ -1,0 +1,29 @@
+# This github action adds a new commit to the Dependabot PRs when running "go mod tidy" produces changes.
+name: Dependabot-Tidier
+on:
+  pull_request:
+    types: [ labeled ]
+
+jobs:
+  mod_tidier:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16.0'
+      - uses: evantorrie/mott-the-tidier@v1-beta
+        id: modtidy
+        with:
+          gomods: '**/go.mod'
+          gomodsum_only: true
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        id: autocommit
+        with:
+          commit_message: Auto-fix go.sum changes in dependent modules
+      - name: changes
+        run: |
+          echo "Changes detected: ${{ steps.autocommit.outputs.changes_detected }}"
