@@ -36,6 +36,10 @@ type metricsCloningConsumer []consumer.Metrics
 
 var _ consumer.Metrics = (*metricsCloningConsumer)(nil)
 
+func (mfc metricsCloningConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
 // ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
 func (mfc metricsCloningConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
@@ -73,6 +77,10 @@ type tracesCloningConsumer []consumer.Traces
 
 var _ consumer.Traces = (*tracesCloningConsumer)(nil)
 
+func (tfc tracesCloningConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
 // ConsumeTraces exports the pdata.Traces to all consumers wrapped by the current one.
 func (tfc tracesCloningConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
@@ -109,6 +117,10 @@ func NewLogsCloning(lcs []consumer.Logs) consumer.Logs {
 type logsCloningConsumer []consumer.Logs
 
 var _ consumer.Logs = (*logsCloningConsumer)(nil)
+
+func (lfc logsCloningConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
 
 // ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
 func (lfc logsCloningConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {

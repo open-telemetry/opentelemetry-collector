@@ -137,6 +137,24 @@ func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestResourceLogsSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewResourceLogsSlice()
+	emptySlice.RemoveIf(func(el ResourceLogs) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestResourceLogsSlice()
+	pos := 0
+	filtered.RemoveIf(func(el ResourceLogs) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestResourceLogs_CopyTo(t *testing.T) {
 	ms := NewResourceLogs()
 	generateTestResourceLogs().CopyTo(ms)
@@ -269,6 +287,24 @@ func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
+func TestInstrumentationLibraryLogsSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewInstrumentationLibraryLogsSlice()
+	emptySlice.RemoveIf(func(el InstrumentationLibraryLogs) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestInstrumentationLibraryLogsSlice()
+	pos := 0
+	filtered.RemoveIf(func(el InstrumentationLibraryLogs) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
 func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	generateTestInstrumentationLibraryLogs().CopyTo(ms)
@@ -399,6 +435,24 @@ func TestLogSlice_MoveAndAppendTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func TestLogSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewLogSlice()
+	emptySlice.RemoveIf(func(el LogRecord) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestLogSlice()
+	pos := 0
+	filtered.RemoveIf(func(el LogRecord) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {

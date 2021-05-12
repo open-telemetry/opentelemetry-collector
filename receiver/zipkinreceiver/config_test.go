@@ -40,28 +40,22 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r0 := cfg.Receivers["zipkin"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["zipkin/customname"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "zipkin/customname",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "localhost:8765",
 			},
 		})
 
-	r2 := cfg.Receivers["zipkin/parse_strings"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "parse_strings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "zipkin/parse_strings",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "parse_strings")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "0.0.0.0:9411",
 			},

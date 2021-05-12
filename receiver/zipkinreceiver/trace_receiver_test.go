@@ -49,7 +49,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-const zipkinReceiverName = "zipkin_receiver_test"
+var zipkinReceiverID = config.NewIDWithName(typeStr, "receiver_test")
 
 func TestNew(t *testing.T) {
 	type args struct {
@@ -76,9 +76,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					NameVal: zipkinReceiverName,
-				},
+				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: tt.args.address,
 				},
@@ -101,9 +99,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: zipkinReceiverName,
-		},
+		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:" + portStr,
 		},
@@ -289,9 +285,7 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					NameVal: zipkinReceiverName,
-				},
+				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:0",
 				},
@@ -387,9 +381,7 @@ func TestReceiverContentTypes(t *testing.T) {
 				ch: make(chan pdata.Traces, 10),
 			}
 			cfg := &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					NameVal: zipkinReceiverName,
-				},
+				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "",
 				},
@@ -424,9 +416,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: zipkinReceiverName,
-		},
+		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
@@ -453,9 +443,7 @@ func TestReceiverConsumerError(t *testing.T) {
 		err: errors.New("consumer error"),
 	}
 	cfg := &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: zipkinReceiverName,
-		},
+		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:9411",
 		},
@@ -527,6 +515,10 @@ type zipkinMockTraceConsumer struct {
 	err error
 }
 
+func (m *zipkinMockTraceConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (m *zipkinMockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	m.ch <- td
 	return m.err
@@ -557,9 +549,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: zipkinReceiverName,
-		},
+		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
@@ -609,9 +599,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: zipkinReceiverName,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},

@@ -194,6 +194,14 @@ Collector as it runs. This is an advanced use-case that should not be needed in 
 
 ## Common Issues
 
+To see logs for the Collector:
+
+On a Linux systemd system, logs can be found using `journalctl`:  
+`journalctl | grep otelcol`
+
+or to find only errors:  
+`journalctl | grep otelcol | grep Error`
+
 ### Collector exit/restart
 
 The Collector may exit/restart because:

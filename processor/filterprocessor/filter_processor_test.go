@@ -306,7 +306,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -324,8 +324,8 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
-			caps := fmp.GetCapabilities()
-			assert.False(t, caps.MutatesConsumedData)
+			caps := fmp.Capabilities()
+			assert.True(t, caps.MutatesData)
 			ctx := context.Background()
 			assert.NoError(t, fmp.Start(ctx, nil))
 
@@ -452,11 +452,13 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateParams{},
+		component.ProcessorCreateParams{Logger: zap.NewNop()},
 		cfg,
 		consumertest.NewNop(),
 	)
 	pdms := metricSlice(128)
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, pdm := range pdms {
 			_ = proc.ConsumeMetrics(ctx, pdm)
@@ -485,29 +487,6 @@ func pdm(prefix string, size int) pdata.Metrics {
 		NumResourceMetrics:   size,
 	}
 	return goldendataset.MetricsFromCfg(c)
-}
-
-func TestMetricIndexSingle(t *testing.T) {
-	metrics := pdm("", 1)
-	idx := newMetricIndex()
-	idx.add(0, 0, 0)
-	extracted := idx.extract(metrics)
-	require.Equal(t, metrics, extracted)
-}
-
-func TestMetricIndexAll(t *testing.T) {
-	metrics := pdm("", 2)
-	idx := newMetricIndex()
-	idx.add(0, 0, 0)
-	idx.add(0, 0, 1)
-	idx.add(0, 1, 0)
-	idx.add(0, 1, 1)
-	idx.add(1, 0, 0)
-	idx.add(1, 0, 1)
-	idx.add(1, 1, 0)
-	idx.add(1, 1, 1)
-	extracted := idx.extract(metrics)
-	require.Equal(t, metrics, extracted)
 }
 
 func TestNilResourceMetrics(t *testing.T) {

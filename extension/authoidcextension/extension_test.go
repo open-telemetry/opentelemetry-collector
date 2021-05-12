@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package authoidcextension
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -33,7 +32,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 )
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
@@ -43,17 +46,15 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	config := Authentication{
-		OIDC: &OIDC{
-			IssuerURL:   oidcServer.URL,
-			Audience:    "unit-test",
-			GroupsClaim: "memberships",
-		},
+	config := &Config{
+		IssuerURL:   oidcServer.URL,
+		Audience:    "unit-test",
+		GroupsClaim: "memberships",
 	}
-	p, err := newOIDCAuthenticator(config)
+	p, err := newExtension(config, zap.NewNop())
 	require.NoError(t, err)
 
-	err = p.Start(context.Background())
+	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	payload, _ := json.Marshal(map[string]interface{}{
@@ -68,20 +69,12 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.NoError(t, err)
 
-	subject, ok := SubjectFromContext(ctx)
-	assert.True(t, ok)
-	assert.EqualValues(t, "jdoe@example.com", subject)
-
-	groups, ok := GroupsFromContext(ctx)
-	assert.True(t, ok)
-	assert.Contains(t, groups, "department-1")
-	assert.Contains(t, groups, "department-2")
+	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
 }
 
 func TestOIDCProviderForConfigWithTLS(t *testing.T) {
@@ -120,7 +113,7 @@ func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 	oidcServer.StartTLS()
 
 	// prepare the processor configuration
-	config := OIDC{
+	config := &Config{
 		IssuerURL:    oidcServer.URL,
 		IssuerCAPath: caFile.Name(),
 		Audience:     "unit-test",
@@ -195,7 +188,7 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	_, err = file.Write([]byte("foobar"))
 	require.NoError(t, err)
 
-	config := OIDC{
+	config := &Config{
 		IssuerCAPath: file.Name(),
 	}
 
@@ -209,52 +202,44 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 
 func TestOIDCInvalidAuthHeader(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com",
-		},
-	})
+	p, err := newExtension(&Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com",
+	}, zap.NewNop())
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
+	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.Equal(t, errInvalidAuthenticationHeaderFormat, err)
 }
 
 func TestOIDCNotAuthenticated(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com",
-		},
-	})
+	p, err := newExtension(&Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com",
+	}, zap.NewNop())
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), make(map[string][]string))
+	err = p.Authenticate(context.Background(), make(map[string][]string))
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.Equal(t, errNotAuthenticated, err)
 }
 
 func TestProviderNotReacheable(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com",
-		},
-	})
+	p, err := newExtension(&Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com",
+	}, zap.NewNop())
 	require.NoError(t, err)
 
 	// test
-	err = p.Start(context.Background())
+	err = p.Start(context.Background(), componenttest.NewNopHost())
 
 	// verify
 	assert.Error(t, err)
@@ -267,22 +252,19 @@ func TestFailedToVerifyToken(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			IssuerURL: oidcServer.URL,
-			Audience:  "unit-test",
-		},
-	})
+	p, err := newExtension(&Config{
+		IssuerURL: oidcServer.URL,
+		Audience:  "unit-test",
+	}, zap.NewNop())
 	require.NoError(t, err)
 
-	err = p.Start(context.Background())
+	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
+	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
 
 	// verify
-	assert.NotNil(t, ctx)
 	assert.Error(t, err)
 }
 
@@ -295,48 +277,42 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 
 	for _, tt := range []struct {
 		casename      string
-		config        Authentication
+		config        *Config
 		expectedError error
 	}{
 		{
 			"groupsClaimNonExisting",
-			Authentication{
-				OIDC: &OIDC{
-					IssuerURL:   oidcServer.URL,
-					Audience:    "unit-test",
-					GroupsClaim: "non-existing-claim",
-				},
+			&Config{
+				IssuerURL:   oidcServer.URL,
+				Audience:    "unit-test",
+				GroupsClaim: "non-existing-claim",
 			},
 			errGroupsClaimNotFound,
 		},
 		{
 			"usernameClaimNonExisting",
-			Authentication{
-				OIDC: &OIDC{
-					IssuerURL:     oidcServer.URL,
-					Audience:      "unit-test",
-					UsernameClaim: "non-existing-claim",
-				},
+			&Config{
+				IssuerURL:     oidcServer.URL,
+				Audience:      "unit-test",
+				UsernameClaim: "non-existing-claim",
 			},
 			errClaimNotFound,
 		},
 		{
 			"usernameNotString",
-			Authentication{
-				OIDC: &OIDC{
-					IssuerURL:     oidcServer.URL,
-					Audience:      "unit-test",
-					UsernameClaim: "some-non-string-field",
-				},
+			&Config{
+				IssuerURL:     oidcServer.URL,
+				Audience:      "unit-test",
+				UsernameClaim: "some-non-string-field",
 			},
 			errUsernameNotString,
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			p, err := newOIDCAuthenticator(tt.config)
+			p, err := newExtension(tt.config, zap.NewNop())
 			require.NoError(t, err)
 
-			err = p.Start(context.Background())
+			err = p.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			payload, _ := json.Marshal(map[string]interface{}{
@@ -349,11 +325,10 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			require.NoError(t, err)
 
 			// test
-			ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			err = p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 			// verify
-			assert.NotNil(t, ctx)
-			assert.True(t, errors.Is(err, tt.expectedError))
+			assert.ErrorIs(t, err, tt.expectedError)
 		})
 	}
 }
@@ -437,50 +412,44 @@ func TestEmptyGroupsClaim(t *testing.T) {
 
 func TestMissingClient(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		IssuerURL: "http://example.com/",
 	}
 
 	// test
-	p, err := newOIDCAuthenticator(config)
+	p, err := newExtension(config, zap.NewNop())
 
 	// verify
 	assert.Nil(t, p)
-	assert.Equal(t, errNoClientIDProvided, err)
+	assert.Equal(t, errNoAudienceProvided, err)
 }
 
 func TestMissingIssuerURL(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience: "some-audience",
-		},
+	config := &Config{
+		Audience: "some-audience",
 	}
 
 	// test
-	p, err := newOIDCAuthenticator(config)
+	p, err := newExtension(config, zap.NewNop())
 
 	// verify
 	assert.Nil(t, p)
 	assert.Equal(t, errNoIssuerURL, err)
 }
 
-func TestClose(t *testing.T) {
+func TestShutdown(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com/",
 	}
-	p, err := newOIDCAuthenticator(config)
+	p, err := newExtension(config, zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	// test
-	err = p.Close() // for now, we never fail
+	err = p.Shutdown(context.Background()) // for now, we never fail
 
 	// verify
 	assert.NoError(t, err)
@@ -488,18 +457,16 @@ func TestClose(t *testing.T) {
 
 func TestUnaryInterceptor(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com/",
 	}
-	p, err := newOIDCAuthenticator(config)
+	p, err := newExtension(config, zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	interceptorCalled := false
-	p.unaryInterceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate authenticateFunc) (interface{}, error) {
+	p.unaryInterceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate configauth.AuthenticateFunc) (interface{}, error) {
 		interceptorCalled = true
 		return nil, nil
 	}
@@ -508,7 +475,7 @@ func TestUnaryInterceptor(t *testing.T) {
 	}
 
 	// test
-	res, err := p.UnaryInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler)
+	res, err := p.GrpcUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler)
 
 	// verify
 	assert.NoError(t, err)
@@ -518,18 +485,16 @@ func TestUnaryInterceptor(t *testing.T) {
 
 func TestStreamInterceptor(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com/",
 	}
-	p, err := newOIDCAuthenticator(config)
+	p, err := newExtension(config, zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	interceptorCalled := false
-	p.streamInterceptor = func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate authenticateFunc) error {
+	p.streamInterceptor = func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate configauth.AuthenticateFunc) error {
 		interceptorCalled = true
 		return nil
 	}
@@ -541,9 +506,18 @@ func TestStreamInterceptor(t *testing.T) {
 	}
 
 	// test
-	err = p.StreamInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
+	err = p.GrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
 
 	// verify
 	assert.NoError(t, err)
 	assert.True(t, interceptorCalled)
+}
+
+type mockServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (m *mockServerStream) Context() context.Context {
+	return m.ctx
 }

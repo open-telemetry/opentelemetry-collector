@@ -25,6 +25,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -83,8 +84,13 @@ func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
 
 	groupByLibrary := jSpansToInternal(jSpans)
 	ilss := dest.InstrumentationLibrarySpans()
-	for _, v := range groupByLibrary {
-		ilss.Append(v)
+	for library, spans := range groupByLibrary {
+		ils := ilss.AppendEmpty()
+		if library.name != "" {
+			ils.InstrumentationLibrary().SetName(library.name)
+			ils.InstrumentationLibrary().SetVersion(library.version)
+		}
+		spans.MoveAndAppendTo(ils.Spans())
 	}
 }
 
@@ -127,32 +133,27 @@ func translateHostnameAttr(attrs pdata.AttributeMap) {
 // translateHostnameAttr translates "jaeger.version" atttribute
 func translateJaegerVersionAttr(attrs pdata.AttributeMap) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
-	_, exporterVersionFound := attrs.Get(conventions.OCAttributeExporterVersion)
+	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
-		attrs.InsertString(conventions.OCAttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
+		attrs.InsertString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
 		attrs.Delete("jaeger.version")
 	}
 }
 
-func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.InstrumentationLibrarySpans {
-	spansByLibrary := make(map[instrumentationLibrary]pdata.InstrumentationLibrarySpans)
+func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.SpanSlice {
+	spansByLibrary := make(map[instrumentationLibrary]pdata.SpanSlice)
 
 	for _, span := range spans {
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
 			continue
 		}
 		pSpan, library := jSpanToInternal(span)
-		ils, found := spansByLibrary[library]
+		ss, found := spansByLibrary[library]
 		if !found {
-			ils = pdata.NewInstrumentationLibrarySpans()
-			spansByLibrary[library] = ils
-
-			if library.name != "" {
-				ils.InstrumentationLibrary().SetName(library.name)
-				ils.InstrumentationLibrary().SetVersion(library.version)
-			}
+			ss = pdata.NewSpanSlice()
+			spansByLibrary[library] = ss
 		}
-		ils.Spans().Append(pSpan)
+		ss.Append(pSpan)
 	}
 	return spansByLibrary
 }
@@ -250,7 +251,7 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 			statusMessage = msgAttr.StringVal()
 			attrs.Delete(tracetranslator.TagStatusMsg)
 		}
-	} else if httpCodeAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusCode); ok {
+	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); ok {
 		statusExists = true
 		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
 

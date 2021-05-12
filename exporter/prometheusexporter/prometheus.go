@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -50,8 +51,8 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 	}
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:        configtelemetry.GetMetricsLevelFlagValue(),
-		ExporterName: config.Name(),
+		Level:      configtelemetry.GetMetricsLevelFlagValue(),
+		ExporterID: config.ID(),
 	})
 
 	collector := newCollector(config, logger)
@@ -59,7 +60,7 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 	_ = registry.Register(collector)
 
 	return &prometheusExporter{
-		name:         config.Name(),
+		name:         config.ID().String(),
 		endpoint:     addr,
 		collector:    collector,
 		registry:     registry,
@@ -92,6 +93,10 @@ func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
+func (pe *prometheusExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	pe.obsrep.StartMetricsExportOp(ctx)
 	n := 0
@@ -104,6 +109,6 @@ func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metri
 	return nil
 }
 
-func (pe *prometheusExporter) Shutdown(_ context.Context) error {
+func (pe *prometheusExporter) Shutdown(context.Context) error {
 	return pe.shutdownFunc()
 }

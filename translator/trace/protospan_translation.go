@@ -17,7 +17,6 @@ package tracetranslator
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -29,14 +28,10 @@ const (
 
 	TagSpanKind = "span.kind"
 
-	TagStatusCode          = "status.code"
-	TagStatusMsg           = "status.message"
-	TagError               = "error"
-	TagHTTPStatusCode      = "http.status_code"
-	TagHTTPStatusMsg       = "http.status_message"
-	TagZipkinCensusCode    = "census.status_code"
-	TagZipkinCensusMsg     = "census.status_description"
-	TagZipkinOpenCensusMsg = "opencensus.status_description"
+	TagStatusCode    = "status.code"
+	TagStatusMsg     = "status.message"
+	TagError         = "error"
+	TagHTTPStatusMsg = "http.status_message"
 
 	TagW3CTraceState     = "w3c.tracestate"
 	TagServiceNameSource = "otlp.service.name.source"
@@ -62,37 +57,6 @@ const (
 	OpenTracingSpanKindProducer    OpenTracingSpanKind = "producer"
 	OpenTracingSpanKindInternal    OpenTracingSpanKind = "internal"
 )
-
-const (
-	SpanLinkDataFormat  = "%s|%s|%s|%s|%d"
-	SpanEventDataFormat = "%s|%s|%d"
-)
-
-type attrValDescript struct {
-	regex    *regexp.Regexp
-	attrType pdata.AttributeValueType
-}
-
-var attrValDescriptions = getAttrValDescripts()
-
-func getAttrValDescripts() []*attrValDescript {
-	descriptions := make([]*attrValDescript, 0, 5)
-	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueNULL))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueINT))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
-	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
-	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueMAP))
-	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueARRAY))
-	return descriptions
-}
-
-func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *attrValDescript {
-	regexc := regexp.MustCompile(regex)
-	return &attrValDescript{
-		regex:    regexc,
-		attrType: attrType,
-	}
-}
 
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
 func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
@@ -122,7 +86,7 @@ func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 		return string(jsonStr)
 
 	case pdata.AttributeValueARRAY:
-		jsonStr, _ := json.Marshal(AttributeArrayToSlice(attr.ArrayVal()))
+		jsonStr, _ := json.Marshal(attributeArrayToSlice(attr.ArrayVal()))
 		return string(jsonStr)
 
 	default:
@@ -148,15 +112,15 @@ func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 		case pdata.AttributeValueMAP:
 			rawMap[k] = AttributeMapToMap(v.MapVal())
 		case pdata.AttributeValueARRAY:
-			rawMap[k] = AttributeArrayToSlice(v.ArrayVal())
+			rawMap[k] = attributeArrayToSlice(v.ArrayVal())
 		}
 		return true
 	})
 	return rawMap
 }
 
-// AttributeArrayToSlice creates a slice out of a pdata.AnyValueArray.
-func AttributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
+// attributeArrayToSlice creates a slice out of a pdata.AnyValueArray.
+func attributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 	rawSlice := make([]interface{}, 0, attrArray.Len())
 	for i := 0; i < attrArray.Len(); i++ {
 		v := attrArray.At(i)
@@ -176,16 +140,6 @@ func AttributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 		}
 	}
 	return rawSlice
-}
-
-// DetermineValueType returns the native OTLP attribute type the string translates to.
-func DetermineValueType(value string) pdata.AttributeValueType {
-	for _, desc := range attrValDescriptions {
-		if desc.regex.MatchString(value) {
-			return desc.attrType
-		}
-	}
-	return pdata.AttributeValueSTRING
 }
 
 // StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code

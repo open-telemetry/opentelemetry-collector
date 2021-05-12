@@ -25,7 +25,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/internal/occonventions"
 )
 
 func TestOcNodeResourceToInternal(t *testing.T) {
@@ -55,7 +55,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		}
 		return true
 	})
-	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
+	ocResource.Labels[occonventions.AttributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
 	resource = pdata.NewResource()

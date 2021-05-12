@@ -6,8 +6,6 @@ receivers:
   opencensus:
   # The following entry demonstrates configuring the common receiver settings:
   # - endpoint
-  # For more information on the struct, refer to
-  # https://github:com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/config/configmodels/configmodels.go#L142-L150
   # This configuration is of type 'opencensus' and has the name 'customname' with a full name of 'opencensus/customname'
   # ('<type>/<name>'. To reference this configuration in a pipeline, use the full name `opencensus/customname`.
   opencensus/customname:

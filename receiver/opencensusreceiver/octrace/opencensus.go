@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -32,7 +33,6 @@ import (
 )
 
 const (
-	receiverTagValue   = "oc_trace"
 	receiverTransport  = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
 	receiverDataFormat = "protobuf"
 )
@@ -41,18 +41,18 @@ const (
 type Receiver struct {
 	agenttracepb.UnimplementedTraceServiceServer
 	nextConsumer consumer.Traces
-	instanceName string
+	id           config.ComponentID
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(instanceName string, nextConsumer consumer.Traces, opts ...Option) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Traces, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	ocr := &Receiver{
 		nextConsumer: nextConsumer,
-		instanceName: instanceName,
+		id:           id,
 	}
 	for _, opt := range opts {
 		opt(ocr)
@@ -81,7 +81,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.instanceName, receiverTransport)
+	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.id, receiverTransport)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -144,7 +144,7 @@ func (ocr *Receiver) processReceivedMsg(
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		longLivedRPCCtx,
-		ocr.instanceName,
+		ocr.id,
 		receiverTransport,
 		obsreport.WithLongLivedCtx())
 

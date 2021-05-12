@@ -42,15 +42,11 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["prometheus"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["prometheus/customname"].(*Config)
-	assert.Equal(t, r1.ReceiverSettings,
-		config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "prometheus/customname",
-		})
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
+	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")))
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
@@ -71,12 +67,8 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers["prometheus"].(*Config)
-	assert.Equal(t, r.ReceiverSettings,
-		config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "prometheus",
-		})
+	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
 	assert.Equal(t, r.PrometheusConfig.ScrapeConfigs[0].JobName, jobname)
 	os.Unsetenv(jobnamevar)
 }
@@ -96,12 +88,8 @@ func TestLoadConfigK8s(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers["prometheus"].(*Config)
-	assert.Equal(t, r.ReceiverSettings,
-		config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "prometheus",
-		})
+	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
 
 	scrapeConfig := r.PrometheusConfig.ScrapeConfigs[0]
 	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)

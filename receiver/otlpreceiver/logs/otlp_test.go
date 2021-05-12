@@ -154,7 +154,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Logs) (net.Addr, func())
 		}
 	}
 
-	r := New(receiverTagValue, tc)
+	r := New(receiverID, tc)
 	require.NoError(t, err)
 
 	// Now run it as a gRPC server

@@ -23,6 +23,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
+type nopReceiverConfig struct {
+	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+}
+
 // nopReceiverFactory is factory for nopReceiver.
 type nopReceiverFactory struct{}
 
@@ -35,13 +39,13 @@ func NewNopReceiverFactory() component.ReceiverFactory {
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *nopReceiverFactory) Type() config.Type {
-	return "nop"
+	return config.NewID("nop").Type()
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *nopReceiverFactory) CreateDefaultConfig() config.Receiver {
-	return &config.ReceiverSettings{
-		TypeVal: f.Type(),
+	return &nopReceiverConfig{
+		ReceiverSettings: config.NewReceiverSettings(config.NewID("nop")),
 	}
 }
 

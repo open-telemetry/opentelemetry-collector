@@ -185,3 +185,23 @@ func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
 	}
 	*es.orig = nil
 }
+
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es AnyValueArray) RemoveIf(f func(AttributeValue) bool) {
+	newLen := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
+}

@@ -15,10 +15,12 @@
 package consumererror
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -35,6 +37,18 @@ func TestTraces(t *testing.T) {
 	assert.Equal(t, td, target.GetTraces())
 }
 
+func TestTraces_Unwrap(t *testing.T) {
+	td := testdata.GenerateTraceDataOneSpan()
+	var err error = testErrorType{"some error"}
+	// Wrapping err with error Traces.
+	traceErr := NewTraces(err, td)
+	target := testErrorType{}
+	require.NotEqual(t, err, target)
+	// Unwrapping traceErr for err and assigning to target.
+	require.True(t, errors.As(traceErr, &target))
+	require.Equal(t, err, target)
+}
+
 func TestLogs(t *testing.T) {
 	td := testdata.GenerateLogDataOneLog()
 	err := fmt.Errorf("some error")
@@ -47,6 +61,18 @@ func TestLogs(t *testing.T) {
 	assert.Equal(t, td, target.GetLogs())
 }
 
+func TestLogs_Unwrap(t *testing.T) {
+	td := testdata.GenerateLogDataOneLog()
+	var err error = testErrorType{"some error"}
+	// Wrapping err with error Logs.
+	logsErr := NewLogs(err, td)
+	target := testErrorType{}
+	require.NotEqual(t, err, target)
+	// Unwrapping logsErr for err and assigning to target.
+	require.True(t, errors.As(logsErr, &target))
+	require.Equal(t, err, target)
+}
+
 func TestMetrics(t *testing.T) {
 	td := testdata.GenerateMetricsOneMetric()
 	err := fmt.Errorf("some error")
@@ -57,4 +83,16 @@ func TestMetrics(t *testing.T) {
 	assert.False(t, AsMetrics(err, &target))
 	assert.True(t, AsMetrics(metricErr, &target))
 	assert.Equal(t, td, target.GetMetrics())
+}
+
+func TestMetrics_Unwrap(t *testing.T) {
+	td := testdata.GenerateMetricsOneMetric()
+	var err error = testErrorType{"some error"}
+	// Wrapping err with error Metrics.
+	metricErr := NewMetrics(err, td)
+	target := testErrorType{}
+	require.NotEqual(t, err, target)
+	// Unwrapping metricErr for err and assigning to target.
+	require.True(t, errors.As(metricErr, &target))
+	require.Equal(t, err, target)
 }

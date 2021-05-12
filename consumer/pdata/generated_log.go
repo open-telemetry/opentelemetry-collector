@@ -143,6 +143,26 @@ func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
 	*es.orig = nil
 }
 
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
+	newLen := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
+}
+
 // ResourceLogs is a collection of logs from a Resource.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -303,6 +323,26 @@ func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLi
 	*es.orig = nil
 }
 
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es InstrumentationLibraryLogsSlice) RemoveIf(f func(InstrumentationLibraryLogs) bool) {
+	newLen := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
+}
+
 // InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -461,6 +501,26 @@ func (es LogSlice) MoveAndAppendTo(dest LogSlice) {
 		*dest.orig = append(*dest.orig, *es.orig...)
 	}
 	*es.orig = nil
+}
+
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es LogSlice) RemoveIf(f func(LogRecord) bool) {
+	newLen := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
