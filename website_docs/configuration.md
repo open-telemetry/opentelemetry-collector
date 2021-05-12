@@ -89,7 +89,7 @@ exporters:
   otlp:
     endpoint: otelcol:55680
   otlp/2:
-    endpoint: otelcol2:55680
+    endpoint: otelcol2:4317
 
 extensions:
   health_check:
