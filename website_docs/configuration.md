@@ -87,7 +87,7 @@ processors:
 
 exporters:
   otlp:
-    endpoint: otelcol:55680
+    endpoint: otelcol:4317
   otlp/2:
     endpoint: otelcol2:4317
 
