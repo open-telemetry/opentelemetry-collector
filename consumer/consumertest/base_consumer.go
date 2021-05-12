@@ -15,31 +15,11 @@
 package consumertest
 
 import (
-	"context"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer"
 )
 
-type errConsumer struct {
-	nonMutatingConsumer
-	err error
-}
+type nonMutatingConsumer struct{}
 
-func (er *errConsumer) unexported() {}
-
-func (er *errConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
-	return er.err
-}
-
-func (er *errConsumer) ConsumeMetrics(context.Context, pdata.Metrics) error {
-	return er.err
-}
-
-func (er *errConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
-	return er.err
-}
-
-// NewErr returns a Consumer that just drops all received data and returns no error.
-func NewErr(err error) Consumer {
-	return &errConsumer{err: err}
+func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }

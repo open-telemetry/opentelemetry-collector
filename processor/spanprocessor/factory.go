@@ -29,7 +29,7 @@ const (
 	typeStr = "span"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.

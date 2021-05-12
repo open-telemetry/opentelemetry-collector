@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
@@ -65,6 +66,10 @@ func TestTraceSource(t *testing.T) {
 
 type traceConsumer struct {
 	cb func(context.Context, pdata.Traces)
+}
+
+func (t traceConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {

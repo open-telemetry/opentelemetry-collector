@@ -19,50 +19,52 @@ import (
 )
 
 // splitLogs removes logrecords from the input data and returns a new data of the specified size.
-func splitLogs(size int, toSplit pdata.Logs) pdata.Logs {
-	if toSplit.LogRecordCount() <= size {
-		return toSplit
+func splitLogs(size int, src pdata.Logs) pdata.Logs {
+	if src.LogRecordCount() <= size {
+		return src
 	}
-	copiedLogs := 0
-	result := pdata.NewLogs()
-	rls := toSplit.ResourceLogs()
-	result.ResourceLogs().Resize(rls.Len())
-	rlsCount := 0
-	for i := rls.Len() - 1; i >= 0; i-- {
-		rlsCount++
-		rl := rls.At(i)
-		destRl := result.ResourceLogs().At(result.ResourceLogs().Len() - 1 - i)
-		rl.Resource().CopyTo(destRl.Resource())
+	totalCopiedLogs := 0
+	dest := pdata.NewLogs()
 
-		for j := rl.InstrumentationLibraryLogs().Len() - 1; j >= 0; j-- {
-			instLogs := rl.InstrumentationLibraryLogs().At(j)
-			destInstLogs := destRl.InstrumentationLibraryLogs().AppendEmpty()
-			instLogs.InstrumentationLibrary().CopyTo(destInstLogs.InstrumentationLibrary())
+	src.ResourceLogs().RemoveIf(func(srcRs pdata.ResourceLogs) bool {
+		// If we are done skip everything else.
+		if totalCopiedLogs == size {
+			return false
+		}
 
-			if size-copiedLogs >= instLogs.Logs().Len() {
-				destInstLogs.Logs().Resize(instLogs.Logs().Len())
-			} else {
-				destInstLogs.Logs().Resize(size - copiedLogs)
+		destRs := dest.ResourceLogs().AppendEmpty()
+		srcRs.Resource().CopyTo(destRs.Resource())
+
+		srcRs.InstrumentationLibraryLogs().RemoveIf(func(srcIlm pdata.InstrumentationLibraryLogs) bool {
+			// If we are done skip everything else.
+			if totalCopiedLogs == size {
+				return false
 			}
-			for k, destIdx := instLogs.Logs().Len()-1, 0; k >= 0 && copiedLogs < size; k, destIdx = k-1, destIdx+1 {
-				log := instLogs.Logs().At(k)
-				log.CopyTo(destInstLogs.Logs().At(destIdx))
-				copiedLogs++
-				// remove log
-				instLogs.Logs().Resize(instLogs.Logs().Len() - 1)
+
+			destIlm := destRs.InstrumentationLibraryLogs().AppendEmpty()
+			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
+
+			// If possible to move all metrics do that.
+			srcLogsLen := srcIlm.Logs().Len()
+			if size-totalCopiedLogs >= srcLogsLen {
+				totalCopiedLogs += srcLogsLen
+				srcIlm.Logs().MoveAndAppendTo(destIlm.Logs())
+				return true
 			}
-			if instLogs.Logs().Len() == 0 {
-				rl.InstrumentationLibraryLogs().Resize(rl.InstrumentationLibraryLogs().Len() - 1)
-			}
-			if copiedLogs == size {
-				result.ResourceLogs().Resize(rlsCount)
-				return result
-			}
-		}
-		if rl.InstrumentationLibraryLogs().Len() == 0 {
-			rls.Resize(rls.Len() - 1)
-		}
-	}
-	result.ResourceLogs().Resize(rlsCount)
-	return result
+
+			srcIlm.Logs().RemoveIf(func(srcMetric pdata.LogRecord) bool {
+				// If we are done skip everything else.
+				if totalCopiedLogs == size {
+					return false
+				}
+				srcMetric.CopyTo(destIlm.Logs().AppendEmpty())
+				totalCopiedLogs++
+				return true
+			})
+			return false
+		})
+		return srcRs.InstrumentationLibraryLogs().Len() == 0
+	})
+
+	return dest
 }
