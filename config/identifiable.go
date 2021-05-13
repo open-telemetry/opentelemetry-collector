@@ -49,11 +49,11 @@ func NewIDWithName(typeVal Type, nameVal string) ComponentID {
 	return ComponentID{typeVal: typeVal, nameVal: nameVal}
 }
 
-// IDFromString decodes a string in type[/name] format into ComponentID.
+// NewIDFromString decodes a string in type[/name] format into ComponentID.
 // The type and name components will have spaces trimmed, the "type" part must be present,
 // the forward slash and "name" are optional.
 // The returned ComponentID will be invalid if err is not-nil.
-func IDFromString(idStr string) (ComponentID, error) {
+func NewIDFromString(idStr string) (ComponentID, error) {
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
 
 	id := ComponentID{}
@@ -74,16 +74,6 @@ func IDFromString(idStr string) (ComponentID, error) {
 	}
 
 	return id, nil
-}
-
-// MustIDFromString is equivalent with IDFromString except that it panics instead of returning error.
-// This is useful for testing.
-func MustIDFromString(idStr string) ComponentID {
-	id, err := IDFromString(idStr)
-	if err != nil {
-		panic(err)
-	}
-	return id
 }
 
 // Type returns the type of the component.

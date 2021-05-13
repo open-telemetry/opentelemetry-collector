@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	fakeMetricsExporterName   = config.MustIDFromString("fake_metrics_exporter/with_name")
+	fakeMetricsExporterName   = config.NewIDWithName("fake_metrics_exporter", "with_name")
 	fakeMetricsExporterConfig = config.NewExporterSettings(fakeMetricsExporterName)
 )
 
