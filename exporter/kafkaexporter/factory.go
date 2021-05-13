@@ -56,6 +56,7 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 		tracesMarshalers:  tracesMarshalers(),
 		metricsMarshalers: metricsMarshalers(),
 		logsMarshalers:    logsMarshalers(),
+		converters:        getConverters(),
 	}
 	for _, o := range options {
 		o(f)
@@ -93,6 +94,7 @@ type kafkaExporterFactory struct {
 	tracesMarshalers  map[string]TracesMarshaler
 	metricsMarshalers map[string]MetricsMarshaler
 	logsMarshalers    map[string]LogsMarshaler
+	converters        map[string]MessageConverter
 }
 
 func (f *kafkaExporterFactory) createTracesExporter(
@@ -104,7 +106,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	exp, err := newTracesExporter(*oCfg, params, f.tracesMarshalers)
+	exp, err := newTracesExporter(*oCfg, params, f.tracesMarshalers, f.converters)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +131,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	exp, err := newMetricsExporter(*oCfg, params, f.metricsMarshalers)
+	exp, err := newMetricsExporter(*oCfg, params, f.metricsMarshalers, f.converters)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +156,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	exp, err := newLogsExporter(*oCfg, params, f.logsMarshalers)
+	exp, err := newLogsExporter(*oCfg, params, f.logsMarshalers, f.converters)
 	if err != nil {
 		return nil, err
 	}
