@@ -60,7 +60,7 @@ func newExporter(cfg config.Exporter) (*exporter, error) {
 
 // start actually creates the grpc connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporterImp) start(_ context.Context, host component.Host) error {
+func (e *exporter) start(_ context.Context, host component.Host) error {
 	w, err := newGrpcSender(e.config, host.GetExtensions())
 	if err != nil {
 		return err
