@@ -91,12 +91,7 @@ func (e *exporterImp) pushTraceData(ctx context.Context, traces pdata.Traces) er
 		return consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, e.tracesURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.tracesURL, request)
 }
 
 func (e *exporterImp) pushMetricsData(ctx context.Context, metrics pdata.Metrics) error {
@@ -104,13 +99,7 @@ func (e *exporterImp) pushMetricsData(ctx context.Context, metrics pdata.Metrics
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-
-	err = e.export(ctx, e.metricsURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.metricsURL, request)
 }
 
 func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) error {
@@ -119,12 +108,7 @@ func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) error {
 		return consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, e.logsURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.logsURL, request)
 }
 
 func (e *exporterImp) export(ctx context.Context, url string, request []byte) error {
