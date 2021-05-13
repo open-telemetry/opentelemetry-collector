@@ -36,7 +36,7 @@ import (
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
-type exporterImp struct {
+type exporter struct {
 	// Input configuration.
 	config *Config
 	w      *grpcSender
@@ -44,14 +44,14 @@ type exporterImp struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter) (*exporterImp, error) {
+func newExporter(cfg config.Exporter) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
 
-	e := &exporterImp{}
+	e := &exporter{}
 	e.config = oCfg
 	w, err := newGrpcSender(oCfg)
 	if err != nil {
@@ -61,18 +61,18 @@ func newExporter(cfg config.Exporter) (*exporterImp, error) {
 	return e, nil
 }
 
-func (e *exporterImp) shutdown(context.Context) error {
+func (e *exporter) shutdown(context.Context) error {
 	return e.w.stop()
 }
 
-func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *exporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	if err := e.w.exportTrace(ctx, internal.TracesToOtlp(td.InternalRep())); err != nil {
 		return fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
 	}
 	return nil
 }
 
-func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (e *exporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	req := internal.MetricsToOtlp(md.InternalRep())
 	if err := e.w.exportMetrics(ctx, req); err != nil {
 		return fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
@@ -80,7 +80,7 @@ func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) err
 	return nil
 }
 
-func (e *exporterImp) pushLogData(ctx context.Context, ld pdata.Logs) error {
+func (e *exporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 	request := internal.LogsToOtlp(ld.InternalRep())
 	if err := e.w.exportLogs(ctx, request); err != nil {
 		return fmt.Errorf("failed to push log data via OTLP exporter: %w", err)
