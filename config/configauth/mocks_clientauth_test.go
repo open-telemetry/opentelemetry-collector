@@ -19,9 +19,8 @@ import (
 	"net/http"
 	"testing"
 
-	"google.golang.org/grpc/credentials"
-
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/credentials"
 )
 
 func TestNilStartAndShutdown(t *testing.T) {
