@@ -32,7 +32,7 @@ type nopReceiverFactory struct{}
 
 var nopReceiverFactoryInstance = &nopReceiverFactory{}
 
-// NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop exporters.
+// NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop receivers.
 func NewNopReceiverFactory() component.ReceiverFactory {
 	return nopReceiverFactoryInstance
 }

@@ -31,7 +31,7 @@ type nopExtensionFactory struct{}
 
 var nopExtensionFactoryInstance = &nopExtensionFactory{}
 
-// NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop exporters.
+// NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
 func NewNopExtensionFactory() component.ExtensionFactory {
 	return nopExtensionFactoryInstance
 }
