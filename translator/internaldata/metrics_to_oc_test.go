@@ -19,6 +19,7 @@ import (
 	"time"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
@@ -43,46 +44,32 @@ func TestMetricsToOC(t *testing.T) {
 	tests := []struct {
 		name     string
 		internal pdata.Metrics
-		oc       []MetricsData
+		oc       *agentmetricspb.ExportMetricsServiceRequest
 	}{
-		{
-			name:     "empty",
-			internal: testdata.GenerateMetricsEmpty(),
-			oc:       []MetricsData(nil),
-		},
-
 		{
 			name:     "one-empty-resource-metrics",
 			internal: testdata.GenerateMetricsOneEmptyResourceMetrics(),
-			oc: []MetricsData{
-				{},
-			},
+			oc:       &agentmetricspb.ExportMetricsServiceRequest{},
 		},
 
 		{
 			name:     "no-libraries",
 			internal: testdata.GenerateMetricsNoLibraries(),
-			oc: []MetricsData{
-				generateOCTestDataNoMetrics(),
-			},
+			oc:       generateOCTestDataNoMetrics(),
 		},
 
 		{
 			name:     "one-empty-instrumentation-library",
 			internal: testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
-			oc: []MetricsData{
-				generateOCTestDataNoMetrics(),
-			},
+			oc:       generateOCTestDataNoMetrics(),
 		},
 
 		{
 			name:     "one-metric-no-resource",
 			internal: testdata.GenerateMetricsOneMetricNoResource(),
-			oc: []MetricsData{
-				{
-					Metrics: []*ocmetrics.Metric{
-						generateOCTestMetricInt(),
-					},
+			oc: &agentmetricspb.ExportMetricsServiceRequest{
+				Metrics: []*ocmetrics.Metric{
+					generateOCTestMetricInt(),
 				},
 			},
 		},
@@ -90,72 +77,66 @@ func TestMetricsToOC(t *testing.T) {
 		{
 			name:     "one-metric",
 			internal: testdata.GenerateMetricsOneMetric(),
-			oc: []MetricsData{
-				generateOCTestDataMetricsOneMetric(),
-			},
+			oc:       generateOCTestDataMetricsOneMetric(),
 		},
 
 		{
 			name:     "one-metric-no-labels",
 			internal: testdata.GenerateMetricsOneMetricNoLabels(),
-			oc: []MetricsData{
-				generateOCTestDataNoLabels(),
-			},
+			oc:       generateOCTestDataNoLabels(),
 		},
 
 		{
 			name:     "all-types-no-data-points",
 			internal: testdata.GenerateMetricsAllTypesNoDataPoints(),
-			oc: []MetricsData{
-				generateOCTestDataNoPoints(),
-			},
+			oc:       generateOCTestDataNoPoints(),
 		},
 
 		{
 			name:     "sample-metric",
 			internal: sampleMetricData,
-			oc: []MetricsData{
-				generateOCTestData(),
-			},
+			oc:       generateOCTestData(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := MetricsToOC(test.internal)
-			assert.EqualValues(t, test.oc, got)
+			gotNode, gotResource, gotMetrics := ResourceMetricsToOC(test.internal.ResourceMetrics().At(0))
+			assert.EqualValues(t, test.oc.Node, gotNode)
+			assert.EqualValues(t, test.oc.Resource, gotResource)
+			assert.EqualValues(t, test.oc.Metrics, gotMetrics)
 		})
 	}
 }
 
 func TestMetricsToOC_InvalidDataType(t *testing.T) {
 	internal := testdata.GenerateMetricsMetricTypeInvalid()
-	want := []MetricsData{
-		{
-			Node: &occommon.Node{},
-			Resource: &ocresource.Resource{
-				Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
-			},
-			Metrics: []*ocmetrics.Metric{
-				{
-					MetricDescriptor: &ocmetrics.MetricDescriptor{
-						Name:      testdata.TestCounterIntMetricName,
-						Unit:      "1",
-						Type:      ocmetrics.MetricDescriptor_UNSPECIFIED,
-						LabelKeys: nil,
-					},
+	want := &agentmetricspb.ExportMetricsServiceRequest{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric{
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:      testdata.TestCounterIntMetricName,
+					Unit:      "1",
+					Type:      ocmetrics.MetricDescriptor_UNSPECIFIED,
+					LabelKeys: nil,
 				},
 			},
 		},
 	}
-	got := MetricsToOC(internal)
-	assert.EqualValues(t, want, got)
+	gotNode, gotResource, gotMetrics := ResourceMetricsToOC(internal.ResourceMetrics().At(0))
+	assert.EqualValues(t, want.Node, gotNode)
+	assert.EqualValues(t, want.Resource, gotResource)
+	assert.EqualValues(t, want.Metrics, gotMetrics)
 }
 
-func generateOCTestData() MetricsData {
+func generateOCTestData() *agentmetricspb.ExportMetricsServiceRequest {
 	ts := timestamppb.New(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 
-	return MetricsData{
+	return &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &occommon.Node{
 			Identifier: &occommon.ProcessIdentifier{
 				HostName:       "host1",

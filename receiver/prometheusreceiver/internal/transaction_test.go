@@ -20,9 +20,11 @@ import (
 	"testing"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/config"
@@ -117,10 +119,14 @@ func Test_transaction(t *testing.T) {
 		if len(mds) != 1 {
 			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())
 		}
-		ocmds := internaldata.MetricsToOC(mds[0])
-		if len(ocmds) != 1 {
-			t.Fatalf("wanted one batch per node, got %v\n", sink.AllMetrics())
+		var ocmds []*agentmetricspb.ExportMetricsServiceRequest
+		rms := mds[0].ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+			ocmds = append(ocmds, ocmd)
 		}
+		require.Len(t, ocmds, 1)
 		if !proto.Equal(ocmds[0].Node, expectedNode) {
 			t.Errorf("generated node %v and expected node %v is different\n", ocmds[0].Node, expectedNode)
 		}

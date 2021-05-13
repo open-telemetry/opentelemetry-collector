@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	gokitlog "github.com/go-kit/kit/log"
@@ -112,7 +113,7 @@ type testData struct {
 	pages        []mockPrometheusResponse
 	node         *commonpb.Node
 	resource     *resourcepb.Resource
-	validateFunc func(t *testing.T, td *testData, result []internaldata.MetricsData)
+	validateFunc func(t *testing.T, td *testData, result []*agentmetricspb.ExportMetricsServiceRequest)
 }
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
@@ -170,7 +171,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
-func verifyNumScrapeResults(t *testing.T, td *testData, mds []internaldata.MetricsData) {
+func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	want := 0
 	for _, p := range td.pages {
 		if p.code == 200 {
@@ -182,7 +183,7 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []internaldata.Metri
 	}
 }
 
-func doCompare(name string, t *testing.T, want, got *internaldata.MetricsData) {
+func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetricsServiceRequest) {
 	t.Run(name, func(t *testing.T) {
 		assert.EqualValues(t, want, got)
 	})
@@ -251,7 +252,7 @@ rpc_duration_seconds_sum 5002
 rpc_duration_seconds_count 1001
 `
 
-func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
+func verifyTarget1(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
 	// m1 shall only have a gauge
@@ -280,12 +281,12 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
 	doCompare("scrape1", t,
-		&internaldata.MetricsData{
+		&agentmetricspb.ExportMetricsServiceRequest{
 			Node:     td.node,
 			Resource: td.resource,
 			Metrics:  []*metricspb.Metric{wantG1},
 		},
-		&internaldata.MetricsData{
+		&agentmetricspb.ExportMetricsServiceRequest{
 			Node:     td.node,
 			Resource: td.resource,
 			Metrics:  []*metricspb.Metric{gotG1},
@@ -295,7 +296,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want2 := &internaldata.MetricsData{
+	want2 := &agentmetricspb.ExportMetricsServiceRequest{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -421,7 +422,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 		},
 	}
 
-	doCompare("scrape2", t, want2, &m2)
+	doCompare("scrape2", t, want2, m2)
 }
 
 // target2 is going to have 5 pages, and there's a newly appeared item from the 2nd page. we are expecting the new
@@ -488,7 +489,7 @@ http_requests_total{method="post",code="400"} 59
 http_requests_total{method="post",code="500"} 5
 `
 
-func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
+func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
 	// m1 shall only have a gauge
@@ -516,12 +517,12 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
 	doCompare("scrape1", t,
-		&internaldata.MetricsData{
+		&agentmetricspb.ExportMetricsServiceRequest{
 			Node:     td.node,
 			Resource: td.resource,
 			Metrics:  []*metricspb.Metric{wantG1},
 		},
-		&internaldata.MetricsData{
+		&agentmetricspb.ExportMetricsServiceRequest{
 			Node:     td.node,
 			Resource: td.resource,
 			Metrics:  []*metricspb.Metric{gotG1},
@@ -531,7 +532,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want2 := &internaldata.MetricsData{
+	want2 := &agentmetricspb.ExportMetricsServiceRequest{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -581,14 +582,14 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			},
 		},
 	}
-	doCompare("scrape2", t, want2, &m2)
+	doCompare("scrape2", t, want2, m2)
 
 	// verify the 3rd metricData, with the new code=500 counter which first appeared on 2nd run
 	m3 := mds[2]
 	// its start timestamp shall be from the 2nd run
 	ts3 := m3.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want3 := &internaldata.MetricsData{
+	want3 := &agentmetricspb.ExportMetricsServiceRequest{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -648,13 +649,13 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			},
 		},
 	}
-	doCompare("scrape3", t, want3, &m3)
+	doCompare("scrape3", t, want3, m3)
 
 	// verify the 4th metricData which reset happens, all cumulative types shall be absent
 	m4 := mds[3]
 	ts4 := m4.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want4 := &internaldata.MetricsData{
+	want4 := &agentmetricspb.ExportMetricsServiceRequest{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -674,14 +675,14 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			},
 		},
 	}
-	doCompare("scrape4", t, want4, &m4)
+	doCompare("scrape4", t, want4, m4)
 
 	// verify the 4th metricData which reset happens, all cumulative types shall be absent
 	m5 := mds[4]
 	// its start timestamp shall be from the 3rd run
 	ts5 := m5.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want5 := &internaldata.MetricsData{
+	want5 := &agentmetricspb.ExportMetricsServiceRequest{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -741,7 +742,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 			},
 		},
 	}
-	doCompare("scrape5", t, want5, &m5)
+	doCompare("scrape5", t, want5, m5)
 }
 
 // target3 for complicated data types, including summaries and histograms. one of the summary and histogram have only
@@ -816,7 +817,7 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
-func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
+func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
 	// m1 shall only have a gauge
@@ -843,12 +844,12 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	// set this timestamp to wantG1
 	wantG1.Timeseries[0].Points[0].Timestamp = ts1
 	doCompare("scrape1", t,
-		&internaldata.MetricsData{
+		&agentmetricspb.ExportMetricsServiceRequest{
 			Node:     td.node,
 			Resource: td.resource,
 			Metrics:  []*metricspb.Metric{wantG1},
 		},
-		&internaldata.MetricsData{
+		&agentmetricspb.ExportMetricsServiceRequest{
 			Node:     td.node,
 			Resource: td.resource,
 			Metrics:  []*metricspb.Metric{gotG1},
@@ -858,7 +859,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want2 := &internaldata.MetricsData{
+	want2 := &agentmetricspb.ExportMetricsServiceRequest{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -984,7 +985,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 		},
 	}
 
-	doCompare("scrape2", t, want2, &m2)
+	doCompare("scrape2", t, want2, m2)
 }
 
 // TestEndToEnd  end to end test executor
@@ -1058,7 +1059,7 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 
 const numStartTimeMetricPageTimeseries = 6
 
-func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []internaldata.MetricsData) {
+func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	numTimeseries := 0
 	for _, cmd := range mds {
 		for _, metric := range cmd.Metrics {
@@ -1110,13 +1111,15 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	results := make(map[string][]internaldata.MetricsData)
-	for _, m := range metrics {
-		ocmds := internaldata.MetricsToOC(m)
-		for _, ocmd := range ocmds {
+	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
+	for _, md := range metrics {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
-				result = make([]internaldata.MetricsData, 0)
+				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 			}
 			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
 		}
@@ -1201,13 +1204,15 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	results := make(map[string][]internaldata.MetricsData)
-	for _, m := range metrics {
-		ocmds := internaldata.MetricsToOC(m)
-		for _, ocmd := range ocmds {
+	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
+	for _, md := range metrics {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
-				result = make([]internaldata.MetricsData, 0)
+				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 			}
 			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
 		}
