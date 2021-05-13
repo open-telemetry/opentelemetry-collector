@@ -42,7 +42,7 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
 
-// BearerTokenAuth is an implementation of configauth.GRPCClientAuth. It passes a static bearer token per every rpc call.
+// BearerTokenAuth is an implementation of configauth.GRPCClientAuth. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
 	tokenString string
 	logger      *zap.Logger
