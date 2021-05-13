@@ -17,7 +17,9 @@ package internaldata
 import (
 	"sort"
 
+	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -31,29 +33,14 @@ type labelKeys struct {
 	keyIndices map[string]int
 }
 
-// MetricsToOC may be used only by OpenCensus receiver and exporter implementations.
+// ResourceMetricsToOC may be used only by OpenCensus receiver and exporter implementations.
+// Deprecated: Use pdata.Metrics.
 // TODO: move this function to OpenCensus package.
-func MetricsToOC(md pdata.Metrics) []MetricsData {
-	resourceMetrics := md.ResourceMetrics()
-
-	if resourceMetrics.Len() == 0 {
-		return nil
-	}
-
-	ocResourceMetricsList := make([]MetricsData, 0, resourceMetrics.Len())
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		ocResourceMetricsList = append(ocResourceMetricsList, resourceMetricsToOC(resourceMetrics.At(i)))
-	}
-
-	return ocResourceMetricsList
-}
-
-func resourceMetricsToOC(rm pdata.ResourceMetrics) MetricsData {
-	ocMetricsData := MetricsData{}
-	ocMetricsData.Node, ocMetricsData.Resource = internalResourceToOC(rm.Resource())
+func ResourceMetricsToOC(rm pdata.ResourceMetrics) (*occommon.Node, *ocresource.Resource, []*ocmetrics.Metric) {
+	node, resource := internalResourceToOC(rm.Resource())
 	ilms := rm.InstrumentationLibraryMetrics()
 	if ilms.Len() == 0 {
-		return ocMetricsData
+		return node, resource, nil
 	}
 	// Approximate the number of the metrics as the number of the metrics in the first
 	// instrumentation library info.
@@ -66,10 +53,10 @@ func resourceMetricsToOC(rm pdata.ResourceMetrics) MetricsData {
 			ocMetrics = append(ocMetrics, metricToOC(metrics.At(j)))
 		}
 	}
-	if len(ocMetrics) != 0 {
-		ocMetricsData.Metrics = ocMetrics
+	if len(ocMetrics) == 0 {
+		ocMetrics = nil
 	}
-	return ocMetricsData
+	return node, resource, ocMetrics
 }
 
 func metricToOC(metric pdata.Metric) *ocmetrics.Metric {

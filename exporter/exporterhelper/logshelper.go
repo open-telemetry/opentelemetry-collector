@@ -24,21 +24,18 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushLogs is a helper function that is similar to ConsumeLogs but also returns
-// the number of dropped logs.
-type PushLogs func(ctx context.Context, md pdata.Logs) error
-
 type logsRequest struct {
 	baseRequest
 	ld     pdata.Logs
-	pusher PushLogs
+	pusher consumerhelper.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogs) request {
+func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.ConsumeLogsFunc) request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -64,7 +61,7 @@ func (req *logsRequest) count() int {
 
 type logsExporter struct {
 	*baseExporter
-	pusher PushLogs
+	pusher consumerhelper.ConsumeLogsFunc
 }
 
 func (lexp *logsExporter) Capabilities() consumer.Capabilities {
@@ -79,7 +76,7 @@ func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error 
 func NewLogsExporter(
 	cfg config.Exporter,
 	logger *zap.Logger,
-	pusher PushLogs,
+	pusher consumerhelper.ConsumeLogsFunc,
 	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {

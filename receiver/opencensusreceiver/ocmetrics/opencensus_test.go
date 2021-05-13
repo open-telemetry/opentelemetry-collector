@@ -151,9 +151,10 @@ func TestExportMultiplexing(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		ocmds := internaldata.MetricsToOC(md)
-		for _, ocmd := range ocmds {
-			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			node, _, metrics := internaldata.ResourceMetricsToOC(rms.At(i))
+			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}
 	}
 
@@ -292,9 +293,10 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		ocmds := internaldata.MetricsToOC(md)
-		for _, ocmd := range ocmds {
-			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			node, _, metrics := internaldata.ResourceMetricsToOC(rms.At(i))
+			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}
 	}
 

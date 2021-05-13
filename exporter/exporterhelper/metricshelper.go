@@ -24,21 +24,18 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushMetrics is a helper function that is similar to ConsumeMetrics but also returns
-// the number of dropped metrics.
-type PushMetrics func(ctx context.Context, md pdata.Metrics) error
-
 type metricsRequest struct {
 	baseRequest
 	md     pdata.Metrics
-	pusher PushMetrics
+	pusher consumerhelper.ConsumeMetricsFunc
 }
 
-func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetrics) request {
+func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher consumerhelper.ConsumeMetricsFunc) request {
 	return &metricsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		md:          md,
@@ -65,7 +62,7 @@ func (req *metricsRequest) count() int {
 
 type metricsExporter struct {
 	*baseExporter
-	pusher PushMetrics
+	pusher consumerhelper.ConsumeMetricsFunc
 }
 
 func (mexp *metricsExporter) Capabilities() consumer.Capabilities {
@@ -83,7 +80,7 @@ func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metric
 func NewMetricsExporter(
 	cfg config.Exporter,
 	logger *zap.Logger,
-	pusher PushMetrics,
+	pusher consumerhelper.ConsumeMetricsFunc,
 	options ...Option,
 ) (component.MetricsExporter, error) {
 	if cfg == nil {

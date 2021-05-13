@@ -17,45 +17,28 @@ package internaldata
 import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// OCSliceToMetrics converts a slice of OC data format to data.MetricData.
-// Deprecated: use pdata.Metrics instead.
-func OCSliceToMetrics(ocmds []MetricsData) pdata.Metrics {
-	metricData := pdata.NewMetrics()
-	if len(ocmds) == 0 {
-		return metricData
-	}
-	for _, ocmd := range ocmds {
-		appendOcToMetrics(ocmd, metricData)
-	}
-	return metricData
-}
-
 // OCToMetrics converts OC data format to data.MetricData.
 // Deprecated: use pdata.Metrics instead. OCToMetrics may be used only by OpenCensus
 // receiver and exporter implementations.
-func OCToMetrics(md MetricsData) pdata.Metrics {
-	metricData := pdata.NewMetrics()
-	appendOcToMetrics(md, metricData)
-	return metricData
-}
-
-func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
-	if md.Node == nil && md.Resource == nil && len(md.Metrics) == 0 {
-		return
+func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*ocmetrics.Metric) pdata.Metrics {
+	dest := pdata.NewMetrics()
+	if node == nil && resource == nil && len(metrics) == 0 {
+		return dest
 	}
 
 	rms := dest.ResourceMetrics()
 	initialRmsLen := rms.Len()
 
-	if len(md.Metrics) == 0 {
+	if len(metrics) == 0 {
 		// At least one of the md.Node or md.Resource is not nil. Set the resource and return.
 		rms.Resize(initialRmsLen + 1)
-		ocNodeResourceToInternal(md.Node, md.Resource, rms.At(initialRmsLen).Resource())
-		return
+		ocNodeResourceToInternal(node, resource, rms.At(initialRmsLen).Resource())
+		return dest
 	}
 
 	// We may need to split OC metrics into several ResourceMetrics. OC metrics can have a
@@ -80,7 +63,7 @@ func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
 	// in one slice.
 	combinedMetricCount := 0
 	distinctResourceCount := 0
-	for _, ocMetric := range md.Metrics {
+	for _, ocMetric := range metrics {
 		if ocMetric == nil {
 			// Skip nil metrics.
 			continue
@@ -104,7 +87,7 @@ func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
 
 	if combinedMetricCount > 0 {
 		rm0 := rms.At(initialRmsLen)
-		ocNodeResourceToInternal(md.Node, md.Resource, rm0.Resource())
+		ocNodeResourceToInternal(node, resource, rm0.Resource())
 
 		// Allocate a slice for metrics that need to be combined into first ResourceMetrics.
 		ilms := rm0.InstrumentationLibraryMetrics()
@@ -114,7 +97,7 @@ func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
 		// Index to next available slot in "combinedMetrics" slice.
 		combinedMetricIdx := 0
 
-		for _, ocMetric := range md.Metrics {
+		for _, ocMetric := range metrics {
 			if ocMetric == nil {
 				// Skip nil metrics.
 				continue
@@ -139,7 +122,7 @@ func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
 		// First resourcemetric is used for the default resource, so start with 1.
 		resourceMetricIdx = 1
 	}
-	for _, ocMetric := range md.Metrics {
+	for _, ocMetric := range metrics {
 		if ocMetric == nil {
 			// Skip nil metrics.
 			continue
@@ -152,9 +135,10 @@ func appendOcToMetrics(md MetricsData, dest pdata.Metrics) {
 		// This metric has a different Resource and must be placed in a different
 		// ResourceMetrics instance. Create a separate ResourceMetrics item just for this metric
 		// and store at resourceMetricIdx.
-		ocMetricToResourceMetrics(ocMetric, md.Node, rms.At(initialRmsLen+resourceMetricIdx))
+		ocMetricToResourceMetrics(ocMetric, node, rms.At(initialRmsLen+resourceMetricIdx))
 		resourceMetricIdx++
 	}
+	return dest
 }
 
 func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out pdata.ResourceMetrics) {
