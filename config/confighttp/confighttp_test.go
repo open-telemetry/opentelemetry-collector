@@ -34,9 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-
-type customRoundTripper struct{
-	transport *http.Transport
+type customRoundTripper struct {
 }
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)

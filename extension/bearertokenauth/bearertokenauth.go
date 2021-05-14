@@ -67,7 +67,7 @@ func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// PerRPCCredential returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
+// PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
 		metadata: map[string]string{"authorization": fmt.Sprintf("Bearer %s", b.tokenString)},
