@@ -50,6 +50,15 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	}
 }
 
+// WithConverters adds converters.
+func WithConverters(converters ...MessageConverter) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, converter := range converters {
+			factory.converters[converter.Encoding()] = converter
+		}
+	}
+}
+
 // NewFactory creates Kafka exporter factory.
 func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	f := &kafkaExporterFactory{

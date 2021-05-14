@@ -125,6 +125,7 @@ func TestTraceDataPusher(t *testing.T) {
 	p := kafkaTracesProducer{
 		producer:  producer,
 		marshaler: &otlpTracesPbMarshaler{},
+		converter: &OTLPProtoConverter{},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -142,6 +143,7 @@ func TestTraceDataPusher_err(t *testing.T) {
 	p := kafkaTracesProducer{
 		producer:  producer,
 		marshaler: &otlpTracesPbMarshaler{},
+		converter: &OTLPProtoConverter{},
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -156,6 +158,7 @@ func TestTraceDataPusher_marshal_error(t *testing.T) {
 	expErr := fmt.Errorf("failed to marshal")
 	p := kafkaTracesProducer{
 		marshaler: &tracesErrorMarshaler{err: expErr},
+		converter: &OTLPProtoConverter{},
 		logger:    zap.NewNop(),
 	}
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
@@ -172,6 +175,7 @@ func TestMetricsDataPusher(t *testing.T) {
 	p := kafkaMetricsProducer{
 		producer:  producer,
 		marshaler: &otlpMetricsPbMarshaler{},
+		converter: &OTLPProtoConverter{},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -189,6 +193,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 	p := kafkaMetricsProducer{
 		producer:  producer,
 		marshaler: &otlpMetricsPbMarshaler{},
+		converter: &OTLPProtoConverter{},
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -203,6 +208,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 	expErr := fmt.Errorf("failed to marshal")
 	p := kafkaMetricsProducer{
 		marshaler: &metricsErrorMarshaler{err: expErr},
+		converter: &OTLPProtoConverter{},
 		logger:    zap.NewNop(),
 	}
 	md := testdata.GenerateMetricsTwoMetrics()
@@ -219,6 +225,7 @@ func TestLogsDataPusher(t *testing.T) {
 	p := kafkaLogsProducer{
 		producer:  producer,
 		marshaler: &otlpLogsPbMarshaler{},
+		converter: &OTLPProtoConverter{},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -236,6 +243,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 	p := kafkaLogsProducer{
 		producer:  producer,
 		marshaler: &otlpLogsPbMarshaler{},
+		converter: &OTLPProtoConverter{},
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -250,6 +258,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 	expErr := fmt.Errorf("failed to marshal")
 	p := kafkaLogsProducer{
 		marshaler: &logsErrorMarshaler{err: expErr},
+		converter: &OTLPProtoConverter{},
 		logger:    zap.NewNop(),
 	}
 	ld := testdata.GenerateLogDataOneLog()
