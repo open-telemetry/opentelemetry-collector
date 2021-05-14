@@ -53,7 +53,7 @@ func GetHTTPClientAuth(extensions map[config.ComponentID]component.Extension, re
 		return nil, errAuthenticatorNotProvided
 	}
 
-	reqID, err := config.IDFromString(requested)
+	reqID, err := config.NewIDFromString(requested)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func GetGRPCClientAuth(extensions map[config.ComponentID]component.Extension, re
 		return nil, errAuthenticatorNotProvided
 	}
 
-	reqID, err := config.IDFromString(requested)
+	reqID, err := config.NewIDFromString(requested)
 	if err != nil {
 		return nil, err
 	}
