@@ -27,6 +27,5 @@ import (
 // the OpenCensus ocgrpc server stats handler enabled for tracing and stats.
 // Use it instead of invoking grpc.NewServer directly.
 func GRPCServerWithObservabilityEnabled(extraOpts ...grpc.ServerOption) *grpc.Server {
-	opts := append(extraOpts, grpc.StatsHandler(&ocgrpc.ServerHandler{}))
-	return grpc.NewServer(opts...)
+	return grpc.NewServer(append(extraOpts, grpc.StatsHandler(&ocgrpc.ServerHandler{}))...)
 }
