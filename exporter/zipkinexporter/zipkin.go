@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
@@ -42,7 +45,7 @@ type zipkinExporter struct {
 }
 
 func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
-	client, err := cfg.HTTPClientSettings.ToClient()
+	client, err := cfg.HTTPClientSettings.ToClient(map[config.ComponentID]component.Extension{})
 	if err != nil {
 		return nil, err
 	}

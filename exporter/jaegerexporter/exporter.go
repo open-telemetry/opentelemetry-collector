@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/config"
+
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -39,7 +41,7 @@ import (
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
-	opts, err := cfg.GRPCClientSettings.ToDialOptions()
+	opts, err := cfg.GRPCClientSettings.ToDialOptions(map[config.ComponentID]component.Extension{})
 	if err != nil {
 		return nil, err
 	}

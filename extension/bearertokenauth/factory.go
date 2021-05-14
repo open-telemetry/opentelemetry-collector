@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bearertokenextension
+package bearertokenauth
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "bearer"
+	typeStr = "bearertokenauth"
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.

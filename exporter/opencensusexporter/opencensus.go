@@ -19,6 +19,9 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
@@ -66,7 +69,7 @@ func newOcExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
 		return nil, errors.New("OpenCensus exporter cfg requires at least one worker")
 	}
 
-	dialOpts, err := cfg.GRPCClientSettings.ToDialOptions()
+	dialOpts, err := cfg.GRPCClientSettings.ToDialOptions(map[config.ComponentID]component.Extension{})
 	if err != nil {
 		return nil, err
 	}

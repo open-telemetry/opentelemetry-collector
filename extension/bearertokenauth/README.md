@@ -9,8 +9,8 @@ The authenticator type has to be set to `bearer`.
 
 ```yaml
 extensions:
-  bearer:
-    bearer_token: "sometoken"
+   bearertokenauth:
+    token: "sometoken"
 
 receivers:
   hostmetrics:
@@ -24,7 +24,7 @@ exporters:
 processors:
 
 service:
-  extensions: [bearer]
+  extensions: [bearertokenauth]
   pipelines:
     traces:
       receivers: [hostmetrics]

@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/extension/authoidcextension"
-	"go.opentelemetry.io/collector/extension/bearertokenextension"
+	"go.opentelemetry.io/collector/extension/bearertokenauth"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -62,7 +62,7 @@ func Components() (
 		healthcheckextension.NewFactory(),
 		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
-		bearertokenextension.NewFactory(),
+		bearertokenauth.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

@@ -45,7 +45,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid configuration")
 	}
 
-	client, err := prwCfg.HTTPClientSettings.ToClient()
+	client, err := prwCfg.HTTPClientSettings.ToClient(map[config.ComponentID]component.Extension{})
 	if err != nil {
 		return nil, err
 	}

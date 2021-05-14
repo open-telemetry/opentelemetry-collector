@@ -48,13 +48,13 @@ func TestGetAuthenticatorFails(t *testing.T) {
 		expected error
 	}{
 		{
-			desc:     "Authenticator not provided",
+			desc:     "ServerAuth not provided",
 			cfg:      &Authentication{},
 			ext:      map[config.ComponentID]component.Extension{},
 			expected: errAuthenticatorNotProvided,
 		},
 		{
-			desc: "Authenticator not found",
+			desc: "ServerAuth not found",
 			cfg: &Authentication{
 				AuthenticatorName: "does-not-exist",
 			},

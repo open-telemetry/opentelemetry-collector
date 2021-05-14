@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bearertokenextension
+package bearertokenauth
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
 	// BearerToken specifies the bearer token to use for every RPC.
-	BearerToken string `mapstructure:"bearer_token,omitempty"`
+	BearerToken string `mapstructure:"token,omitempty"`
 }
 
 var _ config.Extension = (*Config)(nil)

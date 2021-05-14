@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -107,7 +106,7 @@ type grpcSender struct {
 }
 
 func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extension) (*grpcSender, error) {
-	dialOpts, err := config.GRPCClientSettings.ToDialOptions(configgrpc.WithExtensionsConfiguration(ext))
+	dialOpts, err := config.GRPCClientSettings.ToDialOptions(ext)
 	if err != nil {
 		return nil, err
 	}

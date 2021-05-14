@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -77,7 +76,7 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporter, error) {
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(confighttp.WithExtensionsConfiguration(host.GetExtensions()))
+	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
 	}

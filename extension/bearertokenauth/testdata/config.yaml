@@ -1,8 +1,8 @@
 extensions:
-  bearer:
-    bearer_token: "sometoken"
-  bearer/1:
-    bearer_token: "sometesttoken"
+  bearertokenauth:
+    token: "sometoken"
+  bearertokenauth/1:
+    token: "sometesttoken"
 
 # Data pipeline is required to load the config.
 receivers:
@@ -13,7 +13,7 @@ exporters:
   nop:
 
 service:
-  extensions: [bearer/1]
+  extensions: [bearertokenauth/1]
   pipelines:
     traces:
       receivers: [nop]

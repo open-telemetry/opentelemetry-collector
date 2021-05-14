@@ -19,6 +19,9 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/bearertokenauth"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -36,6 +39,11 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
+
+	authFactory := bearertokenauth.NewFactory()
+	authType := authFactory.Type()
+	factories.Extensions[authType] = authFactory
+
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -83,6 +91,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
+				Auth:            &configauth.Authentication{AuthenticatorName: string(authType)},
 			},
 		})
 }

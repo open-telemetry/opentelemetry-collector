@@ -35,6 +35,9 @@ import (
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
+	ext := map[config.ComponentID]component.Extension{
+		config.NewID("testauth"): &configauth.MockClientAuthenticator{},
+	}
 	tests := []struct {
 		name        string
 		settings    HTTPClientSettings
@@ -50,6 +53,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				//Auth: &configauth.Authentication{AuthenticatorName: "testauth"},
 			},
 			shouldError: false,
 		},
@@ -70,7 +74,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient()
+			client, err := test.settings.ToClient(ext)
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -114,10 +118,17 @@ func TestHTTPClientSettingsError(t *testing.T) {
 				},
 			},
 		},
+		{
+			err: "failed to resolve authenticator \"dummy\": authenticator not found",
+			settings: HTTPClientSettings{
+				Endpoint: "https://localhost:1234/v1/traces",
+				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient()
+			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{})
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -196,7 +207,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(WithExtensionsConfiguration(test.extensionMap))
+			client, err := test.settings.ToClient(test.extensionMap)
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -390,7 +401,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			client, errClient := hcs.ToClient()
+			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
 			assert.NoError(t, errClient)
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
@@ -565,7 +576,7 @@ func TestHttpHeaders(t *testing.T) {
 					"header1": "value1",
 				},
 			}
-			client, _ := setting.ToClient()
+			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{})
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)

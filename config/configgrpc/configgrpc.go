@@ -98,7 +98,7 @@ type GRPCClientSettings struct {
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 
-	// Authenticator for the exporter referred from extensions.
+	// ServerAuth for the exporter referred from extensions.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
@@ -106,15 +106,6 @@ type GRPCClientSettings struct {
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
-}
-
-// PerRPCAuthConfig specifies how the Per-RPC authentication data should be obtained.
-type PerRPCAuthConfig struct {
-	// AuthType represents the authentication type to use. Currently, only 'bearer' is supported.
-	AuthType string `mapstructure:"type,omitempty"`
-
-	// BearerToken specifies the bearer token to use for every RPC.
-	BearerToken string `mapstructure:"bearer_token,omitempty"`
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -167,31 +158,8 @@ type GRPCServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
-type clientOptions struct {
-	ext map[config.ComponentID]component.Extension
-}
-
-// ToClientSettingOption is an option to add/change additional configuration on top of GRPCClientSettings
-// to construct GRPCClientSettings.ToClient().
-type ToClientSettingOption func(options *clientOptions)
-
-// WithExtensionsConfiguration  is passed to GRPCClientSettings.ToClient() in order to
-// extend GRPCClientSettings with the configuration provided through extensions
-// e.g Authenticator configuration via extensions
-func WithExtensionsConfiguration(ext map[config.ComponentID]component.Extension) ToClientSettingOption {
-	return func(options *clientOptions) {
-		options.ext = ext
-	}
-}
-
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
-func (gcs *GRPCClientSettings) ToDialOptions(copts ...ToClientSettingOption) ([]grpc.DialOption, error) {
-	// apply client options
-	clientOpts := &clientOptions{}
-	for _, copt := range copts {
-		copt(clientOpts)
-	}
-
+func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
@@ -229,11 +197,11 @@ func (gcs *GRPCClientSettings) ToDialOptions(copts ...ToClientSettingOption) ([]
 	}
 
 	if gcs.Auth != nil {
-		if clientOpts.ext == nil {
+		if ext == nil {
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuth(clientOpts.ext, gcs.Auth.AuthenticatorName)
+		grpcAuthenticator, cerr := configauth.GetGRPCClientAuth(ext, gcs.Auth.AuthenticatorName)
 		if cerr != nil {
 			return nil, cerr
 		}

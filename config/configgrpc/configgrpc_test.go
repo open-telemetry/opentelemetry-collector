@@ -40,7 +40,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.ToDialOptions()
+	opts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
 	assert.Len(t, opts, 1)
 }
@@ -64,52 +64,16 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		WriteBufferSize: 1024,
 		WaitForReady:    true,
 		BalancerName:    "round_robin",
+		Auth:            &configauth.Authentication{AuthenticatorName: "testauth"},
 	}
-
-	gcsWithAuth := *gcs
-	gcsWithAuth.Auth = &configauth.Authentication{AuthenticatorName: "bearer"}
 
 	ext := map[config.ComponentID]component.Extension{
-		config.NewID("bearer"): &configauth.MockClientAuthenticator{},
+		config.NewID("testauth"): &configauth.MockClientAuthenticator{},
 	}
 
-	testcases := []struct {
-		name             string
-		mustError        bool
-		gc               *GRPCClientSettings
-		withClientOption bool
-		expectedOpts     int
-	}{
-		{
-			name:         "all_setting_except_auth",
-			mustError:    false,
-			gc:           gcs,
-			expectedOpts: 6,
-		},
-		{
-			name:             "auth_with_to_client_option",
-			mustError:        false,
-			gc:               &gcsWithAuth,
-			expectedOpts:     7, // all of the above + 1 PerRPCCredentials
-			withClientOption: true,
-		},
-	}
-	for _, tt := range testcases {
-		t.Run(tt.name, func(t *testing.T) {
-			var opts []grpc.DialOption
-			var err error
-
-			if tt.withClientOption {
-				opts, err = tt.gc.ToDialOptions(WithExtensionsConfiguration(ext))
-			} else {
-				opts, err = tt.gc.ToDialOptions()
-			}
-
-			assert.NoError(t, err)
-			assert.Len(t, opts, tt.expectedOpts)
-		})
-	}
-
+	opts, err := gcs.ToDialOptions(ext)
+	assert.NoError(t, err)
+	assert.Len(t, opts, 7)
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
@@ -177,6 +141,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	tests := []struct {
 		settings GRPCClientSettings
 		err      string
+		ext      map[config.ComponentID]component.Extension
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
@@ -233,20 +198,17 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "no extensions configuration available",
+			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
 			},
+			ext: map[config.ComponentID]component.Extension{},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			var copts []ToClientSettingOption
-			if test.settings.Auth != nil {
-				copts = []ToClientSettingOption{WithExtensionsConfiguration(nil)}
-			}
-			opts, err := test.settings.ToDialOptions(copts...)
+			opts, err := test.settings.ToDialOptions(test.ext)
 			assert.Nil(t, opts)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
@@ -262,7 +224,7 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.ToDialOptions()
+	dialOpts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
 	assert.Equal(t, len(dialOpts), 1)
 }
@@ -481,7 +443,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			clientOpts, errClient := gcs.ToDialOptions()
+			clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
@@ -528,7 +490,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	clientOpts, errClient := gcs.ToDialOptions()
+	clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)

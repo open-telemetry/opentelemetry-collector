@@ -54,35 +54,12 @@ type HTTPClientSettings struct {
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
-	// Authenticator for the exporter referred from extensions.
+	// ServerAuth for the exporter referred from extensions.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
-type toClientOptions struct {
-	extensionsMap map[config.ComponentID]component.Extension
-}
-
-// ToClientOption is an option to add/change additional configuration on top of HTTPClientSettings
-// to construct HTTPClientSettings.ToClient().
-type ToClientOption func(options *toClientOptions)
-
-// WithExtensionsConfiguration is passed to HTTPClientSettings.ToClient() in order to
-// extend HTTPClientSettings with the configuration provided through extensions
-// e.g Authenticator configuration via extensions
-func WithExtensionsConfiguration(ext map[config.ComponentID]component.Extension) ToClientOption {
-	return func(opts *toClientOptions) {
-		opts.extensionsMap = ext
-	}
-}
-
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient(opts ...ToClientOption) (*http.Client, error) {
-	// apply client options
-	clientOptions := &toClientOptions{}
-	for _, opt := range opts {
-		opt(clientOptions)
-	}
-
+func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -107,10 +84,10 @@ func (hcs *HTTPClientSettings) ToClient(opts ...ToClientOption) (*http.Client, e
 	}
 
 	if hcs.Auth != nil {
-		if clientOptions.extensionsMap == nil {
+		if ext == nil {
 			return nil, fmt.Errorf("extensions configuration not found")
 		}
-		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuth(clientOptions.extensionsMap, hcs.Auth.AuthenticatorName)
+		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuth(ext, hcs.Auth.AuthenticatorName)
 		if aerr != nil {
 			return nil, aerr
 		}

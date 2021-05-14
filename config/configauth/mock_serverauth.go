@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	_ Authenticator       = (*MockAuthenticator)(nil)
+	_ ServerAuth          = (*MockAuthenticator)(nil)
 	_ component.Extension = (*MockAuthenticator)(nil)
 )
 
