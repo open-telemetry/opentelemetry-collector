@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -55,37 +56,40 @@ func Test_createMetricsExporter(t *testing.T) {
 		cfg         config.Exporter
 		params      component.ExporterCreateParams
 		returnError bool
+		startError  bool
 	}{
-		{"success_case",
-			createDefaultConfig(),
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			false,
+		{name: "success_case",
+			cfg:    createDefaultConfig(),
+			params: component.ExporterCreateParams{Logger: zap.NewNop()},
 		},
-		{"fail_case",
-			nil,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
+		{name: "fail_case",
+			params:      component.ExporterCreateParams{Logger: zap.NewNop()},
+			returnError: true,
 		},
-		{"invalid_config_case",
-			invalidConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
+		{name: "invalid_config_case",
+			cfg:         invalidConfig,
+			params:      component.ExporterCreateParams{Logger: zap.NewNop()},
+			returnError: true,
 		},
-		{"invalid_tls_config_case",
-			invalidTLSConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
+		{name: "invalid_tls_config_case",
+			cfg:         invalidTLSConfig,
+			params:      component.ExporterCreateParams{Logger: zap.NewNop()},
+			returnError: false,
+			startError:  true,
 		},
-	}
-	// run tests
+	} // run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
+			exp, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			if tt.startError {
+				assert.Error(t, err)
+			}
 		})
 	}
 }

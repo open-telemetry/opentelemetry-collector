@@ -54,21 +54,17 @@ type PrwExporter struct {
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
 	userAgentHeader string
+	cfg             *Config
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
-// client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, buildInfo component.BuildInfo) (*PrwExporter, error) {
-	if client == nil {
-		return nil, errors.New("http client cannot be nil")
-	}
-
-	sanitizedLabels, err := validateAndSanitizeExternalLabels(externalLabels)
+func NewPrwExporter(cfg *Config, buildInfo component.BuildInfo) (*PrwExporter, error) {
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.HTTPClientSettings.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -76,28 +72,37 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
 	return &PrwExporter{
-		namespace:       namespace,
+		namespace:       cfg.Namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
-		client:          client,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
+		cfg:             cfg,
 	}, nil
 }
 
-// Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
+func (prwe *PrwExporter) start(ctx context.Context, host component.Host) error {
+	client, err := prwe.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+	if err != nil {
+		return err
+	}
+	prwe.client = client
+	return nil
+}
+
+// shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (prwe *PrwExporter) Shutdown(context.Context) error {
+func (prwe *PrwExporter) shutdown(context.Context) error {
 	close(prwe.closeChan)
 	prwe.wg.Wait()
 	return nil
 }
 
-// PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
+// pushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (prwe *PrwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 

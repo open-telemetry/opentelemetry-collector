@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -77,16 +78,6 @@ func Test_NewPrwExporter(t *testing.T) {
 			buildInfo,
 		},
 		{
-			"nil_client",
-			cfg,
-			"test",
-			"http://some.url:9411/api/prom/push",
-			map[string]string{"Key1": "Val1"},
-			nil,
-			true,
-			buildInfo,
-		},
-		{
 			"invalid_labels_case",
 			cfg,
 			"test",
@@ -120,12 +111,18 @@ func Test_NewPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, tt.buildInfo)
+
+			cfg.HTTPClientSettings.Endpoint = tt.endpoint
+			cfg.ExternalLabels = tt.externalLabels
+			cfg.Namespace = tt.namespace
+
+			prwe, err := NewPrwExporter(cfg, tt.buildInfo)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
 			}
-			require.NotNil(t, prwe)
+			require.NoError(t, err)
+			require.NoError(t, prwe.start(context.Background(), componenttest.NewNopHost()))
 			assert.NotNil(t, prwe.namespace)
 			assert.NotNil(t, prwe.endpointURL)
 			assert.NotNil(t, prwe.externalLabels)
@@ -137,21 +134,21 @@ func Test_NewPrwExporter(t *testing.T) {
 	}
 }
 
-// Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
-func Test_Shutdown(t *testing.T) {
+// Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
+func Test_shutdown(t *testing.T) {
 	prwe := &PrwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
-	err := prwe.Shutdown(context.Background())
+	err := prwe.shutdown(context.Background())
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
+			errChan <- prwe.pushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
 		}()
 	}
 	wg.Wait()
@@ -162,7 +159,7 @@ func Test_Shutdown(t *testing.T) {
 }
 
 // Test whether or not the Server receives the correct TimeSeries.
-// Currently considering making this test an iterative for loop of multiple TimeSeries much akin to Test_PushMetrics
+// Currently considering making this test an iterative for loop of multiple TimeSeries much akin to Test_pushMetrics
 func Test_export(t *testing.T) {
 	// First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
 	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
@@ -256,25 +253,33 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts
 
-	HTTPClient := http.DefaultClient
+	cfg := createDefaultConfig().(*Config)
+	cfg.HTTPClientSettings.Endpoint = endpoint.String()
 
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, buildInfo)
+	prwe, err := NewPrwExporter(cfg, buildInfo)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
 	}
+
+	err = prwe.start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+
 	errs = append(errs, prwe.export(context.Background(), testmap)...)
 	return errs
 }
 
-// Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
+// Test_pushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
-func Test_PushMetrics(t *testing.T) {
+func Test_pushMetrics(t *testing.T) {
 
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
@@ -698,30 +703,27 @@ func Test_PushMetrics(t *testing.T) {
 
 			defer server.Close()
 
-			serverURL, uErr := url.Parse(server.URL)
-			assert.NoError(t, uErr)
-
-			config := &Config{
+			cfg := &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				Namespace:        "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://some.url:9411/api/prom/push",
+					Endpoint: server.URL,
 					// We almost read 0 bytes, so no need to tune ReadBufferSize.
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 				},
 			}
-			assert.NotNil(t, config)
-			// c, err := config.HTTPClientSettings.ToClient()
-			// assert.Nil(t, err)
-			c := http.DefaultClient
+			assert.NotNil(t, cfg)
 			buildInfo := component.BuildInfo{
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, buildInfo)
+
+			prwe, nErr := NewPrwExporter(cfg, buildInfo)
 			require.NoError(t, nErr)
-			err := prwe.PushMetrics(context.Background(), *tt.md)
+			require.NoError(t, prwe.start(context.Background(), componenttest.NewNopHost()))
+
+			err := prwe.pushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return

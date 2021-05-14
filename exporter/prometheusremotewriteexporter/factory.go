@@ -45,12 +45,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid configuration")
 	}
 
-	client, err := prwCfg.HTTPClientSettings.ToClient(map[config.ComponentID]component.Extension{})
-	if err != nil {
-		return nil, err
-	}
-
-	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels, params.BuildInfo)
+	prwe, err := NewPrwExporter(prwCfg, params.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +59,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		prwe.PushMetrics,
+		prwe.pushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
 			Enabled:      true,
@@ -75,7 +70,8 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithResourceToTelemetryConversion(prwCfg.ResourceToTelemetrySettings),
-		exporterhelper.WithShutdown(prwe.Shutdown),
+		exporterhelper.WithStart(prwe.start),
+		exporterhelper.WithShutdown(prwe.shutdown),
 	)
 
 	return prwexp, err
