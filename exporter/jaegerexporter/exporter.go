@@ -80,7 +80,7 @@ type protoGRPCSender struct {
 	connStateReporterInterval time.Duration
 	stateChangeCallbacks      []func(connectivity.State)
 
-	stopCh   chan (struct{})
+	stopCh   chan struct{}
 	stopped  bool
 	stopLock sync.Mutex
 }
@@ -96,7 +96,7 @@ func newProtoGRPCSender(logger *zap.Logger, name string, cl jaegerproto.Collecto
 		conn:                      conn,
 		connStateReporterInterval: time.Second,
 
-		stopCh: make(chan (struct{})),
+		stopCh: make(chan struct{}),
 	}
 	s.AddStateChangeCallback(s.onStateChange)
 	return s

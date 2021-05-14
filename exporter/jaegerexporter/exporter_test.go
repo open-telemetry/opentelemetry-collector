@@ -253,7 +253,7 @@ func TestConnectionStateChange(t *testing.T) {
 	}
 	sender := &protoGRPCSender{
 		logger:                    zap.NewNop(),
-		stopCh:                    make(chan (struct{})),
+		stopCh:                    make(chan struct{}),
 		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,
 	}
@@ -284,7 +284,7 @@ func TestConnectionReporterEndsOnStopped(t *testing.T) {
 
 	sender := &protoGRPCSender{
 		logger:                    zap.NewNop(),
-		stopCh:                    make(chan (struct{})),
+		stopCh:                    make(chan struct{}),
 		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,
 	}
