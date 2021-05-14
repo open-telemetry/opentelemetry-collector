@@ -24,7 +24,6 @@ import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
@@ -41,18 +40,15 @@ type zipkinExporter struct {
 	url        string
 	client     *http.Client
 	serializer zipkinreporter.SpanSerializer
+	cfg        *Config
 }
 
 func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
-	client, err := cfg.HTTPClientSettings.ToClient(map[config.ComponentID]component.Extension{})
-	if err != nil {
-		return nil, err
-	}
-
 	ze := &zipkinExporter{
 		defaultServiceName: cfg.DefaultServiceName,
 		url:                cfg.Endpoint,
-		client:             client,
+		cfg:                cfg,
+		client:             nil,
 	}
 
 	switch cfg.Format {
@@ -65,6 +61,15 @@ func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 	}
 
 	return ze, nil
+}
+
+func (ze *zipkinExporter)start(ctx context.Context, host component.Host) error {
+	client, err := ze.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+	if err != nil {
+		return  err
+	}
+	ze.client = client
+	return nil
 }
 
 func (ze *zipkinExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
