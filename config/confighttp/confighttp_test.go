@@ -34,9 +34,20 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
+
+type customRoundTripper struct{
+	transport *http.Transport
+}
+
+var _ http.RoundTripper = (*customRoundTripper)(nil)
+
+func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	return nil, nil
+}
+
 func TestAllHTTPClientSettings(t *testing.T) {
 	ext := map[config.ComponentID]component.Extension{
-		config.NewID("testauth"): &configauth.MockClientAuthenticator{},
+		config.NewID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 	}
 	tests := []struct {
 		name        string
@@ -53,7 +64,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				//Auth: &configauth.Authentication{AuthenticatorName: "testauth"},
+				Auth: &configauth.Authentication{AuthenticatorName: "testauth"},
 			},
 			shouldError: false,
 		},
@@ -132,14 +143,6 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			assert.Regexp(t, test.err, err)
 		})
 	}
-}
-
-type customRoundTripper struct{}
-
-var _ http.RoundTripper = (*customRoundTripper)(nil)
-
-func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
-	return nil, nil
 }
 
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {

@@ -59,10 +59,10 @@ func Components() (
 
 	extensions, err := component.MakeExtensionFactoryMap(
 		authoidcextension.NewFactory(),
+		bearertokenauth.NewFactory(),
 		healthcheckextension.NewFactory(),
 		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
-		bearertokenauth.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

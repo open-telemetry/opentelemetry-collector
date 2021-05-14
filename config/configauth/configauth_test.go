@@ -33,7 +33,7 @@ func TestGetAuthenticator(t *testing.T) {
 	}
 
 	// test
-	authenticator, err := GetAuthenticator(ext, cfg.AuthenticatorName)
+	authenticator, err := GetServerAuthenticator(ext, cfg.AuthenticatorName)
 
 	// verify
 	assert.NoError(t, err)
@@ -48,13 +48,13 @@ func TestGetAuthenticatorFails(t *testing.T) {
 		expected error
 	}{
 		{
-			desc:     "ServerAuth not provided",
+			desc:     "ServerAuthenticator not provided",
 			cfg:      &Authentication{},
 			ext:      map[config.ComponentID]component.Extension{},
 			expected: errAuthenticatorNotProvided,
 		},
 		{
-			desc: "ServerAuth not found",
+			desc: "ServerAuthenticator not found",
 			cfg: &Authentication{
 				AuthenticatorName: "does-not-exist",
 			},
@@ -64,7 +64,7 @@ func TestGetAuthenticatorFails(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			authenticator, err := GetAuthenticator(tC.ext, tC.cfg.AuthenticatorName)
+			authenticator, err := GetServerAuthenticator(tC.ext, tC.cfg.AuthenticatorName)
 			assert.ErrorIs(t, err, tC.expected)
 			assert.Nil(t, authenticator)
 		})

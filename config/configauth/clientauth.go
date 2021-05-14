@@ -24,31 +24,31 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// ClientAuth is an Extension that can be used as an authenticator for the configauth.Authentication option.
+// ClientAuthenticator is an Extension that can be used as an authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration. .
-type ClientAuth interface {
+type ClientAuthenticator interface {
 	component.Extension
 }
 
-// HTTPClientAuth is a ClientAuth that can be used as an authenticator for the configauth.Authentication option for HTTP
+// HTTPClientAuthenticator is a ClientAuthenticator that can be used as an authenticator for the configauth.Authentication option for HTTP
 // clients.
-type HTTPClientAuth interface {
-	ClientAuth
+type HTTPClientAuthenticator interface {
+	ClientAuthenticator
 	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
 }
 
-// GRPCClientAuth is a ClientAuth that can be used as an authenticator for the configauth.Authentication option for gRPC
+// GRPCClientAuthenticator is a ClientAuthenticator that can be used as an authenticator for the configauth.Authentication option for gRPC
 // clients.
-type GRPCClientAuth interface {
-	ClientAuth
-	PerRPCCredential() (credentials.PerRPCCredentials, error)
+type GRPCClientAuthenticator interface {
+	ClientAuthenticator
+	PerRPCCredentials() (credentials.PerRPCCredentials, error)
 }
 
-// GetHTTPClientAuth attempts to select the appropriate HTTPClientAuth from the list of extensions,
+// GetHTTPClientAuthenticator attempts to select the appropriate HTTPClientAuthenticator from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned. This should be only
 // used by HTTP clients.
-func GetHTTPClientAuth(extensions map[config.ComponentID]component.Extension, requested string) (HTTPClientAuth, error) {
+func GetHTTPClientAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (HTTPClientAuthenticator, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
 	}
@@ -60,7 +60,7 @@ func GetHTTPClientAuth(extensions map[config.ComponentID]component.Extension, re
 
 	for name, ext := range extensions {
 		if name == reqID {
-			if auth, ok := ext.(HTTPClientAuth); ok {
+			if auth, ok := ext.(HTTPClientAuthenticator); ok {
 				return auth, nil
 			}
 			return nil, fmt.Errorf("requested authenticator is not for HTTP clients")
@@ -69,10 +69,10 @@ func GetHTTPClientAuth(extensions map[config.ComponentID]component.Extension, re
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", requested, errAuthenticatorNotFound)
 }
 
-// GetGRPCClientAuth attempts to select the appropriate GRPCClientAuth from the list of extensions,
-// based on the requested extension name. If an authenticator is not found, an error is returned. This shold only be used
+// GetGRPCClientAuthenticator attempts to select the appropriate GRPCClientAuthenticator from the list of extensions,
+// based on the requested extension name. If an authenticator is not found, an error is returned. This should only be used
 // by gRPC clients
-func GetGRPCClientAuth(extensions map[config.ComponentID]component.Extension, requested string) (GRPCClientAuth, error) {
+func GetGRPCClientAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (GRPCClientAuthenticator, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
 	}
@@ -84,7 +84,7 @@ func GetGRPCClientAuth(extensions map[config.ComponentID]component.Extension, re
 
 	for name, ext := range extensions {
 		if name == reqID {
-			if auth, ok := ext.(GRPCClientAuth); ok {
+			if auth, ok := ext.(GRPCClientAuthenticator); ok {
 				return auth, nil
 			}
 			return nil, fmt.Errorf("requested authenticator is not for gRPC clients")

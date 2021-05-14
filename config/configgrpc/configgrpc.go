@@ -98,7 +98,7 @@ type GRPCClientSettings struct {
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 
-	// ServerAuth for the exporter referred from extensions.
+	// Auth configuration for outgoing RPCs.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
@@ -201,12 +201,12 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuth(ext, gcs.Auth.AuthenticatorName)
+		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, gcs.Auth.AuthenticatorName)
 		if cerr != nil {
 			return nil, cerr
 		}
 
-		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredential()
+		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
 		if perr != nil {
 			return nil, err
 		}
@@ -295,7 +295,7 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	}
 
 	if gss.Auth != nil {
-		authenticator, err := configauth.GetAuthenticator(ext, gss.Auth.AuthenticatorName)
+		authenticator, err := configauth.GetServerAuthenticator(ext, gss.Auth.AuthenticatorName)
 		if err != nil {
 			return nil, err
 		}

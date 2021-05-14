@@ -29,13 +29,13 @@ var (
 
 // Authentication defines the auth settings for the receiver
 type Authentication struct {
-	// ServerAuth specifies the name of the extension to use in order to authenticate the incoming data point.
+	// AuthenticatorName specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorName string `mapstructure:"authenticator"`
 }
 
-// GetAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
+// GetServerAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
 // If an authenticator is not found, an error is returned.
-func GetAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (ServerAuth, error) {
+func GetServerAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (ServerAuthenticator, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
 	}
@@ -46,7 +46,7 @@ func GetAuthenticator(extensions map[config.ComponentID]component.Extension, req
 	}
 
 	for name, ext := range extensions {
-		if auth, ok := ext.(ServerAuth); ok {
+		if auth, ok := ext.(ServerAuthenticator); ok {
 			if name == reqID {
 				return auth, nil
 			}

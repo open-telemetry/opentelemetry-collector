@@ -49,7 +49,7 @@ func TestBearerAuthenticator(t *testing.T) {
 	assert.NotNil(t, bauth)
 
 	assert.Nil(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
-	credential, err := bauth.PerRPCCredential()
+	credential, err := bauth.PerRPCCredentials()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, credential)

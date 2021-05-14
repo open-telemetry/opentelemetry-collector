@@ -54,7 +54,7 @@ type HTTPClientSettings struct {
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
-	// ServerAuth for the exporter referred from extensions.
+	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
@@ -87,7 +87,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		if ext == nil {
 			return nil, fmt.Errorf("extensions configuration not found")
 		}
-		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuth(ext, hcs.Auth.AuthenticatorName)
+		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuthenticator(ext, hcs.Auth.AuthenticatorName)
 		if aerr != nil {
 			return nil, aerr
 		}

@@ -121,7 +121,7 @@ func TestMockPerRPCCredential(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			credential, err := testcase.clientAuth.PerRPCCredential()
+			credential, err := testcase.clientAuth.PerRPCCredentials()
 			if err != nil {
 				return
 			}

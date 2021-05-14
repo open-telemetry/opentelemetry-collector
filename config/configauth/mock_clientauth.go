@@ -25,12 +25,12 @@ import (
 )
 
 var (
-	_            HTTPClientAuth = (*MockClientAuthenticator)(nil)
-	_            GRPCClientAuth = (*MockClientAuthenticator)(nil)
-	errMockError                = errors.New("mock Error")
+	_            HTTPClientAuthenticator = (*MockClientAuthenticator)(nil)
+	_            GRPCClientAuthenticator = (*MockClientAuthenticator)(nil)
+	errMockError                         = errors.New("mock Error")
 )
 
-// MockClientAuthenticator provides a mock implementation of GRPCClientAuth and HTTPClientAuth interfaces
+// MockClientAuthenticator provides a mock implementation of GRPCClientAuthenticator and HTTPClientAuthenticator interfaces
 type MockClientAuthenticator struct {
 	ResultRoundTripper      http.RoundTripper
 	ResultPerRPCCredentials credentials.PerRPCCredentials
@@ -56,9 +56,9 @@ func (m *MockClientAuthenticator) RoundTripper(base http.RoundTripper) (http.Rou
 	return m.ResultRoundTripper, nil
 }
 
-// PerRPCCredential for the MockClientAuthenticator either returns error if the mock authenticator is forced to or
+// PerRPCCredentials for the MockClientAuthenticator either returns error if the mock authenticator is forced to or
 // returns the supplied resultPerRPCCredentials.
-func (m *MockClientAuthenticator) PerRPCCredential() (credentials.PerRPCCredentials, error) {
+func (m *MockClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	if m.MustError {
 		return nil, errMockError
 	}
