@@ -141,7 +141,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_jvm_gc_collection_seconds_sum.gc="G1 Old Generation". 0.*`,
 		`test_jvm_gc_collection_seconds_count.gc="G1 Old Generation". 0.*`,
 		`test_jvm_gc_collection_seconds_sum.gc="G1 Young Generation". 0.*`,
-		`test_jvm_gc_collection_seconds_count.gc="G1 Young Generation". 0.*`,
+		`test_jvm_gc_collection_seconds_count.gc="G1 Young Generation". 9.*`,
 		`. HELP test_jvm_info JVM version info`,
 		`. TYPE test_jvm_info gauge`,
 		`test_jvm_info.vendor="Oracle Corporation",version="9.0.4.11". 1.*`,
