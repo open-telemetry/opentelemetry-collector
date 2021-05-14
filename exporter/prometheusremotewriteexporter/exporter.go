@@ -82,7 +82,8 @@ func NewPrwExporter(cfg *Config, buildInfo component.BuildInfo) (*PrwExporter, e
 	}, nil
 }
 
-func (prwe *PrwExporter) start(ctx context.Context, host component.Host) error {
+// start creates the http client
+func (prwe *PrwExporter) start(_ context.Context, host component.Host) error {
 	client, err := prwe.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
