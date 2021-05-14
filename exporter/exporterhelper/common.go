@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 )
 
 // TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
@@ -73,6 +75,7 @@ func (req *baseRequest) setContext(ctx context.Context) {
 // baseSettings represents all the options that users can configure.
 type baseSettings struct {
 	componentOptions []componenthelper.Option
+	consumerOptions  []consumerhelper.Option
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
@@ -80,7 +83,7 @@ type baseSettings struct {
 }
 
 // fromOptions returns the internal options starting from the default and applying all configured options.
-func fromOptions(options []Option) *baseSettings {
+func fromOptions(options ...Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
 		TimeoutSettings: DefaultTimeoutSettings(),
@@ -141,6 +144,15 @@ func WithQueue(queueSettings QueueSettings) Option {
 	}
 }
 
+// WithCapabilities overrides the default Capabilities() function for a Consumer.
+// The default is non-mutable data.
+// TODO: Verify if we can change the default to be mutable as we do for processors.
+func WithCapabilities(capabilities consumer.Capabilities) Option {
+	return func(o *baseSettings) {
+		o.consumerOptions = append(o.consumerOptions, consumerhelper.WithCapabilities(capabilities))
+	}
+}
+
 // WithResourceToTelemetryConversion overrides the default ResourceToTelemetrySettings for an exporter.
 // The default ResourceToTelemetrySettings is to disable resource attributes to metric labels conversion.
 func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTelemetrySettings) Option {
@@ -152,18 +164,13 @@ func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTel
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.Component
-	cfg                        config.Exporter
-	sender                     requestSender
-	qrSender                   *queuedRetrySender
-	convertResourceToTelemetry bool
+	sender   requestSender
+	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg config.Exporter, logger *zap.Logger, options ...Option) *baseExporter {
-	bs := fromOptions(options)
+func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings) *baseExporter {
 	be := &baseExporter{
-		Component:                  componenthelper.New(bs.componentOptions...),
-		cfg:                        cfg,
-		convertResourceToTelemetry: bs.ResourceToTelemetrySettings.Enabled,
+		Component: componenthelper.New(bs.componentOptions...),
 	}
 
 	be.qrSender = newQueuedRetrySender(cfg.ID().String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
