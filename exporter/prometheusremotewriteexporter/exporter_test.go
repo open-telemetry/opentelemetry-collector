@@ -34,9 +34,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal"
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
@@ -281,238 +278,37 @@ func Test_PushMetrics(t *testing.T) {
 	// success cases
 	intSumBatch := testdata.GenerateMetricsManyMetricsSameResource(10)
 
-	doubleSumMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics1[validDoubleSum],
-							validMetrics2[validDoubleSum],
-						},
-					},
-				},
-			},
-		},
-	}
-	doubleSumBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleSumMetric))
+	doubleSumBatch := getMetricsFromMetricList(validMetrics1[validDoubleSum], validMetrics2[validDoubleSum])
 
-	intGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics1[validIntGauge],
-							validMetrics2[validIntGauge],
-						},
-					},
-				},
-			},
-		},
-	}
-	intGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(intGaugeMetric))
+	intGaugeBatch := getMetricsFromMetricList(validMetrics1[validIntGauge], validMetrics2[validIntGauge])
 
-	doubleGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics1[validDoubleGauge],
-							validMetrics2[validDoubleGauge],
-						},
-					},
-				},
-			},
-		},
-	}
-	doubleGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleGaugeMetric))
+	doubleGaugeBatch := getMetricsFromMetricList(validMetrics1[validDoubleGauge], validMetrics2[validDoubleGauge])
 
-	intHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics1[validIntHistogram],
-							validMetrics2[validIntHistogram],
-						},
-					},
-				},
-			},
-		},
-	}
-	intHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(intHistogramMetric))
+	intHistogramBatch := getMetricsFromMetricList(validMetrics1[validIntHistogram], validMetrics2[validIntHistogram])
 
-	doubleHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics1[validDoubleHistogram],
-							validMetrics2[validDoubleHistogram],
-						},
-					},
-				},
-			},
-		},
-	}
-	doubleHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleHistogramMetric))
+	histogramBatch := getMetricsFromMetricList(validMetrics1[validHistogram], validMetrics2[validHistogram])
 
-	doubleSummaryMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics1[validDoubleSummary],
-							validMetrics2[validDoubleSummary],
-						},
-					},
-				},
-			},
-		},
-	}
-	doubleSummaryBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(doubleSummaryMetric))
+	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
 
 	// len(BucketCount) > len(ExplicitBounds)
-	unmatchedBoundBucketIntHistMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics2[unmatchedBoundBucketIntHist],
-						},
-					},
-				},
-			},
-		},
-	}
-	unmatchedBoundBucketIntHistBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(unmatchedBoundBucketIntHistMetric))
+	unmatchedBoundBucketIntHistBatch := getMetricsFromMetricList(validMetrics2[unmatchedBoundBucketIntHist])
 
-	unmatchedBoundBucketDoubleHistMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							validMetrics2[unmatchedBoundBucketDoubleHist],
-						},
-					},
-				},
-			},
-		},
-	}
-	unmatchedBoundBucketDoubleHistBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(unmatchedBoundBucketDoubleHistMetric))
+	unmatchedBoundBucketHistBatch := getMetricsFromMetricList(validMetrics2[unmatchedBoundBucketHist])
 
 	// fail cases
-	nilDataPointIntGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							errorMetrics[nilDataPointIntGauge],
-						},
-					},
-				},
-			},
-		},
-	}
-	nilDataPointIntGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointIntGaugeMetric))
+	emptyIntGaugeBatch := getMetricsFromMetricList(invalidMetrics[emptyIntGauge])
 
-	nilDataPointDoubleGaugeMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							errorMetrics[nilDataPointDoubleGauge],
-						},
-					},
-				},
-			},
-		},
-	}
-	nilDataPointDoubleGaugeBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleGaugeMetric))
+	emptyDoubleGaugeBatch := getMetricsFromMetricList(invalidMetrics[emptyDoubleGauge])
 
-	nilDataPointIntSumMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							errorMetrics[nilDataPointIntSum],
-						},
-					},
-				},
-			},
-		},
-	}
-	nilDataPointIntSumBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointIntSumMetric))
+	emptyCumulativeIntSumBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeIntSum])
 
-	nilDataPointDoubleSumMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							errorMetrics[nilDataPointDoubleSum],
-						},
-					},
-				},
-			},
-		},
-	}
-	nilDataPointDoubleSumBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleSumMetric))
+	emptyCumulativeDoubleSumBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeDoubleSum])
 
-	nilDataPointIntHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							errorMetrics[nilDataPointIntHistogram],
-						},
-					},
-				},
-			},
-		},
-	}
-	nilDataPointIntHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointIntHistogramMetric))
+	emptyCumulativeIntHistogramBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeIntHistogram])
 
-	nilDataPointDoubleHistogramMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							errorMetrics[nilDataPointDoubleHistogram],
-						},
-					},
-				},
-			},
-		},
-	}
-	nilDataPointDoubleHistogramBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleHistogramMetric))
+	emptyCumulativeHistogramBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeHistogram])
 
-	nilDataPointDoubleSummaryMetric := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlp.ResourceMetrics{
-			{
-				InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
-					{
-						Metrics: []*otlp.Metric{
-							errorMetrics[nilDataPointDoubleSummary],
-						},
-					},
-				},
-			},
-		},
-	}
-	nilDataPointDoubleSummaryBatch := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(nilDataPointDoubleSummaryMetric))
+	emptyCumulativeSummaryBatch := getMetricsFromMetricList(invalidMetrics[emptySummary])
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int) {
 		body, err := ioutil.ReadAll(r.Body)
@@ -590,16 +386,16 @@ func Test_PushMetrics(t *testing.T) {
 			false,
 		},
 		{
-			"doubleHistogram_case",
-			&doubleHistogramBatch,
+			"histogram_case",
+			&histogramBatch,
 			checkFunc,
 			12,
 			http.StatusAccepted,
 			false,
 		},
 		{
-			"doubleSummary_case",
-			&doubleSummaryBatch,
+			"summary_case",
+			&summaryBatch,
 			checkFunc,
 			10,
 			http.StatusAccepted,
@@ -614,8 +410,8 @@ func Test_PushMetrics(t *testing.T) {
 			false,
 		},
 		{
-			"unmatchedBoundBucketDoubleHist_case",
-			&unmatchedBoundBucketDoubleHistBatch,
+			"unmatchedBoundBucketHist_case",
+			&unmatchedBoundBucketHistBatch,
 			checkFunc,
 			5,
 			http.StatusAccepted,
@@ -623,63 +419,63 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			"5xx_case",
-			&unmatchedBoundBucketDoubleHistBatch,
+			&unmatchedBoundBucketHistBatch,
 			checkFunc,
 			5,
 			http.StatusServiceUnavailable,
 			true,
 		},
 		{
-			"nilDataPointDoubleGauge_case",
-			&nilDataPointDoubleGaugeBatch,
+			"emptyDoubleGauge_case",
+			&emptyDoubleGaugeBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
 			true,
 		},
 		{
-			"nilDataPointIntGauge_case",
-			&nilDataPointIntGaugeBatch,
+			"emptyIntGauge_case",
+			&emptyIntGaugeBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
 			true,
 		},
 		{
-			"nilDataPointDoubleSum_case",
-			&nilDataPointDoubleSumBatch,
+			"emptyCumulativeDoubleSum_case",
+			&emptyCumulativeDoubleSumBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
 			true,
 		},
 		{
-			"nilDataPointIntSum_case",
-			&nilDataPointIntSumBatch,
+			"emptyCumulativeIntSum_case",
+			&emptyCumulativeIntSumBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
 			true,
 		},
 		{
-			"nilDataPointDoubleHistogram_case",
-			&nilDataPointDoubleHistogramBatch,
+			"emptyCumulativeHistogram_case",
+			&emptyCumulativeHistogramBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
 			true,
 		},
 		{
-			"nilDataPointIntHistogram_case",
-			&nilDataPointIntHistogramBatch,
+			"emptyCumulativeIntHistogram_case",
+			&emptyCumulativeIntHistogramBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
 			true,
 		},
 		{
-			"nilDataPointDoubleSummary_case",
-			&nilDataPointDoubleSummaryBatch,
+			"emptyCumulativeSummary_case",
+			&emptyCumulativeSummaryBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
