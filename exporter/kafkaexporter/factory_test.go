@@ -16,8 +16,9 @@ package kafkaexporter
 
 import (
 	"context"
-	"github.com/Shopify/sarama"
 	"testing"
+
+	"github.com/Shopify/sarama"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -148,4 +149,5 @@ func (c customConverter) ConvertMessages(messages []Message, topic string) []*sa
 func (c customConverter) Encoding() string {
 	return "custom"
 }
+
 var _ MessageConverter = (*customConverter)(nil)
