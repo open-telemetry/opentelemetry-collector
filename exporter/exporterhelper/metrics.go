@@ -24,21 +24,18 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushMetrics is a helper function that is similar to ConsumeMetrics but also returns
-// the number of dropped metrics.
-type PushMetrics func(ctx context.Context, md pdata.Metrics) error
-
 type metricsRequest struct {
 	baseRequest
 	md     pdata.Metrics
-	pusher PushMetrics
+	pusher consumerhelper.ConsumeMetricsFunc
 }
 
-func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetrics) request {
+func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher consumerhelper.ConsumeMetricsFunc) request {
 	return &metricsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		md:          md,
@@ -65,25 +62,14 @@ func (req *metricsRequest) count() int {
 
 type metricsExporter struct {
 	*baseExporter
-	pusher PushMetrics
-}
-
-func (mexp *metricsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	if mexp.baseExporter.convertResourceToTelemetry {
-		md = convertResourceToLabels(md)
-	}
-	return mexp.sender.send(newMetricsRequest(ctx, md, mexp.pusher))
+	consumer.Metrics
 }
 
 // NewMetricsExporter creates an MetricsExporter that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
 	cfg config.Exporter,
 	logger *zap.Logger,
-	pusher PushMetrics,
+	pusher consumerhelper.ConsumeMetricsFunc,
 	options ...Option,
 ) (component.MetricsExporter, error) {
 	if cfg == nil {
@@ -98,7 +84,8 @@ func NewMetricsExporter(
 		return nil, errNilPushMetricsData
 	}
 
-	be := newBaseExporter(cfg, logger, options...)
+	bs := fromOptions(options...)
+	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
 			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
@@ -109,10 +96,17 @@ func NewMetricsExporter(
 		}
 	})
 
+	mc, err := consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
+		if bs.ResourceToTelemetrySettings.Enabled {
+			md = convertResourceToLabels(md)
+		}
+		return be.sender.send(newMetricsRequest(ctx, md, pusher))
+	}, bs.consumerOptions...)
+
 	return &metricsExporter{
 		baseExporter: be,
-		pusher:       pusher,
-	}, nil
+		Metrics:      mc,
+	}, err
 }
 
 type metricsSenderWithObservability struct {

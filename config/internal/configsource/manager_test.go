@@ -576,8 +576,8 @@ type valueEntry struct {
 	WatchForUpdateFn func() error
 }
 
-var _ (configsource.ConfigSource) = (*testConfigSource)(nil)
-var _ (configsource.Session) = (*testConfigSource)(nil)
+var _ configsource.ConfigSource = (*testConfigSource)(nil)
+var _ configsource.Session = (*testConfigSource)(nil)
 
 func (t *testConfigSource) NewSession(context.Context) (configsource.Session, error) {
 	if t.ErrOnNewSession != nil {
@@ -629,7 +629,7 @@ type retrieved struct {
 	watchForUpdateFn func() error
 }
 
-var _ (configsource.Retrieved) = (*retrieved)(nil)
+var _ configsource.Retrieved = (*retrieved)(nil)
 
 func (r *retrieved) Value() interface{} {
 	return r.value

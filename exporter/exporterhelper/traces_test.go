@@ -25,8 +25,11 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -38,7 +41,7 @@ const (
 )
 
 var (
-	fakeTracesExporterName   = config.MustIDFromString("fake_traces_exporter/with_name")
+	fakeTracesExporterName   = config.NewIDWithName("fake_traces_exporter", "with_name")
 	fakeTracesExporterConfig = config.NewExporterSettings(fakeTracesExporterName)
 )
 
@@ -85,15 +88,26 @@ func TestTracesExporter_Default(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
-	assert.Nil(t, te.ConsumeTraces(context.Background(), td))
-	assert.Nil(t, te.Shutdown(context.Background()))
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, te.Capabilities())
+	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, te.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, te.Shutdown(context.Background()))
+}
+
+func TestTracesExporter_WithCapabilities(t *testing.T) {
+	capabilities := consumer.Capabilities{MutatesData: true}
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil), WithCapabilities(capabilities))
+	assert.NotNil(t, te)
+	assert.NoError(t, err)
+
+	assert.Equal(t, capabilities, te.Capabilities())
 }
 
 func TestTracesExporter_Default_ReturnError(t *testing.T) {
 	td := pdata.NewTraces()
 	want := errors.New("my_error")
 	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, te)
 
 	err = te.ConsumeTraces(context.Background(), td)
@@ -102,7 +116,7 @@ func TestTracesExporter_Default_ReturnError(t *testing.T) {
 
 func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, te)
 
 	checkRecordedMetricsForTracesExporter(t, te, nil)
@@ -111,7 +125,7 @@ func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, te)
 
 	checkRecordedMetricsForTracesExporter(t, te, want)
@@ -119,7 +133,7 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 
 func TestTracesExporter_WithSpan(t *testing.T) {
 	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(nil))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, te)
 
 	checkWrapSpanForTracesExporter(t, te, nil, 1)
@@ -128,7 +142,7 @@ func TestTracesExporter_WithSpan(t *testing.T) {
 func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(want))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, te)
 
 	checkWrapSpanForTracesExporter(t, te, want, 1)
@@ -142,7 +156,8 @@ func TestTracesExporter_WithShutdown(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
-	assert.Nil(t, te.Shutdown(context.Background()))
+	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, te.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -154,10 +169,11 @@ func TestTracesExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
+	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, te.Shutdown(context.Background()), want)
 }
 
-func newTraceDataPusher(retError error) PushTraces {
+func newTraceDataPusher(retError error) consumerhelper.ConsumeTracesFunc {
 	return func(ctx context.Context, td pdata.Traces) error {
 		return retError
 	}

@@ -24,21 +24,18 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushLogs is a helper function that is similar to ConsumeLogs but also returns
-// the number of dropped logs.
-type PushLogs func(ctx context.Context, md pdata.Logs) error
-
 type logsRequest struct {
 	baseRequest
 	ld     pdata.Logs
-	pusher PushLogs
+	pusher consumerhelper.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogs) request {
+func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.ConsumeLogsFunc) request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -64,22 +61,14 @@ func (req *logsRequest) count() int {
 
 type logsExporter struct {
 	*baseExporter
-	pusher PushLogs
-}
-
-func (lexp *logsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	return lexp.sender.send(newLogsRequest(ctx, ld, lexp.pusher))
+	consumer.Logs
 }
 
 // NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
 	cfg config.Exporter,
 	logger *zap.Logger,
-	pusher PushLogs,
+	pusher consumerhelper.ConsumeLogsFunc,
 	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {
@@ -94,7 +83,8 @@ func NewLogsExporter(
 		return nil, errNilPushLogsData
 	}
 
-	be := newBaseExporter(cfg, logger, options...)
+	bs := fromOptions(options...)
+	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
 			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
@@ -105,10 +95,14 @@ func NewLogsExporter(
 		}
 	})
 
+	lc, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
+		return be.sender.send(newLogsRequest(ctx, ld, pusher))
+	}, bs.consumerOptions...)
+
 	return &logsExporter{
 		baseExporter: be,
-		pusher:       pusher,
-	}, nil
+		Logs:         lc,
+	}, err
 }
 
 type logsExporterWithObservability struct {

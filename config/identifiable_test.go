@@ -62,12 +62,9 @@ func TestIDFromString(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.idStr, func(t *testing.T) {
-			id, err := IDFromString(test.idStr)
+			id, err := NewIDFromString(test.idStr)
 			if test.expectedErr {
 				assert.Error(t, err)
-				assert.Panics(t, func() {
-					MustIDFromString(test.idStr)
-				})
 				return
 			}
 
@@ -76,8 +73,6 @@ func TestIDFromString(t *testing.T) {
 			assert.Equal(t, test.expectedID.Type(), id.Type())
 			assert.Equal(t, test.expectedID.Name(), id.Name())
 			assert.Equal(t, test.expectedID.String(), id.String())
-
-			assert.Equal(t, test.expectedID, MustIDFromString(test.idStr))
 		})
 	}
 }

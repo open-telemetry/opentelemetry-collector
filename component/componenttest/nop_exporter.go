@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -86,8 +85,4 @@ var nopExporterInstance = &nopExporter{
 type nopExporter struct {
 	component.Component
 	consumertest.Consumer
-}
-
-func (ne *nopExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }

@@ -165,7 +165,9 @@ func assertIncludesExpectedMetrics(t *testing.T, got pdata.Metrics) {
 	}
 
 	// verify the expected list of metrics returned (os dependent)
-	expectedMetrics := append(standardMetrics, systemSpecificMetrics[runtime.GOOS]...)
+	var expectedMetrics []string
+	expectedMetrics = append(expectedMetrics, standardMetrics...)
+	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
 	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)

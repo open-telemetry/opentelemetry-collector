@@ -375,7 +375,9 @@ func (cp *ChildProcess) WatchResourceConsumption() error {
 			cp.fetchCPUUsage()
 
 			if err := cp.checkAllowedResourceUsage(); err != nil {
-				cp.Stop()
+				if _, errStop := cp.Stop(); errStop != nil {
+					log.Printf("Failed to stop child process: %v", err)
+				}
 				return err
 			}
 

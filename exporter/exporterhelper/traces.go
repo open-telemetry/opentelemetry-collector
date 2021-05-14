@@ -24,21 +24,18 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushTraces is a helper function that is similar to ConsumeTraces but also
-// returns the number of dropped spans.
-type PushTraces func(ctx context.Context, td pdata.Traces) error
-
 type tracesRequest struct {
 	baseRequest
 	td     pdata.Traces
-	pusher PushTraces
+	pusher consumerhelper.ConsumeTracesFunc
 }
 
-func newTracesRequest(ctx context.Context, td pdata.Traces, pusher PushTraces) request {
+func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumerhelper.ConsumeTracesFunc) request {
 	return &tracesRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		td:          td,
@@ -64,22 +61,14 @@ func (req *tracesRequest) count() int {
 
 type traceExporter struct {
 	*baseExporter
-	pusher PushTraces
-}
-
-func (texp *traceExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	return texp.sender.send(newTracesRequest(ctx, td, texp.pusher))
+	consumer.Traces
 }
 
 // NewTracesExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
 func NewTracesExporter(
 	cfg config.Exporter,
 	logger *zap.Logger,
-	pusher PushTraces,
+	pusher consumerhelper.ConsumeTracesFunc,
 	options ...Option,
 ) (component.TracesExporter, error) {
 
@@ -95,7 +84,8 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	be := newBaseExporter(cfg, logger, options...)
+	bs := fromOptions(options...)
+	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep: obsreport.NewExporter(
@@ -107,10 +97,14 @@ func NewTracesExporter(
 		}
 	})
 
+	tc, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
+		return be.sender.send(newTracesRequest(ctx, td, pusher))
+	}, bs.consumerOptions...)
+
 	return &traceExporter{
 		baseExporter: be,
-		pusher:       pusher,
-	}, nil
+		Traces:       tc,
+	}, err
 }
 
 type tracesExporterWithObservability struct {

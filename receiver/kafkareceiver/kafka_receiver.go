@@ -109,7 +109,7 @@ func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
 	}
-	go c.consumeLoop(ctx, consumerGroup)
+	go c.consumeLoop(ctx, consumerGroup) // nolint:errcheck
 	<-consumerGroup.ready
 	return nil
 }

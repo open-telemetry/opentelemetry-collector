@@ -24,8 +24,11 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -36,7 +39,7 @@ const (
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
-var fakeLogsExporterName = config.MustIDFromString("fake_logs_exporter/with_name")
+var fakeLogsExporterName = config.NewIDWithName("fake_logs_exporter", "with_name")
 
 var (
 	fakeLogsExporterConfig = config.NewExporterSettings(fakeLogsExporterName)
@@ -77,22 +80,33 @@ func TestLogsExporter_Default(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Nil(t, le.ConsumeLogs(context.Background(), ld))
-	assert.Nil(t, le.Shutdown(context.Background()))
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, le.Capabilities())
+	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.ConsumeLogs(context.Background(), ld))
+	assert.NoError(t, le.Shutdown(context.Background()))
+}
+
+func TestLogsExporter_WithCapabilities(t *testing.T) {
+	capabilities := consumer.Capabilities{MutatesData: true}
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithCapabilities(capabilities))
+	require.NoError(t, err)
+	require.NotNil(t, le)
+
+	assert.Equal(t, capabilities, le.Capabilities())
 }
 
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	ld := testdata.GenerateLogDataEmpty()
 	want := errors.New("my_error")
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 
 	checkRecordedMetricsForLogsExporter(t, le, nil)
@@ -145,7 +159,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, le.Shutdown(context.Background()), want)
 }
 
-func newPushLogsData(retError error) PushLogs {
+func newPushLogsData(retError error) consumerhelper.ConsumeLogsFunc {
 	return func(ctx context.Context, td pdata.Logs) error {
 		return retError
 	}
