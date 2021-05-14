@@ -64,7 +64,6 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Auth: &configauth.Authentication{AuthenticatorName: "testauth"},
 			},
 			shouldError: false,
 		},
