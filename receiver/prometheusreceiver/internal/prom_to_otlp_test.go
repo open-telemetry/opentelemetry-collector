@@ -23,7 +23,8 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func TestCreateNodeAndResourceConversion(t *testing.T) {
+// Parity test to ensure that createNodeAndResource produces identical results to createNodeAndResourcePdata.
+func TestCreateNodeAndResourceEquivalence(t *testing.T) {
 	job, instance, scheme := "converter", "ocmetrics", "http"
 	ocNode, ocResource := createNodeAndResource(job, instance, scheme)
 	mdFromOC := internaldata.OCToMetrics(internaldata.MetricsData{
