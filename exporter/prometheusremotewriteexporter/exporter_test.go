@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -37,7 +38,6 @@ import (
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
@@ -51,6 +51,11 @@ func Test_NewPrwExporter(t *testing.T) {
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
+	buildInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
+
 	tests := []struct {
 		name           string
 		config         *Config
@@ -59,6 +64,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		externalLabels map[string]string
 		client         *http.Client
 		returnError    bool
+		buildInfo      component.BuildInfo
 	}{
 		{
 			"invalid_URL",
@@ -68,6 +74,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			true,
+			buildInfo,
 		},
 		{
 			"nil_client",
@@ -77,6 +84,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			map[string]string{"Key1": "Val1"},
 			nil,
 			true,
+			buildInfo,
 		},
 		{
 			"invalid_labels_case",
@@ -86,6 +94,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			map[string]string{"Key1": ""},
 			http.DefaultClient,
 			true,
+			buildInfo,
 		},
 		{
 			"success_case",
@@ -95,6 +104,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			false,
+			buildInfo,
 		},
 		{
 			"success_case_no_labels",
@@ -104,12 +114,13 @@ func Test_NewPrwExporter(t *testing.T) {
 			map[string]string{},
 			http.DefaultClient,
 			false,
+			buildInfo,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels)
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, tt.buildInfo)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -121,6 +132,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			assert.NotNil(t, prwe.client)
 			assert.NotNil(t, prwe.closeChan)
 			assert.NotNil(t, prwe.wg)
+			assert.NotNil(t, prwe.userAgentHeader)
 		})
 	}
 }
@@ -168,7 +180,7 @@ func Test_export(t *testing.T) {
 		// Receives the http requests and unzip, unmarshals, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
-		assert.Equal(t, "OpenTelemetry-Collector/"+version.Version, r.Header.Get("User-Agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
 
@@ -245,8 +257,13 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 	testmap["test"] = ts
 
 	HTTPClient := http.DefaultClient
+
+	buildInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{})
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, buildInfo)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -507,7 +524,7 @@ func Test_PushMetrics(t *testing.T) {
 		dest, err := snappy.Decode(buf, body)
 		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
 		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
-		assert.Equal(t, "OpenTelemetry-Collector/"+version.Version, r.Header.Get("user-agent"))
+		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		assert.NotNil(t, r.Header.Get("tenant-id"))
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
@@ -698,7 +715,11 @@ func Test_PushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{})
+			buildInfo := component.BuildInfo{
+				Description: "OpenTelemetry Collector",
+				Version:     "1.0",
+			}
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, buildInfo)
 			require.NoError(t, nErr)
 			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {

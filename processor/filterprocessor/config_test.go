@@ -52,11 +52,11 @@ func TestLoadingConfigStrict(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	tests := []struct {
-		filterName string
-		expCfg     *Config
+		filterID config.ComponentID
+		expCfg   *Config
 	}{
 		{
-			filterName: "filter/empty",
+			filterID: config.NewIDWithName("filter", "empty"),
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "empty")),
 				Metrics: MetricFilters{
@@ -66,7 +66,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 				},
 			},
 		}, {
-			filterName: "filter/include",
+			filterID: config.NewIDWithName("filter", "include"),
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
 				Metrics: MetricFilters{
@@ -74,7 +74,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 				},
 			},
 		}, {
-			filterName: "filter/exclude",
+			filterID: config.NewIDWithName("filter", "exclude"),
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
 				Metrics: MetricFilters{
@@ -82,7 +82,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 				},
 			},
 		}, {
-			filterName: "filter/includeexclude",
+			filterID: config.NewIDWithName("filter", "includeexclude"),
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "includeexclude")),
 				Metrics: MetricFilters{
@@ -97,8 +97,8 @@ func TestLoadingConfigStrict(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.filterName, func(t *testing.T) {
-			cfg := cfg.Processors[config.MustIDFromString(test.filterName)]
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}
@@ -134,11 +134,9 @@ func TestLoadingConfigRegexp(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	tests := []struct {
-		filterName string
-		expCfg     *Config
+		expCfg *Config
 	}{
 		{
-			filterName: "filter/include",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
 				Metrics: MetricFilters{
@@ -146,7 +144,6 @@ func TestLoadingConfigRegexp(t *testing.T) {
 				},
 			},
 		}, {
-			filterName: "filter/exclude",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
 				Metrics: MetricFilters{
@@ -154,7 +151,6 @@ func TestLoadingConfigRegexp(t *testing.T) {
 				},
 			},
 		}, {
-			filterName: "filter/unlimitedcache",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "unlimitedcache")),
 				Metrics: MetricFilters{
@@ -168,7 +164,6 @@ func TestLoadingConfigRegexp(t *testing.T) {
 				},
 			},
 		}, {
-			filterName: "filter/limitedcache",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "limitedcache")),
 				Metrics: MetricFilters{
@@ -186,8 +181,8 @@ func TestLoadingConfigRegexp(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.filterName, func(t *testing.T) {
-			cfg := cfg.Processors[config.MustIDFromString(test.filterName)]
+		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.expCfg.ID()]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}
@@ -203,11 +198,9 @@ func TestLoadingConfigExpr(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	tests := []struct {
-		filterName string
-		expCfg     config.Processor
+		expCfg config.Processor
 	}{
 		{
-			filterName: "filter/empty",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "empty")),
 				Metrics: MetricFilters{
@@ -218,7 +211,6 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			filterName: "filter/include",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
 				Metrics: MetricFilters{
@@ -233,7 +225,6 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			filterName: "filter/exclude",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
 				Metrics: MetricFilters{
@@ -248,7 +239,6 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			filterName: "filter/includeexclude",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "includeexclude")),
 				Metrics: MetricFilters{
@@ -269,8 +259,8 @@ func TestLoadingConfigExpr(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.filterName, func(t *testing.T) {
-			cfg := cfg.Processors[config.MustIDFromString(test.filterName)]
+		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.expCfg.ID()]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}

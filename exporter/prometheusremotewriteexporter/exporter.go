@@ -25,18 +25,19 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	resourcev1 "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (
@@ -46,17 +47,18 @@ const (
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type PrwExporter struct {
-	namespace      string
-	externalLabels map[string]string
-	endpointURL    *url.URL
-	client         *http.Client
-	wg             *sync.WaitGroup
-	closeChan      chan struct{}
+	namespace       string
+	externalLabels  map[string]string
+	endpointURL     *url.URL
+	client          *http.Client
+	wg              *sync.WaitGroup
+	closeChan       chan struct{}
+	userAgentHeader string
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, buildInfo component.BuildInfo) (*PrwExporter, error) {
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
 	}
@@ -71,13 +73,16 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		return nil, errors.New("invalid endpoint")
 	}
 
+	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
+
 	return &PrwExporter{
-		namespace:      namespace,
-		externalLabels: sanitizedLabels,
-		endpointURL:    endpointURL,
-		client:         client,
-		wg:             new(sync.WaitGroup),
-		closeChan:      make(chan struct{}),
+		namespace:       namespace,
+		externalLabels:  sanitizedLabels,
+		endpointURL:     endpointURL,
+		client:          client,
+		wg:              new(sync.WaitGroup),
+		closeChan:       make(chan struct{}),
+		userAgentHeader: userAgentHeader,
 	}, nil
 }
 
@@ -322,7 +327,7 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	req.Header.Add("Content-Encoding", "snappy")
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-	req.Header.Set("User-Agent", "OpenTelemetry-Collector/"+version.Version)
+	req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 	resp, err := prwe.client.Do(req)
 	if err != nil {

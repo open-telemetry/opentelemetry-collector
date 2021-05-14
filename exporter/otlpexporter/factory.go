@@ -62,7 +62,7 @@ func createTracesExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		oce.pushTraceData,
@@ -71,11 +71,6 @@ func createTracesExporter(
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown))
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }
 
 func createMetricsExporter(
@@ -88,7 +83,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
 		oce.pushMetricsData,
@@ -98,11 +93,6 @@ func createMetricsExporter(
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }
 
 func createLogsExporter(
@@ -115,7 +105,7 @@ func createLogsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogsExporter(
 		cfg,
 		params.Logger,
 		oce.pushLogData,
@@ -125,9 +115,4 @@ func createLogsExporter(
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }

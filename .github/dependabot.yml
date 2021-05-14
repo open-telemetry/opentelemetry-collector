@@ -2,8 +2,16 @@
 
 version: 2
 updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/checkdoc"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -20,9 +28,5 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/tools"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/checkdoc"
     schedule:
       interval: "weekly"
