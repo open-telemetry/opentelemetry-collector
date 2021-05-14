@@ -115,11 +115,7 @@ func New(params Parameters) (*Application, error) {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
-			if err := app.execute(context.Background()); err != nil {
-				return err
-			}
-
-			return nil
+			return app.execute(context.Background())
 		},
 	}
 
