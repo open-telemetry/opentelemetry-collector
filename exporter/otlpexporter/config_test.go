@@ -19,18 +19,17 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configauth"
-	"go.opentelemetry.io/collector/extension/bearertokenauth"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/extension/bearertokenauth"
 )
 
 func TestLoadConfig(t *testing.T) {

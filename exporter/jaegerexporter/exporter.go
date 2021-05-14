@@ -20,8 +20,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
-
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -31,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
