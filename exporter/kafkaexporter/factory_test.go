@@ -16,7 +16,6 @@ package kafkaexporter
 
 import (
 	"context"
-	"github.com/Shopify/sarama"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +41,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers(), converters: getConverters()}
+	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
@@ -54,7 +53,7 @@ func TestCreateMetricsExport(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers(), converters: getConverters()}
+	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers()}
 	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, mr)
@@ -66,7 +65,7 @@ func TestCreateLogsExport(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers(), converters: getConverters()}
+	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers()}
 	mr, err := mf.createLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, mr)
@@ -76,7 +75,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers(), converters: getConverters()}
+	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	// no available broker
 	require.Error(t, err)
@@ -87,7 +86,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers(), converters: getConverters()}
+	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers()}
 	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
@@ -97,7 +96,7 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers(), converters: getConverters()}
+	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers()}
 	mr, err := mf.createLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
@@ -105,8 +104,7 @@ func TestCreateLogsExporter_err(t *testing.T) {
 
 func TestWithMarshalers(t *testing.T) {
 	cm := &customMarshaler{}
-	cc := &customConverter{}
-	f := NewFactory(WithTracesMarshalers(cm), WithConverters(cc))
+	f := NewFactory(WithTracesMarshalers(cm))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false
@@ -137,15 +135,3 @@ func (c customMarshaler) Marshal(_ pdata.Traces) ([]Message, error) {
 func (c customMarshaler) Encoding() string {
 	return "custom"
 }
-
-type customConverter struct {
-}
-
-func (c customConverter) ConvertMessages(messages []Message, topic string) []*sarama.ProducerMessage {
-	panic("implement me")
-}
-
-func (c customConverter) Encoding() string {
-	return "custom"
-}
-var _ MessageConverter = (*customConverter)(nil)

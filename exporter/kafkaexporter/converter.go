@@ -22,9 +22,6 @@ import (
 type MessageConverter interface {
 	// ConvertMessages generate Messages ready to be sent
 	ConvertMessages([]Message, string) []*sarama.ProducerMessage
-
-	// Encoding return encoding for this converter
-	Encoding() string
 }
 
 // OTLPProtoConverter is the converter for otlp_proto encoding
@@ -43,21 +40,12 @@ func (mp *OTLPProtoConverter) ConvertMessages(messages []Message, topic string) 
 	return producerMessages
 }
 
-// Encoding return encoding for otlp_proto
-func (mp *OTLPProtoConverter) Encoding() string {
-	return "otlp_proto"
+// JaegerConverter is the converter for jaeger_proto and jaeger_json encoding
+type JaegerConverter struct {
 }
 
-// JaegerProtoConverter is the converter for jaeger_proto and jaeger_json encoding
-type JaegerProtoConverter struct {
-}
-
-// JaegerJSONConverter is the converter for jaeger_proto and jaeger_json encoding
-type JaegerJSONConverter struct {
-}
-
-// ConvertMessages converter for jaeger_proto encoding
-func (mp *JaegerProtoConverter) ConvertMessages(messages []Message, topic string) []*sarama.ProducerMessage {
+// ConvertMessages converter for jaeger-ish encoding
+func (mp *JaegerConverter) ConvertMessages(messages []Message, topic string) []*sarama.ProducerMessage {
 	producerMessages := make([]*sarama.ProducerMessage, len(messages))
 	for i := range messages {
 		producerMessages[i] = &sarama.ProducerMessage{
@@ -69,38 +57,17 @@ func (mp *JaegerProtoConverter) ConvertMessages(messages []Message, topic string
 	return producerMessages
 }
 
-// Encoding return encoding for jaeger_proto
-func (mp *JaegerProtoConverter) Encoding() string {
-	return "jaeger_proto"
-}
-
-// ConvertMessages converter for jaeger_json encoding
-func (mp *JaegerJSONConverter) ConvertMessages(messages []Message, topic string) []*sarama.ProducerMessage {
-	producerMessages := make([]*sarama.ProducerMessage, len(messages))
-	for i := range messages {
-		producerMessages[i] = &sarama.ProducerMessage{
-			Topic: topic,
-			Value: sarama.ByteEncoder(messages[i].Value),
-			Key:   sarama.ByteEncoder(messages[i].Key),
-		}
-	}
-	return producerMessages
-}
-
-// Encoding return encoding for jaeger_proto
-func (mp *JaegerJSONConverter) Encoding() string {
-	return "jaeger_json"
-}
-
-// getConverters returns all pre-configured converters for supported encodings
+// getConverters returns all pre-configured converters for supported encodings. For OTLP proto we use the encoding
+// of traces marshaler. If future change make the encoding name different between traces/metrics/logs, then this
+// may needs to adjust accordingly.
 func getConverters() map[string]MessageConverter {
-	otlppb := &OTLPProtoConverter{}
-	jaegerProto := &JaegerProtoConverter{}
-	jaegerJSON := &JaegerJSONConverter{}
+	otlppb := &otlpTracesPbMarshaler{}
+	jaegerProto := &jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
+	jaegerJSON := &jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
 
 	return map[string]MessageConverter{
-		otlppb.Encoding():      otlppb,
-		jaegerProto.Encoding(): jaegerProto,
-		jaegerJSON.Encoding():  jaegerJSON,
+		otlppb.Encoding():      &OTLPProtoConverter{},
+		jaegerProto.Encoding(): &JaegerConverter{},
+		jaegerJSON.Encoding():  &JaegerConverter{},
 	}
 }
