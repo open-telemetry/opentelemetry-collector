@@ -11,6 +11,11 @@
 - Remove OpenCensus status constants and transformation (#3110)
 - Remove `tracetranslator.AttributeArrayToSlice`, not used in core or contrib (#3109)
 
+## 🧰 Bug fixes 🧰
+
+- Fix Prometheus receiver metric start time and reset determination logic. (#3047)
+  - The receiver will no longer drop the first sample for `counter`, `summary`, and `histogram` metrics.
+
 ## v0.26.0 Beta
 
 ## 🛑 Breaking changes 🛑

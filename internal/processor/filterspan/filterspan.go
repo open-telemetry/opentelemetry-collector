@@ -58,7 +58,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		return nil, err
 	}
 
-	var serviceFS filterset.FilterSet = nil
+	var serviceFS filterset.FilterSet
 	if len(mp.Services) > 0 {
 		serviceFS, err = filterset.CreateFilterSet(mp.Services, &mp.Config)
 		if err != nil {
@@ -66,7 +66,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		}
 	}
 
-	var nameFS filterset.FilterSet = nil
+	var nameFS filterset.FilterSet
 	if len(mp.SpanNames) > 0 {
 		nameFS, err = filterset.CreateFilterSet(mp.SpanNames, &mp.Config)
 		if err != nil {

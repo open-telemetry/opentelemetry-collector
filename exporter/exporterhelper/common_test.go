@@ -44,7 +44,7 @@ func TestErrorToStatus(t *testing.T) {
 }
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(&defaultExporterCfg, zap.NewNop())
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -54,10 +54,11 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	be := newBaseExporter(
 		&defaultExporterCfg,
 		zap.NewNop(),
-		WithStart(func(ctx context.Context, host component.Host) error { return want }),
-		WithShutdown(func(ctx context.Context) error { return want }),
-		WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()),
-		WithTimeout(DefaultTimeoutSettings()),
+		fromOptions(
+			WithStart(func(ctx context.Context, host component.Host) error { return want }),
+			WithShutdown(func(ctx context.Context) error { return want }),
+			WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()),
+			WithTimeout(DefaultTimeoutSettings())),
 	)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Equal(t, want, be.Shutdown(context.Background()))

@@ -60,7 +60,7 @@ type protoGRPCSender struct {
 	metadata     metadata.MD
 	waitForReady bool
 
-	sreporter                 stateReporter
+	conn                      stateReporter
 	connStateReporterInterval time.Duration
 	stateChangeCallbacks      []func(connectivity.State)
 
@@ -139,15 +139,14 @@ func (s *protoGRPCSender) start(_ context.Context, host component.Host) error {
 	}
 
 	s.client = jaegerproto.NewCollectorServiceClient(conn)
-	if s.sreporter == nil {
-		s.sreporter = conn
-	}
+	s.conn = conn
+
 	go s.startConnectionStatusReporter()
 	return nil
 }
 
 func (s *protoGRPCSender) startConnectionStatusReporter() {
-	connState := s.sreporter.GetState()
+	connState := s.conn.GetState()
 	s.propagateStateChange(connState)
 
 	ticker := time.NewTicker(s.connStateReporterInterval)
@@ -160,7 +159,7 @@ func (s *protoGRPCSender) startConnectionStatusReporter() {
 				return
 			}
 
-			st := s.sreporter.GetState()
+			st := s.conn.GetState()
 			if connState != st {
 				// state has changed, report it
 				connState = st

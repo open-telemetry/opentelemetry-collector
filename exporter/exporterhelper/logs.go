@@ -61,15 +61,7 @@ func (req *logsRequest) count() int {
 
 type logsExporter struct {
 	*baseExporter
-	pusher consumerhelper.ConsumeLogsFunc
-}
-
-func (lexp *logsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	return lexp.sender.send(newLogsRequest(ctx, ld, lexp.pusher))
+	consumer.Logs
 }
 
 // NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
@@ -91,7 +83,8 @@ func NewLogsExporter(
 		return nil, errNilPushLogsData
 	}
 
-	be := newBaseExporter(cfg, logger, options...)
+	bs := fromOptions(options...)
+	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
 			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
@@ -102,10 +95,14 @@ func NewLogsExporter(
 		}
 	})
 
+	lc, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
+		return be.sender.send(newLogsRequest(ctx, ld, pusher))
+	}, bs.consumerOptions...)
+
 	return &logsExporter{
 		baseExporter: be,
-		pusher:       pusher,
-	}, nil
+		Logs:         lc,
+	}, err
 }
 
 type logsExporterWithObservability struct {

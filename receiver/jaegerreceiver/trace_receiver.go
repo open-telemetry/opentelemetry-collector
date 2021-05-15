@@ -184,11 +184,7 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 		return err
 	}
 
-	if err := jr.startCollector(host); err != nil {
-		return err
-	}
-
-	return nil
+	return jr.startCollector(host)
 }
 
 func (jr *jReceiver) Shutdown(ctx context.Context) error {

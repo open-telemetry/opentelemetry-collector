@@ -118,10 +118,7 @@ func (or *OCDataReceiver) Stop() error {
 	if err := or.traceReceiver.Shutdown(context.Background()); err != nil {
 		return err
 	}
-	if err := or.metricsReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	return nil
+	return or.metricsReceiver.Shutdown(context.Background())
 }
 
 func (or *OCDataReceiver) GenConfigYAMLStr() string {

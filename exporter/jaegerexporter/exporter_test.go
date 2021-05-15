@@ -257,7 +257,7 @@ func TestConnectionStateChange(t *testing.T) {
 	sender := &protoGRPCSender{
 		logger:                    zap.NewNop(),
 		stopCh:                    make(chan struct{}),
-		sreporter:                 sr,
+		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,
 		clientSettings: &configgrpc.GRPCClientSettings{
 			Headers:     nil,
@@ -276,7 +276,10 @@ func TestConnectionStateChange(t *testing.T) {
 		wg.Done()
 	})
 
-	require.NoError(t, sender.start(context.Background(), componenttest.NewNopHost()))
+	go func() {
+		sender.startConnectionStatusReporter()
+	}()
+
 	t.Cleanup(func() { require.NoError(t, sender.shutdown(context.Background())) })
 	wg.Wait() // wait for the initial state to be propagated
 
@@ -297,7 +300,7 @@ func TestConnectionReporterEndsOnStopped(t *testing.T) {
 	sender := &protoGRPCSender{
 		logger:                    zap.NewNop(),
 		stopCh:                    make(chan struct{}),
-		sreporter:                 sr,
+		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,
 		clientSettings: &configgrpc.GRPCClientSettings{
 			Headers:     nil,
