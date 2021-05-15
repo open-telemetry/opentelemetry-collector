@@ -33,7 +33,6 @@ type kafkaTracesProducer struct {
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler TracesMarshaler
-	converter MessageConverter
 	logger    *zap.Logger
 }
 
@@ -42,7 +41,7 @@ func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	err = e.producer.SendMessages(e.converter.ConvertMessages(messages, e.topic))
+	err = e.producer.SendMessages(producerMessages(messages, e.topic))
 	if err != nil {
 		return err
 	}
@@ -58,7 +57,6 @@ type kafkaMetricsProducer struct {
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler MetricsMarshaler
-	converter MessageConverter
 	logger    *zap.Logger
 }
 
@@ -67,7 +65,7 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Met
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	err = e.producer.SendMessages(e.converter.ConvertMessages(messages, e.topic))
+	err = e.producer.SendMessages(producerMessages(messages, e.topic))
 	if err != nil {
 		return err
 	}
@@ -83,7 +81,6 @@ type kafkaLogsProducer struct {
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler LogsMarshaler
-	converter MessageConverter
 	logger    *zap.Logger
 }
 
@@ -92,7 +89,7 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) err
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	err = e.producer.SendMessages(e.converter.ConvertMessages(messages, e.topic))
+	err = e.producer.SendMessages(producerMessages(messages, e.topic))
 	if err != nil {
 		return err
 	}
@@ -132,14 +129,9 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
-func newMetricsExporter(config Config, params component.ExporterCreateParams, marshalers map[string]MetricsMarshaler,
-	converters map[string]MessageConverter) (*kafkaMetricsProducer, error) {
+func newMetricsExporter(config Config, params component.ExporterCreateParams, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-	converter := converters[config.Encoding]
-	if converter == nil {
 		return nil, errUnrecognizedEncoding
 	}
 	producer, err := newSaramaProducer(config)
@@ -151,21 +143,15 @@ func newMetricsExporter(config Config, params component.ExporterCreateParams, ma
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
-		converter: converter,
 		logger:    params.Logger,
 	}, nil
 
 }
 
 // newTracesExporter creates Kafka exporter.
-func newTracesExporter(config Config, params component.ExporterCreateParams, marshalers map[string]TracesMarshaler,
-	converters map[string]MessageConverter) (*kafkaTracesProducer, error) {
+func newTracesExporter(config Config, params component.ExporterCreateParams, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-	converter := converters[config.Encoding]
-	if converter == nil {
 		return nil, errUnrecognizedEncoding
 	}
 	producer, err := newSaramaProducer(config)
@@ -176,19 +162,13 @@ func newTracesExporter(config Config, params component.ExporterCreateParams, mar
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
-		converter: converter,
 		logger:    params.Logger,
 	}, nil
 }
 
-func newLogsExporter(config Config, params component.ExporterCreateParams, marshalers map[string]LogsMarshaler,
-	converters map[string]MessageConverter) (*kafkaLogsProducer, error) {
+func newLogsExporter(config Config, params component.ExporterCreateParams, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-	converter := converters[config.Encoding]
-	if converter == nil {
 		return nil, errUnrecognizedEncoding
 	}
 	producer, err := newSaramaProducer(config)
@@ -200,7 +180,19 @@ func newLogsExporter(config Config, params component.ExporterCreateParams, marsh
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
-		converter: converter,
 		logger:    params.Logger,
 	}, nil
+
+}
+
+func producerMessages(messages []Message, topic string) []*sarama.ProducerMessage {
+	producerMessages := make([]*sarama.ProducerMessage, len(messages))
+	for i := range messages {
+		producerMessages[i] = &sarama.ProducerMessage{
+			Topic: topic,
+			Value: sarama.ByteEncoder(messages[i].Value),
+			Key:   sarama.ByteEncoder(messages[i].Key),
+		}
+	}
+	return producerMessages
 }
