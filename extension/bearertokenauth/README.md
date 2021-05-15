@@ -7,6 +7,12 @@ The authenticator type has to be set to `bearertokenauth`.
 
 ## Configuration
 
+The following is the only setting and is required:
+
+- `token`: static authorization token that needs to be sent on every gRPC client call as metadata.
+  This token is prepended by "Bearer " before being sent as a value of "authorization" key in
+  rpc metadata.
+
 ```yaml
 extensions:
    bearertokenauth:
@@ -32,9 +38,4 @@ service:
       exporters: [otlp]
 ```
 
-The following is the only setting and is required:
-
-- `token`: static authorization token that needs to be sent on every gRPC client call as metadata.
-   This token is prepended by "Bearer " before being sent as a value of "authorization" key in
-   rpc metadata.
   
