@@ -15,6 +15,8 @@
 package kafkaexporter
 
 import (
+	"github.com/Shopify/sarama"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -28,12 +30,17 @@ func (m *otlpTracesPbMarshaler) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpTracesPbMarshaler) Marshal(td pdata.Traces) ([]Message, error) {
+func (m *otlpTracesPbMarshaler) Marshal(td pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
 	bts, err := td.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
 	}
-	return []Message{{Value: bts}}, nil
+	return []*sarama.ProducerMessage{
+		{
+			Topic: topic,
+			Value: sarama.ByteEncoder(bts),
+		},
+	}, nil
 }
 
 type otlpMetricsPbMarshaler struct {
@@ -43,12 +50,17 @@ func (m *otlpMetricsPbMarshaler) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpMetricsPbMarshaler) Marshal(md pdata.Metrics) ([]Message, error) {
+func (m *otlpMetricsPbMarshaler) Marshal(md pdata.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
 	bts, err := md.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
 	}
-	return []Message{{Value: bts}}, nil
+	return []*sarama.ProducerMessage{
+		{
+			Topic: topic,
+			Value: sarama.ByteEncoder(bts),
+		},
+	}, nil
 }
 
 type otlpLogsPbMarshaler struct {
@@ -58,10 +70,15 @@ func (m *otlpLogsPbMarshaler) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpLogsPbMarshaler) Marshal(ld pdata.Logs) ([]Message, error) {
+func (m *otlpLogsPbMarshaler) Marshal(ld pdata.Logs, topic string) ([]*sarama.ProducerMessage, error) {
 	bts, err := ld.ToOtlpProtoBytes()
 	if err != nil {
 		return nil, err
 	}
-	return []Message{{Value: bts}}, nil
+	return []*sarama.ProducerMessage{
+		{
+			Topic: topic,
+			Value: sarama.ByteEncoder(bts),
+		},
+	}, nil
 }
