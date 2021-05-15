@@ -149,15 +149,18 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := newTracesExporter(&tt.config, zap.NewNop())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("newTracesExporter() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got == nil {
-				return
-			}
+			assert.NoError(t, err)
+			assert.NotNil(t, got)
+			t.Cleanup(func() {
+				require.NoError(t, got.Shutdown(context.Background()))
+			})
 
-			// This is expected to fail.
+			err = got.Start(context.Background(), componenttest.NewNopHost())
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 			err = got.ConsumeTraces(context.Background(), testdata.GenerateTraceDataNoLibraries())
 			assert.Error(t, err)
 		})
@@ -220,7 +223,7 @@ func TestMutualTLS(t *testing.T) {
 	}
 	exporter, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
-	err = exporter.Start(context.Background(), nil)
+	err = exporter.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
@@ -253,9 +256,18 @@ func TestConnectionStateChange(t *testing.T) {
 	}
 	sender := &protoGRPCSender{
 		logger:                    zap.NewNop(),
-		stopCh:                    make(chan (struct{})),
-		conn:                      sr,
+		stopCh:                    make(chan struct{}),
+		sreporter:                 sr,
 		connStateReporterInterval: 10 * time.Millisecond,
+		clientSettings: &configgrpc.GRPCClientSettings{
+			Headers:     nil,
+			Endpoint:    "foo.bar",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
+			Keepalive: nil,
+		},
 	}
 
 	wg.Add(1)
@@ -284,9 +296,18 @@ func TestConnectionReporterEndsOnStopped(t *testing.T) {
 
 	sender := &protoGRPCSender{
 		logger:                    zap.NewNop(),
-		stopCh:                    make(chan (struct{})),
-		conn:                      sr,
+		stopCh:                    make(chan struct{}),
+		sreporter:                 sr,
 		connStateReporterInterval: 10 * time.Millisecond,
+		clientSettings: &configgrpc.GRPCClientSettings{
+			Headers:     nil,
+			Endpoint:    "foo.bar",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
+			Keepalive: nil,
+		},
 	}
 
 	wg := sync.WaitGroup{}

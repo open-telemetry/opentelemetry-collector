@@ -33,6 +33,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
@@ -54,7 +55,7 @@ type PrwExporter struct {
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
 	userAgentHeader string
-	cfg             *Config
+	clientSettings  *confighttp.HTTPClientSettings
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
@@ -78,13 +79,13 @@ func NewPrwExporter(cfg *Config, buildInfo component.BuildInfo) (*PrwExporter, e
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
-		cfg:             cfg,
+		clientSettings:  &cfg.HTTPClientSettings,
 	}, nil
 }
 
 // start creates the http client
 func (prwe *PrwExporter) start(_ context.Context, host component.Host) error {
-	client, err := prwe.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := prwe.clientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
 	}
