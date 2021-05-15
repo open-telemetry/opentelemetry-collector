@@ -19,7 +19,7 @@ exporters:
   otlp:
     endpoint: localhost:1234
     auth:
-      authenticator: bearer
+      authenticator: bearertokenauth
 
 processors:
 
