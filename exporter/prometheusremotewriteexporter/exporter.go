@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -283,7 +284,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	concurrencyLimit := prwe.minShards
+	concurrencyLimit := int(math.Min(float64(prwe.minShards), float64(len(requests))))
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	// Run concurrencyLimit of workers until there
