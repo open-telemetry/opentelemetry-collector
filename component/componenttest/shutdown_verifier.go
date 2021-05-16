@@ -50,7 +50,7 @@ func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory compo
 	// Send some traces to the processor.
 	const generatedCount = 10
 	for i := 0; i < generatedCount; i++ {
-		processor.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
+		require.NoError(t, processor.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan()))
 	}
 
 	// Now shutdown the processor.

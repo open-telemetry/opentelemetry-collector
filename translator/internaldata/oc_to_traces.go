@@ -29,8 +29,9 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-// OCToTraces  may be used only by OpenCensus receiver and exporter implementations.
+// OCToTraces may be used only by OpenCensus receiver and exporter implementations.
 // Deprecated: use pdata.Traces instead.
+// TODO: move this function to OpenCensus package.
 func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*octrace.Span) pdata.Traces {
 	traceData := pdata.NewTraces()
 	if node == nil && resource == nil && len(spans) == 0 {

@@ -54,7 +54,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		return nil, err
 	}
 
-	var nameFS filterset.FilterSet = nil
+	var nameFS filterset.FilterSet
 	if len(mp.LogNames) > 0 {
 		nameFS, err = filterset.CreateFilterSet(mp.LogNames, &mp.Config)
 		if err != nil {

@@ -207,23 +207,19 @@ func (oce *ocExporter) pushMetricsData(_ context.Context, md pdata.Metrics) erro
 		}
 	}
 
-	ocmds := internaldata.MetricsToOC(md)
-	for _, ocmd := range ocmds {
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ocReq := agentmetricspb.ExportMetricsServiceRequest{}
+		ocReq.Node, ocReq.Resource, ocReq.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+
 		// This is a hack because OC protocol expects a Node for the initial message.
-		node := ocmd.Node
-		if node == nil {
-			node = &commonpb.Node{}
+		if ocReq.Node == nil {
+			ocReq.Node = &commonpb.Node{}
 		}
-		resource := ocmd.Resource
-		if resource == nil {
-			resource = &resourcepb.Resource{}
+		if ocReq.Resource == nil {
+			ocReq.Resource = &resourcepb.Resource{}
 		}
-		req := &agentmetricspb.ExportMetricsServiceRequest{
-			Metrics:  ocmd.Metrics,
-			Resource: resource,
-			Node:     node,
-		}
-		if err := mClient.msec.Send(req); err != nil {
+		if err := mClient.msec.Send(&ocReq); err != nil {
 			// Error received, cancel the context used to create the RPC to free all resources,
 			// put back nil to keep the number of workers constant.
 			mClient.cancel()

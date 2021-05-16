@@ -39,7 +39,7 @@ import (
 	"go.opentelemetry.io/collector/internal/middleware"
 )
 
-type exporterImp struct {
+type exporter struct {
 	// Input configuration.
 	config     *Config
 	client     *http.Client
@@ -55,7 +55,7 @@ const (
 )
 
 // Crete new exporter.
-func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporterImp, error) {
+func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {
@@ -78,56 +78,40 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporterImp, error) 
 		}
 	}
 
-	return &exporterImp{
+	return &exporter{
 		config: oCfg,
 		client: client,
 		logger: logger,
 	}, nil
 }
 
-func (e *exporterImp) pushTraceData(ctx context.Context, traces pdata.Traces) error {
+func (e *exporter) pushTraceData(ctx context.Context, traces pdata.Traces) error {
 	request, err := traces.ToOtlpProtoBytes()
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, e.tracesURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.tracesURL, request)
 }
 
-func (e *exporterImp) pushMetricsData(ctx context.Context, metrics pdata.Metrics) error {
+func (e *exporter) pushMetricsData(ctx context.Context, metrics pdata.Metrics) error {
 	request, err := metrics.ToOtlpProtoBytes()
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-
-	err = e.export(ctx, e.metricsURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.metricsURL, request)
 }
 
-func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) error {
+func (e *exporter) pushLogData(ctx context.Context, logs pdata.Logs) error {
 	request, err := logs.ToOtlpProtoBytes()
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, e.logsURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.logsURL, request)
 }
 
-func (e *exporterImp) export(ctx context.Context, url string, request []byte) error {
+func (e *exporter) export(ctx context.Context, url string, request []byte) error {
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
@@ -142,7 +126,7 @@ func (e *exporterImp) export(ctx context.Context, url string, request []byte) er
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes)
+		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
 		resp.Body.Close()
 	}()
 

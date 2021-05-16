@@ -21,6 +21,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -116,36 +117,28 @@ func (ocr *Receiver) processReceivedMsg(
 		resource = recv.Resource
 	}
 
-	md := internaldata.MetricsData{
-		Node:     lastNonNilNode,
-		Resource: resource,
-		Metrics:  recv.Metrics,
-	}
-
-	err := ocr.sendToNextConsumer(longLivedRPCCtx, md)
+	err := ocr.sendToNextConsumer(longLivedRPCCtx, lastNonNilNode, resource, recv.Metrics)
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md internaldata.MetricsData) error {
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics []*ocmetrics.Metric) error {
 	ctx := obsreport.StartMetricsReceiveOp(
 		longLivedRPCCtx,
 		ocr.id,
 		receiverTransport,
 		obsreport.WithLongLivedCtx())
 
-	numTimeSeries := 0
 	numPoints := 0
 	// Count number of time series and data points.
-	for _, metric := range md.Metrics {
-		numTimeSeries += len(metric.Timeseries)
+	for _, metric := range metrics {
 		for _, ts := range metric.GetTimeseries() {
 			numPoints += len(ts.GetPoints())
 		}
 	}
 
 	var consumerErr error
-	if len(md.Metrics) > 0 {
-		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+	if len(metrics) > 0 {
+		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(node, resource, metrics))
 	}
 
 	obsreport.EndMetricsReceiveOp(

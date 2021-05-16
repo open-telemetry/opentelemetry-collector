@@ -62,18 +62,7 @@ func (req *metricsRequest) count() int {
 
 type metricsExporter struct {
 	*baseExporter
-	pusher consumerhelper.ConsumeMetricsFunc
-}
-
-func (mexp *metricsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	if mexp.baseExporter.convertResourceToTelemetry {
-		md = convertResourceToLabels(md)
-	}
-	return mexp.sender.send(newMetricsRequest(ctx, md, mexp.pusher))
+	consumer.Metrics
 }
 
 // NewMetricsExporter creates an MetricsExporter that records observability metrics and wraps every request with a Span.
@@ -95,7 +84,8 @@ func NewMetricsExporter(
 		return nil, errNilPushMetricsData
 	}
 
-	be := newBaseExporter(cfg, logger, options...)
+	bs := fromOptions(options...)
+	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
 			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
@@ -106,10 +96,17 @@ func NewMetricsExporter(
 		}
 	})
 
+	mc, err := consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
+		if bs.ResourceToTelemetrySettings.Enabled {
+			md = convertResourceToLabels(md)
+		}
+		return be.sender.send(newMetricsRequest(ctx, md, pusher))
+	}, bs.consumerOptions...)
+
 	return &metricsExporter{
 		baseExporter: be,
-		pusher:       pusher,
-	}, nil
+		Metrics:      mc,
+	}, err
 }
 
 type metricsSenderWithObservability struct {

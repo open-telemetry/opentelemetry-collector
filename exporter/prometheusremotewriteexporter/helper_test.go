@@ -15,16 +15,12 @@
 package prometheusremotewriteexporter
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	common "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
-	resourcev1 "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 )
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
@@ -34,7 +30,7 @@ func Test_validateMetrics(t *testing.T) {
 	// define a single test
 	type combTest struct {
 		name   string
-		metric *otlp.Metric
+		metric pdata.Metric
 		want   bool
 	}
 
@@ -51,11 +47,8 @@ func Test_validateMetrics(t *testing.T) {
 		})
 	}
 
-	// append nil case
-	tests = append(tests, combTest{"invalid_nil", nil, false})
-
 	for k, invalidMetric := range invalidMetrics {
-		name := "valid_" + k
+		name := "invalid_" + k
 
 		tests = append(tests, combTest{
 			name,
@@ -79,7 +72,7 @@ func Test_validateMetrics(t *testing.T) {
 // case.
 func Test_addSample(t *testing.T) {
 	type testCase struct {
-		metric *otlp.Metric
+		metric pdata.Metric
 		sample prompb.Sample
 		labels []prompb.Label
 	}
@@ -122,9 +115,9 @@ func Test_addSample(t *testing.T) {
 			twoPointsDifferentTs,
 		},
 	}
-	t.Run("nil_case", func(t *testing.T) {
+	t.Run("empty_case", func(t *testing.T) {
 		tsMap := map[string]*prompb.TimeSeries{}
-		addSample(tsMap, nil, nil, nil)
+		addSample(tsMap, nil, nil, pdata.NewMetric())
 		assert.Exactly(t, tsMap, map[string]*prompb.TimeSeries{})
 	})
 	// run tests
@@ -143,33 +136,33 @@ func Test_timeSeriesSignature(t *testing.T) {
 	tests := []struct {
 		name   string
 		lbs    []prompb.Label
-		metric *otlp.Metric
+		metric pdata.Metric
 		want   string
 	}{
 		{
 			"int64_signature",
 			promLbs1,
 			validMetrics1[validIntGauge],
-			strconv.Itoa(int(pdata.MetricDataTypeIntGauge)) + lb1Sig,
+			validMetrics1[validIntGauge].DataType().String() + lb1Sig,
 		},
 		{
 			"histogram_signature",
 			promLbs2,
 			validMetrics1[validIntHistogram],
-			strconv.Itoa(int(pdata.MetricDataTypeIntHistogram)) + lb2Sig,
+			validMetrics1[validIntHistogram].DataType().String() + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
 			validMetrics1[validIntHistogram],
-			strconv.Itoa(int(pdata.MetricDataTypeIntHistogram)) + lb2Sig,
+			validMetrics1[validIntHistogram].DataType().String() + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
 			nil,
 			validMetrics1[validIntHistogram],
-			strconv.Itoa(int(pdata.MetricDataTypeIntHistogram)),
+			validMetrics1[validIntHistogram].DataType().String(),
 		},
 	}
 
@@ -186,17 +179,15 @@ func Test_timeSeriesSignature(t *testing.T) {
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
-		resource       resourcev1.Resource
-		orig           []common.StringKeyValue
+		resource       pdata.Resource
+		orig           pdata.StringMap
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
 	}{
 		{
 			"labels_clean",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
+			getResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -204,18 +195,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_resource",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{
-					{
-						Key:   "job",
-						Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: "prometheus"}},
-					},
-					{
-						Key:   "instance",
-						Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: "127.0.0.1:8080"}},
-					},
-				},
-			},
+			getResource("job", "prometheus", "instance", "127.0.0.1:8080"),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -223,9 +203,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_duplicate_in_extras",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
+			getResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label11, value31},
@@ -233,9 +211,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_dirty",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
+			getResource(),
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
@@ -243,19 +219,15 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"no_original_case",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
-			nil,
+			getResource(),
+			pdata.NewStringMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
 		},
 		{
 			"empty_extra_case",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
+			getResource(),
 			lbs1,
 			map[string]string{},
 			[]string{"", ""},
@@ -263,9 +235,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"single_left_over_case",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
+			getResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32},
@@ -273,9 +243,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"valid_external_labels",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
+			getResource(),
 			lbs1,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -283,9 +251,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"overwritten_external_labels",
-			resourcev1.Resource{
-				Attributes: []common.KeyValue{},
-			},
+			getResource(),
 			lbs1,
 			exlbs2,
 			[]string{label31, value31, label32, value32},
@@ -306,15 +272,15 @@ func Test_createLabelSet(t *testing.T) {
 func Test_getPromMetricName(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric *otlp.Metric
+		metric pdata.Metric
 		ns     string
 		want   string
 	}{
 		{
-			"nil_case",
-			nil,
+			"empty_case",
+			invalidMetrics[empty],
 			ns1,
-			"",
+			"test_ns_",
 		},
 		{
 			"normal_case",

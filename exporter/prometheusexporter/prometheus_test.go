@@ -130,11 +130,11 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
-	md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	md := internaldata.OCToMetrics(nil, nil, metricBuilder(128, "metric_1_"))
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
+		md := internaldata.OCToMetrics(nil, nil, metricBuilder(int64(delta), "metric_2_"))
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
@@ -208,11 +208,11 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	// Should accumulate multiple metrics
 
-	md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	md := internaldata.OCToMetrics(nil, nil, metricBuilder(128, "metric_1_"))
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
+		md := internaldata.OCToMetrics(nil, nil, metricBuilder(int64(delta), "metric_2_"))
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
