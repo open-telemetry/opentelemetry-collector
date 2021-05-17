@@ -25,7 +25,7 @@ import (
 )
 
 func TestOTLPTracesPbMarshaler(t *testing.T) {
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	m := otlpTracesPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(td)
@@ -49,7 +49,7 @@ func TestOTLPMetricsPbMarshaler(t *testing.T) {
 }
 
 func TestOTLPLogsPbMarshaler(t *testing.T) {
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	m := otlpLogsPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(ld)

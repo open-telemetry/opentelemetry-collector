@@ -348,7 +348,7 @@ func TestProtoHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	traceProto := internal.TracesToOtlp(testdata.GenerateTraceDataOneSpan().InternalRep())
+	traceProto := internal.TracesToOtlp(testdata.GenerateTracesOneSpan().InternalRep())
 	traceBytes, err := traceProto.Marshal()
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
@@ -557,7 +557,7 @@ func TestHTTPStartWithoutConsumers(t *testing.T) {
 }
 
 func createSingleSpanTrace() *collectortrace.ExportTraceServiceRequest {
-	return internal.TracesToOtlp(testdata.GenerateTraceDataOneSpan().InternalRep())
+	return internal.TracesToOtlp(testdata.GenerateTracesOneSpan().InternalRep())
 }
 
 // TestOTLPReceiverTrace_HandleNextConsumerResponse checks if the trace receiver

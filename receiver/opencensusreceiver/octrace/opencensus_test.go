@@ -64,7 +64,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 		require.NoError(t, oce.Shutdown(context.Background()))
 	}()
 
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	assert.NoError(t, oce.ConsumeTraces(context.Background(), td))
 
 	assert.Eventually(t, func() bool {

@@ -92,7 +92,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 			jb: &jaeger.Batch{
 				Process: generateThriftProcess(),
 			},
-			td: testdata.GenerateTraceDataNoLibraries(),
+			td: testdata.GenerateTracesNoLibraries(),
 		},
 
 		{

@@ -160,8 +160,10 @@ func TestNew(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+
 			require.NoError(t, err)
-			err = got.ConsumeTraces(context.Background(), testdata.GenerateTraceDataNoLibraries())
+			// This is expected to fail.
+			err = got.ConsumeTraces(context.Background(), testdata.GenerateTracesNoLibraries())
 			assert.Error(t, err)
 		})
 	}

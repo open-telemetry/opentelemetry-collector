@@ -46,7 +46,7 @@ var (
 )
 
 func TestLogsRequest(t *testing.T) {
-	lr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
+	lr := newLogsRequest(context.Background(), testdata.GenerateLogsOneLogRecord(), nil)
 
 	logErr := consumererror.NewLogs(errors.New("some error"), pdata.NewLogs())
 	assert.EqualValues(
@@ -170,7 +170,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 	require.NoError(t, err)
 	defer doneFn()
 
-	ld := testdata.GenerateLogDataTwoLogsSameResource()
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, le.ConsumeLogs(context.Background(), ld))
@@ -185,7 +185,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 }
 
 func generateLogsTraffic(t *testing.T, le component.LogsExporter, numRequests int, wantError error) {
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	ctx, span := trace.StartSpan(context.Background(), fakeLogsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

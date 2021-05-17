@@ -498,7 +498,7 @@ func TestJSpanKindToInternal(t *testing.T) {
 }
 
 func generateTraceDataResourceOnly() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
 	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
 	rs.Attributes().InsertInt("int-attr-1", 123)
@@ -506,7 +506,7 @@ func generateTraceDataResourceOnly() pdata.Traces {
 }
 
 func generateTraceDataResourceOnlyWithNoAttrs() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{})
 	return td
 }
@@ -525,7 +525,7 @@ func generateProtoProcess() *model.Process {
 }
 
 func generateTraceDataOneSpanNoResource() pdata.Traces {
-	td := testdata.GenerateTraceDataOneSpanNoResource()
+	td := testdata.GenerateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetTraceID(pdata.NewTraceID(
@@ -834,7 +834,7 @@ func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
 }
 
 func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 
 	rs0 := td.ResourceSpans().At(0)
 	rs0.InstrumentationLibrarySpans().Resize(2)
