@@ -12,27 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encodings
+package encoding
 
-import "fmt"
+import "go.opentelemetry.io/collector/consumer/pdata"
 
-// Encoding is the format that a protocol is serialized to.
-type Encoding string
-
-const (
-	Protobuf Encoding = "protobuf"
-	JSON     Encoding = "json"
-	Thrift   Encoding = "thrift"
-)
-
-func (e Encoding) String() string {
-	return string(e)
+// MetricsEncoder encodes pdata into bytes.
+type MetricsEncoder interface {
+	EncodeMetrics(md pdata.Metrics) ([]byte, error)
 }
 
-type ErrInvalidEncoding struct {
-	Encoding Encoding
+// TracesEncoder encodes pdata into bytes.
+type TracesEncoder interface {
+	EncodeTraces(td pdata.Traces) ([]byte, error)
 }
 
-func (e *ErrInvalidEncoding) Error() string {
-	return fmt.Sprintf("unsupported encoding %q", e.Encoding)
+// LogsEncoder encodes pdata into bytes.
+type LogsEncoder interface {
+	EncodeLogs(ld pdata.Logs) ([]byte, error)
 }

@@ -21,37 +21,37 @@ import (
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/protocols/encodings"
+	"go.opentelemetry.io/collector/protocols/encoding"
 	"go.opentelemetry.io/collector/protocols/models"
 )
 
 var (
-	_ encodings.TracesEncoder = (*Encoder)(nil)
-	_ encodings.TracesDecoder = (*Encoder)(nil)
+	_ encoding.TracesEncoder = (*Encoder)(nil)
+	_ encoding.TracesDecoder = (*Encoder)(nil)
 )
 
 type Encoder struct {
 	models.TracesModelTranslator
 	// Encoding is the format Zipkin is serialized to.
-	Encoding encodings.Encoding
+	Encoding encoding.Type
 }
 
 func (z *Encoder) DecodeTraces(bytes []byte) (pdata.Traces, error) {
 	switch z.Encoding {
-	case encodings.Protobuf:
+	case encoding.Protobuf:
 		spans, err := zipkin_proto3.ParseSpans(bytes, false)
 		if err != nil {
 			return pdata.NewTraces(), err
 		}
 		return z.TracesFromModel(spans)
-	case encodings.JSON:
+	case encoding.JSON:
 		var spans []*zipkinmodel.SpanModel
 		if err := json.Unmarshal(bytes, &spans); err != nil {
 			return pdata.NewTraces(), err
 		}
 		return z.TracesFromModel(spans)
 	default:
-		return pdata.NewTraces(), &encodings.ErrInvalidEncoding{Encoding: z.Encoding}
+		return pdata.NewTraces(), &encoding.ErrUnavailableEncoding{Encoding: z.Encoding}
 	}
 }
 
@@ -59,13 +59,13 @@ func (z *Encoder) EncodeTraces(td pdata.Traces) ([]byte, error) {
 	switch z.Encoding {
 	// TODO
 	// case protocols.Protobuf:
-	case encodings.JSON:
+	case encoding.JSON:
 		var spans []*zipkinmodel.SpanModel
 		if err := z.TracesToModel(td, &spans); err != nil {
 			return nil, err
 		}
 		return json.Marshal(spans)
 	default:
-		return nil, &encodings.ErrInvalidEncoding{Encoding: z.Encoding}
+		return nil, &encoding.ErrUnavailableEncoding{Encoding: z.Encoding}
 	}
 }

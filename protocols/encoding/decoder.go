@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encodings
+package encoding
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
-// MetricsDecoder deserializes bytes into pdata.
+// MetricsDecoder decodes bytes into pdata.
 type MetricsDecoder interface {
 	DecodeMetrics(bytes []byte) (pdata.Metrics, error)
 }
 
-// TracesDecoder deserializes bytes into pdata.
+// TracesDecoder decodes bytes into pdata.
 type TracesDecoder interface {
 	DecodeTraces(bytes []byte) (pdata.Traces, error)
 }
 
-// LogsDecoder deserializes bytes into pdata.
+// LogsDecoder decodes bytes into pdata.
 type LogsDecoder interface {
 	DecodeLogs(bytes []byte) (pdata.Logs, error)
 }
