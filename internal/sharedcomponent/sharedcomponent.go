@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package sharedcomponent exposes util functionality for receivers and exporters
+// that need to share state between different signal types instances such as net.Listener or os.File.
 package sharedcomponent
 
 import (
@@ -21,16 +23,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// SharedComponents a map that keeps reference of all created instances for a given configuration,
+// and ensures that the shared state is started and stopped only once.
 type SharedComponents struct {
 	comps map[interface{}]*SharedComponent
 }
 
+// NewSharedComponents returns a new empty SharedComponents.
 func NewSharedComponents() *SharedComponents {
 	return &SharedComponents{
 		comps: make(map[interface{}]*SharedComponent),
 	}
 }
 
+// GetOrAdd returns the already created instance if exists, otherwise creates a new instance
+// and adds it to the map of references.
 func (scs *SharedComponents) GetOrAdd(key interface{}, create func() component.Component) *SharedComponent {
 	if c, ok := scs.comps[key]; ok {
 		return c
@@ -45,6 +52,8 @@ func (scs *SharedComponents) GetOrAdd(key interface{}, create func() component.C
 	return newComp
 }
 
+// SharedComponent ensures that the wrapped component is started and stopped only once.
+// When stopped it is removed from the SharedComponents map.
 type SharedComponent struct {
 	component.Component
 
