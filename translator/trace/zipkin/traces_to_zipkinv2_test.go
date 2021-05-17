@@ -40,25 +40,25 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 		},
 		{
 			name: "oneEmpty",
-			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			td:   testdata.GenerateTracesOneEmptyResourceSpans(),
 			zs:   make([]*zipkinmodel.SpanModel, 0),
 			err:  nil,
 		},
 		{
 			name: "noLibs",
-			td:   testdata.GenerateTraceDataNoLibraries(),
+			td:   testdata.GenerateTracesNoLibraries(),
 			zs:   make([]*zipkinmodel.SpanModel, 0),
 			err:  nil,
 		},
 		{
 			name: "oneEmptyLib",
-			td:   testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
+			td:   testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
 			zs:   make([]*zipkinmodel.SpanModel, 0),
 			err:  nil,
 		},
 		{
 			name: "oneSpanNoResrouce",
-			td:   testdata.GenerateTraceDataOneSpanNoResource(),
+			td:   testdata.GenerateTracesOneSpanNoResource(),
 			zs:   make([]*zipkinmodel.SpanModel, 0),
 			err:  errors.New("TraceID is invalid"),
 		},
@@ -133,7 +133,7 @@ func findSpanByID(rs pdata.ResourceSpansSlice, spanID pdata.SpanID) *pdata.Span 
 }
 
 func generateTraceOneSpanOneTraceID() pdata.Traces {
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	span.SetTraceID(pdata.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}))

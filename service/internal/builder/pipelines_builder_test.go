@@ -220,7 +220,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 		require.Equal(t, len(expConsumer.Traces), 0)
 	}
 
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	require.NoError(t, processor.firstTC.(consumer.Traces).ConsumeTraces(context.Background(), td))
 
 	// Now verify received data.

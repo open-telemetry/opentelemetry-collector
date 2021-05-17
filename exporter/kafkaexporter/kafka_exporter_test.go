@@ -129,7 +129,7 @@ func TestTraceDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
+	err := p.traceDataPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
 	require.NoError(t, err)
 }
 
@@ -147,7 +147,7 @@ func TestTraceDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	err := p.traceDataPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -158,7 +158,7 @@ func TestTraceDataPusher_marshal_error(t *testing.T) {
 		marshaler: &tracesErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	err := p.traceDataPusher(context.Background(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
@@ -223,7 +223,7 @@ func TestLogsDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.logsDataPusher(context.Background(), testdata.GenerateLogDataOneLog())
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogsOneLogRecord())
 	require.NoError(t, err)
 }
 
@@ -241,7 +241,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	err := p.logsDataPusher(context.Background(), ld)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -252,7 +252,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 		marshaler: &logsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	err := p.logsDataPusher(context.Background(), ld)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())

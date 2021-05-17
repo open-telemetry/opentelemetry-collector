@@ -35,7 +35,7 @@ func TestFileTracesExporter(t *testing.T) {
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, fe.Shutdown(context.Background()))
@@ -53,7 +53,7 @@ func TestFileTracesExporterError(t *testing.T) {
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Error(t, fe.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, fe.Shutdown(context.Background()))
@@ -93,7 +93,7 @@ func TestFileLogsExporter(t *testing.T) {
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
-	otlp := testdata.GenerateLogDataTwoLogsSameResource()
+	otlp := testdata.GenerateLogsTwoLogRecordsSameResource()
 	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, fe.ConsumeLogs(context.Background(), otlp))
 	assert.NoError(t, fe.Shutdown(context.Background()))
@@ -111,7 +111,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
-	otlp := testdata.GenerateLogDataTwoLogsSameResource()
+	otlp := testdata.GenerateLogsTwoLogRecordsSameResource()
 	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Error(t, fe.ConsumeLogs(context.Background(), otlp))
 	assert.NoError(t, fe.Shutdown(context.Background()))

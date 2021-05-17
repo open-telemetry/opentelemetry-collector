@@ -171,7 +171,7 @@ func TestResourceProcessorError(t *testing.T) {
 }
 
 func generateTraceData(attributes map[string]string) pdata.Traces {
-	td := testdata.GenerateTraceDataOneSpanNoResource()
+	td := testdata.GenerateTracesOneSpanNoResource()
 	if attributes == nil {
 		return td
 	}
@@ -197,7 +197,7 @@ func generateMetricData(attributes map[string]string) pdata.Metrics {
 }
 
 func generateLogData(attributes map[string]string) pdata.Logs {
-	ld := testdata.GenerateLogDataOneLogNoResource()
+	ld := testdata.GenerateLogsOneLogRecordNoResource()
 	if attributes == nil {
 		return ld
 	}
