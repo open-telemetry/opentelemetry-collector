@@ -46,7 +46,7 @@ func TestUnmarshalOTLPTraces_error(t *testing.T) {
 }
 
 func TestUnmarshalOTLPLogs(t *testing.T) {
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 
 	expected, err := ld.ToOtlpProtoBytes()
 	require.NoError(t, err)

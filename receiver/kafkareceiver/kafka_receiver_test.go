@@ -393,7 +393,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		wg.Done()
 	}()
 
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	bts, err := ld.ToOtlpProtoBytes()
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}

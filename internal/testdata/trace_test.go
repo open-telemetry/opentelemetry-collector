@@ -34,38 +34,38 @@ func generateAllTraceTestCases() []traceTestCase {
 	return []traceTestCase{
 		{
 			name: "one-empty-resource-spans",
-			td:   GenerateTraceDataOneEmptyResourceSpans(),
-			otlp: generateTraceOtlpOneEmptyResourceSpans(),
+			td:   GenerateTracesOneEmptyResourceSpans(),
+			otlp: generateTracesOtlpOneEmptyResourceSpans(),
 		},
 		{
 			name: "no-libraries",
-			td:   GenerateTraceDataNoLibraries(),
-			otlp: generateTraceOtlpNoLibraries(),
+			td:   GenerateTracesNoLibraries(),
+			otlp: generateTracesOtlpNoLibraries(),
 		},
 		{
 			name: "one-empty-instrumentation-library",
-			td:   GenerateTraceDataOneEmptyInstrumentationLibrary(),
-			otlp: generateTraceOtlpOneEmptyInstrumentationLibrary(),
+			td:   GenerateTracesOneEmptyInstrumentationLibrary(),
+			otlp: generateTracesOtlpOneEmptyInstrumentationLibrary(),
 		},
 		{
 			name: "one-span-no-resource",
-			td:   GenerateTraceDataOneSpanNoResource(),
-			otlp: generateTraceOtlpOneSpanNoResource(),
+			td:   GenerateTracesOneSpanNoResource(),
+			otlp: generateTracesOtlpOneSpanNoResource(),
 		},
 		{
 			name: "one-span",
-			td:   GenerateTraceDataOneSpan(),
-			otlp: generateTraceOtlpOneSpan(),
+			td:   GenerateTracesOneSpan(),
+			otlp: generateTracesOtlpOneSpan(),
 		},
 		{
 			name: "two-spans-same-resource",
-			td:   GenerateTraceDataTwoSpansSameResource(),
-			otlp: generateTraceOtlpSameResourceTwoSpans(),
+			td:   GenerateTracesTwoSpansSameResource(),
+			otlp: generateTracesOtlpSameResourceTwoSpans(),
 		},
 		{
 			name: "two-spans-same-resource-one-different",
-			td:   GenerateTraceDataTwoSpansSameResourceOneDifferent(),
-			otlp: generateTraceOtlpTwoSpansSameResourceOneDifferent(),
+			td:   GenerateTracesTwoSpansSameResourceOneDifferent(),
+			otlp: generateTracesOtlpTwoSpansSameResourceOneDifferent(),
 		},
 	}
 }

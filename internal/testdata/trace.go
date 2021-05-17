@@ -33,13 +33,13 @@ var (
 	TestSpanEndTimestamp = pdata.TimestampFromTime(TestSpanEndTime)
 )
 
-func GenerateTraceDataOneEmptyResourceSpans() pdata.Traces {
+func GenerateTracesOneEmptyResourceSpans() pdata.Traces {
 	td := pdata.NewTraces()
 	td.ResourceSpans().AppendEmpty()
 	return td
 }
 
-func generateTraceOtlpOneEmptyResourceSpans() *otlpcollectortrace.ExportTraceServiceRequest {
+func generateTracesOtlpOneEmptyResourceSpans() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{},
@@ -47,14 +47,14 @@ func generateTraceOtlpOneEmptyResourceSpans() *otlpcollectortrace.ExportTraceSer
 	}
 }
 
-func GenerateTraceDataNoLibraries() pdata.Traces {
-	td := GenerateTraceDataOneEmptyResourceSpans()
+func GenerateTracesNoLibraries() pdata.Traces {
+	td := GenerateTracesOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().At(0)
 	initResource1(rs0.Resource())
 	return td
 }
 
-func generateTraceOtlpNoLibraries() *otlpcollectortrace.ExportTraceServiceRequest {
+func generateTracesOtlpNoLibraries() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -64,13 +64,13 @@ func generateTraceOtlpNoLibraries() *otlpcollectortrace.ExportTraceServiceReques
 	}
 }
 
-func GenerateTraceDataOneEmptyInstrumentationLibrary() pdata.Traces {
-	td := GenerateTraceDataNoLibraries()
+func GenerateTracesOneEmptyInstrumentationLibrary() pdata.Traces {
+	td := GenerateTracesNoLibraries()
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty()
 	return td
 }
 
-func generateTraceOtlpOneEmptyInstrumentationLibrary() *otlpcollectortrace.ExportTraceServiceRequest {
+func generateTracesOtlpOneEmptyInstrumentationLibrary() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -83,14 +83,14 @@ func generateTraceOtlpOneEmptyInstrumentationLibrary() *otlpcollectortrace.Expor
 	}
 }
 
-func GenerateTraceDataOneSpanNoResource() pdata.Traces {
-	td := GenerateTraceDataOneEmptyResourceSpans()
+func GenerateTracesOneSpanNoResource() pdata.Traces {
+	td := GenerateTracesOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().At(0)
 	fillSpanOne(rs0.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
 	return td
 }
 
-func generateTraceOtlpOneSpanNoResource() *otlpcollectortrace.ExportTraceServiceRequest {
+func generateTracesOtlpOneSpanNoResource() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -106,14 +106,14 @@ func generateTraceOtlpOneSpanNoResource() *otlpcollectortrace.ExportTraceService
 	}
 }
 
-func GenerateTraceDataOneSpan() pdata.Traces {
-	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
+func GenerateTracesOneSpan() pdata.Traces {
+	td := GenerateTracesOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	return td
 }
 
-func generateTraceOtlpOneSpan() *otlpcollectortrace.ExportTraceServiceRequest {
+func generateTracesOtlpOneSpan() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -130,16 +130,16 @@ func generateTraceOtlpOneSpan() *otlpcollectortrace.ExportTraceServiceRequest {
 	}
 }
 
-func GenerateTraceDataTwoSpansSameResource() pdata.Traces {
-	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
+func GenerateTracesTwoSpansSameResource() pdata.Traces {
+	td := GenerateTracesOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
 	return td
 }
 
-// generateTraceOtlpSameResourceTwoSpans returns the OTLP representation of the generateTraceOtlpSameResourceTwoSpans.
-func generateTraceOtlpSameResourceTwoSpans() *otlpcollectortrace.ExportTraceServiceRequest {
+// generateTracesOtlpSameResourceTwoSpans returns the OTLP representation of the generateTracesOtlpSameResourceTwoSpans.
+func generateTracesOtlpSameResourceTwoSpans() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -157,7 +157,7 @@ func generateTraceOtlpSameResourceTwoSpans() *otlpcollectortrace.ExportTraceServ
 	}
 }
 
-func GenerateTraceDataTwoSpansSameResourceOneDifferent() pdata.Traces {
+func GenerateTracesTwoSpansSameResourceOneDifferent() pdata.Traces {
 	td := pdata.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	initResource1(rs0.Resource())
@@ -171,8 +171,8 @@ func GenerateTraceDataTwoSpansSameResourceOneDifferent() pdata.Traces {
 	return td
 }
 
-func GenerateTraceDataManySpansSameResource(spansCount int) pdata.Traces {
-	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
+func GenerateTracesManySpansSameResource(spansCount int) pdata.Traces {
+	td := GenerateTracesOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	rs0ils0.Spans().Resize(spansCount)
 	for i := 0; i < spansCount; i++ {
@@ -181,7 +181,7 @@ func GenerateTraceDataManySpansSameResource(spansCount int) pdata.Traces {
 	return td
 }
 
-func generateTraceOtlpTwoSpansSameResourceOneDifferent() *otlpcollectortrace.ExportTraceServiceRequest {
+func generateTracesOtlpTwoSpansSameResourceOneDifferent() *otlpcollectortrace.ExportTraceServiceRequest {
 	return &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -304,14 +304,4 @@ func generateOtlpSpanThree() *otlptrace.Span {
 		Attributes:             generateOtlpSpanAttributes(),
 		DroppedAttributesCount: 5,
 	}
-}
-
-func GenerateTracesManySpansSameResource(spansCount int) pdata.Traces {
-	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
-	rs0ilm0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	rs0ilm0.Spans().Resize(spansCount)
-	for i := 0; i < spansCount; i++ {
-		fillSpanOne(rs0ilm0.Spans().At(i))
-	}
-	return td
 }

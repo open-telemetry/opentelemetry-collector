@@ -106,18 +106,18 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 		},
 		{
 			name:   "one-empty-resource-spans",
-			input:  testdata.GenerateTraceDataOneEmptyResourceSpans(),
-			output: testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			input:  testdata.GenerateTracesOneEmptyResourceSpans(),
+			output: testdata.GenerateTracesOneEmptyResourceSpans(),
 		},
 		{
 			name:   "no-libraries",
-			input:  testdata.GenerateTraceDataNoLibraries(),
-			output: testdata.GenerateTraceDataNoLibraries(),
+			input:  testdata.GenerateTracesNoLibraries(),
+			output: testdata.GenerateTracesNoLibraries(),
 		},
 		{
 			name:   "one-empty-instrumentation-library",
-			input:  testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
-			output: testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
+			input:  testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
+			output: testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
 		},
 	}
 	factory := NewFactory()

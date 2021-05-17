@@ -296,7 +296,7 @@ func TestInternalToOC(t *testing.T) {
 	}{
 		{
 			name:     "one-empty-resource-spans",
-			td:       testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			td:       testdata.GenerateTracesOneEmptyResourceSpans(),
 			Node:     nil,
 			Resource: nil,
 			Spans:    []*octrace.Span(nil),
@@ -304,7 +304,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "no-libraries",
-			td:       testdata.GenerateTraceDataNoLibraries(),
+			td:       testdata.GenerateTracesNoLibraries(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span(nil),
@@ -312,7 +312,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-instrumentation-library",
-			td:       testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
+			td:       testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span{},
@@ -320,7 +320,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "one-span-no-resource",
-			td:       testdata.GenerateTraceDataOneSpanNoResource(),
+			td:       testdata.GenerateTracesOneSpanNoResource(),
 			Node:     nil,
 			Resource: nil,
 			Spans:    []*octrace.Span{ocSpan1},
@@ -328,7 +328,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "one-span",
-			td:       testdata.GenerateTraceDataOneSpan(),
+			td:       testdata.GenerateTracesOneSpan(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span{ocSpan1},
@@ -336,7 +336,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "two-spans-same-resource",
-			td:       testdata.GenerateTraceDataTwoSpansSameResource(),
+			td:       testdata.GenerateTracesTwoSpansSameResource(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span{ocSpan1, ocSpan2},
