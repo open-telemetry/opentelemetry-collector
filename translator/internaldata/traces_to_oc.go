@@ -145,11 +145,11 @@ func attributeValueToOC(attr pdata.AttributeValue) *octrace.AttributeValue {
 		}
 	case pdata.AttributeValueMAP:
 		a.Value = &octrace.AttributeValue_StringValue{
-			StringValue: stringToTruncatableString(tracetranslator.AttributeValueToString(attr, false)),
+			StringValue: stringToTruncatableString(tracetranslator.AttributeValueToString(attr)),
 		}
 	case pdata.AttributeValueARRAY:
 		a.Value = &octrace.AttributeValue_StringValue{
-			StringValue: stringToTruncatableString(tracetranslator.AttributeValueToString(attr, false)),
+			StringValue: stringToTruncatableString(tracetranslator.AttributeValueToString(attr)),
 		}
 	default:
 		a.Value = &octrace.AttributeValue_StringValue{

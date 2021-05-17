@@ -59,17 +59,12 @@ const (
 )
 
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
-func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
+func AttributeValueToString(attr pdata.AttributeValue) string {
 	switch attr.Type() {
 	case pdata.AttributeValueNULL:
-		if jsonLike {
-			return "null"
-		}
 		return ""
+
 	case pdata.AttributeValueSTRING:
-		if jsonLike {
-			return fmt.Sprintf("%q", attr.StringVal())
-		}
 		return attr.StringVal()
 
 	case pdata.AttributeValueBOOL:
