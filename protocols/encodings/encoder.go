@@ -16,17 +16,17 @@ package encodings
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
-// MetricsEncoder converts pdata to another type.
+// MetricsEncoder serializes pdata into bytes.
 type MetricsEncoder interface {
-	MarshalMetrics(md pdata.Metrics) ([]byte, error)
+	EncodeMetrics(md pdata.Metrics) ([]byte, error)
 }
 
-// TracesEncoder converts pdata to another type.
+// TracesEncoder serializes pdata into bytes.
 type TracesEncoder interface {
-	MarshalTraces(md pdata.Traces) ([]byte, error)
+	EncodeTraces(td pdata.Traces) ([]byte, error)
 }
 
-// LogsEncoder converts pdata to another type.
+// LogsEncoder serializes pdata into bytes.
 type LogsEncoder interface {
-	MarshalLogs(md pdata.Logs) ([]byte, error)
+	EncodeLogs(ld pdata.Logs) ([]byte, error)
 }

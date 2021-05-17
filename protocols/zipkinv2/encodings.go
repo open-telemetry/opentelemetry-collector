@@ -36,7 +36,7 @@ type Encoder struct {
 	Encoding encodings.Encoding
 }
 
-func (z *Encoder) UnmarshalTraces(bytes []byte) (pdata.Traces, error) {
+func (z *Encoder) DecodeTraces(bytes []byte) (pdata.Traces, error) {
 	switch z.Encoding {
 	case encodings.Protobuf:
 		spans, err := zipkin_proto3.ParseSpans(bytes, false)
@@ -55,7 +55,7 @@ func (z *Encoder) UnmarshalTraces(bytes []byte) (pdata.Traces, error) {
 	}
 }
 
-func (z *Encoder) MarshalTraces(td pdata.Traces) ([]byte, error) {
+func (z *Encoder) EncodeTraces(td pdata.Traces) ([]byte, error) {
 	switch z.Encoding {
 	// TODO
 	// case protocols.Protobuf:

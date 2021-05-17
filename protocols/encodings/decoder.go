@@ -16,20 +16,17 @@ package encodings
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
-// MetricsDecoder converts another protocol to pdata.
+// MetricsDecoder deserializes bytes into pdata.
 type MetricsDecoder interface {
-	// UnmarshalMetrics converts data in another protocol to pdata.
-	UnmarshalMetrics(bytes []byte) (pdata.Metrics, error)
+	DecodeMetrics(bytes []byte) (pdata.Metrics, error)
 }
 
-// TracesDecoder converts another type of data to pdata.
+// TracesDecoder deserializes bytes into pdata.
 type TracesDecoder interface {
-	// UnmarshalTraces converts data in another protocol to pdata.
-	UnmarshalTraces(bytes []byte) (pdata.Traces, error)
+	DecodeTraces(bytes []byte) (pdata.Traces, error)
 }
 
-// LogsDecoder converts another type of data to pdata.
+// LogsDecoder deserializes bytes into pdata.
 type LogsDecoder interface {
-	// UnmarshalLogs converts a data model of another protocol into pdata.
-	UnmarshalLogs(bytes []byte) (pdata.Logs, error)
+	DecodeLogs(bytes []byte) (pdata.Logs, error)
 }
