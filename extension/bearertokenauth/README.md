@@ -12,30 +12,38 @@ The following is the only setting and is required:
 - `token`: static authorization token that needs to be sent on every gRPC client call as metadata.
   This token is prepended by "Bearer " before being sent as a value of "authorization" key in
   rpc metadata.
+  
+  **Note**: bearertokenauth requires transport layer security enabled on the exporter.
+
 
 ```yaml
 extensions:
-   bearertokenauth:
-    token: "sometoken"
+  bearertokenauth:
+    token: "somerandomtoken"
 
 receivers:
   hostmetrics:
+    scrapers:
+      memory:
+  otlp:
+    protocols:
+      grpc:
 
 exporters:
-  otlp:
-    endpoint: localhost:1234
+  otlp/withauth:
+    endpoint: 0.0.0.0:5000
+    ca_file: /tmp/certs/ca.pem
     auth:
       authenticator: bearertokenauth
-
-processors:
 
 service:
   extensions: [bearertokenauth]
   pipelines:
-    traces:
+    metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlp]
+      exporters: [otlp/withauth]
+
 ```
 
   
