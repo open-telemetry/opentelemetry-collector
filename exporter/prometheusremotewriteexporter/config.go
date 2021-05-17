@@ -53,12 +53,12 @@ type QueueConfig struct {
 	// in the queue at a given time.
 	Size int `mapstructure:"size"`
 
-	// MinShards configures the minimum number of shards used by
+	// Concurrency configures the number of workers used by
 	// the collector to fan out remote write requests.
-	MinShards int `mapstructure:"min_shards"`
+	Concurrency int `mapstructure:"concurrency"`
 }
 
-// TODO(jbd): Add capacity, max_shards, max_samples_per_send to QueueConfig.
+// TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
 
 var _ config.Exporter = (*Config)(nil)
 

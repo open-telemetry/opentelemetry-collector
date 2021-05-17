@@ -38,7 +38,7 @@ The following settings can be optionally configured:
 - `namespace`: prefix attached to each exported metric name.
 - `queue_config`: fine tuning for the outgoing request queues.
   - `size`: number of OTLP metrics that can be queued.
-  - `min_shards`: minimum number of shards to use to fan out the outgoing requests.
+  - `concurrency`: minimum number of workers to use to fan out the outgoing requests.
 
 Example:
 

@@ -47,13 +47,13 @@ type PrwExporter struct {
 	client          *http.Client
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
-	minShards       int
+	concurrency     int
 	userAgentHeader string
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, minShards int, buildInfo component.BuildInfo) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, concurrency int, buildInfo component.BuildInfo) (*PrwExporter, error) {
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
 	}
@@ -78,7 +78,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
-		minShards:       minShards,
+		concurrency:     concurrency,
 	}, nil
 }
 
@@ -284,7 +284,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	concurrencyLimit := int(math.Min(float64(prwe.minShards), float64(len(requests))))
+	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(requests))))
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	// Run concurrencyLimit of workers until there

@@ -50,7 +50,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, err
 	}
 
-	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels, prwCfg.QueueConfig.MinShards, params.BuildInfo)
+	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels, prwCfg.QueueConfig.Concurrency, params.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +94,8 @@ func createDefaultConfig() config.Exporter {
 		},
 		// TODO(jbd): Adjust the default queue size.
 		QueueConfig: QueueConfig{
-			Size:      10000,
-			MinShards: 5,
+			Size:        10000,
+			Concurrency: 5,
 		},
 	}
 }

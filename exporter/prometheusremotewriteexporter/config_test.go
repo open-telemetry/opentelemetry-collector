@@ -59,8 +59,8 @@ func Test_loadConfig(t *testing.T) {
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			QueueConfig: QueueConfig{
-				Size:      2000,
-				MinShards: 10,
+				Size:        2000,
+				Concurrency: 10,
 			},
 			Namespace:      "test-space",
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},

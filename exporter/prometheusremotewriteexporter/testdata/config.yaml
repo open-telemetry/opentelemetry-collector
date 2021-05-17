@@ -26,7 +26,7 @@ exporters:
             enabled: true
         queue_config:
             size: 2000
-            min_shards: 10
+            concurrency: 10
 
 service:
     pipelines:
