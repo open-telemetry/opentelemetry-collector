@@ -220,14 +220,14 @@ func TestResourceToOCAndBack(t *testing.T) {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
-				case pdata.AttributeValueINT:
+				case pdata.AttributeValueTypeInt:
 					// conventions.AttributeProcessID is special because we preserve the type for this.
 					if k == conventions.AttributeProcessID {
 						assert.Equal(t, v.IntVal(), a.IntVal())
 					} else {
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
 					}
-				case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
+				case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
 					assert.Equal(t, a, a)
 				default:
 					assert.Equal(t, v, a)
