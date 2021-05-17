@@ -50,7 +50,13 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, err
 	}
 
-	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels, prwCfg.QueueConfig.Concurrency, params.BuildInfo)
+	prwe, err := NewPrwExporter(
+		prwCfg.Namespace,
+		prwCfg.HTTPClientSettings.Endpoint,
+		client, prwCfg.ExternalLabels,
+		prwCfg.RemoteWriteQueue.NumConsumers,
+		params.BuildInfo,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +75,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
 			Enabled:      true,
 			NumConsumers: 1,
-			QueueSize:    prwCfg.QueueConfig.Size,
+			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithResourceToTelemetryConversion(prwCfg.ResourceToTelemetrySettings),
@@ -93,9 +99,9 @@ func createDefaultConfig() config.Exporter {
 			Headers:         map[string]string{},
 		},
 		// TODO(jbd): Adjust the default queue size.
-		QueueConfig: QueueConfig{
-			Size:        10000,
-			Concurrency: 5,
+		RemoteWriteQueue: RemoteWriteQueue{
+			QueueSize:    10000,
+			NumConsumers: 5,
 		},
 	}
 }

@@ -58,9 +58,9 @@ func Test_loadConfig(t *testing.T) {
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
 			},
-			QueueConfig: QueueConfig{
-				Size:        2000,
-				Concurrency: 10,
+			RemoteWriteQueue: RemoteWriteQueue{
+				QueueSize:    2000,
+				NumConsumers: 10,
 			},
 			Namespace:      "test-space",
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},

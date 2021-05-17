@@ -33,8 +33,7 @@ type Config struct {
 
 	// QueueConfig allows users to fine tune the queues
 	// that handle outgoing requests.
-	// See https://prometheus.io/docs/practices/remote_write/ for more.
-	QueueConfig QueueConfig `mapstructure:"queue_config"`
+	RemoteWriteQueue RemoteWriteQueue `mapstructure:"remote_write_queue"`
 
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
@@ -47,15 +46,15 @@ type Config struct {
 	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 }
 
-// QueueConfig allows to configure the remote write queue.
-type QueueConfig struct {
-	// Size is the maximum number of OTLP metric batches allowed
+// RemoteWriteQueue allows to configure the remote write queue.
+type RemoteWriteQueue struct {
+	// QueueSize is the maximum number of OTLP metric batches allowed
 	// in the queue at a given time.
-	Size int `mapstructure:"size"`
+	QueueSize int `mapstructure:"queue_size"`
 
-	// Concurrency configures the number of workers used by
+	// NumWorkers configures the number of workers used by
 	// the collector to fan out remote write requests.
-	Concurrency int `mapstructure:"concurrency"`
+	NumConsumers int `mapstructure:"num_consumers"`
 }
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
