@@ -42,7 +42,6 @@ func Test_NewPrwExporter(t *testing.T) {
 	cfg := &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
-		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
