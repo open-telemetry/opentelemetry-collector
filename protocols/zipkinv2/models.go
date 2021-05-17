@@ -31,6 +31,10 @@ type Model struct {
 	ParseStringTags bool
 }
 
+func (z *Model) Type() interface{} {
+	return []*zipkinmodel.SpanModel{}
+}
+
 func (z *Model) TracesFromModel(src interface{}) (pdata.Traces, error) {
 	if model, ok := src.([]*zipkinmodel.SpanModel); ok {
 		return zipkin.V2SpansToInternalTraces(model, z.ParseStringTags)

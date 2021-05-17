@@ -31,6 +31,8 @@ type TracesModelTranslator interface {
 	TracesFromModel(src interface{}) (pdata.Traces, error)
 	// TracesToModel converts pdata to data model.
 	TracesToModel(md pdata.Traces, out interface{}) error
+
+	Type() interface{}
 }
 
 type LogsModelTranslator interface {

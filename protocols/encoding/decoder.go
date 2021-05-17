@@ -14,19 +14,17 @@
 
 package encoding
 
-import "go.opentelemetry.io/collector/consumer/pdata"
-
 // MetricsDecoder decodes bytes into pdata.
 type MetricsDecoder interface {
-	DecodeMetrics(bytes []byte) (pdata.Metrics, error)
+	DecodeMetrics(bytes []byte) (interface{}, error)
 }
 
 // TracesDecoder decodes bytes into pdata.
 type TracesDecoder interface {
-	DecodeTraces(bytes []byte) (pdata.Traces, error)
+	DecodeTraces(bytes []byte) (interface{}, error)
 }
 
 // LogsDecoder decodes bytes into pdata.
 type LogsDecoder interface {
-	DecodeLogs(bytes []byte) (pdata.Logs, error)
+	DecodeLogs(bytes []byte) (interface{}, error)
 }

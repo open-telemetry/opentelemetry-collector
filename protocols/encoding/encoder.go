@@ -14,19 +14,17 @@
 
 package encoding
 
-import "go.opentelemetry.io/collector/consumer/pdata"
-
 // MetricsEncoder encodes pdata into bytes.
 type MetricsEncoder interface {
-	EncodeMetrics(md pdata.Metrics) ([]byte, error)
+	EncodeMetrics(model interface{}) ([]byte, error)
 }
 
 // TracesEncoder encodes pdata into bytes.
 type TracesEncoder interface {
-	EncodeTraces(td pdata.Traces) ([]byte, error)
+	EncodeTraces(model interface{}) ([]byte, error)
 }
 
 // LogsEncoder encodes pdata into bytes.
 type LogsEncoder interface {
-	EncodeLogs(ld pdata.Logs) ([]byte, error)
+	EncodeLogs(model interface{}) ([]byte, error)
 }
