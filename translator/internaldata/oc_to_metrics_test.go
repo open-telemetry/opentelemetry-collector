@@ -49,7 +49,7 @@ func TestOCToMetrics(t *testing.T) {
 		{
 			name:     "empty",
 			oc:       &agentmetricspb.ExportMetricsServiceRequest{},
-			internal: testdata.GenerateMetricsEmpty(),
+			internal: pdata.NewMetrics(),
 		},
 
 		{

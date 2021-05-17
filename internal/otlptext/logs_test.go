@@ -32,7 +32,7 @@ func TestLogs(t *testing.T) {
 		args  args
 		empty bool
 	}{
-		{"empty logs", args{testdata.GenerateLogDataEmpty()}, true},
+		{"empty logs", args{pdata.NewLogs()}, true},
 		{"logs data with empty resource log", args{testdata.GenerateLogDataOneEmptyResourceLogs()}, false},
 		{"logs data with no log records", args{testdata.GenerateLogDataNoLogRecords()}, false},
 		{"logs with one empty log", args{testdata.GenerateLogDataOneEmptyLogs()}, false},

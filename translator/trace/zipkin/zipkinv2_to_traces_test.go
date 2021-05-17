@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -36,13 +35,7 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			zs:   make([]*zipkinmodel.SpanModel, 0),
-			td:   testdata.GenerateTraceDataEmpty(),
-			err:  nil,
-		},
-		{
-			name: "nilSpan",
-			zs:   generateNilSpan(),
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 			err:  nil,
 		},
 		{
@@ -74,10 +67,6 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 			assert.EqualValues(t, test.td, td)
 		})
 	}
-}
-
-func generateNilSpan() []*zipkinmodel.SpanModel {
-	return make([]*zipkinmodel.SpanModel, 1)
 }
 
 func generateSpanNoEndpoints() []*zipkinmodel.SpanModel {

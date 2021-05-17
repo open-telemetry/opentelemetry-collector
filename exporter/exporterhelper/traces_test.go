@@ -48,8 +48,8 @@ var (
 func TestTracesRequest(t *testing.T) {
 	mr := newTracesRequest(context.Background(), testdata.GenerateTraceDataOneSpan(), nil)
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraceDataEmpty())
-	assert.EqualValues(t, newTracesRequest(context.Background(), testdata.GenerateTraceDataEmpty(), nil), mr.onError(traceErr))
+	traceErr := consumererror.NewTraces(errors.New("some error"), pdata.NewTraces())
+	assert.EqualValues(t, newTracesRequest(context.Background(), pdata.NewTraces(), nil), mr.onError(traceErr))
 }
 
 type testOCTracesExporter struct {
