@@ -109,7 +109,8 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	}
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
-		ctx := obsreport.StartTraceDataReceiveOp(receiverCtx, receiver, param.transport)
+		rec := obsreport.NewReceiver(receiver, param.transport)
+		ctx := rec.StartTraceDataReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
 		obsreport.EndTraceDataReceiveOp(
@@ -169,7 +170,8 @@ func TestReceiveLogsOp(t *testing.T) {
 	}
 	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
-		ctx := obsreport.StartLogsReceiveOp(receiverCtx, receiver, param.transport)
+		rec := obsreport.NewReceiver(receiver, param.transport)
+		ctx := rec.StartLogsReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
 		obsreport.EndLogsReceiveOp(
@@ -229,7 +231,8 @@ func TestReceiveMetricsOp(t *testing.T) {
 	}
 	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
-		ctx := obsreport.StartMetricsReceiveOp(receiverCtx, receiver, param.transport)
+		rec := obsreport.NewReceiver(receiver, param.transport)
+		ctx := rec.StartMetricsReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
 		obsreport.EndMetricsReceiveOp(
@@ -499,10 +502,9 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for _, op := range ops {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		ctx := obsreport.StartTraceDataReceiveOp(
+		rec := obsreport.NewReceiver(receiver, transport)
+		ctx := rec.StartTraceDataReceiveOp(
 			longLivedCtx,
-			receiver,
-			transport,
 			obsreport.WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 

@@ -143,19 +143,30 @@ func WithLongLivedCtx() StartReceiveOption {
 	}
 }
 
+// Receiver is a helper to add obersvability to a component.Receiver
+type Receiver struct {
+	receiverID config.ComponentID
+	transport  string
+}
+
+func NewReceiver(receiverID config.ComponentID, transport string) *Receiver {
+	return &Receiver{
+		receiverID: receiverID,
+		transport:  transport,
+	}
+}
+
 // StartTraceDataReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func StartTraceDataReceiveOp(
+func (rec *Receiver) StartTraceDataReceiveOp(
 	operationCtx context.Context,
-	receiverID config.ComponentID,
-	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
 	return traceReceiveOp(
 		operationCtx,
-		receiverID,
-		transport,
+		rec.receiverID,
+		rec.transport,
 		receiveTraceDataOperationSuffix,
 		opt...)
 }
@@ -180,16 +191,14 @@ func EndTraceDataReceiveOp(
 // StartLogsReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func StartLogsReceiveOp(
+func (rec *Receiver) StartLogsReceiveOp(
 	operationCtx context.Context,
-	receiverID config.ComponentID,
-	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
 	return traceReceiveOp(
 		operationCtx,
-		receiverID,
-		transport,
+		rec.receiverID,
+		rec.transport,
 		receiverLogsOperationSuffix,
 		opt...)
 }
@@ -214,16 +223,14 @@ func EndLogsReceiveOp(
 // StartMetricsReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func StartMetricsReceiveOp(
+func (rec *Receiver) StartMetricsReceiveOp(
 	operationCtx context.Context,
-	receiverID config.ComponentID,
-	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
 	return traceReceiveOp(
 		operationCtx,
-		receiverID,
-		transport,
+		rec.receiverID,
+		rec.transport,
 		receiverMetricsOperationSuffix,
 		opt...)
 }

@@ -169,7 +169,8 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
-	ctx := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverID, transport)
+	rec := obsreport.NewReceiver(tr.receiverID, transport)
+	ctx := rec.StartMetricsReceiveOp(tr.ctx)
 	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {
 		// Only error by Build() is errNoDataToBuild, with numReceivedPoints set to zero.

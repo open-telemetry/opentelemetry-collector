@@ -217,7 +217,8 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	transportTag := transportType(r, asZipkinv1)
 	ctx = obsreport.ReceiverContext(ctx, zr.id, transportTag)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.id, transportTag)
+	rec := obsreport.NewReceiver(zr.id, transportTag)
+	ctx = rec.StartTraceDataReceiveOp(ctx)
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)

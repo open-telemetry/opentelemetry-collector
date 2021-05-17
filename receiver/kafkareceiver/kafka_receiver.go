@@ -254,7 +254,8 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 		session.MarkMessage(message, "")
 
 		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.id, transport)
+		rec := obsreport.NewReceiver(c.id, transport)
+		ctx = rec.StartTraceDataReceiveOp(ctx)
 		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.String())}
 		_ = stats.RecordWithTags(ctx, statsTags,
 			statMessageCount.M(1),
@@ -306,7 +307,8 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 		session.MarkMessage(message, "")
 
 		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.id, transport)
+		rec := obsreport.NewReceiver(c.id, transport)
+		ctx = rec.StartTraceDataReceiveOp(ctx)
 		_ = stats.RecordWithTags(
 			ctx,
 			[]tag.Mutator{tag.Insert(tagInstanceName, c.id.String())},

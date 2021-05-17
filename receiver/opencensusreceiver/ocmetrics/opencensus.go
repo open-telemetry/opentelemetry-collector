@@ -122,10 +122,9 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics []*ocmetrics.Metric) error {
-	ctx := obsreport.StartMetricsReceiveOp(
+	rec := obsreport.NewReceiver(ocr.id, receiverTransport)
+	ctx := rec.StartMetricsReceiveOp(
 		longLivedRPCCtx,
-		ocr.id,
-		receiverTransport,
 		obsreport.WithLongLivedCtx())
 
 	numPoints := 0

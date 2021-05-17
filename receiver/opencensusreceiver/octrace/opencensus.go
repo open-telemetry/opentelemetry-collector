@@ -142,10 +142,9 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
-	ctx := obsreport.StartTraceDataReceiveOp(
+	rec := obsreport.NewReceiver(ocr.id, receiverTransport)
+	ctx := rec.StartTraceDataReceiveOp(
 		longLivedRPCCtx,
-		ocr.id,
-		receiverTransport,
 		obsreport.WithLongLivedCtx())
 
 	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
