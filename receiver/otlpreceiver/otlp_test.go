@@ -524,7 +524,7 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r := newGRPCReceiver(t, otlpReceiverName, addr, new(consumertest.TracesSink), new(consumertest.MetricsSink))
+	r := newGRPCReceiver(t, otlpReceiverName, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -536,23 +536,9 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r := newHTTPReceiver(t, addr, new(consumertest.TracesSink), new(consumertest.MetricsSink))
+	r := newHTTPReceiver(t, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
 
-	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
-}
-
-func TestGRPCStartWithoutConsumers(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	r := newGRPCReceiver(t, otlpReceiverName, addr, nil, nil)
-	require.NotNil(t, r)
-	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
-}
-
-func TestHTTPStartWithoutConsumers(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	r := newHTTPReceiver(t, addr, nil, nil)
-	require.NotNil(t, r)
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
@@ -682,11 +668,16 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	r := createReceiver(cfg, zap.NewNop())
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
 	assert.NotNil(t, r)
 
-	err := r.startProtocolServers(componenttest.NewNopHost())
-	assert.EqualError(t, err,
+	assert.EqualError(t,
+		r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
@@ -706,12 +697,18 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Start for HTTP.
-	r := newReceiver(t, NewFactory(), cfg, new(consumertest.TracesSink), new(consumertest.MetricsSink))
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, r)
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
-func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
+func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SetIDName(name)
@@ -720,7 +717,7 @@ func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Tra
 	return newReceiver(t, factory, cfg, tc, mc)
 }
 
-func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
+func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SetIDName(otlpReceiverName)
@@ -729,16 +726,16 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 	return newReceiver(t, factory, cfg, tc, mc)
 }
 
-func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) *otlpReceiver {
-	r := createReceiver(cfg, zap.NewNop())
+func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) component.Component {
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	var r component.Component
+	var err error
 	if tc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
+		r, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
+		r, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
 		require.NoError(t, err)
 	}
 	return r
@@ -772,9 +769,14 @@ func TestShutdown(t *testing.T) {
 	cfg.SetIDName(otlpReceiverName)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
-	ocr := newReceiver(t, factory, cfg, nextSink, nil)
-	require.NotNil(t, ocr)
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		nextSink)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
 	conn, err := grpc.Dial(endpointGrpc, grpc.WithInsecure(), grpc.WithBlock())
 	require.NoError(t, err)
@@ -816,7 +818,7 @@ func TestShutdown(t *testing.T) {
 	// Now shutdown the receiver, while continuing sending traces to it.
 	ctx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFn()
-	err = ocr.Shutdown(ctx)
+	err = r.Shutdown(ctx)
 	assert.NoError(t, err)
 
 	// Remember how many spans the sink received. This number should not change after this
