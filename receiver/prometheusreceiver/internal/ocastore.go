@@ -49,21 +49,12 @@ type OcaStore struct {
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
-	externalLabels       labels.Labels
 
 	logger *zap.Logger
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(
-	ctx context.Context,
-	sink consumer.Metrics,
-	logger *zap.Logger,
-	jobsMap *JobsMap,
-	useStartTimeMetric bool,
-	startTimeMetricRegex string,
-	receiverID config.ComponentID,
-	externalLabels labels.Labels) *OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.Metrics, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverID config.ComponentID) *OcaStore {
 	return &OcaStore{
 		running:              runningStateInit,
 		ctx:                  ctx,
@@ -73,7 +64,6 @@ func NewOcaStore(
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
 		receiverID:           receiverID,
-		externalLabels:       externalLabels,
 	}
 }
 
@@ -88,17 +78,7 @@ func (o *OcaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *OcaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(
-			o.ctx,
-			o.jobsMap,
-			o.useStartTimeMetric,
-			o.startTimeMetricRegex,
-			o.receiverID,
-			o.mc,
-			o.sink,
-			o.externalLabels,
-			o.logger,
-		)
+		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverID, o.mc, o.sink, o.logger)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}

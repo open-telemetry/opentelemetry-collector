@@ -27,7 +27,8 @@ import (
 )
 
 func TestOcaStore(t *testing.T) {
-	o := NewOcaStore(context.Background(), nil, nil, nil, false, "", config.NewID("prometheus"), nil)
+
+	o := NewOcaStore(context.Background(), nil, nil, nil, false, "", config.NewID("prometheus"))
 	o.SetScrapeManager(&scrape.Manager{})
 
 	app := o.Appender(context.Background())
