@@ -73,10 +73,20 @@ type transaction struct {
 	node                 *commonpb.Node
 	resource             *resourcepb.Resource
 	metricBuilder        *metricBuilder
+	externalLabels       labels.Labels
 	logger               *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverID config.ComponentID, ms *metadataService, sink consumer.Metrics, logger *zap.Logger) *transaction {
+func newTransaction(
+	ctx context.Context,
+	jobsMap *JobsMap,
+	useStartTimeMetric bool,
+	startTimeMetricRegex string,
+	receiverID config.ComponentID,
+	ms *metadataService,
+	sink consumer.Metrics,
+	externalLabels labels.Labels,
+	logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -87,6 +97,7 @@ func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bo
 		startTimeMetricRegex: startTimeMetricRegex,
 		receiverID:           receiverID,
 		ms:                   ms,
+		externalLabels:       externalLabels,
 		logger:               logger,
 	}
 }
@@ -109,7 +120,10 @@ func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) 
 		return 0, errTransactionAborted
 	default:
 	}
-
+	if len(tr.externalLabels) > 0 {
+		// TODO(jbd): Improve the allocs.
+		ls = append(ls, tr.externalLabels...)
+	}
 	if tr.isNew {
 		if err := tr.initTransaction(ls); err != nil {
 			return 0, err
