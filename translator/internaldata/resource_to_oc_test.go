@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestResourceToOC(t *testing.T) {
@@ -120,29 +119,6 @@ func TestContainerResourceToOC(t *testing.T) {
 	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
 		t.Errorf("Unexpected difference:\n%v", diff)
 	}
-}
-
-func TestAttributeValueToString(t *testing.T) {
-	assert.EqualValues(t, "", tracetranslator.AttributeValueToString(pdata.NewAttributeValueNull(), false))
-	assert.EqualValues(t, "abc", tracetranslator.AttributeValueToString(pdata.NewAttributeValueString("abc"), false))
-	assert.EqualValues(t, `"abc"`, tracetranslator.AttributeValueToString(pdata.NewAttributeValueString("abc"), true))
-	assert.EqualValues(t, "123", tracetranslator.AttributeValueToString(pdata.NewAttributeValueInt(123), false))
-	assert.EqualValues(t, "1.23", tracetranslator.AttributeValueToString(pdata.NewAttributeValueDouble(1.23), false))
-	assert.EqualValues(t, "true", tracetranslator.AttributeValueToString(pdata.NewAttributeValueBool(true), false))
-
-	v := pdata.NewAttributeValueMap()
-	v.MapVal().InsertString(`a"\`, `b"\`)
-	v.MapVal().InsertInt("c", 123)
-	v.MapVal().Insert("d", pdata.NewAttributeValueNull())
-	v.MapVal().Insert("e", v)
-	assert.EqualValues(t, `{"a\"\\":"b\"\\","c":123,"d":null,"e":{"a\"\\":"b\"\\","c":123,"d":null}}`, tracetranslator.AttributeValueToString(v, false))
-
-	v = pdata.NewAttributeValueArray()
-	v.ArrayVal().AppendEmpty().SetStringVal(`b"\`)
-	v.ArrayVal().AppendEmpty().SetIntVal(123)
-	v.ArrayVal().AppendEmpty()
-	pdata.NewAttributeValueArray().CopyTo(v.ArrayVal().AppendEmpty())
-	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, tracetranslator.AttributeValueToString(v, false))
 }
 
 func TestInferResourceType(t *testing.T) {
