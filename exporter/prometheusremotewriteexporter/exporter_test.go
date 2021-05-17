@@ -131,8 +131,8 @@ func Test_NewPrwExporter(t *testing.T) {
 	}
 }
 
-// Test_shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
-func Test_shutdown(t *testing.T) {
+// Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
+func Test_Shutdown(t *testing.T) {
 	prwe := &PrwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
@@ -156,7 +156,7 @@ func Test_shutdown(t *testing.T) {
 }
 
 // Test whether or not the Server receives the correct TimeSeries.
-// Currently considering making this test an iterative for loop of multiple TimeSeries much akin to Test_pushMetrics
+// Currently considering making this test an iterative for loop of multiple TimeSeries much akin to Test_PushMetrics
 func Test_export(t *testing.T) {
 	// First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
 	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
@@ -274,9 +274,9 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 	return errs
 }
 
-// Test_pushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
+// Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
-func Test_pushMetrics(t *testing.T) {
+func Test_PushMetrics(t *testing.T) {
 
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 

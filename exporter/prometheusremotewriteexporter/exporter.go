@@ -107,7 +107,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 
 	select {
 	case <-prwe.closeChan:
-		return errors.New("Shutdown has been called")
+		return errors.New("shutdown has been called")
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
