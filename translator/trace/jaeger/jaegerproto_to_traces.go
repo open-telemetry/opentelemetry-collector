@@ -275,9 +275,9 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 func getStatusCodeValFromAttr(attrVal pdata.AttributeValue) (int, error) {
 	var codeVal int64
 	switch attrVal.Type() {
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		codeVal = attrVal.IntVal()
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		i, err := strconv.Atoi(attrVal.StringVal())
 		if err != nil {
 			return 0, err
@@ -304,17 +304,17 @@ func getStatusCodeFromHTTPStatusAttr(attrVal pdata.AttributeValue) (pdata.Status
 func jSpanKindToInternal(spanKind string) pdata.SpanKind {
 	switch spanKind {
 	case "client":
-		return pdata.SpanKindCLIENT
+		return pdata.SpanKindClient
 	case "server":
-		return pdata.SpanKindSERVER
+		return pdata.SpanKindServer
 	case "producer":
-		return pdata.SpanKindPRODUCER
+		return pdata.SpanKindProducer
 	case "consumer":
-		return pdata.SpanKindCONSUMER
+		return pdata.SpanKindConsumer
 	case "internal":
-		return pdata.SpanKindINTERNAL
+		return pdata.SpanKindInternal
 	}
-	return pdata.SpanKindUNSPECIFIED
+	return pdata.SpanKindUnspecified
 }
 
 func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {

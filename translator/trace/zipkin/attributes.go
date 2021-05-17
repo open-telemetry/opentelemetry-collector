@@ -30,12 +30,12 @@ var attrValDescriptions = getAttrValDescripts()
 
 func getAttrValDescripts() []*attrValDescript {
 	descriptions := make([]*attrValDescript, 0, 5)
-	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueNULL))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueINT))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
-	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
-	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueMAP))
-	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueARRAY))
+	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueTypeNull))
+	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueTypeInt))
+	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueTypeDouble))
+	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueTypeBool))
+	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueTypeMap))
+	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueTypeArray))
 	return descriptions
 }
 
@@ -59,5 +59,5 @@ func determineValueType(value string) pdata.AttributeValueType {
 			return desc.attrType
 		}
 	}
-	return pdata.AttributeValueSTRING
+	return pdata.AttributeValueTypeString
 }

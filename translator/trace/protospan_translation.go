@@ -61,26 +61,26 @@ const (
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
 func AttributeValueToString(attr pdata.AttributeValue) string {
 	switch attr.Type() {
-	case pdata.AttributeValueNULL:
+	case pdata.AttributeValueTypeNull:
 		return ""
 
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return attr.StringVal()
 
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return strconv.FormatBool(attr.BoolVal())
 
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
 
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return strconv.FormatInt(attr.IntVal(), 10)
 
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		jsonStr, _ := json.Marshal(AttributeMapToMap(attr.MapVal()))
 		return string(jsonStr)
 
-	case pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeArray:
 		jsonStr, _ := json.Marshal(attributeArrayToSlice(attr.ArrayVal()))
 		return string(jsonStr)
 
@@ -94,19 +94,19 @@ func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 	rawMap := make(map[string]interface{})
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
 		switch v.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			rawMap[k] = v.StringVal()
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			rawMap[k] = v.IntVal()
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			rawMap[k] = v.DoubleVal()
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			rawMap[k] = v.BoolVal()
-		case pdata.AttributeValueNULL:
+		case pdata.AttributeValueTypeNull:
 			rawMap[k] = nil
-		case pdata.AttributeValueMAP:
+		case pdata.AttributeValueTypeMap:
 			rawMap[k] = AttributeMapToMap(v.MapVal())
-		case pdata.AttributeValueARRAY:
+		case pdata.AttributeValueTypeArray:
 			rawMap[k] = attributeArrayToSlice(v.ArrayVal())
 		}
 		return true
@@ -120,15 +120,15 @@ func attributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 	for i := 0; i < attrArray.Len(); i++ {
 		v := attrArray.At(i)
 		switch v.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			rawSlice = append(rawSlice, v.StringVal())
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			rawSlice = append(rawSlice, v.IntVal())
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			rawSlice = append(rawSlice, v.DoubleVal())
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			rawSlice = append(rawSlice, v.BoolVal())
-		case pdata.AttributeValueNULL:
+		case pdata.AttributeValueTypeNull:
 			rawSlice = append(rawSlice, nil)
 		default:
 			rawSlice = append(rawSlice, "<Invalid array value>")

@@ -103,14 +103,14 @@ func TestGetTagFromSpanKind(t *testing.T) {
 	}{
 		{
 			name: "unspecified",
-			kind: pdata.SpanKindUNSPECIFIED,
+			kind: pdata.SpanKindUnspecified,
 			tag:  model.KeyValue{},
 			ok:   false,
 		},
 
 		{
 			name: "client",
-			kind: pdata.SpanKindCLIENT,
+			kind: pdata.SpanKindClient,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -121,7 +121,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "server",
-			kind: pdata.SpanKindSERVER,
+			kind: pdata.SpanKindServer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -132,7 +132,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "producer",
-			kind: pdata.SpanKindPRODUCER,
+			kind: pdata.SpanKindProducer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -143,7 +143,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "consumer",
-			kind: pdata.SpanKindCONSUMER,
+			kind: pdata.SpanKindConsumer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -154,7 +154,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "internal",
-			kind: pdata.SpanKindINTERNAL,
+			kind: pdata.SpanKindInternal,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
