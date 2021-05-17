@@ -192,7 +192,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			jb:   model.Batch{},
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{

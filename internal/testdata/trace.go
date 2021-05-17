@@ -17,10 +17,9 @@ package testdata
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 var (
@@ -34,16 +33,8 @@ var (
 	TestSpanEndTimestamp = pdata.TimestampFromTime(TestSpanEndTime)
 )
 
-func GenerateTraceDataEmpty() pdata.Traces {
-	return pdata.NewTraces()
-}
-
-func generateTraceOtlpEmpty() *otlpcollectortrace.ExportTraceServiceRequest {
-	return &otlpcollectortrace.ExportTraceServiceRequest{}
-}
-
 func GenerateTraceDataOneEmptyResourceSpans() pdata.Traces {
-	td := GenerateTraceDataEmpty()
+	td := pdata.NewTraces()
 	td.ResourceSpans().AppendEmpty()
 	return td
 }

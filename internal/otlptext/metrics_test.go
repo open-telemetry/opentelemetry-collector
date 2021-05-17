@@ -32,7 +32,7 @@ func TestMetrics(t *testing.T) {
 		args  args
 		empty bool
 	}{
-		{"empty metrics", args{testdata.GenerateMetricsEmpty()}, true},
+		{"empty metrics", args{pdata.NewMetrics()}, true},
 		{"metrics with all types and datapoints", args{testdata.GeneratMetricsAllTypesWithSampleDatapoints()}, false},
 		{"metrics with all types without datapoints", args{testdata.GenerateMetricsAllTypesEmptyDataPoint()}, false},
 		{"metrics with invalid metric types", args{testdata.GenerateMetricsMetricTypeInvalid()}, false},

@@ -57,7 +57,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	}
 
 	// Added to test logic that check for empty resources.
-	td := testdata.GenerateTraceDataEmpty()
+	td := pdata.NewTraces()
 	assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -97,7 +97,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	}
 
 	// Added to test logic that check for empty resources.
-	td := testdata.GenerateTraceDataEmpty()
+	td := pdata.NewTraces()
 	require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	// wait for all spans to be reported
@@ -287,7 +287,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	}
 
 	// Added to test case with empty resources sent.
-	md := testdata.GenerateMetricsEmpty()
+	md := pdata.NewMetrics()
 	assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -533,7 +533,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	}
 
 	// Added to test case with empty resources sent.
-	ld := testdata.GenerateLogDataEmpty()
+	ld := pdata.NewLogs()
 	assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))

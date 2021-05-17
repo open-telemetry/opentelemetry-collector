@@ -83,8 +83,8 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
-			input:  testdata.GenerateLogDataEmpty(),
-			output: testdata.GenerateLogDataEmpty(),
+			input:  pdata.NewLogs(),
+			output: pdata.NewLogs(),
 		},
 		{
 			name:   "one-empty-resource-logs",
