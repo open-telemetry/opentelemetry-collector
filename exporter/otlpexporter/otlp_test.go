@@ -224,7 +224,7 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	td := testdata.GenerateTraceDataEmpty()
+	td := pdata.NewTraces()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
@@ -294,7 +294,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	md := testdata.GenerateMetricsEmpty()
+	md := pdata.NewMetrics()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
@@ -497,7 +497,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty request.
-	td := testdata.GenerateLogDataEmpty()
+	td := pdata.NewLogs()
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), td))
 
 	// Wait until it is received.

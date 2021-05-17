@@ -80,8 +80,8 @@ func NewPrwExporter(cfg *Config, buildInfo component.BuildInfo) (*PrwExporter, e
 	}, nil
 }
 
-// start creates the http client
-func (prwe *PrwExporter) start(_ context.Context, host component.Host) error {
+// Start creates the http client
+func (prwe *PrwExporter) Start(_ context.Context, host component.Host) error {
 	client, err := prwe.clientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
@@ -90,24 +90,24 @@ func (prwe *PrwExporter) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-// shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
+// Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (prwe *PrwExporter) shutdown(context.Context) error {
+func (prwe *PrwExporter) Shutdown(context.Context) error {
 	close(prwe.closeChan)
 	prwe.wg.Wait()
 	return nil
 }
 
-// pushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
+// PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *PrwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
 	select {
 	case <-prwe.closeChan:
-		return errors.New("shutdown has been called")
+		return errors.New("Shutdown has been called")
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0

@@ -32,7 +32,7 @@ func TestTraces(t *testing.T) {
 		args  args
 		empty bool
 	}{
-		{"empty traces", args{testdata.GenerateTraceDataEmpty()}, true},
+		{"empty traces", args{pdata.NewTraces()}, true},
 		{"traces with two spans", args{testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()}, false},
 	}
 	for _, tt := range tests {

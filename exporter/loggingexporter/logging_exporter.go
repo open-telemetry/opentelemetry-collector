@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/otlptext"
@@ -76,6 +77,7 @@ func newTracesExporter(config config.Exporter, level string, logger *zap.Logger)
 		config,
 		logger,
 		s.pushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -96,6 +98,7 @@ func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger
 		config,
 		logger,
 		s.pushMetricsData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -116,6 +119,7 @@ func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (
 		config,
 		logger,
 		s.pushLogData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),

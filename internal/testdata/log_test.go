@@ -33,11 +33,6 @@ type logTestCase struct {
 func generateAllLogTestCases() []logTestCase {
 	return []logTestCase{
 		{
-			name: "empty",
-			ld:   GenerateLogDataEmpty(),
-			otlp: generateLogOtlpEmpty(),
-		},
-		{
 			name: "one-empty-resource-logs",
 			ld:   GenerateLogDataOneEmptyResourceLogs(),
 			otlp: generateLogOtlpOneEmptyResourceLogs(),

@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -112,6 +113,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 		cfg,
 		params.Logger,
 		exp.traceDataPusher,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -137,6 +139,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		cfg,
 		params.Logger,
 		exp.metricsDataPusher,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -162,6 +165,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 		cfg,
 		params.Logger,
 		exp.logsDataPusher,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

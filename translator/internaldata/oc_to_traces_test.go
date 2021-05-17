@@ -311,7 +311,7 @@ func TestOcToInternal(t *testing.T) {
 	}{
 		{
 			name: "empty",
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{

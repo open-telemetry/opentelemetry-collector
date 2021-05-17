@@ -59,7 +59,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		prwe.pushMetrics,
+		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
 			Enabled:      true,
@@ -70,8 +70,8 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithResourceToTelemetryConversion(prwCfg.ResourceToTelemetrySettings),
-		exporterhelper.WithStart(prwe.start),
-		exporterhelper.WithShutdown(prwe.shutdown),
+		exporterhelper.WithStart(prwe.Start),
+		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
 
 	return prwexp, err

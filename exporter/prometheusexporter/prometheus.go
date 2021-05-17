@@ -27,7 +27,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -91,10 +90,6 @@ func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 	}()
 
 	return nil
-}
-
-func (pe *prometheusExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }
 
 func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {

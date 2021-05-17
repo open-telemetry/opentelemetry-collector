@@ -29,16 +29,8 @@ var (
 	TestLogTimestamp = pdata.TimestampFromTime(TestLogTime)
 )
 
-func GenerateLogDataEmpty() pdata.Logs {
-	return pdata.NewLogs()
-}
-
-func generateLogOtlpEmpty() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{}
-}
-
 func GenerateLogDataOneEmptyResourceLogs() pdata.Logs {
-	ld := GenerateLogDataEmpty()
+	ld := pdata.NewLogs()
 	ld.ResourceLogs().AppendEmpty()
 	return ld
 }

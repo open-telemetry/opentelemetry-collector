@@ -119,7 +119,7 @@ func Test_NewPrwExporter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.NoError(t, prwe.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NotNil(t, prwe.namespace)
 			assert.NotNil(t, prwe.endpointURL)
 			assert.NotNil(t, prwe.externalLabels)
@@ -131,21 +131,21 @@ func Test_NewPrwExporter(t *testing.T) {
 	}
 }
 
-// Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
+// Test_shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
 func Test_shutdown(t *testing.T) {
 	prwe := &PrwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
-	err := prwe.shutdown(context.Background())
+	err := prwe.Shutdown(context.Background())
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.pushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
+			errChan <- prwe.PushMetrics(context.Background(), pdata.NewMetrics())
 		}()
 	}
 	wg.Wait()
@@ -264,7 +264,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		return errs
 	}
 
-	err = prwe.start(context.Background(), componenttest.NewNopHost())
+	err = prwe.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -517,9 +517,9 @@ func Test_pushMetrics(t *testing.T) {
 
 			prwe, nErr := NewPrwExporter(cfg, buildInfo)
 			require.NoError(t, nErr)
-			require.NoError(t, prwe.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
 
-			err := prwe.pushMetrics(context.Background(), *tt.md)
+			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return
