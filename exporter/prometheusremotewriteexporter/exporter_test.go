@@ -58,7 +58,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		config         *Config
 		namespace      string
 		endpoint       string
-		minShards      int
+		concurrency    int
 		externalLabels map[string]string
 		client         *http.Client
 		returnError    bool
