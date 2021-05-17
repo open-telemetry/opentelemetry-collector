@@ -84,7 +84,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			jb:   &jaeger.Batch{},
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{

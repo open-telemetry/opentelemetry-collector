@@ -48,10 +48,10 @@ var (
 func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
 
-	logErr := consumererror.NewLogs(errors.New("some error"), testdata.GenerateLogDataEmpty())
+	logErr := consumererror.NewLogs(errors.New("some error"), pdata.NewLogs())
 	assert.EqualValues(
 		t,
-		newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil),
+		newLogsRequest(context.Background(), pdata.NewLogs(), nil),
 		lr.onError(logErr),
 	)
 }
@@ -75,7 +75,7 @@ func TestLogsExporter_NilPushLogsData(t *testing.T) {
 }
 
 func TestLogsExporter_Default(t *testing.T) {
-	ld := testdata.GenerateLogDataEmpty()
+	ld := pdata.NewLogs()
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
@@ -96,7 +96,7 @@ func TestLogsExporter_WithCapabilities(t *testing.T) {
 }
 
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
-	ld := testdata.GenerateLogDataEmpty()
+	ld := pdata.NewLogs()
 	want := errors.New("my_error")
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
 	require.NoError(t, err)

@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 var testTracesCfg = config.NewProcessorSettings(config.NewID(typeStr))
@@ -40,7 +39,7 @@ func TestNewTracesProcessor(t *testing.T) {
 
 	assert.True(t, tp.Capabilities().MutatesData)
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, tp.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), pdata.NewTraces()))
 	assert.NoError(t, tp.Shutdown(context.Background()))
 }
 
@@ -69,13 +68,13 @@ func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
 	tp, err := NewTracesProcessor(&testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)
-	assert.Equal(t, want, tp.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
+	assert.Equal(t, want, tp.ConsumeTraces(context.Background(), pdata.NewTraces()))
 }
 
 func TestNewTracesProcessor_ProcessTracesErrSkipProcessingData(t *testing.T) {
 	tp, err := NewTracesProcessor(&testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, tp.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
+	assert.Equal(t, nil, tp.ConsumeTraces(context.Background(), pdata.NewTraces()))
 }
 
 type testTProcessor struct {

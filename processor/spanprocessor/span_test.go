@@ -101,8 +101,8 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
-			input:  testdata.GenerateTraceDataEmpty(),
-			output: testdata.GenerateTraceDataEmpty(),
+			input:  pdata.NewTraces(),
+			output: pdata.NewTraces(),
 		},
 		{
 			name:   "one-empty-resource-spans",

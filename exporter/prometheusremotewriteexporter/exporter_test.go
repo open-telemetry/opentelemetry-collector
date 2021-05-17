@@ -148,7 +148,7 @@ func Test_Shutdown(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
+			errChan <- prwe.PushMetrics(context.Background(), pdata.NewMetrics())
 		}()
 	}
 	wg.Wait()

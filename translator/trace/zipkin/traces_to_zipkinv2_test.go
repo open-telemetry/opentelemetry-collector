@@ -35,7 +35,7 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 	}{
 		{
 			name: "empty",
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 			err:  nil,
 		},
 		{

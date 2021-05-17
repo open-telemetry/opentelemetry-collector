@@ -19,10 +19,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type traceTestCase struct {
@@ -33,11 +32,6 @@ type traceTestCase struct {
 
 func generateAllTraceTestCases() []traceTestCase {
 	return []traceTestCase{
-		{
-			name: "empty",
-			td:   GenerateTraceDataEmpty(),
-			otlp: generateTraceOtlpEmpty(),
-		},
 		{
 			name: "one-empty-resource-spans",
 			td:   GenerateTraceDataOneEmptyResourceSpans(),
