@@ -16,206 +16,103 @@ package fileexporter
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/internal"
 	collectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	logspb "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
-	otresourcepb "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/testutil"
 )
 
-func TestFileTracesExporterNoErrors(t *testing.T) {
+func TestFileTracesExporter(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	lte := &fileExporter{file: mf}
-	require.NotNil(t, lte)
+	fe := &fileExporter{file: mf}
+	require.NotNil(t, fe)
 
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
-
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), td))
-	assert.NoError(t, lte.Shutdown(context.Background()))
+	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, fe.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
 	got := &collectortrace.ExportTraceServiceRequest{}
 	assert.NoError(t, unmarshaler.Unmarshal(mf, got))
-
 	assert.EqualValues(t, internal.TracesToOtlp(td.InternalRep()), got)
 }
 
-func TestFileMetricsExporterNoErrors(t *testing.T) {
-	mf := &testutil.LimitedWriter{}
-	lme := &fileExporter{file: mf}
-	require.NotNil(t, lme)
+func TestFileTracesExporterError(t *testing.T) {
+	mf := &testutil.LimitedWriter{
+		MaxLen: 42,
+	}
+	fe := &fileExporter{file: mf}
+	require.NotNil(t, fe)
 
-	md := testdata.GenerateMetricsTwoMetrics()
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
-	assert.NoError(t, lme.Shutdown(context.Background()))
-
-	var unmarshaler = &jsonpb.Unmarshaler{}
-	j := &collectormetrics.ExportMetricsServiceRequest{}
-	assert.NoError(t, unmarshaler.Unmarshal(mf, j))
-
-	assert.EqualValues(t, internal.MetricsToOtlp(md.InternalRep()), j)
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Error(t, fe.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
-func TestFileLogsExporterNoErrors(t *testing.T) {
+func TestFileMetricsExporter(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	exporter := &fileExporter{file: mf}
-	require.NotNil(t, exporter)
+	fe := &fileExporter{file: mf}
+	require.NotNil(t, fe)
 
-	now := time.Now()
-	otlp := &collectorlogs.ExportLogsServiceRequest{
-		ResourceLogs: []*logspb.ResourceLogs{
-			{
-				Resource: otresourcepb.Resource{
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "attr1",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
-						},
-					},
-				},
-				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-					{
-						Logs: []*logspb.LogRecord{
-							{
-								TimeUnixNano: uint64(now.UnixNano()),
-								Name:         "logA",
-							},
-							{
-								TimeUnixNano: uint64(now.UnixNano()),
-								Name:         "logB",
-							},
-						},
-					},
-				},
-			},
-			{
-				Resource: otresourcepb.Resource{
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "attr2",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
-						},
-					},
-				},
-				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-					{
-						Logs: []*logspb.LogRecord{
-							{
-								TimeUnixNano: uint64(now.UnixNano()),
-								Name:         "logC",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, fe.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
-	var j collectorlogs.ExportLogsServiceRequest
+	got := &collectormetrics.ExportMetricsServiceRequest{}
+	assert.NoError(t, unmarshaler.Unmarshal(mf, got))
+	assert.EqualValues(t, internal.MetricsToOtlp(md.InternalRep()), got)
+}
 
-	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
-	assert.EqualValues(t, otlp.ResourceLogs, j.ResourceLogs)
+func TestFileMetricsExporterError(t *testing.T) {
+	mf := &testutil.LimitedWriter{
+		MaxLen: 42,
+	}
+	fe := &fileExporter{file: mf}
+	require.NotNil(t, fe)
+
+	md := testdata.GenerateMetricsTwoMetrics()
+	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Error(t, fe.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, fe.Shutdown(context.Background()))
+}
+
+func TestFileLogsExporter(t *testing.T) {
+	mf := &testutil.LimitedWriter{}
+	fe := &fileExporter{file: mf}
+	require.NotNil(t, fe)
+
+	otlp := testdata.GenerateLogDataTwoLogsSameResource()
+	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, fe.ConsumeLogs(context.Background(), otlp))
+	assert.NoError(t, fe.Shutdown(context.Background()))
+
+	var unmarshaler = &jsonpb.Unmarshaler{}
+	got := &collectorlogs.ExportLogsServiceRequest{}
+	assert.NoError(t, unmarshaler.Unmarshal(mf, got))
+	assert.EqualValues(t, internal.LogsToOtlp(otlp.InternalRep()), got)
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
-
-	now := time.Now()
-	otlp := &collectorlogs.ExportLogsServiceRequest{
-		ResourceLogs: []*logspb.ResourceLogs{
-			{
-				Resource: otresourcepb.Resource{
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "attr1",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
-						},
-					},
-				},
-				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-					{
-						Logs: []*logspb.LogRecord{
-							{
-								TimeUnixNano: uint64(now.UnixNano()),
-								Name:         "logA",
-							},
-							{
-								TimeUnixNano: uint64(now.UnixNano()),
-								Name:         "logB",
-							},
-						},
-					},
-				},
-			},
-			{
-				Resource: otresourcepb.Resource{
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "attr2",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
-						},
-					},
-				},
-				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-					{
-						Logs: []*logspb.LogRecord{
-							{
-								TimeUnixNano: uint64(now.UnixNano()),
-								Name:         "logC",
-							},
-						},
-					},
-				},
-			},
-		},
+	mf := &testutil.LimitedWriter{
+		MaxLen: 42,
 	}
+	fe := &fileExporter{file: mf}
+	require.NotNil(t, fe)
 
-	cases := []struct {
-		Name   string
-		MaxLen int
-	}{
-		{
-			Name:   "opening",
-			MaxLen: 1,
-		},
-		{
-			Name:   "resource",
-			MaxLen: 16,
-		},
-		{
-			Name:   "log_start",
-			MaxLen: 78,
-		},
-		{
-			Name:   "logs",
-			MaxLen: 128,
-		},
-	}
-
-	for i := range cases {
-		maxLen := cases[i].MaxLen
-		t.Run(cases[i].Name, func(t *testing.T) {
-			mf := &testutil.LimitedWriter{
-				MaxLen: maxLen,
-			}
-			exporter := &fileExporter{file: mf}
-			require.NotNil(t, exporter)
-
-			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
-			assert.NoError(t, exporter.Shutdown(context.Background()))
-		})
-	}
+	otlp := testdata.GenerateLogDataTwoLogsSameResource()
+	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Error(t, fe.ConsumeLogs(context.Background(), otlp))
+	assert.NoError(t, fe.Shutdown(context.Background()))
 }
