@@ -200,11 +200,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 		if ext == nil {
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
-
-		if gcs.Auth.AuthenticatorName == "" {
-			return nil, fmt.Errorf("authenticator name not provided")
-		}
-
+		
 		componentId, cperr := config.NewIDFromString(gcs.Auth.AuthenticatorName)
 		if cperr != nil {
 			return nil, cperr
