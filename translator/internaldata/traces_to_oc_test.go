@@ -102,27 +102,27 @@ func TestSpanKindToOC(t *testing.T) {
 		ocKind octrace.Span_SpanKind
 	}{
 		{
-			kind:   pdata.SpanKindCLIENT,
+			kind:   pdata.SpanKindClient,
 			ocKind: octrace.Span_CLIENT,
 		},
 		{
-			kind:   pdata.SpanKindSERVER,
+			kind:   pdata.SpanKindServer,
 			ocKind: octrace.Span_SERVER,
 		},
 		{
-			kind:   pdata.SpanKindCONSUMER,
+			kind:   pdata.SpanKindConsumer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindPRODUCER,
+			kind:   pdata.SpanKindProducer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindUNSPECIFIED,
+			kind:   pdata.SpanKindUnspecified,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindINTERNAL,
+			kind:   pdata.SpanKindInternal,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 	}
@@ -155,7 +155,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 		ocAttribute *octrace.AttributeValue
 	}{
 		{
-			kind: pdata.SpanKindCONSUMER,
+			kind: pdata.SpanKindConsumer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -165,7 +165,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindPRODUCER,
+			kind: pdata.SpanKindProducer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -175,7 +175,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindINTERNAL,
+			kind: pdata.SpanKindInternal,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -185,15 +185,15 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind:        pdata.SpanKindUNSPECIFIED,
+			kind:        pdata.SpanKindUnspecified,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindSERVER,
+			kind:        pdata.SpanKindServer,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindCLIENT,
+			kind:        pdata.SpanKindClient,
 			ocAttribute: nil,
 		},
 	}

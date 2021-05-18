@@ -15,6 +15,8 @@
 package prometheusremotewriteexporter
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -31,6 +33,10 @@ type Config struct {
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
 	Namespace string `mapstructure:"namespace"`
 
+	// QueueConfig allows users to fine tune the queues
+	// that handle outgoing requests.
+	RemoteWriteQueue RemoteWriteQueue `mapstructure:"remote_write_queue"`
+
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
@@ -42,9 +48,28 @@ type Config struct {
 	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 }
 
+// RemoteWriteQueue allows to configure the remote write queue.
+type RemoteWriteQueue struct {
+	// QueueSize is the maximum number of OTLP metric batches allowed
+	// in the queue at a given time.
+	QueueSize int `mapstructure:"queue_size"`
+
+	// NumWorkers configures the number of workers used by
+	// the collector to fan out remote write requests.
+	NumConsumers int `mapstructure:"num_consumers"`
+}
+
+// TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
+
 var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.RemoteWriteQueue.QueueSize < 0 {
+		return fmt.Errorf("remote write queue size can't be negative")
+	}
+	if cfg.RemoteWriteQueue.NumConsumers < 0 {
+		return fmt.Errorf("remote write consumer number can't be negative")
+	}
 	return nil
 }

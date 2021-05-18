@@ -124,6 +124,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			require.NotNil(t, tr)
 			if tt.wantErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(context.Background()))
 			} else {
 				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, tr.Shutdown(context.Background()))
@@ -306,11 +307,11 @@ func TestCreateLogReceiver(t *testing.T) {
 
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(context.Background()))
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))
 			}
-			receivers = map[*Config]*otlpReceiver{}
 		})
 	}
 }

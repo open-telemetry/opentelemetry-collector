@@ -59,6 +59,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		config         *Config
 		namespace      string
 		endpoint       string
+		concurrency    int
 		externalLabels map[string]string
 		client         *http.Client
 		returnError    bool
@@ -69,6 +70,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"invalid URL",
+			5,
 			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			true,
@@ -79,6 +81,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			5,
 			map[string]string{"Key1": ""},
 			http.DefaultClient,
 			true,
@@ -89,6 +92,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			5,
 			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			false,
@@ -99,6 +103,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			5,
 			map[string]string{},
 			http.DefaultClient,
 			false,
@@ -108,11 +113,10 @@ func Test_NewPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			cfg.HTTPClientSettings.Endpoint = tt.endpoint
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
-
+			cfg.NumConsumers = 1
 			prwe, err := NewPrwExporter(cfg, tt.buildInfo)
 			if tt.returnError {
 				assert.Error(t, err)
@@ -252,6 +256,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = endpoint.String()
+	cfg.NumConsumers = 1
 
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -508,13 +513,15 @@ func Test_PushMetrics(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 				},
+				QueueSettings: exporterhelper.QueueSettings{
+					NumConsumers: 5,
+				},
 			}
 			assert.NotNil(t, cfg)
 			buildInfo := component.BuildInfo{
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-
 			prwe, nErr := NewPrwExporter(cfg, buildInfo)
 			require.NoError(t, nErr)
 			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))

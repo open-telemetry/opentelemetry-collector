@@ -140,7 +140,7 @@ func spanToZipkinSpan(
 		zs.Duration = time.Duration(span.EndTimestamp() - span.StartTimestamp())
 	}
 	zs.Kind = spanKindToZipkinKind(span.Kind())
-	if span.Kind() == pdata.SpanKindINTERNAL {
+	if span.Kind() == pdata.SpanKindInternal {
 		tags[tracetranslator.TagSpanKind] = "internal"
 	}
 
@@ -227,7 +227,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		rawMap[k] = tracetranslator.AttributeValueToString(v, false)
+		rawMap[k] = tracetranslator.AttributeValueToString(v)
 		return true
 	})
 	return rawMap
@@ -251,7 +251,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		zTags[k] = tracetranslator.AttributeValueToString(v, false)
+		zTags[k] = tracetranslator.AttributeValueToString(v)
 		return true
 	})
 
@@ -284,13 +284,13 @@ func extractZipkinServiceName(zTags map[string]string) string {
 
 func spanKindToZipkinKind(kind pdata.SpanKind) zipkinmodel.Kind {
 	switch kind {
-	case pdata.SpanKindCLIENT:
+	case pdata.SpanKindClient:
 		return zipkinmodel.Client
-	case pdata.SpanKindSERVER:
+	case pdata.SpanKindServer:
 		return zipkinmodel.Server
-	case pdata.SpanKindPRODUCER:
+	case pdata.SpanKindProducer:
 		return zipkinmodel.Producer
-	case pdata.SpanKindCONSUMER:
+	case pdata.SpanKindConsumer:
 		return zipkinmodel.Consumer
 	default:
 		return zipkinmodel.Undetermined

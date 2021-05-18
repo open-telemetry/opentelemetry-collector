@@ -36,6 +36,9 @@ The following settings can be optionally configured:
 - `headers`: additional headers attached to each HTTP request. 
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
+- `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
+  - `queue_size`: number of OTLP metrics that can be queued.
+  - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
 
 Example:
 
@@ -51,5 +54,5 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
-- [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue`.
+- [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
 - [Resource attributes to Metric labels](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), 
