@@ -2,12 +2,12 @@
 title: "Getting Started"
 weight: 1
 ---
-
+<!-- markdown-link-check-disable -->
 Please be sure to review the [Data Collection
 documentation](../../concepts/data-collection) in order to understand the
 deployment models, components, and repositories applicable to the OpenTelemetry
 Collector.
-
+<!-- markdown-link-check-enable -->
 ## Deployment
 
 The OpenTelemetry Collector consists of a single binary and two primary deployment methods:
