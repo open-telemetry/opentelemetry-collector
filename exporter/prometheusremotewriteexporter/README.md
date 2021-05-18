@@ -18,6 +18,7 @@ how this exporter works.
 
 The following settings are required:
 
+<!-- markdown-link-check-disable-next-line -->
 - `endpoint` (no default): The remote write endpoint to send remote
 write samples, e.g. https://my-cortex:7900/api/v1/push.
 
@@ -48,7 +49,7 @@ Example:
 ```yaml
 exporters:
   prometheusremotewrite:
-    endpoint: "http://some.url:9411/api/prom/push"
+    endpoint: "https://my-cortex:7900/api/v1/push"
 ```
 
 ## Advanced Configuration
