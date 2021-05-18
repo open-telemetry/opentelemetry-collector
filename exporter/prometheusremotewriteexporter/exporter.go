@@ -75,7 +75,7 @@ func NewPrwExporter(cfg *Config, buildInfo component.BuildInfo) (*PrwExporter, e
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
 		clientSettings:  &cfg.HTTPClientSettings,
-		concurrency:     cfg.NumConsumers,
+		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 	}, nil
 }
 

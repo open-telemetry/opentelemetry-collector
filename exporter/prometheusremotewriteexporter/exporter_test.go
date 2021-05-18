@@ -116,8 +116,9 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg.HTTPClientSettings.Endpoint = tt.endpoint
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
-			cfg.NumConsumers = 1
+			cfg.RemoteWriteQueue.NumConsumers = 1
 			prwe, err := NewPrwExporter(cfg, tt.buildInfo)
+
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -256,7 +257,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = endpoint.String()
-	cfg.NumConsumers = 1
+	cfg.RemoteWriteQueue.NumConsumers = 1
 
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -513,10 +514,10 @@ func Test_PushMetrics(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
-					NumConsumers: 5,
-				},
+				RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 5},
 			}
+
+
 			assert.NotNil(t, cfg)
 			buildInfo := component.BuildInfo{
 				Description: "OpenTelemetry Collector",
