@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoding
+package bytes
 
-// MetricsDecoder decodes bytes into pdata.
+// MetricsDecoder decodes bytes into data model.
 type MetricsDecoder interface {
 	DecodeMetrics(bytes []byte) (interface{}, error)
 }
 
-// TracesDecoder decodes bytes into pdata.
+// TracesDecoder decodes bytes into data model.
 type TracesDecoder interface {
 	DecodeTraces(bytes []byte) (interface{}, error)
 }
 
-// LogsDecoder decodes bytes into pdata.
+// LogsDecoder decodes bytes into data model.
 type LogsDecoder interface {
 	DecodeLogs(bytes []byte) (interface{}, error)
 }

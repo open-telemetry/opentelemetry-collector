@@ -12,28 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoding
+package bytes
 
-import "fmt"
-
-// Type is the encoding format that a model is serialized to.
-type Type string
-
-const (
-	Protobuf Type = "protobuf"
-	JSON     Type = "json"
-	Thrift   Type = "thrift"
-)
-
-func (e Type) String() string {
-	return string(e)
+// MetricsEncoder encodes data model into bytes.
+type MetricsEncoder interface {
+	EncodeMetrics(model interface{}) ([]byte, error)
 }
 
-// ErrUnavailableEncoding is returned when the requested encoding is not present.
-type ErrUnavailableEncoding struct {
-	Encoding Type
+// TracesEncoder encodes data model into bytes.
+type TracesEncoder interface {
+	EncodeTraces(model interface{}) ([]byte, error)
 }
 
-func (e *ErrUnavailableEncoding) Error() string {
-	return fmt.Sprintf("unsupported encoding %q", e.Encoding)
+// LogsEncoder encodes data model into bytes.
+type LogsEncoder interface {
+	EncodeLogs(model interface{}) ([]byte, error)
 }

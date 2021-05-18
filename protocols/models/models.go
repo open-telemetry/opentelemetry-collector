@@ -16,38 +16,22 @@ package models
 
 import (
 	"fmt"
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-type MetricsModelTranslator interface {
-	// MetricsFromModel converts a data model of another protocol into pdata.
-	MetricsFromModel(src interface{}) (pdata.Metrics, error)
-	// MetricsToModel converts pdata to data model.
-	MetricsToModel(md pdata.Metrics, out interface{}) error
-}
-
-type TracesModelTranslator interface {
-	// TracesFromModel converts a data model of another protocol into pdata.
-	TracesFromModel(src interface{}) (pdata.Traces, error)
-	// TracesToModel converts pdata to data model.
-	TracesToModel(md pdata.Traces, out interface{}) error
-
-	Type() interface{}
-}
-
-type LogsModelTranslator interface {
-	// LogsFromModel converts a data model of another protocol into pdata.
-	LogsFromModel(src interface{}) (pdata.Logs, error)
-	// LogsToModel converts pdata to data model.
-	LogsToModel(md pdata.Logs, out interface{}) error
-}
 
 // ErrIncompatibleType details a type conversion error during translation.
 type ErrIncompatibleType struct {
-	Model interface{}
-	// TODO: maybe do expected vs. actual?
+	given interface{}
+	expected interface{}
 }
 
 func (i *ErrIncompatibleType) Error() string {
-	return fmt.Sprintf("model type %T is incompatible", i.Model)
+	return fmt.Sprintf("model type %T is expected but given %T ", i.expected, i.given)
+}
+
+// NewErrIncompatibleType returns ErrIncompatibleType instance
+func NewErrIncompatibleType(expected, given interface{}) *ErrIncompatibleType {
+	return &ErrIncompatibleType{
+		given:    given,
+		expected: expected,
+	}
 }
