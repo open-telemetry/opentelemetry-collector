@@ -48,7 +48,7 @@ Example:
 ```yaml
 exporters:
   prometheusremotewrite:
-    endpoint: "https://my-cortex:7900/api/v1/push"
+    endpoint: "http://some.url:9411/api/prom/push"
 ```
 
 ## Advanced Configuration
