@@ -16,17 +16,22 @@ package prometheusremotewriteexporter
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+const (
+	defaultRetryMinBackoff = 30 * time.Millisecond
+	defaultRetryMaxBackoff = 100 * time.Millisecond
+)
+
 // Config defines configuration for Remote Write exporter.
 type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
@@ -56,6 +61,15 @@ type RemoteWriteQueue struct {
 	// NumWorkers configures the number of workers used by
 	// the collector to fan out remote write requests.
 	NumConsumers int `mapstructure:"num_consumers"`
+
+	// MinBackoff controls the minimum amount of time to wait before
+	// retrying a failed request. The backoff interval is doubled
+	// for each failed requests up to max_backoff.
+	MinBackoff time.Duration `mapstructure:"min_backoff"`
+
+	// MaxBackoff controls the maximum amount of time
+	// to wait before retrying a failed request.
+	MaxBackoff time.Duration `mapstructure:"max_backoff"`
 }
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.

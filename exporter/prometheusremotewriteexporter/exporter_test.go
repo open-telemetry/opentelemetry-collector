@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -42,7 +43,6 @@ func Test_NewPrwExporter(t *testing.T) {
 	cfg := &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
-		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
@@ -64,71 +64,75 @@ func Test_NewPrwExporter(t *testing.T) {
 		buildInfo      component.BuildInfo
 	}{
 		{
-			"invalid_URL",
-			cfg,
-			"test",
-			"invalid URL",
-			5,
-			map[string]string{"Key1": "Val1"},
-			http.DefaultClient,
-			true,
-			buildInfo,
+			name:           "invalid_URL",
+			config:         cfg,
+			namespace:      "test",
+			endpoint:       "invalid URL",
+			concurrency:    5,
+			externalLabels: map[string]string{"Key1": "Val1"},
+			client:         http.DefaultClient,
+			returnError:    true,
+			buildInfo:      buildInfo,
 		},
 		{
-			"nil_client",
-			cfg,
-			"test",
-			"http://some.url:9411/api/prom/push",
-			5,
-			map[string]string{"Key1": "Val1"},
-			nil,
-			true,
-			buildInfo,
+			name:           "nil_client",
+			config:         cfg,
+			namespace:      "test",
+			endpoint:       "http://some.url:9411/api/prom/push",
+			concurrency:    5,
+			externalLabels: map[string]string{"Key1": "Val1"},
+			client:         nil,
+			returnError:    true,
+			buildInfo:      buildInfo,
 		},
 		{
-			"invalid_labels_case",
-			cfg,
-			"test",
-			"http://some.url:9411/api/prom/push",
-			5,
-			map[string]string{"Key1": ""},
-			http.DefaultClient,
-			true,
-			buildInfo,
+			name:           "invalid_labels_case",
+			config:         cfg,
+			namespace:      "test",
+			endpoint:       "http://some.url:9411/api/prom/push",
+			concurrency:    5,
+			externalLabels: map[string]string{"Key1": ""},
+			client:         http.DefaultClient,
+			returnError:    true,
+			buildInfo:      buildInfo,
 		},
 		{
-			"success_case",
-			cfg,
-			"test",
-			"http://some.url:9411/api/prom/push",
-			5,
-			map[string]string{"Key1": "Val1"},
-			http.DefaultClient,
-			false,
-			buildInfo,
+			name:           "success_case",
+			config:         cfg,
+			namespace:      "test",
+			endpoint:       "http://some.url:9411/api/prom/push",
+			concurrency:    5,
+			externalLabels: map[string]string{"Key1": "Val1"},
+			client:         http.DefaultClient,
+			returnError:    false,
+			buildInfo:      buildInfo,
 		},
 		{
-			"success_case_no_labels",
-			cfg,
-			"test",
-			"http://some.url:9411/api/prom/push",
-			5,
-			map[string]string{},
-			http.DefaultClient,
-			false,
-			buildInfo,
+			name:           "success_case_no_labels",
+			config:         cfg,
+			namespace:      "test",
+			endpoint:       "http://some.url:9411/api/prom/push",
+			concurrency:    5,
+			externalLabels: map[string]string{},
+			client:         http.DefaultClient,
+			returnError:    false,
+			buildInfo:      buildInfo,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, 1, tt.buildInfo)
+			cfg.Namespace = tt.namespace
+			cfg.RemoteWriteQueue.NumConsumers = tt.concurrency
+			cfg.ExternalLabels = tt.externalLabels
+
+			prwe, err := NewPrwExporter(cfg, tt.endpoint, tt.client, tt.buildInfo)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
 			}
-			require.NotNil(t, prwe)
-			assert.NotNil(t, prwe.namespace)
+			assert.NoError(t, err)
+			assert.NotNil(t, prwe)
 			assert.NotNil(t, prwe.endpointURL)
 			assert.NotNil(t, prwe.externalLabels)
 			assert.NotNil(t, prwe.client)
@@ -207,7 +211,8 @@ func Test_export(t *testing.T) {
 		httpResponseCode int
 		returnError      bool
 	}{
-		{"success_case",
+		{
+			"success_case",
 			*ts1,
 			true,
 			http.StatusAccepted,
@@ -219,7 +224,8 @@ func Test_export(t *testing.T) {
 			false,
 			http.StatusAccepted,
 			true,
-		}, {
+		},
+		{
 			"error_status_code_case",
 			*ts1,
 			true,
@@ -231,11 +237,10 @@ func Test_export(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if handleFunc != nil {
-					handleFunc(w, r, tt.httpResponseCode)
-				}
+				handleFunc(w, r, tt.httpResponseCode)
 			}))
 			defer server.Close()
+
 			serverURL, uErr := url.Parse(server.URL)
 			assert.NoError(t, uErr)
 			if !tt.serverUp {
@@ -243,6 +248,7 @@ func Test_export(t *testing.T) {
 			}
 			errs := runExportPipeline(ts1, serverURL)
 			if tt.returnError {
+				assert.GreaterOrEqual(t, len(errs), 1)
 				assert.Error(t, errs[0])
 				return
 			}
@@ -258,14 +264,15 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts
 
-	HTTPClient := http.DefaultClient
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.Namespace = "test"
 
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, 1, buildInfo)
+	prwe, err := NewPrwExporter(defaultConfig, endpoint.String(), http.DefaultClient, buildInfo)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -511,6 +518,11 @@ func Test_PushMetrics(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 				},
+				RemoteWriteQueue: RemoteWriteQueue{
+					NumConsumers: 5,
+					MinBackoff:   1 * time.Millisecond,
+					MaxBackoff:   3 * time.Millisecond,
+				},
 			}
 			assert.NotNil(t, config)
 			// c, err := config.HTTPClientSettings.ToClient()
@@ -520,7 +532,7 @@ func Test_PushMetrics(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, 5, buildInfo)
+			prwe, nErr := NewPrwExporter(config, serverURL.String(), c, buildInfo)
 			require.NoError(t, nErr)
 			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {

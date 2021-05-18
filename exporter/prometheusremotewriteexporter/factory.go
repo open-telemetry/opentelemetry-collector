@@ -51,10 +51,9 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	}
 
 	prwe, err := NewPrwExporter(
-		prwCfg.Namespace,
+		prwCfg,
 		prwCfg.HTTPClientSettings.Endpoint,
-		client, prwCfg.ExternalLabels,
-		prwCfg.RemoteWriteQueue.NumConsumers,
+		client,
 		params.BuildInfo,
 	)
 	if err != nil {
@@ -77,7 +76,6 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
-		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithResourceToTelemetryConversion(prwCfg.ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -89,7 +87,6 @@ func createDefaultConfig() config.Exporter {
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -102,6 +99,8 @@ func createDefaultConfig() config.Exporter {
 		RemoteWriteQueue: RemoteWriteQueue{
 			QueueSize:    10000,
 			NumConsumers: 5,
+			MinBackoff:   defaultRetryMinBackoff,
+			MaxBackoff:   defaultRetryMaxBackoff,
 		},
 	}
 }

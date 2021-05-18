@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -41,24 +42,24 @@ const maxBatchByteSize = 3000000
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type PrwExporter struct {
-	namespace       string
+	cfg             *Config
 	externalLabels  map[string]string
 	endpointURL     *url.URL
 	client          *http.Client
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
-	concurrency     int
 	userAgentHeader string
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, concurrency int, buildInfo component.BuildInfo) (*PrwExporter, error) {
+func NewPrwExporter(cfg *Config, endpoint string, client *http.Client, buildInfo component.BuildInfo) (*PrwExporter, error) {
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
 	}
 
-	sanitizedLabels, err := validateAndSanitizeExternalLabels(externalLabels)
+	// TODO(jbd): Read endpoint from cfg.
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
 	}
@@ -71,14 +72,13 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
 	return &PrwExporter{
-		namespace:       namespace,
+		cfg:             cfg,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
 		client:          client,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
-		concurrency:     concurrency,
 	}, nil
 }
 
@@ -186,6 +186,8 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+	namespace := prwe.cfg.Namespace
+
 	switch metric.DataType() {
 	// int points
 	case pdata.MetricDataTypeDoubleGauge:
@@ -195,7 +197,7 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 		}
 
 		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleDoubleDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleDoubleDataPoint(dataPoints.At(i), resource, metric, namespace, tsMap, prwe.externalLabels)
 		}
 	case pdata.MetricDataTypeIntGauge:
 		dataPoints := metric.IntGauge().DataPoints()
@@ -203,7 +205,7 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
 		}
 		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleIntDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleIntDataPoint(dataPoints.At(i), resource, metric, namespace, tsMap, prwe.externalLabels)
 		}
 	case pdata.MetricDataTypeDoubleSum:
 		dataPoints := metric.DoubleSum().DataPoints()
@@ -211,7 +213,7 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
 		}
 		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleDoubleDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleDoubleDataPoint(dataPoints.At(i), resource, metric, namespace, tsMap, prwe.externalLabels)
 
 		}
 	case pdata.MetricDataTypeIntSum:
@@ -220,7 +222,7 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
 		}
 		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleIntDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleIntDataPoint(dataPoints.At(i), resource, metric, namespace, tsMap, prwe.externalLabels)
 		}
 	}
 	return nil
@@ -230,6 +232,8 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
 func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+	namespace := prwe.cfg.Namespace
+
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntHistogram:
 		dataPoints := metric.IntHistogram().DataPoints()
@@ -237,7 +241,7 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
 		}
 		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleIntHistogramDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleIntHistogramDataPoint(dataPoints.At(i), resource, metric, namespace, tsMap, prwe.externalLabels)
 		}
 	case pdata.MetricDataTypeHistogram:
 		dataPoints := metric.Histogram().DataPoints()
@@ -245,7 +249,7 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
 		}
 		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleDoubleHistogramDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+			addSingleDoubleHistogramDataPoint(dataPoints.At(i), resource, metric, namespace, tsMap, prwe.externalLabels)
 		}
 	}
 	return nil
@@ -260,7 +264,7 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 		return fmt.Errorf("empty data points. %s is dropped", metric.Name())
 	}
 	for i := 0; i < dataPoints.Len(); i++ {
-		addSingleDoubleSummaryDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+		addSingleDoubleSummaryDataPoint(dataPoints.At(i), resource, metric, prwe.cfg.Namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }
@@ -284,7 +288,10 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(requests))))
+	concurrencyLimit := int(math.Min(
+		float64(prwe.cfg.RemoteWriteQueue.NumConsumers),
+		float64(len(requests)),
+	))
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	// Run concurrencyLimit of workers until there
@@ -304,7 +311,6 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 		}()
 	}
 	wg.Wait()
-
 	return errs
 }
 
@@ -330,23 +336,56 @@ func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	req.Header.Set("User-Agent", prwe.userAgentHeader)
 
-	resp, err := prwe.client.Do(req)
-	if err != nil {
-		return consumererror.Permanent(err)
-	}
-	defer resp.Body.Close()
+	return prwe.makeReqWithRetries(req)
+}
 
+func (prwe *PrwExporter) makeReqWithRetries(req *http.Request) error {
+	backoff := prwe.cfg.RemoteWriteQueue.MinBackoff
+	if backoff == 0 {
+		// Should never happen, but setting it to be safe.
+		backoff = defaultRetryMinBackoff
+	}
+	maxBackoff := prwe.cfg.RemoteWriteQueue.MaxBackoff
+	if maxBackoff == 0 {
+		// Should never happen, but setting it to be safe.
+		backoff = defaultRetryMaxBackoff
+	}
+
+	var lastErr error
+	for ; backoff <= maxBackoff; backoff *= 2 {
+		retry, err := prwe.makeReq(req)
+		if err == nil {
+			return nil
+		}
+		if !retry {
+			return err // permanent error
+		}
+
+		lastErr = err // transient error
+		time.Sleep(backoff)
+	}
+	return lastErr
+}
+
+func (prwe *PrwExporter) makeReq(req *http.Request) (retry bool, err error) {
 	// 2xx status code is considered a success
 	// 5xx errors are recoverable and the exporter should retry
 	// Reference for different behavior according to status code:
 	// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
+	resp, err := prwe.client.Do(req)
+	if err != nil {
+		return false, consumererror.Permanent(err)
+	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return nil
+		return false, nil
 	}
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
 	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %v: %s", resp.Status, err, body)
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-		return rerr
+		return true, rerr
 	}
-	return consumererror.Permanent(rerr)
+
+	return false, consumererror.Permanent(rerr)
 }

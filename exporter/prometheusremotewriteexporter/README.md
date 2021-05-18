@@ -39,6 +39,9 @@ The following settings can be optionally configured:
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `queue_size`: number of OTLP metrics that can be queued.
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
+  - `min_backoff`: minimum time before a retry, e.g. "30ms". The backoff interval is doubled
+  for each failed requests up to max_backoff.
+  - `max_backoff` maximum time to wait before retrying, e.g. "100ms".
 
 Example:
 

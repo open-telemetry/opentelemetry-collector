@@ -8,11 +8,6 @@ exporters:
     prometheusremotewrite:
     prometheusremotewrite/2:
         namespace: "test-space"
-        retry_on_failure:
-            enabled: true
-            initial_interval: 10s
-            max_interval: 60s
-            max_elapsed_time: 10m
         endpoint: "localhost:8888"
         ca_file: "/var/lib/mycert.pem"
         write_buffer_size: 524288
