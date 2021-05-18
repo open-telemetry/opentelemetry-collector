@@ -43,7 +43,4 @@ service:
       receivers: [hostmetrics]
       processors: []
       exporters: [otlp/withauth]
-
 ```
-
-  
