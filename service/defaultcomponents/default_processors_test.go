@@ -91,6 +91,9 @@ func TestDefaultProcessors(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			processor: "tracemetrics",
+		},
 	}
 
 	assert.Equal(t, len(tests), len(procFactories))

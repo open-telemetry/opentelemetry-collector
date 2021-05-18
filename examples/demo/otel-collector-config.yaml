@@ -8,7 +8,7 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: promexample
     const_labels:
-      label1: value1
+
   logging:
 
   zipkin:
@@ -21,6 +21,9 @@ exporters:
 
 processors:
   batch:
+  tracemetrics:
+    metrics_exporter: prometheus
+
 
 extensions:
   health_check:
@@ -34,8 +37,8 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [logging, zipkin, jaeger]
+      processors: [batch, tracemetrics]
+      exporters: [zipkin, jaeger]
     metrics:
       receivers: [otlp]
       processors: [batch]
