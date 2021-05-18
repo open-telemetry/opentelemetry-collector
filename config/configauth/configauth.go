@@ -40,7 +40,7 @@ func GetAuthenticator(extensions map[config.ComponentID]component.Extension, req
 		return nil, errAuthenticatorNotProvided
 	}
 
-	reqID, err := config.IDFromString(requested)
+	reqID, err := config.NewIDFromString(requested)
 	if err != nil {
 		return nil, err
 	}

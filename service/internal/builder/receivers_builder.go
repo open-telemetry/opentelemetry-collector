@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/fanoutconsumer"
+	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
 var errUnusedReceiver = errors.New("receiver defined but not used by any pipeline")

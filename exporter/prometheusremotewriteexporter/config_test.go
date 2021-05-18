@@ -52,16 +52,15 @@ func Test_loadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
+			},
+			RemoteWriteQueue: RemoteWriteQueue{
+				QueueSize:    2000,
+				NumConsumers: 10,
 			},
 			Namespace:      "test-space",
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},

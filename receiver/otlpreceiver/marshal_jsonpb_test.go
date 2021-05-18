@@ -83,7 +83,7 @@ func TestJSONPbMarshal(t *testing.T) {
 	jpb := JSONPb{
 		Indent: "  ",
 	}
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	otlp := internal.TracesToOtlp(td.InternalRep())
 	bytes, err := jpb.Marshal(otlp.ResourceSpans[0])
 	assert.NoError(t, err)
@@ -97,7 +97,7 @@ func TestJSONPbUnmarshal(t *testing.T) {
 	var proto v1.ResourceSpans
 	err := jpb.Unmarshal([]byte(expectedJSON), &proto)
 	assert.NoError(t, err)
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	otlp := internal.TracesToOtlp(td.InternalRep())
 	assert.EqualValues(t, &proto, otlp.ResourceSpans[0])
 }

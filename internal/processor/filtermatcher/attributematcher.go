@@ -57,7 +57,7 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 			}
 
 			if config.MatchType == filterset.Regexp {
-				if val.Type() != pdata.AttributeValueSTRING {
+				if val.Type() != pdata.AttributeValueTypeString {
 					return nil, fmt.Errorf(
 						"%s=%s for %q only supports STRING, but found %s",
 						filterset.MatchTypeFieldName, filterset.Regexp, attribute.Key, val.Type(),
@@ -115,13 +115,13 @@ func (ma AttributesMatcher) Match(attrs pdata.AttributeMap) bool {
 
 func attributeStringValue(attr pdata.AttributeValue) (string, error) {
 	switch attr.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return attr.StringVal(), nil
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return strconv.FormatBool(attr.BoolVal()), nil
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64), nil
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return strconv.FormatInt(attr.IntVal(), 10), nil
 	default:
 		return "", errUnexpectedAttributeType

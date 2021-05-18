@@ -91,12 +91,7 @@ func (e *exporter) pushTraceData(ctx context.Context, traces pdata.Traces) error
 		return consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, e.tracesURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.tracesURL, request)
 }
 
 func (e *exporter) pushMetricsData(ctx context.Context, metrics pdata.Metrics) error {
@@ -104,13 +99,7 @@ func (e *exporter) pushMetricsData(ctx context.Context, metrics pdata.Metrics) e
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-
-	err = e.export(ctx, e.metricsURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.metricsURL, request)
 }
 
 func (e *exporter) pushLogData(ctx context.Context, logs pdata.Logs) error {
@@ -119,12 +108,7 @@ func (e *exporter) pushLogData(ctx context.Context, logs pdata.Logs) error {
 		return consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, e.logsURL, request)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.export(ctx, e.logsURL, request)
 }
 
 func (e *exporter) export(ctx context.Context, url string, request []byte) error {
@@ -142,7 +126,7 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes)
+		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
 		resp.Body.Close()
 	}()
 

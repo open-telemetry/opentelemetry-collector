@@ -207,7 +207,9 @@ func (tc *TestCase) StartAgent(args ...string) {
 
 // StopAgent stops agent process.
 func (tc *TestCase) StopAgent() {
-	tc.agentProc.Stop()
+	if _, err := tc.agentProc.Stop(); err != nil {
+		tc.indicateError(err)
+	}
 }
 
 // StartLoad starts the load generator and redirects its standard output and standard error

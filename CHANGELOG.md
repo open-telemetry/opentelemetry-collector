@@ -13,6 +13,9 @@
 
 ## 🧰 Bug fixes 🧰
 
+- Fix Prometheus receiver metric start time and reset determination logic. (#3047)
+  - The receiver will no longer drop the first sample for `counter`, `summary`, and `histogram` metrics.
+- The Prometheus remote write exporter will no longer force `counter` metrics to have a `_total` suffix. (#2993)
 - Change `Marshal` signatures in kafkaexporter's Marshalers to directly convert pdata to `sarama.ProducerMessage` (#3162)
 
 

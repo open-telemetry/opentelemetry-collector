@@ -16,7 +16,6 @@ package otlpreceiver
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/http"
 	"sync"
@@ -48,9 +47,6 @@ type otlpReceiver struct {
 	traceReceiver   *trace.Receiver
 	metricsReceiver *metrics.Receiver
 	logReceiver     *logs.Receiver
-
-	stopOnce        sync.Once
-	startServerOnce sync.Once
 	shutdownWG      sync.WaitGroup
 
 	logger *zap.Logger
@@ -175,38 +171,22 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
-	if r.traceReceiver == nil && r.metricsReceiver == nil && r.logReceiver == nil {
-		return errors.New("cannot start receiver: no consumers were specified")
-	}
-
-	var err error
-	r.startServerOnce.Do(func() {
-		err = r.startProtocolServers(host)
-	})
-	return err
+	return r.startProtocolServers(host)
 }
 
 // Shutdown is a method to turn off receiving.
 func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	var err error
-	r.stopOnce.Do(func() {
-		err = nil
 
-		if r.serverHTTP != nil {
-			err = r.serverHTTP.Shutdown(ctx)
-		}
+	if r.serverHTTP != nil {
+		err = r.serverHTTP.Shutdown(ctx)
+	}
 
-		if r.serverGRPC != nil {
-			r.serverGRPC.GracefulStop()
-		}
+	if r.serverGRPC != nil {
+		r.serverGRPC.GracefulStop()
+	}
 
-		r.shutdownWG.Wait()
-
-		// delete the receiver from the map so it doesn't leak and it becomes possible to create
-		// another instance with the same configuration that functions properly. Notice that an
-		// OTLP object can only be started and shutdown once.
-		delete(receivers, r.cfg)
-	})
+	r.shutdownWG.Wait()
 	return err
 }
 

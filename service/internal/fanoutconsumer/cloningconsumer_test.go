@@ -38,7 +38,7 @@ func TestTracesProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	tfc := NewTracesCloning(processors)
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
@@ -124,7 +124,7 @@ func TestLogsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	mfc := NewLogsCloning(processors)
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {

@@ -224,7 +224,7 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	td := testdata.GenerateTraceDataEmpty()
+	td := pdata.NewTraces()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
@@ -236,7 +236,7 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A trace with 2 spans.
-	td = testdata.GenerateTraceDataTwoSpansSameResource()
+	td = testdata.GenerateTracesTwoSpansSameResource()
 
 	expectedOTLPReq := internal.TracesToOtlp(td.Clone().InternalRep())
 
@@ -294,7 +294,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	md := testdata.GenerateMetricsEmpty()
+	md := pdata.NewMetrics()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
@@ -361,7 +361,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// A trace with 2 spans.
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
@@ -418,7 +418,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// A trace with 2 spans.
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	done := make(chan bool, 1)
 	defer close(done)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -497,7 +497,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty request.
-	td := testdata.GenerateLogDataEmpty()
+	td := pdata.NewLogs()
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), td))
 
 	// Wait until it is received.
@@ -509,7 +509,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A request with 2 log entries.
-	td = testdata.GenerateLogDataTwoLogsSameResource()
+	td = testdata.GenerateLogsTwoLogRecordsSameResource()
 	expectedOTLPReq := internal.LogsToOtlp(td.Clone().InternalRep())
 
 	err = exp.ConsumeLogs(context.Background(), td)

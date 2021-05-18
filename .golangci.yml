@@ -69,7 +69,7 @@ linters-settings:
     disable:
       - fieldalignment
 
-  golint:
+  revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
 
@@ -103,10 +103,10 @@ linters:
     - gocritic
     - gofmt
     - goimports
-    - golint
     - gosec
     - govet
     - misspell
+    - revive
     - staticcheck
     - unconvert
     - unparam
@@ -133,11 +133,11 @@ issues:
     - path: ".*internal.*|.*testbed.*"
       text: "should have comment|should be of the form"
       linters:
-        - golint
+        - revive
     # Exclude documenting constant blocks.
     - text: "or a comment on this block"
       linters:
-        - golint
+        - revive
 
   # The list of ids of default excludes to include or disable. By default it's empty.
   # See the list of default excludes here https://golangci-lint.run/usage/configuration.

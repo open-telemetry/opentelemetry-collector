@@ -61,15 +61,7 @@ func (req *tracesRequest) count() int {
 
 type traceExporter struct {
 	*baseExporter
-	pusher consumerhelper.ConsumeTracesFunc
-}
-
-func (texp *traceExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	return texp.sender.send(newTracesRequest(ctx, td, texp.pusher))
+	consumer.Traces
 }
 
 // NewTracesExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
@@ -92,7 +84,8 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	be := newBaseExporter(cfg, logger, options...)
+	bs := fromOptions(options...)
+	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep: obsreport.NewExporter(
@@ -104,10 +97,14 @@ func NewTracesExporter(
 		}
 	})
 
+	tc, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
+		return be.sender.send(newTracesRequest(ctx, td, pusher))
+	}, bs.consumerOptions...)
+
 	return &traceExporter{
 		baseExporter: be,
-		pusher:       pusher,
-	}, nil
+		Traces:       tc,
+	}, err
 }
 
 type tracesExporterWithObservability struct {

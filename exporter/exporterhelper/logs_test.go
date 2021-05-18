@@ -24,7 +24,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -37,19 +39,19 @@ const (
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
-var fakeLogsExporterName = config.MustIDFromString("fake_logs_exporter/with_name")
+var fakeLogsExporterName = config.NewIDWithName("fake_logs_exporter", "with_name")
 
 var (
 	fakeLogsExporterConfig = config.NewExporterSettings(fakeLogsExporterName)
 )
 
 func TestLogsRequest(t *testing.T) {
-	lr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
+	lr := newLogsRequest(context.Background(), testdata.GenerateLogsOneLogRecord(), nil)
 
-	logErr := consumererror.NewLogs(errors.New("some error"), testdata.GenerateLogDataEmpty())
+	logErr := consumererror.NewLogs(errors.New("some error"), pdata.NewLogs())
 	assert.EqualValues(
 		t,
-		newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil),
+		newLogsRequest(context.Background(), pdata.NewLogs(), nil),
 		lr.onError(logErr),
 	)
 }
@@ -73,27 +75,38 @@ func TestLogsExporter_NilPushLogsData(t *testing.T) {
 }
 
 func TestLogsExporter_Default(t *testing.T) {
-	ld := testdata.GenerateLogDataEmpty()
+	ld := pdata.NewLogs()
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Nil(t, le.ConsumeLogs(context.Background(), ld))
-	assert.Nil(t, le.Shutdown(context.Background()))
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, le.Capabilities())
+	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.ConsumeLogs(context.Background(), ld))
+	assert.NoError(t, le.Shutdown(context.Background()))
+}
+
+func TestLogsExporter_WithCapabilities(t *testing.T) {
+	capabilities := consumer.Capabilities{MutatesData: true}
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithCapabilities(capabilities))
+	require.NoError(t, err)
+	require.NotNil(t, le)
+
+	assert.Equal(t, capabilities, le.Capabilities())
 }
 
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
-	ld := testdata.GenerateLogDataEmpty()
+	ld := pdata.NewLogs()
 	want := errors.New("my_error")
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 
 	checkRecordedMetricsForLogsExporter(t, le, nil)
@@ -157,7 +170,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 	require.NoError(t, err)
 	defer doneFn()
 
-	ld := testdata.GenerateLogDataTwoLogsSameResource()
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, le.ConsumeLogs(context.Background(), ld))
@@ -172,7 +185,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 }
 
 func generateLogsTraffic(t *testing.T, le component.LogsExporter, numRequests int, wantError error) {
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	ctx, span := trace.StartSpan(context.Background(), fakeLogsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

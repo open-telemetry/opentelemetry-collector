@@ -40,8 +40,7 @@ func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex 
 
 	metrics.Resize(startIndex + unixMetricsLen)
 	initializeProcessesCountMetric(metrics.At(startIndex+0), now, misc)
-	appendUnixSystemSpecificProcessesMetrics(metrics, startIndex+1, now, misc)
-	return nil
+	return appendUnixSystemSpecificProcessesMetrics(metrics, startIndex+1, now, misc)
 }
 
 func initializeProcessesCountMetric(metric pdata.Metric, now pdata.Timestamp, misc *load.MiscStat) {
