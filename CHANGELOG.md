@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.27.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Remove `tracetranslator.DetermineValueType`, only used internally by Zipkin (#3114)
@@ -10,12 +12,38 @@
 - Remove `tracetranslator.TagHTTPStatusCode`, use `conventions.AttributeHTTPStatusCode` (#3111)
 - Remove OpenCensus status constants and transformation (#3110)
 - Remove `tracetranslator.AttributeArrayToSlice`, not used in core or contrib (#3109)
+- Remove `internaldata.MetricsData`, same APIs as for traces (#3156)
+- Rename `config.IDFromString` to `NewIDFromString`, remove `MustIDFromString` (#3177)
+- Move consumerfanout package to internal (#3207)
+- Canonicalize enum names in pdata. Fix usage of uppercase names (#3208)
+
+## 💡 Enhancements 💡
+
+- Use `config.ComponentID` for obsreport receiver/scraper (#3098)
+- Add initial implementation of the consumerhelper (#3146)
+- Add Collector version to Prometheus Remote Write Exporter user-agent header (#3094)
+- Refactor processorhelper to use consumerhelper, split by signal type (#3180)
+- Use consumerhelper for exporterhelper, add WithCapabilities (#3186)
+- Set capabilities for all core exporters, remove unnecessary funcs (#3190)
+- Add an internal sharedcomponent to be shared by receivers with shared resources (#3198)
+- Allow users to configure the Prometheus remote write queue (#3046)
+- Mark internaldata traces translation as deprecated for external usage (#3176)
 
 ## 🧰 Bug fixes 🧰
 
 - Fix Prometheus receiver metric start time and reset determination logic. (#3047)
   - The receiver will no longer drop the first sample for `counter`, `summary`, and `histogram` metrics.
 - The Prometheus remote write exporter will no longer force `counter` metrics to have a `_total` suffix. (#2993)
+- Remove locking from jaeger receiver start and stop processes (#3070)
+- Fix batch processor metrics reorder, improve performance (#3034)
+- Fix batch processor traces reorder, improve performance (#3107)
+- Fix batch processor logs reorder, improve performance (#3125)
+- Avoid one unnecessary allocation in grpc OTLP exporter (#3122)
+- `batch` processor: Validate that batch config max size is greater than send size (#3126)
+- Add capabilities to consumer, remove from processor (#2770)
+- Remove internal protos usage in Prometheusremotewrite exporter (#3184)
+- `prometheus` receiver: Honor Prometheus external labels (#3127)
+- Validate that remote write queue settings are not negative (#3213)
 
 ## v0.26.0 Beta
 
