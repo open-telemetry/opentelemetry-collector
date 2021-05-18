@@ -52,16 +52,15 @@ func Test_loadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
+			},
+			RemoteWriteQueue: RemoteWriteQueue{
+				QueueSize:    2000,
+				NumConsumers: 10,
 			},
 			Namespace:      "test-space",
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
@@ -82,4 +81,24 @@ func Test_loadConfig(t *testing.T) {
 			},
 			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
 		})
+}
+
+func TestNegativeQueueSize(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "negative_queue_size.yaml"), factories)
+	assert.Error(t, err)
+}
+
+func TestNegativeNumConsumers(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "negative_num_consumers.yaml"), factories)
+	assert.Error(t, err)
 }

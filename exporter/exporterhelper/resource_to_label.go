@@ -61,7 +61,7 @@ func extractLabelsFromResource(resource *pdata.Resource) pdata.StringMap {
 
 	attrMap := resource.Attributes()
 	attrMap.Range(func(k string, av pdata.AttributeValue) bool {
-		stringLabel := tracetranslator.AttributeValueToString(av, false)
+		stringLabel := tracetranslator.AttributeValueToString(av)
 		labelMap.Upsert(k, stringLabel)
 		return true
 	})

@@ -158,7 +158,7 @@ func TestNew(t *testing.T) {
 			}
 
 			// This is expected to fail.
-			err = got.ConsumeTraces(context.Background(), testdata.GenerateTraceDataNoLibraries())
+			err = got.ConsumeTraces(context.Background(), testdata.GenerateTracesNoLibraries())
 			assert.Error(t, err)
 		})
 	}

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/Shopify/sarama"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,14 +51,14 @@ func TestJaegerMarshaler(t *testing.T) {
 	tests := []struct {
 		unmarshaler TracesMarshaler
 		encoding    string
-		messages    []Message
+		messages    []*sarama.ProducerMessage
 	}{
 		{
 			unmarshaler: jaegerMarshaler{
 				marshaler: jaegerProtoSpanMarshaler{},
 			},
 			encoding: "jaeger_proto",
-			messages: []Message{{Value: jaegerProtoBytes, Key: messageKey}},
+			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}},
 		},
 		{
 			unmarshaler: jaegerMarshaler{
@@ -66,12 +67,12 @@ func TestJaegerMarshaler(t *testing.T) {
 				},
 			},
 			encoding: "jaeger_json",
-			messages: []Message{{Value: jsonByteBuffer.Bytes(), Key: messageKey}},
+			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.unmarshaler.Marshal(td)
+			messages, err := test.unmarshaler.Marshal(td, "topic")
 			require.NoError(t, err)
 			assert.Equal(t, test.messages, messages)
 			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
@@ -86,7 +87,7 @@ func TestJaegerMarshaler_error_covert_traceID(t *testing.T) {
 	td := pdata.NewTraces()
 	td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	// fails in zero traceID
-	messages, err := marshaler.Marshal(td)
+	messages, err := marshaler.Marshal(td, "topic")
 	require.Error(t, err)
 	assert.Nil(t, messages)
 }

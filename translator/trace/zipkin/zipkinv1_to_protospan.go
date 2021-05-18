@@ -254,13 +254,13 @@ func parseAnnotationValue(value string, parseStringTags bool) *tracepb.Attribute
 
 	if parseStringTags {
 		switch determineValueType(value) {
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			iValue, _ := strconv.ParseInt(value, 10, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			fValue, _ := strconv.ParseFloat(value, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			bValue, _ := strconv.ParseBool(value)
 			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
 		default:

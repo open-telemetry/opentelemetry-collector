@@ -46,10 +46,10 @@ var (
 )
 
 func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(context.Background(), testdata.GenerateTraceDataOneSpan(), nil)
+	mr := newTracesRequest(context.Background(), testdata.GenerateTracesOneSpan(), nil)
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraceDataEmpty())
-	assert.EqualValues(t, newTracesRequest(context.Background(), testdata.GenerateTraceDataEmpty(), nil), mr.onError(traceErr))
+	traceErr := consumererror.NewTraces(errors.New("some error"), pdata.NewTraces())
+	assert.EqualValues(t, newTracesRequest(context.Background(), pdata.NewTraces(), nil), mr.onError(traceErr))
 }
 
 type testOCTracesExporter struct {
@@ -184,7 +184,7 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExpo
 	require.NoError(t, err)
 	defer doneFn()
 
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, te.ConsumeTraces(context.Background(), td))

@@ -42,7 +42,6 @@ func Test_NewPrwExporter(t *testing.T) {
 	cfg := &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
-		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
@@ -58,6 +57,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		config         *Config
 		namespace      string
 		endpoint       string
+		concurrency    int
 		externalLabels map[string]string
 		client         *http.Client
 		returnError    bool
@@ -68,6 +68,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"invalid URL",
+			5,
 			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			true,
@@ -78,6 +79,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			5,
 			map[string]string{"Key1": "Val1"},
 			nil,
 			true,
@@ -88,6 +90,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			5,
 			map[string]string{"Key1": ""},
 			http.DefaultClient,
 			true,
@@ -98,6 +101,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			5,
 			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			false,
@@ -108,6 +112,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			5,
 			map[string]string{},
 			http.DefaultClient,
 			false,
@@ -117,7 +122,7 @@ func Test_NewPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, tt.buildInfo)
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, 1, tt.buildInfo)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -148,7 +153,7 @@ func Test_Shutdown(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
+			errChan <- prwe.PushMetrics(context.Background(), pdata.NewMetrics())
 		}()
 	}
 	wg.Wait()
@@ -260,7 +265,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, buildInfo)
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, 1, buildInfo)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -515,7 +520,7 @@ func Test_PushMetrics(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, buildInfo)
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, 5, buildInfo)
 			require.NoError(t, nErr)
 			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {

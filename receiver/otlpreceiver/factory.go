@@ -17,14 +17,13 @@ package otlpreceiver
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -73,9 +72,11 @@ func createTracesReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
-	r := createReceiver(cfg, params.Logger)
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newOtlpReceiver(cfg.(*Config), params.Logger)
+	})
 
-	if err := r.registerTraceConsumer(ctx, nextConsumer); err != nil {
+	if err := r.Unwrap().(*otlpReceiver).registerTraceConsumer(ctx, nextConsumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -88,9 +89,11 @@ func createMetricsReceiver(
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	r := createReceiver(cfg, params.Logger)
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newOtlpReceiver(cfg.(*Config), params.Logger)
+	})
 
-	if err := r.registerMetricsConsumer(ctx, consumer); err != nil {
+	if err := r.Unwrap().(*otlpReceiver).registerMetricsConsumer(ctx, consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -103,28 +106,14 @@ func createLogReceiver(
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-	r := createReceiver(cfg, params.Logger)
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newOtlpReceiver(cfg.(*Config), params.Logger)
+	})
 
-	if err := r.registerLogsConsumer(ctx, consumer); err != nil {
+	if err := r.Unwrap().(*otlpReceiver).registerLogsConsumer(ctx, consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
-}
-
-func createReceiver(cfg config.Receiver, logger *zap.Logger) *otlpReceiver {
-	rCfg := cfg.(*Config)
-
-	// There must be one receiver for both metrics and traces. We maintain a map of
-	// receivers per config.
-
-	// Check to see if there is already a receiver for this config.
-	receiver, ok := receivers[rCfg]
-	if !ok {
-		// We don't have a receiver, so create one.
-		receiver = newOtlpReceiver(rCfg, logger)
-		receivers[rCfg] = receiver
-	}
-	return receiver
 }
 
 // This is the map of already created OTLP receivers for particular configurations.
@@ -133,4 +122,4 @@ func createReceiver(cfg config.Receiver, logger *zap.Logger) *otlpReceiver {
 // create separate objects, they must use one otlpReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
-var receivers = map[*Config]*otlpReceiver{}
+var receivers = sharedcomponent.NewSharedComponents()

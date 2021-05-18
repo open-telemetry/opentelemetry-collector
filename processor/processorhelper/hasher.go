@@ -41,18 +41,18 @@ var (
 func sha1Hasher(attr pdata.AttributeValue) {
 	var val []byte
 	switch attr.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		val = []byte(attr.StringVal())
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		if attr.BoolVal() {
 			val = byteTrue[:]
 		} else {
 			val = byteFalse[:]
 		}
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		val = make([]byte, int64ByteSize)
 		binary.LittleEndian.PutUint64(val, uint64(attr.IntVal()))
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		val = make([]byte, float64ByteSize)
 		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.DoubleVal()))
 	}
