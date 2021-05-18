@@ -117,24 +117,85 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
-
-	// sanity check
-	_, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
-	require.NoError(t, err)
-
-	// test
-	gss.Auth = &configauth.Authentication{
-		AuthenticatorName: "mock",
+	tests := []struct {
+		name     string
+		settings GRPCServerSettings
+		mustErr  bool
+		ext      map[config.ComponentID]component.Extension
+	}{
+		{
+			name: "no error",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "mock",
+				},
+			},
+			mustErr: false,
+			ext: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &configauth.MockAuthenticator{},
+			},
+		},
+		{
+			name: "fail on non existent extension configuration",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "mock",
+				},
+			},
+			mustErr: true,
+			ext:     map[config.ComponentID]component.Extension{},
+		},
+		{
+			name: "fail on no authenticator string",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "",
+				},
+			},
+			mustErr: true,
+			ext: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &configauth.MockAuthenticator{},
+			},
+		},
+		{
+			name: "fail on no configuration",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "doesnt_exist",
+				},
+			},
+			mustErr: true,
+			ext:     nil,
+		},
 	}
-	ext := map[config.ComponentID]component.Extension{
-		config.NewID("mock"): &configauth.MockAuthenticator{},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := tt.settings.ToServerOption(tt.ext)
+			if tt.mustErr {
+				require.Error(t, err)
+				require.Nil(t, opts)
+				return
+			}
+			require.NoError(t, err)
+			assert.NotNil(t, opts)
+		})
 	}
-	opts, err := gss.ToServerOption(ext)
-
-	// verify
-	assert.NoError(t, err)
-	assert.NotNil(t, opts)
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
@@ -198,12 +259,28 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
+			err: "authenticator name not provided",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{},
+			},
+			ext: map[config.ComponentID]component.Extension{},
+		},
+		{
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
 			},
 			ext: map[config.ComponentID]component.Extension{},
+		},
+		{
+			err: "no extensions configuration available",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
+			},
+			ext: nil,
 		},
 	}
 	for _, test := range tests {

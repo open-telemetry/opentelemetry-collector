@@ -201,7 +201,16 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, gcs.Auth.AuthenticatorName)
+		if gcs.Auth.AuthenticatorName == "" {
+			return nil, fmt.Errorf("authenticator name not provided")
+		}
+
+		componentId, cperr := config.NewIDFromString(gcs.Auth.AuthenticatorName)
+		if cperr != nil {
+			return nil, cperr
+		}
+
+		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, componentId)
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -295,7 +304,12 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	}
 
 	if gss.Auth != nil {
-		authenticator, err := configauth.GetServerAuthenticator(ext, gss.Auth.AuthenticatorName)
+		componentID, cperr := config.NewIDFromString(gss.Auth.AuthenticatorName)
+		if cperr != nil {
+			return nil, cperr
+		}
+
+		authenticator, err := configauth.GetServerAuthenticator(ext, componentID)
 		if err != nil {
 			return nil, err
 		}

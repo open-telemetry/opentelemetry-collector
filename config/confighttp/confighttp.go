@@ -87,10 +87,17 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		if ext == nil {
 			return nil, fmt.Errorf("extensions configuration not found")
 		}
-		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuthenticator(ext, hcs.Auth.AuthenticatorName)
+
+		componentID, cperr := config.NewIDFromString(hcs.Auth.AuthenticatorName)
+		if cperr != nil {
+			return nil, cperr
+		}
+
+		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuthenticator(ext, componentID)
 		if aerr != nil {
 			return nil, aerr
 		}
+
 		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
 		if err != nil {
 			return nil, err

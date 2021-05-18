@@ -23,8 +23,7 @@ import (
 )
 
 var (
-	errAuthenticatorNotFound    = errors.New("authenticator not found")
-	errAuthenticatorNotProvided = errors.New("authenticator not provided")
+	errAuthenticatorNotFound = errors.New("authenticator not found")
 )
 
 // Authentication defines the auth settings for the receiver
@@ -35,23 +34,14 @@ type Authentication struct {
 
 // GetServerAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
 // If an authenticator is not found, an error is returned.
-func GetServerAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (ServerAuthenticator, error) {
-	if requested == "" {
-		return nil, errAuthenticatorNotProvided
-	}
-
-	reqID, err := config.NewIDFromString(requested)
-	if err != nil {
-		return nil, err
-	}
-
+func GetServerAuthenticator(extensions map[config.ComponentID]component.Extension, componentID config.ComponentID) (ServerAuthenticator, error) {
 	for name, ext := range extensions {
 		if auth, ok := ext.(ServerAuthenticator); ok {
-			if name == reqID {
+			if name == componentID {
 				return auth, nil
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", requested, errAuthenticatorNotFound)
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", componentID.String(), errAuthenticatorNotFound)
 }

@@ -133,6 +133,13 @@ func TestHTTPClientSettingsError(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
 			},
 		},
+		{
+			err: "idStr must have non empty type",
+			settings: HTTPClientSettings{
+				Endpoint: "https://localhost:1234/v1/traces",
+				Auth:     &configauth.Authentication{AuthenticatorName: ""},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {

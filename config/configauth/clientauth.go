@@ -31,64 +31,48 @@ type ClientAuthenticator interface {
 	component.Extension
 }
 
-// HTTPClientAuthenticator is a ClientAuthenticator that can be used as an authenticator for the configauth.Authentication option for HTTP
-// clients.
+// HTTPClientAuthenticator is a ClientAuthenticator that can be used as an authenticator
+// for the configauth.Authentication option for HTTP clients.
 type HTTPClientAuthenticator interface {
 	ClientAuthenticator
 	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
 }
 
-// GRPCClientAuthenticator is a ClientAuthenticator that can be used as an authenticator for the configauth.Authentication option for gRPC
-// clients.
+// GRPCClientAuthenticator is a ClientAuthenticator that can be used as an authenticator for
+// the configauth.Authentication option for gRPC clients.
 type GRPCClientAuthenticator interface {
 	ClientAuthenticator
 	PerRPCCredentials() (credentials.PerRPCCredentials, error)
 }
 
 // GetHTTPClientAuthenticator attempts to select the appropriate HTTPClientAuthenticator from the list of extensions,
-// based on the requested extension name. If an authenticator is not found, an error is returned. This should be only
-// used by HTTP clients.
-func GetHTTPClientAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (HTTPClientAuthenticator, error) {
-	if requested == "" {
-		return nil, errAuthenticatorNotProvided
-	}
-
-	reqID, err := config.NewIDFromString(requested)
-	if err != nil {
-		return nil, err
-	}
-
+// based on the component id of the extension. If an authenticator is not found, an error is returned.
+// This should be only used by HTTP clients.
+func GetHTTPClientAuthenticator(extensions map[config.ComponentID]component.Extension,
+	componentID config.ComponentID) (HTTPClientAuthenticator, error) {
 	for name, ext := range extensions {
-		if name == reqID {
+		if name == componentID {
 			if auth, ok := ext.(HTTPClientAuthenticator); ok {
 				return auth, nil
 			}
 			return nil, fmt.Errorf("requested authenticator is not for HTTP clients")
 		}
 	}
-	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", requested, errAuthenticatorNotFound)
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", componentID.String(), errAuthenticatorNotFound)
 }
 
 // GetGRPCClientAuthenticator attempts to select the appropriate GRPCClientAuthenticator from the list of extensions,
-// based on the requested extension name. If an authenticator is not found, an error is returned. This should only be used
-// by gRPC clients.
-func GetGRPCClientAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (GRPCClientAuthenticator, error) {
-	if requested == "" {
-		return nil, errAuthenticatorNotProvided
-	}
-
-	reqID, err := config.NewIDFromString(requested)
-	if err != nil {
-		return nil, err
-	}
-
+// based on the component id of the extension. If an authenticator is not found, an error is returned.
+//This should only be used by gRPC clients.
+func GetGRPCClientAuthenticator(extensions map[config.ComponentID]component.Extension,
+	componentID config.ComponentID) (GRPCClientAuthenticator, error) {
 	for name, ext := range extensions {
-		if name == reqID {
+		if name == componentID {
 			if auth, ok := ext.(GRPCClientAuthenticator); ok {
 				return auth, nil
 			}
 			return nil, fmt.Errorf("requested authenticator is not for gRPC clients")
 		}
 	}
-	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", requested, errAuthenticatorNotFound)
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", componentID.String(), errAuthenticatorNotFound)
 }
