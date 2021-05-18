@@ -16,11 +16,11 @@ package fileexporter
 
 import (
 	"context"
-	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/sharedcomponent"
 )
 
 const (
@@ -46,52 +46,39 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	return createExporter(cfg)
+	fe := exporters.GetOrAdd(cfg, func() component.Component {
+		return &fileExporter{path: cfg.(*Config).Path}
+	})
+	return exporterhelper.NewTracesExporter(cfg, params.Logger, fe.Unwrap().(*fileExporter).ConsumeTraces)
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	return createExporter(cfg)
+	fe := exporters.GetOrAdd(cfg, func() component.Component {
+		return &fileExporter{path: cfg.(*Config).Path}
+	})
+	return exporterhelper.NewMetricsExporter(cfg, params.Logger, fe.Unwrap().(*fileExporter).ConsumeMetrics)
 }
 
 func createLogsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	return createExporter(cfg)
-}
-
-func createExporter(config config.Exporter) (*fileExporter, error) {
-	cfg := config.(*Config)
-
-	// There must be one exporter for metrics, traces, and logs. We maintain a
-	// map of exporters per config.
-
-	// Check to see if there is already a exporter for this config.
-	exporter, ok := exporters[cfg]
-
-	if !ok {
-		file, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		if err != nil {
-			return nil, err
-		}
-		exporter = &fileExporter{file: file}
-
-		// Remember the receiver in the map
-		exporters[cfg] = exporter
-	}
-	return exporter, nil
+	fe := exporters.GetOrAdd(cfg, func() component.Component {
+		return &fileExporter{path: cfg.(*Config).Path}
+	})
+	return exporterhelper.NewLogsExporter(cfg, params.Logger, fe.Unwrap().(*fileExporter).ConsumeLogs)
 }
 
 // This is the map of already created File exporters for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
-var exporters = map[*Config]*fileExporter{}
+var exporters = sharedcomponent.NewSharedComponents()

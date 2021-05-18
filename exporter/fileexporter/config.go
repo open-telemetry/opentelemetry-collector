@@ -15,6 +15,8 @@
 package fileexporter
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -30,5 +32,9 @@ var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.Path == "" {
+		return errors.New("path must be non-empty")
+	}
+
 	return nil
 }
