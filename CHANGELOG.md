@@ -11,6 +11,11 @@
 - Remove OpenCensus status constants and transformation (#3110)
 - Remove `tracetranslator.AttributeArrayToSlice`, not used in core or contrib (#3109)
 
+## 🧰 Bug fixes 🧰
+
+- Change `Marshal` signatures in kafkaexporter's Marshalers to directly convert pdata to `sarama.ProducerMessage` (#3162)
+
+
 ## v0.26.0 Beta
 
 ## 🛑 Breaking changes 🛑

@@ -18,7 +18,6 @@ import (
 	"bytes"
 
 	"github.com/Shopify/sarama"
-
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
 
