@@ -124,14 +124,14 @@ func GetModules(cfg Config) error {
 	}
 
 	cfg.Logger.Info("Getting go modules")
-	cmd := exec.Command(goBinary, "mod", "download")
-	cmd.Dir = cfg.Distribution.OutputPath
 
 	// basic retry if error from go mod command (in case of transient network error). This could be improved
 	// retry 3 times with 5 second spacing interval
 	retries := 3
 	failReason := "unknown"
 	for i := 1; i <= retries; i++ {
+		cmd := exec.Command(goBinary, "mod", "download")
+		cmd.Dir = cfg.Distribution.OutputPath
 		if out, err := cmd.CombinedOutput(); err != nil {
 			failReason = fmt.Sprintf("%s. Output: %q", err, out)
 			cfg.Logger.Info("Failed modules download", "retry", fmt.Sprintf("%d/%d", i, retries))
