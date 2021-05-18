@@ -12,19 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bytes
+package translation
 
-// MetricsDecoder decodes bytes into data model.
+import "go.opentelemetry.io/collector/consumer/pdata"
+
 type MetricsDecoder interface {
-	DecodeMetrics(bytes []byte) (interface{}, error)
+	// ToMetrics converts a data model of another protocol into pdata.
+	ToMetrics(src interface{}) (pdata.Metrics, error)
+	// Type returns an instance of the model.
+	Type() interface{}
 }
 
-// TracesDecoder decodes bytes into data model.
 type TracesDecoder interface {
-	DecodeTraces(bytes []byte) (interface{}, error)
+	// ToTraces converts a data model of another protocol into pdata.
+	ToTraces(src interface{}) (pdata.Traces, error)
+	// Type returns an instance of the model.
+	Type() interface{}
 }
 
-// LogsDecoder decodes bytes into data model.
 type LogsDecoder interface {
-	DecodeLogs(bytes []byte) (interface{}, error)
+	// ToLogs converts a data model of another protocol into pdata.
+	ToLogs(src interface{}) (pdata.Logs, error)
+	// Type returns an instance of the model.
+	Type() interface{}
 }

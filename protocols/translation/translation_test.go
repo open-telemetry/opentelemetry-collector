@@ -12,26 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package models
+package translation
 
 import (
-	"fmt"
+	"testing"
+
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	"github.com/stretchr/testify/assert"
 )
 
-// ErrIncompatibleType details a type conversion error during translation.
-type ErrIncompatibleType struct {
-	given interface{}
-	expected interface{}
-}
-
-func (i *ErrIncompatibleType) Error() string {
-	return fmt.Sprintf("model type %T is expected but given %T ", i.expected, i.given)
-}
-
-// NewErrIncompatibleType returns ErrIncompatibleType instance
-func NewErrIncompatibleType(expected, given interface{}) *ErrIncompatibleType {
-	return &ErrIncompatibleType{
-		given:    given,
-		expected: expected,
-	}
+func TestNewErrIncompatibleType(t *testing.T) {
+	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
+	assert.IsType(t, &ErrIncompatibleType{}, err)
+	assert.EqualError(t, err, "model type []*model.SpanModel is expected but given string")
 }
