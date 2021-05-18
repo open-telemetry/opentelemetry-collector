@@ -56,8 +56,6 @@ type ocReceiver struct {
 	traceConsumer   consumer.Traces
 	metricsConsumer consumer.Metrics
 
-	stopOnce                 sync.Once
-	startServerOnce          sync.Once
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
@@ -191,22 +189,21 @@ func (ocr *ocReceiver) Shutdown(context.Context) error {
 	defer ocr.mu.Unlock()
 
 	var err error
-	ocr.stopOnce.Do(func() {
-		if ocr.serverHTTP != nil {
-			_ = ocr.serverHTTP.Close()
-		}
+	if ocr.serverHTTP != nil {
+		err = ocr.serverHTTP.Close()
+	}
 
-		if ocr.ln != nil {
-			_ = ocr.ln.Close()
-		}
+	if ocr.ln != nil {
+		_ = ocr.ln.Close()
+	}
 
-		// TODO: @(odeke-em) investigate what utility invoking (*grpc.Server).Stop()
-		// gives us yet we invoke (net.Listener).Close().
-		// Sure (*grpc.Server).Stop() enables proper shutdown but imposes
-		// a painful and artificial wait time that goes into 20+seconds yet most of our
-		// tests and code should be reactive in less than even 1second.
-		// ocr.serverGRPC.Stop()
-	})
+	// TODO: @(odeke-em) investigate what utility invoking (*grpc.Server).Stop()
+	// gives us yet we invoke (net.Listener).Close().
+	// Sure (*grpc.Server).Stop() enables proper shutdown but imposes
+	// a painful and artificial wait time that goes into 20+seconds yet most of our
+	// tests and code should be reactive in less than even 1second.
+	// ocr.serverGRPC.Stop()
+
 	return err
 }
 
@@ -227,50 +224,45 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 }
 
 func (ocr *ocReceiver) startServer(host component.Host) error {
-	var err error
-	ocr.startServerOnce.Do(func() {
-		// Register the grpc-gateway on the HTTP server mux
-		c := context.Background()
-		opts := []grpc.DialOption{grpc.WithInsecure()}
-		endpoint := ocr.ln.Addr().String()
+	// Register the grpc-gateway on the HTTP server mux
+	c := context.Background()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	endpoint := ocr.ln.Addr().String()
 
-		_, ok := ocr.ln.(*net.UnixListener)
-		if ok {
-			endpoint = "unix:" + endpoint
+	_, ok := ocr.ln.(*net.UnixListener)
+	if ok {
+		endpoint = "unix:" + endpoint
+	}
+
+	if err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
+		return err
+	}
+
+	if err := agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
+		return err
+	}
+
+	// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
+	m := cmux.New(ocr.ln)
+	grpcL := m.MatchWithWriters(
+		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
+
+	httpL := m.Match(cmux.Any())
+	go func() {
+		if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
+			host.ReportFatalError(errGrpc)
 		}
-
-		err = agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
+	}()
+	go func() {
+		if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != http.ErrServerClosed {
+			host.ReportFatalError(errHTTP)
 		}
-
-		err = agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
+	}()
+	go func() {
+		if errServe := m.Serve(); errServe != nil {
+			host.ReportFatalError(errServe)
 		}
-
-		// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
-		m := cmux.New(ocr.ln)
-		grpcL := m.MatchWithWriters(
-			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
-			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
-
-		httpL := m.Match(cmux.Any())
-		go func() {
-			if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
-				host.ReportFatalError(errGrpc)
-			}
-		}()
-		go func() {
-			if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != http.ErrServerClosed {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-		go func() {
-			if errServe := m.Serve(); errServe != nil {
-				host.ReportFatalError(errServe)
-			}
-		}()
-	})
-	return err
+	}()
+	return nil
 }
