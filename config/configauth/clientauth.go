@@ -26,7 +26,7 @@ import (
 
 // ClientAuthenticator is an Extension that can be used as an authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
-// names from the Authentication configuration. .
+// names from the Authentication configuration.
 type ClientAuthenticator interface {
 	component.Extension
 }
@@ -71,7 +71,7 @@ func GetHTTPClientAuthenticator(extensions map[config.ComponentID]component.Exte
 
 // GetGRPCClientAuthenticator attempts to select the appropriate GRPCClientAuthenticator from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned. This should only be used
-// by gRPC clients
+// by gRPC clients.
 func GetGRPCClientAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (GRPCClientAuthenticator, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
