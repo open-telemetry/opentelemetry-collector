@@ -18,9 +18,7 @@ how this exporter works.
 
 The following settings are required:
 
-<!-- markdown-link-check-disable-next-line -->
-- `endpoint` (no default): The remote write endpoint to send remote
-write samples, e.g. https://my-cortex:7900/api/v1/push.
+- `endpoint` (no default): The remote write URL to send remote write samples.
 
 By default, TLS is enabled:
 
