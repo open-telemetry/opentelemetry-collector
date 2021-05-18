@@ -210,7 +210,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 
 	_, dataPointCount := metrics.MetricAndDataPointCount()
 
-	rec := obsreport.NewReceiver(sc.id, "")
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: sc.id, Transport: ""})
 	ctx = rec.StartMetricsReceiveOp(ctx)
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
 	obsreport.EndMetricsReceiveOp(ctx, "", dataPointCount, err)

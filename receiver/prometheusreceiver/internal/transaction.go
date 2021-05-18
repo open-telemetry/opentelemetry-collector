@@ -169,7 +169,7 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
-	rec := obsreport.NewReceiver(tr.receiverID, transport)
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: tr.receiverID, Transport: transport})
 	ctx := rec.StartMetricsReceiveOp(tr.ctx)
 	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {

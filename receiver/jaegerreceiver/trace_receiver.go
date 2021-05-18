@@ -239,7 +239,7 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
 	ctx = obsreport.ReceiverContext(ctx, h.id, h.transport)
-	rec := obsreport.NewReceiver(h.id, h.transport)
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: h.id, Transport: h.transport})
 	ctx = rec.StartTraceDataReceiveOp(ctx)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
@@ -268,7 +268,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, grpcTransport)
-	rec := obsreport.NewReceiver(jr.id, grpcTransport)
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: grpcTransport})
 	ctx = rec.StartTraceDataReceiveOp(ctx)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
@@ -417,7 +417,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, collectorHTTPTransport)
-	rec := obsreport.NewReceiver(jr.id, collectorHTTPTransport)
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: collectorHTTPTransport})
 	ctx = rec.StartTraceDataReceiveOp(ctx)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)

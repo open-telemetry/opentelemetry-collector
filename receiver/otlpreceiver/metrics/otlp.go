@@ -75,7 +75,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md pdata.Metrics) err
 		ctx = client.NewContext(ctx, c)
 	}
 
-	rec := obsreport.NewReceiver(r.id, receiverTransport)
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: r.id, Transport: receiverTransport})
 	ctx = rec.StartMetricsReceiveOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, err)

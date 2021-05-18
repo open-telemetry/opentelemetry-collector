@@ -149,10 +149,15 @@ type Receiver struct {
 	transport  string
 }
 
-func NewReceiver(receiverID config.ComponentID, transport string) *Receiver {
+type ReceiverSettings struct {
+	ReceiverID config.ComponentID
+	Transport  string
+}
+
+func NewReceiver(cfg ReceiverSettings) *Receiver {
 	return &Receiver{
-		receiverID: receiverID,
-		transport:  transport,
+		receiverID: cfg.ReceiverID,
+		transport:  cfg.Transport,
 	}
 }
 
@@ -163,10 +168,8 @@ func (rec *Receiver) StartTraceDataReceiveOp(
 	operationCtx context.Context,
 	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
+	return rec.traceReceiveOp(
 		operationCtx,
-		rec.receiverID,
-		rec.transport,
 		receiveTraceDataOperationSuffix,
 		opt...)
 }
@@ -195,10 +198,8 @@ func (rec *Receiver) StartLogsReceiveOp(
 	operationCtx context.Context,
 	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
+	return rec.traceReceiveOp(
 		operationCtx,
-		rec.receiverID,
-		rec.transport,
 		receiverLogsOperationSuffix,
 		opt...)
 }
@@ -227,10 +228,8 @@ func (rec *Receiver) StartMetricsReceiveOp(
 	operationCtx context.Context,
 	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
+	return rec.traceReceiveOp(
 		operationCtx,
-		rec.receiverID,
-		rec.transport,
 		receiverMetricsOperationSuffix,
 		opt...)
 }
@@ -270,10 +269,8 @@ func ReceiverContext(
 
 // traceReceiveOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
-func traceReceiveOp(
+func (rec *Receiver) traceReceiveOp(
 	receiverCtx context.Context,
-	receiverID config.ComponentID,
-	transport string,
 	operationSuffix string,
 	opt ...StartReceiveOption,
 ) context.Context {
@@ -284,7 +281,7 @@ func traceReceiveOp(
 
 	var ctx context.Context
 	var span *trace.Span
-	spanName := receiverPrefix + receiverID.String() + operationSuffix
+	spanName := receiverPrefix + rec.receiverID.String() + operationSuffix
 	if !opts.LongLivedCtx {
 		ctx, span = trace.StartSpan(receiverCtx, spanName)
 	} else {
@@ -299,8 +296,8 @@ func traceReceiveOp(
 		ctx = trace.NewContext(receiverCtx, span)
 	}
 
-	if transport != "" {
-		span.AddAttributes(trace.StringAttribute(TransportKey, transport))
+	if rec.transport != "" {
+		span.AddAttributes(trace.StringAttribute(TransportKey, rec.transport))
 	}
 	return ctx
 }

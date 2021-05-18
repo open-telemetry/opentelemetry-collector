@@ -76,7 +76,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.Traces) erro
 		ctx = client.NewContext(ctx, c)
 	}
 
-	rec := obsreport.NewReceiver(r.id, receiverTransport)
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: r.id, Transport: receiverTransport})
 	ctx = rec.StartTraceDataReceiveOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	obsreport.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
