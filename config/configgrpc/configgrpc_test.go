@@ -259,12 +259,14 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "authenticator name not provided",
+			err: "idStr must have non empty type",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{},
 			},
-			ext: map[config.ComponentID]component.Extension{},
+			ext: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &configauth.MockClientAuthenticator{},
+			},
 		},
 		{
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
