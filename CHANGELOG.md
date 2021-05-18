@@ -6,6 +6,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Change `Marshal` signatures in kafkaexporter's Marshalers to directly convert pdata to `sarama.ProducerMessage` (#3162)
 - Remove `tracetranslator.DetermineValueType`, only used internally by Zipkin (#3114)
 - Remove OpenCensus conventions, should not be used (#3113)
 - Remove Zipkin specific translation constants, move to internal (#3112)

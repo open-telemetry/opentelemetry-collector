@@ -37,11 +37,11 @@ type kafkaTracesProducer struct {
 }
 
 func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces) error {
-	messages, err := e.marshaler.Marshal(td)
+	messages, err := e.marshaler.Marshal(td, e.topic)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	err = e.producer.SendMessages(producerMessages(messages, e.topic))
+	err = e.producer.SendMessages(messages)
 	if err != nil {
 		return err
 	}
@@ -61,11 +61,11 @@ type kafkaMetricsProducer struct {
 }
 
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) error {
-	messages, err := e.marshaler.Marshal(md)
+	messages, err := e.marshaler.Marshal(md, e.topic)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	err = e.producer.SendMessages(producerMessages(messages, e.topic))
+	err = e.producer.SendMessages(messages)
 	if err != nil {
 		return err
 	}
@@ -85,11 +85,11 @@ type kafkaLogsProducer struct {
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) error {
-	messages, err := e.marshaler.Marshal(ld)
+	messages, err := e.marshaler.Marshal(ld, e.topic)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	err = e.producer.SendMessages(producerMessages(messages, e.topic))
+	err = e.producer.SendMessages(messages)
 	if err != nil {
 		return err
 	}
@@ -183,16 +183,4 @@ func newLogsExporter(config Config, params component.ExporterCreateParams, marsh
 		logger:    params.Logger,
 	}, nil
 
-}
-
-func producerMessages(messages []Message, topic string) []*sarama.ProducerMessage {
-	producerMessages := make([]*sarama.ProducerMessage, len(messages))
-	for i := range messages {
-		producerMessages[i] = &sarama.ProducerMessage{
-			Topic: topic,
-			Value: sarama.ByteEncoder(messages[i].Value),
-			Key:   sarama.ByteEncoder(messages[i].Key),
-		}
-	}
-	return producerMessages
 }
