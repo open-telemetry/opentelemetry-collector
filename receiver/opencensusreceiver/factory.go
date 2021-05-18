@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -56,12 +57,17 @@ func createTracesReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
-	r, err := createReceiver(cfg)
+	var err error
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		rCfg := cfg.(*Config)
+		var recv *ocReceiver
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, rCfg.buildOptions()...)
+		return recv
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	r.traceConsumer = nextConsumer
+	r.Unwrap().(*ocReceiver).traceConsumer = nextConsumer
 
 	return r, nil
 }
@@ -72,42 +78,23 @@ func createMetricsReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	r, err := createReceiver(cfg)
+	var err error
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		rCfg := cfg.(*Config)
+		var recv *ocReceiver
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, rCfg.buildOptions()...)
+		return recv
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	r.metricsConsumer = nextConsumer
+	r.Unwrap().(*ocReceiver).metricsConsumer = nextConsumer
 
 	return r, nil
-}
-
-func createReceiver(cfg config.Receiver) (*ocReceiver, error) {
-	rCfg := cfg.(*Config)
-
-	// There must be one receiver for both metrics and traces. We maintain a map of
-	// receivers per config.
-
-	// Check to see if there is already a receiver for this config.
-	receiver, ok := receivers[rCfg]
-	if !ok {
-		// Build the configuration options.
-		opts := rCfg.buildOptions()
-
-		// We don't have a receiver, so create one.
-		var err error
-		receiver, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, opts...)
-		if err != nil {
-			return nil, err
-		}
-		// Remember the receiver in the map
-		receivers[rCfg] = receiver
-	}
-	return receiver, nil
 }
 
 // This is the map of already created OpenCensus receivers for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one ocReceiver object per configuration.
-var receivers = map[*Config]*ocReceiver{}
+var receivers = sharedcomponent.NewSharedComponents()
