@@ -143,17 +143,19 @@ func WithLongLivedCtx() StartReceiveOption {
 	}
 }
 
-// Receiver is a helper to add obersvability to a component.Receiver
+// Receiver is a helper to add obersvability to a component.Receiver.
 type Receiver struct {
 	receiverID config.ComponentID
 	transport  string
 }
 
+// ReceiverSettings are settings for creating an Receiver.
 type ReceiverSettings struct {
 	ReceiverID config.ComponentID
 	Transport  string
 }
 
+// NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
 	return &Receiver{
 		receiverID: cfg.ReceiverID,
