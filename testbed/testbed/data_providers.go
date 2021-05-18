@@ -152,7 +152,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			var labelsMap map[string]string
 			if dp.options.IsScraping {
 				labelsMap = map[string]string{
-					"item_index":  "item_" + strconv.Itoa(j),
+					"item_index": "item_" + strconv.Itoa(j),
 				}
 			} else {
 				labelsMap = map[string]string{

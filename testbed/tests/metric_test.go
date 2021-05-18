@@ -107,18 +107,18 @@ func TestMetric10kDPS(t *testing.T) {
 func TestMetrics10kDPSScraped(t *testing.T) {
 	scrapeIntervalString := os.Getenv(scrapeIntervalEnvVar)
 	if scrapeIntervalString == "" {
-		scrapeIntervalString = "15s"
+		scrapeIntervalString = "1s"
 	}
 	scrapeInterval, err := time.ParseDuration(scrapeIntervalString)
 	if err != nil {
 		log.Fatalf("Invalid "+scrapeIntervalEnvVar+": %v. Expecting a valid duration string.", scrapeInterval)
 	}
 	tests := []struct {
-		name         string
-		sender       testbed.DataSender
-		receiver     testbed.DataReceiver
-		resourceSpec testbed.ResourceSpec
-		processors   map[string]string
+		name           string
+		sender         testbed.DataSender
+		receiver       testbed.DataReceiver
+		resourceSpec   testbed.ResourceSpec
+		processors     map[string]string
 		scrapeInterval time.Duration
 	}{
 		{
@@ -126,10 +126,10 @@ func TestMetrics10kDPSScraped(t *testing.T) {
 			testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), scrapeInterval.String()),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 65,
-				ExpectedMaxRAM: 500,
+				ExpectedMaxCPU: 15,
+				ExpectedMaxRAM: 85,
 			},
-			map[string]string {
+			map[string]string{
 				"batch": `batch:
     send_batch_max_size: 5000
 `,

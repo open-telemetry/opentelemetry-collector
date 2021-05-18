@@ -46,12 +46,12 @@ type MockBackend struct {
 	startedAt time.Time
 
 	// Recording fields.
-	isRecording     bool
-	isScraping      bool
-	recordMutex     sync.Mutex
-	ReceivedTraces  []pdata.Traces
-	ReceivedMetrics []pdata.Metrics
-	ReceivedLogs    []pdata.Logs
+	isRecording        bool
+	isScraping         bool
+	recordMutex        sync.Mutex
+	ReceivedTraces     []pdata.Traces
+	ReceivedMetrics    []pdata.Metrics
+	ReceivedLogs       []pdata.Logs
 	ReceivedTimestamps []time.Time
 }
 
@@ -169,7 +169,7 @@ func (mb *MockBackend) getTimestamps(md pdata.Metrics) {
 	if rms.Len() > 0 {
 		rm := rms.At(0)
 		ilms := rm.InstrumentationLibraryMetrics()
-	  if ilms.Len() > 0 {
+		if ilms.Len() > 0 {
 			ilm := ilms.At(0)
 			ms := ilm.Metrics()
 			if ms.Len() > 0 {

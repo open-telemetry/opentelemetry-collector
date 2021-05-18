@@ -19,9 +19,9 @@ package tests
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
-	"log"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -36,7 +36,7 @@ import (
 
 var (
 	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
-	itemsPerIntervalEnvVar = "ITEMS_PER_INTERVAL"
+	itemsPerIntervalEnvVar                               = "ITEMS_PER_INTERVAL"
 )
 
 // createConfigYaml creates a collector config file that corresponds to the
@@ -266,7 +266,7 @@ func Scenario10kScrapeItemsPerSecond(
 
 	tc.StopLoad()
 
-	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, 
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 },
 		timeToWait,
 		"load generator started")
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() <= tc.MockBackend.DataItemsReceived() },
@@ -294,7 +294,6 @@ func genRandByteString(len int) string {
 	}
 	return string(b)
 }
-
 
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.

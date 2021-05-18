@@ -485,7 +485,7 @@ func TestMetricsFromFile(t *testing.T) {
 
 	options := testbed.LoadOptions{
 		DataItemsPerInterval: 1_000,
-		Parallel:           1,
+		Parallel:             1,
 		// ItemsPerBatch is based on the data from the file.
 		ItemsPerBatch: dataProvider.ItemsPerBatch,
 	}

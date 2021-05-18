@@ -562,7 +562,7 @@ func (zs *ZipkinDataSender) ProtocolName() string {
 type PrometheusDataSender struct {
 	DataSenderBase
 	consumer.Metrics
-	namespace string
+	namespace      string
 	scrapeInterval string
 }
 

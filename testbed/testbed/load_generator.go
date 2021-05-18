@@ -55,7 +55,7 @@ type LoadOptions struct {
 	// records to generate each interval.
 	DataItemsPerInterval int
 
-	// Interval specifies the number of seconds between generated spans, 
+	// Interval specifies the number of seconds between generated spans,
 	// metric data points or log records
 	Interval time.Duration
 
@@ -96,7 +96,7 @@ func (lg *LoadGenerator) Start(options LoadOptions) {
 		// 10 items per batch by default.
 		lg.options.ItemsPerBatch = 10
 	}
-	
+
 	if lg.options.Interval.Nanoseconds() == 0 {
 		// 1 second interval by default
 		lg.options.Interval = time.Second
