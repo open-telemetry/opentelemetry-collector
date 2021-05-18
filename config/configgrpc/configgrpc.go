@@ -201,12 +201,12 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		componentId, cperr := config.NewIDFromString(gcs.Auth.AuthenticatorName)
+		componentID, cperr := config.NewIDFromString(gcs.Auth.AuthenticatorName)
 		if cperr != nil {
 			return nil, cperr
 		}
 
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, componentId)
+		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, componentID)
 		if cerr != nil {
 			return nil, cerr
 		}

@@ -63,7 +63,7 @@ func GetHTTPClientAuthenticator(extensions map[config.ComponentID]component.Exte
 
 // GetGRPCClientAuthenticator attempts to select the appropriate GRPCClientAuthenticator from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
-//This should only be used by gRPC clients.
+// This should only be used by gRPC clients.
 func GetGRPCClientAuthenticator(extensions map[config.ComponentID]component.Extension,
 	componentID config.ComponentID) (GRPCClientAuthenticator, error) {
 	for name, ext := range extensions {
