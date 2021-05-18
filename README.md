@@ -66,7 +66,8 @@ Objectives:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triager)):
+Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
+
 - [Alolita Sharma](https://github.com/alolita), AWS
 - [Steve Flanders](https://github.com/flands), Splunk
 
