@@ -517,7 +517,6 @@ func Test_PushMetrics(t *testing.T) {
 				RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 5},
 			}
 
-
 			assert.NotNil(t, cfg)
 			buildInfo := component.BuildInfo{
 				Description: "OpenTelemetry Collector",
