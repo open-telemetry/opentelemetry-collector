@@ -46,7 +46,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
 	ctx := rec.StartTraceDataReceiveOp(receiverCtx)
 	assert.NotNil(t, ctx)
-	obsreport.EndTraceDataReceiveOp(
+	rec.EndTraceDataReceiveOp(
 		ctx,
 		format,
 		7,
@@ -64,7 +64,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
 	ctx := rec.StartMetricsReceiveOp(receiverCtx)
 	assert.NotNil(t, ctx)
-	obsreport.EndMetricsReceiveOp(ctx, format, 7, nil)
+	rec.EndMetricsReceiveOp(ctx, format, 7, nil)
 
 	obsreporttest.CheckReceiverMetrics(t, receiver, transport, 7, 0)
 }
@@ -78,7 +78,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
 	ctx := rec.StartLogsReceiveOp(receiverCtx)
 	assert.NotNil(t, ctx)
-	obsreport.EndLogsReceiveOp(ctx, format, 7, nil)
+	rec.EndLogsReceiveOp(ctx, format, 7, nil)
 
 	obsreporttest.CheckReceiverLogs(t, receiver, transport, 7, 0)
 }

@@ -176,13 +176,13 @@ func (rec *Receiver) StartTraceDataReceiveOp(
 
 // EndTraceDataReceiveOp completes the receive operation that was started with
 // StartTraceDataReceiveOp.
-func EndTraceDataReceiveOp(
+func (rec *Receiver) EndTraceDataReceiveOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedSpans int,
 	err error,
 ) {
-	endReceiveOp(
+	rec.endReceiveOp(
 		receiverCtx,
 		format,
 		numReceivedSpans,
@@ -206,13 +206,13 @@ func (rec *Receiver) StartLogsReceiveOp(
 
 // EndLogsReceiveOp completes the receive operation that was started with
 // StartLogsReceiveOp.
-func EndLogsReceiveOp(
+func (rec *Receiver) EndLogsReceiveOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedLogRecords int,
 	err error,
 ) {
-	endReceiveOp(
+	rec.endReceiveOp(
 		receiverCtx,
 		format,
 		numReceivedLogRecords,
@@ -236,13 +236,13 @@ func (rec *Receiver) StartMetricsReceiveOp(
 
 // EndMetricsReceiveOp completes the receive operation that was started with
 // StartMetricsReceiveOp.
-func EndMetricsReceiveOp(
+func (rec *Receiver) EndMetricsReceiveOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedPoints int,
 	err error,
 ) {
-	endReceiveOp(
+	rec.endReceiveOp(
 		receiverCtx,
 		format,
 		numReceivedPoints,
@@ -303,7 +303,7 @@ func (rec *Receiver) traceReceiveOp(
 }
 
 // endReceiveOp records the observability signals at the end of an operation.
-func endReceiveOp(
+func (rec *Receiver) endReceiveOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedItems int,

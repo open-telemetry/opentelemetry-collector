@@ -243,7 +243,7 @@ func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error
 	ctx = rec.StartTraceDataReceiveOp(ctx)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
-	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+	rec.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 	return err
 }
 
@@ -274,7 +274,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
 
 	err := jr.nextConsumer.ConsumeTraces(ctx, td)
-	obsreport.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
+	rec.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +423,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {
 		http.Error(w, html.EscapeString(hErr.msg), hErr.statusCode)
-		obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
+		rec.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
 		return
 	}
 
@@ -433,7 +433,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	} else {
 		w.WriteHeader(http.StatusAccepted)
 	}
-	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+	rec.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 }
 
 func (jr *jReceiver) startCollector(host component.Host) error {

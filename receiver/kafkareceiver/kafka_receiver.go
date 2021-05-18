@@ -270,7 +270,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 
 		spanCount := traces.SpanCount()
 		err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
-		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
+		rec.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
 		if err != nil {
 			return err
 		}
@@ -324,7 +324,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 
 		err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
 		// TODO
-		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
+		rec.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
 		if err != nil {
 			return err
 		}

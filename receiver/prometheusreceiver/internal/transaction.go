@@ -174,7 +174,7 @@ func (tr *transaction) Commit() error {
 	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {
 		// Only error by Build() is errNoDataToBuild, with numReceivedPoints set to zero.
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, err)
+		rec.EndMetricsReceiveOp(ctx, dataformat, 0, err)
 		return err
 	}
 
@@ -185,7 +185,7 @@ func (tr *transaction) Commit() error {
 			// Since we are unable to adjust metrics properly, we will drop them
 			// and return an error.
 			err = errNoStartTimeMetrics
-			obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, err)
+			rec.EndMetricsReceiveOp(ctx, dataformat, 0, err)
 			return err
 		}
 
@@ -202,7 +202,7 @@ func (tr *transaction) Commit() error {
 		_, numPoints = md.MetricAndDataPointCount()
 		err = tr.sink.ConsumeMetrics(ctx, md)
 	}
-	obsreport.EndMetricsReceiveOp(ctx, dataformat, numPoints, err)
+	rec.EndMetricsReceiveOp(ctx, dataformat, numPoints, err)
 	return err
 }
 

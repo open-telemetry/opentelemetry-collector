@@ -148,7 +148,7 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdat
 		obsreport.WithLongLivedCtx())
 
 	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
-	obsreport.EndTraceDataReceiveOp(ctx, receiverDataFormat, td.SpanCount(), err)
+	rec.EndTraceDataReceiveOp(ctx, receiverDataFormat, td.SpanCount(), err)
 
 	return err
 }

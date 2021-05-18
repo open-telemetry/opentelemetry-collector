@@ -113,7 +113,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		ctx := rec.StartTraceDataReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndTraceDataReceiveOp(
+		rec.EndTraceDataReceiveOp(
 			ctx,
 			format,
 			rcvdSpans[i],
@@ -174,7 +174,7 @@ func TestReceiveLogsOp(t *testing.T) {
 		ctx := rec.StartLogsReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndLogsReceiveOp(
+		rec.EndLogsReceiveOp(
 			ctx,
 			format,
 			rcvdLogRecords[i],
@@ -235,7 +235,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 		ctx := rec.StartMetricsReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndMetricsReceiveOp(
+		rec.EndMetricsReceiveOp(
 			ctx,
 			format,
 			rcvdMetricPts[i],
@@ -508,7 +508,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			obsreport.WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 
-		obsreport.EndTraceDataReceiveOp(
+		rec.EndTraceDataReceiveOp(
 			ctx,
 			format,
 			op.numSpans,

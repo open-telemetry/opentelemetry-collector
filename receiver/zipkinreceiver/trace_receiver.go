@@ -246,7 +246,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if asZipkinv1 {
 		receiverTagValue = zipkinV1TagValue
 	}
-	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
+	rec.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
 
 	if consumerErr != nil {
 		// Transient error, due to some internal condition.

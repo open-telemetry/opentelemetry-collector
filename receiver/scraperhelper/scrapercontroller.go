@@ -213,7 +213,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: sc.id, Transport: ""})
 	ctx = rec.StartMetricsReceiveOp(ctx)
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
-	obsreport.EndMetricsReceiveOp(ctx, "", dataPointCount, err)
+	rec.EndMetricsReceiveOp(ctx, "", dataPointCount, err)
 }
 
 // stopScraping stops the ticker

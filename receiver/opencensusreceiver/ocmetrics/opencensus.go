@@ -140,7 +140,7 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *c
 		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(node, resource, metrics))
 	}
 
-	obsreport.EndMetricsReceiveOp(
+	rec.EndMetricsReceiveOp(
 		ctx,
 		receiverDataFormat,
 		numPoints,
