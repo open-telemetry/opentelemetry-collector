@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove unused logstest package (#3222)
+
 ## v0.27.0 Beta
 
 ## 🛑 Breaking changes 🛑
