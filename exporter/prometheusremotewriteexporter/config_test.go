@@ -82,3 +82,23 @@ func Test_loadConfig(t *testing.T) {
 			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
 		})
 }
+
+func TestNegativeQueueSize(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "negative_queue_size.yaml"), factories)
+	assert.Error(t, err)
+}
+
+func TestNegativeNumConsumers(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "negative_num_consumers.yaml"), factories)
+	assert.Error(t, err)
+}

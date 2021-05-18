@@ -15,6 +15,8 @@
 package prometheusremotewriteexporter
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -63,5 +65,11 @@ var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.RemoteWriteQueue.QueueSize < 0 {
+		return fmt.Errorf("remote write queue size can't be negative")
+	}
+	if cfg.RemoteWriteQueue.NumConsumers < 0 {
+		return fmt.Errorf("remote write consumer number can't be negative")
+	}
 	return nil
 }
