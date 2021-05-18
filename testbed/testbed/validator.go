@@ -52,6 +52,8 @@ func (v *PerfTestValidator) Validate(tc *TestCase) {
 		for i, timestamp := range tc.MockBackend.ReceivedTimestamps {
 			if i != 0 && !assert.WithinDuration(tc.t, timestamp, tc.MockBackend.ReceivedTimestamps[i-1], v.ScrapeInterval,
 				"Scrape timestamps difference larger than scrape interval") {
+				log.Printf("%s and %s are not within the scrape interval duration of %s",
+					timestamp.String(), tc.MockBackend.ReceivedTimestamps[i-1].String(), v.ScrapeInterval.String())
 				return
 			}
 		}
