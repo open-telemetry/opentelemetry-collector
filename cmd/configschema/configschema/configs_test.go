@@ -24,18 +24,18 @@ import (
 )
 
 func TestGetAllConfigs(t *testing.T) {
-	cfgs := GetAllConfigs(testComponents())
+	cfgs := GetAllCfgInfos(testComponents())
 	require.NotNil(t, cfgs)
 }
 
 func TestCreateReceiverConfig(t *testing.T) {
-	cfg, err := GetConfig(testComponents(), "receiver", "otlp")
+	cfg, err := GetCfgInfo(testComponents(), "receiver", "otlp")
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }
 
 func TestCreateProcesorConfig(t *testing.T) {
-	cfg, err := GetConfig(testComponents(), "processor", "filter")
+	cfg, err := GetCfgInfo(testComponents(), "processor", "filter")
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }
@@ -64,7 +64,7 @@ func TestGetConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfg, err := GetConfig(testComponents(), test.componentType, test.name)
+			cfg, err := GetCfgInfo(testComponents(), test.componentType, test.name)
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
 		})

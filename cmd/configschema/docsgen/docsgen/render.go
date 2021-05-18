@@ -16,30 +16,32 @@ package docsgen
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"text/template"
 
-	"go.opentelemetry.io/collector/cmd/schemagen/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema/configschema"
 )
 
-func renderHeader(tmpl *template.Template, f *configschema.Field) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := tmpl.Execute(buf, f)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+func renderHeader(typ, group, doc string) []byte {
+	return []byte(fmt.Sprintf(
+		"# %q %s Reference\n\n%s\n\n",
+		typ,
+		strings.Title(group),
+		doc,
+	))
 }
 
 func renderTable(tmpl *template.Template, field *configschema.Field) ([]byte, error) {
 	buf := &bytes.Buffer{}
-	err := traverseFields(tmpl, field, buf)
+	err := executeTableTemplate(tmpl, field, buf)
 	if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func traverseFields(tmpl *template.Template, field *configschema.Field, buf *bytes.Buffer) error {
+func executeTableTemplate(tmpl *template.Template, field *configschema.Field, buf *bytes.Buffer) error {
 	err := tmpl.Execute(buf, field)
 	if err != nil {
 		return err
@@ -48,10 +50,27 @@ func traverseFields(tmpl *template.Template, field *configschema.Field, buf *byt
 		if subField.Fields == nil {
 			continue
 		}
-		err = traverseFields(tmpl, subField, buf)
+		err = executeTableTemplate(tmpl, subField, buf)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+const durationBlock = "### time-Duration \n" +
+	"An optionally signed sequence of decimal numbers, " +
+	"each with a unit suffix, such as `300ms`, `-1.5h`, " +
+	"or `2h45m`. Valid time units are `ns`, `us`, `ms`, `s`, `m`, `h`."
+
+func hasTimeDuration(f *configschema.Field) bool {
+	if f.Type == "time.Duration" {
+		return true
+	}
+	for _, sub := range f.Fields {
+		if hasTimeDuration(sub) {
+			return true
+		}
+	}
+	return false
 }

@@ -53,6 +53,14 @@ func refl(f *Field, v reflect.Value, dr DirResolver) {
 		return
 	}
 	comments := commentsForStruct(v, dr)
+
+	// we also check if f.Doc hasn't already been written, thus preventing a
+	// squashed type with struct comments from overwriting the containing struct's
+	// comments
+	if sc, ok := comments["_struct"]; ok && f.Doc == "" {
+		f.Doc = sc
+	}
+
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
 		tagName, options, err := mapstructure(structField.Tag)
@@ -66,7 +74,6 @@ func refl(f *Field, v reflect.Value, dr DirResolver) {
 		fv := v.Field(i)
 		next := f
 		if !containsSquash(options) {
-			doc := comments[structField.Name]
 			name := tagName
 			if name == "" {
 				name = strings.ToLower(structField.Name)
@@ -80,7 +87,7 @@ func refl(f *Field, v reflect.Value, dr DirResolver) {
 				Name: name,
 				Type: typeStr,
 				Kind: kindStr,
-				Doc:  doc,
+				Doc:  comments[structField.Name],
 			}
 			f.Fields = append(f.Fields, next)
 		}

@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configschema
+package main
 
 import (
-	"reflect"
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/cmd/configschema/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema/docsgen/docsgen"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
-func TestFieldComments(t *testing.T) {
-	v := reflect.ValueOf(testStruct{})
-	comments := commentsForStruct(v, testDR())
-	require.EqualValues(t, map[string]string{
-		"Duration": "embedded, package qualified\n",
-	}, comments)
+func main() {
+	cmps, err := defaultcomponents.Components()
+	if err != nil {
+		panic(err)
+	}
+	dr := configschema.NewDefaultDirResolver()
+	docsgen.CLI(cmps, dr)
 }

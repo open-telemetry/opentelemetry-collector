@@ -23,12 +23,12 @@ import (
 )
 
 // commentsForStruct returns a map of fieldname -> comment for a struct
-func commentsForStruct(v reflect.Value, env DirResolver) map[string]string {
+func commentsForStruct(v reflect.Value, dr DirResolver) map[string]string {
 	elem := v
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	dir := env.PackageDir(elem.Type())
+	dir := dr.PackageDir(elem.Type())
 	name := trimPackage(elem)
 	return commentsForStructName(dir, name)
 }
@@ -48,13 +48,20 @@ func commentsForStructName(packageDir, structName string) map[string]string {
 	comments := map[string]string{}
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Files {
-			if obj, ok := file.Scope.Objects[structName]; ok {
-				if ts, ok := obj.Decl.(*ast.TypeSpec); ok {
-					if st, ok := ts.Type.(*ast.StructType); ok {
-						for _, field := range st.Fields.List {
-							if field.Doc != nil {
-								if name := fieldName(field); name != "" {
-									comments[name] = field.Doc.Text()
+			for _, decl := range file.Decls {
+				if gd, ok := decl.(*ast.GenDecl); ok {
+					for _, spec := range gd.Specs {
+						if ts, ok := spec.(*ast.TypeSpec); ok {
+							if ts.Name.Name == structName {
+								if structComments := gd.Doc.Text(); structComments != "" {
+									comments["_struct"] = structComments
+								}
+								if st, ok := ts.Type.(*ast.StructType); ok {
+									for _, field := range st.Fields.List {
+										if name := fieldName(field); name != "" {
+											comments[name] = field.Doc.Text()
+										}
+									}
 								}
 							}
 						}

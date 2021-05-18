@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTopLevelFieldWithDefaults(t *testing.T) {
+func TestReadFieldsWithDefaults(t *testing.T) {
 	defaults := map[string]interface{}{
 		"one":           "1",
 		"two":           int64(2),
@@ -46,11 +46,11 @@ func TestTopLevelFieldWithDefaults(t *testing.T) {
 			Name: "bar",
 		},
 	}
-	testTopLevelField(t, s, defaults)
+	testReadFields(t, s, defaults)
 }
 
-func TestTopLevelFieldWithoutDefaults(t *testing.T) {
-	testTopLevelField(t, testStruct{}, map[string]interface{}{})
+func TestReadFieldsWithoutDefaults(t *testing.T) {
+	testReadFields(t, testStruct{}, map[string]interface{}{})
 }
 
 func getField(fields []*Field, name string) *Field {
@@ -62,11 +62,13 @@ func getField(fields []*Field, name string) *Field {
 	return nil
 }
 
-func testTopLevelField(t *testing.T, s testStruct, defaults map[string]interface{}) {
+func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{}) {
 	root := ReadFields(
 		reflect.ValueOf(s),
 		testDR(),
 	)
+
+	assert.Equal(t, "testStruct comment\n", root.Doc)
 
 	assert.Equal(t, "configschema.testStruct", root.Type)
 
@@ -101,7 +103,7 @@ func testTopLevelField(t *testing.T, s testStruct, defaults map[string]interface
 		Type:    "time.Duration",
 		Kind:    "int64",
 		Default: defaults["duration"],
-		Doc:     "embedded, package qualified\n",
+		Doc:     "embedded, package qualified comment\n",
 	}, getField(root.Fields, "duration"))
 
 	assert.Equal(t, &Field{

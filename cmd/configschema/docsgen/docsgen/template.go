@@ -15,31 +15,19 @@
 package docsgen
 
 import (
-	"path"
 	"strings"
 	"text/template"
 )
 
-func headerTemplate(templateDir string) (*template.Template, error) {
-	const fname = "header.tmpl"
-	tmpl := template.New(fname)
-	tmpl = tmpl.Funcs(template.FuncMap{
-		"packageName": packageName,
-	})
-	return tmpl.ParseFiles(path.Join(templateDir, fname))
-}
-
-func tableTemplate(templateDir string) (*template.Template, error) {
-	const fname = "table.tmpl"
-	tmpl := template.New(fname)
-	tmpl = tmpl.Funcs(
+func tableTemplate() (*template.Template, error) {
+	return template.New("table").Funcs(
 		template.FuncMap{
 			"join":            join,
 			"cleanType":       cleanType,
 			"isCompoundField": isCompoundField,
+			"isDuration":      isDuration,
 		},
-	)
-	return tmpl.ParseFiles(path.Join(templateDir, fname))
+	).Parse(tableTemplateStr)
 }
 
 func isCompoundField(kind string) bool {
@@ -54,9 +42,29 @@ func cleanType(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, "*", ""), ".", "-")
 }
 
-// packageName takes an input, e.g. "*otlpreceiver.Config" and return "otlpreceiver"
-func packageName(s string) string {
-	dotIdx := strings.Index(s, ".")
-	replaced := strings.ReplaceAll(s[:dotIdx], "*", "")
-	return strings.Title(replaced)
+func isDuration(s string) bool {
+	return s == "time.Duration"
 }
+
+const tableTemplateStr = `### {{ cleanType .Type }}
+
+| Name | Type | Default | Docs |
+| ---- | ---- | ------- | ---- |
+{{ range .Fields -}}
+| {{ .Name }} |
+{{- if .Type -}}
+    {{- if isCompoundField .Kind -}}
+        [{{ cleanType .Type }}](#{{ cleanType .Type }})
+    {{- else -}}
+		{{- if isDuration .Type -}}
+			[{{ cleanType .Type }}](#{{ cleanType .Type }})
+        {{- else -}}
+            {{ .Type }}
+        {{- end -}}
+    {{- end -}}
+{{- else -}}
+    {{ .Kind }}
+{{- end -}}
+| {{ .Default }} | {{ join .Doc }} |
+{{ end }}
+`

@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package configschema
 
 import (
-	"go.opentelemetry.io/collector/cmd/schemagen/docsgen/docsgen"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"reflect"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func main() {
-	cmps, err := defaultcomponents.Components()
-	if err != nil {
-		panic(err)
-	}
-	docsgen.CLI(cmps)
+func TestFieldComments(t *testing.T) {
+	v := reflect.ValueOf(testStruct{})
+	comments := commentsForStruct(v, testDR())
+	assert.Equal(t, "embedded, package qualified comment\n", comments["Duration"])
+	assert.Equal(t, "testStruct comment\n", comments["_struct"])
 }

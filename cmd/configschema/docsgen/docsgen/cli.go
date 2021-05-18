@@ -21,39 +21,30 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strings"
 	"text/template"
 
-	"go.opentelemetry.io/collector/cmd/schemagen/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema/configschema"
 	"go.opentelemetry.io/collector/component"
 )
 
-const (
-	mdFileName  = "config.md"
-	templateDir = "cmd/schemagen/docsgen/docsgen/templates/"
-)
+const mdFileName = "config.md"
 
 // CLI is the entrypoint for this package's functionality. It handles command-
 // line arguments for the docsgen executable and produces config documentation
 // for the specified components.
-func CLI(factories component.Factories) {
-	headerTmpl, err := headerTemplate(templateDir)
+func CLI(factories component.Factories, dr configschema.DirResolver) {
+	tableTmpl, err := tableTemplate()
 	if err != nil {
 		panic(err)
 	}
 
-	tableTmpl, err := tableTemplate(templateDir)
-	if err != nil {
-		panic(err)
-	}
-
-	dr := configschema.NewDefaultDirResolver()
-	handleCLI(factories, dr, headerTmpl, tableTmpl, ioutil.WriteFile, os.Stdout, os.Args...)
+	handleCLI(factories, dr, tableTmpl, ioutil.WriteFile, os.Stdout, os.Args...)
 }
 
 func handleCLI(
 	factories component.Factories,
 	dr configschema.DirResolver,
-	headerTmpl *template.Template,
 	tableTmpl *template.Template,
 	writeFile writeFileFunc,
 	wr io.Writer,
@@ -66,11 +57,11 @@ func handleCLI(
 
 	componentType := args[1]
 	if componentType == "all" {
-		allComponents(dr, headerTmpl, tableTmpl, factories, writeFile)
+		allComponents(dr, tableTmpl, factories, writeFile)
 		return
 	}
 
-	singleComponent(dr, headerTmpl, tableTmpl, factories, componentType, args[2], writeFile)
+	singleComponent(dr, tableTmpl, factories, componentType, args[2], writeFile)
 }
 
 func printLines(wr io.Writer, lines ...string) {
@@ -81,57 +72,63 @@ func printLines(wr io.Writer, lines ...string) {
 
 func allComponents(
 	dr configschema.DirResolver,
-	headerTmpl *template.Template,
 	tableTmpl *template.Template,
 	factories component.Factories,
 	writeFile writeFileFunc,
 ) {
-	configs := configschema.GetAllConfigs(factories)
+	configs := configschema.GetAllCfgInfos(factories)
 	for _, cfg := range configs {
-		writeConfigDoc(headerTmpl, tableTmpl, dr, cfg, writeFile)
+		writeConfigDoc(tableTmpl, dr, cfg, writeFile)
 	}
 }
 
 func singleComponent(
 	dr configschema.DirResolver,
-	headerTmpl, tableTmpl *template.Template,
+	tableTmpl *template.Template,
 	factories component.Factories,
 	componentType, componentName string,
 	writeFile writeFileFunc,
 ) {
-	cfg, err := configschema.GetConfig(factories, componentType, componentName)
+	cfg, err := configschema.GetCfgInfo(factories, componentType, componentName)
 	if err != nil {
 		panic(err)
 	}
 
-	writeConfigDoc(headerTmpl, tableTmpl, dr, cfg, writeFile)
+	writeConfigDoc(tableTmpl, dr, cfg, writeFile)
 }
 
 type writeFileFunc func(filename string, data []byte, perm os.FileMode) error
 
 func writeConfigDoc(
-	headerTmpl *template.Template,
 	tableTmpl *template.Template,
 	dr configschema.DirResolver,
-	config interface{},
+	ci configschema.CfgInfo,
 	writeFile writeFileFunc,
 ) {
-	v := reflect.ValueOf(config)
+	v := reflect.ValueOf(ci.CfgInstance)
 	f := configschema.ReadFields(v, dr)
 
-	headerBytes, err := renderHeader(headerTmpl, f)
-	if err != nil {
-		panic(err)
-	}
+	f.Type = stripPrefix(f.Type)
 
+	mdBytes := renderHeader(string(ci.Type), ci.Group, f.Doc)
 	tableBytes, err := renderTable(tableTmpl, f)
 	if err != nil {
 		panic(err)
 	}
+	mdBytes = append(mdBytes, tableBytes...)
+
+	if hasTimeDuration(f) {
+		mdBytes = append(mdBytes, durationBlock...)
+	}
 
 	dir := dr.PackageDir(v.Type().Elem())
-	err = writeFile(path.Join(dir, mdFileName), append(headerBytes, tableBytes...), 0644)
+	err = writeFile(path.Join(dir, mdFileName), mdBytes, 0644)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func stripPrefix(name string) string {
+	idx := strings.Index(name, ".")
+	return name[idx+1:]
 }

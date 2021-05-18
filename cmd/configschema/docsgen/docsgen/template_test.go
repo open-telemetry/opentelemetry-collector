@@ -18,31 +18,20 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"path"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/cmd/schemagen/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema/configschema"
 )
 
 func TestTableTemplate(t *testing.T) {
 	field := testDataField(t)
-	tmpl, err := tableTemplate("templates")
+	tmpl, err := tableTemplate()
 	require.NoError(t, err)
 	bytes, err := renderTable(tmpl, field)
 	require.NoError(t, err)
 	require.NotNil(t, bytes)
-}
-
-func TestHeaderTemplate(t *testing.T) {
-	field := testDataField(t)
-	tmpl, err := headerTemplate("templates")
-	require.NoError(t, err)
-	bytes, err := renderHeader(tmpl, field)
-	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(string(bytes), "# Otlpreceiver Configuration Reference"))
 }
 
 func testDataField(t *testing.T) *configschema.Field {
