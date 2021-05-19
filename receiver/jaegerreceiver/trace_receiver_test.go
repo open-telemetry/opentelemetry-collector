@@ -50,6 +50,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -109,6 +110,8 @@ func TestClientIPDetection(t *testing.T) {
 				ch <- ctx
 			},
 		},
+		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 	batch := &jaegerthrift.Batch{
 		Process: jaegerthrift.NewProcess(),

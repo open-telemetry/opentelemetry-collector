@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 func TestNewTracesReceiver_version_err(t *testing.T) {
@@ -133,6 +134,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -174,6 +176,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -198,6 +201,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -315,6 +319,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -356,6 +361,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -380,6 +386,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 
 	wg := sync.WaitGroup{}
