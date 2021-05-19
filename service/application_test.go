@@ -322,14 +322,14 @@ func TestApplication_reloadService(t *testing.T) {
 				return
 			}
 
-			app := Application{
+			col := Collector{
 				logger:         zap.NewNop(),
 				parserProvider: tt.parserProvider,
 				factories:      factories,
 				service:        tt.service,
 			}
 
-			err := app.reloadService(ctx)
+			err := col.reloadService(ctx)
 
 			if err != nil {
 				assert.ErrorIs(t, err, sentinelError)
@@ -337,7 +337,7 @@ func TestApplication_reloadService(t *testing.T) {
 			}
 
 			// If successful need to shutdown active service.
-			assert.NoError(t, app.service.Shutdown(ctx))
+			assert.NoError(t, col.service.Shutdown(ctx))
 		})
 	}
 }

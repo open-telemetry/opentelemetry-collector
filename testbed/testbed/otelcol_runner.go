@@ -57,7 +57,7 @@ type InProcessCollector struct {
 	logger    *zap.Logger
 	factories component.Factories
 	configStr string
-	svc       *service.Application
+	svc       *service.Collector
 	appDone   chan struct{}
 	stopped   bool
 }
