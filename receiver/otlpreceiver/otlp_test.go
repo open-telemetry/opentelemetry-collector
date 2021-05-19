@@ -54,6 +54,7 @@ import (
 	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
+	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
@@ -98,7 +99,6 @@ var traceJSON = []byte(`
 	}`)
 
 var resourceSpansOtlp = otlptrace.ResourceSpans{
-
 	Resource: otlpresource.Resource{
 		Attributes: []otlpcommon.KeyValue{
 			{
@@ -348,8 +348,8 @@ func TestProtoHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	traceProto := internal.TracesToOtlp(testdata.GenerateTracesOneSpan().InternalRep())
-	traceBytes, err := traceProto.Marshal()
+	traceData := testdata.GenerateTracesOneSpan()
+	traceBytes, err := traceData.ToOtlpProtoBytes()
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -365,7 +365,7 @@ func TestProtoHttp(t *testing.T) {
 			t.Run(test.name+targetURLPath, func(t *testing.T) {
 				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
 				tSink.Reset()
-				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, traceProto)
+				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, traceData)
 			})
 		}
 	}
@@ -400,7 +400,7 @@ func testHTTPProtobufRequest(
 	encoding string,
 	traceBytes []byte,
 	expectedErr error,
-	wantOtlp *collectortrace.ExportTraceServiceRequest,
+	wantData pdata.Traces,
 ) {
 	tSink.SetConsumeError(expectedErr)
 
@@ -425,9 +425,7 @@ func testHTTPProtobufRequest(
 		require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
 		require.Len(t, allTraces, 1)
-
-		gotOtlp := internal.TracesToOtlp(allTraces[0].InternalRep())
-		assert.EqualValues(t, gotOtlp, wantOtlp)
+		assert.EqualValues(t, allTraces[0], wantData)
 	} else {
 		errStatus := &spb.Status{}
 		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
@@ -542,8 +540,8 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func createSingleSpanTrace() *collectortrace.ExportTraceServiceRequest {
-	return internal.TracesToOtlp(testdata.GenerateTracesOneSpan().InternalRep())
+func createSingleSpanTrace() pdata.Traces {
+	return testdata.GenerateTracesOneSpan()
 }
 
 // TestOTLPReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
@@ -587,27 +585,15 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	req := createSingleSpanTrace()
 
-	exportBidiFn := func(
-		t *testing.T,
-		cc *grpc.ClientConn,
-		msg *collectortrace.ExportTraceServiceRequest) error {
-
-		acc := collectortrace.NewTraceServiceClient(cc)
-		_, err := acc.Export(context.Background(), req)
-
-		return err
-	}
-
 	exporters := []struct {
 		receiverTag string
 		exportFn    func(
-			t *testing.T,
 			cc *grpc.ClientConn,
-			msg *collectortrace.ExportTraceServiceRequest) error
+			td pdata.Traces) error
 	}{
 		{
 			receiverTag: "trace",
-			exportFn:    exportBidiFn,
+			exportFn:    exportTraces,
 		},
 	}
 	for _, exporter := range exporters {
@@ -635,7 +621,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 						sink.SetConsumeError(fmt.Errorf("%q: consumer error", tt.name))
 					}
 
-					err = exporter.exportFn(t, cc, req)
+					err = exporter.exportFn(cc, req)
 
 					status, ok := status.FromError(err)
 					require.True(t, ok)
@@ -755,7 +741,7 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-type senderFunc func(msg *collectortrace.ExportTraceServiceRequest)
+type senderFunc func(td pdata.Traces)
 
 func TestShutdown(t *testing.T) {
 	endpointGrpc := testutil.GetAvailableLocalAddress(t)
@@ -785,14 +771,13 @@ func TestShutdown(t *testing.T) {
 	doneSignalGrpc := make(chan bool)
 	doneSignalHTTP := make(chan bool)
 
-	senderGrpc := func(msg *collectortrace.ExportTraceServiceRequest) {
-		// Send request via OTLP/gRPC.
-		client := collectortrace.NewTraceServiceClient(conn)
-		client.Export(context.Background(), msg) //nolint: errcheck
+	senderGrpc := func(td pdata.Traces) {
+		// Ignore error, may be executed after the receiver shutdown.
+		_ = exportTraces(conn, td)
 	}
-	senderHTTP := func(msg *collectortrace.ExportTraceServiceRequest) {
+	senderHTTP := func(td pdata.Traces) {
 		// Send request via OTLP/HTTP.
-		traceBytes, err2 := msg.Marshal()
+		traceBytes, err2 := td.ToOtlpProtoBytes()
 		if err2 != nil {
 			t.Errorf("Error marshaling protobuf: %v", err2)
 		}
@@ -858,4 +843,11 @@ loop:
 
 	// Indicate that we are done.
 	close(doneSignal)
+}
+
+func exportTraces(cc *grpc.ClientConn, td pdata.Traces) error {
+	acc := pdatagrpc.NewTracesClient(cc)
+	_, err := acc.Export(context.Background(), td)
+
+	return err
 }
