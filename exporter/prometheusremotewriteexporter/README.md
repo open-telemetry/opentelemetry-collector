@@ -1,22 +1,24 @@
 # Prometheus Remote Write Exporter
 
-This exporter sends data in Prometheus TimeSeries format to Cortex or any
-Prometheus [remote write compatible
-backend](https://prometheus.io/docs/operating/integrations/).
+Prometheus Remote Write Exporter sends OpenTelemetry metrics
+to Prometheus [remote write compatible
+backends](https://prometheus.io/docs/operating/integrations/)
+such as Cortex and Thanos.
 By default, this exporter requires TLS and offers queued retry capabilities.
+
+Supported pipeline types: metrics
 
 :warning: Non-cumulative monotonic, histogram, and summary OTLP metrics are
 dropped by this exporter.
 
-_Here is a link to the overall project [design](./DESIGN.md)_
-
-Supported pipeline types: metrics
+A [design doc](./DESIGN.md) is available to document in detail
+how this exporter works.
 
 ## Getting Started
 
 The following settings are required:
 
-- `endpoint` (no default): protocol:host:port to which the exporter is going to send data.
+- `endpoint` (no default): The remote write URL to send remote write samples.
 
 By default, TLS is enabled:
 
@@ -45,7 +47,7 @@ Example:
 ```yaml
 exporters:
   prometheusremotewrite:
-    endpoint: "http://some.url:9411/api/prom/push"
+    endpoint: "https://my-cortex:7900/api/v1/push"
 ```
 
 ## Advanced Configuration
@@ -55,4 +57,3 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
-- [Resource attributes to Metric labels](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), 

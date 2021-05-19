@@ -33,8 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
+	require.EqualError(t, err, "exporter \"file\" has invalid configuration: path must be non-empty")
 	require.NotNil(t, cfg)
 
 	e0 := cfg.Exporters[config.NewID(typeStr)]

@@ -270,7 +270,7 @@ type logsErrorMarshaler struct {
 	err error
 }
 
-func (e metricsErrorMarshaler) Marshal(_ pdata.Metrics) ([]Message, error) {
+func (e metricsErrorMarshaler) Marshal(_ pdata.Metrics, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
@@ -280,7 +280,7 @@ func (e metricsErrorMarshaler) Encoding() string {
 
 var _ TracesMarshaler = (*tracesErrorMarshaler)(nil)
 
-func (e tracesErrorMarshaler) Marshal(_ pdata.Traces) ([]Message, error) {
+func (e tracesErrorMarshaler) Marshal(_ pdata.Traces, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
@@ -288,7 +288,7 @@ func (e tracesErrorMarshaler) Encoding() string {
 	panic("implement me")
 }
 
-func (e logsErrorMarshaler) Marshal(_ pdata.Logs) ([]Message, error) {
+func (e logsErrorMarshaler) Marshal(_ pdata.Logs, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
