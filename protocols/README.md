@@ -1,6 +1,6 @@
 # Protocols
 
-This package provides common ways for decoding bytes into data models (e.g. Zipkin Span). These data models can then be decoded into internal pdata representations. Similarly, pdata can be encoded into a data model which can then be encoded into bytes.
+This package provides common ways for decoding serialized bytes into protocol-specific in-memory data models (e.g. Zipkin Span). These data models can then be decoded into internal pdata representations. Similarly, pdata can be encoded into a data model which can then be encoded into bytes.
 
 [encoding](encoding): Common interfaces for encoding/decoding bytes from/to data models.
 
