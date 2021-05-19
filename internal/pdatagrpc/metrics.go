@@ -24,7 +24,9 @@ import (
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 )
 
-// TODO: Consider to add `MetricsRequest` and `MetricsResponse`
+// TODO: Consider to add `MetricsRequest` and `MetricsResponse`. Right now the funcs return interface{},
+//  it would be better and future proof to create a MetricsResponse empty struct and return that.
+//  So if we ever add things in the OTLP response I can deal with that. Similar for request if we add non pdata properties.
 
 // MetricsClient is the client API for OTLP-GRPC Metrics service.
 //
