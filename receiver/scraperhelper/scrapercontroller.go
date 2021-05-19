@@ -124,6 +124,7 @@ func NewScraperControllerReceiver(
 		metricsScrapers:    &multiMetricScraper{},
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
+		obsrecv:            obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ID(), Transport: ""}),
 	}
 
 	for _, op := range options {
@@ -133,8 +134,6 @@ func NewScraperControllerReceiver(
 	if len(sc.metricsScrapers.scrapers) > 0 {
 		sc.resourceMetricScrapers = append(sc.resourceMetricScrapers, sc.metricsScrapers)
 	}
-
-	sc.obsrecv = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: sc.id, Transport: ""})
 
 	return sc, nil
 }

@@ -108,6 +108,7 @@ func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport}),
 	}
 	go c.consumeLoop(ctx, consumerGroup) // nolint:errcheck
 	<-consumerGroup.ready
@@ -179,6 +180,7 @@ func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport}),
 	}
 	go c.consumeLoop(ctx, logsConsumerGroup)
 	<-logsConsumerGroup.ready
@@ -258,7 +260,6 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 		session.MarkMessage(message, "")
 
 		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		c.obsrecv = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport})
 		ctx = c.obsrecv.StartTraceDataReceiveOp(ctx)
 		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.String())}
 		_ = stats.RecordWithTags(ctx, statsTags,
@@ -311,7 +312,6 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 		session.MarkMessage(message, "")
 
 		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		c.obsrecv = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport})
 		ctx = c.obsrecv.StartTraceDataReceiveOp(ctx)
 		_ = stats.RecordWithTags(
 			ctx,

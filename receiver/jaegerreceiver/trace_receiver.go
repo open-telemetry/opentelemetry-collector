@@ -93,7 +93,8 @@ type jReceiver struct {
 
 	logger *zap.Logger
 
-	obsrecv *obsreport.Receiver
+	grpcObsrecv *obsreport.Receiver
+	httpObsrecv *obsreport.Receiver
 }
 
 const (
@@ -126,6 +127,8 @@ func newJaegerReceiver(
 		nextConsumer: nextConsumer,
 		id:           id,
 		logger:       params.Logger,
+		grpcObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: grpcTransport}),
+		httpObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: collectorHTTPTransport}),
 	}
 }
 
@@ -242,7 +245,6 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
 	ctx = obsreport.ReceiverContext(ctx, h.id, h.transport)
-	h.obsrecv = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: h.id, Transport: h.transport})
 	ctx = h.obsrecv.StartTraceDataReceiveOp(ctx)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
@@ -271,13 +273,12 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, grpcTransport)
-	jr.obsrecv = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: grpcTransport})
-	ctx = jr.obsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = jr.grpcObsrecv.StartTraceDataReceiveOp(ctx)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
 
 	err := jr.nextConsumer.ConsumeTraces(ctx, td)
-	jr.obsrecv.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
+	jr.grpcObsrecv.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
 	if err != nil {
 		return nil, err
 	}
@@ -295,6 +296,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			id:           jr.id,
 			transport:    agentTransportBinary,
 			nextConsumer: jr.nextConsumer,
+			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportBinary}),
 		}
 		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), jr.config.AgentBinaryThriftConfig, apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
 		if err != nil {
@@ -308,6 +310,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			id:           jr.id,
 			transport:    agentTransportCompact,
 			nextConsumer: jr.nextConsumer,
+			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportCompact}),
 		}
 		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), jr.config.AgentCompactThriftConfig, apacheThrift.NewTCompactProtocolFactory(), h)
 		if err != nil {
@@ -420,13 +423,12 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, collectorHTTPTransport)
-	jr.obsrecv = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: collectorHTTPTransport})
-	ctx = jr.obsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = jr.httpObsrecv.StartTraceDataReceiveOp(ctx)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {
 		http.Error(w, html.EscapeString(hErr.msg), hErr.statusCode)
-		jr.obsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
+		jr.httpObsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
 		return
 	}
 
@@ -436,7 +438,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	} else {
 		w.WriteHeader(http.StatusAccepted)
 	}
-	jr.obsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+	jr.httpObsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 }
 
 func (jr *jReceiver) startCollector(host component.Host) error {

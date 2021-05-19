@@ -42,8 +42,8 @@ func New(id config.ComponentID, nextConsumer consumer.Logs) *Receiver {
 	r := &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
-	r.obsrecv = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport})
 
 	return r
 }
