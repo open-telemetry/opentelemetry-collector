@@ -36,6 +36,7 @@ type Receiver struct {
 	agentmetricspb.UnimplementedMetricsServiceServer
 	id           config.ComponentID
 	nextConsumer consumer.Metrics
+	receiver     *obsreport.Receiver
 }
 
 // New creates a new ocmetrics.Receiver reference.
@@ -46,6 +47,7 @@ func New(id config.ComponentID, nextConsumer consumer.Metrics) (*Receiver, error
 	ocr := &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
+		receiver:     obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
 	return ocr, nil
 }
@@ -122,8 +124,7 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics []*ocmetrics.Metric) error {
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: ocr.id, Transport: receiverTransport})
-	ctx := rec.StartMetricsReceiveOp(
+	ctx := ocr.receiver.StartMetricsReceiveOp(
 		longLivedRPCCtx,
 		obsreport.WithLongLivedCtx())
 
@@ -140,7 +141,7 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *c
 		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(node, resource, metrics))
 	}
 
-	rec.EndMetricsReceiveOp(
+	ocr.receiver.EndMetricsReceiveOp(
 		ctx,
 		receiverDataFormat,
 		numPoints,
