@@ -41,7 +41,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 )
 
-func TestApplication_Start(t *testing.T) {
+func TestCollector_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
@@ -51,30 +51,30 @@ func TestApplication_Start(t *testing.T) {
 		return nil
 	}
 
-	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
+	col, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
 	require.NoError(t, err)
-	assert.Equal(t, app.rootCmd, app.Command())
+	assert.Equal(t, col.rootCmd, col.Command())
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
 	healthCheckEndpoint := testutil.GetAvailableLocalAddress(t)
-	app.rootCmd.SetArgs([]string{
+	col.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
 		"--set=extensions.health_check.endpoint=" + healthCheckEndpoint,
 	})
 
-	appDone := make(chan struct{})
+	colDone := make(chan struct{})
 	go func() {
-		defer close(appDone)
-		assert.NoError(t, app.Run())
+		defer close(colDone)
+		assert.NoError(t, col.Run())
 	}()
 
-	assert.Equal(t, Starting, <-app.GetStateChannel())
-	assert.Equal(t, Running, <-app.GetStateChannel())
+	assert.Equal(t, Starting, <-col.GetStateChannel())
+	assert.Equal(t, Running, <-col.GetStateChannel())
 	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
-	assert.Equal(t, app.logger, app.GetLogger())
+	assert.Equal(t, col.logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
 	// All labels added to all collector metrics by default are listed below.
@@ -91,13 +91,13 @@ func TestApplication_Start(t *testing.T) {
 	assertZPages(t)
 
 	// Trigger another configuration load.
-	require.NoError(t, app.reloadService(context.Background()))
+	require.NoError(t, col.reloadService(context.Background()))
 	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
 
-	app.signalsChannel <- syscall.SIGTERM
-	<-appDone
-	assert.Equal(t, Closing, <-app.GetStateChannel())
-	assert.Equal(t, Closed, <-app.GetStateChannel())
+	col.signalsChannel <- syscall.SIGTERM
+	<-colDone
+	assert.Equal(t, Closing, <-col.GetStateChannel())
+	assert.Equal(t, Closed, <-col.GetStateChannel())
 }
 
 type mockAppTelemetry struct{}
@@ -110,7 +110,7 @@ func (tel *mockAppTelemetry) shutdown() error {
 	return errors.New("err1")
 }
 
-func TestApplication_ReportError(t *testing.T) {
+func TestCollector_ReportError(t *testing.T) {
 	// use a mock AppTelemetry struct to return an error on shutdown
 	preservedAppTelemetry := applicationTelemetry
 	applicationTelemetry = &mockAppTelemetry{}
@@ -119,26 +119,26 @@ func TestApplication_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo()})
+	col, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo()})
 	require.NoError(t, err)
 
-	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
+	col.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
 
-	appDone := make(chan struct{})
+	colDone := make(chan struct{})
 	go func() {
-		defer close(appDone)
-		assert.EqualError(t, app.Run(), "failed to shutdown application telemetry: err1")
+		defer close(colDone)
+		assert.EqualError(t, col.Run(), "failed to shutdown application telemetry: err1")
 	}()
 
-	assert.Equal(t, Starting, <-app.GetStateChannel())
-	assert.Equal(t, Running, <-app.GetStateChannel())
-	app.service.ReportFatalError(errors.New("err2"))
-	<-appDone
-	assert.Equal(t, Closing, <-app.GetStateChannel())
-	assert.Equal(t, Closed, <-app.GetStateChannel())
+	assert.Equal(t, Starting, <-col.GetStateChannel())
+	assert.Equal(t, Running, <-col.GetStateChannel())
+	col.service.ReportFatalError(errors.New("err2"))
+	<-colDone
+	assert.Equal(t, Closing, <-col.GetStateChannel())
+	assert.Equal(t, Closed, <-col.GetStateChannel())
 }
 
-func TestApplication_StartAsGoRoutine(t *testing.T) {
+func TestCollector_StartAsGoRoutine(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
@@ -147,26 +147,26 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 		ParserProvider: new(minimalParserLoader),
 		Factories:      factories,
 	}
-	app, err := New(params)
+	col, err := New(params)
 	require.NoError(t, err)
 
-	appDone := make(chan struct{})
+	colDone := make(chan struct{})
 	go func() {
-		defer close(appDone)
-		appErr := app.Run()
-		if appErr != nil {
-			err = appErr
+		defer close(colDone)
+		colErr := col.Run()
+		if colErr != nil {
+			err = colErr
 		}
 	}()
 
-	assert.Equal(t, Starting, <-app.GetStateChannel())
-	assert.Equal(t, Running, <-app.GetStateChannel())
+	assert.Equal(t, Starting, <-col.GetStateChannel())
+	assert.Equal(t, Running, <-col.GetStateChannel())
 
-	app.Shutdown()
-	app.Shutdown()
-	<-appDone
-	assert.Equal(t, Closing, <-app.GetStateChannel())
-	assert.Equal(t, Closed, <-app.GetStateChannel())
+	col.Shutdown()
+	col.Shutdown()
+	<-colDone
+	assert.Equal(t, Closing, <-col.GetStateChannel())
+	assert.Equal(t, Closed, <-col.GetStateChannel())
 }
 
 // isAppAvailable checks if the healthcheck server at the given endpoint is
@@ -275,7 +275,7 @@ func (epl *errParserLoader) Get() (*config.Parser, error) {
 	return nil, epl.err
 }
 
-func TestApplication_reloadService(t *testing.T) {
+func TestCollector_reloadService(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 	ctx := context.Background()

@@ -28,7 +28,7 @@ import (
 
 type WindowsService struct {
 	params Parameters
-	app    *Application
+	col    *Collector
 }
 
 func NewWindowsService(params Parameters) *WindowsService {
@@ -48,10 +48,10 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 		return false, 1501 // 1501: ERROR_EVENTLOG_CANT_START
 	}
 
-	appErrorChannel := make(chan error, 1)
+	colErrorChannel := make(chan error, 1)
 
 	changes <- svc.Status{State: svc.StartPending}
-	if err = s.start(elog, appErrorChannel); err != nil {
+	if err = s.start(elog, colErrorChannel); err != nil {
 		elog.Error(3, fmt.Sprintf("failed to start service: %v", err))
 		return false, 1064 // 1064: ERROR_EXCEPTION_IN_SERVICE
 	}
@@ -64,7 +64,7 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 
 		case svc.Stop, svc.Shutdown:
 			changes <- svc.Status{State: svc.StopPending}
-			if err := s.stop(appErrorChannel); err != nil {
+			if err := s.stop(colErrorChannel); err != nil {
 				elog.Error(3, fmt.Sprintf("errors occurred while shutting down the service: %v", err))
 			}
 			changes <- svc.Status{State: svc.Stopped}
@@ -79,36 +79,36 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 	return false, 0
 }
 
-func (s *WindowsService) start(elog *eventlog.Log, appErrorChannel chan error) error {
+func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
 	var err error
-	s.app, err = newWithEventViewerLoggingHook(s.params, elog)
+	s.col, err = newWithEventViewerLoggingHook(s.params, elog)
 	if err != nil {
 		return err
 	}
 
-	// app.Start blocks until receiving a SIGTERM signal, so needs to be started
+	// col.Start blocks until receiving a SIGTERM signal, so needs to be started
 	// asynchronously, but it will exit early if an error occurs on startup
-	go func() { appErrorChannel <- s.app.Run() }()
+	go func() { colErrorChannel <- s.col.Run() }()
 
-	// wait until the app is in the Running state
+	// wait until the collector server is in the Running state
 	go func() {
-		for state := range s.app.GetStateChannel() {
+		for state := range s.col.GetStateChannel() {
 			if state == Running {
-				appErrorChannel <- nil
+				colErrorChannel <- nil
 				break
 			}
 		}
 	}()
 
-	// wait until the app is in the Running state, or an error was returned
-	return <-appErrorChannel
+	// wait until the collector server is in the Running state, or an error was returned
+	return <-colErrorChannel
 }
 
-func (s *WindowsService) stop(appErrorChannel chan error) error {
-	// simulate a SIGTERM signal to terminate the application
-	s.app.signalsChannel <- syscall.SIGTERM
-	// return the response of app.Start
-	return <-appErrorChannel
+func (s *WindowsService) stop(colErrorChannel chan error) error {
+	// simulate a SIGTERM signal to terminate the collector server
+	s.col.signalsChannel <- syscall.SIGTERM
+	// return the response of col.Start
+	return <-colErrorChannel
 }
 
 func openEventLog(serviceName string) (*eventlog.Log, error) {
@@ -120,7 +120,7 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithEventViewerLoggingHook(params Parameters, elog *eventlog.Log) (*Application, error) {
+func newWithEventViewerLoggingHook(params Parameters, elog *eventlog.Log) (*Collector, error) {
 	params.LoggingOptions = append(
 		params.LoggingOptions,
 		zap.Hooks(func(entry zapcore.Entry) error {
