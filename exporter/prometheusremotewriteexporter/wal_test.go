@@ -104,8 +104,11 @@ wal:
 	prwe, err := NewPrwExporter("test_ns", prweServer.URL, prweServer.Client(), nil, 1, defaultBuildInfo, walConfig)
 	assert.Nil(t, err)
 	ctx := context.Background()
+	require.Nil(t, prwe.Start(ctx, nil))
 	defer prwe.Shutdown(ctx)
 	defer close(exiting)
+	require.Nil(t, prwe.Start(ctx, nil))
+	require.NotNil(t, prwe.wal)
 
 	assert.NotNil(t, prwe.wal)
 
@@ -171,7 +174,9 @@ wal:
 	// Read from that same WAL, export to the RWExporter server.
 	prwe2, err := NewPrwExporter("test_ns", prweServer.URL, prweServer.Client(), nil, 1, defaultBuildInfo, walConfig)
 	assert.Nil(t, err)
+	require.Nil(t, prwe2.Start(ctx, nil))
 	defer prwe2.Shutdown(ctx)
+	require.NotNil(t, prwe2.wal)
 
 	snappyEncodedBytes := <-uploadedBytesCh
 	decodeBuffer := make([]byte, len(snappyEncodedBytes))

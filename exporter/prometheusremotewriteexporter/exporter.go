@@ -78,7 +78,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 	}
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
-	prwe := &PrwExporter{
+	return &PrwExporter{
 		namespace:       namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
@@ -88,12 +88,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		walConfig:       walCfg,
 		userAgentHeader: userAgentHeader,
 		concurrency:     concurrency,
-	}
-
-	if err := prwe.turnOnWALIfEnabled(); err != nil {
-		return nil, err
-	}
-	return prwe, nil
+	}, nil
 }
 
 var errAlreadyClosed = errors.New("already closed")
@@ -109,6 +104,11 @@ func (prwe *PrwExporter) Shutdown(context.Context) error {
 	prwe.wg.Wait()
 	prwe.closeWAL()
 	return nil
+}
+
+// Start turns on the Write-Ahead-Log (WAL).
+func (prwe *PrwExporter) Start(ctx context.Context, host component.Host) error {
+	return prwe.turnOnWALIfEnabled()
 }
 
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of

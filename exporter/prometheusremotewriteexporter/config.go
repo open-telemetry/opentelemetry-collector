@@ -36,7 +36,12 @@ type Config struct {
 	// QueueConfig allows users to fine tune the queues
 	// that handle outgoing requests.
 	RemoteWriteQueue RemoteWriteQueue `mapstructure:"remote_write_queue"`
-	WALConfig        *walConfig       `mapstructure:"wal"`
+
+	// WALConfig creates a Write-Ahead-Log to which translated OTLP->PrometheusProto requests
+	// will be persisted until they are read during exporting. This ensures that
+	// sudden shutdown won't lose data, and that we can recover on restart and continue
+	// exporting the previously saved data.
+	WALConfig *walConfig `mapstructure:"wal"`
 
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
