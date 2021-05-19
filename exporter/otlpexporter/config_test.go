@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/extension/bearertokenauth"
+	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 
-	authFactory := bearertokenauth.NewFactory()
+	authFactory := bearertokenauthextension.NewFactory()
 	authType := authFactory.Type()
 	factories.Extensions[authType] = authFactory
 
