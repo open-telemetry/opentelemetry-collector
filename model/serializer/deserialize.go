@@ -14,17 +14,17 @@
 
 package encoding
 
-// MetricsDecoder decodes bytes into data model.
-type MetricsDecoder interface {
-	DecodeMetrics(bytes []byte) (interface{}, error)
+// MetricsDeserializer decodes bytes into data model.
+type MetricsDeserializer interface {
+	DeserializeMetrics(bytes []byte) (interface{}, error)
 }
 
-// TracesDecoder decodes bytes into data model.
-type TracesDecoder interface {
-	DecodeTraces(bytes []byte) (interface{}, error)
+// TracesDeserializer decodes bytes into data model.
+type TracesDeserializer interface {
+	DeserializeTraces(bytes []byte) (interface{}, error)
 }
 
-// LogsDecoder decodes bytes into data model.
-type LogsDecoder interface {
-	DecodeLogs(bytes []byte) (interface{}, error)
+// LogsDeserializer decodes bytes into data model.
+type LogsDeserializer interface {
+	DeserializeLogs(bytes []byte) (interface{}, error)
 }

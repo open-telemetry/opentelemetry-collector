@@ -14,17 +14,17 @@
 
 package encoding
 
-// MetricsEncoder encodes data model into bytes.
-type MetricsEncoder interface {
-	EncodeMetrics(model interface{}) ([]byte, error)
+// MetricsSerializer encodes data model into bytes.
+type MetricsSerializer interface {
+	SerializeMetrics(model interface{}) ([]byte, error)
 }
 
-// TracesEncoder encodes data model into bytes.
-type TracesEncoder interface {
-	EncodeTraces(model interface{}) ([]byte, error)
+// TracesSerializer encodes data model into bytes.
+type TracesSerializer interface {
+	SerializeTraces(model interface{}) ([]byte, error)
 }
 
-// LogsEncoder encodes data model into bytes.
-type LogsEncoder interface {
-	EncodeLogs(model interface{}) ([]byte, error)
+// LogsSerializer encodes data model into bytes.
+type LogsSerializer interface {
+	SerializeLogs(model interface{}) ([]byte, error)
 }

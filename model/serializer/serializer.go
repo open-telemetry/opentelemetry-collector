@@ -16,28 +16,28 @@ package encoding
 
 import "fmt"
 
-// Type is the encoding format that a model is serialized to.
-type Type string
+// Encoding is the encoding format that a model is serialized to.
+type Encoding string
 
 const (
-	Protobuf Type = "protobuf"
-	JSON     Type = "json"
-	Thrift   Type = "thrift"
+	Protobuf Encoding = "protobuf"
+	JSON     Encoding = "json"
+	Thrift   Encoding = "thrift"
 )
 
-func (e Type) String() string {
+func (e Encoding) String() string {
 	return string(e)
 }
 
 // ErrUnavailableEncoding is returned when the requested encoding is not supported.
 type ErrUnavailableEncoding struct {
-	encoding Type
+	encoding Encoding
 }
 
 func (e *ErrUnavailableEncoding) Error() string {
 	return fmt.Sprintf("unsupported encoding %q", e.encoding)
 }
 
-func NewErrUnavailableEncoding(encoding Type) *ErrUnavailableEncoding {
+func NewErrUnavailableEncoding(encoding Encoding) *ErrUnavailableEncoding {
 	return &ErrUnavailableEncoding{encoding: encoding}
 }
