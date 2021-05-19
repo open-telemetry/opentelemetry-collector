@@ -2,9 +2,9 @@
 title: "Configuration"
 weight: 20
 ---
-<!-- markdown-link-check-disable -->
-Please be sure to review the following documentation:
 
+Please be sure to review the following documentation:
+<!-- markdown-link-check-disable -->
 - [Data Collection concepts](../../concepts/data-collection) in order to
   understand the repositories applicable to the OpenTelemetry Collector.
 - [Security
