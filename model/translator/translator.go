@@ -12,25 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation
+package translator
 
 import (
 	"fmt"
 )
 
-// ErrIncompatibleType details a type conversion error during translation.
-type ErrIncompatibleType struct {
+// errIncompatibleType details a type conversion error during translation.
+type errIncompatibleType struct {
 	given    interface{}
 	expected interface{}
 }
 
-func (i *ErrIncompatibleType) Error() string {
+func (i *errIncompatibleType) Error() string {
 	return fmt.Sprintf("expected model type %T but given %T", i.expected, i.given)
 }
 
-// NewErrIncompatibleType returns ErrIncompatibleType instance
-func NewErrIncompatibleType(expected, given interface{}) *ErrIncompatibleType {
-	return &ErrIncompatibleType{
+// NewErrIncompatibleType returns errIncompatibleType instance
+func NewErrIncompatibleType(expected, given interface{}) *errIncompatibleType {
+	return &errIncompatibleType{
 		given:    given,
 		expected: expected,
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation
+package translator
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 

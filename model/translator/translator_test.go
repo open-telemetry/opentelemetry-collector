@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation
+package translator
 
 import (
 	"testing"
@@ -23,6 +23,6 @@ import (
 
 func TestNewErrIncompatibleType(t *testing.T) {
 	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
-	assert.IsType(t, &ErrIncompatibleType{}, err)
+	assert.IsType(t, &errIncompatibleType{}, err)
 	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
 }

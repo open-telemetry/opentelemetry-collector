@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoding
+package serializer
 
 // MetricsDeserializer decodes bytes into protocol-specific data model.
 type MetricsDeserializer interface {
-	DeserializeMetrics(bytes []byte) (interface{}, error)
+	DeserializeMetrics(buf []byte) (interface{}, error)
 }
 
 // TracesDeserializer decodes bytes into protocol-specific data model.
 type TracesDeserializer interface {
-	DeserializeTraces(bytes []byte) (interface{}, error)
+	DeserializeTraces(buf []byte) (interface{}, error)
 }
 
 // LogsDeserializer decodes bytes into protocol-specific data model.
 type LogsDeserializer interface {
-	DeserializeLogs(bytes []byte) (interface{}, error)
+	DeserializeLogs(buf []byte) (interface{}, error)
 }
