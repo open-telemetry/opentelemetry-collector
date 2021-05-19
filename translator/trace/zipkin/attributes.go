@@ -23,7 +23,8 @@ import (
 // These constants are the attribute keys used when translating from zipkin
 // format to the internal collector data format.
 const (
-	startTimeAbsent = "otel.zipkin.absentField.startTime"
+	startTimeAbsent      = "otel.zipkin.absentField.startTime"
+	tagServiceNameSource = "otlp.service.name.source"
 )
 
 var attrValDescriptions = getAttrValDescripts()
