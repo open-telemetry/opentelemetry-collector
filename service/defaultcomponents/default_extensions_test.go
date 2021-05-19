@@ -70,7 +70,7 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "bearertokenauthextension",
 			getConfigFn: func() config.Extension {
-				cfg := extFactories["bearertokenauthextension"].CreateDefaultConfig().(*bearertokenauthextension.Config)
+				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
 				cfg.BearerToken = "dummysecret"
 				return cfg
 			},
