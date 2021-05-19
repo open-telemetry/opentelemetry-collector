@@ -18,21 +18,15 @@ import "go.opentelemetry.io/collector/consumer/pdata"
 
 type MetricsEncoder interface {
 	// FromMetrics converts pdata to protocol-specific data model.
-	FromMetrics(md pdata.Metrics, out interface{}) error
-	// NewModel returns an instance of the model.
-	NewModel() interface{}
+	FromMetrics(md pdata.Metrics) (interface{}, error)
 }
 
 type TracesEncoder interface {
 	// FromTraces converts pdata to protocol-specific data model.
-	FromTraces(md pdata.Traces, out interface{}) error
-	// NewModel returns an instance of the model.
-	NewModel() interface{}
+	FromTraces(td pdata.Traces) (interface{}, error)
 }
 
 type LogsEncoder interface {
 	// FromLogs converts pdata to protocol-specific data model.
-	FromLogs(md pdata.Logs, out interface{}) error
-	// NewModel returns an instance of the model.
-	NewModel() interface{}
+	FromLogs(ld pdata.Logs) (interface{}, error)
 }
