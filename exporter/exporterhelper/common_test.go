@@ -18,6 +18,9 @@ import (
 	"errors"
 	"testing"
 
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/consumer/pdata"
+
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
@@ -44,14 +47,15 @@ func TestErrorToStatus(t *testing.T) {
 }
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions())
+	be, err := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(), nopRequestUnmarshaler())
+	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
-	be := newBaseExporter(
+	be, err := newBaseExporter(
 		&defaultExporterCfg,
 		zap.NewNop(),
 		fromOptions(
@@ -59,7 +63,9 @@ func TestBaseExporterWithOptions(t *testing.T) {
 			WithShutdown(func(ctx context.Context) error { return want }),
 			WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()),
 			WithTimeout(DefaultTimeoutSettings())),
+		nopRequestUnmarshaler(),
 	)
+	require.NoError(t, err)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Equal(t, want, be.Shutdown(context.Background()))
 }
@@ -69,4 +75,14 @@ func errToStatus(err error) trace.Status {
 		return trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()}
 	}
 	return okStatus
+}
+
+func nopTracePusher() consumerhelper.ConsumeTracesFunc {
+	return func(ctx context.Context, ld pdata.Traces) error {
+		return nil
+	}
+}
+
+func nopRequestUnmarshaler() requestUnmarshaler {
+	return newTraceRequestUnmarshalerFunc(nopTracePusher())
 }

@@ -43,6 +43,29 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumerhelpe
 	}
 }
 
+func newTraceRequestUnmarshalerFunc(pusher consumerhelper.ConsumeTracesFunc) requestUnmarshaler {
+	return func(bytes []byte) (request, error) {
+		traces, err := pdata.TracesFromOtlpProtoBytes(bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO unmarshall context
+
+		return newTracesRequest(context.Background(), traces, pusher), nil
+	}
+}
+
+func (req *tracesRequest) marshall() ([]byte, error) {
+	// Unfortunately, this is perhaps the only type of context which might be safely checked against
+	// TODO: handle serializing context
+	// c, ok := client.FromContext(req.context())
+	// if ok {
+	// 	 ...
+	// }
+	return req.td.ToOtlpProtoBytes()
+}
+
 func (req *tracesRequest) onError(err error) request {
 	var traceError consumererror.Traces
 	if consumererror.AsTraces(err, &traceError) {
@@ -85,7 +108,11 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, logger, bs)
+	be, err := newBaseExporter(cfg, logger, bs, newTraceRequestUnmarshalerFunc(pusher))
+	if err != nil {
+		return nil, err
+	}
+	be.setSignalType("traces")
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep: obsreport.NewExporter(

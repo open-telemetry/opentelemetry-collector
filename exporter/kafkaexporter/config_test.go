@@ -51,9 +51,10 @@ func TestLoadConfig(t *testing.T) {
 			MaxElapsedTime:  10 * time.Minute,
 		},
 		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 2,
-			QueueSize:    10,
+			Enabled:          true,
+			NumConsumers:     2,
+			QueueSize:        10,
+			WalSyncFrequency: 1 * time.Second,
 		},
 		Topic:    "spans",
 		Encoding: "otlp_proto",

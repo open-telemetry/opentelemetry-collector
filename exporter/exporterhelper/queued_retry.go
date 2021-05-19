@@ -55,6 +55,10 @@ type QueueSettings struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`
+	// WalDirectory describes where Write-Ahead-Log should be stored. If empty (default) no WAL used
+	WalDirectory string `mapstructure:"wal_directory"`
+	// WalSyncFrequency describes how frequently the WAL should be synced. If set to zero, it's synced after each operation
+	WalSyncFrequency time.Duration `mapstructure:"wal_sync_frequency"`
 }
 
 // DefaultQueueSettings returns the default settings for QueueSettings.
@@ -66,7 +70,9 @@ func DefaultQueueSettings() QueueSettings {
 		// This is a pretty decent value for production.
 		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
 		// multiply that by the number of requests per seconds.
-		QueueSize: 5000,
+		QueueSize:        5000,
+		WalDirectory:     "",
+		WalSyncFrequency: 1 * time.Second,
 	}
 }
 
@@ -99,7 +105,7 @@ type queuedRetrySender struct {
 	fullName        string
 	cfg             QueueSettings
 	consumerSender  requestSender
-	queue           *queue.BoundedQueue
+	queue           consumersQueue
 	retryStopCh     chan struct{}
 	traceAttributes []trace.Attribute
 	logger          *zap.Logger
@@ -124,25 +130,64 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 	return logger.WithOptions(opts)
 }
 
-func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler requestUnmarshaler, nextSender requestSender, logger *zap.Logger) (*queuedRetrySender, error) {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := trace.StringAttribute(obsreport.ExporterKey, fullName)
+	walEnabled := qCfg.WalDirectory != ""
+
+	var err error
+	var _queue consumersQueue
+	var onTemporaryFailure onRequestTemporaryFailureFunc
+
+	if walEnabled {
+		_queue, err = newWALQueue(logger, qCfg.WalDirectory, fullName, qCfg.WalSyncFrequency, reqUnmarshaler)
+		onTemporaryFailure = func(req request, err error) error {
+			if _queue.Produce(req) {
+				sampledLogger.Error(
+					"Exporting failed. Putting back to the end of the queue.",
+					zap.Error(err),
+				)
+			} else {
+				sampledLogger.Error(
+					"Exporting failed. Queue did not accept requeuing request. Dropping data.",
+					zap.Error(err),
+					zap.Int("dropped_items", req.count()),
+				)
+			}
+			return err
+		}
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_queue = queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {})
+		onTemporaryFailure = func(req request, err error) error {
+			sampledLogger.Error(
+				"Exporting failed. No more retries left. Dropping data.",
+				zap.Error(err),
+				zap.Int("dropped_items", req.count()),
+			)
+			return err
+		}
+	}
+
 	return &queuedRetrySender{
 		fullName: fullName,
 		cfg:      qCfg,
 		consumerSender: &retrySender{
-			traceAttribute: traceAttr,
-			cfg:            rCfg,
-			nextSender:     nextSender,
-			stopCh:         retryStopCh,
-			logger:         sampledLogger,
+			traceAttribute:     traceAttr,
+			cfg:                rCfg,
+			nextSender:         nextSender,
+			stopCh:             retryStopCh,
+			logger:             sampledLogger,
+			onTemporaryFailure: onTemporaryFailure,
 		},
-		queue:           queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
+		queue:           _queue,
 		retryStopCh:     retryStopCh,
 		traceAttributes: []trace.Attribute{traceAttr},
 		logger:          sampledLogger,
-	}
+	}, nil
 }
 
 // start is invoked during service startup.
@@ -205,7 +250,7 @@ func (qrs *queuedRetrySender) shutdown() {
 		}, metricdata.NewLabelValue(qrs.fullName))
 	}
 
-	// First stop the retry goroutines, so that unblocks the queue workers.
+	// First stop the retry goroutines, so that unblocks the queue numWorkers.
 	close(qrs.retryStopCh)
 
 	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
@@ -227,12 +272,15 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
+type onRequestTemporaryFailureFunc func(request, error) error
+
 type retrySender struct {
-	traceAttribute trace.Attribute
-	cfg            RetrySettings
-	nextSender     requestSender
-	stopCh         chan struct{}
-	logger         *zap.Logger
+	traceAttribute     trace.Attribute
+	cfg                RetrySettings
+	nextSender         requestSender
+	stopCh             chan struct{}
+	logger             *zap.Logger
+	onTemporaryFailure onRequestTemporaryFailureFunc
 }
 
 // send implements the requestSender interface
@@ -292,12 +340,7 @@ func (rs *retrySender) send(req request) error {
 		if backoffDelay == backoff.Stop {
 			// throw away the batch
 			err = fmt.Errorf("max elapsed time expired %w", err)
-			rs.logger.Error(
-				"Exporting failed. No more retries left. Dropping data.",
-				zap.Error(err),
-				zap.Int("dropped_items", req.count()),
-			)
-			return err
+			return rs.onTemporaryFailure(req, err)
 		}
 
 		if throttleErr, isThrottle := err.(*throttleRetry); isThrottle {

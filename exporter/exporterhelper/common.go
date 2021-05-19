@@ -16,6 +16,7 @@ package exporterhelper
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -52,7 +53,11 @@ type request interface {
 	onError(error) request
 	// Returns the count of spans/metric points or log records.
 	count() int
+	marshall() ([]byte, error)
 }
+
+// requestUnmarshaler defines a function which can take a byte stream and unmarshal it into a relevant request
+type requestUnmarshaler func([]byte) (request, error)
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
@@ -164,25 +169,36 @@ func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTel
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.Component
-	sender   requestSender
-	qrSender *queuedRetrySender
+	sender     requestSender
+	qrSender   *queuedRetrySender
+	signalType string
 }
 
-func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings) *baseExporter {
+func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings, reqUnnmarshaler requestUnmarshaler) (*baseExporter, error) {
+	var err error
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}
 
-	be.qrSender = newQueuedRetrySender(cfg.ID().String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
+	// We need specific ID when WAL is used, so single configuration could be used for several signals without risk of WAL file name collisions
+	senderID := fmt.Sprintf("%s-%s", cfg.ID().String(), be.signalType)
+	be.qrSender, err = newQueuedRetrySender(senderID, bs.QueueSettings, bs.RetrySettings, reqUnnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
+	if err != nil {
+		return nil, err
+	}
 	be.sender = be.qrSender
 
-	return be
+	return be, nil
 }
 
 // wrapConsumerSender wraps the consumer sender (the sender that uses retries and timeout) with the given wrapper.
 // This can be used to wrap with observability (create spans, record metrics) the consumer sender.
 func (be *baseExporter) wrapConsumerSender(f func(consumer requestSender) requestSender) {
 	be.qrSender.consumerSender = f(be.qrSender.consumerSender)
+}
+
+func (be *baseExporter) setSignalType(signalType string) {
+	be.signalType = signalType
 }
 
 // Start all senders and exporter and is invoked during service start.
