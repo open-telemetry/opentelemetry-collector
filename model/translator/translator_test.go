@@ -24,5 +24,5 @@ import (
 func TestNewErrIncompatibleType(t *testing.T) {
 	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
 	assert.IsType(t, &ErrIncompatibleType{}, err)
-	assert.EqualError(t, err, "model type []*model.SpanModel is expected but given string")
+	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
 }

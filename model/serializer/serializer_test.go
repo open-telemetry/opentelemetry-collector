@@ -26,6 +26,6 @@ func TestNewErrUnavailableEncoding(t *testing.T) {
 	assert.EqualError(t, err, `unsupported encoding "unknown"`)
 }
 
-func TestType_String(t *testing.T) {
+func TestEncoding_String(t *testing.T) {
 	assert.Equal(t, "protobuf", Protobuf.String())
 }

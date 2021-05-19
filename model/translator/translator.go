@@ -25,7 +25,7 @@ type ErrIncompatibleType struct {
 }
 
 func (i *ErrIncompatibleType) Error() string {
-	return fmt.Sprintf("model type %T is expected but given %T", i.expected, i.given)
+	return fmt.Sprintf("expected model type %T but given %T", i.expected, i.given)
 }
 
 // NewErrIncompatibleType returns ErrIncompatibleType instance
