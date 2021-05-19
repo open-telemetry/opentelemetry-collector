@@ -33,10 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
-	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlptraces "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -57,29 +54,20 @@ func (r *mockReceiver) GetMetadata() metadata.MD {
 
 type mockTracesReceiver struct {
 	mockReceiver
-	lastRequest *otlptraces.ExportTraceServiceRequest
+	lastRequest pdata.Traces
 }
 
-func (r *mockTracesReceiver) Export(
-	ctx context.Context,
-	req *otlptraces.ExportTraceServiceRequest,
-) (*otlptraces.ExportTraceServiceResponse, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (interface{}, error) {
 	atomic.AddInt32(&r.requestCount, 1)
-	spanCount := 0
-	for _, rs := range req.ResourceSpans {
-		for _, ils := range rs.InstrumentationLibrarySpans {
-			spanCount += len(ils.Spans)
-		}
-	}
-	atomic.AddInt32(&r.totalItems, int32(spanCount))
+	atomic.AddInt32(&r.totalItems, int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	r.lastRequest = req
+	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return &otlptraces.ExportTraceServiceResponse{}, nil
+	return nil, nil
 }
 
-func (r *mockTracesReceiver) GetLastRequest() *otlptraces.ExportTraceServiceRequest {
+func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -93,7 +81,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
 	}
 
 	// Now run it as a gRPC server
-	otlptraces.RegisterTraceServiceServer(rcv.srv, rcv)
+	pdatagrpc.RegisterTracesServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -103,29 +91,20 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
 
 type mockLogsReceiver struct {
 	mockReceiver
-	lastRequest *otlplogs.ExportLogsServiceRequest
+	lastRequest pdata.Logs
 }
 
-func (r *mockLogsReceiver) Export(
-	ctx context.Context,
-	req *otlplogs.ExportLogsServiceRequest,
-) (*otlplogs.ExportLogsServiceResponse, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (interface{}, error) {
 	atomic.AddInt32(&r.requestCount, 1)
-	recordCount := 0
-	for _, rs := range req.ResourceLogs {
-		for _, il := range rs.InstrumentationLibraryLogs {
-			recordCount += len(il.Logs)
-		}
-	}
-	atomic.AddInt32(&r.totalItems, int32(recordCount))
+	atomic.AddInt32(&r.totalItems, int32(ld.LogRecordCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	r.lastRequest = req
+	r.lastRequest = ld
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return &otlplogs.ExportLogsServiceResponse{}, nil
+	return nil, nil
 }
 
-func (r *mockLogsReceiver) GetLastRequest() *otlplogs.ExportLogsServiceRequest {
+func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -139,7 +118,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	otlplogs.RegisterLogsServiceServer(rcv.srv, rcv)
+	pdatagrpc.RegisterLogsServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -149,24 +128,21 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 
 type mockMetricsReceiver struct {
 	mockReceiver
-	lastRequest *otlpmetrics.ExportMetricsServiceRequest
+	lastRequest pdata.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(
-	ctx context.Context,
-	req *otlpmetrics.ExportMetricsServiceRequest,
-) (*otlpmetrics.ExportMetricsServiceResponse, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (interface{}, error) {
 	atomic.AddInt32(&r.requestCount, 1)
-	_, recordCount := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(req)).MetricAndDataPointCount()
+	_, recordCount := md.MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	r.lastRequest = req
+	r.lastRequest = md
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return &otlpmetrics.ExportMetricsServiceResponse{}, nil
+	return nil, nil
 }
 
-func (r *mockMetricsReceiver) GetLastRequest() *otlpmetrics.ExportMetricsServiceRequest {
+func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -180,7 +156,7 @@ func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	otlpmetrics.RegisterMetricsServiceServer(rcv.srv, rcv)
+	pdatagrpc.RegisterMetricsServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -238,8 +214,6 @@ func TestSendTraces(t *testing.T) {
 	// A trace with 2 spans.
 	td = testdata.GenerateTracesTwoSpansSameResource()
 
-	expectedOTLPReq := internal.TracesToOtlp(td.Clone().InternalRep())
-
 	err = exp.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
 
@@ -253,7 +227,7 @@ func TestSendTraces(t *testing.T) {
 	// Verify received span.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
-	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
+	assert.EqualValues(t, td, rcv.GetLastRequest())
 
 	require.EqualValues(t, rcv.GetMetadata().Get("header"), expectedHeader)
 }
@@ -308,8 +282,6 @@ func TestSendMetrics(t *testing.T) {
 	// A trace with 2 spans.
 	md = testdata.GenerateMetricsTwoMetrics()
 
-	expectedOTLPReq := internal.MetricsToOtlp(md.Clone().InternalRep())
-
 	err = exp.ConsumeMetrics(context.Background(), md)
 	assert.NoError(t, err)
 
@@ -323,7 +295,7 @@ func TestSendMetrics(t *testing.T) {
 	// Verify received metrics.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, 4, atomic.LoadInt32(&rcv.totalItems))
-	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
+	assert.EqualValues(t, md, rcv.GetLastRequest())
 
 	require.EqualValues(t, rcv.GetMetadata().Get("header"), expectedHeader)
 }
@@ -447,7 +419,7 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pd
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Clone the request and store as expected.
-	expectedOTLPReq := internal.TracesToOtlp(td.Clone().InternalRep())
+	expectedData := td.Clone()
 
 	// Resend the request, this should succeed.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -461,7 +433,7 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pd
 
 	// Verify received span.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
-	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
+	assert.EqualValues(t, expectedData, rcv.GetLastRequest())
 }
 
 func TestSendLogData(t *testing.T) {
@@ -497,8 +469,8 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty request.
-	td := pdata.NewLogs()
-	assert.NoError(t, exp.ConsumeLogs(context.Background(), td))
+	ld := pdata.NewLogs()
+	assert.NoError(t, exp.ConsumeLogs(context.Background(), ld))
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -509,10 +481,9 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A request with 2 log entries.
-	td = testdata.GenerateLogsTwoLogRecordsSameResource()
-	expectedOTLPReq := internal.LogsToOtlp(td.Clone().InternalRep())
+	ld = testdata.GenerateLogsTwoLogRecordsSameResource()
 
-	err = exp.ConsumeLogs(context.Background(), td)
+	err = exp.ConsumeLogs(context.Background(), ld)
 	assert.NoError(t, err)
 
 	// Wait until it is received.
@@ -523,5 +494,5 @@ func TestSendLogData(t *testing.T) {
 	// Verify received logs.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
-	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
+	assert.EqualValues(t, ld, rcv.GetLastRequest())
 }
