@@ -63,6 +63,8 @@ type ZipkinReceiver struct {
 	shutdownWG sync.WaitGroup
 	server     *http.Server
 	config     *Config
+
+	receiver *obsreport.Receiver
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
@@ -217,8 +219,8 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	transportTag := transportType(r, asZipkinv1)
 	ctx = obsreport.ReceiverContext(ctx, zr.id, transportTag)
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: zr.id, Transport: transportTag})
-	ctx = rec.StartTraceDataReceiveOp(ctx)
+	zr.receiver = obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: zr.id, Transport: transportTag})
+	ctx = zr.receiver.StartTraceDataReceiveOp(ctx)
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)
@@ -246,7 +248,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if asZipkinv1 {
 		receiverTagValue = zipkinV1TagValue
 	}
-	rec.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
+	zr.receiver.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
 
 	if consumerErr != nil {
 		// Transient error, due to some internal condition.
