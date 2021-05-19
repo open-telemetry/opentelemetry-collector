@@ -17,21 +17,21 @@ package translation
 import "go.opentelemetry.io/collector/consumer/pdata"
 
 type MetricsDecoder interface {
-	// ToMetrics converts a data model of another protocol into pdata.
+	// ToMetrics converts a protocol-specific data model into pdata.
 	ToMetrics(src interface{}) (pdata.Metrics, error)
-	// Type returns an instance of the model.
+	// NewModel returns an instance of the model.
 	NewModel() interface{}
 }
 
 type TracesDecoder interface {
-	// ToTraces converts a data model of another protocol into pdata.
+	// ToTraces converts a protocol-specific data model into pdata.
 	ToTraces(src interface{}) (pdata.Traces, error)
 	// NewModel returns an instance of the model.
 	NewModel() interface{}
 }
 
 type LogsDecoder interface {
-	// ToLogs converts a data model of another protocol into pdata.
+	// ToLogs converts a protocol-specific data model into pdata.
 	ToLogs(src interface{}) (pdata.Logs, error)
 	// NewModel returns an instance of the model.
 	NewModel() interface{}
