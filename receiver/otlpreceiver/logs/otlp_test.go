@@ -27,14 +27,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/internal/data"
 	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlplog "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
-
-var _ collectorlog.LogsServiceServer = (*Receiver)(nil)
 
 func TestExport(t *testing.T) {
 	// given
@@ -48,43 +45,18 @@ func TestExport(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	// when
-
-	unixnanos := uint64(12578940000000012345)
-	traceID := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
-	spanID := [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
-	otlp := &collectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplog.ResourceLogs{
-			{
-				InstrumentationLibraryLogs: []*otlplog.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplog.LogRecord{
-							{
-								TraceId:      data.NewTraceID(traceID),
-								SpanId:       data.NewSpanID(spanID),
-								Name:         "operationB",
-								TimeUnixNano: unixnanos,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
+	req := testdata.GenerateLogsOneLogRecord()
 	// Keep log data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	ld := pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp)).Clone()
+	logData := req.Clone()
 
-	resp, err := traceClient.Export(context.Background(), otlp)
+	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
-	// assert
-
-	require.Equal(t, 1, len(logSink.AllLogs()), "unexpected length: %v", len(logSink.AllLogs()))
-
-	assert.EqualValues(t, ld, logSink.AllLogs()[0])
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.EqualValues(t, logData, lds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
@@ -97,7 +69,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer logClientDoneFn()
 
-	resp, err := logClient.Export(context.Background(), &collectorlog.ExportLogsServiceRequest{})
+	resp, err := logClient.Export(context.Background(), pdata.NewLogs())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
@@ -110,34 +82,20 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer logClientDoneFn()
 
-	req := &collectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplog.ResourceLogs{
-			{
-				InstrumentationLibraryLogs: []*otlplog.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplog.LogRecord{
-							{
-								Name: "operationB",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	req := testdata.GenerateLogsOneLogRecord()
 
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Nil(t, resp)
 }
 
-func makeLogsServiceClient(addr net.Addr) (collectorlog.LogsServiceClient, func(), error) {
+func makeLogsServiceClient(addr net.Addr) (pdatagrpc.LogsClient, func(), error) {
 	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
 
-	logClient := collectorlog.NewLogsServiceClient(cc)
+	logClient := pdatagrpc.NewLogsClient(cc)
 
 	doneFn := func() { _ = cc.Close() }
 	return logClient, doneFn, nil
