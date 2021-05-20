@@ -97,6 +97,8 @@ type controller struct {
 	initialized bool
 	done        chan struct{}
 	terminated  chan struct{}
+
+	obsrecv *obsreport.Receiver
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
@@ -122,6 +124,7 @@ func NewScraperControllerReceiver(
 		metricsScrapers:    &multiMetricScraper{},
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
+		obsrecv:            obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ID(), Transport: ""}),
 	}
 
 	for _, op := range options {
@@ -210,9 +213,9 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 
 	_, dataPointCount := metrics.MetricAndDataPointCount()
 
-	ctx = obsreport.StartMetricsReceiveOp(ctx, sc.id, "")
+	ctx = sc.obsrecv.StartMetricsReceiveOp(ctx)
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
-	obsreport.EndMetricsReceiveOp(ctx, "", dataPointCount, err)
+	sc.obsrecv.EndMetricsReceiveOp(ctx, "", dataPointCount, err)
 }
 
 // stopScraping stops the ticker

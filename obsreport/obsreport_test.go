@@ -109,10 +109,11 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	}
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
-		ctx := obsreport.StartTraceDataReceiveOp(receiverCtx, receiver, param.transport)
+		rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
+		ctx := rec.StartTraceDataReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndTraceDataReceiveOp(
+		rec.EndTraceDataReceiveOp(
 			ctx,
 			format,
 			rcvdSpans[i],
@@ -169,10 +170,11 @@ func TestReceiveLogsOp(t *testing.T) {
 	}
 	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
-		ctx := obsreport.StartLogsReceiveOp(receiverCtx, receiver, param.transport)
+		rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
+		ctx := rec.StartLogsReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndLogsReceiveOp(
+		rec.EndLogsReceiveOp(
 			ctx,
 			format,
 			rcvdLogRecords[i],
@@ -229,10 +231,11 @@ func TestReceiveMetricsOp(t *testing.T) {
 	}
 	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
-		ctx := obsreport.StartMetricsReceiveOp(receiverCtx, receiver, param.transport)
+		rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
+		ctx := rec.StartMetricsReceiveOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndMetricsReceiveOp(
+		rec.EndMetricsReceiveOp(
 			ctx,
 			format,
 			rcvdMetricPts[i],
@@ -499,14 +502,13 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for _, op := range ops {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		ctx := obsreport.StartTraceDataReceiveOp(
+		rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		ctx := rec.StartTraceDataReceiveOp(
 			longLivedCtx,
-			receiver,
-			transport,
 			obsreport.WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 
-		obsreport.EndTraceDataReceiveOp(
+		rec.EndTraceDataReceiveOp(
 			ctx,
 			format,
 			op.numSpans,

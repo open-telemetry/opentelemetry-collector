@@ -143,7 +143,40 @@ func WithLongLivedCtx() StartReceiveOption {
 	}
 }
 
+// Receiver is a helper to add obersvability to a component.Receiver.
+type Receiver struct {
+	receiverID config.ComponentID
+	transport  string
+}
+
+// ReceiverSettings are settings for creating an Receiver.
+type ReceiverSettings struct {
+	ReceiverID config.ComponentID
+	Transport  string
+}
+
+// NewReceiver creates a new Receiver.
+func NewReceiver(cfg ReceiverSettings) *Receiver {
+	return &Receiver{
+		receiverID: cfg.ReceiverID,
+		transport:  cfg.Transport,
+	}
+}
+
 // StartTraceDataReceiveOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func (rec *Receiver) StartTraceDataReceiveOp(
+	operationCtx context.Context,
+	opt ...StartReceiveOption,
+) context.Context {
+	return rec.traceReceiveOp(
+		operationCtx,
+		receiveTraceDataOperationSuffix,
+		opt...)
+}
+
+// StartTraceDataReceiveOp is deprecated but is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartTraceDataReceiveOp(
@@ -152,15 +185,31 @@ func StartTraceDataReceiveOp(
 	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
+	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
+	return rec.traceReceiveOp(
 		operationCtx,
-		receiverID,
-		transport,
 		receiveTraceDataOperationSuffix,
 		opt...)
 }
 
 // EndTraceDataReceiveOp completes the receive operation that was started with
+// StartTraceDataReceiveOp.
+func (rec *Receiver) EndTraceDataReceiveOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedSpans int,
+	err error,
+) {
+	rec.endReceiveOp(
+		receiverCtx,
+		format,
+		numReceivedSpans,
+		err,
+		config.TracesDataType,
+	)
+}
+
+// EndTraceDataReceiveOp is deprecated but completes the receive operation that was started with
 // StartTraceDataReceiveOp.
 func EndTraceDataReceiveOp(
 	receiverCtx context.Context,
@@ -168,7 +217,8 @@ func EndTraceDataReceiveOp(
 	numReceivedSpans int,
 	err error,
 ) {
-	endReceiveOp(
+	rec := NewReceiver(ReceiverSettings{})
+	rec.endReceiveOp(
 		receiverCtx,
 		format,
 		numReceivedSpans,
@@ -180,21 +230,50 @@ func EndTraceDataReceiveOp(
 // StartLogsReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
+func (rec *Receiver) StartLogsReceiveOp(
+	operationCtx context.Context,
+	opt ...StartReceiveOption,
+) context.Context {
+	return rec.traceReceiveOp(
+		operationCtx,
+		receiverLogsOperationSuffix,
+		opt...)
+}
+
+// StartLogsReceiveOp is deprecated but is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
 func StartLogsReceiveOp(
 	operationCtx context.Context,
 	receiverID config.ComponentID,
 	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
+	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
+	return rec.traceReceiveOp(
 		operationCtx,
-		receiverID,
-		transport,
 		receiverLogsOperationSuffix,
 		opt...)
 }
 
 // EndLogsReceiveOp completes the receive operation that was started with
+// StartLogsReceiveOp.
+func (rec *Receiver) EndLogsReceiveOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedLogRecords int,
+	err error,
+) {
+	rec.endReceiveOp(
+		receiverCtx,
+		format,
+		numReceivedLogRecords,
+		err,
+		config.LogsDataType,
+	)
+}
+
+// EndLogsReceiveOp is deprecated but completes the receive operation that was started with
 // StartLogsReceiveOp.
 func EndLogsReceiveOp(
 	receiverCtx context.Context,
@@ -202,7 +281,8 @@ func EndLogsReceiveOp(
 	numReceivedLogRecords int,
 	err error,
 ) {
-	endReceiveOp(
+	rec := NewReceiver(ReceiverSettings{})
+	rec.endReceiveOp(
 		receiverCtx,
 		format,
 		numReceivedLogRecords,
@@ -214,21 +294,50 @@ func EndLogsReceiveOp(
 // StartMetricsReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
+func (rec *Receiver) StartMetricsReceiveOp(
+	operationCtx context.Context,
+	opt ...StartReceiveOption,
+) context.Context {
+	return rec.traceReceiveOp(
+		operationCtx,
+		receiverMetricsOperationSuffix,
+		opt...)
+}
+
+// StartMetricsReceiveOp is deprecated but is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
 func StartMetricsReceiveOp(
 	operationCtx context.Context,
 	receiverID config.ComponentID,
 	transport string,
 	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
+	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
+	return rec.traceReceiveOp(
 		operationCtx,
-		receiverID,
-		transport,
 		receiverMetricsOperationSuffix,
 		opt...)
 }
 
 // EndMetricsReceiveOp completes the receive operation that was started with
+// StartMetricsReceiveOp.
+func (rec *Receiver) EndMetricsReceiveOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedPoints int,
+	err error,
+) {
+	rec.endReceiveOp(
+		receiverCtx,
+		format,
+		numReceivedPoints,
+		err,
+		config.MetricsDataType,
+	)
+}
+
+// EndMetricsReceiveOp is deprecated but completes the receive operation that was started with
 // StartMetricsReceiveOp.
 func EndMetricsReceiveOp(
 	receiverCtx context.Context,
@@ -236,7 +345,8 @@ func EndMetricsReceiveOp(
 	numReceivedPoints int,
 	err error,
 ) {
-	endReceiveOp(
+	rec := NewReceiver(ReceiverSettings{})
+	rec.endReceiveOp(
 		receiverCtx,
 		format,
 		numReceivedPoints,
@@ -263,10 +373,8 @@ func ReceiverContext(
 
 // traceReceiveOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
-func traceReceiveOp(
+func (rec *Receiver) traceReceiveOp(
 	receiverCtx context.Context,
-	receiverID config.ComponentID,
-	transport string,
 	operationSuffix string,
 	opt ...StartReceiveOption,
 ) context.Context {
@@ -277,7 +385,7 @@ func traceReceiveOp(
 
 	var ctx context.Context
 	var span *trace.Span
-	spanName := receiverPrefix + receiverID.String() + operationSuffix
+	spanName := receiverPrefix + rec.receiverID.String() + operationSuffix
 	if !opts.LongLivedCtx {
 		ctx, span = trace.StartSpan(receiverCtx, spanName)
 	} else {
@@ -292,14 +400,14 @@ func traceReceiveOp(
 		ctx = trace.NewContext(receiverCtx, span)
 	}
 
-	if transport != "" {
-		span.AddAttributes(trace.StringAttribute(TransportKey, transport))
+	if rec.transport != "" {
+		span.AddAttributes(trace.StringAttribute(TransportKey, rec.transport))
 	}
 	return ctx
 }
 
 // endReceiveOp records the observability signals at the end of an operation.
-func endReceiveOp(
+func (rec *Receiver) endReceiveOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedItems int,
