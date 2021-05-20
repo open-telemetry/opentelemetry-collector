@@ -166,6 +166,7 @@ const (
 	MetricDataTypeSummary
 )
 
+// String returns the string representation of the MetricDataType.
 func (mdt MetricDataType) String() string {
 	switch mdt {
 	case MetricDataTypeNone:

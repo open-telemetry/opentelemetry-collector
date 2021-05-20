@@ -145,6 +145,7 @@ const (
 	StatusCodeError = StatusCode(otlptrace.Status_STATUS_CODE_ERROR)
 )
 
+// String returns the string representation of the StatusCode.
 func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
 
 // SetCode replaces the code associated with this SpanStatus.

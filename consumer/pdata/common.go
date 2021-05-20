@@ -36,6 +36,7 @@ const (
 	AttributeValueTypeArray
 )
 
+// String returns the string representation of the AttributeValueType.
 func (avt AttributeValueType) String() string {
 	switch avt {
 	case AttributeValueTypeNull:
