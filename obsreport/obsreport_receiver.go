@@ -176,6 +176,23 @@ func (rec *Receiver) StartTraceDataReceiveOp(
 		opt...)
 }
 
+// DEPRECATED
+// StartTraceDataReceiveOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func StartTraceDataReceiveOp(
+	operationCtx context.Context,
+	receiverID config.ComponentID,
+	transport string,
+	opt ...StartReceiveOption,
+) context.Context {
+	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
+	return rec.traceReceiveOp(
+		operationCtx,
+		receiveTraceDataOperationSuffix,
+		opt...)
+}
+
 // EndTraceDataReceiveOp completes the receive operation that was started with
 // StartTraceDataReceiveOp.
 func (rec *Receiver) EndTraceDataReceiveOp(
@@ -193,6 +210,25 @@ func (rec *Receiver) EndTraceDataReceiveOp(
 	)
 }
 
+// DEPRECATED
+// EndTraceDataReceiveOp completes the receive operation that was started with
+// StartTraceDataReceiveOp.
+func EndTraceDataReceiveOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedSpans int,
+	err error,
+) {
+	rec := NewReceiver(ReceiverSettings{})
+	rec.endReceiveOp(
+		receiverCtx,
+		format,
+		numReceivedSpans,
+		err,
+		config.TracesDataType,
+	)
+}
+
 // StartLogsReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
@@ -200,6 +236,23 @@ func (rec *Receiver) StartLogsReceiveOp(
 	operationCtx context.Context,
 	opt ...StartReceiveOption,
 ) context.Context {
+	return rec.traceReceiveOp(
+		operationCtx,
+		receiverLogsOperationSuffix,
+		opt...)
+}
+
+// DEPRECATED
+// StartLogsReceiveOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func StartLogsReceiveOp(
+	operationCtx context.Context,
+	receiverID config.ComponentID,
+	transport string,
+	opt ...StartReceiveOption,
+) context.Context {
+	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
 	return rec.traceReceiveOp(
 		operationCtx,
 		receiverLogsOperationSuffix,
@@ -223,6 +276,25 @@ func (rec *Receiver) EndLogsReceiveOp(
 	)
 }
 
+// DEPRECATED
+// EndLogsReceiveOp completes the receive operation that was started with
+// StartLogsReceiveOp.
+func EndLogsReceiveOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedLogRecords int,
+	err error,
+) {
+	rec := NewReceiver(ReceiverSettings{})
+	rec.endReceiveOp(
+		receiverCtx,
+		format,
+		numReceivedLogRecords,
+		err,
+		config.LogsDataType,
+	)
+}
+
 // StartMetricsReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
@@ -230,6 +302,23 @@ func (rec *Receiver) StartMetricsReceiveOp(
 	operationCtx context.Context,
 	opt ...StartReceiveOption,
 ) context.Context {
+	return rec.traceReceiveOp(
+		operationCtx,
+		receiverMetricsOperationSuffix,
+		opt...)
+}
+
+// DEPRECATED
+// StartMetricsReceiveOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func StartMetricsReceiveOp(
+	operationCtx context.Context,
+	receiverID config.ComponentID,
+	transport string,
+	opt ...StartReceiveOption,
+) context.Context {
+	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
 	return rec.traceReceiveOp(
 		operationCtx,
 		receiverMetricsOperationSuffix,
@@ -244,6 +333,25 @@ func (rec *Receiver) EndMetricsReceiveOp(
 	numReceivedPoints int,
 	err error,
 ) {
+	rec.endReceiveOp(
+		receiverCtx,
+		format,
+		numReceivedPoints,
+		err,
+		config.MetricsDataType,
+	)
+}
+
+// DEPRECATED
+// EndMetricsReceiveOp completes the receive operation that was started with
+// StartMetricsReceiveOp.
+func EndMetricsReceiveOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedPoints int,
+	err error,
+) {
+	rec := NewReceiver(ReceiverSettings{})
 	rec.endReceiveOp(
 		receiverCtx,
 		format,
