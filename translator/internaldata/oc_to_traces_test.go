@@ -311,24 +311,24 @@ func TestOcToInternal(t *testing.T) {
 	}{
 		{
 			name: "empty",
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{
 			name: "one-empty-resource-spans",
-			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			td:   testdata.GenerateTracesOneEmptyResourceSpans(),
 			node: ocNode,
 		},
 
 		{
 			name:     "no-libraries",
-			td:       testdata.GenerateTraceDataNoLibraries(),
+			td:       testdata.GenerateTracesNoLibraries(),
 			resource: ocResource1,
 		},
 
 		{
 			name:     "one-span-no-resource",
-			td:       testdata.GenerateTraceDataOneSpanNoResource(),
+			td:       testdata.GenerateTracesOneSpanNoResource(),
 			node:     ocNode,
 			resource: &ocresource.Resource{},
 			spans:    []*octrace.Span{ocSpan1},
@@ -336,7 +336,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name:     "one-span",
-			td:       testdata.GenerateTraceDataOneSpan(),
+			td:       testdata.GenerateTracesOneSpan(),
 			node:     ocNode,
 			resource: ocResource1,
 			spans:    []*octrace.Span{ocSpan1},
@@ -344,7 +344,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name:     "one-span-zeroed-parent-id",
-			td:       testdata.GenerateTraceDataOneSpan(),
+			td:       testdata.GenerateTracesOneSpan(),
 			node:     ocNode,
 			resource: ocResource1,
 			spans:    []*octrace.Span{ocSpanZeroedParentID},
@@ -352,7 +352,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name:     "one-span-one-nil",
-			td:       testdata.GenerateTraceDataOneSpan(),
+			td:       testdata.GenerateTracesOneSpan(),
 			node:     ocNode,
 			resource: ocResource1,
 			spans:    []*octrace.Span{ocSpan1, nil},
@@ -360,7 +360,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name:     "two-spans-same-resource",
-			td:       testdata.GenerateTraceDataTwoSpansSameResource(),
+			td:       testdata.GenerateTracesTwoSpansSameResource(),
 			node:     ocNode,
 			resource: ocResource1,
 			spans:    []*octrace.Span{ocSpan1, nil, ocSpan2},
@@ -368,7 +368,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name:     "two-spans-same-resource-one-different",
-			td:       testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
+			td:       testdata.GenerateTracesTwoSpansSameResourceOneDifferent(),
 			node:     ocNode,
 			resource: ocResource1,
 			spans:    []*octrace.Span{ocSpan1, ocSpan2, ocSpan3},
@@ -376,7 +376,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name:     "two-spans-and-separate-in-the-middle",
-			td:       testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
+			td:       testdata.GenerateTracesTwoSpansSameResourceOneDifferent(),
 			node:     ocNode,
 			resource: ocResource1,
 			spans:    []*octrace.Span{ocSpan1, ocSpan3, ocSpan2},
@@ -399,14 +399,14 @@ func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok := span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueBOOL, v.Type())
+	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
 	assert.False(t, v.BoolVal())
 
 	ocSameProcessAsParentSpanToInternal(wrapperspb.Bool(true), span)
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok = span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueBOOL, v.Type())
+	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
 }
 

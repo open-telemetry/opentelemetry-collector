@@ -38,7 +38,7 @@ var nonSpanAttributes = func() map[string]struct{} {
 	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
 		attrs[key] = struct{}{}
 	}
-	attrs[tracetranslator.TagServiceNameSource] = struct{}{}
+	attrs[tagServiceNameSource] = struct{}{}
 	attrs[conventions.InstrumentationLibraryName] = struct{}{}
 	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
 	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
@@ -176,21 +176,21 @@ func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) pdata.SpanKind {
 	switch kind {
 	case zipkinmodel.Client:
-		return pdata.SpanKindCLIENT
+		return pdata.SpanKindClient
 	case zipkinmodel.Server:
-		return pdata.SpanKindSERVER
+		return pdata.SpanKindServer
 	case zipkinmodel.Producer:
-		return pdata.SpanKindPRODUCER
+		return pdata.SpanKindProducer
 	case zipkinmodel.Consumer:
-		return pdata.SpanKindCONSUMER
+		return pdata.SpanKindConsumer
 	default:
 		if value, ok := tags[tracetranslator.TagSpanKind]; ok {
 			delete(tags, tracetranslator.TagSpanKind)
 			if value == "internal" {
-				return pdata.SpanKindINTERNAL
+				return pdata.SpanKindInternal
 			}
 		}
-		return pdata.SpanKindUNSPECIFIED
+		return pdata.SpanKindUnspecified
 	}
 }
 
@@ -348,13 +348,13 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 
 		if parseStringTags {
 			switch determineValueType(val) {
-			case pdata.AttributeValueINT:
+			case pdata.AttributeValueTypeInt:
 				iValue, _ := strconv.ParseInt(val, 10, 64)
 				dest.UpsertInt(key, iValue)
-			case pdata.AttributeValueDOUBLE:
+			case pdata.AttributeValueTypeDouble:
 				fValue, _ := strconv.ParseFloat(val, 64)
 				dest.UpsertDouble(key, fValue)
-			case pdata.AttributeValueBOOL:
+			case pdata.AttributeValueTypeBool:
 				bValue, _ := strconv.ParseBool(val)
 				dest.UpsertBool(key, bValue)
 			default:
@@ -377,13 +377,13 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 		return
 	}
 
-	snSource := tags[tracetranslator.TagServiceNameSource]
+	snSource := tags[tagServiceNameSource]
 	if snSource == "" {
 		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
 	} else {
 		resource.Attributes().InsertString(snSource, localServiceName)
 	}
-	delete(tags, tracetranslator.TagServiceNameSource)
+	delete(tags, tagServiceNameSource)
 
 	for key := range nonSpanAttributes {
 		if key == conventions.InstrumentationLibraryName || key == conventions.InstrumentationLibraryVersion {

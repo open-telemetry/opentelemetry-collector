@@ -24,7 +24,7 @@ import (
 )
 
 func TestSplitLogs_noop(t *testing.T) {
-	td := testdata.GenerateLogDataManyLogsSameResource(20)
+	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
 	splitSize := 40
 	split := splitLogs(splitSize, td)
 	assert.Equal(t, td, split)
@@ -34,7 +34,7 @@ func TestSplitLogs_noop(t *testing.T) {
 }
 
 func TestSplitLogs(t *testing.T) {
-	ld := testdata.GenerateLogDataManyLogsSameResource(20)
+	ld := testdata.GenerateLogsManyLogRecordsSameResource(20)
 	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(0, i))
@@ -77,14 +77,14 @@ func TestSplitLogs(t *testing.T) {
 }
 
 func TestSplitLogsMultipleResourceLogs(t *testing.T) {
-	td := testdata.GenerateLogDataManyLogsSameResource(20)
+	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
 	logs := td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(0, i))
 	}
 	td.ResourceLogs().Resize(2)
 	// add second index to resource logs
-	testdata.GenerateLogDataManyLogsSameResource(20).
+	testdata.GenerateLogsManyLogRecordsSameResource(20).
 		ResourceLogs().At(0).CopyTo(td.ResourceLogs().At(1))
 	logs = td.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
@@ -100,14 +100,14 @@ func TestSplitLogsMultipleResourceLogs(t *testing.T) {
 }
 
 func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testing.T) {
-	td := testdata.GenerateLogDataManyLogsSameResource(20)
+	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
 	logs := td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(0, i))
 	}
 	td.ResourceLogs().Resize(2)
 	// add second index to resource logs
-	testdata.GenerateLogDataManyLogsSameResource(20).
+	testdata.GenerateLogsManyLogRecordsSameResource(20).
 		ResourceLogs().At(0).CopyTo(td.ResourceLogs().At(1))
 	logs = td.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
@@ -129,7 +129,7 @@ func BenchmarkSplitLogs(b *testing.B) {
 	md := pdata.NewLogs()
 	rms := md.ResourceLogs()
 	for i := 0; i < 20; i++ {
-		testdata.GenerateLogDataManyLogsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
+		testdata.GenerateLogsManyLogRecordsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
 		ms := rms.At(rms.Len() - 1).InstrumentationLibraryLogs().At(0).Logs()
 		for i := 0; i < ms.Len(); i++ {
 			ms.At(i).SetName(getTestLogName(1, i))
@@ -151,7 +151,7 @@ func BenchmarkCloneLogs(b *testing.B) {
 	md := pdata.NewLogs()
 	rms := md.ResourceLogs()
 	for i := 0; i < 20; i++ {
-		testdata.GenerateLogDataManyLogsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
+		testdata.GenerateLogsManyLogRecordsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
 		ms := rms.At(rms.Len() - 1).InstrumentationLibraryLogs().At(0).Logs()
 		for i := 0; i < ms.Len(); i++ {
 			ms.At(i).SetName(getTestLogName(1, i))

@@ -39,7 +39,7 @@ func TestTracesProcessorMultiplexing(t *testing.T) {
 	}
 
 	tfc := NewTraces(processors)
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
@@ -68,7 +68,7 @@ func TestTracesProcessorWhenOneErrors(t *testing.T) {
 	processors[1] = consumertest.NewErr(errors.New("my error"))
 
 	tfc := NewTraces(processors)
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
@@ -147,7 +147,7 @@ func TestLogsProcessorMultiplexing(t *testing.T) {
 	}
 
 	lfc := NewLogs(processors)
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
@@ -176,7 +176,7 @@ func TestLogsProcessorWhenOneErrors(t *testing.T) {
 	processors[1] = consumertest.NewErr(errors.New("my error"))
 
 	lfc := NewLogs(processors)
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {

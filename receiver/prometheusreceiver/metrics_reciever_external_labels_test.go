@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/stretchr/testify/require"
@@ -61,45 +62,52 @@ func TestExternalLabels(t *testing.T) {
 	mp.wg.Wait()
 	metrics := cms.AllMetrics()
 
-	results := make(map[string][]internaldata.MetricsData)
-	for _, m := range metrics {
-		ocmds := internaldata.MetricsToOC(m)
-		for _, ocmd := range ocmds {
+	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
+	for _, md := range metrics {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
-				result = make([]internaldata.MetricsData, 0)
+				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 			}
 			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
 		}
+
 	}
 	for _, target := range targets {
 		target.validateFunc(t, target, results[target.name])
 	}
 }
 
-func verifyExternalLabels(t *testing.T, td *testData, mds []internaldata.MetricsData) {
+func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
 
-	wantG1 := &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:        "go_threads",
-			Description: "Number of OS threads created",
-			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			LabelKeys:   []*metricspb.LabelKey{{Key: "key"}},
-		},
-		Timeseries: []*metricspb.TimeSeries{
+	want := &agentmetricspb.ExportMetricsServiceRequest{
+		Node:     td.node,
+		Resource: td.resource,
+		Metrics: []*metricspb.Metric{
 			{
-				Points: []*metricspb.Point{
-					{Value: &metricspb.Point_DoubleValue{DoubleValue: 19.0}},
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "go_threads",
+					Description: "Number of OS threads created",
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "key"}},
 				},
-				LabelValues: []*metricspb.LabelValue{
-					{Value: "value", HasValue: true},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						Points: []*metricspb.Point{
+							{Value: &metricspb.Point_DoubleValue{DoubleValue: 19.0}},
+						},
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value", HasValue: true},
+						},
+					},
 				},
 			},
 		},
 	}
-	gotG1 := mds[0].Metrics[0]
-	ts1 := gotG1.Timeseries[0].Points[0].Timestamp
-	wantG1.Timeseries[0].Points[0].Timestamp = ts1
-	doCompare("scrape-externalLabels", t, wantG1, gotG1)
+	want.Metrics[0].Timeseries[0].Points[0].Timestamp = mds[0].Metrics[0].Timeseries[0].Points[0].Timestamp
+	doCompare("scrape-externalLabels", t, want, mds[0])
 }

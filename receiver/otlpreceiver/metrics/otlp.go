@@ -34,6 +34,7 @@ const (
 type Receiver struct {
 	id           config.ComponentID
 	nextConsumer consumer.Metrics
+	obsrecv      *obsreport.Receiver
 }
 
 // New creates a new Receiver reference.
@@ -41,6 +42,7 @@ func New(id config.ComponentID, nextConsumer consumer.Metrics) *Receiver {
 	r := &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
 	return r
 }
@@ -75,9 +77,9 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md pdata.Metrics) err
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.id, receiverTransport)
+	ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
-	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, err)
+	r.obsrecv.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, err)
 
 	return err
 }

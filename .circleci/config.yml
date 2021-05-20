@@ -1,3 +1,26 @@
+# Using Contexts:
+#   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
+#   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
+#   
+#   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
+#   explicitly enables the context for the job. 
+#
+#   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
+#   part of the approved security groups for the given context. This means that contributors who are not part of the
+#   OpenTelemetry GitHub organisation will not be able to run jobs that depend on contexts. As a result, PR pipelines
+#   should never depend on any contexts and never use any tokens/secrets.
+#
+#   This CI pipeline uses two contexts:
+#      - github-release-and-issues-api-token
+#        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
+#        We use this to report failures as issues back to the GitHub project.
+#        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
+#        
+#      - dockerhub-token
+#        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
+#        This is used to publish docker images to Docker Hub.
+#        Only project approvers and maintainers can run jobs that depend on this context such e.g, publish-stable.
+
 version: 2.1
 
 orbs:
@@ -91,6 +114,32 @@ commands:
                 command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 
+  run_loadtest:
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: TEST_ARGS="-test.run=$(make -s testbed-list-loadtest | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-loadtest
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+
+  run_tests:
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Unit tests
+          command: |
+            mkdir -p unit-test-results/junit
+            trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
+            make gotest | tee unit-test-results/go-unit-tests.out
+      - store_artifacts:
+          path: unit-test-results
+      - store_test_results:
+          path: unit-test-results/junit
+      - save_module_cache
+
 workflows:
   version: 2
   build-and-test:
@@ -105,22 +154,38 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - loadtest:
+      - loadtest-with-github-reports:
           context:
             - github-release-and-issues-api-token
           requires:
             - cross-compile
           filters:
+            branches:
+              only: main
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - test:
+      - loadtest:
+          requires:
+            - cross-compile
+          filters:
+            branches:
+              ignore: main
+      - test-with-github-reports:
           context:
             - github-release-and-issues-api-token
           requires:
             - setup-environment
           filters:
+            branches:
+              only: main
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - test:
+          requires:
+            - setup-environment
+          filters:
+            branches:
+              ignore: main
       - coverage:
           requires:
             - setup-environment
@@ -136,12 +201,27 @@ workflows:
       - publish-check:
           requires:
             - cross-compile
+            - loadtest-with-github-reports
+            - test-with-github-reports
+            - coverage
+            - windows-msi
+            - deb-package
+            - rpm-package
+          filters:
+            branches:
+              only: main
+      - publish-check:
+          requires:
+            - cross-compile
             - loadtest
             - test
             - coverage
             - windows-msi
             - deb-package
             - rpm-package
+          filters:
+            branches:
+              ignore: main
       - publish-stable:
           context:
             - github-release-and-issues-api-token
@@ -226,6 +306,16 @@ jobs:
           root: ~/
           paths: project/bin
 
+  loadtest-with-github-reports:
+    executor: golang
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    parallelism: 6
+    resource_class: medium+
+    steps:
+      - run_loadtest
+      - github_issue_generator
+
   loadtest:
     executor: golang
     environment:
@@ -233,14 +323,14 @@ jobs:
     parallelism: 6
     resource_class: medium+
     steps:
-      - attach_to_workspace
-      - run:
-          name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -s testbed-list-loadtest | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-loadtest
-      - store_artifacts:
-          path: testbed/tests/results
-      - store_test_results:
-          path: testbed/tests/results/junit
+      - run_loadtest
+
+  test-with-github-reports:
+    executor: golang
+    environment:
+      TEST_RESULTS: unit-test-results/junit/results.xml
+    steps:
+      - run_loadtest
       - github_issue_generator
 
   test:
@@ -248,19 +338,7 @@ jobs:
     environment:
       TEST_RESULTS: unit-test-results/junit/results.xml
     steps:
-      - attach_to_workspace
-      - run:
-          name: Unit tests
-          command: |
-            mkdir -p unit-test-results/junit
-            trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
-            make gotest | tee unit-test-results/go-unit-tests.out
-      - store_artifacts:
-          path: unit-test-results
-      - store_test_results:
-          path: unit-test-results/junit
-      - save_module_cache
-      - github_issue_generator
+      - run_loadtest
 
   coverage:
     executor: golang

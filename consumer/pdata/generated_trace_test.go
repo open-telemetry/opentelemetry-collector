@@ -503,8 +503,8 @@ func TestSpan_Name(t *testing.T) {
 
 func TestSpan_Kind(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, SpanKindUNSPECIFIED, ms.Kind())
-	testValKind := SpanKindSERVER
+	assert.EqualValues(t, SpanKindUnspecified, ms.Kind())
+	testValKind := SpanKindServer
 	ms.SetKind(testValKind)
 	assert.EqualValues(t, testValKind, ms.Kind())
 }
@@ -1018,7 +1018,7 @@ func fillTestSpan(tv Span) {
 	tv.SetTraceState(TraceState("congo=congos"))
 	tv.SetParentSpanID(NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetName("test_name")
-	tv.SetKind(SpanKindSERVER)
+	tv.SetKind(SpanKindServer)
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetEndTimestamp(Timestamp(1234567890))
 	fillTestAttributeMap(tv.Attributes())

@@ -192,7 +192,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			jb:   model.Batch{},
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{
@@ -466,27 +466,27 @@ func TestJSpanKindToInternal(t *testing.T) {
 	}{
 		{
 			jSpanKind:    "client",
-			otlpSpanKind: pdata.SpanKindCLIENT,
+			otlpSpanKind: pdata.SpanKindClient,
 		},
 		{
 			jSpanKind:    "server",
-			otlpSpanKind: pdata.SpanKindSERVER,
+			otlpSpanKind: pdata.SpanKindServer,
 		},
 		{
 			jSpanKind:    "producer",
-			otlpSpanKind: pdata.SpanKindPRODUCER,
+			otlpSpanKind: pdata.SpanKindProducer,
 		},
 		{
 			jSpanKind:    "consumer",
-			otlpSpanKind: pdata.SpanKindCONSUMER,
+			otlpSpanKind: pdata.SpanKindConsumer,
 		},
 		{
 			jSpanKind:    "internal",
-			otlpSpanKind: pdata.SpanKindINTERNAL,
+			otlpSpanKind: pdata.SpanKindInternal,
 		},
 		{
 			jSpanKind:    "all-others",
-			otlpSpanKind: pdata.SpanKindUNSPECIFIED,
+			otlpSpanKind: pdata.SpanKindUnspecified,
 		},
 	}
 
@@ -498,7 +498,7 @@ func TestJSpanKindToInternal(t *testing.T) {
 }
 
 func generateTraceDataResourceOnly() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
 	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
 	rs.Attributes().InsertInt("int-attr-1", 123)
@@ -506,7 +506,7 @@ func generateTraceDataResourceOnly() pdata.Traces {
 }
 
 func generateTraceDataResourceOnlyWithNoAttrs() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{})
 	return td
 }
@@ -525,7 +525,7 @@ func generateProtoProcess() *model.Process {
 }
 
 func generateTraceDataOneSpanNoResource() pdata.Traces {
-	td := testdata.GenerateTraceDataOneSpanNoResource()
+	td := testdata.GenerateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetTraceID(pdata.NewTraceID(
@@ -534,7 +534,7 @@ func generateTraceDataOneSpanNoResource() pdata.Traces {
 	span.SetDroppedEventsCount(0)
 	span.SetStartTimestamp(testSpanStartTimestamp)
 	span.SetEndTimestamp(testSpanEndTimestamp)
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(0).SetDroppedAttributesCount(0)
 	span.Events().At(0).SetName("event-with-attr")
@@ -715,7 +715,7 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetName("operationB")
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetParentSpanID(spans.At(0).SpanID())
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
@@ -771,7 +771,7 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)
-	span.SetKind(pdata.SpanKindCONSUMER)
+	span.SetKind(pdata.SpanKindConsumer)
 	span.Status().SetCode(pdata.StatusCodeOk)
 	span.Status().SetMessage("status-ok")
 	link := span.Links().AppendEmpty()
@@ -834,7 +834,7 @@ func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
 }
 
 func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 
 	rs0 := td.ResourceSpans().At(0)
 	rs0.InstrumentationLibrarySpans().Resize(2)

@@ -32,8 +32,8 @@ func TestTraces(t *testing.T) {
 		args  args
 		empty bool
 	}{
-		{"empty traces", args{testdata.GenerateTraceDataEmpty()}, true},
-		{"traces with two spans", args{testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()}, false},
+		{"empty traces", args{pdata.NewTraces()}, true},
+		{"traces with two spans", args{testdata.GenerateTracesTwoSpansSameResource()}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

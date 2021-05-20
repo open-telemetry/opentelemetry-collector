@@ -89,7 +89,7 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 		span.SetTraceID(GenerateSequentialTraceID(traceID))
 		span.SetSpanID(GenerateSequentialSpanID(spanID))
 		span.SetName("load-generator-span")
-		span.SetKind(pdata.SpanKindCLIENT)
+		span.SetKind(pdata.SpanKindClient)
 		attrs := span.Attributes()
 		attrs.UpsertInt("load_generator.span_seq_num", int64(spanID))
 		attrs.UpsertInt("load_generator.trace_seq_num", int64(traceID))

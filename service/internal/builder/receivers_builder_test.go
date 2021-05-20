@@ -134,7 +134,7 @@ func testReceivers(
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
 
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	if test.hasTraces {
 		traceProducer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
 		assert.NoError(t, traceProducer.ConsumeTraces(context.Background(), td))

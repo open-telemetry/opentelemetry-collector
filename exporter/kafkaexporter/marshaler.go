@@ -15,13 +15,15 @@
 package kafkaexporter
 
 import (
+	"github.com/Shopify/sarama"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // TracesMarshaler marshals traces into Message array.
 type TracesMarshaler interface {
-	// Marshal serializes spans into Messages
-	Marshal(traces pdata.Traces) ([]Message, error)
+	// Marshal serializes spans into sarama's ProducerMessages
+	Marshal(traces pdata.Traces, topic string) ([]*sarama.ProducerMessage, error)
 
 	// Encoding returns encoding name
 	Encoding() string
@@ -29,8 +31,8 @@ type TracesMarshaler interface {
 
 // MetricsMarshaler marshals metrics into Message array
 type MetricsMarshaler interface {
-	// Marshal serializes metrics into Messages
-	Marshal(metrics pdata.Metrics) ([]Message, error)
+	// Marshal serializes metrics into sarama's ProducerMessages
+	Marshal(metrics pdata.Metrics, topic string) ([]*sarama.ProducerMessage, error)
 
 	// Encoding returns encoding name
 	Encoding() string
@@ -38,17 +40,11 @@ type MetricsMarshaler interface {
 
 // LogsMarshaler marshals logs into Message array
 type LogsMarshaler interface {
-	// Marshal serializes logs into Messages
-	Marshal(logs pdata.Logs) ([]Message, error)
+	// Marshal serializes logs into sarama's ProducerMessages
+	Marshal(logs pdata.Logs, topic string) ([]*sarama.ProducerMessage, error)
 
 	// Encoding returns encoding name
 	Encoding() string
-}
-
-// Message encapsulates Kafka's message payload.
-type Message struct {
-	Value []byte
-	Key   []byte
 }
 
 // tracesMarshalers returns map of supported encodings with TracesMarshaler.

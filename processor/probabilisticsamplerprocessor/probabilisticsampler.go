@@ -124,21 +124,21 @@ func parseSpanSamplingPriority(span pdata.Span) samplingPriority {
 	// client libraries it is also possible that the type was lost in translation
 	// between different formats.
 	switch samplingPriorityAttrib.Type() {
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		value := samplingPriorityAttrib.IntVal()
 		if value == 0 {
 			decision = doNotSampleSpan
 		} else if value > 0 {
 			decision = mustSampleSpan
 		}
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		value := samplingPriorityAttrib.DoubleVal()
 		if value == 0.0 {
 			decision = doNotSampleSpan
 		} else if value > 0.0 {
 			decision = mustSampleSpan
 		}
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		attribVal := samplingPriorityAttrib.StringVal()
 		if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
 			if value == 0.0 {

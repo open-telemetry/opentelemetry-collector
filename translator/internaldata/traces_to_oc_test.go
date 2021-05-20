@@ -102,27 +102,27 @@ func TestSpanKindToOC(t *testing.T) {
 		ocKind octrace.Span_SpanKind
 	}{
 		{
-			kind:   pdata.SpanKindCLIENT,
+			kind:   pdata.SpanKindClient,
 			ocKind: octrace.Span_CLIENT,
 		},
 		{
-			kind:   pdata.SpanKindSERVER,
+			kind:   pdata.SpanKindServer,
 			ocKind: octrace.Span_SERVER,
 		},
 		{
-			kind:   pdata.SpanKindCONSUMER,
+			kind:   pdata.SpanKindConsumer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindPRODUCER,
+			kind:   pdata.SpanKindProducer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindUNSPECIFIED,
+			kind:   pdata.SpanKindUnspecified,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindINTERNAL,
+			kind:   pdata.SpanKindInternal,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 	}
@@ -155,7 +155,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 		ocAttribute *octrace.AttributeValue
 	}{
 		{
-			kind: pdata.SpanKindCONSUMER,
+			kind: pdata.SpanKindConsumer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -165,7 +165,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindPRODUCER,
+			kind: pdata.SpanKindProducer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -175,7 +175,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindINTERNAL,
+			kind: pdata.SpanKindInternal,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -185,15 +185,15 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind:        pdata.SpanKindUNSPECIFIED,
+			kind:        pdata.SpanKindUnspecified,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindSERVER,
+			kind:        pdata.SpanKindServer,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindCLIENT,
+			kind:        pdata.SpanKindClient,
 			ocAttribute: nil,
 		},
 	}
@@ -296,7 +296,7 @@ func TestInternalToOC(t *testing.T) {
 	}{
 		{
 			name:     "one-empty-resource-spans",
-			td:       testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			td:       testdata.GenerateTracesOneEmptyResourceSpans(),
 			Node:     nil,
 			Resource: nil,
 			Spans:    []*octrace.Span(nil),
@@ -304,7 +304,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "no-libraries",
-			td:       testdata.GenerateTraceDataNoLibraries(),
+			td:       testdata.GenerateTracesNoLibraries(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span(nil),
@@ -312,7 +312,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-instrumentation-library",
-			td:       testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
+			td:       testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span{},
@@ -320,7 +320,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "one-span-no-resource",
-			td:       testdata.GenerateTraceDataOneSpanNoResource(),
+			td:       testdata.GenerateTracesOneSpanNoResource(),
 			Node:     nil,
 			Resource: nil,
 			Spans:    []*octrace.Span{ocSpan1},
@@ -328,7 +328,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "one-span",
-			td:       testdata.GenerateTraceDataOneSpan(),
+			td:       testdata.GenerateTracesOneSpan(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span{ocSpan1},
@@ -336,7 +336,7 @@ func TestInternalToOC(t *testing.T) {
 
 		{
 			name:     "two-spans-same-resource",
-			td:       testdata.GenerateTraceDataTwoSpansSameResource(),
+			td:       testdata.GenerateTracesTwoSpansSameResource(),
 			Node:     ocNode,
 			Resource: ocResource1,
 			Spans:    []*octrace.Span{ocSpan1, ocSpan2},
