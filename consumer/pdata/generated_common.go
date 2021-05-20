@@ -71,7 +71,7 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 
 // AnyValueArray logically represents a slice of AttributeValue.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies, it the
 // caller will see the modification.
 //
 // Must use NewAnyValueArray function to create new instances.

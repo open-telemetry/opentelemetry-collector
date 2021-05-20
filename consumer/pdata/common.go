@@ -66,7 +66,7 @@ func (avt AttributeValueType) String() string {
 //
 //   function f1(val AttributeValue) { val.SetIntVal(234) }
 //   function f2() {
-//   	v := NewAttributeValueString("a string")
+//      v := NewAttributeValueString("a string")
 //      f1(v)
 //      _ := v.Type() // this will return AttributeValueTypeInt
 //   }
