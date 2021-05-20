@@ -1,0 +1,21 @@
+extensions:
+  oauth2/missingurl:
+    client_id: someclientid
+    client_secret: someclientsecret
+    scopes: ["api.metrics"]
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [oauth2/missingurl]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
