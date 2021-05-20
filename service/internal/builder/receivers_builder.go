@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/service/internal/contexttoresourceconsumer"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -180,17 +181,23 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 
 	switch dataType {
 	case config.TracesDataType:
-		junction := buildFanoutTraceConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateTracesReceiver(ctx, creationParams, cfg, junction)
-
+		var junction consumer.Traces
+		junction, err = buildTracesJunction(builtPipelines)
+		if err == nil {
+			createdReceiver, err = factory.CreateTracesReceiver(ctx, creationParams, cfg, junction)
+		}
 	case config.MetricsDataType:
-		junction := buildFanoutMetricConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateMetricsReceiver(ctx, creationParams, cfg, junction)
-
+		var junction consumer.Metrics
+		junction, err = buildMetricsJunction(builtPipelines)
+		if err == nil {
+			createdReceiver, err = factory.CreateMetricsReceiver(ctx, creationParams, cfg, junction)
+		}
 	case config.LogsDataType:
-		junction := buildFanoutLogConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateLogsReceiver(ctx, creationParams, cfg, junction)
-
+		var junction consumer.Logs
+		junction, err = buildLogsJunction(builtPipelines)
+		if err == nil {
+			createdReceiver, err = factory.CreateLogsReceiver(ctx, creationParams, cfg, junction)
+		}
 	default:
 		err = componenterror.ErrDataTypeIsNotSupported
 	}
@@ -269,6 +276,21 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 	}
 
 	return rcv, nil
+}
+
+func buildTracesJunction(pipelines []*builtPipeline) (consumer.Traces, error) {
+	ftc := buildFanoutTraceConsumer(pipelines)
+	return contexttoresourceconsumer.NewTraces(ftc)
+}
+
+func buildMetricsJunction(pipelines []*builtPipeline) (consumer.Metrics, error) {
+	fmc := buildFanoutMetricConsumer(pipelines)
+	return contexttoresourceconsumer.NewMetrics(fmc)
+}
+
+func buildLogsJunction(pipelines []*builtPipeline) (consumer.Logs, error) {
+	flc := buildFanoutLogConsumer(pipelines)
+	return contexttoresourceconsumer.NewLogs(flc)
 }
 
 func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.Traces {

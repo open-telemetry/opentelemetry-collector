@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/auth"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -30,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
 )
 
 type testCase struct {
@@ -94,8 +94,6 @@ func testReceivers(
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := attributesprocessor.NewFactory()
-	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.NoError(t, err)
 
@@ -241,7 +239,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			}
 
 			// Send one data.
-			log := pdata.Logs{}
+			log := pdata.NewLogs()
 			producer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
 			require.NoError(t, producer.ConsumeLogs(context.Background(), log))
 
@@ -348,5 +346,59 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 			assert.Error(t, err)
 			assert.Zero(t, len(receivers))
 		})
+	}
+}
+
+// TestJunctionUsesContextToResourceConsumer ensures that the junction point contains the
+// contexttoresourceconsumer, which copies information from the context to the data point's resource.
+// We only test whether one single attribute is found, on a very simple case, for each data point type.
+// Correctness of the consumer itself is done by its own test suite.
+func TestJunctionUsesContextToResourceConsumer(t *testing.T) {
+	// prepare
+	factories, err := testcomponents.ExampleComponents()
+	require.NoError(t, err)
+
+	cfg, err := configtest.LoadConfigFile(t, "testdata/junction.yaml", factories)
+	require.NoError(t, err)
+
+	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	require.NoError(t, err)
+	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	require.NoError(t, err)
+	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	ctx = auth.NewContextFromSubject(ctx, "jdoe")
+
+	// test
+	receiver := receivers[cfg.Receivers[config.NewID("examplereceiver")]]
+	p := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
+	require.NoError(t, p.ConsumeTraces(ctx, testdata.GenerateTracesOneSpan()))
+	require.NoError(t, p.ConsumeMetrics(ctx, testdata.GenerateMetricsOneMetric()))
+	require.NoError(t, p.ConsumeLogs(ctx, testdata.GenerateLogsOneLogRecord()))
+
+	// verify
+	exporter := allExporters[cfg.Exporters[config.NewID("exampleexporter")]]
+
+	{ // verify the traces part
+		c := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
+		val, found := c.Traces[0].ResourceSpans().At(0).Resource().Attributes().Get("__auth_subject")
+		assert.True(t, found)
+		assert.Equal(t, "jdoe", val.StringVal())
+	}
+
+	{ // verify the metrics part
+		c := exporter.getMetricExporter().(*testcomponents.ExampleExporterConsumer)
+		val, found := c.Metrics[0].ResourceMetrics().At(0).Resource().Attributes().Get("__auth_subject")
+		assert.True(t, found)
+		assert.Equal(t, "jdoe", val.StringVal())
+	}
+
+	{ // verify the logs part
+		c := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
+		val, found := c.Logs[0].ResourceLogs().At(0).Resource().Attributes().Get("__auth_subject")
+		assert.True(t, found)
+		assert.Equal(t, "jdoe", val.StringVal())
 	}
 }
