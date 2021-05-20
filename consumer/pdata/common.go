@@ -70,7 +70,7 @@ func (avt AttributeValueType) String() string {
 //      _ := v.Type() // this will return AttributeValueTypeInt
 //   }
 //
-// Important: zero-initialized instance is not valid for use. All AttributeValue functions bellow must
+// Important: zero-initialized instance is not valid for use. All AttributeValue functions below must
 // be called only on instances that are created via NewAttributeValue+ functions.
 type AttributeValue struct {
 	orig *otlpcommon.AnyValue
