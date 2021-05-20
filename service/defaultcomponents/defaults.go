@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
+	"go.opentelemetry.io/collector/extension/storage/filestorage"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
@@ -63,6 +64,7 @@ func Components() (
 		healthcheckextension.NewFactory(),
 		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
+		filestorage.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

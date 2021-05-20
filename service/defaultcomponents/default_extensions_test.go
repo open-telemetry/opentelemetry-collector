@@ -16,6 +16,8 @@ package defaultcomponents
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
+	"go.opentelemetry.io/collector/extension/storage/filestorage"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -38,11 +41,21 @@ func TestDefaultExtensions(t *testing.T) {
 
 	extFactories := allFactories.Extensions
 	endpoint := testutil.GetAvailableLocalAddress(t)
+	tempDir, _ := ioutil.TempDir("", "")
+	defer os.RemoveAll(tempDir)
 
 	tests := []struct {
 		extension   config.Type
 		getConfigFn getExtensionConfigFn
 	}{
+		{
+			extension: "file_storage",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["file_storage"].CreateDefaultConfig().(*filestorage.Config)
+				cfg.Directory = tempDir
+				return cfg
+			},
+		},
 		{
 			extension: "health_check",
 			getConfigFn: func() config.Extension {
