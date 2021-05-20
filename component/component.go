@@ -17,8 +17,9 @@ package component
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/config"
 )
 
 // Component is either a receiver, exporter, processor or an extension.

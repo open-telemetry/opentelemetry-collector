@@ -22,19 +22,13 @@ import (
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
-// CommonSettings holds common settings for Service and Application
-type CommonSettings struct {
+// svcSettings holds configuration for building a new service.
+type svcSettings struct {
 	// Factories component factories.
 	Factories component.Factories
 
 	// BuildInfo provides application start information.
 	BuildInfo component.BuildInfo
-}
-
-// SvcSettings holds configuration for building a new service.
-type SvcSettings struct {
-	// CommonSettings contains Factories and BuildInfo
-	CommonSettings CommonSettings
 
 	// Config represents the configuration of the service.
 	Config *config.Config
@@ -48,8 +42,11 @@ type SvcSettings struct {
 
 // AppSettings holds configuration for creating a new Application.
 type AppSettings struct {
-	// CommonSettings contains Factories and BuildInfo
-	CommonSettings CommonSettings
+	// Factories component factories.
+	Factories component.Factories
+
+	// BuildInfo provides application start information.
+	BuildInfo component.BuildInfo
 
 	// ParserProvider provides the configuration's Parser.
 	// If it is not provided a default provider is used. The default provider loads the configuration

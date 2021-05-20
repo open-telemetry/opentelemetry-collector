@@ -31,17 +31,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to build default components: %v", err)
 	}
-
-	commonSettings := service.CommonSettings{
-		BuildInfo: component.BuildInfo{
-			Command:     "otelcol",
-			Description: "OpenTelemetry Collector",
-			Version:     version.Version,
-		},
-		Factories: factories,
+	info := component.BuildInfo{
+		Command:     "otelcol",
+		Description: "OpenTelemetry Collector",
+		Version:     version.Version,
 	}
 
-	if err := run(service.AppSettings{CommonSettings: commonSettings}); err != nil {
+	if err := run(service.AppSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }

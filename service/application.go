@@ -81,19 +81,19 @@ type Application struct {
 
 // New creates and returns a new instance of Application.
 func New(set AppSettings) (*Application, error) {
-	if err := configcheck.ValidateConfigFromFactories(set.CommonSettings.Factories); err != nil {
+	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
 		return nil, err
 	}
 
 	app := &Application{
-		info:         set.CommonSettings.BuildInfo,
-		factories:    set.CommonSettings.Factories,
+		info:         set.BuildInfo,
+		factories:    set.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     set.CommonSettings.BuildInfo.Command,
-		Version: set.CommonSettings.BuildInfo.Version,
+		Use:     set.BuildInfo.Command,
+		Version: set.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			if app.logger, err = newLogger(set.LoggingOptions); err != nil {
@@ -220,13 +220,9 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 
 	app.logger.Info("Applying configuration...")
 
-	commonSettings := CommonSettings{
-		BuildInfo: app.info,
-		Factories: app.factories,
-	}
-
-	service, err := newService(&SvcSettings{
-		CommonSettings:    commonSettings,
+	service, err := newService(&svcSettings{
+		BuildInfo:         app.info,
+		Factories:         app.factories,
 		Config:            cfg,
 		Logger:            app.logger,
 		AsyncErrorChannel: app.asyncErrorChannel,
