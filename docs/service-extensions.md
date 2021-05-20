@@ -20,7 +20,7 @@ to receive data. These are a necessary addition to allow implementing extensions
 that indicate to LBs and external systems if the service instance is ready or 
 not to receive data 
 (e.g.: a [k8s readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#define-readiness-probes)). 
-These state changes are under the control of the service application hosting 
+These state changes are under the control of the service server hosting 
 the extensions.
 
 There are more complex scenarios in which there can be notifications of state 

@@ -19,7 +19,7 @@ import (
 )
 
 // Host represents the entity that is hosting a Component. It is used to allow communication
-// between the Component and its host (normally the service.Application is the host).
+// between the Component and its host (normally the service.Collector is the host).
 type Host interface {
 	// ReportFatalError is used to report to the host that the extension
 	// encountered a fatal error (i.e.: an error that the instance can't recover

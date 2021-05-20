@@ -46,12 +46,12 @@ func main() {
 func runInteractive(params service.Parameters) error {
 	app, err := service.New(params)
 	if err != nil {
-		return fmt.Errorf("failed to construct the application: %w", err)
+		return fmt.Errorf("failed to construct the collector server: %w", err)
 	}
 
 	err = app.Run()
 	if err != nil {
-		return fmt.Errorf("application run finished with error: %w", err)
+		return fmt.Errorf("collector server run finished with error: %w", err)
 	}
 
 	return nil
