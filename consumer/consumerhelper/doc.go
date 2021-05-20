@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package consumerhelpers defines types and functions used to create consumer
+// Package consumerhelper defines types and functions used to create consumer
 // Logs, Metrics, and Traces.
 package consumerhelper
