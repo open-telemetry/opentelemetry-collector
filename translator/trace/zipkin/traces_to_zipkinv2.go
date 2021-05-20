@@ -267,15 +267,15 @@ func extractZipkinServiceName(zTags map[string]string) string {
 	} else if fn, ok := zTags[conventions.AttributeFaasName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeFaasName)
-		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeFaasName
+		zTags[tagServiceNameSource] = conventions.AttributeFaasName
 	} else if fn, ok := zTags[conventions.AttributeK8sDeployment]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeK8sDeployment)
-		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeK8sDeployment
+		zTags[tagServiceNameSource] = conventions.AttributeK8sDeployment
 	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeProcessExecutableName)
-		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeProcessExecutableName
+		zTags[tagServiceNameSource] = conventions.AttributeProcessExecutableName
 	} else {
 		serviceName = tracetranslator.ResourceNoServiceName
 	}

@@ -33,8 +33,7 @@ const (
 	TagError         = "error"
 	TagHTTPStatusMsg = "http.status_message"
 
-	TagW3CTraceState     = "w3c.tracestate"
-	TagServiceNameSource = "otlp.service.name.source"
+	TagW3CTraceState = "w3c.tracestate"
 )
 
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required

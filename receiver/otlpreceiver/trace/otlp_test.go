@@ -27,14 +27,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/internal/data"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
-
-var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
 
 func TestExport(t *testing.T) {
 	// given
@@ -50,44 +47,18 @@ func TestExport(t *testing.T) {
 
 	// when
 
-	unixnanos := uint64(12578940000000012345)
-	traceID := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
-	spanID := [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
-	req := &collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
-			{
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-					{
-						Spans: []*otlptrace.Span{
-							{
-								TraceId:           data.NewTraceID(traceID),
-								SpanId:            data.NewSpanID(spanID),
-								Name:              "operationB",
-								Kind:              otlptrace.Span_SPAN_KIND_SERVER,
-								StartTimeUnixNano: unixnanos,
-								EndTimeUnixNano:   unixnanos,
-								Status:            otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_STATUS_CODE_ERROR},
-								TraceState:        "a=text,b=123",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	req := testdata.GenerateTracesOneSpan()
 
 	// Keep trace data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := pdata.TracesFromInternalRep(internal.TracesFromOtlp(req)).Clone()
+	traceData := req.Clone()
 
 	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
 	// assert
-
-	require.Equal(t, 1, len(traceSink.AllTraces()), "unexpected length: %v", len(traceSink.AllTraces()))
-
+	require.Len(t, traceSink.AllTraces(), 1)
 	assert.EqualValues(t, traceData, traceSink.AllTraces()[0])
 }
 
@@ -101,7 +72,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	resp, err := traceClient.Export(context.Background(), &collectortrace.ExportTraceServiceRequest{})
+	resp, err := traceClient.Export(context.Background(), pdata.NewTraces())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
@@ -114,34 +85,19 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	req := &collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
-			{
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-					{
-						Spans: []*otlptrace.Span{
-							{
-								Name: "operationB",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
+	req := testdata.GenerateTracesOneSpan()
 	resp, err := traceClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Nil(t, resp)
 }
 
-func makeTraceServiceClient(addr net.Addr) (collectortrace.TraceServiceClient, func(), error) {
+func makeTraceServiceClient(addr net.Addr) (pdatagrpc.TracesClient, func(), error) {
 	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
 
-	metricsClient := collectortrace.NewTraceServiceClient(cc)
+	metricsClient := pdatagrpc.NewTracesClient(cc)
 
 	doneFn := func() { _ = cc.Close() }
 	return metricsClient, doneFn, nil

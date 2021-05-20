@@ -38,7 +38,7 @@ var nonSpanAttributes = func() map[string]struct{} {
 	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
 		attrs[key] = struct{}{}
 	}
-	attrs[tracetranslator.TagServiceNameSource] = struct{}{}
+	attrs[tagServiceNameSource] = struct{}{}
 	attrs[conventions.InstrumentationLibraryName] = struct{}{}
 	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
 	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
@@ -377,13 +377,13 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 		return
 	}
 
-	snSource := tags[tracetranslator.TagServiceNameSource]
+	snSource := tags[tagServiceNameSource]
 	if snSource == "" {
 		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
 	} else {
 		resource.Attributes().InsertString(snSource, localServiceName)
 	}
-	delete(tags, tracetranslator.TagServiceNameSource)
+	delete(tags, tagServiceNameSource)
 
 	for key := range nonSpanAttributes {
 		if key == conventions.InstrumentationLibraryName || key == conventions.InstrumentationLibraryVersion {
