@@ -88,12 +88,12 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ResourceMetricsSlice can be initialized:
-// es := NewResourceMetricsSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewResourceMetricsSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ResourceMetricsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -267,13 +267,13 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
-// Here is how a new InstrumentationLibraryMetricsSlice can be initialized:
-// es := NewInstrumentationLibraryMetricsSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   Here is how a new InstrumentationLibraryMetricsSlice can be initialized:
+//   es := NewInstrumentationLibraryMetricsSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -448,12 +448,12 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new MetricSlice can be initialized:
-// es := NewMetricSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewMetricSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es MetricSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -941,12 +941,12 @@ func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new IntDataPointSlice can be initialized:
-// es := NewIntDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewIntDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es IntDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1154,12 +1154,12 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new DoubleDataPointSlice can be initialized:
-// es := NewDoubleDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewDoubleDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es DoubleDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1367,12 +1367,12 @@ func (es IntHistogramDataPointSlice) CopyTo(dest IntHistogramDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new IntHistogramDataPointSlice can be initialized:
-// es := NewIntHistogramDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewIntHistogramDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es IntHistogramDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1613,12 +1613,12 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new HistogramDataPointSlice can be initialized:
-// es := NewHistogramDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewHistogramDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es HistogramDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1859,12 +1859,12 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new SummaryDataPointSlice can be initialized:
-// es := NewSummaryDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewSummaryDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es SummaryDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2083,12 +2083,12 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ValueAtQuantileSlice can be initialized:
-// es := NewValueAtQuantileSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewValueAtQuantileSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ValueAtQuantileSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2268,12 +2268,12 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new IntExemplarSlice can be initialized:
-// es := NewIntExemplarSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewIntExemplarSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es IntExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2462,12 +2462,12 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ExemplarSlice can be initialized:
-// es := NewExemplarSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewExemplarSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)

@@ -131,12 +131,12 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new AnyValueArray can be initialized:
-// es := NewAnyValueArray()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewAnyValueArray()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es AnyValueArray) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
