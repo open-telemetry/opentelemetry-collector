@@ -608,9 +608,9 @@ func (am AttributeMap) Len() int {
 //
 // Example:
 //
-// it := sm.Range(func(k string, v AttributeValue) {
-//   ...
-// })
+//   it := sm.Range(func(k string, v AttributeValue) {
+//       ...
+//   })
 func (am AttributeMap) Range(f func(k string, v AttributeValue) bool) {
 	for i := range *am.orig {
 		kv := &(*am.orig)[i]
