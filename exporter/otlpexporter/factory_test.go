@@ -24,7 +24,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -57,11 +59,11 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
-
 	tests := []struct {
-		name     string
-		config   Config
-		mustFail bool
+		name            string
+		config          Config
+		mustFail        bool
+		mustFailOnStart bool
 	}{
 		{
 			name: "NoEndpoint",
@@ -140,7 +142,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					Compression: "unknown compression",
 				},
 			},
-			mustFail: true,
+			mustFailOnStart: true,
 		},
 		{
 			name: "CaCert",
@@ -169,7 +171,29 @@ func TestCreateTracesExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail: true,
+			mustFailOnStart: true,
+		},
+		{
+			name: "AuthenticatorError",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint: endpoint,
+					Auth:     &configauth.Authentication{AuthenticatorName: "bearer"},
+				},
+			},
+			mustFailOnStart: true,
+		},
+		{
+			name: "AuthenticatorError",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint: endpoint,
+					Auth:     &configauth.Authentication{AuthenticatorName: "bearer"},
+				},
+			},
+			mustFailOnStart: true,
 		},
 	}
 
@@ -178,13 +202,17 @@ func TestCreateTracesExporter(t *testing.T) {
 			factory := NewFactory()
 			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
-
 			if tt.mustFail {
 				assert.NotNil(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, consumer)
-
+				err = consumer.Start(context.Background(), componenttest.NewNopHost())
+				if tt.mustFailOnStart {
+					assert.Error(t, err)
+					return
+				}
+				assert.NoError(t, err)
 				err = consumer.Shutdown(context.Background())
 				if err != nil {
 					// Since the endpoint of OTLP exporter doesn't actually exist,

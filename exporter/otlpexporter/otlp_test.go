@@ -188,12 +188,12 @@ func TestSendTraces(t *testing.T) {
 	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
+
 	defer func() {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	}()
 
 	host := componenttest.NewNopHost()
-
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.

@@ -16,12 +16,16 @@ package confighttp
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/rs/cors"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/middleware"
 )
@@ -49,10 +53,13 @@ type HTTPClientSettings struct {
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+
+	// Auth configuration for outgoing HTTP calls.
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -73,6 +80,27 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 		clientTransport = &headerRoundTripper{
 			transport: transport,
 			headers:   hcs.Headers,
+		}
+	}
+
+	if hcs.Auth != nil {
+		if ext == nil {
+			return nil, fmt.Errorf("extensions configuration not found")
+		}
+
+		componentID, cperr := config.NewIDFromString(hcs.Auth.AuthenticatorName)
+		if cperr != nil {
+			return nil, cperr
+		}
+
+		httpCustomAuthRoundTripper, aerr := configauth.GetHTTPClientAuthenticator(ext, componentID)
+		if aerr != nil {
+			return nil, aerr
+		}
+
+		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
 		}
 	}
 

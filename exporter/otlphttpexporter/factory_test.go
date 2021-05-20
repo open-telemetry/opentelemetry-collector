@@ -24,7 +24,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -62,9 +64,10 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		name     string
-		config   Config
-		mustFail bool
+		name            string
+		config          Config
+		mustFail        bool
+		mustFailOnStart bool
 	}{
 		{
 			name: "NoEndpoint",
@@ -128,7 +131,20 @@ func TestCreateTracesExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail: true,
+			mustFail:        false,
+			mustFailOnStart: true,
+		},
+		{
+			name: "ErrorWithAuthAndNoExtensionConfiguration",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: endpoint,
+					Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+				},
+			},
+			mustFail:        false,
+			mustFailOnStart: true,
 		},
 	}
 
@@ -143,6 +159,10 @@ func TestCreateTracesExporter(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, consumer)
+				err = consumer.Start(context.Background(), componenttest.NewNopHost())
+				if tt.mustFailOnStart {
+					assert.Error(t, err)
+				}
 
 				err = consumer.Shutdown(context.Background())
 				if err != nil {

@@ -40,7 +40,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.ToDialOptions()
+	opts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
 	assert.Len(t, opts, 1)
 }
@@ -63,12 +63,17 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		WaitForReady:    true,
-		PerRPCAuth:      nil,
 		BalancerName:    "round_robin",
+		Auth:            &configauth.Authentication{AuthenticatorName: "testauth"},
 	}
-	opts, err := gcs.ToDialOptions()
+
+	ext := map[config.ComponentID]component.Extension{
+		config.NewID("testauth"): &configauth.MockClientAuthenticator{},
+	}
+
+	opts, err := gcs.ToDialOptions(ext)
 	assert.NoError(t, err)
-	assert.Len(t, opts, 6)
+	assert.Len(t, opts, 7)
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
@@ -112,30 +117,92 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
-
-	// sanity check
-	_, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
-	require.NoError(t, err)
-
-	// test
-	gss.Auth = &configauth.Authentication{
-		AuthenticatorName: "mock",
+	tests := []struct {
+		name     string
+		settings GRPCServerSettings
+		mustErr  bool
+		ext      map[config.ComponentID]component.Extension
+	}{
+		{
+			name: "no error",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "mock",
+				},
+			},
+			mustErr: false,
+			ext: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &configauth.MockAuthenticator{},
+			},
+		},
+		{
+			name: "fail on non existent extension configuration",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "mock",
+				},
+			},
+			mustErr: true,
+			ext:     map[config.ComponentID]component.Extension{},
+		},
+		{
+			name: "fail on no authenticator string",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "",
+				},
+			},
+			mustErr: true,
+			ext: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &configauth.MockAuthenticator{},
+			},
+		},
+		{
+			name: "fail on no configuration",
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:1234",
+					Transport: "tcp",
+				},
+				Auth: &configauth.Authentication{
+					AuthenticatorName: "doesnt_exist",
+				},
+			},
+			mustErr: true,
+			ext:     nil,
+		},
 	}
-	ext := map[config.ComponentID]component.Extension{
-		config.NewID("mock"): &configauth.MockAuthenticator{},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := tt.settings.ToServerOption(tt.ext)
+			if tt.mustErr {
+				require.Error(t, err)
+				require.Nil(t, opts)
+				return
+			}
+			require.NoError(t, err)
+			assert.NotNil(t, opts)
+		})
 	}
-	opts, err := gss.ToServerOption(ext)
-
-	// verify
-	assert.NoError(t, err)
-	assert.NotNil(t, opts)
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
 	tests := []struct {
 		settings GRPCClientSettings
 		err      string
+		ext      map[config.ComponentID]component.Extension
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
@@ -191,10 +258,36 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				BalancerName:    "test",
 			},
 		},
+		{
+			err: "idStr must have non empty type",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{},
+			},
+			ext: map[config.ComponentID]component.Extension{
+				config.NewID("mock"): &configauth.MockClientAuthenticator{},
+			},
+		},
+		{
+			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
+			},
+			ext: map[config.ComponentID]component.Extension{},
+		},
+		{
+			err: "no extensions configuration available",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
+			},
+			ext: nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions()
+			opts, err := test.settings.ToDialOptions(test.ext)
 			assert.Nil(t, opts)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
@@ -209,9 +302,8 @@ func TestUseSecure(t *testing.T) {
 		Compression: "",
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
-		PerRPCAuth:  nil,
 	}
-	dialOpts, err := gcs.ToDialOptions()
+	dialOpts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
 	assert.Equal(t, len(dialOpts), 1)
 }
@@ -430,7 +522,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			clientOpts, errClient := gcs.ToDialOptions()
+			clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
@@ -477,7 +569,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	clientOpts, errClient := gcs.ToDialOptions()
+	clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)
@@ -494,34 +586,4 @@ type grpcTraceServer struct{}
 
 func (gts *grpcTraceServer) Export(context.Context, *otelcol.ExportTraceServiceRequest) (*otelcol.ExportTraceServiceResponse, error) {
 	return &otelcol.ExportTraceServiceResponse{}, nil
-}
-
-func TestWithPerRPCAuthBearerToken(t *testing.T) {
-	// prepare
-	// test
-	gcs := &GRPCClientSettings{
-		PerRPCAuth: &PerRPCAuthConfig{
-			AuthType:    "bearer",
-			BearerToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-		},
-	}
-	dialOpts, err := gcs.ToDialOptions()
-
-	// verify
-	assert.NoError(t, err)
-	assert.Len(t, dialOpts, 2) // WithInsecure and WithPerRPCCredentials
-}
-
-func TestWithPerRPCAuthInvalidAuthType(t *testing.T) {
-	// test
-	gcs := &GRPCClientSettings{
-		PerRPCAuth: &PerRPCAuthConfig{
-			AuthType: "non-existing",
-		},
-	}
-	dialOpts, err := gcs.ToDialOptions()
-
-	// verify
-	assert.Error(t, err)
-	assert.Nil(t, dialOpts)
 }

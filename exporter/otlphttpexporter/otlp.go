@@ -31,6 +31,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -65,24 +66,30 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporter, error) {
 		}
 	}
 
-	client, err := oCfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
-	if oCfg.Compression != "" {
-		if strings.ToLower(oCfg.Compression) == configgrpc.CompressionGzip {
-			client.Transport = middleware.NewCompressRoundTripper(client.Transport)
-		} else {
-			return nil, fmt.Errorf("unsupported compression type %q", oCfg.Compression)
-		}
-	}
-
+	// client construction is deferred to start
 	return &exporter{
 		config: oCfg,
-		client: client,
 		logger: logger,
 	}, nil
+}
+
+// start actually creates the HTTP client. The client construction is deferred till this point as this
+// is the only place we get hold of Extensions which are required to construct auth round tripper.
+func (e *exporter) start(_ context.Context, host component.Host) error {
+	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	if err != nil {
+		return err
+	}
+
+	if e.config.Compression != "" {
+		if strings.ToLower(e.config.Compression) == configgrpc.CompressionGzip {
+			client.Transport = middleware.NewCompressRoundTripper(client.Transport)
+		} else {
+			return fmt.Errorf("unsupported compression type %q", e.config.Compression)
+		}
+	}
+	e.client = client
+	return nil
 }
 
 func (e *exporter) pushTraceData(ctx context.Context, traces pdata.Traces) error {
