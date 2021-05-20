@@ -16,6 +16,7 @@ package zipkinv2
 
 import (
 	"encoding/json"
+	"errors"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
@@ -25,42 +26,45 @@ import (
 )
 
 var (
-	_ serializer.TracesMarshaler   = (*Encoder)(nil)
-	_ serializer.TracesUnmarshaler = (*Encoder)(nil)
+	_ serializer.TracesMarshaler   = (*Protobuf)(nil)
+	_ serializer.TracesUnmarshaler = (*Protobuf)(nil)
+	_ serializer.TracesMarshaler   = (*JSON)(nil)
+	_ serializer.TracesUnmarshaler = (*JSON)(nil)
 )
 
-type Encoder struct {
-	// Encoding is the format Zipkin is serialized to.
-	Encoding serializer.Encoding
+type Protobuf struct {
 }
 
-func (z *Encoder) UnmarshalTraces(data []byte) (interface{}, error) {
-	switch z.Encoding {
-	case serializer.Protobuf:
-		return zipkin_proto3.ParseSpans(data, false)
-	case serializer.JSON:
-		var spans []*zipkinmodel.SpanModel
-		if err := json.Unmarshal(data, &spans); err != nil {
-			return nil, err
-		}
-		return spans, nil
-	default:
-		return nil, serializer.NewErrUnavailableEncoding(z.Encoding)
-	}
+type JSON struct {
 }
 
-func (z *Encoder) MarshalTraces(model interface{}) ([]byte, error) {
+func (z *Protobuf) UnmarshalTraces(data []byte) (interface{}, error) {
+	return zipkin_proto3.ParseSpans(data, false)
+}
+
+func (z *Protobuf) MarshalTraces(model interface{}) ([]byte, error) {
 	spans, ok := model.([]*zipkinmodel.SpanModel)
 	if !ok {
 		return nil, translator.NewErrIncompatibleType(spans, model)
 	}
 
-	switch z.Encoding {
 	// TODO: need to extract code from zipkinreceiver
-	// case protocols.Protobuf:
-	case serializer.JSON:
-		return json.Marshal(spans)
-	default:
-		return nil, serializer.NewErrUnavailableEncoding(z.Encoding)
+	return nil, errors.New("Unimplemented")
+}
+
+func (z *JSON) UnmarshalTraces(data []byte) (interface{}, error) {
+	var spans []*zipkinmodel.SpanModel
+	if err := json.Unmarshal(data, &spans); err != nil {
+		return nil, err
 	}
+	return spans, nil
+}
+
+func (z *JSON) MarshalTraces(model interface{}) ([]byte, error) {
+	spans, ok := model.([]*zipkinmodel.SpanModel)
+	if !ok {
+		return nil, translator.NewErrIncompatibleType(spans, model)
+	}
+
+	return json.Marshal(spans)
 }
