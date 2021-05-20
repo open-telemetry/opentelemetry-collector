@@ -14,17 +14,17 @@
 
 package serializer
 
-// MetricsSerializer encodes protocol-specific data model into bytes.
-type MetricsSerializer interface {
-	SerializeMetrics(model interface{}) ([]byte, error)
+// MetricsMarshaler encodes protocol-specific data model into bytes.
+type MetricsMarshaler interface {
+	MarshalMetrics(model interface{}) ([]byte, error)
 }
 
-// TracesSerializer encodes protocol-specific data model into bytes.
-type TracesSerializer interface {
-	SerializeTraces(model interface{}) ([]byte, error)
+// TracesMarshaler encodes protocol-specific data model into bytes.
+type TracesMarshaler interface {
+	MarshalTraces(model interface{}) ([]byte, error)
 }
 
-// LogsSerializer encodes protocol-specific data model into bytes.
-type LogsSerializer interface {
-	SerializeLogs(model interface{}) ([]byte, error)
+// LogsMarshaler encodes protocol-specific data model into bytes.
+type LogsMarshaler interface {
+	MarshalLogs(model interface{}) ([]byte, error)
 }

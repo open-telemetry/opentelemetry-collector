@@ -14,17 +14,17 @@
 
 package serializer
 
-// MetricsDeserializer decodes bytes into protocol-specific data model.
-type MetricsDeserializer interface {
-	DeserializeMetrics(buf []byte) (interface{}, error)
+// MetricsUnmarshaler decodes bytes into protocol-specific data model.
+type MetricsUnmarshaler interface {
+	UnmarshalMetrics(buf []byte) (interface{}, error)
 }
 
-// TracesDeserializer decodes bytes into protocol-specific data model.
-type TracesDeserializer interface {
-	DeserializeTraces(buf []byte) (interface{}, error)
+// TracesUnmarshaler decodes bytes into protocol-specific data model.
+type TracesUnmarshaler interface {
+	UnmarshalTraces(buf []byte) (interface{}, error)
 }
 
-// LogsDeserializer decodes bytes into protocol-specific data model.
-type LogsDeserializer interface {
-	DeserializeLogs(buf []byte) (interface{}, error)
+// LogsUnmarshaler decodes bytes into protocol-specific data model.
+type LogsUnmarshaler interface {
+	UnmarshalLogs(buf []byte) (interface{}, error)
 }
