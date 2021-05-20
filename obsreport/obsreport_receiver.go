@@ -176,8 +176,7 @@ func (rec *Receiver) StartTraceDataReceiveOp(
 		opt...)
 }
 
-// DEPRECATED
-// StartTraceDataReceiveOp is called when a request is received from a client.
+// StartTraceDataReceiveOp is deprecated but is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartTraceDataReceiveOp(
@@ -210,8 +209,7 @@ func (rec *Receiver) EndTraceDataReceiveOp(
 	)
 }
 
-// DEPRECATED
-// EndTraceDataReceiveOp completes the receive operation that was started with
+// EndTraceDataReceiveOp is deprecated but completes the receive operation that was started with
 // StartTraceDataReceiveOp.
 func EndTraceDataReceiveOp(
 	receiverCtx context.Context,
@@ -242,8 +240,7 @@ func (rec *Receiver) StartLogsReceiveOp(
 		opt...)
 }
 
-// DEPRECATED
-// StartLogsReceiveOp is called when a request is received from a client.
+// StartLogsReceiveOp is deprecated but is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartLogsReceiveOp(
@@ -276,8 +273,7 @@ func (rec *Receiver) EndLogsReceiveOp(
 	)
 }
 
-// DEPRECATED
-// EndLogsReceiveOp completes the receive operation that was started with
+// EndLogsReceiveOp is deprecated but completes the receive operation that was started with
 // StartLogsReceiveOp.
 func EndLogsReceiveOp(
 	receiverCtx context.Context,
@@ -308,8 +304,7 @@ func (rec *Receiver) StartMetricsReceiveOp(
 		opt...)
 }
 
-// DEPRECATED
-// StartMetricsReceiveOp is called when a request is received from a client.
+// StartMetricsReceiveOp is deprecated but is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartMetricsReceiveOp(
@@ -342,8 +337,7 @@ func (rec *Receiver) EndMetricsReceiveOp(
 	)
 }
 
-// DEPRECATED
-// EndMetricsReceiveOp completes the receive operation that was started with
+// EndMetricsReceiveOp is deprecated but completes the receive operation that was started with
 // StartMetricsReceiveOp.
 func EndMetricsReceiveOp(
 	receiverCtx context.Context,
