@@ -18,20 +18,7 @@ import (
 	"fmt"
 )
 
-// errIncompatibleType details a type conversion error during translation.
-type errIncompatibleType struct {
-	given    interface{}
-	expected interface{}
-}
-
-func (i *errIncompatibleType) Error() string {
-	return fmt.Sprintf("expected model type %T but given %T", i.expected, i.given)
-}
-
 // NewErrIncompatibleType returns errIncompatibleType instance
-func NewErrIncompatibleType(expected, given interface{}) *errIncompatibleType {
-	return &errIncompatibleType{
-		given:    given,
-		expected: expected,
-	}
+func NewErrIncompatibleType(expected, given interface{}) error {
+	return fmt.Errorf("expected model type %T but given %T", expected, given)
 }
