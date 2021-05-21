@@ -1,6 +1,6 @@
 # Authenticator - OAuth2 Client Credentials
 
-This extension implements a `configauth.Authenticator` and is to be used by HTTP and gRPC based exporters.
+This extension implements a `configauth.ClientAuthenticator` and is to be used by HTTP and gRPC based exporters.
 The authenticator type has to be set to `oauth2`.
 
 ## Configuration
