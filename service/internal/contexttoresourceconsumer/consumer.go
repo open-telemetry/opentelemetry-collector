@@ -19,7 +19,6 @@ package contexttoresourceconsumer
 
 import (
 	"context"
-	"strings"
 
 	"go.opentelemetry.io/collector/auth"
 	"go.opentelemetry.io/collector/consumer"
@@ -64,56 +63,36 @@ func NewLogs(toConsume consumer.Logs) (consumer.Logs, error) {
 }
 
 func (tc wrappedConsumer) consumeTraces(ctx context.Context, td pdata.Traces) error {
-	raw, subject, groups := extractFromContext(ctx)
-
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rs := td.ResourceSpans().At(i).Resource()
-		injectIntoResource(rs, raw, subject, groups)
-	}
-
+	auth := extractFromContext(ctx)
+	td = pdata.TracesWithAuth(td, auth)
 	return tc.traces.ConsumeTraces(ctx, td)
 }
 
 func (tc wrappedConsumer) consumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	raw, subject, groups := extractFromContext(ctx)
-
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rs := md.ResourceMetrics().At(i).Resource()
-		injectIntoResource(rs, raw, subject, groups)
-	}
-
+	auth := extractFromContext(ctx)
+	md = pdata.MetricsWithAuth(md, auth)
 	return tc.metrics.ConsumeMetrics(ctx, md)
 }
 
 func (tc wrappedConsumer) consumeLogs(ctx context.Context, ld pdata.Logs) error {
-	raw, subject, groups := extractFromContext(ctx)
-
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rs := ld.ResourceLogs().At(i).Resource()
-		injectIntoResource(rs, raw, subject, groups)
-	}
-
+	auth := extractFromContext(ctx)
+	ld = pdata.LogsWithAuth(ld, auth)
 	return tc.logs.ConsumeLogs(ctx, ld)
 }
 
-func extractFromContext(ctx context.Context) (raw, subject, groups string) {
-	raw, _ = auth.RawFromContext(ctx)
-	subject, _ = auth.SubjectFromContext(ctx)
-	groupsSlice, _ := auth.GroupsFromContext(ctx)
-	groups = strings.Join(groupsSlice, ",")
-	return
-}
+func extractFromContext(ctx context.Context) *pdata.Auth {
+	raw, _ := auth.RawFromContext(ctx)
+	subject, _ := auth.SubjectFromContext(ctx)
+	groups, _ := auth.GroupsFromContext(ctx)
 
-func injectIntoResource(rs pdata.Resource, raw, subject, groups string) {
-	if len(raw) > 0 {
-		rs.Attributes().UpsertString(auth.RawAttributeKey, raw)
+	// raw and subject are required, no need to check the groups here
+	if len(raw) == 0 && len(subject) == 0 {
+		return nil
 	}
 
-	if len(subject) > 0 {
-		rs.Attributes().UpsertString(auth.SubjectAttributeKey, subject)
-	}
-
-	if len(groups) > 0 {
-		rs.Attributes().UpsertString(auth.MembershipsAttributeKey, groups)
+	return &pdata.Auth{
+		Raw:     raw,
+		Subject: subject,
+		Groups:  groups,
 	}
 }

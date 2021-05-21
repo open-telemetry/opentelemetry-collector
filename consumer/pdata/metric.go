@@ -44,12 +44,29 @@ func (at AggregationTemporality) String() string {
 // Outside of the core repository the metrics pipeline cannot be converted to the new model since data.MetricData is
 // part of the internal package.
 type Metrics struct {
+	auth *Auth
 	orig *otlpcollectormetrics.ExportMetricsServiceRequest
 }
 
 // NewMetrics creates a new Metrics.
 func NewMetrics() Metrics {
 	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
+}
+
+// NewMetricsWithAuth creates a new Metrics with the given Auth information.
+func NewMetricsWithAuth(auth *Auth) Metrics {
+	return Metrics{
+		orig: &otlpcollectormetrics.ExportMetricsServiceRequest{},
+		auth: auth,
+	}
+}
+
+// MetricsWithAuth creates a new Metrics containing the given Auth information.
+func MetricsWithAuth(metrics Metrics, auth *Auth) Metrics {
+	return Metrics{
+		orig: metrics.orig,
+		auth: auth,
+	}
 }
 
 // MetricsFromInternalRep creates Metrics from the internal representation.
@@ -86,7 +103,7 @@ func (md Metrics) ToOtlpProtoBytes() ([]byte, error) {
 
 // Clone returns a copy of MetricData.
 func (md Metrics) Clone() Metrics {
-	cloneMd := NewMetrics()
+	cloneMd := NewMetricsWithAuth(md.auth)
 	md.ResourceMetrics().CopyTo(cloneMd.ResourceMetrics())
 	return cloneMd
 }
@@ -150,6 +167,11 @@ func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int
 		}
 	}
 	return
+}
+
+// Auth returns a copy of the Auth stored as part of this Metrics.
+func (md Metrics) Auth() *Auth {
+	return md.auth
 }
 
 // MetricDataType specifies the type of data in a Metric.

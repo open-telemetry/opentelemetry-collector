@@ -29,12 +29,29 @@ import (
 // Must use NewLogs functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Logs struct {
+	auth *Auth
 	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
 
 // NewLogs creates a new Logs.
 func NewLogs() Logs {
 	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+}
+
+// NewLogsWithAuth creates a new Logs with the given Auth information.
+func NewLogsWithAuth(auth *Auth) Logs {
+	return Logs{
+		orig: &otlpcollectorlog.ExportLogsServiceRequest{},
+		auth: auth,
+	}
+}
+
+// LogsWithAuth creates a new Logs containing the given Auth information.
+func LogsWithAuth(logs Logs, auth *Auth) Logs {
+	return Logs{
+		orig: logs.orig,
+		auth: auth,
+	}
 }
 
 // LogsFromInternalRep creates the internal Logs representation from the ProtoBuf. Should
@@ -73,7 +90,7 @@ func (ld Logs) ToOtlpProtoBytes() ([]byte, error) {
 
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
-	cloneLd := NewLogs()
+	cloneLd := NewLogsWithAuth(ld.auth)
 	ld.ResourceLogs().CopyTo(cloneLd.ResourceLogs())
 	return cloneLd
 }
@@ -102,6 +119,11 @@ func (ld Logs) OtlpProtoSize() int {
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)
+}
+
+// Auth returns a copy of the Auth stored as part of this Logs.
+func (ld Logs) Auth() *Auth {
+	return ld.auth
 }
 
 // SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.

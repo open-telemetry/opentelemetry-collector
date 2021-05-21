@@ -28,10 +28,9 @@ import (
 )
 
 var (
-	raw            = "jdoe:password"
-	sub            = "jdoe"
-	groups         = []string{"tenant1", "tenant2"}
-	expectedGroups = "tenant1,tenant2"
+	raw    = "jdoe:password"
+	sub    = "jdoe"
+	groups = []string{"tenant1", "tenant2"}
 )
 
 func TestTraces(t *testing.T) {
@@ -62,10 +61,7 @@ func TestTraces(t *testing.T) {
 
 			// verify
 			for _, trace := range next.AllTraces() {
-				for i := 0; i < trace.ResourceSpans().Len(); i++ {
-					rs := trace.ResourceSpans().At(i).Resource()
-					assertValuesInResource(t, rs, raw, sub, expectedGroups)
-				}
+				assertValuesInAuth(t, trace.Auth(), raw, sub, groups)
 			}
 
 		})
@@ -99,10 +95,7 @@ func TestMetrics(t *testing.T) {
 
 			// verify
 			for _, metric := range next.AllMetrics() {
-				for i := 0; i < metric.ResourceMetrics().Len(); i++ {
-					rs := metric.ResourceMetrics().At(i).Resource()
-					assertValuesInResource(t, rs, raw, sub, expectedGroups)
-				}
+				assertValuesInAuth(t, metric.Auth(), raw, sub, groups)
 			}
 		})
 	}
@@ -140,33 +133,17 @@ func TestLogs(t *testing.T) {
 
 			// verify
 			for _, log := range next.AllLogs() {
-				for i := 0; i < log.ResourceLogs().Len(); i++ {
-					rs := log.ResourceLogs().At(i).Resource()
-					assertValuesInResource(t, rs, raw, sub, expectedGroups)
-				}
+				assertValuesInAuth(t, log.Auth(), raw, sub, groups)
 			}
 		})
 	}
 }
 
-func assertValuesInResource(t *testing.T, rs pdata.Resource, raw, sub, groups string) {
-	{
-		v, exists := rs.Attributes().Get(auth.RawAttributeKey)
-		assert.True(t, exists)
-		assert.Equal(t, raw, v.StringVal())
-	}
-
-	{
-		v, exists := rs.Attributes().Get(auth.SubjectAttributeKey)
-		assert.True(t, exists)
-		assert.Equal(t, sub, v.StringVal())
-	}
-
-	{
-		v, exists := rs.Attributes().Get(auth.MembershipsAttributeKey)
-		assert.True(t, exists)
-		assert.Equal(t, groups, v.StringVal())
-	}
+func assertValuesInAuth(t *testing.T, auth *pdata.Auth, raw, sub string, groups []string) {
+	assert.NotNil(t, auth)
+	assert.Equal(t, raw, auth.Raw)
+	assert.Equal(t, sub, auth.Subject)
+	assert.Equal(t, groups, auth.Groups)
 }
 
 func prepareContext() context.Context {

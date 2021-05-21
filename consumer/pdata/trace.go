@@ -24,12 +24,29 @@ import (
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
 type Traces struct {
+	auth *Auth
 	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
 
 // NewTraces creates a new Traces.
 func NewTraces() Traces {
 	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
+}
+
+// NewTracesWithAuth creates a new Traces with the given Auth information.
+func NewTracesWithAuth(auth *Auth) Traces {
+	return Traces{
+		orig: &otlpcollectortrace.ExportTraceServiceRequest{},
+		auth: auth,
+	}
+}
+
+// TracesWithAuth creates a new Traces containing the given Auth information.
+func TracesWithAuth(traces Traces, auth *Auth) Traces {
+	return Traces{
+		orig: traces.orig,
+		auth: auth,
+	}
 }
 
 // TracesFromInternalRep creates Traces from the internal representation.
@@ -67,7 +84,7 @@ func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
 
 // Clone returns a copy of Traces.
 func (td Traces) Clone() Traces {
-	cloneTd := NewTraces()
+	cloneTd := NewTracesWithAuth(td.auth)
 	td.ResourceSpans().CopyTo(cloneTd.ResourceSpans())
 	return cloneTd
 }
@@ -92,9 +109,14 @@ func (td Traces) OtlpProtoSize() int {
 	return td.orig.Size()
 }
 
-// ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
+// ResourceSpans returns the ResourceSpansSlice associated with this Traces.
 func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&td.orig.ResourceSpans)
+}
+
+// Auth returns a copy of the Auth stored as part of this Traces.
+func (td Traces) Auth() *Auth {
+	return td.auth
 }
 
 // TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header

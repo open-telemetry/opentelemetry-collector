@@ -383,22 +383,16 @@ func TestJunctionUsesContextToResourceConsumer(t *testing.T) {
 
 	{ // verify the traces part
 		c := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
-		val, found := c.Traces[0].ResourceSpans().At(0).Resource().Attributes().Get("__auth_subject")
-		assert.True(t, found)
-		assert.Equal(t, "jdoe", val.StringVal())
+		assert.Equal(t, "jdoe", c.Traces[0].Auth().Subject)
 	}
 
 	{ // verify the metrics part
 		c := exporter.getMetricExporter().(*testcomponents.ExampleExporterConsumer)
-		val, found := c.Metrics[0].ResourceMetrics().At(0).Resource().Attributes().Get("__auth_subject")
-		assert.True(t, found)
-		assert.Equal(t, "jdoe", val.StringVal())
+		assert.Equal(t, "jdoe", c.Metrics[0].Auth().Subject)
 	}
 
 	{ // verify the logs part
 		c := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
-		val, found := c.Logs[0].ResourceLogs().At(0).Resource().Attributes().Get("__auth_subject")
-		assert.True(t, found)
-		assert.Equal(t, "jdoe", val.StringVal())
+		assert.Equal(t, "jdoe", c.Logs[0].Auth().Subject)
 	}
 }
