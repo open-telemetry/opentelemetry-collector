@@ -35,7 +35,9 @@ import (
 type configErrorCode int
 
 const (
-	_ configErrorCode = iota // Skip 0, start errors codes from 1.
+	// Skip 0, start errors codes from 1.
+	_ configErrorCode = iota
+
 	errInvalidTypeAndNameKey
 	errUnknownType
 	errDuplicateName
@@ -43,8 +45,11 @@ const (
 )
 
 type configError struct {
-	msg  string          // Human readable error message.
-	code configErrorCode // Internal error code.
+	// Human readable error message.
+	msg string
+
+	// Internal error code.
+	code configErrorCode
 }
 
 func (e *configError) Error() string {
