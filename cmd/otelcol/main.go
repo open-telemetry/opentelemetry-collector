@@ -37,12 +37,12 @@ func main() {
 		Version:     version.Version,
 	}
 
-	if err := run(service.AppSettings{BuildInfo: info, Factories: factories}); err != nil {
+	if err := run(service.ColSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(settings service.AppSettings) error {
+func runInteractive(settings service.ColSettings) error {
 	app, err := service.New(settings)
 	if err != nil {
 		return fmt.Errorf("failed to construct the collector server: %w", err)
