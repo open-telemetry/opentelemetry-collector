@@ -163,7 +163,7 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
+// ResourceSpans is a collection of spans from a Resource.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
