@@ -28,9 +28,9 @@ type TracesEncoder struct {
 	serialize serializer.TracesMarshaler
 }
 
-// Encode pdata.Traces into bytes.
+// Encode pdata.Traces into bytes. On error []byte is nil.
 func (t *TracesEncoder) Encode(td pdata.Traces) ([]byte, error) {
-	model, err := t.translate.FromTraces(td)
+	model, err := t.translate.EncodeTraces(td)
 	if err != nil {
 		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
 	}

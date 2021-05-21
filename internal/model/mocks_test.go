@@ -54,12 +54,12 @@ type mockTranslator struct {
 	mock.Mock
 }
 
-func (m *mockTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
+func (m *mockTranslator) DecodeTraces(src interface{}) (pdata.Traces, error) {
 	args := m.Called(src)
 	return args.Get(0).(pdata.Traces), args.Error(1)
 }
 
-func (m *mockTranslator) FromTraces(md pdata.Traces) (interface{}, error) {
+func (m *mockTranslator) EncodeTraces(md pdata.Traces) (interface{}, error) {
 	args := m.Called(md)
 	return args.Get(0), args.Error(1)
 }

@@ -34,7 +34,7 @@ func TestTracesEncoder_TranslationError(t *testing.T) {
 
 	td := pdata.NewTraces()
 
-	translate.On("FromTraces", td).Return(nil, errors.New("translation failed"))
+	translate.On("EncodeTraces", td).Return(nil, errors.New("translation failed"))
 
 	_, err := d.Encode(td)
 
@@ -54,7 +54,7 @@ func TestTracesEncoder_SerializeError(t *testing.T) {
 	td := pdata.NewTraces()
 	expectedModel := struct{}{}
 
-	translate.On("FromTraces", td).Return(expectedModel, nil)
+	translate.On("EncodeTraces", td).Return(expectedModel, nil)
 	serialize.On("MarshalTraces", expectedModel).Return(nil, errors.New("serialization failed"))
 
 	_, err := d.Encode(td)
@@ -76,7 +76,7 @@ func TestTracesEncoder_Encode(t *testing.T) {
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
-	translate.On("FromTraces", expectedTraces).Return(expectedModel, nil)
+	translate.On("EncodeTraces", expectedTraces).Return(expectedModel, nil)
 	serialize.On("MarshalTraces", expectedModel).Return(expectedBytes, nil)
 
 	actualBytes, err := d.Encode(expectedTraces)

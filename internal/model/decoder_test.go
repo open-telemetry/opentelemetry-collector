@@ -56,7 +56,7 @@ func TestTracesDecoder_TranslationError(t *testing.T) {
 	expectedModel := struct{}{}
 
 	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, nil)
-	translate.On("ToTraces", expectedModel).Return(pdata.NewTraces(), errors.New("translation failed"))
+	translate.On("DecodeTraces", expectedModel).Return(pdata.NewTraces(), errors.New("translation failed"))
 
 	_, err := d.Decode(expectedBytes)
 
@@ -78,7 +78,7 @@ func TestTracesDecoder_Decode(t *testing.T) {
 	expectedModel := struct{}{}
 
 	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, nil)
-	translate.On("ToTraces", expectedModel).Return(expectedTraces, nil)
+	translate.On("DecodeTraces", expectedModel).Return(expectedTraces, nil)
 
 	actualTraces, err := d.Decode(expectedBytes)
 

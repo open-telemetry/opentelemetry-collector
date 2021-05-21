@@ -28,15 +28,15 @@ type TracesDecoder struct {
 	serialize serializer.TracesUnmarshaler
 }
 
-// Decode bytes into pdata.Traces.
+// Decode bytes into pdata.Traces. On error pdata.Traces is invalid.
 func (t *TracesDecoder) Decode(buf []byte) (pdata.Traces, error) {
 	model, err := t.serialize.UnmarshalTraces(buf)
 	if err != nil {
-		return pdata.NewTraces(), fmt.Errorf("unmarshal failed: %w", err)
+		return pdata.Traces{}, fmt.Errorf("unmarshal failed: %w", err)
 	}
-	td, err := t.translate.ToTraces(model)
+	td, err := t.translate.DecodeTraces(model)
 	if err != nil {
-		return pdata.NewTraces(), fmt.Errorf("converting model to pdata failed: %w", err)
+		return pdata.Traces{}, fmt.Errorf("converting model to pdata failed: %w", err)
 	}
 	return td, nil
 }
