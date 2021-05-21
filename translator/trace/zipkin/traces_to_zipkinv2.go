@@ -25,6 +25,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idsutil "go.opentelemetry.io/collector/internal/idsutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -358,10 +359,10 @@ func isIPv6Address(ipStr string) bool {
 }
 
 func convertTraceID(t pdata.TraceID) zipkinmodel.TraceID {
-	h, l := tracetranslator.TraceIDToUInt64Pair(t)
+	h, l := idsutil.TraceIDToUInt64Pair(t)
 	return zipkinmodel.TraceID{High: h, Low: l}
 }
 
 func convertSpanID(s pdata.SpanID) zipkinmodel.ID {
-	return zipkinmodel.ID(tracetranslator.SpanIDToUInt64(s))
+	return zipkinmodel.ID(idsutil.SpanIDToUInt64(s))
 }
