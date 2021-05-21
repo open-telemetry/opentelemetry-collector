@@ -168,6 +168,7 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
+          name: publish-check-main
           requires:
             - cross-compile
             - loadtest-with-github-reports
@@ -179,6 +180,7 @@ workflows:
             branches:
               only: main
       - publish-check:
+          name: publish-check-pr
           requires:
             - cross-compile
             - loadtest
@@ -378,7 +380,7 @@ jobs:
 
   build-package:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2004:202104-01
     parameters:
       package_type:
         type: enum
