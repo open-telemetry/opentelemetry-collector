@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
+	"go.opentelemetry.io/collector/extension/oauth2authextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/testutil"
@@ -72,6 +73,17 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
 				cfg.BearerToken = "dummysecret"
+				return cfg
+			},
+		},
+		{
+			extension: "oauth2",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["oauth2"].CreateDefaultConfig().(*oauth2authextension.OAuth2ClientSettings)
+				cfg.ClientSecret = "dummysecret"
+				cfg.ClientID = "dummyid"
+				cfg.Scopes = []string{"scope.dummy"}
+				cfg.TokenURL = "https://some.url/default/oauth/token"
 				return cfg
 			},
 		},

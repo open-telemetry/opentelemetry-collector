@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/extension/authoidcextension"
 	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
+	"go.opentelemetry.io/collector/extension/oauth2authextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
@@ -61,6 +62,7 @@ func Components() (
 		authoidcextension.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		healthcheckextension.NewFactory(),
+		oauth2authextension.NewFactory(),
 		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
 	)
