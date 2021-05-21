@@ -36,7 +36,7 @@ const (
 	// either environment variables or config sources.
 	expandPrefixChar = '$'
 	// configSourceNameDelimChar is the char used to terminate the name of config source
-	// when it is used to retrieve values to inject in the configuration
+	// when it is used to retrieve values to inject in the configuration.
 	configSourceNameDelimChar = ':'
 )
 
@@ -47,7 +47,7 @@ type (
 
 // Manager is used to inject data from config sources into a configuration and also
 // to monitor for updates on the items injected into the configuration.  All methods
-// of a Manager must be called only once and have a expected sequence:
+// of a Manager must be called only once and have an expected sequence:
 //
 // 1. NewManager to create a new instance;
 // 2. Resolve to inject the data from config sources into a configuration;
@@ -385,7 +385,8 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 			case s[j+1] == '{':
 				// Bracketed usage, consume everything until first '}' exactly as os.Expand.
 				expandableContent, w = getShellName(s[j+1:])
-				expandableContent = strings.Trim(expandableContent, " ") // Allow for some spaces.
+				// Allow for some spaces.
+				expandableContent = strings.Trim(expandableContent, " ")
 				if len(expandableContent) > 1 && strings.Contains(expandableContent, string(configSourceNameDelimChar)) {
 					// Bracket expandableContent contains ':' treating it as a config source.
 					cfgSrcName, _ = getShellName(expandableContent)
@@ -613,12 +614,14 @@ func getShellName(s string) (string, int) {
 		for i := 1; i < len(s); i++ {
 			if s[i] == '}' {
 				if i == 1 {
-					return "", 2 // Bad syntax; eat "${}"
+					// Bad syntax; eat "${}"
+					return "", 2
 				}
 				return s[1:i], i + 1
 			}
 		}
-		return "", 1 // Bad syntax; eat "${"
+		// Bad syntax; eat "${"
+		return "", 1
 	case isShellSpecialVar(s[0]):
 		return s[0:1], 1
 	}

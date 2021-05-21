@@ -167,7 +167,7 @@ func checkStructFieldTags(f reflect.StructField) error {
 
 	switch f.Type.Kind() {
 	case reflect.Struct:
-		// It is another struct, continue down-level
+		// It is another struct, continue down-level.
 		return validateConfigDataType(f.Type)
 
 	case reflect.Map, reflect.Slice, reflect.Array:
