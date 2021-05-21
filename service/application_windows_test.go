@@ -34,7 +34,7 @@ func TestWindowsService_Execute(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	s := NewWindowsService(svcSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
+	s := NewWindowsService(AppSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
 
 	appDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)

@@ -17,8 +17,6 @@ package component
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -60,16 +58,6 @@ type Component interface {
 	// the same or different configuration may be created and started (this may happen
 	// for example if we want to restart the component).
 	Shutdown(ctx context.Context) error
-}
-
-// Settings is passed to ReceiverFactory.Create* functions.
-type Settings struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// BuildInfo can be used by components for informational purposes
-	BuildInfo BuildInfo
 }
 
 // Kind represents component kinds.
