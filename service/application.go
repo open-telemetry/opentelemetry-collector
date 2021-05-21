@@ -80,20 +80,20 @@ type Application struct {
 }
 
 // New creates and returns a new instance of Application.
-func New(set Settings) (*Application, error) {
-	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
+func New(set ApplicationSettings) (*Application, error) {
+	if err := configcheck.ValidateConfigFromFactories(set.CommonSettings.Factories); err != nil {
 		return nil, err
 	}
 
 	app := &Application{
-		info:         set.ComponentSettings.BuildInfo,
-		factories:    set.Factories,
+		info:         set.CommonSettings.BuildInfo,
+		factories:    set.CommonSettings.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     set.ComponentSettings.BuildInfo.Command,
-		Version: set.ComponentSettings.BuildInfo.Version,
+		Use:     set.CommonSettings.BuildInfo.Command,
+		Version: set.CommonSettings.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			if app.logger, err = newLogger(set.LoggingOptions); err != nil {
@@ -219,15 +219,16 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 	}
 
 	app.logger.Info("Applying configuration...")
-	componentSettings := component.ComponentSettings{
+
+	commonSettings := CommonSettings{
 		BuildInfo: app.info,
-		Logger:    app.logger,
+		Factories: app.factories,
 	}
 
-	service, err := newService(&Settings{
-		Factories:         app.factories,
-		ComponentSettings: componentSettings,
+	service, err := newService(&ServiceSettings{
+		CommonSettings:    commonSettings,
 		Config:            cfg,
+		Logger:            app.logger,
 		AsyncErrorChannel: app.asyncErrorChannel,
 	})
 	if err != nil {

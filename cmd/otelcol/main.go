@@ -32,20 +32,21 @@ func main() {
 		log.Fatalf("failed to build default components: %v", err)
 	}
 
-	componentSettings := component.ComponentSettings{
+	commonSettings := service.CommonSettings{
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
 			Version:     version.Version,
 		},
+		Factories: factories,
 	}
 
-	if err := run(service.Settings{ComponentSettings: componentSettings, Factories: factories}); err != nil {
+	if err := run(service.ApplicationSettings{CommonSettings: commonSettings}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(settings service.Settings) error {
+func runInteractive(settings service.ApplicationSettings) error {
 	app, err := service.New(settings)
 	if err != nil {
 		return fmt.Errorf("failed to construct the application: %w", err)

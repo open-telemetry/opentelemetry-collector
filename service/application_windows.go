@@ -27,12 +27,12 @@ import (
 )
 
 type WindowsService struct {
-	settings Settings
+	settings ApplicationSettings
 	app      *Application
 }
 
-func NewWindowsService(settings Settings) *WindowsService {
-	return &WindowsService{settings: settings}
+func NewWindowsService(set ApplicationSettings) *WindowsService {
+	return &WindowsService{settings: set}
 }
 
 // Execute implements https://godoc.org/golang.org/x/sys/windows/svc#Handler

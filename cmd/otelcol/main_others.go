@@ -18,6 +18,6 @@ package main
 
 import "go.opentelemetry.io/collector/service"
 
-func run(settings service.Settings) error {
+func run(settings service.ApplicationSettings) error {
 	return runInteractive(settings)
 }

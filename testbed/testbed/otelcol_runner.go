@@ -84,16 +84,16 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 }
 
 func (ipp *InProcessCollector) Start(args StartParams) error {
-	componentSettings := component.ComponentSettings{
+	commonSettings := service.CommonSettings{
 		BuildInfo: component.BuildInfo{
 			Command: "otelcol",
 			Version: version.Version,
 		},
+		Factories: ipp.factories,
 	}
-	settings := service.Settings{
-		ComponentSettings: componentSettings,
-		ParserProvider:    parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
-		Factories:         ipp.factories,
+	settings := service.ApplicationSettings{
+		CommonSettings: commonSettings,
+		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 	}
 	var err error
 	ipp.svc, err = service.New(settings)
