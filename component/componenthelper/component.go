@@ -32,7 +32,7 @@ func (f StartFunc) Start(ctx context.Context, host component.Host) error {
 // ShutdownFunc specifies the function invoked when the component.Component is being shutdown.
 type ShutdownFunc func(context.Context) error
 
-// Shutdown calls f(ctx, host).
+// Shutdown calls f(ctx).
 func (f ShutdownFunc) Shutdown(ctx context.Context) error {
 	return f(ctx)
 }
