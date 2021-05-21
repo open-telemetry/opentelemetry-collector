@@ -428,7 +428,7 @@ jobs:
 
   build-package:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2004:202104-01
     parameters:
       package_type:
         type: enum
