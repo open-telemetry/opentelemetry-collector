@@ -760,9 +760,9 @@ func (sm StringMap) Len() int {
 //
 // Example:
 //
-// it := sm.Range(func(k string, v StringValue) {
-//   ...
-// })
+//   it := sm.Range(func(k string, v StringValue) {
+//       ...
+//   })
 func (sm StringMap) Range(f func(k string, v string) bool) {
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
@@ -801,7 +801,7 @@ func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) {
 
 // Sort sorts the entries in the StringMap so two instances can be compared.
 // Returns the same instance to allow nicer code like:
-// assert.EqualValues(t, expected.Sort(), actual.Sort())
+//   assert.EqualValues(t, expected.Sort(), actual.Sort())
 func (sm StringMap) Sort() StringMap {
 	sort.SliceStable(*sm.orig, func(i, j int) bool {
 		// Intention is to move the nil values at the end.
