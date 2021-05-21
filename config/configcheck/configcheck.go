@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configcheck has checks to be applied to configuration
-// objects implemented by factories of components used in the OpenTelemetry
-// collector. It is recommended for implementers of components to run the
-// validations available on this package.
 package configcheck
 
 import (
