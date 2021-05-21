@@ -6,6 +6,7 @@
 
 - Remove unused logstest package (#3222)
 - Introduce `AppSettings` instead of `Parameters` (#3163)
+- Rename `service.Application` to `service.Collector` (#3257)
 
 ## v0.27.0 Beta
 
