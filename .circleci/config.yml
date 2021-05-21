@@ -125,21 +125,6 @@ commands:
       - store_test_results:
           path: testbed/tests/results/junit
 
-  run_tests:
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Unit tests
-          command: |
-            mkdir -p unit-test-results/junit
-            trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
-            make gotest | tee unit-test-results/go-unit-tests.out
-      - store_artifacts:
-          path: unit-test-results
-      - store_test_results:
-          path: unit-test-results/junit
-      - save_module_cache
-
 workflows:
   version: 2
   build-and-test:
@@ -170,22 +155,6 @@ workflows:
           filters:
             branches:
               ignore: main
-      - test-with-github-reports:
-          context:
-            - github-release-and-issues-api-token
-          requires:
-            - setup-environment
-          filters:
-            branches:
-              only: main
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - test:
-          requires:
-            - setup-environment
-          filters:
-            branches:
-              ignore: main
       - coverage:
           requires:
             - setup-environment
@@ -202,7 +171,6 @@ workflows:
           requires:
             - cross-compile
             - loadtest-with-github-reports
-            - test-with-github-reports
             - coverage
             - windows-msi
             - deb-package
@@ -214,7 +182,6 @@ workflows:
           requires:
             - cross-compile
             - loadtest
-            - test
             - coverage
             - windows-msi
             - deb-package
@@ -229,7 +196,6 @@ workflows:
           requires:
             - cross-compile
             - loadtest
-            - test
             - coverage
             - windows-msi
             - deb-package
@@ -245,7 +211,6 @@ workflows:
           requires:
             - cross-compile
             - loadtest
-            - test
             - coverage
             - windows-msi
             - deb-package
@@ -322,21 +287,6 @@ jobs:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
     parallelism: 6
     resource_class: medium+
-    steps:
-      - run_loadtest
-
-  test-with-github-reports:
-    executor: golang
-    environment:
-      TEST_RESULTS: unit-test-results/junit/results.xml
-    steps:
-      - run_loadtest
-      - github_issue_generator
-
-  test:
-    executor: golang
-    environment:
-      TEST_RESULTS: unit-test-results/junit/results.xml
     steps:
       - run_loadtest
 
