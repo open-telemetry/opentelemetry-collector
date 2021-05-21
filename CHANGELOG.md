@@ -5,7 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove unused logstest package (#3222)
-- Rename `service.Application` to `service.Collector` (TBD)
+- Rename `service.Application` to `service.Collector` (#3257)
 
 ## v0.27.0 Beta
 
