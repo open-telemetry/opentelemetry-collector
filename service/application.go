@@ -79,39 +79,24 @@ type Application struct {
 	asyncErrorChannel chan error
 }
 
-// Parameters holds configuration for creating a new Application.
-type Parameters struct {
-	// Factories component factories.
-	Factories component.Factories
-	// BuildInfo provides application start information.
-	BuildInfo component.BuildInfo
-	// ParserProvider provides the configuration's Parser.
-	// If it is not provided a default provider is used. The default provider loads the configuration
-	// from a config file define by the --config command line flag and overrides component's configuration
-	// properties supplied via --set command line flag.
-	ParserProvider parserprovider.ParserProvider
-	// LoggingOptions provides a way to change behavior of zap logging.
-	LoggingOptions []zap.Option
-}
-
 // New creates and returns a new instance of Application.
-func New(params Parameters) (*Application, error) {
-	if err := configcheck.ValidateConfigFromFactories(params.Factories); err != nil {
+func New(set Settings) (*Application, error) {
+	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
 		return nil, err
 	}
 
 	app := &Application{
-		info:         params.BuildInfo,
-		factories:    params.Factories,
+		info:         set.ComponentSettings.BuildInfo,
+		factories:    set.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     params.BuildInfo.Command,
-		Version: params.BuildInfo.Version,
+		Use:     set.ComponentSettings.BuildInfo.Command,
+		Version: set.ComponentSettings.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-			if app.logger, err = newLogger(params.LoggingOptions); err != nil {
+			if app.logger, err = newLogger(set.LoggingOptions); err != nil {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
@@ -134,7 +119,7 @@ func New(params Parameters) (*Application, error) {
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	app.rootCmd = rootCmd
 
-	parserProvider := params.ParserProvider
+	parserProvider := set.ParserProvider
 	if parserProvider == nil {
 		// use default provider.
 		parserProvider = parserprovider.Default()
@@ -234,12 +219,15 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 	}
 
 	app.logger.Info("Applying configuration...")
+	componentSettings := component.ComponentSettings{
+		BuildInfo: app.info,
+		Logger:    app.logger,
+	}
 
-	service, err := newService(&settings{
+	service, err := newService(&Settings{
 		Factories:         app.factories,
-		BuildInfo:         app.info,
+		ComponentSettings: componentSettings,
 		Config:            cfg,
-		Logger:            app.logger,
 		AsyncErrorChannel: app.asyncErrorChannel,
 	})
 	if err != nil {

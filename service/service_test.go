@@ -103,12 +103,15 @@ func createExampleService(t *testing.T) *service {
 	require.NoError(t, err)
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "otelcol-nop.yaml"), factories)
 	require.NoError(t, err)
-
-	srv, err := newService(&settings{
-		Factories: factories,
+	componentSettings := component.ComponentSettings{
 		BuildInfo: component.DefaultBuildInfo(),
-		Config:    cfg,
 		Logger:    zap.NewNop(),
+	}
+
+	srv, err := newService(&Settings{
+		Factories:         factories,
+		ComponentSettings: componentSettings,
+		Config:            cfg,
 	})
 	require.NoError(t, err)
 	return srv
