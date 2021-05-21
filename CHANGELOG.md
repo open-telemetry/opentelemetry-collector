@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove unused logstest package (#3222)
+- Introduce `AppSettings` instead of `Parameters` (#3163)
 
 ## v0.27.0 Beta
 
@@ -21,7 +22,6 @@
 - Rename `config.IDFromString` to `NewIDFromString`, remove `MustIDFromString` (#3177)
 - Move consumerfanout package to internal (#3207)
 - Canonicalize enum names in pdata. Fix usage of uppercase names (#3208)
-- Introduce `SvcSettings` and `AppSettings` instead of `Parameters` (#3163)
 
 ## 💡 Enhancements 💡
 
