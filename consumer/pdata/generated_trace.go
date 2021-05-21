@@ -1122,8 +1122,8 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }
 
-// SpanStatus is an optional final status for this span. Semantically when Status wasn't set
-// it is means span ended without errors and assume Status.Ok (code = 0).
+// SpanStatus is an optional final status for this span. Semantically, when Status was not
+// set, that means the span ended without errors and to assume Status.Ok (code = 0).
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
