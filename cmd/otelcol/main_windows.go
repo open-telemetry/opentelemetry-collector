@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/service"
 )
 
-func run(set service.AppSettings) error {
+func run(set service.ColSettings) error {
 	if useInteractiveMode, err := checkUseInteractiveMode(); err != nil {
 		return err
 	} else if useInteractiveMode {
@@ -51,7 +51,7 @@ func checkUseInteractiveMode() (bool, error) {
 	}
 }
 
-func runService(set service.AppSettings) error {
+func runService(set service.ColSettings) error {
 	// do not need to supply service name when startup is invoked through Service Control Manager directly
 	if err := svc.Run("", service.NewWindowsService(set)); err != nil {
 		return fmt.Errorf("failed to start service %w", err)
