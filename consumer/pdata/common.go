@@ -363,7 +363,7 @@ func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
 // with values from the given map[string]string.
 //
 // Returns the same instance to allow nicer code like:
-// assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
+//   assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
 func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeMap {
 	if len(attrMap) == 0 {
 		*am.orig = []otlpcommon.KeyValue(nil)
@@ -587,7 +587,7 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 
 // Sort sorts the entries in the AttributeMap so two instances can be compared.
 // Returns the same instance to allow nicer code like:
-// assert.EqualValues(t, expected.Sort(), actual.Sort())
+//   assert.EqualValues(t, expected.Sort(), actual.Sort())
 func (am AttributeMap) Sort() AttributeMap {
 	// Intention is to move the nil values at the end.
 	sort.SliceStable(*am.orig, func(i, j int) bool {
@@ -665,7 +665,7 @@ func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
 // with values from the given map[string]string.
 //
 // Returns the same instance to allow nicer code like:
-// assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
+//   assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
 func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
 		*sm.orig = []otlpcommon.StringKeyValue(nil)
