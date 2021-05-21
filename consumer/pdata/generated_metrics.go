@@ -2158,7 +2158,7 @@ func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// ValueAtQuantile is a quantile value within a Summary data point
+// ValueAtQuantile is a quantile value within a Summary data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
