@@ -199,6 +199,7 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
+          name: publish-check-main
           requires:
             - cross-compile
             - loadtest-with-github-reports
@@ -211,6 +212,7 @@ workflows:
             branches:
               only: main
       - publish-check:
+          name: publish-check-pr
           requires:
             - cross-compile
             - loadtest
