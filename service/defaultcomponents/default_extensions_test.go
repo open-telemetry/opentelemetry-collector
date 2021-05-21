@@ -79,7 +79,7 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "oauth2",
 			getConfigFn: func() config.Extension {
-				cfg := extFactories["oauth2"].CreateDefaultConfig().(*oauth2authextension.OAuth2ClientSettings)
+				cfg := extFactories["oauth2"].CreateDefaultConfig().(*oauth2authextension.Config)
 				cfg.ClientSecret = "dummysecret"
 				cfg.ClientID = "dummyid"
 				cfg.Scopes = []string{"scope.dummy"}

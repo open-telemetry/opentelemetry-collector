@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	expected := factory.CreateDefaultConfig().(*OAuth2ClientSettings)
+	expected := factory.CreateDefaultConfig().(*Config)
 	expected.ClientSecret = "someclientsecret"
 	expected.ClientID = "someclientid"
 	expected.Scopes = []string{"api.metrics"}
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 
 	ext := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
 	assert.Equal(t,
-		&OAuth2ClientSettings{
+		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
 			ClientSecret:      "someclientsecret",
 			ClientID:          "someclientid",

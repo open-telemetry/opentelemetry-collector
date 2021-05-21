@@ -28,20 +28,20 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 )
 
-// OAuth2Authenticator provides implementation for providing client authentication using OAuth2 client credentials
+// ClientCredentialsAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
-type OAuth2Authenticator struct {
+type ClientCredentialsAuthenticator struct {
 	clientCredentials *clientcredentials.Config
 	logger            *zap.Logger
 }
 
-// OAuth2Authenticator implements both HTTPClientAuth and GRPCClientAuth
+// ClientCredentialsAuthenticator implements both HTTPClientAuth and GRPCClientAuth
 var (
-	_ configauth.HTTPClientAuthenticator = (*OAuth2Authenticator)(nil)
-	_ configauth.GRPCClientAuthenticator = (*OAuth2Authenticator)(nil)
+	_ configauth.HTTPClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
+	_ configauth.GRPCClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
 )
 
-func newOAuth2Extension(cfg *OAuth2ClientSettings, logger *zap.Logger) (*OAuth2Authenticator, error) {
+func newOAuth2Extension(cfg *Config, logger *zap.Logger) (*ClientCredentialsAuthenticator, error) {
 	if cfg.ClientID == "" {
 		return nil, errNoClientIDProvided
 	}
@@ -51,7 +51,7 @@ func newOAuth2Extension(cfg *OAuth2ClientSettings, logger *zap.Logger) (*OAuth2A
 	if cfg.TokenURL == "" {
 		return nil, errNoTokenURLProvided
 	}
-	return &OAuth2Authenticator{
+	return &ClientCredentialsAuthenticator{
 		clientCredentials: &clientcredentials.Config{
 			ClientID:     cfg.ClientID,
 			ClientSecret: cfg.ClientSecret,
@@ -62,19 +62,19 @@ func newOAuth2Extension(cfg *OAuth2ClientSettings, logger *zap.Logger) (*OAuth2A
 	}, nil
 }
 
-// Start for OAuth2Authenticator extension does nothing
-func (o *OAuth2Authenticator) Start(_ context.Context, _ component.Host) error {
+// Start for ClientCredentialsAuthenticator extension does nothing
+func (o *ClientCredentialsAuthenticator) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-// Shutdown for OAuth2Authenticator extension does nothing
-func (o *OAuth2Authenticator) Shutdown(_ context.Context) error {
+// Shutdown for ClientCredentialsAuthenticator extension does nothing
+func (o *ClientCredentialsAuthenticator) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
 // also auto refreshes OAuth tokens as needed.
-func (o *OAuth2Authenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (o *ClientCredentialsAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &oauth2.Transport{
 		Source: o.clientCredentials.TokenSource(context.Background()),
 		Base:   base,
@@ -83,7 +83,7 @@ func (o *OAuth2Authenticator) RoundTripper(base http.RoundTripper) (http.RoundTr
 
 // PerRPCCredentials returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
 // oauth2.clientcredentials.Config instance will manage tokens performing auto refresh as necessary.
-func (o *OAuth2Authenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (o *ClientCredentialsAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return grpcOAuth.TokenSource{
 		TokenSource: o.clientCredentials.TokenSource(context.Background()),
 	}, nil

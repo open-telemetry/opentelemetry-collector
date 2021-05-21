@@ -7,7 +7,7 @@ The authenticator type has to be set to `oauth2`.
 
 ```yaml
 extensions:
-  oauth2:
+  oauth2clientcredentials:
     client_id: someclientid
     client_secret: someclientsecret
     token_url: https://someserver.com/oauth2/default/v1/token
@@ -25,7 +25,7 @@ exporters:
   otlphttp/withauth:
     endpoint: http://localhost:9000
     auth:
-      authenticator: oauth2
+      authenticator: oauth2clientcredentials
       
   otlp/withauth:
     endpoint: 0.0.0.0:5000

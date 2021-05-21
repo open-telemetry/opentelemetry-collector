@@ -26,8 +26,8 @@ var (
 	errNoClientSecretProvided = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
 )
 
-// OAuth2ClientSettings stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup
-type OAuth2ClientSettings struct {
+// Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup
+type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
 	// ClientID is the application's ID.
@@ -44,10 +44,10 @@ type OAuth2ClientSettings struct {
 	Scopes []string `mapstructure:"scopes,omitempty"`
 }
 
-var _ config.Extension = (*OAuth2ClientSettings)(nil)
+var _ config.Extension = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
-func (cfg *OAuth2ClientSettings) Validate() error {
+func (cfg *Config) Validate() error {
 	if cfg.ClientID == "" {
 		return errNoClientIDProvided
 	}

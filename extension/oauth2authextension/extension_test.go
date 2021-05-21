@@ -28,13 +28,13 @@ import (
 func TestOAuthClientSettings(t *testing.T) {
 	tests := []struct {
 		name          string
-		settings      *OAuth2ClientSettings
+		settings      *Config
 		shouldError   bool
 		expectedError error
 	}{
 		{
 			name: "all_valid_settings",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
@@ -45,7 +45,7 @@ func TestOAuthClientSettings(t *testing.T) {
 		},
 		{
 			name: "missing_client_id",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
@@ -55,7 +55,7 @@ func TestOAuthClientSettings(t *testing.T) {
 		},
 		{
 			name: "missing_client_secret",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID: "testclientid",
 				TokenURL: "https://example.com/v1/token",
 				Scopes:   []string{"resource.read"},
@@ -65,7 +65,7 @@ func TestOAuthClientSettings(t *testing.T) {
 		},
 		{
 			name: "missing_token_url",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
 				Scopes:       []string{"resource.read"},
@@ -103,12 +103,12 @@ func (b *testRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
 func TestRoundTripper(t *testing.T) {
 	tests := []struct {
 		name        string
-		settings    *OAuth2ClientSettings
+		settings    *Config
 		shouldError bool
 	}{
 		{
 			name: "returns_http_round_tripper",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
@@ -118,7 +118,7 @@ func TestRoundTripper(t *testing.T) {
 		},
 		{
 			name: "invalid_client_settings_should_error",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID: "testclientid",
 				TokenURL: "https://example.com/v1/token",
 				Scopes:   []string{"resource.read"},
@@ -158,13 +158,13 @@ func TestRoundTripper(t *testing.T) {
 func TestOAuth2PerRPCCredentials(t *testing.T) {
 	tests := []struct {
 		name        string
-		settings    *OAuth2ClientSettings
+		settings    *Config
 		shouldError bool
 		expectedErr error
 	}{
 		{
 			name: "returns_http_round_tripper",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
@@ -174,7 +174,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 		},
 		{
 			name: "invalid_client_settings_should_error",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID: "testclientid",
 				TokenURL: "https://example.com/v1/token",
 				Scopes:   []string{"resource.read"},
@@ -203,7 +203,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 
 func TestOAuthExtensionStart(t *testing.T) {
 	oAuthExtensionAuth, err := newOAuth2Extension(
-		&OAuth2ClientSettings{
+		&Config{
 			ClientID:     "testclientid",
 			ClientSecret: "testsecret",
 			TokenURL:     "https://example.com/v1/token",
@@ -215,7 +215,7 @@ func TestOAuthExtensionStart(t *testing.T) {
 
 func TestOAuthExtensionShutdown(t *testing.T) {
 	oAuthExtensionAuth, err := newOAuth2Extension(
-		&OAuth2ClientSettings{
+		&Config{
 			ClientID:     "testclientid",
 			ClientSecret: "testsecret",
 			TokenURL:     "https://example.com/v1/token",

@@ -28,7 +28,7 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
-	expected := &OAuth2ClientSettings{
+	expected := &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 	}
 
@@ -41,17 +41,17 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateExtension(t *testing.T) {
-	cfg := createDefaultConfig().(*OAuth2ClientSettings)
+	cfg := createDefaultConfig().(*Config)
 
 	tests := []struct {
 		name        string
-		settings    *OAuth2ClientSettings
+		settings    *Config
 		shouldError bool
 		expectedErr error
 	}{
 		{
 			name: "valid_settings",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
@@ -61,7 +61,7 @@ func TestCreateExtension(t *testing.T) {
 		},
 		{
 			name: "invalid_client_settings_should_error",
-			settings: &OAuth2ClientSettings{
+			settings: &Config{
 				ClientID: "testclientid",
 				TokenURL: "https://example.com/v1/token",
 				Scopes:   []string{"resource.read"},

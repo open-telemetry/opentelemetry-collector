@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "oauth2"
+	typeStr = "oauth2clientcredentials"
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.
@@ -36,11 +36,11 @@ func NewFactory() component.ExtensionFactory {
 }
 
 func createDefaultConfig() config.Extension {
-	return &OAuth2ClientSettings{
+	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 	}
 }
 
 func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
-	return newOAuth2Extension(cfg.(*OAuth2ClientSettings), params.Logger)
+	return newOAuth2Extension(cfg.(*Config), params.Logger)
 }
