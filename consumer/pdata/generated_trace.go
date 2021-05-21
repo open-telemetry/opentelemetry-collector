@@ -524,7 +524,7 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 }
 
 // Span represents a single operation within a trace.
-// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto#L37
+// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -1046,7 +1046,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a
-// different trace. See OTLP for link definition.
+// different trace. See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
