@@ -28,4 +28,6 @@ func TestNewErrUnavailableEncoding(t *testing.T) {
 
 func TestEncoding_String(t *testing.T) {
 	assert.Equal(t, "protobuf", Protobuf.String())
+	assert.Equal(t, "json", JSON.String())
+	assert.Equal(t, "thrift", Thrift.String())
 }
