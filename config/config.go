@@ -12,21 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config defines the data models for entities. This file defines the
-// models for configuration format. The defined entities are:
-// Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
-//
-// Receivers, Exporters and Processors typically have common configuration settings, however
-// sometimes specific implementations will have extra configuration settings.
-// This requires the configuration data for these entities to be polymorphic.
-//
-// To satisfy these requirements we declare interfaces Receiver, Exporter, Processor,
-// which define the behavior. We also provide helper structs ReceiverSettings, ExporterSettings,
-// ProcessorSettings, which define the common settings and un-marshaling from config files.
-//
-// Specific Receivers/Exporters/Processors are expected to at the minimum implement the
-// corresponding interface and if they have additional settings they must also extend
-// the corresponding common settings struct (the easiest approach is to embed the common struct).
 package config
 
 import (
