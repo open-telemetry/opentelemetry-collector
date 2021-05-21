@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+ // Package componenthelper assists with the creation of a new component.Component.
 package componenthelper
 
 import (
