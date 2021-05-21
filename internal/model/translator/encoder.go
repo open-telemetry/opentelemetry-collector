@@ -17,16 +17,16 @@ package translator
 import "go.opentelemetry.io/collector/consumer/pdata"
 
 type MetricsEncoder interface {
-	// FromMetrics converts pdata to protocol-specific data model.
-	FromMetrics(md pdata.Metrics) (interface{}, error)
+	// EncodeMetrics converts pdata to protocol-specific data model.
+	EncodeMetrics(md pdata.Metrics) (interface{}, error)
 }
 
 type TracesEncoder interface {
-	// FromTraces converts pdata to protocol-specific data model.
-	FromTraces(td pdata.Traces) (interface{}, error)
+	// EncodeTraces converts pdata to protocol-specific data model.
+	EncodeTraces(td pdata.Traces) (interface{}, error)
 }
 
 type LogsEncoder interface {
-	// FromLogs converts pdata to protocol-specific data model.
-	FromLogs(ld pdata.Logs) (interface{}, error)
+	// EncodeLogs converts pdata to protocol-specific data model.
+	EncodeLogs(ld pdata.Logs) (interface{}, error)
 }
