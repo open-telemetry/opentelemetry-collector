@@ -163,7 +163,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
+// ResourceMetrics is a collection of metrics from a Resource.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
