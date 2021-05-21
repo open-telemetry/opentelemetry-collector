@@ -22,21 +22,21 @@ import (
 	"go.opentelemetry.io/collector/internal/model/translator"
 )
 
-// TracesDecoder decodes bytes into pdata.Traces.
-type TracesDecoder struct {
-	translate translator.TracesDecoder
-	serialize serializer.TracesUnmarshaler
+// TracesMarshaler marshals pdata.Traces into bytes.
+type TracesMarshaler struct {
+	translate translator.TracesEncoder
+	serialize serializer.TracesMarshaler
 }
 
-// Decode bytes into pdata.Traces. On error pdata.Traces is invalid.
-func (t *TracesDecoder) Decode(buf []byte) (pdata.Traces, error) {
-	model, err := t.serialize.UnmarshalTraces(buf)
+// Marshal pdata.Traces into bytes. On error []byte is nil.
+func (t *TracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
+	model, err := t.translate.EncodeTraces(td)
 	if err != nil {
-		return pdata.Traces{}, fmt.Errorf("unmarshal failed: %w", err)
+		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
 	}
-	td, err := t.translate.DecodeTraces(model)
+	buf, err := t.serialize.MarshalTraces(model)
 	if err != nil {
-		return pdata.Traces{}, fmt.Errorf("converting model to pdata failed: %w", err)
+		return nil, fmt.Errorf("marshal failed: %w", err)
 	}
-	return td, nil
+	return buf, nil
 }

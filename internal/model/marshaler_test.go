@@ -27,7 +27,7 @@ func TestTracesEncoder_TranslationError(t *testing.T) {
 	translate := &mockTranslator{}
 	serialize := &mockSerializer{}
 
-	d := &TracesEncoder{
+	d := &TracesMarshaler{
 		translate: translate,
 		serialize: serialize,
 	}
@@ -36,7 +36,7 @@ func TestTracesEncoder_TranslationError(t *testing.T) {
 
 	translate.On("EncodeTraces", td).Return(nil, errors.New("translation failed"))
 
-	_, err := d.Encode(td)
+	_, err := d.Marshal(td)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
@@ -46,7 +46,7 @@ func TestTracesEncoder_SerializeError(t *testing.T) {
 	translate := &mockTranslator{}
 	serialize := &mockSerializer{}
 
-	d := &TracesEncoder{
+	d := &TracesMarshaler{
 		translate: translate,
 		serialize: serialize,
 	}
@@ -57,7 +57,7 @@ func TestTracesEncoder_SerializeError(t *testing.T) {
 	translate.On("EncodeTraces", td).Return(expectedModel, nil)
 	serialize.On("MarshalTraces", expectedModel).Return(nil, errors.New("serialization failed"))
 
-	_, err := d.Encode(td)
+	_, err := d.Marshal(td)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "marshal failed: serialization failed")
@@ -67,7 +67,7 @@ func TestTracesEncoder_Encode(t *testing.T) {
 	translate := &mockTranslator{}
 	serialize := &mockSerializer{}
 
-	d := &TracesEncoder{
+	d := &TracesMarshaler{
 		translate: translate,
 		serialize: serialize,
 	}
@@ -79,7 +79,7 @@ func TestTracesEncoder_Encode(t *testing.T) {
 	translate.On("EncodeTraces", expectedTraces).Return(expectedModel, nil)
 	serialize.On("MarshalTraces", expectedModel).Return(expectedBytes, nil)
 
-	actualBytes, err := d.Encode(expectedTraces)
+	actualBytes, err := d.Marshal(expectedTraces)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedBytes, actualBytes)
