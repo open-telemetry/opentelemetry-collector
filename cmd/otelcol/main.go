@@ -41,12 +41,12 @@ func main() {
 		Factories: factories,
 	}
 
-	if err := run(service.ApplicationSettings{CommonSettings: commonSettings}); err != nil {
+	if err := run(service.AppSettings{CommonSettings: commonSettings}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(settings service.ApplicationSettings) error {
+func runInteractive(settings service.AppSettings) error {
 	app, err := service.New(settings)
 	if err != nil {
 		return fmt.Errorf("failed to construct the application: %w", err)

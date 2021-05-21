@@ -91,7 +91,7 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 		},
 		Factories: ipp.factories,
 	}
-	settings := service.ApplicationSettings{
+	settings := service.AppSettings{
 		CommonSettings: commonSettings,
 		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 	}

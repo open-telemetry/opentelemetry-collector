@@ -80,7 +80,7 @@ type Application struct {
 }
 
 // New creates and returns a new instance of Application.
-func New(set ApplicationSettings) (*Application, error) {
+func New(set AppSettings) (*Application, error) {
 	if err := configcheck.ValidateConfigFromFactories(set.CommonSettings.Factories); err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 		Factories: app.factories,
 	}
 
-	service, err := newService(&ServiceSettings{
+	service, err := newService(&SvcSettings{
 		CommonSettings:    commonSettings,
 		Config:            cfg,
 		Logger:            app.logger,

@@ -40,7 +40,7 @@ type service struct {
 	builtExtensions builder.Extensions
 }
 
-func newService(set *ServiceSettings) (*service, error) {
+func newService(set *SvcSettings) (*service, error) {
 	srv := &service{
 		factories:         set.CommonSettings.Factories,
 		buildInfo:         set.CommonSettings.BuildInfo,

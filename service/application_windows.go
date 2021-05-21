@@ -27,11 +27,11 @@ import (
 )
 
 type WindowsService struct {
-	settings ApplicationSettings
+	settings AppSettings
 	app      *Application
 }
 
-func NewWindowsService(set ApplicationSettings) *WindowsService {
+func NewWindowsService(set AppSettings) *WindowsService {
 	return &WindowsService{settings: set}
 }
 
@@ -120,12 +120,12 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithWindowsEventLogCore(settings Settings, elog *eventlog.Log) (*Application, error) {
-	settings.LoggingOptions = append(
-		settings.LoggingOptions,
+func newWithWindowsEventLogCore(set AppSettings, elog *eventlog.Log) (*Application, error) {
+	set.LoggingOptions = append(
+		set.LoggingOptions,
 		zap.WrapCore(withWindowsCore(elog)),
 	)
-	return New(settings)
+	return New(set)
 }
 
 var _ zapcore.Core = (*windowsEventLogCore)(nil)

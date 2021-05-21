@@ -15,10 +15,11 @@
 package service
 
 import (
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/parserprovider"
-	"go.uber.org/zap"
 )
 
 // CommonSettings holds common settings for Service and Application
@@ -30,8 +31,8 @@ type CommonSettings struct {
 	BuildInfo component.BuildInfo
 }
 
-// ServiceSettings holds configuration for building a new service.
-type ServiceSettings struct {
+// SvcSettings holds configuration for building a new service.
+type SvcSettings struct {
 	// CommonSettings contains Factories and BuildInfo
 	CommonSettings CommonSettings
 
@@ -45,8 +46,8 @@ type ServiceSettings struct {
 	AsyncErrorChannel chan error
 }
 
-// ApplicationSettings holds configuration for creating a new Application.
-type ApplicationSettings struct {
+// AppSettings holds configuration for creating a new Application.
+type AppSettings struct {
 	// CommonSettings contains Factories and BuildInfo
 	CommonSettings CommonSettings
 

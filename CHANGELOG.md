@@ -21,7 +21,7 @@
 - Rename `config.IDFromString` to `NewIDFromString`, remove `MustIDFromString` (#3177)
 - Move consumerfanout package to internal (#3207)
 - Canonicalize enum names in pdata. Fix usage of uppercase names (#3208)
-- Introduce `ServiceSettings` and `ApplicationSettings` instead of `Parameters` (#3163)
+- Introduce `SvcSettings` and `AppSettings` instead of `Parameters` (#3163)
 
 ## 💡 Enhancements 💡
 

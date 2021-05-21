@@ -108,7 +108,7 @@ func createExampleService(t *testing.T) *service {
 		Factories: factories,
 	}
 
-	srv, err := newService(&ServiceSettings{
+	srv, err := newService(&SvcSettings{
 		CommonSettings: commonSettings,
 		Logger:         zap.NewNop(),
 		Config:         cfg,

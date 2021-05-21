@@ -56,7 +56,7 @@ func TestApplication_Start(t *testing.T) {
 		Factories: factories,
 	}
 
-	app, err := New(ApplicationSettings{CommonSettings: commonSettings, LoggingOptions: []zap.Option{zap.Hooks(hook)}})
+	app, err := New(AppSettings{CommonSettings: commonSettings, LoggingOptions: []zap.Option{zap.Hooks(hook)}})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 
@@ -129,7 +129,7 @@ func TestApplication_ReportError(t *testing.T) {
 		Factories: factories,
 	}
 
-	app, err := New(ApplicationSettings{CommonSettings: commonSettings})
+	app, err := New(AppSettings{CommonSettings: commonSettings})
 	require.NoError(t, err)
 
 	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
@@ -157,7 +157,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 		Factories: factories,
 	}
 
-	params := ApplicationSettings{
+	params := AppSettings{
 		CommonSettings: commonSettings,
 		ParserProvider: new(minimalParserLoader),
 	}
