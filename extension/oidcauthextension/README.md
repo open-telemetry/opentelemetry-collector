@@ -7,17 +7,16 @@ This extension implements a `configauth.Authenticator`, to be used in receivers 
 ```yaml
 extensions:
   oidc:
-    issuer_url: https://tenant1.example.com/
+    issuer_url: http://localhost:8080/auth/realms/opentelemetry
     issuer_ca_path: /etc/pki/tls/cert.pem
-    client_id: my-oidc-client
+    audience: account
     username_claim: email
 
 receivers:
   otlp:
     protocols:
       grpc:
-        authentication:
-          attribute: authorization
+        auth:
           authenticator: oidc
 
 processors:
