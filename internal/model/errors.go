@@ -12,19 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serializer
+package model
 
-// MetricsUnmarshaler decodes bytes into protocol-specific data model.
-type MetricsUnmarshaler interface {
-	UnmarshalMetrics(buf []byte) (interface{}, error)
-}
+import (
+	"fmt"
+)
 
-// TracesUnmarshaler decodes bytes into protocol-specific data model.
-type TracesUnmarshaler interface {
-	UnmarshalTraces(buf []byte) (interface{}, error)
-}
-
-// LogsUnmarshaler decodes bytes into protocol-specific data model.
-type LogsUnmarshaler interface {
-	UnmarshalLogs(buf []byte) (interface{}, error)
+// NewErrIncompatibleType returns errIncompatibleType instance
+func NewErrIncompatibleType(expected, given interface{}) error {
+	return fmt.Errorf("expected model type %T but given %T", expected, given)
 }
