@@ -27,7 +27,7 @@ func TestTracesDecoder_SerializeError(t *testing.T) {
 	translate := &mockTranslator{}
 	serialize := &mockSerializer{}
 
-	d := &TracesDecoder{
+	d := &TracesUnmarshaler{
 		translate: translate,
 		serialize: serialize,
 	}
@@ -37,7 +37,7 @@ func TestTracesDecoder_SerializeError(t *testing.T) {
 
 	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, errors.New("decode failed"))
 
-	_, err := d.Decode(expectedBytes)
+	_, err := d.Unmarshal(expectedBytes)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "unmarshal failed: decode failed")
@@ -47,7 +47,7 @@ func TestTracesDecoder_TranslationError(t *testing.T) {
 	translate := &mockTranslator{}
 	serialize := &mockSerializer{}
 
-	d := &TracesDecoder{
+	d := &TracesUnmarshaler{
 		translate: translate,
 		serialize: serialize,
 	}
@@ -58,7 +58,7 @@ func TestTracesDecoder_TranslationError(t *testing.T) {
 	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, nil)
 	translate.On("DecodeTraces", expectedModel).Return(pdata.NewTraces(), errors.New("translation failed"))
 
-	_, err := d.Decode(expectedBytes)
+	_, err := d.Unmarshal(expectedBytes)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
@@ -68,7 +68,7 @@ func TestTracesDecoder_Decode(t *testing.T) {
 	translate := &mockTranslator{}
 	serialize := &mockSerializer{}
 
-	d := &TracesDecoder{
+	d := &TracesUnmarshaler{
 		translate: translate,
 		serialize: serialize,
 	}
@@ -80,7 +80,7 @@ func TestTracesDecoder_Decode(t *testing.T) {
 	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, nil)
 	translate.On("DecodeTraces", expectedModel).Return(expectedTraces, nil)
 
-	actualTraces, err := d.Decode(expectedBytes)
+	actualTraces, err := d.Unmarshal(expectedBytes)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedTraces, actualTraces)
