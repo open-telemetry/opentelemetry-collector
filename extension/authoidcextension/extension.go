@@ -32,6 +32,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/collector/auth"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 )
@@ -100,21 +101,23 @@ func (e *oidcExtension) Shutdown(context.Context) error {
 }
 
 // Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
-func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) error {
+func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	authHeaders := headers[e.cfg.Attribute]
 	if len(authHeaders) == 0 {
-		return errNotAuthenticated
+		return ctx, errNotAuthenticated
 	}
 
+	raw := authHeaders[0]
+
 	// we only use the first header, if multiple values exist
-	parts := strings.Split(authHeaders[0], " ")
+	parts := strings.Split(raw, " ")
 	if len(parts) != 2 {
-		return errInvalidAuthenticationHeaderFormat
+		return ctx, errInvalidAuthenticationHeaderFormat
 	}
 
 	idToken, err := e.verifier.Verify(ctx, parts[1])
 	if err != nil {
-		return fmt.Errorf("failed to verify token: %w", err)
+		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
 
 	claims := map[string]interface{}{}
@@ -125,20 +128,26 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		// to read the claims. It could fail if we were using a custom struct. Instead of
 		// swalling the error, it's better to make this future-proof, in case the underlying
 		// code changes
-		return errFailedToObtainClaimsFromToken
+		return ctx, errFailedToObtainClaimsFromToken
 	}
 
-	_, err = getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
+	// we could have set this right after obtaining the raw auth string, but we should only change the
+	// context if the auth was successful
+	ctx = auth.NewContextFromRaw(ctx, raw)
+
+	sub, err := getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
 	if err != nil {
-		return fmt.Errorf("failed to get subject from claims in the token: %w", err)
+		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
+	ctx = auth.NewContextFromSubject(ctx, sub)
 
-	_, err = getGroupsFromClaims(claims, e.cfg.GroupsClaim)
+	groups, err := getGroupsFromClaims(claims, e.cfg.GroupsClaim)
 	if err != nil {
-		return fmt.Errorf("failed to get groups from claims in the token: %w", err)
+		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
+	ctx = auth.NewContextFromMemberships(ctx, groups)
 
-	return nil
+	return ctx, nil
 }
 
 // GrpcUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.

@@ -35,9 +35,9 @@ type MockAuthenticator struct {
 }
 
 // Authenticate executes the mock's AuthenticateFunc, if provided, or just returns the given context unchanged.
-func (m *MockAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) error {
+func (m *MockAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	if m.AuthenticateFunc == nil {
-		return nil
+		return context.Background(), nil
 	}
 	return m.AuthenticateFunc(ctx, headers)
 }
