@@ -180,6 +180,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 	}
 
 	for i := 0; i < 2; i++ {
+		var exps []component.Exporter
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateParams, cfg)
 			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
@@ -187,6 +188,9 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 			}
 			require.NoError(t, err)
 			require.NoError(t, exp.Start(ctx, host))
+			exps = append(exps, exp)
+		}
+		for _, exp := range exps {
 			assert.NoError(t, exp.Shutdown(ctx))
 		}
 	}
