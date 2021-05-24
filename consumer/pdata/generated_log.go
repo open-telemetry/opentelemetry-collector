@@ -18,12 +18,13 @@
 package pdata
 
 import (
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
 // ResourceLogsSlice logically represents a slice of ResourceLogs.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewResourceLogsSlice function to create new instances.
@@ -130,7 +131,6 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
@@ -203,7 +203,7 @@ func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 
 // InstrumentationLibraryLogsSlice logically represents a slice of InstrumentationLibraryLogs.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibraryLogsSlice function to create new instances.
@@ -310,7 +310,6 @@ func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLo
 	*es.orig = append(*es.orig, &otlplogs.InstrumentationLibraryLogs{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLibraryLogsSlice) {
@@ -383,7 +382,7 @@ func (ms InstrumentationLibraryLogs) CopyTo(dest InstrumentationLibraryLogs) {
 
 // LogSlice logically represents a slice of LogRecord.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewLogSlice function to create new instances.
@@ -490,7 +489,6 @@ func (es LogSlice) AppendEmpty() LogRecord {
 	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es LogSlice) MoveAndAppendTo(dest LogSlice) {

@@ -18,12 +18,14 @@
 package pdata
 
 import (
+	"go.opentelemetry.io/collector/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 // ResourceSpansSlice logically represents a slice of ResourceSpans.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewResourceSpansSlice function to create new instances.
@@ -130,7 +132,6 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
@@ -203,7 +204,7 @@ func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 
 // InstrumentationLibrarySpansSlice logically represents a slice of InstrumentationLibrarySpans.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibrarySpansSlice function to create new instances.
@@ -310,7 +311,6 @@ func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibraryS
 	*es.orig = append(*es.orig, &otlptrace.InstrumentationLibrarySpans{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationLibrarySpansSlice) {
@@ -383,7 +383,7 @@ func (ms InstrumentationLibrarySpans) CopyTo(dest InstrumentationLibrarySpans) {
 
 // SpanSlice logically represents a slice of Span.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewSpanSlice function to create new instances.
@@ -490,7 +490,6 @@ func (es SpanSlice) AppendEmpty() Span {
 	*es.orig = append(*es.orig, &otlptrace.Span{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
@@ -697,7 +696,7 @@ func (ms Span) CopyTo(dest Span) {
 
 // SpanEventSlice logically represents a slice of SpanEvent.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewSpanEventSlice function to create new instances.
@@ -804,7 +803,6 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
@@ -905,7 +903,7 @@ func (ms SpanEvent) CopyTo(dest SpanEvent) {
 
 // SpanLinkSlice logically represents a slice of SpanLink.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewSpanLinkSlice function to create new instances.
@@ -1012,7 +1010,6 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
@@ -1046,7 +1043,8 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a
-// different trace. See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
+// different trace.
+// See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.

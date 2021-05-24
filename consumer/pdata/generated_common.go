@@ -71,7 +71,7 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 
 // AnyValueArray logically represents a slice of AttributeValue.
 //
-// This is a reference type, if passed by value and callee modifies, it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewAnyValueArray function to create new instances.
@@ -105,7 +105,7 @@ func (es AnyValueArray) Len() int {
 // This function is used mostly for iterating over all the values in the slice:
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
-//       // Do something with the element
+//       ... // Do something with the element
 //   }
 func (es AnyValueArray) At(ix int) AttributeValue {
 	return newAttributeValue(&(*es.orig)[ix])
@@ -173,7 +173,6 @@ func (es AnyValueArray) AppendEmpty() AttributeValue {
 	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {

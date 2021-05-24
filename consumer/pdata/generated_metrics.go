@@ -23,7 +23,7 @@ import (
 
 // ResourceMetricsSlice logically represents a slice of ResourceMetrics.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewResourceMetricsSlice function to create new instances.
@@ -130,7 +130,6 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
@@ -203,7 +202,7 @@ func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 
 // InstrumentationLibraryMetricsSlice logically represents a slice of InstrumentationLibraryMetrics.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibraryMetricsSlice function to create new instances.
@@ -267,7 +266,7 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
-//   Here is how a new InstrumentationLibraryMetricsSlice can be initialized:
+// Here is how a new InstrumentationLibraryMetricsSlice can be initialized:
 //   es := NewInstrumentationLibraryMetricsSlice()
 //   es.Resize(4)
 //   for i := 0; i < es.Len(); i++ {
@@ -310,7 +309,6 @@ func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibrar
 	*es.orig = append(*es.orig, &otlpmetrics.InstrumentationLibraryMetrics{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest InstrumentationLibraryMetricsSlice) {
@@ -383,7 +381,7 @@ func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetric
 
 // MetricSlice logically represents a slice of Metric.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewMetricSlice function to create new instances.
@@ -490,7 +488,6 @@ func (es MetricSlice) AppendEmpty() Metric {
 	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
@@ -575,6 +572,8 @@ func (ms Metric) Unit() string {
 func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
+
+
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
@@ -876,7 +875,7 @@ func (ms Summary) CopyTo(dest Summary) {
 
 // IntDataPointSlice logically represents a slice of IntDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewIntDataPointSlice function to create new instances.
@@ -983,7 +982,6 @@ func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.IntDataPoint{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
@@ -1089,7 +1087,7 @@ func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
 
 // DoubleDataPointSlice logically represents a slice of DoubleDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewDoubleDataPointSlice function to create new instances.
@@ -1196,7 +1194,6 @@ func (es DoubleDataPointSlice) AppendEmpty() DoubleDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleDataPoint{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
@@ -1302,7 +1299,7 @@ func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
 
 // IntHistogramDataPointSlice logically represents a slice of IntHistogramDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewIntHistogramDataPointSlice function to create new instances.
@@ -1409,7 +1406,6 @@ func (es IntHistogramDataPointSlice) AppendEmpty() IntHistogramDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.IntHistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntHistogramDataPointSlice) MoveAndAppendTo(dest IntHistogramDataPointSlice) {
@@ -1548,7 +1544,7 @@ func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewHistogramDataPointSlice function to create new instances.
@@ -1655,7 +1651,6 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleHistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
@@ -1794,7 +1789,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewSummaryDataPointSlice function to create new instances.
@@ -1901,7 +1896,6 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
@@ -2018,7 +2012,7 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 
 // ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewValueAtQuantileSlice function to create new instances.
@@ -2125,7 +2119,6 @@ func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
@@ -2208,7 +2201,7 @@ func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
 
 // IntExemplarSlice logically represents a slice of IntExemplar.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewIntExemplarSlice function to create new instances.
@@ -2310,7 +2303,6 @@ func (es IntExemplarSlice) AppendEmpty() IntExemplar {
 	*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
@@ -2402,7 +2394,7 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 
 // ExemplarSlice logically represents a slice of Exemplar.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewExemplarSlice function to create new instances.
@@ -2504,7 +2496,6 @@ func (es ExemplarSlice) AppendEmpty() Exemplar {
 	*es.orig = append(*es.orig, otlpmetrics.DoubleExemplar{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
