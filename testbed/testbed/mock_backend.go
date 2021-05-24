@@ -159,11 +159,15 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 		mb.ReceivedMetrics = append(mb.ReceivedMetrics, md)
 	}
 	if mb.isScraping {
-		mb.getTimestamps(md)
+		currentTimestamp := getMetricTimestamp(md)
+		receivedTimestampsCount := len(mb.ReceivedTimestamps)
+		if receivedTimestampsCount == 0 || !mb.ReceivedTimestamps[receivedTimestampsCount-1].Equal(currentTimestamp) {
+			mb.ReceivedTimestamps = append(mb.ReceivedTimestamps, currentTimestamp)
+		}
 	}
 }
 
-func (mb *MockBackend) getTimestamps(md pdata.Metrics) {
+func getMetricTimestamp(md pdata.Metrics) time.Time {
 	currentTimestamp := time.Time{}
 	rms := md.ResourceMetrics()
 	if rms.Len() > 0 {
@@ -214,11 +218,7 @@ func (mb *MockBackend) getTimestamps(md pdata.Metrics) {
 			}
 		}
 	}
-	length := len(mb.ReceivedTimestamps)
-	if length == 0 || !mb.ReceivedTimestamps[length-1].Equal(currentTimestamp) {
-		mb.ReceivedTimestamps = append(mb.ReceivedTimestamps, currentTimestamp)
-	}
-	return
+	return currentTimestamp
 }
 
 var _ consumer.Traces = (*MockTraceConsumer)(nil)
