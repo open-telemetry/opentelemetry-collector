@@ -13,13 +13,7 @@ jobs:
       - run: echo "hello world"
 
       - run: echo "${{ github.base_ref }}"
-      - run: echo "${{github.base_ref}}"
-      - run: echo "${ github.base_ref }"
-      - run: echo "${github.base_ref}"
-      - run: echo "$github.base_ref"
 
       - run: echo "${{ github.base_ref.sha }}"
-      - run: echo "${{github.base_ref.sha}}"
-      - run: echo "${ github.base_ref.sha }"
-      - run: echo "${github.base_ref.sha}"
+      
       - run: echo "$github.base_ref.sha"
