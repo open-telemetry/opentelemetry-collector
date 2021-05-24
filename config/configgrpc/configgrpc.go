@@ -94,14 +94,10 @@ type GRPCClientSettings struct {
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
 
-<<<<<<< HEAD
 	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis.
 	PerRPCAuth *PerRPCAuthConfig `mapstructure:"per_rpc_auth"`
 
-	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first
-=======
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
->>>>>>> bf891180 (Fix typos in Config Package)
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 }
