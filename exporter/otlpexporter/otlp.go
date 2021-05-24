@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -51,18 +50,12 @@ func newExporter(cfg config.Exporter) (*exporter, error) {
 
 	e := &exporter{}
 	e.config = oCfg
-	return e, nil
-}
-
-// start actually creates the gRPC connection. The client construction is deferred till this point as this
-// is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporter) start(_ context.Context, host component.Host) error {
-	w, err := newGrpcSender(e.config, host.GetExtensions())
+	w, err := newGrpcSender(oCfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	e.w = w
-	return nil
+	return e, nil
 }
 
 func (e *exporter) shutdown(context.Context) error {
@@ -100,8 +93,8 @@ type grpcSender struct {
 	callOptions    []grpc.CallOption
 }
 
-func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extension) (*grpcSender, error) {
-	dialOpts, err := config.GRPCClientSettings.ToDialOptions(ext)
+func newGrpcSender(config *Config) (*grpcSender, error) {
+	dialOpts, err := config.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
 	}
