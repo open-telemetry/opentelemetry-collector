@@ -18,11 +18,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/Shopify/sarama"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"github.com/Shopify/sarama"
 )
 
 const (
@@ -39,7 +40,7 @@ const (
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
 	// By default, don't use compression.
-	defaultCompression  = "none"
+	defaultCompression = "none"
 	// default from sarama.NewConfig()
 	defaultCompressionLevel = sarama.CompressionLevelDefault
 )

@@ -26,30 +26,26 @@ func TestConfigureCompression(t *testing.T) {
 	tests := []struct {
 		compression  string
 		saramaConfig *sarama.Config
-		wantErr bool
+		wantErr      bool
 	}{
 		{
-			compression: "none",
+			compression:  "none",
 			saramaConfig: saramaSample,
 		},
 		{
-			compression: "gzip",
+			compression:  "gzip",
 			saramaConfig: saramaSample,
 		},
 		{
-			compression: "snappy",
+			compression:  "snappy",
 			saramaConfig: saramaSample,
 		},
 		{
-			compression: "lz4",
+			compression:  "lz4",
 			saramaConfig: saramaSample,
 		},
 		{
-			compression: "zstd",
-			saramaConfig: saramaSample,
-		},
-		{
-			compression: "random",
+			compression:  "zstd",
 			saramaConfig: saramaSample,
 		},
 	}
