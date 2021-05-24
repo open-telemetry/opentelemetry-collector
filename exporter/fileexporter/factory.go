@@ -56,8 +56,8 @@ func createTracesExporter(
 		cfg,
 		params.Logger,
 		fe.Unwrap().(*fileExporter).ConsumeTraces,
-		exporterhelper.WithStart(fe.Unwrap().(*fileExporter).Start),
-		exporterhelper.WithShutdown(fe.Unwrap().(*fileExporter).Shutdown),
+		exporterhelper.WithStart(fe.Start),
+		exporterhelper.WithShutdown(fe.Shutdown),
 	)
 }
 
@@ -73,8 +73,8 @@ func createMetricsExporter(
 		cfg,
 		params.Logger,
 		fe.Unwrap().(*fileExporter).ConsumeMetrics,
-		exporterhelper.WithStart(fe.Unwrap().(*fileExporter).Start),
-		exporterhelper.WithShutdown(fe.Unwrap().(*fileExporter).Shutdown),
+		exporterhelper.WithStart(fe.Start),
+		exporterhelper.WithShutdown(fe.Shutdown),
 	)
 }
 
@@ -90,8 +90,8 @@ func createLogsExporter(
 		cfg,
 		params.Logger,
 		fe.Unwrap().(*fileExporter).ConsumeLogs,
-		exporterhelper.WithStart(fe.Unwrap().(*fileExporter).Start),
-		exporterhelper.WithShutdown(fe.Unwrap().(*fileExporter).Shutdown),
+		exporterhelper.WithStart(fe.Start),
+		exporterhelper.WithShutdown(fe.Shutdown),
 	)
 }
 
