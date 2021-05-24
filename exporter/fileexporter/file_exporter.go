@@ -35,10 +35,9 @@ var marshaler = &jsonpb.Marshaler{}
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 // in Protobuf-JSON format.
 type fileExporter struct {
-	path         string
-	file         io.WriteCloser
-	mutex        sync.Mutex
-	isFileClosed bool
+	path  string
+	file  io.WriteCloser
+	mutex sync.Mutex
 }
 
 func (e *fileExporter) Capabilities() consumer.Capabilities {
@@ -73,21 +72,10 @@ func exportMessageAsLine(e *fileExporter, message proto.Message) error {
 func (e *fileExporter) Start(context.Context, component.Host) error {
 	var err error
 	e.file, err = os.OpenFile(e.path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err == nil {
-		e.isFileClosed = false
-	}
 	return err
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (e *fileExporter) Shutdown(context.Context) error {
-	if e.isFileClosed {
-		return nil
-	}
-
-	err := e.file.Close()
-	if err == nil {
-		e.isFileClosed = true
-	}
-	return err
+	return e.file.Close()
 }
