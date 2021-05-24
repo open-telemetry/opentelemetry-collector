@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package model
 
 import (
-	"fmt"
+	"testing"
+
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	"github.com/stretchr/testify/assert"
 )
 
-// NewErrIncompatibleType returns errIncompatibleType instance
-func NewErrIncompatibleType(expected, given interface{}) error {
-	return fmt.Errorf("expected model type %T but given %T", expected, given)
+func TestNewErrIncompatibleType(t *testing.T) {
+	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
+	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
 }
