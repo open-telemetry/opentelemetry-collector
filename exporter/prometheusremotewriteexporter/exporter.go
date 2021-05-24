@@ -70,7 +70,6 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
-
 	return &PRWExporter{
 		namespace:       namespace,
 		externalLabels:  sanitizedLabels,
