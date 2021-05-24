@@ -15,6 +15,7 @@
 package goldendataset
 
 import (
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -54,6 +55,36 @@ func GenerateResource(rscID PICTInputResource) otlpresource.Resource {
 		Attributes:             convertMapToAttributeKeyValues(attrs),
 		DroppedAttributesCount: dropped,
 	}
+}
+
+// generatePDataResource generates a PData Resource object with representative attributes for the
+// underlying resource type specified by the rscID input parameter.
+func generatePDataResource(rscID PICTInputResource) pdata.Resource {
+	var attrs map[string]interface{}
+	switch rscID {
+	case ResourceNil:
+		attrs = generateNilAttributes()
+	case ResourceEmpty:
+		attrs = generateEmptyAttributes()
+	case ResourceVMOnPrem:
+		attrs = generateOnpremVMAttributes()
+	case ResourceVMCloud:
+		attrs = generateCloudVMAttributes()
+	case ResourceK8sOnPrem:
+		attrs = generateOnpremK8sAttributes()
+	case ResourceK8sCloud:
+		attrs = generateCloudK8sAttributes()
+	case ResourceFaas:
+		attrs = generateFassAttributes()
+	case ResourceExec:
+		attrs = generateExecAttributes()
+	default:
+		attrs = generateEmptyAttributes()
+	}
+	resource := pdata.NewResource()
+	attrMap := convertMapToAttributeKeyValues(attrs)
+	pdata.NewAttributeMapFromKeyValues(&attrMap).CopyTo(resource.Attributes())
+	return resource
 }
 
 func generateNilAttributes() map[string]interface{} {

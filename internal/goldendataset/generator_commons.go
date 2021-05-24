@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cast"
 
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
 
@@ -94,20 +94,20 @@ func loadPictOutputFile(fileName string) ([][]string, error) {
 	return reader.ReadAll()
 }
 
-func generateTraceID(random io.Reader) data.TraceID {
+func generatePDataTraceID(random io.Reader) pdata.TraceID {
 	var r [16]byte
 	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return data.NewTraceID(r)
+	return pdata.NewTraceID(r)
 }
 
-func generateSpanID(random io.Reader) data.SpanID {
+func generatePDataSpanID(random io.Reader) pdata.SpanID {
 	var r [8]byte
 	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return data.NewSpanID(r)
+	return pdata.NewSpanID(r)
 }

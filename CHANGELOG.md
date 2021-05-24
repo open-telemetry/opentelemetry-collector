@@ -7,6 +7,10 @@
 - Remove unused logstest package (#3222)
 - Introduce `AppSettings` instead of `Parameters` (#3163)
 
+## 💡 Enhancements 💡
+
+- Remove the proto dependency in `goldendataset` for traces (#TBD)
+
 ## v0.27.0 Beta
 
 ## 🛑 Breaking changes 🛑
