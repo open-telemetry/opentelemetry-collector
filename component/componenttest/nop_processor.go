@@ -55,7 +55,7 @@ func (f *nopProcessorFactory) CreateDefaultConfig() config.Processor {
 // CreateTracesProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateTracesProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateParams,
+	_ component.ProcessorCreateSettings,
 	_ config.Processor,
 	_ consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -65,7 +65,7 @@ func (f *nopProcessorFactory) CreateTracesProcessor(
 // CreateMetricsProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateMetricsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateParams,
+	_ component.ProcessorCreateSettings,
 	_ config.Processor,
 	_ consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -75,7 +75,7 @@ func (f *nopProcessorFactory) CreateMetricsProcessor(
 // CreateLogsProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateParams,
+	_ component.ProcessorCreateSettings,
 	_ config.Processor,
 	_ consumer.Logs,
 ) (component.LogsProcessor, error) {

@@ -48,8 +48,8 @@ type LogsProcessor interface {
 	consumer.Logs
 }
 
-// ProcessorCreateParams is passed to Create* functions in ProcessorFactory.
-type ProcessorCreateParams struct {
+// ProcessorCreateSettings is passed to Create* functions in ProcessorFactory.
+type ProcessorCreateSettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -80,7 +80,7 @@ type ProcessorFactory interface {
 	// an error will be returned instead.
 	CreateTracesProcessor(
 		ctx context.Context,
-		params ProcessorCreateParams,
+		set ProcessorCreateSettings,
 		cfg config.Processor,
 		nextConsumer consumer.Traces,
 	) (TracesProcessor, error)
@@ -90,7 +90,7 @@ type ProcessorFactory interface {
 	// an error will be returned instead.
 	CreateMetricsProcessor(
 		ctx context.Context,
-		params ProcessorCreateParams,
+		set ProcessorCreateSettings,
 		cfg config.Processor,
 		nextConsumer consumer.Metrics,
 	) (MetricsProcessor, error)
@@ -100,7 +100,7 @@ type ProcessorFactory interface {
 	// an error will be returned instead.
 	CreateLogsProcessor(
 		ctx context.Context,
-		params ProcessorCreateParams,
+		set ProcessorCreateSettings,
 		cfg config.Processor,
 		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
@@ -125,17 +125,17 @@ func (b BaseProcessorFactory) CreateDefaultConfig() config.Processor {
 }
 
 // CreateTracesProcessor default implemented as not supported data type.
-func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Traces) (TracesProcessor, error) {
+func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor default implemented as not supported data type.
-func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateLogsProcessor default implemented as not supported data type.
-func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Logs) (LogsProcessor, error) {
+func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
