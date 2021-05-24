@@ -23,18 +23,18 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TestTracesEncoder_TranslationError(t *testing.T) {
-	translate := &mockTranslator{}
-	serialize := &mockSerializer{}
+func TestTracesMarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
 
 	d := &TracesMarshaler{
-		translate: translate,
-		serialize: serialize,
+		translator: translator,
+		encoder:    encoder,
 	}
 
 	td := pdata.NewTraces()
 
-	translate.On("EncodeTraces", td).Return(nil, errors.New("translation failed"))
+	translator.On("FromTraces", td).Return(nil, errors.New("translation failed"))
 
 	_, err := d.Marshal(td)
 
@@ -42,20 +42,20 @@ func TestTracesEncoder_TranslationError(t *testing.T) {
 	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
 }
 
-func TestTracesEncoder_SerializeError(t *testing.T) {
-	translate := &mockTranslator{}
-	serialize := &mockSerializer{}
+func TestTracesMarshal_SerializeError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
 
 	d := &TracesMarshaler{
-		translate: translate,
-		serialize: serialize,
+		translator: translator,
+		encoder:    encoder,
 	}
 
 	td := pdata.NewTraces()
 	expectedModel := struct{}{}
 
-	translate.On("EncodeTraces", td).Return(expectedModel, nil)
-	serialize.On("MarshalTraces", expectedModel).Return(nil, errors.New("serialization failed"))
+	translator.On("FromTraces", td).Return(expectedModel, nil)
+	encoder.On("EncodeTraces", expectedModel).Return(nil, errors.New("serialization failed"))
 
 	_, err := d.Marshal(td)
 
@@ -63,21 +63,21 @@ func TestTracesEncoder_SerializeError(t *testing.T) {
 	assert.EqualError(t, err, "marshal failed: serialization failed")
 }
 
-func TestTracesEncoder_Encode(t *testing.T) {
-	translate := &mockTranslator{}
-	serialize := &mockSerializer{}
+func TestTracesMarshal_Encode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
 
 	d := &TracesMarshaler{
-		translate: translate,
-		serialize: serialize,
+		translator: translator,
+		encoder:    encoder,
 	}
 
 	expectedTraces := pdata.NewTraces()
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
-	translate.On("EncodeTraces", expectedTraces).Return(expectedModel, nil)
-	serialize.On("MarshalTraces", expectedModel).Return(expectedBytes, nil)
+	translator.On("FromTraces", expectedTraces).Return(expectedModel, nil)
+	encoder.On("EncodeTraces", expectedModel).Return(expectedBytes, nil)
 
 	actualBytes, err := d.Marshal(expectedTraces)
 

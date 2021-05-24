@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serializer
+package model
 
-// MetricsMarshaler encodes protocol-specific data model into bytes.
-type MetricsMarshaler interface {
-	MarshalMetrics(model interface{}) ([]byte, error)
-}
+import (
+	"testing"
 
-// TracesMarshaler encodes protocol-specific data model into bytes.
-type TracesMarshaler interface {
-	MarshalTraces(model interface{}) ([]byte, error)
-}
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	"github.com/stretchr/testify/assert"
+)
 
-// LogsMarshaler encodes protocol-specific data model into bytes.
-type LogsMarshaler interface {
-	MarshalLogs(model interface{}) ([]byte, error)
+func TestNewErrIncompatibleType(t *testing.T) {
+	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
+	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
 }

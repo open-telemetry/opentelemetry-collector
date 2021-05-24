@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package model
 
-import (
-	"testing"
+import "go.opentelemetry.io/collector/consumer/pdata"
 
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"github.com/stretchr/testify/assert"
-)
+type ToMetricsTranslator interface {
+	// ToMetrics converts a protocol-specific data model into pdata.
+	ToMetrics(src interface{}) (pdata.Metrics, error)
+}
 
-func TestNewErrIncompatibleType(t *testing.T) {
-	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
-	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
+type ToTracesTranslator interface {
+	// ToTraces converts a protocol-specific data model into pdata.
+	ToTraces(src interface{}) (pdata.Traces, error)
+}
+
+type ToLogsTranslator interface {
+	// ToLogs converts a protocol-specific data model into pdata.
+	ToLogs(src interface{}) (pdata.Logs, error)
 }

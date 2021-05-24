@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package model
 
-import "go.opentelemetry.io/collector/consumer/pdata"
-
+// MetricsEncoder encodes protocol-specific data model into bytes.
 type MetricsEncoder interface {
-	// EncodeMetrics converts pdata to protocol-specific data model.
-	EncodeMetrics(md pdata.Metrics) (interface{}, error)
+	// EncodeMetrics converts protocol-specific data model into bytes.
+	EncodeMetrics(model interface{}) ([]byte, error)
 }
 
+// TracesEncoder encodes protocol-specific data model into bytes.
 type TracesEncoder interface {
-	// EncodeTraces converts pdata to protocol-specific data model.
-	EncodeTraces(td pdata.Traces) (interface{}, error)
+	// EncodeTraces converts protocol-specific data model into bytes.
+	EncodeTraces(model interface{}) ([]byte, error)
 }
 
+// LogsEncoder encodes protocol-specific data model into bytes.
 type LogsEncoder interface {
-	// EncodeLogs converts pdata to protocol-specific data model.
-	EncodeLogs(ld pdata.Logs) (interface{}, error)
+	// EncodeLogs converts protocol-specific data model into bytes.
+	EncodeLogs(model interface{}) ([]byte, error)
 }
