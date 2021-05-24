@@ -22,7 +22,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	idsutil "go.opentelemetry.io/collector/internal/idsutil"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -96,15 +96,15 @@ func jThriftSpansToInternal(spans []*jaeger.Span, dest pdata.SpanSlice) {
 }
 
 func jThriftSpanToInternal(span *jaeger.Span, dest pdata.Span) {
-	dest.SetTraceID(idsutil.UInt64ToTraceID(uint64(span.TraceIdHigh), uint64(span.TraceIdLow)))
-	dest.SetSpanID(idsutil.UInt64ToSpanID(uint64(span.SpanId)))
+	dest.SetTraceID(idutils.UInt64ToTraceID(uint64(span.TraceIdHigh), uint64(span.TraceIdLow)))
+	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanId)))
 	dest.SetName(span.OperationName)
 	dest.SetStartTimestamp(microsecondsToUnixNano(span.StartTime))
 	dest.SetEndTimestamp(microsecondsToUnixNano(span.StartTime + span.Duration))
 
 	parentSpanID := span.ParentSpanId
 	if parentSpanID != 0 {
-		dest.SetParentSpanID(idsutil.UInt64ToSpanID(uint64(parentSpanID)))
+		dest.SetParentSpanID(idutils.UInt64ToSpanID(uint64(parentSpanID)))
 	}
 
 	attrs := dest.Attributes()
@@ -185,8 +185,8 @@ func jThriftReferencesToSpanLinks(refs []*jaeger.SpanRef, excludeParentID int64,
 			continue
 		}
 
-		link.SetTraceID(idsutil.UInt64ToTraceID(uint64(ref.TraceIdHigh), uint64(ref.TraceIdLow)))
-		link.SetSpanID(idsutil.UInt64ToSpanID(uint64(ref.SpanId)))
+		link.SetTraceID(idutils.UInt64ToTraceID(uint64(ref.TraceIdHigh), uint64(ref.TraceIdLow)))
+		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanId)))
 		i++
 	}
 
