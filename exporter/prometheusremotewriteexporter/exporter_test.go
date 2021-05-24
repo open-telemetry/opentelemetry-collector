@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -76,6 +75,17 @@ func Test_NewPRWExporter(t *testing.T) {
 			buildInfo,
 		},
 		{
+			"nil_client",
+			cfg,
+			"test",
+			"http://some.url:9411/api/prom/push",
+			5,
+			map[string]string{"Key1": "Val1"},
+			nil,
+			true,
+			buildInfo,
+		},
+		{
 			"invalid_labels_case",
 			cfg,
 			"test",
@@ -112,18 +122,13 @@ func Test_NewPRWExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg.HTTPClientSettings.Endpoint = tt.endpoint
-			cfg.ExternalLabels = tt.externalLabels
-			cfg.Namespace = tt.namespace
-			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
 
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels, 1, tt.buildInfo)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
 			}
-			require.NoError(t, err)
-			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
+			require.NotNil(t, prwe)
 			assert.NotNil(t, prwe.namespace)
 			assert.NotNil(t, prwe.endpointURL)
 			assert.NotNil(t, prwe.externalLabels)
@@ -254,27 +259,18 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts
 
-	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = endpoint.String()
-	cfg.RemoteWriteQueue.NumConsumers = 1
+	HTTPClient := http.DefaultClient
 
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPRWExporter(cfg, buildInfo)
+
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{}, 1, buildInfo)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
 	}
-
-	err = prwe.Start(context.Background(), componenttest.NewNopHost())
-	if err != nil {
-		errs = append(errs, err)
-		return errs
-	}
-
 	errs = append(errs, prwe.export(context.Background(), testmap)...)
 	return errs
 }
@@ -504,27 +500,30 @@ func Test_PushMetrics(t *testing.T) {
 
 			defer server.Close()
 
-			cfg := &Config{
+			serverURL, uErr := url.Parse(server.URL)
+			assert.NoError(t, uErr)
+
+			config := &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				Namespace:        "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: server.URL,
+					Endpoint: "http://some.url:9411/api/prom/push",
 					// We almost read 0 bytes, so no need to tune ReadBufferSize.
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 				},
-				RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 5},
 			}
-
-			assert.NotNil(t, cfg)
+			assert.NotNil(t, config)
+			// c, err := config.HTTPClientSettings.ToClient()
+			// assert.Nil(t, err)
+			c := http.DefaultClient
 			buildInfo := component.BuildInfo{
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPRWExporter(cfg, buildInfo)
-			require.NoError(t, nErr)
-			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
 
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{}, 5, buildInfo)
+			require.NoError(t, nErr)
 			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {
 				assert.Error(t, err)

@@ -165,15 +165,13 @@ func TestCompressionOptions(t *testing.T) {
 			factory := NewFactory()
 			cfg := createExporterConfig(test.baseURL, factory.CreateDefaultConfig())
 			cfg.Compression = test.compression
-			exp, _ := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
-			err := exp.Start(context.Background(), componenttest.NewNopHost())
-			t.Cleanup(func() {
-				require.NoError(t, exp.Shutdown(context.Background()))
-			})
+			exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 			if test.err {
-				require.Error(t, err)
+				assert.Error(t, err)
 				return
 			}
+			require.NoError(t, err)
+			startAndCleanup(t, exp)
 
 			td := testdata.GenerateTracesOneSpan()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
@@ -453,14 +451,6 @@ func TestErrorResponses(t *testing.T) {
 			exp, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 			require.NoError(t, err)
 
-			// start the exporter
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				require.NoError(t, exp.Shutdown(context.Background()))
-			})
-
-			// generate traces
 			traces := pdata.NewTraces()
 			err = exp.ConsumeTraces(context.Background(), traces)
 			assert.Error(t, err)

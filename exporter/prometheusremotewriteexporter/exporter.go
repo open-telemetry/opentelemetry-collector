@@ -33,7 +33,6 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -50,43 +49,38 @@ type PRWExporter struct {
 	closeChan       chan struct{}
 	concurrency     int
 	userAgentHeader string
-	clientSettings  *confighttp.HTTPClientSettings
 }
 
-// NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
-func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, error) {
-	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
+// NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
+// client parameter cannot be nil.
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, concurrency int, buildInfo component.BuildInfo) (*PRWExporter, error) {
+	if client == nil {
+		return nil, errors.New("http client cannot be nil")
+	}
+
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(externalLabels)
 	if err != nil {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.HTTPClientSettings.Endpoint)
+	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
+
 	return &PRWExporter{
-		namespace:       cfg.Namespace,
+		namespace:       namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
+		client:          client,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
-		clientSettings:  &cfg.HTTPClientSettings,
-		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
+		concurrency:     concurrency,
 	}, nil
-}
-
-// Start creates the http client
-func (prwe *PRWExporter) Start(_ context.Context, host component.Host) error {
-	client, err := prwe.clientSettings.ToClient(host.GetExtensions())
-	if err != nil {
-		return err
-	}
-	prwe.client = client
-	return nil
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
