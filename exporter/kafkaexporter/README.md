@@ -61,6 +61,8 @@ The following settings can be optionally configured:
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
+- `compression` (default = none): The compression codec to compress the messages sent to Kafka. Support four compression methods: `gzip`, `snappy`, `lz4` and `zstd`.
+- `compression_level` (default = -1000): The corresponding compression level.
 
 Example configuration:
 
