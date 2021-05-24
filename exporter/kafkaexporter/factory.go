@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"github.com/Shopify/sarama"
 )
 
 const (
@@ -37,6 +38,10 @@ const (
 	defaultMetadataRetryBackoff = time.Millisecond * 250
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
+	// By default, don't use compression.
+	defaultCompression  = "none"
+	// default from sarama.NewConfig()
+	defaultCompressionLevel = sarama.CompressionLevelDefault
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -87,6 +92,8 @@ func createDefaultConfig() config.Exporter {
 				Backoff: defaultMetadataRetryBackoff,
 			},
 		},
+		CompressionCodec: defaultCompression,
+		CompressionLevel: defaultCompressionLevel,
 	}
 }
 
