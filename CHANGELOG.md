@@ -5,7 +5,6 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove unused logstest package (#3222)
-- Move BigEndian helper functions in `tracetranslator` to an internal package.(#TBD)
 
 ## v0.27.0 Beta
 
