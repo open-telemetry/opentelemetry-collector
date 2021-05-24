@@ -114,12 +114,12 @@ type BaseProcessorFactory struct{}
 
 var _ ProcessorFactory = (*BaseProcessorFactory)(nil)
 
-// Type must be overriden.
+// Type must be overridden.
 func (b BaseProcessorFactory) Type() config.Type {
 	panic("implement me")
 }
 
-// CreateDefaultConfig must be overriden.
+// CreateDefaultConfig must be overridden.
 func (b BaseProcessorFactory) CreateDefaultConfig() config.Processor {
 	panic("implement me")
 }
