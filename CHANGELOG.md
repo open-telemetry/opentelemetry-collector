@@ -6,6 +6,10 @@
 
 - Remove unused logstest package (#3222)
 
+## 💡 Enhancements 💡
+
+- Improve documentation of consumer package and subpackages (#3269)
+
 ## v0.27.0 Beta
 
 ## 🛑 Breaking changes 🛑
