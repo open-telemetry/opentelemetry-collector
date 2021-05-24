@@ -21,7 +21,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func ConfigureCompression(compression string, saramaConfig *sarama.Config) error {
+func configureCompression(compression string, saramaConfig *sarama.Config) error {
 	switch strings.ToLower(compression) {
 	case "none":
 		saramaConfig.Producer.Compression = sarama.CompressionNone
@@ -34,7 +34,7 @@ func ConfigureCompression(compression string, saramaConfig *sarama.Config) error
 	case "zstd":
 		saramaConfig.Producer.Compression = sarama.CompressionZSTD
 	default:
-		return fmt.Errorf("invalid compression %q: can be either \"none\" , \"gzip\", \"snappy\", \"lz4\" or \"zstd\"", compression)
+		return fmt.Errorf("invalid compression %q: can be one of \"none\" , \"gzip\", \"snappy\", \"lz4\" or \"zstd\"", compression)
 	}
 
 	return nil

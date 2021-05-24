@@ -112,7 +112,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
-	if err := ConfigureCompression(config.CompressionCodec, c); err != nil {
+	if err := configureCompression(config.CompressionCodec, c); err != nil {
 		return nil, err
 	}
 	c.Producer.CompressionLevel = config.CompressionLevel

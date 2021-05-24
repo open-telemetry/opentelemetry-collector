@@ -45,10 +45,10 @@ type Config struct {
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
 
-	// CompressionCodec is the chosen compression method
+	// CompressionCodec is the chosen compression method.
 	CompressionCodec string `mapstructure:"compression"`
 
-	// CompressionCodec is the chosen compression level, if applicable
+	// CompressionLevel is the chosen compression level, if applicable.
 	CompressionLevel int `mapstructure:"compression_level"`
 }
 

@@ -15,6 +15,7 @@
 package kafkaexporter
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Shopify/sarama"
@@ -26,7 +27,7 @@ func TestConfigureCompression(t *testing.T) {
 	tests := []struct {
 		compression  string
 		saramaConfig *sarama.Config
-		wantErr      bool
+		wantErr      string
 	}{
 		{
 			compression:  "none",
@@ -48,10 +49,15 @@ func TestConfigureCompression(t *testing.T) {
 			compression:  "zstd",
 			saramaConfig: saramaSample,
 		},
+		{
+			compression:  "somerandomcompression",
+			saramaConfig: saramaSample,
+			wantErr: "invalid compression \"somerandomcompression\": can be one of \"none\" , \"gzip\", \"snappy\", \"lz4\" or \"zstd\"",
+		},
 	}
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			if err := ConfigureCompression(tt.compression, tt.saramaConfig); (err != nil) != tt.wantErr {
+			if err := configureCompression(tt.compression, tt.saramaConfig); (err != nil) && strings.Compare(err.Error(), tt.wantErr) != 0 {
 				t.Errorf("ConfigureCompression() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
