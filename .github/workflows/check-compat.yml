@@ -1,0 +1,12 @@
+name: "Inform incompatible PRs"
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Check-Compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "$GITHUB_HEAD_REF"
+      - run: echo "$GITHUB_BASE_REF"
