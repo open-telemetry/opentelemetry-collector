@@ -33,8 +33,7 @@ type Authentication struct {
 	AuthenticatorName string `mapstructure:"authenticator"`
 }
 
-<<<<<<< HEAD
-// GetAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
+// GetAuthenticator attempts to select the appropriate Authenticator from the list of extensions, based on the requested extension name.
 // If an authenticator is not found, an error is returned.
 func GetAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (Authenticator, error) {
 	if requested == "" {
@@ -46,11 +45,6 @@ func GetAuthenticator(extensions map[config.ComponentID]component.Extension, req
 		return nil, err
 	}
 
-=======
-// GetServerAuthenticator attempts to select the appropriate ServerAuthenticator from the list of extensions, based on the requested extension name.
-// If authenticator is not found, an error is returned.
-func GetServerAuthenticator(extensions map[config.ComponentID]component.Extension, componentID config.ComponentID) (ServerAuthenticator, error) {
->>>>>>> bf891180 (Fix typos in Config Package)
 	for name, ext := range extensions {
 		if auth, ok := ext.(Authenticator); ok {
 			if name == reqID {

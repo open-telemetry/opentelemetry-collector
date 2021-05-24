@@ -15,6 +15,6 @@
 package configgrpc
 
 import (
-	// Import the gzip package with auto-registers the gzip gRPC compressor.
+	// Import the gzip package which auto-registers the gzip gRPC compressor.
 	_ "google.golang.org/grpc/encoding/gzip"
 )
