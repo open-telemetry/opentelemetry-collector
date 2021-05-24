@@ -171,13 +171,8 @@ type GRPCServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
-<<<<<<< HEAD
-// ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
-func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
-=======
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
-func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
->>>>>>> bf891180 (Fix typos in Config Package)
+func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
