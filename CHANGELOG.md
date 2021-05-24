@@ -6,6 +6,10 @@
 
 - Remove unused logstest package (#3222)
 
+## 💡 Enhancements 💡
+
+- Add `doc.go` files to the consumer package and its subpackages (#3270)
+
 ## v0.27.0 Beta
 
 ## 🛑 Breaking changes 🛑
