@@ -65,7 +65,7 @@ The following settings can be optionally configured:
 - `compression_level` (default = -1000): The corresponding compression level which measures the compression degree.
   Lower compression level would lead to fast compression as well as relatively big file size. The valid ranges for each compression method are:
   - `gzip`: `1 - 9`
-  - `snappy`: Snappy do not support compression level.
+  - `snappy`: Snappy does not support compression level.
   - `lz4`: `1 - 17`
   - `zstd`: `1 - 22`
 
