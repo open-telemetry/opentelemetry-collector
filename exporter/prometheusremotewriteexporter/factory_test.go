@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"go.opentelemetry.io/collector/component/componenttest"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -51,37 +53,48 @@ func Test_createMetricsExporter(t *testing.T) {
 		ServerName: "",
 	}
 	tests := []struct {
-		name        string
-		cfg         config.Exporter
-		params      component.ExporterCreateParams
-		returnError bool
+		name                string
+		cfg                 config.Exporter
+		params              component.ExporterCreateParams
+		returnErrorOnCreate bool
+		returnErrorOnStart  bool
 	}{
 		{"success_case",
 			createDefaultConfig(),
 			component.ExporterCreateParams{Logger: zap.NewNop()},
+			false,
 			false,
 		},
 		{"fail_case",
 			nil,
 			component.ExporterCreateParams{Logger: zap.NewNop()},
 			true,
+			false,
 		},
 		{"invalid_config_case",
 			invalidConfig,
 			component.ExporterCreateParams{Logger: zap.NewNop()},
 			true,
+			false,
 		},
 		{"invalid_tls_config_case",
 			invalidTLSConfig,
 			component.ExporterCreateParams{Logger: zap.NewNop()},
+			false,
 			true,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
-			if tt.returnError {
+			exp, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
+			if tt.returnErrorOnCreate {
+				assert.Error(t, err)
+				return
+			}
+			assert.NotNil(t, exp)
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			if tt.returnErrorOnStart {
 				assert.Error(t, err)
 				return
 			}

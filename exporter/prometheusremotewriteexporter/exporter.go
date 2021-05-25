@@ -28,6 +28,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/collector/config/confighttp"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
@@ -49,15 +51,11 @@ type PRWExporter struct {
 	closeChan       chan struct{}
 	concurrency     int
 	userAgentHeader string
+	clientSettings  *confighttp.HTTPClientSettings
 }
 
 // NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
 func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, error) {
-	client, err := cfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
@@ -74,12 +72,18 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 		namespace:       cfg.Namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
-		client:          client,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:  &cfg.HTTPClientSettings,
 	}, nil
+}
+
+// Start creates the prometheus client
+func (prwe *PRWExporter) Start(_ context.Context, _ component.Host) (err error) {
+	prwe.client, err = prwe.clientSettings.ToClient()
+	return err
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
