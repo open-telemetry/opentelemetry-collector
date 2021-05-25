@@ -61,7 +61,7 @@ type ProcessorCreateParams struct {
 // ProcessorFactory is factory interface for processors. This is the
 // new factory type that can create new style processors.
 //
-// This interface cannot be directly implemented; implementations need to embed
+// This interface cannot be directly implemented. Implementations need to embed
 // the BaseProcessorFactory or use the processorhelper.NewFactory to implement it.
 type ProcessorFactory interface {
 	Factory
@@ -76,7 +76,7 @@ type ProcessorFactory interface {
 	CreateDefaultConfig() config.Processor
 
 	// CreateTracesProcessor creates a trace processor based on this config.
-	// If the processor type does not support tracing or if the config is not valid
+	// If the processor type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
 	CreateTracesProcessor(
 		ctx context.Context,
@@ -86,7 +86,7 @@ type ProcessorFactory interface {
 	) (TracesProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
-	// If the processor type does not support metrics or if the config is not valid
+	// If the processor type does not support metrics or if the config is not valid,
 	// an error will be returned instead.
 	CreateMetricsProcessor(
 		ctx context.Context,
@@ -96,7 +96,7 @@ type ProcessorFactory interface {
 	) (MetricsProcessor, error)
 
 	// CreateLogsProcessor creates a processor based on the config.
-	// If the processor type does not support logs or if the config is not valid
+	// If the processor type does not support logs or if the config is not valid,
 	// an error will be returned instead.
 	CreateLogsProcessor(
 		ctx context.Context,
