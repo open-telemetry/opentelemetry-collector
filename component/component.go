@@ -48,12 +48,12 @@ type Component interface {
 	// Shutdown is invoked during service shutdown. After Shutdown() is called, if the component accept data in
 	// any way, it should not accept it anymore.
 	//
-	// If there are any background operations running by the component they must be aborted as soon as possible.
-	// Remember that if you started any long-running background operation from the Start() method that operation
-	// must be also cancelled. If there are any buffer in the component, it should be cleared and the data sent
-	// immediately to the next component.
-	//
-	// Once the Shutdown() method returns the component's lifecycle is completed. No other
+	// If there are any background operations running by the component they must be aborted as 
+	// soon as possible. Remember that if you started any long-running background operations from 
+	// the Start() method, those operations must be also cancelled. If there are any buffers in the 
+	// component, they should be cleared and the data sent immediately to the next component.
+	// 
+	// The component's lifecycle is completed once the Shutdown() method returns. No other
 	// methods of the component are called after that. If necessary a new component with
 	// the same or different configuration may be created and started (this may happen
 	// for example if we want to restart the component).
