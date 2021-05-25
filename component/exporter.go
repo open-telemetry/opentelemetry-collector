@@ -71,20 +71,20 @@ type ExporterFactory interface {
 	CreateDefaultConfig() config.Exporter
 
 	// CreateTracesExporter creates a trace exporter based on this config.
-	// If the exporter type does not support tracing or if the config is not valid
-	// error will be returned instead.
+	// If the exporter type does not support tracing or if the config is not valid,
+	// an error will be returned instead.
 	CreateTracesExporter(ctx context.Context, params ExporterCreateParams,
 		cfg config.Exporter) (TracesExporter, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
-	// If the exporter type does not support metrics or if the config is not valid
-	// error will be returned instead.
+	// If the exporter type does not support metrics or if the config is not valid,
+	// an error will be returned instead.
 	CreateMetricsExporter(ctx context.Context, params ExporterCreateParams,
 		cfg config.Exporter) (MetricsExporter, error)
 
 	// CreateLogsExporter creates an exporter based on the config.
-	// If the exporter type does not support logs or if the config is not valid
-	// error will be returned instead.
+	// If the exporter type does not support logs or if the config is not valid,
+	// an error will be returned instead.
 	CreateLogsExporter(ctx context.Context, params ExporterCreateParams,
 		cfg config.Exporter) (LogsExporter, error)
 }
