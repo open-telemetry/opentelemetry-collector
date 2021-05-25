@@ -67,10 +67,7 @@ func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 // start creates the http client
 func (ze *zipkinExporter) start(_ context.Context, _ component.Host) (err error) {
 	ze.client, err = ze.clientSettings.ToClient()
-	if err != nil {
-		return err
-	}
-	return nil
+	return
 }
 
 func (ze *zipkinExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
