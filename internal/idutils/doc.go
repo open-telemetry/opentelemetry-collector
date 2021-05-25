@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package idutils provides a set of helper functions to convert ids.
-
-Functions in big_endian_converter.go help converting uint64 ids to TraceID
-and SpanID using big endian, and vice versa.
-*/
+// Package idutils provides a set of helper functions to convert ids.
+//
+// Functions in big_endian_converter.go help converting uint64 ids to TraceID
+// and SpanID using big endian, and vice versa.
 package idutils // import "go.opentelemetry.io/collector/internal/idutils"
