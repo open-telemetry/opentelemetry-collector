@@ -53,7 +53,7 @@ type Component interface {
 	// the Start() method, those operations must be also cancelled. If there are any buffers in the 
 	// component, they should be cleared and the data sent immediately to the next component.
 	// 
-	// The component's lifecycle once the Shutdown() method returns. No other
+	// The component's lifecycle is completed once the Shutdown() method returns. No other
 	// methods of the component are called after that. If necessary a new component with
 	// the same or different configuration may be created and started (this may happen
 	// for example if we want to restart the component).
