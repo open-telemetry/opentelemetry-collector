@@ -14,4 +14,3 @@
 
 // Package componenthelper assists with the creation of a new component.Component.
 package componenthelper
- 
