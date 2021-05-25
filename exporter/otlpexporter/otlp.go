@@ -48,10 +48,8 @@ func newExporter(cfg config.Exporter) (*exporter, error) {
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
-
-	e := &exporter{}
-	e.config = oCfg
-	return e, nil
+	
+	return &exporter{config: oCfg}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
