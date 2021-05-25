@@ -355,8 +355,7 @@ func NewAttributeMap() AttributeMap {
 }
 
 func NewAttributeMapFromKeyValues(orig *[]otlpcommon.KeyValue) AttributeMap {
-	return AttributeMap{orig}
-}
+	return newAttributeMap(orig)
 
 func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
 	return AttributeMap{orig}
