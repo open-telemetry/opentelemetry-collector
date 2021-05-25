@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package component outlines the components used in the collector, 
+// Package component outlines the components used in the collector 
 // and provides a foundation for the component’s creation and 
 // termination process. A component can be either a receiver, exporter, 
-// processor or an extension.
+// processor, or an extension.
 package component

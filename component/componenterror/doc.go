@@ -13,5 +13,5 @@
 // limitations under the License.
 
 // Package componenterror provides helper functions to create and process
-// OpenTelemetry specific errors
+// OpenTelemetry specific errors.
 package componenterror
