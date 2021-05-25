@@ -17,3 +17,17 @@ jobs:
       - run: echo "${{ github.base_ref.sha }}"
       
       - run: echo "$github.base_ref.sha"
+
+      - run: echo "${{ github.event.pull_request.head.sha }}"
+
+  Get-Multiple-Branches:
+    runs-on: ubuntu-latest
+    - name: Checkout PR
+      uses: actions/checkout@v2
+      with:
+        path: $GITHUB_BASE_REF"
+
+    - name: Checkout Main
+      uses: actions/checkout@v2
+      with:
+        path: "$GITHUB_HEAD_REF"
