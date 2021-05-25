@@ -20,9 +20,6 @@ exporters:
       initial_interval: 10s
       max_interval: 60s
       max_elapsed_time: 10m
-    per_rpc_auth:
-      type: bearer
-      bearer_token: some-token
     headers:
       "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
       header1: 234
