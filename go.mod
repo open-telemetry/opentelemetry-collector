@@ -28,7 +28,7 @@ require (
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.24.0
+	github.com/prometheus/common v0.25.0
 	github.com/prometheus/prometheus v1.8.2-0.20210430082741-2a4b8e12bbf2
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v3.21.4+incompatible
@@ -46,7 +46,7 @@ require (
 	golang.org/x/sys v0.0.0-20210423082822-04245dca01da
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210312152112-fc591d9ea70f
-	google.golang.org/grpc v1.37.1
+	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0

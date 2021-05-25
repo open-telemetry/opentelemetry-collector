@@ -8,6 +8,10 @@
 - Introduce `AppSettings` instead of `Parameters` (#3163)
 - Move BigEndian helper functions in `tracetranslator` to an internal package.(#TBD)
 
+## 💡 Enhancements 💡
+
+- Add `doc.go` files to the consumer package and its subpackages (#3270)
+
 ## v0.27.0 Beta
 
 ## 🛑 Breaking changes 🛑

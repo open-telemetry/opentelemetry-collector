@@ -14,27 +14,19 @@
 
 package model
 
-import (
-	"fmt"
+import "go.opentelemetry.io/collector/consumer/pdata"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-)
-
-// TracesMarshaler marshals pdata.Traces into bytes.
-type TracesMarshaler struct {
-	encoder    TracesEncoder
-	translator FromTracesTranslator
+type ToMetricsTranslator interface {
+	// ToMetrics converts a protocol-specific data model into pdata.
+	ToMetrics(src interface{}) (pdata.Metrics, error)
 }
 
-// Marshal pdata.Traces into bytes. On error []byte is nil.
-func (t *TracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
-	model, err := t.translator.FromTraces(td)
-	if err != nil {
-		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
-	}
-	buf, err := t.encoder.EncodeTraces(model)
-	if err != nil {
-		return nil, fmt.Errorf("marshal failed: %w", err)
-	}
-	return buf, nil
+type ToTracesTranslator interface {
+	// ToTraces converts a protocol-specific data model into pdata.
+	ToTraces(src interface{}) (pdata.Traces, error)
+}
+
+type ToLogsTranslator interface {
+	// ToLogs converts a protocol-specific data model into pdata.
+	ToLogs(src interface{}) (pdata.Logs, error)
 }

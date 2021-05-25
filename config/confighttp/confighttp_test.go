@@ -28,25 +28,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-type customRoundTripper struct {
-}
-
-var _ http.RoundTripper = (*customRoundTripper)(nil)
-
-func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
-	return nil, nil
-}
-
 func TestAllHTTPClientSettings(t *testing.T) {
-	ext := map[config.ComponentID]component.Extension{
-		config.NewID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
-	}
 	tests := []struct {
 		name        string
 		settings    HTTPClientSettings
@@ -82,7 +67,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(ext)
+			client, err := test.settings.ToClient()
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -126,105 +111,11 @@ func TestHTTPClientSettingsError(t *testing.T) {
 				},
 			},
 		},
-		{
-			err: "failed to resolve authenticator \"dummy\": authenticator not found",
-			settings: HTTPClientSettings{
-				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
-			},
-		},
-		{
-			err: "idStr must have non empty type",
-			settings: HTTPClientSettings{
-				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorName: ""},
-			},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{})
+			_, err := test.settings.ToClient()
 			assert.Regexp(t, test.err, err)
-		})
-	}
-}
-
-func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
-	tests := []struct {
-		name         string
-		shouldErr    bool
-		settings     HTTPClientSettings
-		extensionMap map[config.ComponentID]component.Extension
-	}{
-		{
-			name: "no_auth_extension_enabled",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
-				Auth:     nil,
-			},
-			shouldErr: false,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{
-					ResultRoundTripper: &customRoundTripper{},
-				},
-			},
-		},
-		{
-			name: "with_auth_configuration_and_no_extension",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
-			},
-			shouldErr: true,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
-			},
-		},
-		{
-			name: "with_auth_configuration_and_no_extension_map",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
-			},
-			shouldErr: true,
-		},
-		{
-			name: "with_auth_configuration_has_extension",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
-			},
-			shouldErr: false,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
-			},
-		},
-		{
-			name: "with_auth_configuration_has_err_extension",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
-			},
-			shouldErr: true,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{
-					ResultRoundTripper: &customRoundTripper{}, MustError: true},
-			},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(test.extensionMap)
-			if test.shouldErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-			assert.NotNil(t, client)
-			if test.settings.Auth != nil {
-				_, ok := client.Transport.(*customRoundTripper)
-				assert.True(t, ok)
-			}
 		})
 	}
 }
@@ -408,7 +299,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
+			client, errClient := hcs.ToClient()
 			assert.NoError(t, errClient)
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
@@ -583,7 +474,7 @@ func TestHttpHeaders(t *testing.T) {
 					"header1": "value1",
 				},
 			}
-			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{})
+			client, _ := setting.ToClient()
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
