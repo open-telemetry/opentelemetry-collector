@@ -6,6 +6,7 @@
 
 - Remove unused logstest package (#3222)
 - Introduce `AppSettings` instead of `Parameters` (#3163)
+- Move BigEndian helper functions in `tracetranslator` to an internal package.(#3298)
 
 ## 💡 Enhancements 💡
 

@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -843,8 +844,8 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	rs0ils0.InstrumentationLibrary().SetName("library1")
 	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
 	span1 := rs0ils0.Spans().AppendEmpty()
-	span1.SetTraceID(tracetranslator.UInt64ToTraceID(0, 0))
-	span1.SetSpanID(tracetranslator.UInt64ToSpanID(0))
+	span1.SetTraceID(idutils.UInt64ToTraceID(0, 0))
+	span1.SetSpanID(idutils.UInt64ToSpanID(0))
 	span1.SetName("operation1")
 	span1.SetStartTimestamp(testSpanStartTimestamp)
 	span1.SetEndTimestamp(testSpanEndTimestamp)
