@@ -181,21 +181,21 @@ func TestCreateTracesExporter(t *testing.T) {
 			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
 			if tt.mustFailOnCreate {
 				assert.NotNil(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, consumer)
-				err = consumer.Start(context.Background(), componenttest.NewNopHost())
-				if tt.mustFailOnStart {
-					assert.Error(t, err)
-					return
-				}
-				assert.NoError(t, err)
-				err = consumer.Shutdown(context.Background())
-				if err != nil {
-					// Since the endpoint of OTLP exporter doesn't actually exist,
-					// exporter may already stop because it cannot connect.
-					assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
-				}
+				return
+			}
+			assert.NoError(t, err)
+			assert.NotNil(t, consumer)
+			err = consumer.Start(context.Background(), componenttest.NewNopHost())
+			if tt.mustFailOnStart {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			err = consumer.Shutdown(context.Background())
+			if err != nil {
+				// Since the endpoint of OTLP exporter doesn't actually exist,
+				// exporter may already stop because it cannot connect.
+				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
 			}
 		})
 	}
