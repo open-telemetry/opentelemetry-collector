@@ -48,7 +48,7 @@ func newExporter(cfg config.Exporter) (*exporter, error) {
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
-	
+
 	return &exporter{config: oCfg}, nil
 }
 
