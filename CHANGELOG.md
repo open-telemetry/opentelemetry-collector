@@ -6,6 +6,7 @@
 
 - Remove unused logstest package (#3222)
 - Introduce `AppSettings` instead of `Parameters` (#3163)
+- Remove unused testutil.TempSocketName (#3291)
 
 ## 💡 Enhancements 💡
 
