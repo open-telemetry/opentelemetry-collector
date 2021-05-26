@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Keep the the original Uber license.
+// Keep the original Uber license.
 
 // Copyright (c) 2017 Uber Technologies, Inc.
 //

@@ -4,7 +4,7 @@ Enables an extension that serves zPages, an HTTP endpoint that provides live
 data for debugging different components that were properly instrumented for such.
 All core exporters and receivers provide some zPage instrumentation.
 
-zPages are useful to for in-process diagnostics without having to depend on any 
+zPages are useful for in-process diagnostics without having to depend on any
 backend to examine traces or metrics. 
 
 The following settings are required:

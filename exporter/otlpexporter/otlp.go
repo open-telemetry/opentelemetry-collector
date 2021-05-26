@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -48,14 +49,14 @@ func newExporter(cfg config.Exporter) (*exporter, error) {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
 
-	e := &exporter{}
-	e.config = oCfg
-	w, err := newGrpcSender(oCfg)
-	if err != nil {
-		return nil, err
-	}
-	e.w = w
-	return e, nil
+	return &exporter{config: oCfg}, nil
+}
+
+// start actually creates the gRPC connection. The client construction is deferred till this point as this
+// is the only place we get hold of Extensions which are required to construct auth round tripper.
+func (e *exporter) start(_ context.Context, _ component.Host) (err error) {
+	e.w, err = newGrpcSender(e.config)
+	return
 }
 
 func (e *exporter) shutdown(context.Context) error {

@@ -20,6 +20,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -252,7 +253,7 @@ func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.Instru
 }
 
 func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
-	traceIDHigh, traceIDLow := tracetranslator.TraceIDToUInt64Pair(traceID)
+	traceIDHigh, traceIDLow := idutils.TraceIDToUInt64Pair(traceID)
 	if traceIDLow == 0 && traceIDHigh == 0 {
 		return model.TraceID{}, errZeroTraceID
 	}
@@ -263,7 +264,7 @@ func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
 }
 
 func spanIDToJaegerProto(spanID pdata.SpanID) (model.SpanID, error) {
-	uSpanID := tracetranslator.SpanIDToUInt64(spanID)
+	uSpanID := idutils.SpanIDToUInt64(spanID)
 	if uSpanID == 0 {
 		return model.SpanID(0), errZeroSpanID
 	}
