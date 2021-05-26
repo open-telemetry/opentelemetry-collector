@@ -122,7 +122,6 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-section.yaml"), factories)
-	require.NoError(t, err)
-	require.Nil(t, cfg)
-	assert.Error(t, cfg.Validate())
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
 }

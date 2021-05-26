@@ -8,6 +8,7 @@
 - Introduce `AppSettings` instead of `Parameters` (#3163)
 - Remove unused testutil.TempSocketName (#3291)
 - Move BigEndian helper functions in `tracetranslator` to an internal package.(#3298)
+- Rename `configtest.LoadConfigFile` to `configtest.LoadConfigAndValidate` (#3306)
 
 ## 💡 Enhancements 💡
 
