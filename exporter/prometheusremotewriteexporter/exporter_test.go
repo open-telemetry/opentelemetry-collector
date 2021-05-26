@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,8 +37,8 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-// Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
-func Test_NewPrwExporter(t *testing.T) {
+// Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
+func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
@@ -116,14 +115,13 @@ func Test_NewPrwExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := NewPrwExporter(cfg, tt.buildInfo)
+			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
 
 			if tt.returnError {
 				assert.Error(t, err)
 				return
 			}
-			require.NoError(t, err)
-			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
+			require.NotNil(t, prwe)
 			assert.NotNil(t, prwe.namespace)
 			assert.NotNil(t, prwe.endpointURL)
 			assert.NotNil(t, prwe.externalLabels)
@@ -137,7 +135,7 @@ func Test_NewPrwExporter(t *testing.T) {
 
 // Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
 func Test_Shutdown(t *testing.T) {
-	prwe := &PrwExporter{
+	prwe := &PRWExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
@@ -263,18 +261,11 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter(cfg, buildInfo)
+	prwe, err := NewPRWExporter(cfg, buildInfo)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
 	}
-
-	err = prwe.Start(context.Background(), componenttest.NewNopHost())
-	if err != nil {
-		errs = append(errs, err)
-		return errs
-	}
-
 	errs = append(errs, prwe.export(context.Background(), testmap)...)
 	return errs
 }
@@ -515,16 +506,15 @@ func Test_PushMetrics(t *testing.T) {
 				},
 				RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 5},
 			}
-
 			assert.NotNil(t, cfg)
+			// c, err := config.HTTPClientSettings.ToClient()
+			// assert.Nil(t, err)
 			buildInfo := component.BuildInfo{
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPrwExporter(cfg, buildInfo)
+			prwe, nErr := NewPRWExporter(cfg, buildInfo)
 			require.NoError(t, nErr)
-			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
-
 			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {
 				assert.Error(t, err)

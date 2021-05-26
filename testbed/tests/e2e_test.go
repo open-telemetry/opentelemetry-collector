@@ -84,7 +84,11 @@ func TestBallastMemory(t *testing.T) {
 			return vms > test.ballastSize
 		}, time.Second*2, "VMS must be greater than %d", test.ballastSize)
 
-		assert.LessOrEqual(t, rss, test.maxRSS)
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/3233
+		// given that the maxRSS isn't an absolute maximum and that the actual maximum might be a bit off,
+		// we give some room here instead of failing when the memory usage isn't that much higher than the max
+		lenientMax := 1.1 * float32(test.maxRSS)
+		assert.LessOrEqual(t, rss, lenientMax)
 		tc.Stop()
 	}
 }

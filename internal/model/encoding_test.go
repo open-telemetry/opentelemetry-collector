@@ -12,19 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serializer
+package model
 
-// MetricsMarshaler encodes protocol-specific data model into bytes.
-type MetricsMarshaler interface {
-	MarshalMetrics(model interface{}) ([]byte, error)
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewErrUnavailableEncoding(t *testing.T) {
+	err := NewErrUnavailableEncoding("unknown")
+	assert.IsType(t, &ErrUnavailableEncoding{}, err)
+	assert.EqualError(t, err, `unsupported encoding "unknown"`)
 }
 
-// TracesMarshaler encodes protocol-specific data model into bytes.
-type TracesMarshaler interface {
-	MarshalTraces(model interface{}) ([]byte, error)
-}
-
-// LogsMarshaler encodes protocol-specific data model into bytes.
-type LogsMarshaler interface {
-	MarshalLogs(model interface{}) ([]byte, error)
+func TestEncoding_String(t *testing.T) {
+	assert.Equal(t, "protobuf", Protobuf.String())
+	assert.Equal(t, "json", JSON.String())
+	assert.Equal(t, "thrift", Thrift.String())
 }

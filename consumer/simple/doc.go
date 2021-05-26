@@ -12,20 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serializer
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestNewErrUnavailableEncoding(t *testing.T) {
-	err := NewErrUnavailableEncoding("unknown")
-	assert.IsType(t, &ErrUnavailableEncoding{}, err)
-	assert.EqualError(t, err, `unsupported encoding "unknown"`)
-}
-
-func TestEncoding_String(t *testing.T) {
-	assert.Equal(t, "protobuf", Protobuf.String())
-}
+// Package simple facilitates building pdata.Metrics in receivers in an
+// easier and more fluent way than using pdata.Metrics directly.
+package simple

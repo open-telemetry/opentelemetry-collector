@@ -12,13 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
-
-import (
-	"fmt"
-)
-
-// NewErrIncompatibleType returns errIncompatibleType instance
-func NewErrIncompatibleType(expected, given interface{}) error {
-	return fmt.Errorf("expected model type %T but given %T", expected, given)
-}
+// Package consumerhelper defines types and functions used to create consumer
+// Logs, Metrics, and Traces.
+package consumerhelper

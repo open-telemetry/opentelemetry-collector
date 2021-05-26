@@ -51,7 +51,11 @@ func TestApplication_Start(t *testing.T) {
 		return nil
 	}
 
-	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
+	app, err := New(AppSettings{
+		BuildInfo:      component.DefaultBuildInfo(),
+		Factories:      factories,
+		LoggingOptions: []zap.Option{zap.Hooks(hook)},
+	})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 
@@ -119,7 +123,7 @@ func TestApplication_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo()})
+	app, err := New(AppSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
 	require.NoError(t, err)
 
 	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
@@ -142,12 +146,12 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	params := Parameters{
+	set := AppSettings{
 		BuildInfo:      component.DefaultBuildInfo(),
-		ParserProvider: new(minimalParserLoader),
 		Factories:      factories,
+		ParserProvider: new(minimalParserLoader),
 	}
-	app, err := New(params)
+	app, err := New(set)
 	require.NoError(t, err)
 
 	appDone := make(chan struct{})

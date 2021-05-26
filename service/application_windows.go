@@ -27,12 +27,12 @@ import (
 )
 
 type WindowsService struct {
-	params Parameters
-	app    *Application
+	settings AppSettings
+	app      *Application
 }
 
-func NewWindowsService(params Parameters) *WindowsService {
-	return &WindowsService{params: params}
+func NewWindowsService(set AppSettings) *WindowsService {
+	return &WindowsService{settings: set}
 }
 
 // Execute implements https://godoc.org/golang.org/x/sys/windows/svc#Handler
@@ -81,7 +81,7 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 
 func (s *WindowsService) start(elog *eventlog.Log, appErrorChannel chan error) error {
 	var err error
-	s.app, err = newWithWindowsEventLogCore(s.params, elog)
+	s.app, err = newWithWindowsEventLogCore(s.settings, elog)
 	if err != nil {
 		return err
 	}
@@ -120,12 +120,12 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithWindowsEventLogCore(params Parameters, elog *eventlog.Log) (*Application, error) {
-	params.LoggingOptions = append(
-		params.LoggingOptions,
+func newWithWindowsEventLogCore(set AppSettings, elog *eventlog.Log) (*Application, error) {
+	set.LoggingOptions = append(
+		set.LoggingOptions,
 		zap.WrapCore(withWindowsCore(elog)),
 	)
-	return New(params)
+	return New(set)
 }
 
 var _ zapcore.Core = (*windowsEventLogCore)(nil)

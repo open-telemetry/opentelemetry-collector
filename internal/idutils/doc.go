@@ -12,21 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
-
-import "go.opentelemetry.io/collector/consumer/pdata"
-
-type MetricsDecoder interface {
-	// DecodeMetrics converts a protocol-specific data model into pdata.
-	DecodeMetrics(src interface{}) (pdata.Metrics, error)
-}
-
-type TracesDecoder interface {
-	// DecodeTraces converts a protocol-specific data model into pdata.
-	DecodeTraces(src interface{}) (pdata.Traces, error)
-}
-
-type LogsDecoder interface {
-	// DecodeLogs converts a protocol-specific data model into pdata.
-	DecodeLogs(src interface{}) (pdata.Logs, error)
-}
+// Package idutils provides a set of helper functions to convert ids.
+//
+// Functions in big_endian_converter.go help converting uint64 ids to TraceID
+// and SpanID using big endian, and vice versa.
+package idutils // import "go.opentelemetry.io/collector/internal/idutils"

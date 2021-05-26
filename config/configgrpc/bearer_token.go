@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bearertokenauthextension
+package configgrpc
 
 import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 )
 
 var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
@@ -30,6 +26,13 @@ var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
 // PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
 type PerRPCAuth struct {
 	metadata map[string]string
+}
+
+// BearerToken returns a new PerRPCAuth based on the given token.
+func BearerToken(t string) *PerRPCAuth {
+	return &PerRPCAuth{
+		metadata: map[string]string{"authorization": fmt.Sprintf("Bearer %s", t)},
+	}
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
@@ -40,36 +43,4 @@ func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]
 // RequireTransportSecurity always returns true for this implementation. Passing bearer tokens in plain-text connections is a bad idea.
 func (c *PerRPCAuth) RequireTransportSecurity() bool {
 	return true
-}
-
-// BearerTokenAuth is an implementation of configauth.GRPCClientAuthenticator. It embeds a static authorization "bearer" token in every rpc call.
-type BearerTokenAuth struct {
-	tokenString string
-	logger      *zap.Logger
-}
-
-var _ configauth.GRPCClientAuthenticator = (*BearerTokenAuth)(nil)
-
-func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
-	return &BearerTokenAuth{
-		tokenString: cfg.BearerToken,
-		logger:      logger,
-	}
-}
-
-// Start of BearerTokenAuth does nothing and returns nil
-func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown of BearerTokenAuth does nothing and returns nil
-func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
-	return nil
-}
-
-// PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
-func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	return &PerRPCAuth{
-		metadata: map[string]string{"authorization": fmt.Sprintf("Bearer %s", b.tokenString)},
-	}, nil
 }
