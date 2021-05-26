@@ -34,7 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -247,7 +247,7 @@ func assertZPages(t *testing.T) {
 
 type minimalParserLoader struct{}
 
-func (*minimalParserLoader) Get() (*config.Parser, error) {
+func (*minimalParserLoader) Get() (*configparser.Parser, error) {
 	configStr := `
 receivers:
   otlp:
@@ -268,14 +268,14 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	return config.NewParserFromBuffer(strings.NewReader(configStr))
+	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
 }
 
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get() (*config.Parser, error) {
+func (epl *errParserLoader) Get() (*configparser.Parser, error) {
 	return nil, epl.err
 }
 

@@ -23,6 +23,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 const (
@@ -57,7 +58,7 @@ func (cfg *Config) Validate() error {
 }
 
 // Unmarshal a config.Parser into the config struct.
-func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 	if componentParser == nil {
 		return nil
 	}
