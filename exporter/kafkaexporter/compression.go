@@ -15,14 +15,19 @@
 package kafkaexporter
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Shopify/sarama"
 )
 
-func configureCompression(compression string, saramaConfig *sarama.Config) error {
-	switch strings.ToLower(compression) {
+// Compression defines the compression method and the compression level.
+type Compression struct {
+	Codec string `mapstructure:"codec"`
+	Level int    `mapstructure:"level"`
+}
+
+func configureCompression(comp Compression, saramaConfig *sarama.Config) {
+	switch strings.ToLower(comp.Codec) {
 	case "none":
 		saramaConfig.Producer.Compression = sarama.CompressionNone
 	case "gzip":
@@ -33,9 +38,6 @@ func configureCompression(compression string, saramaConfig *sarama.Config) error
 		saramaConfig.Producer.Compression = sarama.CompressionLZ4
 	case "zstd":
 		saramaConfig.Producer.Compression = sarama.CompressionZSTD
-	default:
-		return fmt.Errorf("invalid compression %q: can be one of \"none\" , \"gzip\", \"snappy\", \"lz4\" or \"zstd\"", compression)
 	}
-
-	return nil
+	saramaConfig.Producer.CompressionLevel = comp.Level
 }

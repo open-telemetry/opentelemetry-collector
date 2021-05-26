@@ -93,8 +93,10 @@ func createDefaultConfig() config.Exporter {
 				Backoff: defaultMetadataRetryBackoff,
 			},
 		},
-		CompressionCodec: defaultCompression,
-		CompressionLevel: defaultCompressionLevel,
+		Compression: Compression{
+			Codec: defaultCompression,
+			Level: defaultCompressionLevel,
+		},
 	}
 }
 

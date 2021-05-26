@@ -15,6 +15,8 @@
 package kafkaexporter
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -45,11 +47,8 @@ type Config struct {
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
 
-	// CompressionCodec is the chosen compression method.
-	CompressionCodec string `mapstructure:"compression"`
-
-	// CompressionLevel is the chosen compression level, if applicable.
-	CompressionLevel int `mapstructure:"compression_level"`
+	// Compression defines the compression method and compression level, if applicable.
+	Compression Compression `mapstructure:"compression"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
@@ -80,5 +79,29 @@ var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	switch strings.ToLower(cfg.Compression.Codec) {
+	case "none":
+		if cfg.Compression.Level != defaultCompressionLevel {
+			return fmt.Errorf("invalid compression level %d: should be %d when not using compression", cfg.Compression.Level, defaultCompressionLevel)
+		}
+	case "gzip":
+		if cfg.Compression.Level > 9 || cfg.Compression.Level < 1 {
+			return fmt.Errorf("invalid compression level %d: valid range is [1, 9] when using gzip", cfg.Compression.Level)
+		}
+	case "snappy":
+		if cfg.Compression.Level != defaultCompressionLevel {
+			return fmt.Errorf("invalid compression level %d: should be %d when using snappy", cfg.Compression.Level, defaultCompressionLevel)
+		}
+	case "lz4":
+		if cfg.Compression.Level > 17 || cfg.Compression.Level < 1 {
+			return fmt.Errorf("invalid compression level %d: valid range is [1, 17] when using lz4", cfg.Compression.Level)
+		}
+	case "zstd":
+		if cfg.Compression.Level > 22 || cfg.Compression.Level < 1 {
+			return fmt.Errorf("invalid compression level %d: valid range is [1, 22] when using zstd", cfg.Compression.Level)
+		}
+	default:
+		return fmt.Errorf("invalid compression %q: can be one of \"none\" , \"gzip\", \"snappy\", \"lz4\" or \"zstd\"", cfg.Compression.Codec)
+	}
 	return nil
 }

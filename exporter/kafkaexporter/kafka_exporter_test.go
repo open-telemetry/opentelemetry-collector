@@ -102,8 +102,6 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 		Metadata: Metadata{
 			Full: false,
 		},
-		CompressionCodec: defaultCompression,
-		CompressionLevel: defaultCompressionLevel,
 	}
 	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
 	assert.Error(t, err)
