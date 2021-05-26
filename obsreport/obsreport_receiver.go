@@ -51,7 +51,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 //        for {
 //            // Since the context outlives the individual receive operations call obsreport using
 //            // WithLongLivedCtx().
-//            ctx := obsreport.StartTraceDataReceiveOp(
+//            ctx := obsreport.StartTracesOp(
 //                longLivedCtx,
 //                r.config.Name(),
 //                r.transport,
@@ -62,7 +62,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 //            if ok {
 //                err = r.nextConsumer.ConsumeTraces(ctx, td)
 //            }
-//            obsreport.EndTraceDataReceiveOp(
+//            obsreport.EndTracesOp(
 //                ctx,
 //                r.format,
 //                len(td.Spans),
@@ -99,94 +99,58 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 	}
 }
 
-// StartTraceDataReceiveOp is called when a request is received from a client.
+// StartTracesOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func (rec *Receiver) StartTraceDataReceiveOp(
-	operationCtx context.Context,
-	opt ...StartReceiveOption,
-) context.Context {
-	return rec.traceReceiveOp(
-		operationCtx,
-		obsmetrics.ReceiveTraceDataOperationSuffix,
-		opt...)
+func (rec *Receiver) StartTracesOp(operationCtx context.Context, opt ...StartReceiveOption) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiveTraceDataOperationSuffix, opt...)
 }
 
-// EndTraceDataReceiveOp completes the receive operation that was started with
-// StartTraceDataReceiveOp.
-func (rec *Receiver) EndTraceDataReceiveOp(
+// EndTracesOp completes the receive operation that was started with
+// StartTracesOp.
+func (rec *Receiver) EndTracesOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedSpans int,
 	err error,
 ) {
-	rec.endReceiveOp(
-		receiverCtx,
-		format,
-		numReceivedSpans,
-		err,
-		config.TracesDataType,
-	)
+	rec.endOp(receiverCtx, format, numReceivedSpans, err, config.TracesDataType)
 }
 
-// StartLogsReceiveOp is called when a request is received from a client.
+// StartLogsOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func (rec *Receiver) StartLogsReceiveOp(
-	operationCtx context.Context,
-	opt ...StartReceiveOption,
-) context.Context {
-	return rec.traceReceiveOp(
-		operationCtx,
-		obsmetrics.ReceiverLogsOperationSuffix,
-		opt...)
+func (rec *Receiver) StartLogsOp(operationCtx context.Context, opt ...StartReceiveOption) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiverLogsOperationSuffix, opt...)
 }
 
-// EndLogsReceiveOp completes the receive operation that was started with
-// StartLogsReceiveOp.
-func (rec *Receiver) EndLogsReceiveOp(
+// EndLogsOp completes the receive operation that was started with
+// StartLogsOp.
+func (rec *Receiver) EndLogsOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedLogRecords int,
 	err error,
 ) {
-	rec.endReceiveOp(
-		receiverCtx,
-		format,
-		numReceivedLogRecords,
-		err,
-		config.LogsDataType,
-	)
+	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, config.LogsDataType)
 }
 
-// StartMetricsReceiveOp is called when a request is received from a client.
+// StartMetricsOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func (rec *Receiver) StartMetricsReceiveOp(
-	operationCtx context.Context,
-	opt ...StartReceiveOption,
-) context.Context {
-	return rec.traceReceiveOp(
-		operationCtx,
-		obsmetrics.ReceiverMetricsOperationSuffix,
-		opt...)
+func (rec *Receiver) StartMetricsOp(operationCtx context.Context, opt ...StartReceiveOption) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiverMetricsOperationSuffix, opt...)
 }
 
-// EndMetricsReceiveOp completes the receive operation that was started with
-// StartMetricsReceiveOp.
-func (rec *Receiver) EndMetricsReceiveOp(
+// EndMetricsOp completes the receive operation that was started with
+// StartMetricsOp.
+func (rec *Receiver) EndMetricsOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedPoints int,
 	err error,
 ) {
-	rec.endReceiveOp(
-		receiverCtx,
-		format,
-		numReceivedPoints,
-		err,
-		config.MetricsDataType,
-	)
+	rec.endOp(receiverCtx, format, numReceivedPoints, err, config.MetricsDataType)
 }
 
 // ReceiverContext adds the keys used when recording observability metrics to
@@ -205,9 +169,9 @@ func ReceiverContext(
 	return ctx
 }
 
-// traceReceiveOp creates the span used to trace the operation. Returning
+// startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
-func (rec *Receiver) traceReceiveOp(
+func (rec *Receiver) startOp(
 	receiverCtx context.Context,
 	operationSuffix string,
 	opt ...StartReceiveOption,
@@ -224,7 +188,7 @@ func (rec *Receiver) traceReceiveOp(
 		ctx, span = trace.StartSpan(receiverCtx, spanName)
 	} else {
 		// Since the receiverCtx is long lived do not use it to start the span.
-		// This way this trace ends when the EndTraceDataReceiveOp is called.
+		// This way this trace ends when the EndTracesOp is called.
 		// Here is safe to ignore the returned context since it is not used below.
 		_, span = trace.StartSpan(context.Background(), spanName)
 
@@ -240,8 +204,8 @@ func (rec *Receiver) traceReceiveOp(
 	return ctx
 }
 
-// endReceiveOp records the observability signals at the end of an operation.
-func (rec *Receiver) endReceiveOp(
+// endOp records the observability signals at the end of an operation.
+func (rec *Receiver) endOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedItems int,

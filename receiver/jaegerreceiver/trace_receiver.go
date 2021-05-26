@@ -245,10 +245,10 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
 	ctx = obsreport.ReceiverContext(ctx, h.id, h.transport)
-	ctx = h.obsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = h.obsrecv.StartTracesOp(ctx)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
-	h.obsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+	h.obsrecv.EndTracesOp(ctx, thriftFormat, numSpans, err)
 	return err
 }
 
@@ -273,12 +273,12 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, grpcTransport)
-	ctx = jr.grpcObsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = jr.grpcObsrecv.StartTracesOp(ctx)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
 
 	err := jr.nextConsumer.ConsumeTraces(ctx, td)
-	jr.grpcObsrecv.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
+	jr.grpcObsrecv.EndTracesOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
 	if err != nil {
 		return nil, err
 	}
@@ -423,12 +423,12 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, collectorHTTPTransport)
-	ctx = jr.httpObsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = jr.httpObsrecv.StartTracesOp(ctx)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {
 		http.Error(w, html.EscapeString(hErr.msg), hErr.statusCode)
-		jr.httpObsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
+		jr.httpObsrecv.EndTracesOp(ctx, thriftFormat, 0, hErr)
 		return
 	}
 
@@ -438,7 +438,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	} else {
 		w.WriteHeader(http.StatusAccepted)
 	}
-	jr.httpObsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+	jr.httpObsrecv.EndTracesOp(ctx, thriftFormat, numSpans, err)
 }
 
 func (jr *jReceiver) startCollector(host component.Host) error {
