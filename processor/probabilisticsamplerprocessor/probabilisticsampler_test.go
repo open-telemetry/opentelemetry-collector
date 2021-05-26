@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestNewTracesProcessor(t *testing.T) {
@@ -437,7 +437,7 @@ func Test_hash(t *testing.T) {
 	// collisions, but, of course it is possible that they happen, a different random source
 	// should avoid that.
 	r := rand.New(rand.NewSource(1))
-	fullKey := tracetranslator.UInt64ToTraceID(r.Uint64(), r.Uint64()).Bytes()
+	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()).Bytes()
 	seen := make(map[uint32]bool)
 	for i := 1; i <= len(fullKey); i++ {
 		key := fullKey[:i]
@@ -467,8 +467,8 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 
 			for k := 0; k < numTracesPerBatch; k++ {
 				span := ils.Spans().At(k)
-				span.SetTraceID(tracetranslator.UInt64ToTraceID(r.Uint64(), r.Uint64()))
-				span.SetSpanID(tracetranslator.UInt64ToSpanID(r.Uint64()))
+				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
+				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
 				attributes := make(map[string]pdata.AttributeValue)
 				attributes[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(404)
 				attributes[conventions.AttributeHTTPStatusText] = pdata.NewAttributeValueString("Not Found")
