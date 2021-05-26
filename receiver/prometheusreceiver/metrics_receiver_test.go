@@ -234,37 +234,42 @@ func count_scrape_metrics(in *agentmetricspb.ExportMetricsServiceRequest) int {
 }
 
 type pointComparator func(*testing.T, *metricspb.Point) bool
+type seriesComparator func(*testing.T, *metricspb.TimeSeries) bool
+type descriptorComparator func(*testing.T, *metricspb.MetricDescriptor) bool
 
 type seriesExpectation struct {
-	startTimestamp *timestamppb.Timestamp
-	pointTimestamp *timestamppb.Timestamp
-	compare        pointComparator
+	series []seriesComparator
+	points []pointComparator
 }
 
 type testExpectation func(*testing.T, []*metricspb.Metric) bool
 
-func assertMetricPresent(name string, metricType metricspb.MetricDescriptor_Type, expectations []seriesExpectation) testExpectation {
+func assertMetricPresent(name string, descriptorExpectations []descriptorComparator, seriesExpectations []seriesExpectation) testExpectation {
 	return func(t *testing.T, metrics []*metricspb.Metric) bool {
 		for _, m := range metrics {
 			if name != m.MetricDescriptor.Name {
 				continue
 			}
 
-			if !assert.Equal(t, metricType, m.MetricDescriptor.Type) {
-				return false
-			}
-			if !assert.Equal(t, len(expectations), len(m.Timeseries)) {
-				return false
-			}
-			for i, se := range expectations {
-				if se.startTimestamp != nil && !assert.Equal(t, se.startTimestamp.String(), m.Timeseries[i].StartTimestamp.String()) {
+			for _, de := range descriptorExpectations {
+				if !de(t, m.MetricDescriptor) {
 					return false
 				}
-				if se.pointTimestamp != nil && !assert.Equal(t, m.Timeseries[i].Points[0].Timestamp.String(), se.pointTimestamp.String()) {
-					return false
+			}
+
+			if !assert.Equal(t, len(seriesExpectations), len(m.Timeseries)) {
+				return false
+			}
+			for i, se := range seriesExpectations {
+				for _, sc := range se.series {
+					if !sc(t, m.Timeseries[i]) {
+						return false
+					}
 				}
-				if se.compare != nil && !se.compare(t, m.Timeseries[i].Points[0]) {
-					return false
+				for _, pc := range se.points {
+					if !pc(t, m.Timeseries[i].Points[0]) {
+						return false
+					}
 				}
 			}
 			return true
@@ -282,6 +287,52 @@ func assertMetricAbsent(name string) testExpectation {
 			}
 		}
 		return true
+	}
+}
+
+func compareMetricType(typ metricspb.MetricDescriptor_Type) descriptorComparator {
+	return func(t *testing.T, descriptor *metricspb.MetricDescriptor) bool {
+		return assert.Equal(t, typ, descriptor.Type)
+	}
+}
+
+func compareMetricLabelKeys(keys []string) descriptorComparator {
+	return func(t *testing.T, descriptor *metricspb.MetricDescriptor) bool {
+		if !assert.Equal(t, len(keys), len(descriptor.LabelKeys)) {
+			return false
+		}
+		for i, k := range keys {
+			if !assert.Equal(t, k, descriptor.LabelKeys[i].Key) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func compareSeriesLabelValues(values []string) seriesComparator {
+	return func(t *testing.T, series *metricspb.TimeSeries) bool {
+		if !assert.Equal(t, len(values), len(series.LabelValues)) {
+			return false
+		}
+		for i, v := range values {
+			if !assert.Equal(t, v, series.LabelValues[i].Value) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func compareSeriesTimestamp(ts *timestamppb.Timestamp) seriesComparator {
+	return func(t *testing.T, series *metricspb.TimeSeries) bool {
+		return assert.Equal(t, ts.String(), series.StartTimestamp.String())
+	}
+}
+
+func comparePointTimestamp(ts *timestamppb.Timestamp) pointComparator {
+	return func(t *testing.T, point *metricspb.Point) bool {
+		return assert.Equal(t, ts.String(), point.Timestamp.String())
 	}
 }
 
@@ -321,12 +372,10 @@ func compareSummary(count int64, sum float64, quantiles map[float64]float64) poi
 }
 
 // Test data and validation functions for EndToEnd test
-// Make sure every page has a gauge, we are relying on it to figure out the starttime if needed
+// Make sure every page has a gauge, we are relying on it to figure out the start time if needed
 
-// target1 has one gague, two counts of a same family, one histogram and one summary. We are expecting the first
-// successful scrape will produce a metric with only the gauge metric, and the 2nd successful scrape will produce all
-// the metrics, with the cumulative types using the firstpage's timestamp as starttime, and values are deltas with the
-// one from the first page (summary quantiles will be as it is)
+// target1 has one gauge, two counts of a same family, one histogram and one summary. We are expecting the both
+// successful scrapes will produce all metrics using the first scrape's timestamp as start time.
 var target1Page1 = `
 # HELP go_threads Number of OS threads created
 # TYPE go_threads gauge
@@ -393,40 +442,73 @@ func verifyTarget1(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 
 	ts1 := m1.Metrics[0].Timeseries[0].Points[0].Timestamp
 	e1 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts1,
-					compare:        compareDoubleVal(19),
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareDoubleVal(19),
+					},
 				},
 			}),
-		assertMetricPresent("http_requests_total", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		assertMetricPresent("http_requests_total",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
+				compareMetricLabelKeys([]string{"code", "method"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareDoubleVal(100),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"200", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareDoubleVal(100),
+					},
 				},
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareDoubleVal(5),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"400", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareDoubleVal(5),
+					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds", metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+		assertMetricPresent("http_request_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareHistogram(2500, 5000, []int64{1000, 500, 500, 500}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareHistogram(2500, 5000, []int64{1000, 500, 500, 500}),
+					},
 				},
 			}),
-		assertMetricPresent("rpc_duration_seconds", metricspb.MetricDescriptor_SUMMARY,
+		assertMetricPresent("rpc_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareSummary(1000, 5000, map[float64]float64{1: 1, 90: 5, 99: 8}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareSummary(1000, 5000, map[float64]float64{1: 1, 90: 5, 99: 8}),
+					},
 				},
 			}),
 	}
@@ -448,40 +530,73 @@ func verifyTarget1(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	}
 
 	e2 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(18),
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(18),
+					},
 				},
 			}),
-		assertMetricPresent("http_requests_total", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		assertMetricPresent("http_requests_total",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
+				compareMetricLabelKeys([]string{"code", "method"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(199),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"200", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(199),
+					},
 				},
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(12),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"400", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(12),
+					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds", metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+		assertMetricPresent("http_request_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareHistogram(2600, 5050, []int64{1100, 500, 500, 500}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareHistogram(2600, 5050, []int64{1100, 500, 500, 500}),
+					},
 				},
 			}),
-		assertMetricPresent("rpc_duration_seconds", metricspb.MetricDescriptor_SUMMARY,
+		assertMetricPresent("rpc_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareSummary(1001, 5002, map[float64]float64{1: 1, 90: 6, 99: 8}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareSummary(1001, 5002, map[float64]float64{1: 1, 90: 6, 99: 8}),
+					},
 				},
 			}),
 	}
@@ -489,11 +604,9 @@ func verifyTarget1(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	doCompare("scrape2", t, want2, m2, e2)
 }
 
-// target2 is going to have 5 pages, and there's a newly appeared item from the 2nd page. we are expecting the new
-// metric will appears on the 3rd scrape, and it uses the timestamp from the 2nd page as starttime, and value is delta
-// from the 2nd page.
-// with the 4th page, we are simulating a reset (values smaller than previous), cumulative types shall be skipped at
-// this run. with the 5th page, cumulative types will be delta with the 4th one
+// target2 is going to have 5 pages, and there's a newly added item on the 2nd page.
+// with the 4th page, we are simulating a reset (values smaller than previous), start times should be from
+// this run for the 4th and 5th scrapes.
 var target2Page1 = `
 # HELP go_threads Number of OS threads created
 # TYPE go_threads gauge
@@ -568,24 +681,43 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	}
 
 	e1 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts1,
-					compare:        compareDoubleVal(18),
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareDoubleVal(18),
+					},
 				},
 			}),
-		assertMetricPresent("http_requests_total", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		assertMetricPresent("http_requests_total",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
+				compareMetricLabelKeys([]string{"code", "method"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareDoubleVal(10),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"200", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareDoubleVal(10),
+					},
 				},
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareDoubleVal(50),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"400", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareDoubleVal(50),
+					},
 				},
 			}),
 	}
@@ -601,29 +733,53 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 		Resource: td.resource,
 	}
 	e2 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(16),
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(16),
+					},
 				},
 			}),
-		assertMetricPresent("http_requests_total", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		assertMetricPresent("http_requests_total",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
+				compareMetricLabelKeys([]string{"code", "method"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(50),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"200", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(50),
+					},
 				},
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(60),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"400", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(60),
+					},
 				},
 				{
-					startTimestamp: ts2,
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(3),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts2),
+						compareSeriesLabelValues([]string{"500", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(3),
+					},
 				},
 			}),
 	}
@@ -641,29 +797,53 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	}
 
 	e3 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts3,
-					compare:        compareDoubleVal(16),
+					points: []pointComparator{
+						comparePointTimestamp(ts3),
+						compareDoubleVal(16),
+					},
 				},
 			}),
-		assertMetricPresent("http_requests_total", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		assertMetricPresent("http_requests_total",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
+				compareMetricLabelKeys([]string{"code", "method"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts3,
-					compare:        compareDoubleVal(50),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"200", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts3),
+						compareDoubleVal(50),
+					},
 				},
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts3,
-					compare:        compareDoubleVal(60),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"400", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts3),
+						compareDoubleVal(60),
+					},
 				},
 				{
-					startTimestamp: ts2,
-					pointTimestamp: ts3,
-					compare:        compareDoubleVal(5),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts2),
+						compareSeriesLabelValues([]string{"500", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts3),
+						compareDoubleVal(5),
+					},
 				},
 			}),
 	}
@@ -772,29 +952,53 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	}
 
 	e4 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts4,
-					compare:        compareDoubleVal(16),
+					points: []pointComparator{
+						comparePointTimestamp(ts4),
+						compareDoubleVal(16),
+					},
 				},
 			}),
-		assertMetricPresent("http_requests_total", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		assertMetricPresent("http_requests_total",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
+				compareMetricLabelKeys([]string{"code", "method"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts4,
-					pointTimestamp: ts4,
-					compare:        compareDoubleVal(49),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts4),
+						compareSeriesLabelValues([]string{"200", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts4),
+						compareDoubleVal(49),
+					},
 				},
 				{
-					startTimestamp: ts4,
-					pointTimestamp: ts4,
-					compare:        compareDoubleVal(59),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts4),
+						compareSeriesLabelValues([]string{"400", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts4),
+						compareDoubleVal(59),
+					},
 				},
 				{
-					startTimestamp: ts4,
-					pointTimestamp: ts4,
-					compare:        compareDoubleVal(3),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts4),
+						compareSeriesLabelValues([]string{"500", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts4),
+						compareDoubleVal(3),
+					},
 				},
 			}),
 	}
@@ -812,29 +1016,53 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	}
 
 	e5 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts5,
-					compare:        compareDoubleVal(16),
+					points: []pointComparator{
+						comparePointTimestamp(ts5),
+						compareDoubleVal(16),
+					},
 				},
 			}),
-		assertMetricPresent("http_requests_total", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		assertMetricPresent("http_requests_total",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
+				compareMetricLabelKeys([]string{"code", "method"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts4,
-					pointTimestamp: ts5,
-					compare:        compareDoubleVal(50),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts4),
+						compareSeriesLabelValues([]string{"200", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts5),
+						compareDoubleVal(50),
+					},
 				},
 				{
-					startTimestamp: ts4,
-					pointTimestamp: ts5,
-					compare:        compareDoubleVal(59),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts4),
+						compareSeriesLabelValues([]string{"400", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts5),
+						compareDoubleVal(59),
+					},
 				},
 				{
-					startTimestamp: ts4,
-					pointTimestamp: ts5,
-					compare:        compareDoubleVal(5),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts4),
+						compareSeriesLabelValues([]string{"500", "post"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts5),
+						compareDoubleVal(5),
+					},
 				},
 			}),
 	}
@@ -929,33 +1157,59 @@ func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	}
 
 	e1 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts1,
-					compare:        compareDoubleVal(18),
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareDoubleVal(18),
+					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds", metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+		assertMetricPresent("http_request_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareHistogram(13003, 50000, []int64{10000, 1000, 1001, 1002}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareHistogram(13003, 50000, []int64{10000, 1000, 1001, 1002}),
+					},
 				},
 			}),
 		assertMetricAbsent("corrupted_hist"),
-		assertMetricPresent("rpc_duration_seconds", metricspb.MetricDescriptor_SUMMARY,
+		assertMetricPresent("rpc_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
+				compareMetricLabelKeys([]string{"foo"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareSummary(900, 8000, map[float64]float64{1: 31, 5: 35, 50: 47, 90: 70, 99: 76}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"bar"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareSummary(900, 8000, map[float64]float64{1: 31, 5: 35, 50: 47, 90: 70, 99: 76}),
+					},
 				},
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts1,
-					compare:        compareSummary(50, 100, map[float64]float64{}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"no_quantile"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts1),
+						compareSummary(50, 100, map[float64]float64{}),
+					},
 				},
 			}),
 	}
@@ -972,33 +1226,59 @@ func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 	}
 
 	e2 := []testExpectation{
-		assertMetricPresent("go_threads", metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+			},
 			[]seriesExpectation{
 				{
-					pointTimestamp: ts2,
-					compare:        compareDoubleVal(16),
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareDoubleVal(16),
+					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds", metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+		assertMetricPresent("http_request_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareHistogram(14003, 50100, []int64{11000, 1000, 1001, 1002}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareHistogram(14003, 50100, []int64{11000, 1000, 1001, 1002}),
+					},
 				},
 			}),
 		assertMetricAbsent("corrupted_hist"),
-		assertMetricPresent("rpc_duration_seconds", metricspb.MetricDescriptor_SUMMARY,
+		assertMetricPresent("rpc_duration_seconds",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
+				compareMetricLabelKeys([]string{"foo"}),
+			},
 			[]seriesExpectation{
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareSummary(950, 8100, map[float64]float64{1: 32, 5: 35, 50: 47, 90: 70, 99: 77}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"bar"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareSummary(950, 8100, map[float64]float64{1: 32, 5: 35, 50: 47, 90: 70, 99: 77}),
+					},
 				},
 				{
-					startTimestamp: ts1,
-					pointTimestamp: ts2,
-					compare:        compareSummary(55, 101, map[float64]float64{}),
+					series: []seriesComparator{
+						compareSeriesTimestamp(ts1),
+						compareSeriesLabelValues([]string{"no_quantile"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(ts2),
+						compareSummary(55, 101, map[float64]float64{}),
+					},
 				},
 			}),
 	}

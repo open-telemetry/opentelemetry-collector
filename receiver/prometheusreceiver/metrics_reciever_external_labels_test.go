@@ -109,5 +109,21 @@ func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.Expo
 		},
 	}
 	want.Metrics[0].Timeseries[0].Points[0].Timestamp = mds[0].Metrics[0].Timeseries[0].Points[0].Timestamp
-	doCompare("scrape-externalLabels", t, want, mds[0])
+	doCompare("scrape-externalLabels", t, want, mds[0], []testExpectation{
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+				compareMetricLabelKeys([]string{"key"}),
+			},
+			[]seriesExpectation{
+				{
+					series: []seriesComparator{
+						compareSeriesLabelValues([]string{"value"}),
+					},
+					points: []pointComparator{
+						compareDoubleVal(19),
+					},
+				},
+			}),
+	})
 }
