@@ -88,7 +88,7 @@ func TestBallastMemory(t *testing.T) {
 		// given that the maxRSS isn't an absolute maximum and that the actual maximum might be a bit off,
 		// we give some room here instead of failing when the memory usage isn't that much higher than the max
 		lenientMax := 1.1 * float32(test.maxRSS)
-		assert.LessOrEqual(t, rss, lenientMax)
+		assert.LessOrEqual(t, float32(rss), lenientMax)
 		tc.Stop()
 	}
 }
