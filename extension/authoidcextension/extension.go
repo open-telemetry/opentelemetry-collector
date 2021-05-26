@@ -48,7 +48,7 @@ type oidcExtension struct {
 }
 
 var (
-	_ configauth.ServerAuthenticator = (*oidcExtension)(nil)
+	_ configauth.Authenticator = (*oidcExtension)(nil)
 
 	errNoAudienceProvided                = errors.New("no Audience provided for the OIDC configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")

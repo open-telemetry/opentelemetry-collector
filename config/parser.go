@@ -38,7 +38,7 @@ func NewParser() *Parser {
 
 // NewParserFromFile creates a new Parser by reading the given file.
 func NewParserFromFile(fileName string) (*Parser, error) {
-	// Read yaml config from file
+	// Read yaml config from file.
 	p := NewParser()
 	p.v.SetConfigFile(fileName)
 	if err := p.v.ReadInConfig(); err != nil {
@@ -71,13 +71,13 @@ type Parser struct {
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
-// Nested keys are returned with a KeyDelimiter separator
+// Nested keys are returned with a KeyDelimiter separator.
 func (l *Parser) AllKeys() []string {
 	return l.v.AllKeys()
 }
 
-// Unmarshal unmarshals the config into a struct. Make sure that the tags
-// on the fields of the structure are properly set.
+// Unmarshal unmarshals the config into a struct.
+// Tags on the fields of the structure must be properly set.
 func (l *Parser) Unmarshal(rawVal interface{}) error {
 	return l.v.Unmarshal(rawVal)
 }
@@ -142,8 +142,8 @@ func deepSearch(m map[string]interface{}, path []string) map[string]interface{} 
 	for _, k := range path {
 		m2, ok := m[k]
 		if !ok {
-			// intermediate key does not exist
-			// => create it and continue from there
+			// Intermediate key does not exist:
+			// create it and continue from there.
 			m3 := make(map[string]interface{})
 			m[k] = m3
 			m = m3
@@ -151,8 +151,8 @@ func deepSearch(m map[string]interface{}, path []string) map[string]interface{} 
 		}
 		m3, ok := m2.(map[string]interface{})
 		if !ok {
-			// intermediate key is a value
-			// => replace with a new map
+			// Intermediate key is a value:
+			// replace with a new map.
 			m3 = make(map[string]interface{})
 			m[k] = m3
 		}
@@ -164,17 +164,17 @@ func deepSearch(m map[string]interface{}, path []string) map[string]interface{} 
 
 // ToStringMap creates a map[string]interface{} from a Parser.
 func (l *Parser) ToStringMap() map[string]interface{} {
-	// This is equivalent to l.v.AllSettings() but it maps nil values
+	// This is equivalent to l.v.AllSettings() but it maps nil values.
 	// We can't use AllSettings here because of https://github.com/spf13/viper/issues/819
 
 	m := map[string]interface{}{}
-	// start from the list of keys, and construct the map one value at a time
+	// Start from the list of keys, and construct the map one value at a time.
 	for _, k := range l.v.AllKeys() {
 		value := l.v.Get(k)
 		path := strings.Split(k, KeyDelimiter)
 		lastKey := strings.ToLower(path[len(path)-1])
 		deepestMap := deepSearch(m, path[0:len(path)-1])
-		// set innermost value
+		// Set innermost value.
 		deepestMap[lastKey] = value
 	}
 	return m

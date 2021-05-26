@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configcheck has checks to be applied to configuration
-// objects implemented by factories of components used in the OpenTelemetry
-// collector. It is recommended for implementers of components to run the
-// validations available on this package.
 package configcheck
 
 import (
@@ -167,7 +163,7 @@ func checkStructFieldTags(f reflect.StructField) error {
 
 	switch f.Type.Kind() {
 	case reflect.Struct:
-		// It is another struct, continue down-level
+		// It is another struct, continue down-level.
 		return validateConfigDataType(f.Type)
 
 	case reflect.Map, reflect.Slice, reflect.Array:
