@@ -19,11 +19,13 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
 var (
-	processorTagKey          = tag.MustNewKey(obsreport.ProcessorKey)
+	processorTagKey          = tag.MustNewKey(obsmetrics.ProcessorKey)
 	statBatchSizeTriggerSend = stats.Int64("batch_size_trigger_send", "Number of times the batch was sent due to a size trigger", stats.UnitDimensionless)
 	statTimeoutTriggerSend   = stats.Int64("timeout_trigger_send", "Number of times the batch was sent due to a timeout trigger", stats.UnitDimensionless)
 	statBatchSendSize        = stats.Int64("batch_send_size", "Number of units in the batch", stats.UnitDimensionless)
@@ -68,12 +70,14 @@ func MetricViews() []*view.View {
 			1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000),
 	}
 
-	legacyViews := []*view.View{
-		countBatchSizeTriggerSendView,
-		countTimeoutTriggerSendView,
-		distributionBatchSendSizeView,
-		distributionBatchSendSizeBytesView,
+	legacyViews := &obsreportconfig.ObsMetrics{
+		Views: []*view.View{
+			countBatchSizeTriggerSendView,
+			countTimeoutTriggerSendView,
+			distributionBatchSendSizeView,
+			distributionBatchSendSizeBytesView,
+		},
 	}
 
-	return obsreport.ProcessorMetricViews(typeStr, legacyViews)
+	return obsreport.ProcessorMetricViews(typeStr, legacyViews).Views
 }
