@@ -41,18 +41,18 @@ type Component interface {
 	// If the component needs to perform a long-running starting operation then it is recommended
 	// that Start() returns quickly and the long-running operation is performed in background.
 	// In that case make sure that the long-running operation does not use the context passed
-	// to Start() function since that context will be cancelled soon and can abort the long-running 
+	// to Start() function since that context will be cancelled soon and can abort the long-running
 	// operation. Create a new context from the context.Background() for long-running operations.
 	Start(ctx context.Context, host Host) error
 
-	// Shutdown is invoked during service shutdown. After Shutdown() is called, if the component 
+	// Shutdown is invoked during service shutdown. After Shutdown() is called, if the component
 	// accepted data in any way, it should not accept it anymore.
 	//
-	// If there are any background operations running by the component they must be aborted as 
-	// soon as possible. Remember that if you started any long-running background operations from 
-	// the Start() method, those operations must be also cancelled. If there are any buffers in the 
+	// If there are any background operations running by the component they must be aborted as
+	// soon as possible. Remember that if you started any long-running background operations from
+	// the Start() method, those operations must be also cancelled. If there are any buffers in the
 	// component, they should be cleared and the data sent immediately to the next component.
-	// 
+	//
 	// The component's lifecycle is completed once the Shutdown() method returns. No other
 	// methods of the component are called after that. If necessary a new component with
 	// the same or different configuration may be created and started (this may happen
