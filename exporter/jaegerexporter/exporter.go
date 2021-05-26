@@ -43,7 +43,7 @@ import (
 func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
 	s := newProtoGRPCSender(cfg, logger)
 	return exporterhelper.NewTracesExporter(
-		cfg, logger, s.pushTraceData,
+		cfg, logger, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithShutdown(s.shutdown),
@@ -90,7 +90,7 @@ type stateReporter interface {
 	GetState() connectivity.State
 }
 
-func (s *protoGRPCSender) pushTraceData(
+func (s *protoGRPCSender) pushTraces(
 	ctx context.Context,
 	td pdata.Traces,
 ) error {

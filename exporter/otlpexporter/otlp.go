@@ -63,21 +63,21 @@ func (e *exporter) shutdown(context.Context) error {
 	return e.w.stop()
 }
 
-func (e *exporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	if err := e.w.exportTrace(ctx, td); err != nil {
 		return fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
 	}
 	return nil
 }
 
-func (e *exporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 	if err := e.w.exportMetrics(ctx, md); err != nil {
 		return fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
 	}
 	return nil
 }
 
-func (e *exporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
+func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 	if err := e.w.exportLogs(ctx, ld); err != nil {
 		return fmt.Errorf("failed to push log data via OTLP exporter: %w", err)
 	}
