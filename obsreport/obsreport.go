@@ -18,21 +18,12 @@ import (
 	"context"
 	"strings"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
-)
-
-const (
-	nameSep = "/"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 var (
-	gLevel = configtelemetry.LevelBasic
-
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
 
@@ -60,99 +51,14 @@ func setParentLink(parentCtx context.Context, childSpan *trace.Span) bool {
 	return true
 }
 
-// Configure is used to control the settings that will be used by the obsreport
-// package.
-func Configure(level configtelemetry.Level) (views []*view.View) {
-	gLevel = level
-
-	if gLevel != configtelemetry.LevelNone {
-		gProcessor.level = level
-		views = append(views, AllViews()...)
-	}
-
-	return views
-}
-
 func buildComponentPrefix(componentPrefix, configType string) string {
-	if !strings.HasSuffix(componentPrefix, nameSep) {
-		componentPrefix += nameSep
+	if !strings.HasSuffix(componentPrefix, obsmetrics.NameSep) {
+		componentPrefix += obsmetrics.NameSep
 	}
 	if configType == "" {
 		return componentPrefix
 	}
-	return componentPrefix + configType + nameSep
-}
-
-// AllViews return the list of all views that needs to be configured.
-func AllViews() (views []*view.View) {
-	// Receiver views.
-	measures := []*stats.Int64Measure{
-		mReceiverAcceptedSpans,
-		mReceiverRefusedSpans,
-		mReceiverAcceptedMetricPoints,
-		mReceiverRefusedMetricPoints,
-		mReceiverAcceptedLogRecords,
-		mReceiverRefusedLogRecords,
-	}
-	tagKeys := []tag.Key{
-		tagKeyReceiver, tagKeyTransport,
-	}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
-
-	// Scraper views.
-	measures = []*stats.Int64Measure{
-		mScraperScrapedMetricPoints,
-		mScraperErroredMetricPoints,
-	}
-	tagKeys = []tag.Key{tagKeyReceiver, tagKeyScraper}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
-
-	// Exporter views.
-	measures = []*stats.Int64Measure{
-		mExporterSentSpans,
-		mExporterFailedToSendSpans,
-		mExporterSentMetricPoints,
-		mExporterFailedToSendMetricPoints,
-		mExporterSentLogRecords,
-		mExporterFailedToSendLogRecords,
-	}
-	tagKeys = []tag.Key{tagKeyExporter}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
-
-	// Processor views.
-	measures = []*stats.Int64Measure{
-		mProcessorAcceptedSpans,
-		mProcessorRefusedSpans,
-		mProcessorDroppedSpans,
-		mProcessorAcceptedMetricPoints,
-		mProcessorRefusedMetricPoints,
-		mProcessorDroppedMetricPoints,
-		mProcessorAcceptedLogRecords,
-		mProcessorRefusedLogRecords,
-		mProcessorDroppedLogRecords,
-	}
-	tagKeys = []tag.Key{tagKeyProcessor}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
-
-	return views
-}
-
-func genViews(
-	measures []*stats.Int64Measure,
-	tagKeys []tag.Key,
-	aggregation *view.Aggregation,
-) []*view.View {
-	views := make([]*view.View, 0, len(measures))
-	for _, measure := range measures {
-		views = append(views, &view.View{
-			Name:        measure.Name(),
-			Description: measure.Description(),
-			TagKeys:     tagKeys,
-			Measure:     measure,
-			Aggregation: aggregation,
-		})
-	}
-	return views
+	return componentPrefix + configType + obsmetrics.NameSep
 }
 
 func errToStatus(err error) trace.Status {

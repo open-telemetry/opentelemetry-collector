@@ -89,7 +89,7 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	}, nil
 }
 
-// Custom RoundTripper that add headers
+// Custom RoundTripper that add headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
 	headers   map[string]string

@@ -17,7 +17,7 @@ package config
 // Extension is the configuration of a service extension. Specific extensions
 // must implement this interface and will typically embed ExtensionSettings
 // struct or a struct that extends it.
-// Embedded validatable will force each extension to implement Validate() function
+// Embedded validatable will force each extension to implement Validate() function.
 type Extension interface {
 	identifiable
 	validatable
@@ -28,7 +28,7 @@ type Extensions map[ComponentID]Extension
 
 // ExtensionSettings defines common settings for an extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
-// When embedded in the extension config it must be with `mapstructure:",squash"` tag.
+// When embedded in the extension config, it must be with `mapstructure:",squash"` tag.
 type ExtensionSettings struct {
 	id ComponentID `mapstructure:"-"`
 }
