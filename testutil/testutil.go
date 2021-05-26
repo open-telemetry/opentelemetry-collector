@@ -15,9 +15,7 @@
 package testutil
 
 import (
-	"io/ioutil"
 	"net"
-	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -30,16 +28,6 @@ import (
 type portpair struct {
 	first string
 	last  string
-}
-
-// TempSocketName provides a temporary Unix socket name for testing.
-func TempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
-	require.NoError(t, err)
-	require.NoError(t, tmpfile.Close())
-	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
-	return socket
 }
 
 // GetAvailableLocalAddress finds an available local port and returns an endpoint
