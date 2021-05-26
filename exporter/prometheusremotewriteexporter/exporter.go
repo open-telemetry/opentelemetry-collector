@@ -31,6 +31,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -51,10 +52,11 @@ type PRWExporter struct {
 	concurrency     int
 	userAgentHeader string
 	clientSettings  *confighttp.HTTPClientSettings
+	logger          *zap.Logger
 }
 
 // NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
-func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, error) {
+func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo, logger *zap.Logger) (*PRWExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
@@ -76,6 +78,7 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 		userAgentHeader: userAgentHeader,
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
+		logger:          logger,
 	}, nil
 }
 
@@ -158,7 +161,8 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 			errs = append(errs, exportErrors...)
 		}
 
-		if dropped != 0 {
+		if dropped > 0 {
+			prwe.logger.Info("Prometheus remote write dropped metrics", zap.Int("dropped_count", dropped))
 			return consumererror.Combine(errs)
 		}
 

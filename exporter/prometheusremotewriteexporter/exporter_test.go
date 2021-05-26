@@ -28,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -110,7 +111,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := NewPRWExporter(cfg, tt.buildInfo, zap.NewNop())
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -191,7 +192,7 @@ func Test_Start(t *testing.T) {
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.HTTPClientSettings = tt.clientSettings
 
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := NewPRWExporter(cfg, tt.buildInfo, zap.NewNop())
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -333,7 +334,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPRWExporter(cfg, buildInfo)
+	prwe, err := NewPRWExporter(cfg, buildInfo, zap.NewNop())
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -591,7 +592,7 @@ func Test_PushMetrics(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPRWExporter(cfg, buildInfo)
+			prwe, nErr := NewPRWExporter(cfg, buildInfo, zap.NewNop())
 			require.NoError(t, nErr)
 			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
 			err := prwe.PushMetrics(context.Background(), *tt.md)
