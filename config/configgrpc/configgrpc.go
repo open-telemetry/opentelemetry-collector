@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
@@ -306,6 +307,10 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 			grpc.StreamInterceptor(authenticator.GrpcStreamServerInterceptor),
 		)
 	}
+
+	// Enable OpenCensus observability plugin.
+	// TODO: Change to OpenTelemetry when collector is changed.
+	opts = append(opts, grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 
 	return opts, nil
 }

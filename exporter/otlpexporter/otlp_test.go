@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 type mockReceiver struct {
@@ -76,7 +75,7 @@ func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
 func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
 	rcv := &mockTracesReceiver{
 		mockReceiver: mockReceiver{
-			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+			srv: grpc.NewServer(),
 		},
 	}
 
@@ -113,7 +112,7 @@ func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
 func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	rcv := &mockLogsReceiver{
 		mockReceiver: mockReceiver{
-			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+			srv: grpc.NewServer(),
 		},
 	}
 
@@ -151,7 +150,7 @@ func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {
 func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	rcv := &mockMetricsReceiver{
 		mockReceiver: mockReceiver{
-			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+			srv: grpc.NewServer(),
 		},
 	}
 
