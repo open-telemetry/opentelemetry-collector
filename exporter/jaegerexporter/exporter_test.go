@@ -278,11 +278,21 @@ func TestConnectionStateChange(t *testing.T) {
 		wg.Done()
 	})
 
+
+	done := make(chan struct{})
 	go func() {
 		sender.startConnectionStatusReporter()
+		done <- struct{}{}
 	}()
 
-	t.Cleanup(func() { require.NoError(t, sender.shutdown(context.Background())) })
+	t.Cleanup(func() {
+		// set the stopped flag, and wait for statusReporter to finish and signal back
+		sender.stopLock.Lock()
+		sender.stopped = true
+		sender.stopLock.Unlock()
+		<-done
+	})
+
 	wg.Wait() // wait for the initial state to be propagated
 
 	// test
