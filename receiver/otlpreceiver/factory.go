@@ -32,6 +32,7 @@ const (
 
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:55681"
+	legacyGRPCEndpoint  = "0.0.0.0:55680"
 )
 
 // NewFactory creates a new OTLP receiver factory.
