@@ -234,7 +234,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 		{
 			name: "no-spans",
-			td:   generateTraceDataResourceOnly(),
+			td:   generateTracesResourceOnly(),
 			jb: &model.Batch{
 				Process: generateProtoProcess(),
 			},
@@ -243,13 +243,13 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 		{
 			name: "no-resource-attrs",
-			td:   generateTraceDataResourceOnlyWithNoAttrs(),
+			td:   generateTracesResourceOnlyWithNoAttrs(),
 			err:  nil,
 		},
 
 		{
 			name: "one-span-no-resources",
-			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
+			td:   generateTracesOneSpanNoResourceWithTraceState(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -262,7 +262,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 		{
 			name: "library-info",
-			td:   generateTraceDataWithLibraryInfo(),
+			td:   generateTracesWithLibraryInfo(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -275,7 +275,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 		{
 			name: "two-spans-child-parent",
-			td:   generateTraceDataTwoSpansChildParent(),
+			td:   generateTracesTwoSpansChildParent(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -290,7 +290,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 		{
 			name: "two-spans-with-follower",
-			td:   generateTraceDataTwoSpansWithFollower(),
+			td:   generateTracesTwoSpansWithFollower(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -352,8 +352,8 @@ func generateProtoChildSpanWithErrorTags() *model.Span {
 }
 
 func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
-	td := generateTraceDataTwoSpansChildParent()
-	resource := generateTraceDataResourceOnly().ResourceSpans().At(0).Resource()
+	td := generateTracesTwoSpansChildParent()
+	resource := generateTracesResourceOnly().ResourceSpans().At(0).Resource()
 	resource.CopyTo(td.ResourceSpans().At(0).Resource())
 
 	b.ResetTimer()
