@@ -27,11 +27,7 @@ func TestTracesMarshal_TranslationError(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := &TracesMarshaler{
-		translator: translator,
-		encoder:    encoder,
-	}
-
+	d := NewTracesMarshaler(encoder, translator)
 	td := pdata.NewTraces()
 
 	translator.On("FromTraces", td).Return(nil, errors.New("translation failed"))
@@ -46,11 +42,7 @@ func TestTracesMarshal_SerializeError(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := &TracesMarshaler{
-		translator: translator,
-		encoder:    encoder,
-	}
-
+	d := NewTracesMarshaler(encoder, translator)
 	td := pdata.NewTraces()
 	expectedModel := struct{}{}
 
@@ -67,11 +59,7 @@ func TestTracesMarshal_Encode(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := &TracesMarshaler{
-		translator: translator,
-		encoder:    encoder,
-	}
-
+	d := NewTracesMarshaler(encoder, translator)
 	expectedTraces := pdata.NewTraces()
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
