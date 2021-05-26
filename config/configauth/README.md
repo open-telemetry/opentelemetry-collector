@@ -32,6 +32,6 @@ receivers:
 
 ## Creating an authenticator
 
-New authenticators can be added by creating a new extension that also implements the `configauth.Authenticator` extension. Generic authenticators that may be used by a good number of users might be accepted as part of the core distribution, or as part of the contrib distribution. If you have interest in contributing one authenticator, open an issue with your proposal.
-
+New authenticators can be added by creating a new extension that also implements the `configauth.ServerAuthenticator` or `config.ClientAuthenticator` for server specific authentication or client specific authentication respectively.
+Generic authenticators that may be used by a good number of users might be accepted as part of the core distribution, or as part of the contrib distribution. If you have interest in contributing one authenticator, open an issue with your proposal.
 For other cases, you'll need to include your custom authenticator as part of your custom OpenTelemetry Collector, perhaps being built using the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector-builder).
