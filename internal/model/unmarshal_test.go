@@ -27,11 +27,7 @@ func TestTracesUnmarshal_EncodingError(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := &TracesUnmarshaler{
-		translator: translator,
-		encoder:    encoder,
-	}
-
+	d := NewTracesUnmarshaler(encoder, translator)
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
@@ -47,11 +43,7 @@ func TestTracesUnmarshal_TranslationError(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := &TracesUnmarshaler{
-		translator: translator,
-		encoder:    encoder,
-	}
-
+	d := NewTracesUnmarshaler(encoder, translator)
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
@@ -68,11 +60,7 @@ func TestTracesUnmarshal_Decode(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := &TracesUnmarshaler{
-		translator: translator,
-		encoder:    encoder,
-	}
-
+	d := NewTracesUnmarshaler(encoder, translator)
 	expectedTraces := pdata.NewTraces()
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
