@@ -278,7 +278,6 @@ func TestConnectionStateChange(t *testing.T) {
 		wg.Done()
 	})
 
-
 	done := make(chan struct{})
 	go func() {
 		sender.startConnectionStatusReporter()
