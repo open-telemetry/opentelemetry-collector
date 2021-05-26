@@ -45,7 +45,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				Namespace:        "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
@@ -58,14 +58,14 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				Endpoint:         ":88999",
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 			},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
@@ -103,7 +103,7 @@ func TestPrometheusExporter(t *testing.T) {
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
@@ -130,11 +130,11 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
-	md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	md := internaldata.OCToMetrics(nil, nil, metricBuilder(128, "metric_1_"))
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
+		md := internaldata.OCToMetrics(nil, nil, metricBuilder(int64(delta), "metric_2_"))
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
@@ -180,7 +180,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
@@ -208,11 +208,11 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	// Should accumulate multiple metrics
 
-	md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	md := internaldata.OCToMetrics(nil, nil, metricBuilder(128, "metric_1_"))
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
+		md := internaldata.OCToMetrics(nil, nil, metricBuilder(int64(delta), "metric_2_"))
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
@@ -258,7 +258,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",

@@ -152,7 +152,7 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.14.* and CircleCI.
+This project uses Go 1.16.* and CircleCI.
 
 CircleCI uses the Makefile with the `ci` target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.

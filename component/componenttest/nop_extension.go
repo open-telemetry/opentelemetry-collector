@@ -22,12 +22,16 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+type nopExtensionConfig struct {
+	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+}
+
 // nopExtensionFactory is factory for nopExtension.
 type nopExtensionFactory struct{}
 
 var nopExtensionFactoryInstance = &nopExtensionFactory{}
 
-// NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop exporters.
+// NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
 func NewNopExtensionFactory() component.ExtensionFactory {
 	return nopExtensionFactoryInstance
 }
@@ -39,8 +43,8 @@ func (f *nopExtensionFactory) Type() config.Type {
 
 // CreateDefaultConfig creates the default configuration for the Extension.
 func (f *nopExtensionFactory) CreateDefaultConfig() config.Extension {
-	return &config.ExtensionSettings{
-		TypeVal: f.Type(),
+	return &nopExtensionConfig{
+		ExtensionSettings: config.NewExtensionSettings(config.NewID("nop")),
 	}
 }
 

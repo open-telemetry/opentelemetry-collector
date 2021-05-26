@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -39,7 +40,6 @@ import (
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
-
 	opts, err := cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
@@ -52,22 +52,21 @@ func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporte
 
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(conn)
 	s := newProtoGRPCSender(logger,
-		cfg.NameVal,
+		cfg.ID().String(),
 		collectorServiceClient,
 		metadata.New(cfg.GRPCClientSettings.Headers),
 		cfg.WaitForReady,
 		conn,
 	)
-	exp, err := exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg, logger, s.pushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithShutdown(s.shutdown),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	)
-
-	return exp, err
 }
 
 // protoGRPCSender forwards spans encoded in the jaeger proto
@@ -83,7 +82,7 @@ type protoGRPCSender struct {
 	connStateReporterInterval time.Duration
 	stateChangeCallbacks      []func(connectivity.State)
 
-	stopCh   chan (struct{})
+	stopCh   chan struct{}
 	stopped  bool
 	stopLock sync.Mutex
 }
@@ -99,7 +98,7 @@ func newProtoGRPCSender(logger *zap.Logger, name string, cl jaegerproto.Collecto
 		conn:                      conn,
 		connStateReporterInterval: time.Second,
 
-		stopCh: make(chan (struct{})),
+		stopCh: make(chan struct{}),
 	}
 	s.AddStateChangeCallback(s.onStateChange)
 	return s

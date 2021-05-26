@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -59,16 +59,10 @@ func createTracesExporter(
 	expCfg := config.(*Config)
 	if expCfg.Endpoint == "" {
 		// TODO: Improve error message, see #215
-		err := fmt.Errorf(
+		return nil, fmt.Errorf(
 			"%q config requires a non-empty \"endpoint\"",
-			expCfg.Name())
-		return nil, err
+			expCfg.ID().String())
 	}
 
-	exp, err := newTracesExporter(expCfg, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return exp, nil
+	return newTracesExporter(expCfg, params.Logger)
 }

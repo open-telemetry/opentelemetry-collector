@@ -79,47 +79,28 @@ type Application struct {
 	asyncErrorChannel chan error
 }
 
-// Parameters holds configuration for creating a new Application.
-type Parameters struct {
-	// Factories component factories.
-	Factories component.Factories
-	// BuildInfo provides application start information.
-	BuildInfo component.BuildInfo
-	// ParserProvider provides the configuration's Parser.
-	// If it is not provided a default provider is used. The default provider loads the configuration
-	// from a config file define by the --config command line flag and overrides component's configuration
-	// properties supplied via --set command line flag.
-	ParserProvider parserprovider.ParserProvider
-	// LoggingOptions provides a way to change behavior of zap logging.
-	LoggingOptions []zap.Option
-}
-
 // New creates and returns a new instance of Application.
-func New(params Parameters) (*Application, error) {
-	if err := configcheck.ValidateConfigFromFactories(params.Factories); err != nil {
+func New(set AppSettings) (*Application, error) {
+	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
 		return nil, err
 	}
 
 	app := &Application{
-		info:         params.BuildInfo,
-		factories:    params.Factories,
+		info:         set.BuildInfo,
+		factories:    set.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     params.BuildInfo.ExeName,
-		Version: params.BuildInfo.Version,
+		Use:     set.BuildInfo.Command,
+		Version: set.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-			if app.logger, err = newLogger(params.LoggingOptions); err != nil {
+			if app.logger, err = newLogger(set.LoggingOptions); err != nil {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
-			if err := app.execute(context.Background()); err != nil {
-				return err
-			}
-
-			return nil
+			return app.execute(context.Background())
 		},
 	}
 
@@ -138,7 +119,7 @@ func New(params Parameters) (*Application, error) {
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	app.rootCmd = rootCmd
 
-	parserProvider := params.ParserProvider
+	parserProvider := set.ParserProvider
 	if parserProvider == nil {
 		// use default provider.
 		parserProvider = parserprovider.Default()
@@ -239,9 +220,9 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 
 	app.logger.Info("Applying configuration...")
 
-	service, err := newService(&settings{
-		Factories:         app.factories,
+	service, err := newService(&svcSettings{
 		BuildInfo:         app.info,
+		Factories:         app.factories,
 		Config:            cfg,
 		Logger:            app.logger,
 		AsyncErrorChannel: app.asyncErrorChannel,
@@ -278,7 +259,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 }
 
 func (app *Application) execute(ctx context.Context) error {
-	app.logger.Info("Starting "+app.info.ExeName+"...",
+	app.logger.Info("Starting "+app.info.Command+"...",
 		zap.String("Version", app.info.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)

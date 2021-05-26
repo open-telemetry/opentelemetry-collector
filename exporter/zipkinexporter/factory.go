@@ -46,12 +46,9 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: defaultTimeout,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -82,6 +79,7 @@ func createTracesExporter(
 		zc,
 		params.Logger,
 		ze.pushTraceData,
+		exporterhelper.WithStart(ze.start),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(zc.QueueSettings),

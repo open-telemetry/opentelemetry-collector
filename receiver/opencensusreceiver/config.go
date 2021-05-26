@@ -22,7 +22,6 @@ import (
 // Config defines configuration for OpenCensus receiver.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	// Configures the receiver server protocol.
 	configgrpc.GRPCServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 

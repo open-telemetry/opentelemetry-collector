@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -192,7 +193,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			jb:   model.Batch{},
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{
@@ -382,7 +383,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "http.status_code tag is set as string",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueString("404"),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueString("404"),
 			}),
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -390,9 +391,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "http.status_code, http.status_message and error tags are set",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
-				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("HTTP 404: Not Found"),
+				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
+				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("HTTP 404: Not Found"),
 			}),
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
@@ -400,9 +401,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code has precedence over http.status_code.",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagStatusCode:     pdata.NewAttributeValueInt(1),
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(500),
-				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("Server Error"),
+				tracetranslator.TagStatusCode:       pdata.NewAttributeValueInt(1),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(500),
+				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("Server Error"),
 			}),
 			status:           okStatus,
 			attrsModifiedLen: 2,
@@ -410,8 +411,8 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
-				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(200),
+				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
+				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(200),
 			}),
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -466,27 +467,27 @@ func TestJSpanKindToInternal(t *testing.T) {
 	}{
 		{
 			jSpanKind:    "client",
-			otlpSpanKind: pdata.SpanKindCLIENT,
+			otlpSpanKind: pdata.SpanKindClient,
 		},
 		{
 			jSpanKind:    "server",
-			otlpSpanKind: pdata.SpanKindSERVER,
+			otlpSpanKind: pdata.SpanKindServer,
 		},
 		{
 			jSpanKind:    "producer",
-			otlpSpanKind: pdata.SpanKindPRODUCER,
+			otlpSpanKind: pdata.SpanKindProducer,
 		},
 		{
 			jSpanKind:    "consumer",
-			otlpSpanKind: pdata.SpanKindCONSUMER,
+			otlpSpanKind: pdata.SpanKindConsumer,
 		},
 		{
 			jSpanKind:    "internal",
-			otlpSpanKind: pdata.SpanKindINTERNAL,
+			otlpSpanKind: pdata.SpanKindInternal,
 		},
 		{
 			jSpanKind:    "all-others",
-			otlpSpanKind: pdata.SpanKindUNSPECIFIED,
+			otlpSpanKind: pdata.SpanKindUnspecified,
 		},
 	}
 
@@ -498,7 +499,7 @@ func TestJSpanKindToInternal(t *testing.T) {
 }
 
 func generateTraceDataResourceOnly() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
 	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
 	rs.Attributes().InsertInt("int-attr-1", 123)
@@ -506,7 +507,7 @@ func generateTraceDataResourceOnly() pdata.Traces {
 }
 
 func generateTraceDataResourceOnlyWithNoAttrs() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{})
 	return td
 }
@@ -525,7 +526,7 @@ func generateProtoProcess() *model.Process {
 }
 
 func generateTraceDataOneSpanNoResource() pdata.Traces {
-	td := testdata.GenerateTraceDataOneSpanNoResource()
+	td := testdata.GenerateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetTraceID(pdata.NewTraceID(
@@ -534,7 +535,7 @@ func generateTraceDataOneSpanNoResource() pdata.Traces {
 	span.SetDroppedEventsCount(0)
 	span.SetStartTimestamp(testSpanStartTimestamp)
 	span.SetEndTimestamp(testSpanEndTimestamp)
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(0).SetDroppedAttributesCount(0)
 	span.Events().At(0).SetName("event-with-attr")
@@ -715,13 +716,13 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetName("operationB")
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetParentSpanID(spans.At(0).SpanID())
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(pdata.StatusCodeError)
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
+		conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
 	})
 
 	return td
@@ -740,7 +741,7 @@ func generateProtoChildSpan() *model.Span {
 		Duration:      testSpanEndTime.Sub(testSpanStartTime),
 		Tags: []model.KeyValue{
 			{
-				Key:    tracetranslator.TagHTTPStatusCode,
+				Key:    conventions.AttributeHTTPStatusCode,
 				VType:  model.ValueType_INT64,
 				VInt64: 404,
 			},
@@ -771,7 +772,7 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)
-	span.SetKind(pdata.SpanKindCONSUMER)
+	span.SetKind(pdata.SpanKindConsumer)
 	span.Status().SetCode(pdata.StatusCodeOk)
 	span.Status().SetMessage("status-ok")
 	link := span.Links().AppendEmpty()
@@ -834,7 +835,7 @@ func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
 }
 
 func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	td := testdata.GenerateTracesOneEmptyResourceSpans()
 
 	rs0 := td.ResourceSpans().At(0)
 	rs0.InstrumentationLibrarySpans().Resize(2)
@@ -843,8 +844,8 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	rs0ils0.InstrumentationLibrary().SetName("library1")
 	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
 	span1 := rs0ils0.Spans().AppendEmpty()
-	span1.SetTraceID(tracetranslator.UInt64ToTraceID(0, 0))
-	span1.SetSpanID(tracetranslator.UInt64ToSpanID(0))
+	span1.SetTraceID(idutils.UInt64ToTraceID(0, 0))
+	span1.SetSpanID(idutils.UInt64ToSpanID(0))
 	span1.SetName("operation1")
 	span1.SetStartTimestamp(testSpanStartTimestamp)
 	span1.SetEndTimestamp(testSpanEndTimestamp)

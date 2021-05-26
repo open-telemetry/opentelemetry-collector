@@ -4,6 +4,9 @@ Enables an extension that serves zPages, an HTTP endpoint that provides live
 data for debugging different components that were properly instrumented for such.
 All core exporters and receivers provide some zPage instrumentation.
 
+zPages are useful for in-process diagnostics without having to depend on any
+backend to examine traces or metrics. 
+
 The following settings are required:
 
 - `endpoint` (default = localhost:55679): Specifies the HTTP endpoint that serves
@@ -18,3 +21,47 @@ extensions:
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+## Exposed zPages routes
+
+The collector exposes the following zPage routes:
+
+### ServiceZ
+
+ServiceZ gives an overview of the collector services by gives quick access to the
+`pipelinez` and `extensionz` zPages.  The page also provides build and runtime 
+information.
+
+Example URL: http://localhost:55679/debug/servicez
+
+### PipelineZ
+
+PipelineZ brings insight on the running pipelines running in the collector. You can
+find information on type, if data is mutated and the receivers, processors and exporters
+that are used for each pipeline.
+
+Example URL: http://localhost:55679/debug/pipelinez
+
+### ExtensionZ
+
+ExtensionZ shows the extensions that are active in the collector.
+
+Example URL: http://localhost:55679/debug/extensionz
+
+### TraceZ
+The TraceZ route is available to examine and bucketize spans by latency buckets for 
+example
+
+(0us, 10us, 100us, 1ms, 10ms, 100ms, 1s, 10s, 1m]
+They also allow you to quickly examine error samples
+
+Example URL: http://localhost:55679/debug/tracez
+
+### RpcZ
+The Rpcz route is available to help examine statistics of remote procedure calls (RPCs) 
+that are properly instrumented. For example when using gRPC
+
+Example URL: http://localhost:55679/debug/rpcz
+
+
+

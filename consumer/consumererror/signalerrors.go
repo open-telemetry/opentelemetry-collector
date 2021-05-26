@@ -49,6 +49,11 @@ func (err Traces) GetTraces() pdata.Traces {
 	return err.failed
 }
 
+// Unwrap returns the wrapped error for functions Is and As in standard package errors.
+func (err Traces) Unwrap() error {
+	return err.error
+}
+
 // Logs is an error that may carry associated Log data for a subset of received data
 // that failed to be processed or sent.
 type Logs struct {
@@ -78,6 +83,11 @@ func (err Logs) GetLogs() pdata.Logs {
 	return err.failed
 }
 
+// Unwrap returns the wrapped error for functions Is and As in standard package errors.
+func (err Logs) Unwrap() error {
+	return err.error
+}
+
 // Metrics is an error that may carry associated Metrics data for a subset of received data
 // that failed to be processed or sent.
 type Metrics struct {
@@ -105,4 +115,9 @@ func AsMetrics(err error, target *Metrics) bool {
 // GetMetrics returns failed metrics from the associated error.
 func (err Metrics) GetMetrics() pdata.Metrics {
 	return err.failed
+}
+
+// Unwrap returns the wrapped error for functions Is and As in standard package errors.
+func (err Metrics) Unwrap() error {
+	return err.error
 }

@@ -17,6 +17,7 @@ package kafkaexporter
 import (
 	"bytes"
 
+	"github.com/Shopify/sarama"
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
 
@@ -31,12 +32,13 @@ type jaegerMarshaler struct {
 
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
-func (j jaegerMarshaler) Marshal(traces pdata.Traces) ([]Message, error) {
+func (j jaegerMarshaler) Marshal(traces pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(traces)
 	if err != nil {
 		return nil, err
 	}
-	var messages []Message
+	var messages []*sarama.ProducerMessage
+
 	var errs []error
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
@@ -48,7 +50,11 @@ func (j jaegerMarshaler) Marshal(traces pdata.Traces) ([]Message, error) {
 				continue
 			}
 			key := []byte(span.TraceID.String())
-			messages = append(messages, Message{Value: bts, Key: key})
+			messages = append(messages, &sarama.ProducerMessage{
+				Topic: topic,
+				Value: sarama.ByteEncoder(bts),
+				Key:   sarama.ByteEncoder(key),
+			})
 		}
 	}
 	return messages, consumererror.Combine(errs)

@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	typeStr         = "kafka"
+	typeStr = "kafka"
+
 	defaultTopic    = "otlp_spans"
 	defaultEncoding = "otlp_proto"
 	defaultBroker   = "localhost:9092"
@@ -41,7 +42,7 @@ const (
 	defaultMetadataFull = true
 )
 
-// FactoryOption applies changes to kafkaReceiverFactory.
+// FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
 // WithTracesUnmarshalers adds Unmarshalers.
@@ -81,15 +82,12 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Topic:    defaultTopic,
-		Encoding: defaultEncoding,
-		Brokers:  []string{defaultBroker},
-		ClientID: defaultClientID,
-		GroupID:  defaultGroupID,
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		Topic:            defaultTopic,
+		Encoding:         defaultEncoding,
+		Brokers:          []string{defaultBroker},
+		ClientID:         defaultClientID,
+		GroupID:          defaultGroupID,
 		Metadata: kafkaexporter.Metadata{
 			Full: defaultMetadataFull,
 			Retry: kafkaexporter.MetadataRetry{

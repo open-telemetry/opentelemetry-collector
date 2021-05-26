@@ -69,6 +69,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, zexp)
 
+	require.NoError(t, zexp.Start(context.Background(), componenttest.NewNopHost()))
+
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
@@ -76,9 +78,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
 	recvCfg := &zipkinreceiver.Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: "zipkin_receiver",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName("zipkin", "receiver")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: addr,
 		},
@@ -316,6 +316,8 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	zexp, err := NewFactory().CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 
+	require.NoError(t, zexp.Start(context.Background(), componenttest.NewNopHost()))
+
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
@@ -325,9 +327,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	port := testutil.GetAvailablePort(t)
 	recvCfg := &zipkinreceiver.Config{
-		ReceiverSettings: config.ReceiverSettings{
-			NameVal: "zipkin_receiver",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName("zipkin", "receiver")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: fmt.Sprintf(":%d", port),
 		},

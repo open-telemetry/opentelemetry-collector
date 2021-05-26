@@ -51,8 +51,8 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			expectProcessesCountMetric := (runtime.GOOS == "linux" || runtime.GOOS == "openbsd" || runtime.GOOS == "darwin" || runtime.GOOS == "freebsd")
-			expectProcessesCreatedMetric := (runtime.GOOS == "linux" || runtime.GOOS == "openbsd")
+			expectProcessesCountMetric := runtime.GOOS == "linux" || runtime.GOOS == "openbsd" || runtime.GOOS == "darwin" || runtime.GOOS == "freebsd"
+			expectProcessesCreatedMetric := runtime.GOOS == "linux" || runtime.GOOS == "openbsd"
 
 			scraper := newProcessesScraper(context.Background(), &Config{})
 			if test.miscFunc != nil {

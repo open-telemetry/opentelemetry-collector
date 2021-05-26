@@ -50,8 +50,8 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 	}
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:        configtelemetry.GetMetricsLevelFlagValue(),
-		ExporterName: config.Name(),
+		Level:      configtelemetry.GetMetricsLevelFlagValue(),
+		ExporterID: config.ID(),
 	})
 
 	collector := newCollector(config, logger)
@@ -59,7 +59,7 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 	_ = registry.Register(collector)
 
 	return &prometheusExporter{
-		name:         config.Name(),
+		name:         config.ID().String(),
 		endpoint:     addr,
 		collector:    collector,
 		registry:     registry,
@@ -104,6 +104,6 @@ func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metri
 	return nil
 }
 
-func (pe *prometheusExporter) Shutdown(_ context.Context) error {
+func (pe *prometheusExporter) Shutdown(context.Context) error {
 	return pe.shutdownFunc()
 }

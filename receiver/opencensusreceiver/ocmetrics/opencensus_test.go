@@ -38,6 +38,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
@@ -150,9 +151,10 @@ func TestExportMultiplexing(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		ocmds := internaldata.MetricsToOC(md)
-		for _, ocmd := range ocmds {
-			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			node, _, metrics := internaldata.ResourceMetricsToOC(rms.At(i))
+			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}
 	}
 
@@ -291,9 +293,10 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		ocmds := internaldata.MetricsToOC(md)
-		for _, ocmd := range ocmds {
-			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			node, _, metrics := internaldata.ResourceMetricsToOC(rms.At(i))
+			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}
 	}
 
@@ -358,7 +361,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (net.Addr, func()
 		}
 	}
 
-	oci, err := New(receiverTagValue, sr)
+	oci, err := New(config.NewID("opencensus"), sr)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

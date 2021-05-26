@@ -25,8 +25,14 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+)
+
+const (
+	spanEventDataFormat = "%s|%s|%d"
+	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
 )
 
 var sampled = true
@@ -34,7 +40,6 @@ var sampled = true
 // InternalTracesToZipkinSpans translates internal trace data into Zipkin v2 spans.
 // Returns a slice of Zipkin SpanModel's.
 func InternalTracesToZipkinSpans(td pdata.Traces) ([]*zipkinmodel.SpanModel, error) {
-
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil, nil
@@ -136,7 +141,7 @@ func spanToZipkinSpan(
 		zs.Duration = time.Duration(span.EndTimestamp() - span.StartTimestamp())
 	}
 	zs.Kind = spanKindToZipkinKind(span.Kind())
-	if span.Kind() == pdata.SpanKindINTERNAL {
+	if span.Kind() == pdata.SpanKindInternal {
 		tags[tracetranslator.TagSpanKind] = "internal"
 	}
 
@@ -196,7 +201,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 				}
 				zAnnos[i] = zipkinmodel.Annotation{
 					Timestamp: event.Timestamp().AsTime(),
-					Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
+					Value: fmt.Sprintf(spanEventDataFormat, event.Name(), jsonStr,
 						event.DroppedAttributesCount()),
 				}
 			}
@@ -214,7 +219,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 		if err != nil {
 			return err
 		}
-		zTags[key] = fmt.Sprintf(tracetranslator.SpanLinkDataFormat, link.TraceID().HexString(),
+		zTags[key] = fmt.Sprintf(spanLinkDataFormat, link.TraceID().HexString(),
 			link.SpanID().HexString(), link.TraceState(), jsonStr, link.DroppedAttributesCount())
 	}
 	return nil
@@ -223,7 +228,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		rawMap[k] = tracetranslator.AttributeValueToString(v, false)
+		rawMap[k] = tracetranslator.AttributeValueToString(v)
 		return true
 	})
 	return rawMap
@@ -247,7 +252,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		zTags[k] = tracetranslator.AttributeValueToString(v, false)
+		zTags[k] = tracetranslator.AttributeValueToString(v)
 		return true
 	})
 
@@ -263,15 +268,15 @@ func extractZipkinServiceName(zTags map[string]string) string {
 	} else if fn, ok := zTags[conventions.AttributeFaasName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeFaasName)
-		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeFaasName
+		zTags[tagServiceNameSource] = conventions.AttributeFaasName
 	} else if fn, ok := zTags[conventions.AttributeK8sDeployment]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeK8sDeployment)
-		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeK8sDeployment
+		zTags[tagServiceNameSource] = conventions.AttributeK8sDeployment
 	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeProcessExecutableName)
-		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeProcessExecutableName
+		zTags[tagServiceNameSource] = conventions.AttributeProcessExecutableName
 	} else {
 		serviceName = tracetranslator.ResourceNoServiceName
 	}
@@ -280,13 +285,13 @@ func extractZipkinServiceName(zTags map[string]string) string {
 
 func spanKindToZipkinKind(kind pdata.SpanKind) zipkinmodel.Kind {
 	switch kind {
-	case pdata.SpanKindCLIENT:
+	case pdata.SpanKindClient:
 		return zipkinmodel.Client
-	case pdata.SpanKindSERVER:
+	case pdata.SpanKindServer:
 		return zipkinmodel.Server
-	case pdata.SpanKindPRODUCER:
+	case pdata.SpanKindProducer:
 		return zipkinmodel.Producer
-	case pdata.SpanKindCONSUMER:
+	case pdata.SpanKindConsumer:
 		return zipkinmodel.Consumer
 	default:
 		return zipkinmodel.Undetermined
@@ -354,10 +359,10 @@ func isIPv6Address(ipStr string) bool {
 }
 
 func convertTraceID(t pdata.TraceID) zipkinmodel.TraceID {
-	h, l := tracetranslator.TraceIDToUInt64Pair(t)
+	h, l := idutils.TraceIDToUInt64Pair(t)
 	return zipkinmodel.TraceID{High: h, Low: l}
 }
 
 func convertSpanID(s pdata.SpanID) zipkinmodel.ID {
-	return zipkinmodel.ID(tracetranslator.SpanIDToUInt64(s))
+	return zipkinmodel.ID(idutils.SpanIDToUInt64(s))
 }

@@ -31,8 +31,8 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTracesTwoSpansSameResourceOneDifferent()))
 
 	assert.NoError(t, lte.Shutdown(context.Background()))
 }
@@ -42,7 +42,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GeneratMetricsAllTypesWithSampleDatapoints()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
@@ -55,42 +55,10 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataEmpty()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyResourceLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataNoLogRecords()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyResourceLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsNoLogRecords()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyLogRecord()))
 
 	assert.NoError(t, lle.Shutdown(context.Background()))
-}
-
-func TestNestedArraySerializesCorrectly(t *testing.T) {
-	ava := pdata.NewAttributeValueArray()
-	ava.ArrayVal().AppendEmpty().SetStringVal("foo")
-	ava.ArrayVal().AppendEmpty().SetIntVal(42)
-
-	ava2 := pdata.NewAttributeValueArray()
-	ava2.ArrayVal().AppendEmpty().SetStringVal("bar")
-	ava2.CopyTo(ava.ArrayVal().AppendEmpty())
-
-	assert.Equal(t, 3, ava.ArrayVal().Len())
-	assert.Equal(t, "[foo, 42, [bar]]", attributeValueToString(ava))
-}
-
-func TestNestedMapSerializesCorrectly(t *testing.T) {
-	ava := pdata.NewAttributeValueMap()
-	av := ava.MapVal()
-	av.Insert("foo", pdata.NewAttributeValueString("test"))
-
-	ava2 := pdata.NewAttributeValueMap()
-	av2 := ava2.MapVal()
-	av2.InsertInt("bar", 13)
-	av.Insert("zoo", ava2)
-
-	expected := `{
-     -> foo: STRING(test)
-     -> zoo: MAP({"bar":13})
-}`
-
-	assert.Equal(t, 2, ava.MapVal().Len())
-	assert.Equal(t, expected, attributeValueToString(ava))
 }

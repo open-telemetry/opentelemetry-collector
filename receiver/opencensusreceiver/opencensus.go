@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -55,19 +56,17 @@ type ocReceiver struct {
 	traceConsumer   consumer.Traces
 	metricsConsumer consumer.Metrics
 
-	stopOnce                 sync.Once
-	startServerOnce          sync.Once
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	instanceName string
+	id config.ComponentID
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOpenCensusReceiver(
-	instanceName string,
+	id config.ComponentID,
 	transport string,
 	addr string,
 	tc consumer.Traces,
@@ -81,18 +80,17 @@ func newOpenCensusReceiver(
 	}
 
 	ocr := &ocReceiver{
-		ln:          ln,
-		corsOrigins: []string{}, // Disable CORS by default.
-		gatewayMux:  gatewayruntime.NewServeMux(),
+		id:              id,
+		ln:              ln,
+		corsOrigins:     []string{}, // Disable CORS by default.
+		gatewayMux:      gatewayruntime.NewServeMux(),
+		traceConsumer:   tc,
+		metricsConsumer: mc,
 	}
 
 	for _, opt := range opts {
 		opt.withReceiver(ocr)
 	}
-
-	ocr.instanceName = instanceName
-	ocr.traceConsumer = tc
-	ocr.metricsConsumer = mc
 
 	return ocr, nil
 }
@@ -132,7 +130,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.instanceName, ocr.traceConsumer, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.traceReceiverOpts...)
 		if err != nil {
 			return
 		}
@@ -154,7 +152,7 @@ func (ocr *ocReceiver) registerMetricsConsumer(host component.Host) error {
 	var err error
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.instanceName, ocr.metricsConsumer)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer)
 		if err != nil {
 			return
 		}
@@ -191,22 +189,21 @@ func (ocr *ocReceiver) Shutdown(context.Context) error {
 	defer ocr.mu.Unlock()
 
 	var err error
-	ocr.stopOnce.Do(func() {
-		if ocr.serverHTTP != nil {
-			_ = ocr.serverHTTP.Close()
-		}
+	if ocr.serverHTTP != nil {
+		err = ocr.serverHTTP.Close()
+	}
 
-		if ocr.ln != nil {
-			_ = ocr.ln.Close()
-		}
+	if ocr.ln != nil {
+		_ = ocr.ln.Close()
+	}
 
-		// TODO: @(odeke-em) investigate what utility invoking (*grpc.Server).Stop()
-		// gives us yet we invoke (net.Listener).Close().
-		// Sure (*grpc.Server).Stop() enables proper shutdown but imposes
-		// a painful and artificial wait time that goes into 20+seconds yet most of our
-		// tests and code should be reactive in less than even 1second.
-		// ocr.serverGRPC.Stop()
-	})
+	// TODO: @(odeke-em) investigate what utility invoking (*grpc.Server).Stop()
+	// gives us yet we invoke (net.Listener).Close().
+	// Sure (*grpc.Server).Stop() enables proper shutdown but imposes
+	// a painful and artificial wait time that goes into 20+seconds yet most of our
+	// tests and code should be reactive in less than even 1second.
+	// ocr.serverGRPC.Stop()
+
 	return err
 }
 
@@ -227,50 +224,45 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 }
 
 func (ocr *ocReceiver) startServer(host component.Host) error {
-	var err error
-	ocr.startServerOnce.Do(func() {
-		// Register the grpc-gateway on the HTTP server mux
-		c := context.Background()
-		opts := []grpc.DialOption{grpc.WithInsecure()}
-		endpoint := ocr.ln.Addr().String()
+	// Register the grpc-gateway on the HTTP server mux
+	c := context.Background()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	endpoint := ocr.ln.Addr().String()
 
-		_, ok := ocr.ln.(*net.UnixListener)
-		if ok {
-			endpoint = "unix:" + endpoint
+	_, ok := ocr.ln.(*net.UnixListener)
+	if ok {
+		endpoint = "unix:" + endpoint
+	}
+
+	if err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
+		return err
+	}
+
+	if err := agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
+		return err
+	}
+
+	// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
+	m := cmux.New(ocr.ln)
+	grpcL := m.MatchWithWriters(
+		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
+
+	httpL := m.Match(cmux.Any())
+	go func() {
+		if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
+			host.ReportFatalError(errGrpc)
 		}
-
-		err = agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
+	}()
+	go func() {
+		if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != http.ErrServerClosed {
+			host.ReportFatalError(errHTTP)
 		}
-
-		err = agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
+	}()
+	go func() {
+		if errServe := m.Serve(); errServe != nil {
+			host.ReportFatalError(errServe)
 		}
-
-		// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
-		m := cmux.New(ocr.ln)
-		grpcL := m.MatchWithWriters(
-			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
-			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
-
-		httpL := m.Match(cmux.Any())
-		go func() {
-			if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
-				host.ReportFatalError(errGrpc)
-			}
-		}()
-		go func() {
-			if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != http.ErrServerClosed {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-		go func() {
-			if errServe := m.Serve(); errServe != nil {
-				host.ReportFatalError(errServe)
-			}
-		}()
-	})
-	return err
+	}()
+	return nil
 }

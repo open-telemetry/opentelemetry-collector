@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -53,10 +54,7 @@ var ExampleExporterFactory = exporterhelper.NewFactory(
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporter{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: expType,
-			NameVal: expType,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(expType)),
 		ExtraSetting:     "some export string",
 		ExtraMapSetting:  nil,
 		ExtraListSetting: nil,
@@ -108,6 +106,10 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
+}
+
+func (exp *ExampleExporterConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 // ConsumeMetrics receives pdata.Metrics for processing by the Metrics.

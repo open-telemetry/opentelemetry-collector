@@ -14,5 +14,5 @@ else
     curr="${TESTS[$i]}"
 fi
 done
-MATRIX+="]}"
+MATRIX+=",{\"test\":\"$curr\"}]}"
 echo "::set-output name=matrix::$MATRIX"

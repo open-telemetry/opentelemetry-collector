@@ -140,7 +140,7 @@ func TestDefaultExporters(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
-			assert.Equal(t, tt.exporter, factory.CreateDefaultConfig().Type())
+			assert.Equal(t, config.NewID(tt.exporter), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
 				t.Log("Skipping lifecycle test", tt.exporter)
@@ -168,8 +168,9 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 		BuildInfo: component.DefaultBuildInfo(),
 	}
 
-	if getConfigFn == nil {
-		getConfigFn = factory.CreateDefaultConfig
+	cfg := factory.CreateDefaultConfig()
+	if getConfigFn != nil {
+		cfg = getConfigFn()
 	}
 
 	createFns := []createExporterFn{
@@ -178,19 +179,20 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 		wrapCreateMetricsExp(factory),
 	}
 
-	for _, createFn := range createFns {
-		firstExp, err := createFn(ctx, expCreateParams, getConfigFn())
-		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
-			continue
+	for i := 0; i < 2; i++ {
+		var exps []component.Exporter
+		for _, createFn := range createFns {
+			exp, err := createFn(ctx, expCreateParams, cfg)
+			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+				continue
+			}
+			require.NoError(t, err)
+			require.NoError(t, exp.Start(ctx, host))
+			exps = append(exps, exp)
 		}
-		require.NoError(t, err)
-		require.NoError(t, firstExp.Start(ctx, host))
-		require.NoError(t, firstExp.Shutdown(ctx))
-
-		secondExp, err := createFn(ctx, expCreateParams, getConfigFn())
-		require.NoError(t, err)
-		require.NoError(t, secondExp.Start(ctx, host))
-		require.NoError(t, secondExp.Shutdown(ctx))
+		for _, exp := range exps {
+			assert.NoError(t, exp.Shutdown(ctx))
+		}
 	}
 }
 

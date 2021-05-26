@@ -36,7 +36,7 @@ service:
 
 ## <a name="health_check"></a>Health Check
 Health Check extension enables an HTTP url that can be probed to check the
-status of the the OpenTelemetry Collector. This extension can be used as a
+status of the OpenTelemetry Collector. This extension can be used as a
 liveness and/or readiness probe on Kubernetes.
 
 The following settings are required:

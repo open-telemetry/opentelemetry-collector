@@ -20,11 +20,14 @@ import (
 	"testing"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -59,11 +62,11 @@ func Test_transaction(t *testing.T) {
 		}},
 	}
 
-	rn := "prometheus"
+	rID := config.NewID("prometheus")
 
 	t.Run("Commit Without Adding", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
@@ -71,7 +74,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Rollback dose nothing", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
 		if got := tr.Rollback(); got != nil {
 			t.Errorf("expecting nil from Rollback() but got err %v", got)
 		}
@@ -80,8 +83,8 @@ func Test_transaction(t *testing.T) {
 	badLabels := labels.Labels([]labels.Label{{Name: "foo", Value: "bar"}})
 	t.Run("Add One No Target", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
-		if _, got := tr.Add(badLabels, time.Now().Unix()*1000, 1.0); got == nil {
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
+		if _, got := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
 	})
@@ -92,8 +95,8 @@ func Test_transaction(t *testing.T) {
 		{Name: "foo", Value: "bar"}})
 	t.Run("Add One Job not found", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
-		if _, got := tr.Add(jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
+		if _, got := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
 	})
@@ -103,8 +106,8 @@ func Test_transaction(t *testing.T) {
 		{Name: "__name__", Value: "foo"}})
 	t.Run("Add One Good", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
-		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
+		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		tr.metricBuilder.startTime = 1.0 // set to a non-zero value
@@ -116,10 +119,14 @@ func Test_transaction(t *testing.T) {
 		if len(mds) != 1 {
 			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())
 		}
-		ocmds := internaldata.MetricsToOC(mds[0])
-		if len(ocmds) != 1 {
-			t.Fatalf("wanted one batch per node, got %v\n", sink.AllMetrics())
+		var ocmds []*agentmetricspb.ExportMetricsServiceRequest
+		rms := mds[0].ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+			ocmds = append(ocmds, ocmd)
 		}
+		require.Len(t, ocmds, 1)
 		if !proto.Equal(ocmds[0].Node, expectedNode) {
 			t.Errorf("generated node %v and expected node %v is different\n", ocmds[0].Node, expectedNode)
 		}
@@ -133,8 +140,8 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Error when start time is zero", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
-		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
+		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		tr.metricBuilder.startTime = 0 // zero value means the start time metric is missing
@@ -148,8 +155,8 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Drop NaN value", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
-		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
+		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		if got := tr.Commit(); got != nil {

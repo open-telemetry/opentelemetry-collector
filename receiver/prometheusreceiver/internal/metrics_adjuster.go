@@ -22,7 +22,6 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // Notes on garbage collection (gc):
@@ -186,7 +185,7 @@ func (jm *JobsMap) get(job, instance string) *timeseriesMap {
 }
 
 // MetricsAdjuster takes a map from a metric instance to the initial point in the metrics instance
-// and provides AdjustMetrics, which takes a sequence of metrics and adjust their values based on
+// and provides AdjustMetrics, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
 type MetricsAdjuster struct {
 	tsm    *timeseriesMap
@@ -201,28 +200,23 @@ func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.Logger) *MetricsAdjuster
 	}
 }
 
-// AdjustMetrics takes a sequence of metrics and adjust their values based on the initial and
-// previous points in the timeseriesMap. If the metric is the first point in the timeseries, or the
-// timeseries has been reset, it is removed from the sequence and added to the timeseriesMap.
-// Additionally returns the total number of timeseries dropped from the metrics.
+// AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
+// previous points in the timeseriesMap.
+// Returns the total number of timeseries that had reset start times.
 func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) ([]*metricspb.Metric, int) {
 	var adjusted = make([]*metricspb.Metric, 0, len(metrics))
-	dropped := 0
+	resets := 0
 	ma.tsm.Lock()
 	defer ma.tsm.Unlock()
 	for _, metric := range metrics {
-		adj, d := ma.adjustMetric(metric)
-		dropped += d
-		if adj {
-			adjusted = append(adjusted, metric)
-		}
+		d := ma.adjustMetric(metric)
+		resets += d
+		adjusted = append(adjusted, metric)
 	}
-	return adjusted, dropped
+	return adjusted, resets
 }
 
-// Returns true if at least one of the metric's timeseries was adjusted and false if all of the
-// timeseries are an initial occurrence or a reset. Additionally returns the number of timeseries
-// dropped from the metric.
+// Returns the number of timeseries with reset start times.
 //
 // Types of metrics returned supported by prometheus:
 // - MetricDescriptor_GAUGE_DOUBLE
@@ -230,44 +224,32 @@ func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) ([]*metric
 // - MetricDescriptor_CUMULATIVE_DOUBLE
 // - MetricDescriptor_CUMULATIVE_DISTRIBUTION
 // - MetricDescriptor_SUMMARY
-func (ma *MetricsAdjuster) adjustMetric(metric *metricspb.Metric) (bool, int) {
+func (ma *MetricsAdjuster) adjustMetric(metric *metricspb.Metric) int {
 	switch metric.MetricDescriptor.Type {
 	case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 		// gauges don't need to be adjusted so no additional processing is necessary
-		return true, 0
+		return 0
 	default:
 		return ma.adjustMetricTimeseries(metric)
 	}
 }
 
-// Returns true if at least one of the metric's timeseries was adjusted and false if all of the
-// timeseries are an initial occurrence or a reset. Additionally returns the number of timeseries
-// dropped.
-func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) (bool, int) {
-	dropped := 0
+// Returns  the number of timeseries that had reset start times.
+func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) int {
+	resets := 0
 	filtered := make([]*metricspb.TimeSeries, 0, len(metric.GetTimeseries()))
 	for _, current := range metric.GetTimeseries() {
 		tsi := ma.tsm.get(metric, current.GetLabelValues())
-		if tsi.initial == nil {
-			// initial timeseries
+		if tsi.initial == nil || !ma.adjustTimeseries(metric.MetricDescriptor.Type, current, tsi.initial, tsi.previous) {
+			// initial || reset timeseries
 			tsi.initial = current
-			tsi.previous = current
-			dropped++
-		} else {
-			if ma.adjustTimeseries(metric.MetricDescriptor.Type, current, tsi.initial,
-				tsi.previous) {
-				tsi.previous = current
-				filtered = append(filtered, current)
-			} else {
-				// reset timeseries
-				tsi.initial = current
-				tsi.previous = current
-				dropped++
-			}
+			resets++
 		}
+		tsi.previous = current
+		filtered = append(filtered, current)
 	}
 	metric.Timeseries = filtered
-	return len(filtered) > 0, dropped
+	return resets
 }
 
 // Returns true if 'current' was adjusted and false if 'current' is an the initial occurrence or a
@@ -289,83 +271,35 @@ func (ma *MetricsAdjuster) adjustPoints(metricType metricspb.MetricDescriptor_Ty
 			zap.Int("len(current)", len(current)), zap.Int("len(initial)", len(initial)), zap.Int("len(previous)", len(previous)))
 		return true
 	}
-	return ma.adjustPoint(metricType, current[0], initial[0], previous[0])
+	return ma.isReset(metricType, current[0], previous[0])
 }
 
-// Note: There is an important, subtle point here. When a new timeseries or a reset is detected,
-// current and initial are the same object. When initial == previous, the previous value/count/sum
-// are all the initial value. When initial != previous, the previous value/count/sum has been
-// adjusted wrt the initial value so both they must be combined to find the actual previous
-// value/count/sum. This happens because the timeseries are updated in-place - if new copies of the
-// timeseries were created instead, previous could be used directly but this would mean reallocating
-// all of the metrics.
-func (ma *MetricsAdjuster) adjustPoint(metricType metricspb.MetricDescriptor_Type,
-	current, initial, previous *metricspb.Point) bool {
+func (ma *MetricsAdjuster) isReset(metricType metricspb.MetricDescriptor_Type,
+	current, previous *metricspb.Point) bool {
 	switch metricType {
 	case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-		currentValue := current.GetDoubleValue()
-		initialValue := initial.GetDoubleValue()
-		previousValue := initialValue
-		if initial != previous {
-			previousValue += previous.GetDoubleValue()
-		}
-		if currentValue < previousValue {
+		if current.GetDoubleValue() < previous.GetDoubleValue() {
 			// reset detected
 			return false
 		}
-		current.Value =
-			&metricspb.Point_DoubleValue{DoubleValue: currentValue - initialValue}
 	case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		// note: sum of squared deviation not currently supported
 		currentDist := current.GetDistributionValue()
-		initialDist := initial.GetDistributionValue()
-		previousCount := initialDist.Count
-		previousSum := initialDist.Sum
-		if initial != previous {
-			previousCount += previous.GetDistributionValue().Count
-			previousSum += previous.GetDistributionValue().Sum
-		}
-		if currentDist.Count < previousCount || currentDist.Sum < previousSum {
+		previousDist := previous.GetDistributionValue()
+		if currentDist.Count < previousDist.Count || currentDist.Sum < previousDist.Sum {
 			// reset detected
 			return false
 		}
-		currentDist.Count -= initialDist.Count
-		currentDist.Sum -= initialDist.Sum
-		ma.adjustBuckets(currentDist.Buckets, initialDist.Buckets)
 	case metricspb.MetricDescriptor_SUMMARY:
-		// note: for summary, we don't adjust the snapshot
-		currentCount := current.GetSummaryValue().Count.GetValue()
-		currentSum := current.GetSummaryValue().Sum.GetValue()
-		initialCount := initial.GetSummaryValue().Count.GetValue()
-		initialSum := initial.GetSummaryValue().Sum.GetValue()
-		previousCount := initialCount
-		previousSum := initialSum
-		if initial != previous {
-			previousCount += previous.GetSummaryValue().Count.GetValue()
-			previousSum += previous.GetSummaryValue().Sum.GetValue()
-		}
-		if currentCount < previousCount || currentSum < previousSum {
+		currentSummary := current.GetSummaryValue()
+		previousSummary := previous.GetSummaryValue()
+		if currentSummary.Count.GetValue() < previousSummary.Count.GetValue() || currentSummary.Sum.GetValue() < previousSummary.Sum.GetValue() {
 			// reset detected
 			return false
 		}
-		current.GetSummaryValue().Count =
-			&wrapperspb.Int64Value{Value: currentCount - initialCount}
-		current.GetSummaryValue().Sum =
-			&wrapperspb.DoubleValue{Value: currentSum - initialSum}
 	default:
 		// this shouldn't happen
 		ma.logger.Info("Adjust - skipping unexpected point", zap.String("type", metricType.String()))
 	}
 	return true
-}
-
-func (ma *MetricsAdjuster) adjustBuckets(current, initial []*metricspb.DistributionValue_Bucket) {
-	if len(current) != len(initial) {
-		// this shouldn't happen
-		ma.logger.Info("Bucket sizes not equal", zap.Int("len(current)", len(current)), zap.Int("len(initial)", len(initial)))
-		return
-	}
-	for i := 0; i < len(current); i++ {
-		current[i].Count -= initial[i].Count
-	}
 }

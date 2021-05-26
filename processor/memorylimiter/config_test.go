@@ -42,19 +42,16 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["memory_limiter"]
+	p0 := cfg.Processors[config.NewID(typeStr)]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		})
 
-	p1 := cfg.Processors["memory_limiter/with-settings"]
+	p1 := cfg.Processors[config.NewIDWithName(typeStr, "with-settings")]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: &config.ProcessorSettings{
-				TypeVal: "memory_limiter",
-				NameVal: "memory_limiter/with-settings",
-			},
+			ProcessorSettings:   config.NewProcessorSettings(config.NewIDWithName(typeStr, "with-settings")),
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,

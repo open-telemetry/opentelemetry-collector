@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -40,7 +41,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -62,19 +63,16 @@ func createTracesExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		oce.pushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown))
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }
 
 func createMetricsExporter(
@@ -87,20 +85,17 @@ func createMetricsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
 		oce.pushMetricsData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }
 
 func createLogsExporter(
@@ -113,18 +108,15 @@ func createLogsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogsExporter(
 		cfg,
 		params.Logger,
 		oce.pushLogData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }

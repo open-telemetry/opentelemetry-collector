@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -83,7 +84,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			jb:   &jaeger.Batch{},
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{
@@ -91,7 +92,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 			jb: &jaeger.Batch{
 				Process: generateThriftProcess(),
 			},
-			td: testdata.GenerateTraceDataNoLibraries(),
+			td: testdata.GenerateTracesNoLibraries(),
 		},
 
 		{
@@ -228,7 +229,7 @@ func generateThriftChildSpan() *jaeger.Span {
 		Duration:      spanEndTs - spanStartTs,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   tracetranslator.TagHTTPStatusCode,
+				Key:   conventions.AttributeHTTPStatusCode,
 				VType: jaeger.TagType_LONG,
 				VLong: &notFoundAttrVal,
 			},

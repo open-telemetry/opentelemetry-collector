@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -36,13 +35,7 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			zs:   make([]*zipkinmodel.SpanModel, 0),
-			td:   testdata.GenerateTraceDataEmpty(),
-			err:  nil,
-		},
-		{
-			name: "nilSpan",
-			zs:   generateNilSpan(),
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 			err:  nil,
 		},
 		{
@@ -74,10 +67,6 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 			assert.EqualValues(t, test.td, td)
 		})
 	}
-}
-
-func generateNilSpan() []*zipkinmodel.SpanModel {
-	return make([]*zipkinmodel.SpanModel, 1)
 }
 
 func generateSpanNoEndpoints() []*zipkinmodel.SpanModel {
@@ -123,7 +112,7 @@ func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetName("MinimalData")
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	span.SetStartTimestamp(1596911098294000000)
 	span.SetEndTimestamp(1596911098295000000)
 	return td
@@ -144,7 +133,7 @@ func generateTraceSingleSpanErrorStatus() pdata.Traces {
 		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetName("MinimalData")
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	span.SetStartTimestamp(1596911098294000000)
 	span.SetEndTimestamp(1596911098295000000)
 	span.Status().SetCode(pdata.StatusCodeError)

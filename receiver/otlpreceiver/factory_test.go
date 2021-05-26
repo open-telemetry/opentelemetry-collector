@@ -59,10 +59,6 @@ func TestCreateReceiver(t *testing.T) {
 
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := config.ReceiverSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -81,7 +77,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -91,10 +87,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_port",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -110,10 +103,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "invalid_http_port",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -134,6 +124,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			require.NotNil(t, tr)
 			if tt.wantErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(context.Background()))
 			} else {
 				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, tr.Shutdown(context.Background()))
@@ -144,10 +135,6 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := config.ReceiverSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -166,7 +153,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -176,10 +163,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -195,10 +179,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -229,10 +210,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 
 func TestCreateLogReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := config.ReceiverSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -253,7 +230,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -264,10 +241,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -284,10 +258,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -301,10 +272,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "no_next_consumer",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -318,11 +286,8 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-				Protocols: Protocols{},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				Protocols:        Protocols{},
 			},
 			wantErr: false,
 			sink:    new(consumertest.LogsSink),
@@ -342,11 +307,11 @@ func TestCreateLogReceiver(t *testing.T) {
 
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(context.Background()))
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))
 			}
-			receivers = map[*Config]*otlpReceiver{}
 		})
 	}
 }

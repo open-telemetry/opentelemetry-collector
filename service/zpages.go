@@ -40,7 +40,7 @@ func (srv *service) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 }
 
 func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseForm() // nolint:errcheck
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "service"})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
@@ -58,7 +58,7 @@ func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request
 }
 
 func (srv *service) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseForm() // nolint:errcheck
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	pipelineName := r.Form.Get(zPipelineName)
 	componentName := r.Form.Get(zComponentName)
@@ -85,13 +85,26 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 
 	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(srv.builtPipelines))
 	for c, p := range srv.builtPipelines {
+		// TODO: Change the template to use ID.
+		var recvs []string
+		for _, recvID := range c.Receivers {
+			recvs = append(recvs, recvID.String())
+		}
+		var procs []string
+		for _, procID := range c.Processors {
+			procs = append(procs, procID.String())
+		}
+		var exps []string
+		for _, expID := range c.Exporters {
+			exps = append(exps, expID.String())
+		}
 		row := zpages.SummaryPipelinesTableRowData{
-			FullName:            c.Name,
-			InputType:           string(c.InputType),
-			MutatesConsumedData: p.MutatesConsumedData,
-			Receivers:           c.Receivers,
-			Processors:          c.Processors,
-			Exporters:           c.Exporters,
+			FullName:    c.Name,
+			InputType:   string(c.InputType),
+			MutatesData: p.MutatesData,
+			Receivers:   recvs,
+			Processors:  procs,
+			Exporters:   exps,
 		}
 		data.Rows = append(data.Rows, row)
 	}
@@ -103,7 +116,7 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 }
 
 func handleExtensionzRequest(host component.Host, w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseForm() // nolint:errcheck
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	extensionName := r.Form.Get(zExtensionName)
 	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Extensions"})

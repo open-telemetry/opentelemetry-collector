@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -39,7 +40,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -60,6 +61,7 @@ func createTracesExporter(ctx context.Context, params component.ExporterCreatePa
 		cfg,
 		params.Logger,
 		oce.pushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(oce.shutdown))
@@ -76,6 +78,7 @@ func createMetricsExporter(ctx context.Context, params component.ExporterCreateP
 		cfg,
 		params.Logger,
 		oce.pushMetricsData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(oce.shutdown))

@@ -39,36 +39,27 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	p0 := cfg.Processors["span/custom"]
+	p0 := cfg.Processors[config.NewIDWithName("span", "custom")]
 	assert.Equal(t, p0, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/custom",
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "custom")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "::",
 		},
 	})
 
-	p1 := cfg.Processors["span/no-separator"]
+	p1 := cfg.Processors[config.NewIDWithName("span", "no-separator")]
 	assert.Equal(t, p1, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/no-separator",
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "no-separator")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "",
 		},
 	})
 
-	p2 := cfg.Processors["span/to_attributes"]
+	p2 := cfg.Processors[config.NewIDWithName("span", "to_attributes")]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/to_attributes",
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "to_attributes")),
 		Rename: Name{
 			ToAttributes: &ToAttributes{
 				Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
@@ -76,12 +67,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	p3 := cfg.Processors["span/includeexclude"]
+	p3 := cfg.Processors[config.NewIDWithName("span", "includeexclude")]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/includeexclude",
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "includeexclude")),
 		MatchConfig: filterconfig.MatchConfig{
 			Include: &filterconfig.MatchProperties{
 				Config:    *createMatchConfig(filterset.Regexp),

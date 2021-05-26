@@ -28,11 +28,8 @@ func TestGetAuthenticator(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorName: "mock",
 	}
-	ext := map[config.NamedEntity]component.Extension{
-		&config.ExtensionSettings{
-			NameVal: "mock",
-			TypeVal: "mock",
-		}: &MockAuthenticator{},
+	ext := map[config.ComponentID]component.Extension{
+		config.NewID("mock"): &MockAuthenticator{},
 	}
 
 	// test
@@ -47,13 +44,13 @@ func TestGetAuthenticatorFails(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		cfg      *Authentication
-		ext      map[config.NamedEntity]component.Extension
+		ext      map[config.ComponentID]component.Extension
 		expected error
 	}{
 		{
 			desc:     "Authenticator not provided",
 			cfg:      &Authentication{},
-			ext:      map[config.NamedEntity]component.Extension{},
+			ext:      map[config.ComponentID]component.Extension{},
 			expected: errAuthenticatorNotProvided,
 		},
 		{
@@ -61,7 +58,7 @@ func TestGetAuthenticatorFails(t *testing.T) {
 			cfg: &Authentication{
 				AuthenticatorName: "does-not-exist",
 			},
-			ext:      map[config.NamedEntity]component.Extension{},
+			ext:      map[config.ComponentID]component.Extension{},
 			expected: errAuthenticatorNotFound,
 		},
 	}

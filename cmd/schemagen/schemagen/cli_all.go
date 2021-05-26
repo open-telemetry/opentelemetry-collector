@@ -16,7 +16,6 @@ package schemagen
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 // createAllSchemaFiles creates config yaml schema files for all registered components
@@ -27,8 +26,8 @@ func createAllSchemaFiles(components component.Factories, env env) {
 	}
 }
 
-func getAllConfigs(components component.Factories) []config.NamedEntity {
-	var cfgs []config.NamedEntity
+func getAllConfigs(components component.Factories) []interface{} {
+	var cfgs []interface{}
 	for _, f := range components.Receivers {
 		cfgs = append(cfgs, f.CreateDefaultConfig())
 	}

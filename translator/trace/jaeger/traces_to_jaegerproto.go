@@ -20,6 +20,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -140,23 +141,23 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) [
 func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyValue {
 	tag := model.KeyValue{Key: key}
 	switch attr.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		// Jaeger-to-Internal maps binary tags to string attributes and encodes them as
 		// base64 strings. Blindingly attempting to decode base64 seems too much.
 		tag.VType = model.ValueType_STRING
 		tag.VStr = attr.StringVal()
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		tag.VType = model.ValueType_INT64
 		tag.VInt64 = attr.IntVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		tag.VType = model.ValueType_BOOL
 		tag.VBool = attr.BoolVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		tag.VType = model.ValueType_FLOAT64
 		tag.VFloat64 = attr.DoubleVal()
-	case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
 		tag.VType = model.ValueType_STRING
-		tag.VStr = tracetranslator.AttributeValueToString(attr, false)
+		tag.VStr = tracetranslator.AttributeValueToString(attr)
 	}
 	return tag
 }
@@ -252,7 +253,7 @@ func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.Instru
 }
 
 func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
-	traceIDHigh, traceIDLow := tracetranslator.TraceIDToUInt64Pair(traceID)
+	traceIDHigh, traceIDLow := idutils.TraceIDToUInt64Pair(traceID)
 	if traceIDLow == 0 && traceIDHigh == 0 {
 		return model.TraceID{}, errZeroTraceID
 	}
@@ -263,7 +264,7 @@ func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
 }
 
 func spanIDToJaegerProto(spanID pdata.SpanID) (model.SpanID, error) {
-	uSpanID := tracetranslator.SpanIDToUInt64(spanID)
+	uSpanID := idutils.SpanIDToUInt64(spanID)
 	if uSpanID == 0 {
 		return model.SpanID(0), errZeroSpanID
 	}
@@ -358,15 +359,15 @@ func spanEventsToJaegerProtoLogs(events pdata.SpanEventSlice) []model.Log {
 func getTagFromSpanKind(spanKind pdata.SpanKind) (model.KeyValue, bool) {
 	var tagStr string
 	switch spanKind {
-	case pdata.SpanKindCLIENT:
+	case pdata.SpanKindClient:
 		tagStr = string(tracetranslator.OpenTracingSpanKindClient)
-	case pdata.SpanKindSERVER:
+	case pdata.SpanKindServer:
 		tagStr = string(tracetranslator.OpenTracingSpanKindServer)
-	case pdata.SpanKindPRODUCER:
+	case pdata.SpanKindProducer:
 		tagStr = string(tracetranslator.OpenTracingSpanKindProducer)
-	case pdata.SpanKindCONSUMER:
+	case pdata.SpanKindConsumer:
 		tagStr = string(tracetranslator.OpenTracingSpanKindConsumer)
-	case pdata.SpanKindINTERNAL:
+	case pdata.SpanKindInternal:
 		tagStr = string(tracetranslator.OpenTracingSpanKindInternal)
 	default:
 		return model.KeyValue{}, false

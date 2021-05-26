@@ -26,24 +26,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builder"
 )
 
-// settings holds configuration for building a new service.
-type settings struct {
-	// Factories component factories.
-	Factories component.Factories
-
-	// BuildInfo provides application start information.
-	BuildInfo component.BuildInfo
-
-	// Config represents the configuration of the service.
-	Config *config.Config
-
-	// Logger represents the logger used for all the components.
-	Logger *zap.Logger
-
-	// AsyncErrorChannel is the channel that is used to report fatal errors.
-	AsyncErrorChannel chan error
-}
-
 // service represents the implementation of a component.Host.
 type service struct {
 	factories         component.Factories
@@ -58,13 +40,13 @@ type service struct {
 	builtExtensions builder.Extensions
 }
 
-func newService(settings *settings) (*service, error) {
+func newService(set *svcSettings) (*service, error) {
 	srv := &service{
-		factories:         settings.Factories,
-		buildInfo:         settings.BuildInfo,
-		config:            settings.Config,
-		logger:            settings.Logger,
-		asyncErrorChannel: settings.AsyncErrorChannel,
+		factories:         set.Factories,
+		buildInfo:         set.BuildInfo,
+		config:            set.Config,
+		logger:            set.Logger,
+		asyncErrorChannel: set.AsyncErrorChannel,
 	}
 
 	if err := srv.config.Validate(); err != nil {
@@ -134,11 +116,11 @@ func (srv *service) GetFactory(kind component.Kind, componentType config.Type) c
 	return nil
 }
 
-func (srv *service) GetExtensions() map[config.NamedEntity]component.Extension {
+func (srv *service) GetExtensions() map[config.ComponentID]component.Extension {
 	return srv.builtExtensions.ToMap()
 }
 
-func (srv *service) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (srv *service) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return srv.builtExporters.ToMapByDataType()
 }
 

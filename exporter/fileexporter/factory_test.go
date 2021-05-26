@@ -38,8 +38,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 		context.Background(),
 		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
-	assert.Error(t, err)
-	require.Nil(t, exp)
+	assert.NoError(t, err)
+	require.NotNil(t, exp)
 }
 
 func TestCreateTracesExporter(t *testing.T) {
@@ -48,17 +48,16 @@ func TestCreateTracesExporter(t *testing.T) {
 		context.Background(),
 		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
-	assert.Error(t, err)
-	require.Nil(t, exp)
+	assert.NoError(t, err)
+	require.NotNil(t, exp)
 }
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig()
-
 	exp, err := createLogsExporter(
 		context.Background(),
 		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
-	assert.Error(t, err)
-	require.Nil(t, exp)
+	assert.NoError(t, err)
+	require.NotNil(t, exp)
 }

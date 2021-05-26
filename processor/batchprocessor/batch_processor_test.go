@@ -47,7 +47,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	spansPerRequest := 100
 	traceDataSlice := make([]pdata.Traces, 0, requestCount)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
 		spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
@@ -57,7 +57,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	}
 
 	// Added to test logic that check for empty resources.
-	td := testdata.GenerateTraceDataEmpty()
+	td := pdata.NewTraces()
 	assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -88,7 +88,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	requestCount := 1000
 	spansPerRequest := 150
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
 		spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
@@ -97,7 +97,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	}
 
 	// Added to test logic that check for empty resources.
-	td := testdata.GenerateTraceDataEmpty()
+	td := pdata.NewTraces()
 	require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	// wait for all spans to be reported
@@ -139,7 +139,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	start := time.Now()
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
 		sizeSum += td.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
@@ -197,7 +197,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -232,7 +232,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           3 * time.Second,
 		SendBatchSize:     1000,
 	}
@@ -246,7 +246,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	requestCount := 10
 	spansPerRequest := 10
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -260,7 +260,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           200 * time.Millisecond,
 		SendBatchSize:     50,
 	}
@@ -287,7 +287,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	}
 
 	// Added to test case with empty resources sent.
-	md := testdata.GenerateMetricsEmpty()
+	md := pdata.NewMetrics()
 	assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -313,7 +313,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           100 * time.Millisecond,
 		SendBatchSize:     50,
 	}
@@ -371,7 +371,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 
 func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           100 * time.Millisecond,
 		SendBatchSize:     100,
 	}
@@ -420,7 +420,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           3 * time.Second,
 		SendBatchSize:     1000,
 	}
@@ -489,14 +489,14 @@ func getTestMetricName(requestNum, index int) string {
 }
 
 func BenchmarkTraceSizeBytes(b *testing.B) {
-	td := testdata.GenerateTraceDataManySpansSameResource(8192)
+	td := testdata.GenerateTracesManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
 		fmt.Println(td.OtlpProtoSize())
 	}
 }
 
 func BenchmarkTraceSizeSpanCount(b *testing.B) {
-	td := testdata.GenerateTraceDataManySpansSameResource(8192)
+	td := testdata.GenerateTracesManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
 		td.SpanCount()
 	}
@@ -506,7 +506,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           200 * time.Millisecond,
 		SendBatchSize:     50,
 	}
@@ -523,7 +523,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	logDataSlice := make([]pdata.Logs, 0, requestCount)
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
 		logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			logs.At(logIndex).SetName(getTestLogName(requestNum, logIndex))
@@ -533,7 +533,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	}
 
 	// Added to test case with empty resources sent.
-	ld := testdata.GenerateLogDataEmpty()
+	ld := pdata.NewLogs()
 	assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -559,7 +559,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           100 * time.Millisecond,
 		SendBatchSize:     50,
 	}
@@ -576,7 +576,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	start := time.Now()
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
 		size += ld.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
@@ -617,7 +617,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           100 * time.Millisecond,
 		SendBatchSize:     100,
 	}
@@ -632,7 +632,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
@@ -666,7 +666,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Timeout:           3 * time.Second,
 		SendBatchSize:     1000,
 	}
@@ -680,7 +680,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 

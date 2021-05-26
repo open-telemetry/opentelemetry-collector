@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package consumererror provides wrappers to easily classify errors. This allows
-// appropriate action by error handlers without the need to know each individual
-// error type/instance.
 package consumererror
 
 import "errors"
@@ -33,6 +30,11 @@ func Permanent(err error) error {
 
 func (p permanent) Error() string {
 	return "Permanent error: " + p.err.Error()
+}
+
+// Unwrap returns the wrapped error for functions Is and As in standard package errors.
+func (p permanent) Unwrap() error {
+	return p.err
 }
 
 // IsPermanent checks if an error was wrapped with the Permanent function, that

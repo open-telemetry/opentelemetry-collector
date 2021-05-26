@@ -74,7 +74,7 @@ var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
 func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.Name()))
+	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.ID().String()))
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +92,8 @@ func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batc
 	}, nil
 }
 
-func (bp *batchProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+func (bp *batchProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.
@@ -244,7 +244,7 @@ func (bt *batchTraces) add(item interface{}) {
 func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int) error {
 	var req pdata.Traces
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
-		req = splitTrace(sendBatchMaxSize, bt.traceData)
+		req = splitTraces(sendBatchMaxSize, bt.traceData)
 		bt.spanCount -= sendBatchMaxSize
 	} else {
 		req = bt.traceData

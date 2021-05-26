@@ -2,7 +2,63 @@
 
 ## Unreleased
 
-- `zipkin` translator: Handle missing starttime case for zipkin json v2 format spans (#2506)
+## 🛑 Breaking changes 🛑
+
+- Remove unused logstest package (#3222)
+- Introduce `AppSettings` instead of `Parameters` (#3163)
+- Remove unused testutil.TempSocketName (#3291)
+- Move BigEndian helper functions in `tracetranslator` to an internal package.(#3298)
+
+## 💡 Enhancements 💡
+
+- Add `doc.go` files to the consumer package and its subpackages (#3270)
+
+## v0.27.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Change `Marshal` signatures in kafkaexporter's Marshalers to directly convert pdata to `sarama.ProducerMessage` (#3162)
+- Remove `tracetranslator.DetermineValueType`, only used internally by Zipkin (#3114)
+- Remove OpenCensus conventions, should not be used (#3113)
+- Remove Zipkin specific translation constants, move to internal (#3112)
+- Remove `tracetranslator.TagHTTPStatusCode`, use `conventions.AttributeHTTPStatusCode` (#3111)
+- Remove OpenCensus status constants and transformation (#3110)
+- Remove `tracetranslator.AttributeArrayToSlice`, not used in core or contrib (#3109)
+- Remove `internaldata.MetricsData`, same APIs as for traces (#3156)
+- Rename `config.IDFromString` to `NewIDFromString`, remove `MustIDFromString` (#3177)
+- Move consumerfanout package to internal (#3207)
+- Canonicalize enum names in pdata. Fix usage of uppercase names (#3208)
+
+## 💡 Enhancements 💡
+
+- Use `config.ComponentID` for obsreport receiver/scraper (#3098)
+- Add initial implementation of the consumerhelper (#3146)
+- Add Collector version to Prometheus Remote Write Exporter user-agent header (#3094)
+- Refactor processorhelper to use consumerhelper, split by signal type (#3180)
+- Use consumerhelper for exporterhelper, add WithCapabilities (#3186)
+- Set capabilities for all core exporters, remove unnecessary funcs (#3190)
+- Add an internal sharedcomponent to be shared by receivers with shared resources (#3198)
+- Allow users to configure the Prometheus remote write queue (#3046)
+- Mark internaldata traces translation as deprecated for external usage (#3176)
+- Change receiver obsreport helpers pattern to match the Processor/Exporter (#3227)
+
+## 🧰 Bug fixes 🧰
+
+- Fix Prometheus receiver metric start time and reset determination logic. (#3047)
+  - The receiver will no longer drop the first sample for `counter`, `summary`, and `histogram` metrics.
+- The Prometheus remote write exporter will no longer force `counter` metrics to have a `_total` suffix. (#2993)
+- Remove locking from jaeger receiver start and stop processes (#3070)
+- Fix batch processor metrics reorder, improve performance (#3034)
+- Fix batch processor traces reorder, improve performance (#3107)
+- Fix batch processor logs reorder, improve performance (#3125)
+- Avoid one unnecessary allocation in grpc OTLP exporter (#3122)
+- `batch` processor: Validate that batch config max size is greater than send size (#3126)
+- Add capabilities to consumer, remove from processor (#2770)
+- Remove internal protos usage in Prometheusremotewrite exporter (#3184)
+- `prometheus` receiver: Honor Prometheus external labels (#3127)
+- Validate that remote write queue settings are not negative (#3213)
+
+## v0.26.0 Beta
 
 ## 🛑 Breaking changes 🛑
 
@@ -10,12 +66,34 @@
 - Rename `marshall` to `marshal` in all the occurrences (#2977)
 - Remove `componenterror.ErrAlreadyStarted` and `componenterror.ErrAlreadyStopped`, components should not protect against this, Service will start/stop once.
 - Rename `ApplicationStartInfo` to `BuildInfo`
+- Rename `ApplicationStartInfo.ExeName` to `BuildInfo.Command`
+- Rename `ApplicationStartInfo.LongName` to `BuildInfo.Description`
 
 ## 💡 Enhancements 💡
+
+- `kafka` exporter: Add logs support (#2943)
+- Add AppendEmpty and deprecate Append for slices (#2970)
+- Update mdatagen to create factories of init instead of new (#2978)
+- `zipkin` receiver: Reduce the judgment of zipkin v1 version (#2990)
+- Custom authenticator logic to accept a `component.Host` which will extract the authenticator to use based on a new authenticator name property (#2767)
+- `prometheusremotewrite` exporter: Add `resource_to_telemetry_conversion` config option (#3031)
+- `logging` exporter: Extract OTLP text logging (#3082)
+- Format timestamps as strings instead of int in otlptext output (#3088)
+- Add darwin arm64 build (#3090)
 
 ## 🧰 Bug fixes 🧰
 
 - Fix Jaeger receiver to honor TLS Settings (#2866)
+- `zipkin` translator: Handle missing starttime case for zipkin json v2 format spans (#2506)
+- `prometheus` exporter: Fix OTEL resource label drops (#2899)
+- `prometheusremotewrite` exporter:
+  - Enable the queue internally (#2974)
+  - Don't drop instance and job labels (#2979)
+- `jaeger` receiver: Wait for server goroutines exit on shutdown (#2985)
+- `logging` exporter: Ignore invalid handle on close (#2994)
+- Fix service zpages (#2996)
+- `batch` processor: Fix to avoid reordering and send max size (#3029)
+
 
 ## v0.25.0 Beta
 

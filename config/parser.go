@@ -29,46 +29,40 @@ const (
 	KeyDelimiter = "::"
 )
 
-// newViper creates a new Viper instance with key delimiter KeyDelimiter instead of the
-// default ".". This way configs can have keys that contain ".".
-func newViper() *viper.Viper {
-	return viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter))
-}
-
 // NewParser creates a new empty Parser instance.
 func NewParser() *Parser {
 	return &Parser{
-		v: newViper(),
+		v: viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter)),
 	}
 }
 
 // NewParserFromFile creates a new Parser by reading the given file.
 func NewParserFromFile(fileName string) (*Parser, error) {
-	// Read yaml config from file
-	v := newViper()
-	v.SetConfigFile(fileName)
-	if err := v.ReadInConfig(); err != nil {
+	// Read yaml config from file.
+	p := NewParser()
+	p.v.SetConfigFile(fileName)
+	if err := p.v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
 	}
-	return &Parser{v: v}, nil
+	return p, nil
 }
 
 // NewParserFromBuffer creates a new Parser by reading the given yaml buffer.
 func NewParserFromBuffer(buf io.Reader) (*Parser, error) {
-	v := newViper()
-	v.SetConfigType("yaml")
-	if err := v.ReadConfig(buf); err != nil {
+	p := NewParser()
+	p.v.SetConfigType("yaml")
+	if err := p.v.ReadConfig(buf); err != nil {
 		return nil, err
 	}
-	return &Parser{v: v}, nil
+	return p, nil
 }
 
 // NewParserFromStringMap creates a parser from a map[string]interface{}.
 func NewParserFromStringMap(data map[string]interface{}) *Parser {
-	v := newViper()
-	// Cannot return error because the subv is empty.
-	_ = v.MergeConfigMap(data)
-	return &Parser{v: v}
+	p := NewParser()
+	// Cannot return error because the viper instance is empty.
+	_ = p.v.MergeConfigMap(data)
+	return p
 }
 
 // Parser loads configuration.
@@ -77,13 +71,13 @@ type Parser struct {
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
-// Nested keys are returned with a KeyDelimiter separator
+// Nested keys are returned with a KeyDelimiter separator.
 func (l *Parser) AllKeys() []string {
 	return l.v.AllKeys()
 }
 
-// Unmarshal unmarshals the config into a struct. Make sure that the tags
-// on the fields of the structure are properly set.
+// Unmarshal unmarshals the config into a struct.
+// Tags on the fields of the structure must be properly set.
 func (l *Parser) Unmarshal(rawVal interface{}) error {
 	return l.v.Unmarshal(rawVal)
 }
@@ -126,10 +120,10 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv := newViper()
+		subParser := NewParser()
 		// Cannot return error because the subv is empty.
-		_ = subv.MergeConfigMap(cast.ToStringMap(data))
-		return &Parser{v: subv}, nil
+		_ = subParser.v.MergeConfigMap(cast.ToStringMap(data))
+		return subParser, nil
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
@@ -148,8 +142,8 @@ func deepSearch(m map[string]interface{}, path []string) map[string]interface{} 
 	for _, k := range path {
 		m2, ok := m[k]
 		if !ok {
-			// intermediate key does not exist
-			// => create it and continue from there
+			// Intermediate key does not exist:
+			// create it and continue from there.
 			m3 := make(map[string]interface{})
 			m[k] = m3
 			m = m3
@@ -157,8 +151,8 @@ func deepSearch(m map[string]interface{}, path []string) map[string]interface{} 
 		}
 		m3, ok := m2.(map[string]interface{})
 		if !ok {
-			// intermediate key is a value
-			// => replace with a new map
+			// Intermediate key is a value:
+			// replace with a new map.
 			m3 = make(map[string]interface{})
 			m[k] = m3
 		}
@@ -170,17 +164,17 @@ func deepSearch(m map[string]interface{}, path []string) map[string]interface{} 
 
 // ToStringMap creates a map[string]interface{} from a Parser.
 func (l *Parser) ToStringMap() map[string]interface{} {
-	// This is equivalent to l.v.AllSettings() but it maps nil values
+	// This is equivalent to l.v.AllSettings() but it maps nil values.
 	// We can't use AllSettings here because of https://github.com/spf13/viper/issues/819
 
 	m := map[string]interface{}{}
-	// start from the list of keys, and construct the map one value at a time
+	// Start from the list of keys, and construct the map one value at a time.
 	for _, k := range l.v.AllKeys() {
 		value := l.v.Get(k)
 		path := strings.Split(k, KeyDelimiter)
 		lastKey := strings.ToLower(path[len(path)-1])
 		deepestMap := deepSearch(m, path[0:len(path)-1])
-		// set innermost value
+		// Set innermost value.
 		deepestMap[lastKey] = value
 	}
 	return m

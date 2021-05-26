@@ -21,9 +21,11 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -32,18 +34,20 @@ import (
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
 	agentmetricspb.UnimplementedMetricsServiceServer
-	instanceName string
+	id           config.ComponentID
 	nextConsumer consumer.Metrics
+	obsrecv      *obsreport.Receiver
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(instanceName string, nextConsumer consumer.Metrics) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Metrics) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 	ocr := &Receiver{
-		instanceName: instanceName,
+		id:           id,
 		nextConsumer: nextConsumer,
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
 	return ocr, nil
 }
@@ -53,7 +57,6 @@ var _ agentmetricspb.MetricsServiceServer = (*Receiver)(nil)
 var errMetricsExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
 const (
-	receiverTagValue   = "oc_metrics"
 	receiverTransport  = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
 	receiverDataFormat = "protobuf"
 )
@@ -61,7 +64,7 @@ const (
 // Export is the gRPC method that receives streamed metrics from
 // OpenCensus-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
-	longLivedRPCCtx := obsreport.ReceiverContext(mes.Context(), ocr.instanceName, receiverTransport)
+	longLivedRPCCtx := obsreport.ReceiverContext(mes.Context(), ocr.id, receiverTransport)
 
 	// Retrieve the first message. It MUST have a non-nil Node.
 	recv, err := mes.Recv()
@@ -116,39 +119,29 @@ func (ocr *Receiver) processReceivedMsg(
 		resource = recv.Resource
 	}
 
-	md := internaldata.MetricsData{
-		Node:     lastNonNilNode,
-		Resource: resource,
-		Metrics:  recv.Metrics,
-	}
-
-	err := ocr.sendToNextConsumer(longLivedRPCCtx, md)
+	err := ocr.sendToNextConsumer(longLivedRPCCtx, lastNonNilNode, resource, recv.Metrics)
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md internaldata.MetricsData) error {
-	ctx := obsreport.StartMetricsReceiveOp(
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics []*ocmetrics.Metric) error {
+	ctx := ocr.obsrecv.StartMetricsReceiveOp(
 		longLivedRPCCtx,
-		ocr.instanceName,
-		receiverTransport,
 		obsreport.WithLongLivedCtx())
 
-	numTimeSeries := 0
 	numPoints := 0
 	// Count number of time series and data points.
-	for _, metric := range md.Metrics {
-		numTimeSeries += len(metric.Timeseries)
+	for _, metric := range metrics {
 		for _, ts := range metric.GetTimeseries() {
 			numPoints += len(ts.GetPoints())
 		}
 	}
 
 	var consumerErr error
-	if len(md.Metrics) > 0 {
-		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+	if len(metrics) > 0 {
+		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(node, resource, metrics))
 	}
 
-	obsreport.EndMetricsReceiveOp(
+	ocr.obsrecv.EndMetricsReceiveOp(
 		ctx,
 		receiverDataFormat,
 		numPoints,

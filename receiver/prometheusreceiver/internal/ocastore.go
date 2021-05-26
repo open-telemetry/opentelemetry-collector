@@ -19,11 +19,13 @@ import (
 	"errors"
 	"sync/atomic"
 
+	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -46,13 +48,22 @@ type OcaStore struct {
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
-	receiverName         string
+	receiverID           config.ComponentID
+	externalLabels       labels.Labels
 
 	logger *zap.Logger
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.Metrics, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string) *OcaStore {
+func NewOcaStore(
+	ctx context.Context,
+	sink consumer.Metrics,
+	logger *zap.Logger,
+	jobsMap *JobsMap,
+	useStartTimeMetric bool,
+	startTimeMetricRegex string,
+	receiverID config.ComponentID,
+	externalLabels labels.Labels) *OcaStore {
 	return &OcaStore{
 		running:              runningStateInit,
 		ctx:                  ctx,
@@ -61,7 +72,8 @@ func NewOcaStore(ctx context.Context, sink consumer.Metrics, logger *zap.Logger,
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverName:         receiverName,
+		receiverID:           receiverID,
+		externalLabels:       externalLabels,
 	}
 }
 
@@ -76,7 +88,17 @@ func (o *OcaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *OcaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverName, o.mc, o.sink, o.logger)
+		return newTransaction(
+			o.ctx,
+			o.jobsMap,
+			o.useStartTimeMetric,
+			o.startTimeMetricRegex,
+			o.receiverID,
+			o.mc,
+			o.sink,
+			o.externalLabels,
+			o.logger,
+		)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}
@@ -94,12 +116,12 @@ type noopAppender struct{}
 
 var errAlreadyStopped = errors.New("already stopped")
 
-func (*noopAppender) Add(labels.Labels, int64, float64) (uint64, error) {
+func (*noopAppender) Append(uint64, labels.Labels, int64, float64) (uint64, error) {
 	return 0, errAlreadyStopped
 }
 
-func (*noopAppender) AddFast(uint64, int64, float64) error {
-	return errAlreadyStopped
+func (*noopAppender) AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error) {
+	return 0, errAlreadyStopped
 }
 
 func (*noopAppender) Commit() error {

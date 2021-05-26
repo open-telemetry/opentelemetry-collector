@@ -40,7 +40,8 @@ type TLSSetting struct {
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS client connections.
 type TLSClientSetting struct {
-	TLSSetting `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// squash ensures fields are correctly decoded in embedded struct.
+	TLSSetting `mapstructure:",squash"`
 
 	// These are config options specific to client connections.
 
@@ -63,7 +64,8 @@ type TLSClientSetting struct {
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS server connections.
 type TLSServerSetting struct {
-	TLSSetting `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// squash ensures fields are correctly decoded in embedded struct.
+	TLSSetting `mapstructure:",squash"`
 
 	// These are config options specific to server connections.
 
@@ -81,7 +83,7 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	var err error
 	var certPool *x509.CertPool
 	if len(c.CAFile) != 0 {
-		// setup user specified truststore
+		// Set up user specified truststore.
 		certPool, err = c.loadCert(c.CAFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load CA CertPool: %w", err)
@@ -120,7 +122,7 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-// LoadTLSConfig loads the tls configuration.
+// LoadTLSConfig loads the TLS configuration.
 func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	if c.Insecure && c.CAFile == "" {
 		return nil, nil
@@ -135,7 +137,7 @@ func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
-// LoadTLSConfig loads the tls configuration.
+// LoadTLSConfig loads the TLS configuration.
 func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {

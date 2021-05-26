@@ -23,26 +23,31 @@ import (
 )
 
 var (
-	errAuthenticatorNotFound    error = errors.New("authenticator not found")
-	errAuthenticatorNotProvided error = errors.New("authenticator not provided")
+	errAuthenticatorNotFound    = errors.New("authenticator not found")
+	errAuthenticatorNotProvided = errors.New("authenticator not provided")
 )
 
-// Authentication defines the auth settings for the receiver
+// Authentication defines the auth settings for the receiver.
 type Authentication struct {
 	// Authenticator specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorName string `mapstructure:"authenticator"`
 }
 
-// GetAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
+// GetAuthenticator attempts to select the appropriate Authenticator from the list of extensions, based on the requested extension name.
 // If an authenticator is not found, an error is returned.
-func GetAuthenticator(extensions map[config.NamedEntity]component.Extension, requested string) (Authenticator, error) {
+func GetAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (Authenticator, error) {
 	if requested == "" {
 		return nil, errAuthenticatorNotProvided
 	}
 
+	reqID, err := config.NewIDFromString(requested)
+	if err != nil {
+		return nil, err
+	}
+
 	for name, ext := range extensions {
 		if auth, ok := ext.(Authenticator); ok {
-			if name.Name() == requested {
+			if name == reqID {
 				return auth, nil
 			}
 		}

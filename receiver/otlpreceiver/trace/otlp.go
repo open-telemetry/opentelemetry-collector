@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
@@ -31,29 +32,32 @@ const (
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
-	instanceName string
+	id           config.ComponentID
 	nextConsumer consumer.Traces
+	obsrecv      *obsreport.Receiver
 }
 
 // New creates a new Receiver reference.
-func New(instanceName string, nextConsumer consumer.Traces) *Receiver {
+func New(id config.ComponentID, nextConsumer consumer.Traces) *Receiver {
 	r := &Receiver{
-		instanceName: instanceName,
+		id:           id,
 		nextConsumer: nextConsumer,
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
 
 	return r
 }
 
 const (
-	receiverTagValue  = "otlp_trace"
 	receiverTransport = "grpc"
 )
+
+var receiverID = config.NewIDWithName("otlp", "trace")
 
 // Export implements the service Export traces func.
 func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceServiceRequest) (*collectortrace.ExportTraceServiceResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
+	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.id, receiverTransport)
 	internal.TracesCompatibilityChanges(req)
 	td := pdata.TracesFromInternalRep(internal.TracesFromOtlp(req))
 	err := r.sendToNextConsumer(ctxWithReceiverName, td)
@@ -74,9 +78,9 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.Traces) erro
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, r.instanceName, receiverTransport)
+	ctx = r.obsrecv.StartTraceDataReceiveOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
-	obsreport.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsrecv.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return err
 }

@@ -27,10 +27,7 @@ import (
 const typeStr = "test"
 
 var (
-	defaultCfg = &config.ExtensionSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
+	defaultCfg           = config.NewExtensionSettings(config.NewID(typeStr))
 	nopExtensionInstance = new(nopExtension)
 )
 
@@ -40,14 +37,14 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig,
 		createExtension)
 	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
-	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{}, defaultCfg)
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
 }
 
 func defaultConfig() config.Extension {
-	return defaultCfg
+	return &defaultCfg
 }
 
 func createExtension(context.Context, component.ExtensionCreateParams, config.Extension) (component.Extension, error) {

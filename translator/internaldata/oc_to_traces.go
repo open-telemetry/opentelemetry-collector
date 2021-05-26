@@ -24,12 +24,14 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-// OCToTraces  may be used only by OpenCensus receiver and exporter implementations.
+// OCToTraces may be used only by OpenCensus receiver and exporter implementations.
 // Deprecated: use pdata.Traces instead.
+// TODO: move this function to OpenCensus package.
 func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*octrace.Span) pdata.Traces {
 	traceData := pdata.NewTraces()
 	if node == nil && resource == nil && len(spans) == 0 {
@@ -243,10 +245,10 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.Attribu
 func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_Attributes) pdata.SpanKind {
 	switch ocKind {
 	case octrace.Span_SERVER:
-		return pdata.SpanKindSERVER
+		return pdata.SpanKindServer
 
 	case octrace.Span_CLIENT:
-		return pdata.SpanKindCLIENT
+		return pdata.SpanKindClient
 
 	case octrace.Span_SPAN_KIND_UNSPECIFIED:
 		// Span kind field is unspecified, check if TagSpanKind attribute is set.
@@ -260,23 +262,23 @@ func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_At
 					var otlpKind pdata.SpanKind
 					switch tracetranslator.OpenTracingSpanKind(strVal.StringValue.GetValue()) {
 					case tracetranslator.OpenTracingSpanKindConsumer:
-						otlpKind = pdata.SpanKindCONSUMER
+						otlpKind = pdata.SpanKindConsumer
 					case tracetranslator.OpenTracingSpanKindProducer:
-						otlpKind = pdata.SpanKindPRODUCER
+						otlpKind = pdata.SpanKindProducer
 					case tracetranslator.OpenTracingSpanKindInternal:
-						otlpKind = pdata.SpanKindINTERNAL
+						otlpKind = pdata.SpanKindInternal
 					default:
-						return pdata.SpanKindUNSPECIFIED
+						return pdata.SpanKindUnspecified
 					}
 					delete(ocAttrs.AttributeMap, tracetranslator.TagSpanKind)
 					return otlpKind
 				}
 			}
 		}
-		return pdata.SpanKindUNSPECIFIED
+		return pdata.SpanKindUnspecified
 
 	default:
-		return pdata.SpanKindUNSPECIFIED
+		return pdata.SpanKindUnspecified
 	}
 }
 
@@ -378,5 +380,5 @@ func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata
 	if spaps == nil {
 		return
 	}
-	dest.Attributes().UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, spaps.Value)
+	dest.Attributes().UpsertBool(occonventions.AttributeSameProcessAsParentSpan, spaps.Value)
 }

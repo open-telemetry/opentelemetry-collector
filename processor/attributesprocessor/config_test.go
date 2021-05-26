@@ -39,12 +39,9 @@ func TestLoadingConfig(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["attributes/insert"]
+	p0 := cfg.Processors[config.NewIDWithName(typeStr, "insert")]
 	assert.Equal(t, p0, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/insert",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "insert")),
 		Settings: processorhelper.Settings{
 			Actions: []processorhelper.ActionKeyValue{
 				{Key: "attribute1", Value: 123, Action: processorhelper.INSERT},
@@ -53,12 +50,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p1 := cfg.Processors["attributes/update"]
+	p1 := cfg.Processors[config.NewIDWithName(typeStr, "update")]
 	assert.Equal(t, p1, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/update",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "update")),
 		Settings: processorhelper.Settings{
 			Actions: []processorhelper.ActionKeyValue{
 				{Key: "boo", FromAttribute: "foo", Action: processorhelper.UPDATE},
@@ -67,12 +61,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p2 := cfg.Processors["attributes/upsert"]
+	p2 := cfg.Processors[config.NewIDWithName(typeStr, "upsert")]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/upsert",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "upsert")),
 		Settings: processorhelper.Settings{
 			Actions: []processorhelper.ActionKeyValue{
 				{Key: "region", Value: "planet-earth", Action: processorhelper.UPSERT},
@@ -81,12 +72,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p3 := cfg.Processors["attributes/delete"]
+	p3 := cfg.Processors[config.NewIDWithName(typeStr, "delete")]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/delete",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "delete")),
 		Settings: processorhelper.Settings{
 			Actions: []processorhelper.ActionKeyValue{
 				{Key: "credit_card", Action: processorhelper.DELETE},
@@ -95,12 +83,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p4 := cfg.Processors["attributes/hash"]
+	p4 := cfg.Processors[config.NewIDWithName(typeStr, "hash")]
 	assert.Equal(t, p4, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/hash",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "hash")),
 		Settings: processorhelper.Settings{
 			Actions: []processorhelper.ActionKeyValue{
 				{Key: "user.email", Action: processorhelper.HASH},
@@ -108,12 +93,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p5 := cfg.Processors["attributes/excludemulti"]
+	p5 := cfg.Processors[config.NewIDWithName(typeStr, "excludemulti")]
 	assert.Equal(t, p5, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/excludemulti",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "excludemulti")),
 		MatchConfig: filterconfig.MatchConfig{
 			Exclude: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Strict),
@@ -132,12 +114,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p6 := cfg.Processors["attributes/includeservices"]
+	p6 := cfg.Processors[config.NewIDWithName(typeStr, "includeservices")]
 	assert.Equal(t, p6, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/includeservices",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "includeservices")),
 		MatchConfig: filterconfig.MatchConfig{
 			Include: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Regexp),
@@ -152,12 +131,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p7 := cfg.Processors["attributes/selectiveprocessing"]
+	p7 := cfg.Processors[config.NewIDWithName(typeStr, "selectiveprocessing")]
 	assert.Equal(t, p7, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/selectiveprocessing",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "selectiveprocessing")),
 		MatchConfig: filterconfig.MatchConfig{
 			Include: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Strict),
@@ -178,12 +154,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p8 := cfg.Processors["attributes/complex"]
+	p8 := cfg.Processors[config.NewIDWithName(typeStr, "complex")]
 	assert.Equal(t, p8, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/complex",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "complex")),
 		Settings: processorhelper.Settings{
 			Actions: []processorhelper.ActionKeyValue{
 				{Key: "operation", Value: "default", Action: processorhelper.INSERT},
@@ -193,12 +166,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p9 := cfg.Processors["attributes/example"]
+	p9 := cfg.Processors[config.NewIDWithName(typeStr, "example")]
 	assert.Equal(t, p9, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/example",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "example")),
 		Settings: processorhelper.Settings{
 			Actions: []processorhelper.ActionKeyValue{
 				{Key: "db.table", Action: processorhelper.DELETE},
@@ -210,12 +180,9 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
-	p10 := cfg.Processors["attributes/regexp"]
+	p10 := cfg.Processors[config.NewIDWithName(typeStr, "regexp")]
 	assert.Equal(t, p10, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			NameVal: "attributes/regexp",
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "regexp")),
 		MatchConfig: filterconfig.MatchConfig{
 			Include: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Regexp),

@@ -18,7 +18,10 @@ package component
 // passed into each component. This information can be overridden in custom builds.
 type BuildInfo struct {
 	// Executable file name, e.g. "otelcol".
-	ExeName string
+	Command string
+
+	// Full name of the collector, e.g. "OpenTelemetry Collector".
+	Description string
 
 	// Version string.
 	Version string
@@ -27,7 +30,8 @@ type BuildInfo struct {
 // DefaultBuildInfo returns the default BuildInfo.
 func DefaultBuildInfo() BuildInfo {
 	return BuildInfo{
-		ExeName: "otelcol",
-		Version: "latest",
+		Command:     "otelcol",
+		Description: "OpenTelemetry Collector",
+		Version:     "latest",
 	}
 }

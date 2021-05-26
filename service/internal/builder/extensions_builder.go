@@ -102,10 +102,10 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 	return consumererror.Combine(errs)
 }
 
-func (exts Extensions) ToMap() map[config.NamedEntity]component.Extension {
-	result := make(map[config.NamedEntity]component.Extension, len(exts))
+func (exts Extensions) ToMap() map[config.ComponentID]component.Extension {
+	result := make(map[config.ComponentID]component.Extension, len(exts))
 	for k, v := range exts {
-		result[k] = v.extension
+		result[k.ID()] = v.extension
 	}
 	return result
 }
@@ -134,7 +134,7 @@ func BuildExtensions(
 			return nil, fmt.Errorf("extension %q is not configured", extName)
 		}
 
-		componentLogger := eb.logger.With(zap.String(zapNameKey, extCfg.Name()))
+		componentLogger := eb.logger.With(zap.Stringer(zapNameKey, extCfg.ID()))
 		ext, err := eb.buildExtension(componentLogger, eb.buildInfo, extCfg)
 		if err != nil {
 			return nil, err
@@ -147,9 +147,9 @@ func BuildExtensions(
 }
 
 func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, buildInfo component.BuildInfo, cfg config.Extension) (*builtExtension, error) {
-	factory := eb.factories[cfg.Type()]
+	factory := eb.factories[cfg.ID().Type()]
 	if factory == nil {
-		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.Type())
+		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.ID().Type())
 	}
 
 	ext := &builtExtension{
@@ -163,12 +163,12 @@ func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, buildInfo compon
 
 	ex, err := factory.CreateExtension(context.Background(), creationParams, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create extension %q: %w", cfg.Name(), err)
+		return nil, fmt.Errorf("failed to create extension %v: %w", cfg.ID(), err)
 	}
 
 	// Check if the factory really created the extension.
 	if ex == nil {
-		return nil, fmt.Errorf("factory for %q produced a nil extension", cfg.Name())
+		return nil, fmt.Errorf("factory for %v produced a nil extension", cfg.ID())
 	}
 
 	ext.extension = ex

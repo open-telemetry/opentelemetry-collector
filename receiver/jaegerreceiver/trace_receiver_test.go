@@ -43,18 +43,21 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-const jaegerReceiver = "jaeger_receiver_test"
+var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -64,6 +67,10 @@ func TestTraceSource(t *testing.T) {
 
 type traceConsumer struct {
 	cb func(context.Context, pdata.Traces)
+}
+
+func (t traceConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -103,6 +110,8 @@ func TestClientIPDetection(t *testing.T) {
 				ch <- ctx
 			},
 		},
+		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
 	}
 	batch := &jaegerthrift.Batch{
 		Process: jaegerthrift.NewProcess(),

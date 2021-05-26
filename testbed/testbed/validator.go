@@ -446,7 +446,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 			return true
 		}
 		switch sentVal.Type() {
-		case pdata.AttributeValueMAP:
+		case pdata.AttributeValueTypeMap:
 			v.compareKeyValueList(spanName, sentVal, recdVal, fmtStr, sentKey)
 		default:
 			v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentKey)
@@ -458,15 +458,15 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue,
 	fmtStr string, attrKey string) {
 	if !sentVal.Equal(recdVal) {
-		sentStr := tracetranslator.AttributeValueToString(sentVal, false)
-		recdStr := tracetranslator.AttributeValueToString(recdVal, false)
+		sentStr := tracetranslator.AttributeValueToString(sentVal)
+		recdStr := tracetranslator.AttributeValueToString(recdVal)
 		if !strings.EqualFold(sentStr, recdStr) {
 			af := &TraceAssertionFailure{
 				typeName:      "Span",
 				dataComboName: spanName,
 				fieldPath:     fmt.Sprintf(fmtStr, attrKey),
-				expectedValue: tracetranslator.AttributeValueToString(sentVal, true),
-				actualValue:   tracetranslator.AttributeValueToString(recdVal, true),
+				expectedValue: tracetranslator.AttributeValueToString(sentVal),
+				actualValue:   tracetranslator.AttributeValueToString(recdVal),
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
 		}
@@ -476,9 +476,9 @@ func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal 
 func (v *CorrectnessTestValidator) compareKeyValueList(
 	spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue, fmtStr string, attrKey string) {
 	switch recdVal.Type() {
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		v.diffAttributeMap(spanName, sentVal.MapVal(), recdVal.MapVal(), fmtStr)
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, attrKey)
 	default:
 		af := &TraceAssertionFailure{

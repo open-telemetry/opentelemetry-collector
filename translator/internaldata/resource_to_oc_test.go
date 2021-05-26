@@ -32,8 +32,8 @@ import (
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestResourceToOC(t *testing.T) {
@@ -112,36 +112,13 @@ func TestContainerResourceToOC(t *testing.T) {
 	}
 
 	// Also test that the explicit resource type is preserved if present
-	resource.Attributes().InsertString(conventions.OCAttributeResourceType, "other-type")
+	resource.Attributes().InsertString(occonventions.AttributeResourceType, "other-type")
 	want.Type = "other-type"
 
 	_, ocResource = internalResourceToOC(resource)
 	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
 		t.Errorf("Unexpected difference:\n%v", diff)
 	}
-}
-
-func TestAttributeValueToString(t *testing.T) {
-	assert.EqualValues(t, "", tracetranslator.AttributeValueToString(pdata.NewAttributeValueNull(), false))
-	assert.EqualValues(t, "abc", tracetranslator.AttributeValueToString(pdata.NewAttributeValueString("abc"), false))
-	assert.EqualValues(t, `"abc"`, tracetranslator.AttributeValueToString(pdata.NewAttributeValueString("abc"), true))
-	assert.EqualValues(t, "123", tracetranslator.AttributeValueToString(pdata.NewAttributeValueInt(123), false))
-	assert.EqualValues(t, "1.23", tracetranslator.AttributeValueToString(pdata.NewAttributeValueDouble(1.23), false))
-	assert.EqualValues(t, "true", tracetranslator.AttributeValueToString(pdata.NewAttributeValueBool(true), false))
-
-	v := pdata.NewAttributeValueMap()
-	v.MapVal().InsertString(`a"\`, `b"\`)
-	v.MapVal().InsertInt("c", 123)
-	v.MapVal().Insert("d", pdata.NewAttributeValueNull())
-	v.MapVal().Insert("e", v)
-	assert.EqualValues(t, `{"a\"\\":"b\"\\","c":123,"d":null,"e":{"a\"\\":"b\"\\","c":123,"d":null}}`, tracetranslator.AttributeValueToString(v, false))
-
-	v = pdata.NewAttributeValueArray()
-	v.ArrayVal().AppendEmpty().SetStringVal(`b"\`)
-	v.ArrayVal().AppendEmpty().SetIntVal(123)
-	v.ArrayVal().AppendEmpty()
-	pdata.NewAttributeValueArray().CopyTo(v.ArrayVal().AppendEmpty())
-	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, tracetranslator.AttributeValueToString(v, false))
 }
 
 func TestInferResourceType(t *testing.T) {
@@ -237,20 +214,20 @@ func TestResourceToOCAndBack(t *testing.T) {
 			actual := pdata.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
 			// Remove opencensus resource type from actual. This will be added during translation.
-			actual.Attributes().Delete(conventions.OCAttributeResourceType)
+			actual.Attributes().Delete(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
 			expected.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
-				case pdata.AttributeValueINT:
+				case pdata.AttributeValueTypeInt:
 					// conventions.AttributeProcessID is special because we preserve the type for this.
 					if k == conventions.AttributeProcessID {
 						assert.Equal(t, v.IntVal(), a.IntVal())
 					} else {
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
 					}
-				case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
+				case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
 					assert.Equal(t, a, a)
 				default:
 					assert.Equal(t, v, a)

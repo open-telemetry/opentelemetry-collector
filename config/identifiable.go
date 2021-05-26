@@ -22,20 +22,38 @@ import (
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
+// identifiable is an interface that all components configurations MUST embed.
+type identifiable interface {
+	// ID returns the ID of the component that this configuration belongs to.
+	ID() ComponentID
+	// SetIDName updates the name part of the ID for the component that this configuration belongs to.
+	SetIDName(idName string)
+}
+
 // ComponentID represents the identity for a component. It combines two values:
 // * type - the Type of the component.
 // * name - the name of that component.
 // The component ComponentID (combination type + name) is unique for a given component.Kind.
 type ComponentID struct {
-	typeVal Type
-	nameVal string
+	typeVal Type   `mapstructure:"-"`
+	nameVal string `mapstructure:"-"`
 }
 
-// IDFromString decodes a string in type[/name] format into ComponentID.
+// NewID returns a new ComponentID with the given Type and empty name.
+func NewID(typeVal Type) ComponentID {
+	return ComponentID{typeVal: typeVal}
+}
+
+// NewIDWithName returns a new ComponentID with the given Type and name.
+func NewIDWithName(typeVal Type, nameVal string) ComponentID {
+	return ComponentID{typeVal: typeVal, nameVal: nameVal}
+}
+
+// NewIDFromString decodes a string in type[/name] format into ComponentID.
 // The type and name components will have spaces trimmed, the "type" part must be present,
 // the forward slash and "name" are optional.
 // The returned ComponentID will be invalid if err is not-nil.
-func IDFromString(idStr string) (ComponentID, error) {
+func NewIDFromString(idStr string) (ComponentID, error) {
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
 
 	id := ComponentID{}
@@ -56,16 +74,6 @@ func IDFromString(idStr string) (ComponentID, error) {
 	}
 
 	return id, nil
-}
-
-// MustIDFromString is equivalent with IDFromString except that it panics instead of returning error.
-// This is useful for testing.
-func MustIDFromString(idStr string) ComponentID {
-	id, err := IDFromString(idStr)
-	if err != nil {
-		panic(err)
-	}
-	return id
 }
 
 // Type returns the type of the component.

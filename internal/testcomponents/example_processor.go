@@ -45,13 +45,10 @@ var ExampleProcessorFactory = processorhelper.NewFactory(
 // CreateDefaultConfig creates the default configuration for the Processor.
 func createDefaultConfig() config.Processor {
 	return &ExampleProcessorCfg{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: procType,
-			NameVal: procType,
-		},
-		ExtraSetting:     "some export string",
-		ExtraMapSetting:  nil,
-		ExtraListSetting: nil,
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(procType)),
+		ExtraSetting:      "some export string",
+		ExtraMapSetting:   nil,
+		ExtraListSetting:  nil,
 	}
 }
 
@@ -81,6 +78,6 @@ func (ep *exampleProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (ep *exampleProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (ep *exampleProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }

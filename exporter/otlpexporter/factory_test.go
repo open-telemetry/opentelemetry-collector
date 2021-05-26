@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -57,26 +58,26 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
-
 	tests := []struct {
-		name     string
-		config   Config
-		mustFail bool
+		name             string
+		config           Config
+		mustFailOnCreate bool
+		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "",
 				},
 			},
-			mustFail: true,
+			mustFailOnCreate: true,
 		},
 		{
 			name: "UseSecure",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -88,7 +89,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Keepalive",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
@@ -102,7 +103,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Compression",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configgrpc.CompressionGzip,
@@ -112,7 +113,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Headers",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]string{
@@ -125,7 +126,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NumConsumers",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				},
@@ -134,18 +135,18 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CompressionError",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: "unknown compression",
 				},
 			},
-			mustFail: true,
+			mustFailOnStart: true,
 		},
 		{
 			name: "CaCert",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -159,7 +160,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -169,7 +170,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail: true,
+			mustFailOnStart: true,
 		},
 	}
 
@@ -178,19 +179,23 @@ func TestCreateTracesExporter(t *testing.T) {
 			factory := NewFactory()
 			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
-
-			if tt.mustFail {
+			if tt.mustFailOnCreate {
 				assert.NotNil(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, consumer)
-
-				err = consumer.Shutdown(context.Background())
-				if err != nil {
-					// Since the endpoint of OTLP exporter doesn't actually exist,
-					// exporter may already stop because it cannot connect.
-					assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
-				}
+				return
+			}
+			assert.NoError(t, err)
+			assert.NotNil(t, consumer)
+			err = consumer.Start(context.Background(), componenttest.NewNopHost())
+			if tt.mustFailOnStart {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			err = consumer.Shutdown(context.Background())
+			if err != nil {
+				// Since the endpoint of OTLP exporter doesn't actually exist,
+				// exporter may already stop because it cannot connect.
+				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
 			}
 		})
 	}

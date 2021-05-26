@@ -67,7 +67,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
-		ExporterSettings: config.NewExporterSettings("prometheus"),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Namespace:        "test",
 		Endpoint:         ":8787",
 		SendTimestamps:   true,
@@ -107,10 +107,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "prometheus",
-			NameVal: "prometheus",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateParams, rcvCfg, exporter)
@@ -144,7 +141,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_jvm_gc_collection_seconds_sum.gc="G1 Old Generation". 0.*`,
 		`test_jvm_gc_collection_seconds_count.gc="G1 Old Generation". 0.*`,
 		`test_jvm_gc_collection_seconds_sum.gc="G1 Young Generation". 0.*`,
-		`test_jvm_gc_collection_seconds_count.gc="G1 Young Generation". 0.*`,
+		`test_jvm_gc_collection_seconds_count.gc="G1 Young Generation". 9.*`,
 		`. HELP test_jvm_info JVM version info`,
 		`. TYPE test_jvm_info gauge`,
 		`test_jvm_info.vendor="Oracle Corporation",version="9.0.4.11". 1.*`,

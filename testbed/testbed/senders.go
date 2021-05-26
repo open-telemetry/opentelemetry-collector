@@ -96,11 +96,11 @@ func (dsb *DataSenderBase) GetFactory(_ component.Kind, _ config.Type) component
 	return nil
 }
 
-func (dsb *DataSenderBase) GetExtensions() map[config.NamedEntity]component.Extension {
+func (dsb *DataSenderBase) GetExtensions() map[config.ComponentID]component.Extension {
 	return nil
 }
 
-func (dsb *DataSenderBase) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (dsb *DataSenderBase) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return nil
 }
 
