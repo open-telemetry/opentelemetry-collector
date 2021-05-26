@@ -22,13 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -541,56 +538,24 @@ func TestProcessorMetricsData(t *testing.T) {
 	obsreporttest.CheckProcessorMetrics(t, processor, acceptedPoints, refusedPoints, droppedPoints)
 }
 
-func TestProcessorMetricViews(t *testing.T) {
-	measures := []stats.Measure{
-		stats.Int64("firstMeasure", "test firstMeasure", stats.UnitDimensionless),
-		stats.Int64("secondMeasure", "test secondMeasure", stats.UnitBytes),
-	}
-	legacyViews := []*view.View{
-		{
-			Name:        measures[0].Name(),
-			Description: measures[0].Description(),
-			Measure:     measures[0],
-			Aggregation: view.Sum(),
-		},
-		{
-			Measure:     measures[1],
-			Aggregation: view.Count(),
-		},
-	}
-
+func TestBuildProcessorCustomMetricName(t *testing.T) {
 	tests := []struct {
-		name  string
-		level configtelemetry.Level
-		want  []*view.View
+		name string
+		want string
 	}{
 		{
-			name:  "none",
-			level: configtelemetry.LevelNone,
+			name: "firstMeasure",
+			want: "processor/test_type/firstMeasure",
 		},
 		{
-			name:  "basic",
-			level: configtelemetry.LevelBasic,
-			want: []*view.View{
-				{
-					Name:        "processor/test_type/" + measures[0].Name(),
-					Description: measures[0].Description(),
-					Measure:     measures[0],
-					Aggregation: view.Sum(),
-				},
-				{
-					Name:        "processor/test_type/" + measures[1].Name(),
-					Measure:     measures[1],
-					Aggregation: view.Count(),
-				},
-			},
+			name: "secondMeasure",
+			want: "processor/test_type/secondMeasure",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			obsreportconfig.Configure(tt.level)
-			got := ProcessorMetricViews("test_type", &obsreportconfig.ObsMetrics{Views: legacyViews})
-			assert.Equal(t, tt.want, got.Views)
+			got := BuildProcessorCustomMetricName("test_type", tt.name)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
