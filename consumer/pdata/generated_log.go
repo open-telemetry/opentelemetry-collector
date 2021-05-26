@@ -18,7 +18,6 @@
 package pdata
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
