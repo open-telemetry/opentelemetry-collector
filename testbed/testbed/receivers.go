@@ -259,7 +259,7 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	return str
 }
 
-const DefaultOTLPPort = 55680
+const DefaultOTLPPort = 4317
 
 // NewOTLPDataReceiver creates a new OTLP DataReceiver that will listen on the specified port after Start
 // is called.

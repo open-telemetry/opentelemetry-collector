@@ -23,72 +23,8 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-)
-
-const (
-	// ReceiverKey used to identify receivers in metrics and traces.
-	ReceiverKey = "receiver"
-	// TransportKey used to identify the transport used to received the data.
-	TransportKey = "transport"
-	// FormatKey used to identify the format of the data received.
-	FormatKey = "format"
-
-	// AcceptedSpansKey used to identify spans accepted by the Collector.
-	AcceptedSpansKey = "accepted_spans"
-	// RefusedSpansKey used to identify spans refused (ie.: not ingested) by the Collector.
-	RefusedSpansKey = "refused_spans"
-
-	// AcceptedMetricPointsKey used to identify metric points accepted by the Collector.
-	AcceptedMetricPointsKey = "accepted_metric_points"
-	// RefusedMetricPointsKey used to identify metric points refused (ie.: not ingested) by the
-	// Collector.
-	RefusedMetricPointsKey = "refused_metric_points"
-
-	// AcceptedLogRecordsKey used to identify log records accepted by the Collector.
-	AcceptedLogRecordsKey = "accepted_log_records"
-	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
-	// Collector.
-	RefusedLogRecordsKey = "refused_log_records"
-)
-
-var (
-	tagKeyReceiver, _  = tag.NewKey(ReceiverKey)
-	tagKeyTransport, _ = tag.NewKey(TransportKey)
-
-	receiverPrefix                  = ReceiverKey + nameSep
-	receiveTraceDataOperationSuffix = nameSep + "TraceDataReceived"
-	receiverMetricsOperationSuffix  = nameSep + "MetricsReceived"
-	receiverLogsOperationSuffix     = nameSep + "LogsReceived"
-
-	// Receiver metrics. Any count of data items below is in the original format
-	// that they were received, reasoning: reconciliation is easier if measurements
-	// on clients and receiver are expected to be the same. Translation issues
-	// that result in a different number of elements should be reported in a
-	// separate way.
-	mReceiverAcceptedSpans = stats.Int64(
-		receiverPrefix+AcceptedSpansKey,
-		"Number of spans successfully pushed into the pipeline.",
-		stats.UnitDimensionless)
-	mReceiverRefusedSpans = stats.Int64(
-		receiverPrefix+RefusedSpansKey,
-		"Number of spans that could not be pushed into the pipeline.",
-		stats.UnitDimensionless)
-	mReceiverAcceptedMetricPoints = stats.Int64(
-		receiverPrefix+AcceptedMetricPointsKey,
-		"Number of metric points successfully pushed into the pipeline.",
-		stats.UnitDimensionless)
-	mReceiverRefusedMetricPoints = stats.Int64(
-		receiverPrefix+RefusedMetricPointsKey,
-		"Number of metric points that could not be pushed into the pipeline.",
-		stats.UnitDimensionless)
-	mReceiverAcceptedLogRecords = stats.Int64(
-		receiverPrefix+AcceptedLogRecordsKey,
-		"Number of log records successfully pushed into the pipeline.",
-		stats.UnitDimensionless)
-	mReceiverRefusedLogRecords = stats.Int64(
-		receiverPrefix+RefusedLogRecordsKey,
-		"Number of log records that could not be pushed into the pipeline.",
-		stats.UnitDimensionless)
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 // StartReceiveOptions has the options related to starting a receive operation.
@@ -172,7 +108,7 @@ func (rec *Receiver) StartTraceDataReceiveOp(
 ) context.Context {
 	return rec.traceReceiveOp(
 		operationCtx,
-		receiveTraceDataOperationSuffix,
+		obsmetrics.ReceiveTraceDataOperationSuffix,
 		opt...)
 }
 
@@ -188,7 +124,7 @@ func StartTraceDataReceiveOp(
 	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
 	return rec.traceReceiveOp(
 		operationCtx,
-		receiveTraceDataOperationSuffix,
+		obsmetrics.ReceiveTraceDataOperationSuffix,
 		opt...)
 }
 
@@ -236,7 +172,7 @@ func (rec *Receiver) StartLogsReceiveOp(
 ) context.Context {
 	return rec.traceReceiveOp(
 		operationCtx,
-		receiverLogsOperationSuffix,
+		obsmetrics.ReceiverLogsOperationSuffix,
 		opt...)
 }
 
@@ -252,7 +188,7 @@ func StartLogsReceiveOp(
 	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
 	return rec.traceReceiveOp(
 		operationCtx,
-		receiverLogsOperationSuffix,
+		obsmetrics.ReceiverLogsOperationSuffix,
 		opt...)
 }
 
@@ -300,7 +236,7 @@ func (rec *Receiver) StartMetricsReceiveOp(
 ) context.Context {
 	return rec.traceReceiveOp(
 		operationCtx,
-		receiverMetricsOperationSuffix,
+		obsmetrics.ReceiverMetricsOperationSuffix,
 		opt...)
 }
 
@@ -316,7 +252,7 @@ func StartMetricsReceiveOp(
 	rec := NewReceiver(ReceiverSettings{ReceiverID: receiverID, Transport: transport})
 	return rec.traceReceiveOp(
 		operationCtx,
-		receiverMetricsOperationSuffix,
+		obsmetrics.ReceiverMetricsOperationSuffix,
 		opt...)
 }
 
@@ -365,8 +301,8 @@ func ReceiverContext(
 	transport string,
 ) context.Context {
 	ctx, _ = tag.New(ctx,
-		tag.Upsert(tagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-		tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
+		tag.Upsert(obsmetrics.TagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
+		tag.Upsert(obsmetrics.TagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
 }
@@ -385,7 +321,7 @@ func (rec *Receiver) traceReceiveOp(
 
 	var ctx context.Context
 	var span *trace.Span
-	spanName := receiverPrefix + rec.receiverID.String() + operationSuffix
+	spanName := obsmetrics.ReceiverPrefix + rec.receiverID.String() + operationSuffix
 	if !opts.LongLivedCtx {
 		ctx, span = trace.StartSpan(receiverCtx, spanName)
 	} else {
@@ -401,7 +337,7 @@ func (rec *Receiver) traceReceiveOp(
 	}
 
 	if rec.transport != "" {
-		span.AddAttributes(trace.StringAttribute(TransportKey, rec.transport))
+		span.AddAttributes(trace.StringAttribute(obsmetrics.TransportKey, rec.transport))
 	}
 	return ctx
 }
@@ -423,18 +359,18 @@ func (rec *Receiver) endReceiveOp(
 
 	span := trace.FromContext(receiverCtx)
 
-	if gLevel != configtelemetry.LevelNone {
+	if obsreportconfig.Level != configtelemetry.LevelNone {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
 		switch dataType {
 		case config.TracesDataType:
-			acceptedMeasure = mReceiverAcceptedSpans
-			refusedMeasure = mReceiverRefusedSpans
+			acceptedMeasure = obsmetrics.ReceiverAcceptedSpans
+			refusedMeasure = obsmetrics.ReceiverRefusedSpans
 		case config.MetricsDataType:
-			acceptedMeasure = mReceiverAcceptedMetricPoints
-			refusedMeasure = mReceiverRefusedMetricPoints
+			acceptedMeasure = obsmetrics.ReceiverAcceptedMetricPoints
+			refusedMeasure = obsmetrics.ReceiverRefusedMetricPoints
 		case config.LogsDataType:
-			acceptedMeasure = mReceiverAcceptedLogRecords
-			refusedMeasure = mReceiverRefusedLogRecords
+			acceptedMeasure = obsmetrics.ReceiverAcceptedLogRecords
+			refusedMeasure = obsmetrics.ReceiverRefusedLogRecords
 		}
 
 		stats.Record(
@@ -448,19 +384,19 @@ func (rec *Receiver) endReceiveOp(
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
 		case config.TracesDataType:
-			acceptedItemsKey = AcceptedSpansKey
-			refusedItemsKey = RefusedSpansKey
+			acceptedItemsKey = obsmetrics.AcceptedSpansKey
+			refusedItemsKey = obsmetrics.RefusedSpansKey
 		case config.MetricsDataType:
-			acceptedItemsKey = AcceptedMetricPointsKey
-			refusedItemsKey = RefusedMetricPointsKey
+			acceptedItemsKey = obsmetrics.AcceptedMetricPointsKey
+			refusedItemsKey = obsmetrics.RefusedMetricPointsKey
 		case config.LogsDataType:
-			acceptedItemsKey = AcceptedLogRecordsKey
-			refusedItemsKey = RefusedLogRecordsKey
+			acceptedItemsKey = obsmetrics.AcceptedLogRecordsKey
+			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
 		}
 
 		span.AddAttributes(
 			trace.StringAttribute(
-				FormatKey, format),
+				obsmetrics.FormatKey, format),
 			trace.Int64Attribute(
 				acceptedItemsKey, int64(numAccepted)),
 			trace.Int64Attribute(
