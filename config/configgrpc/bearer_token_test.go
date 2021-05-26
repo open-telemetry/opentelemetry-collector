@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bearertokenauthextension
+package configgrpc
 
 import (
 	"context"
@@ -20,23 +20,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 )
 
-func TestFactory_CreateDefaultConfig(t *testing.T) {
-	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr))}, cfg)
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+func TestBearerToken(t *testing.T) {
+	// test
+	result := BearerToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+	metadata, err := result.GetRequestMetadata(context.Background())
+	require.NoError(t, err)
+
+	// verify
+	assert.Equal(t, "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", metadata["authorization"])
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.BearerToken = "somerandometoken"
-	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
+func TestBearerTokenRequiresSecureTransport(t *testing.T) {
+	// test
+	token := BearerToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+
+	// verify
+	assert.True(t, token.RequireTransportSecurity())
 }

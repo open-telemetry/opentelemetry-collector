@@ -18,23 +18,21 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/model/serializer"
-	"go.opentelemetry.io/collector/internal/model/translator"
 )
 
 // TracesMarshaler marshals pdata.Traces into bytes.
 type TracesMarshaler struct {
-	translate translator.TracesEncoder
-	serialize serializer.TracesMarshaler
+	encoder    TracesEncoder
+	translator FromTracesTranslator
 }
 
 // Marshal pdata.Traces into bytes. On error []byte is nil.
 func (t *TracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
-	model, err := t.translate.EncodeTraces(td)
+	model, err := t.translator.FromTraces(td)
 	if err != nil {
 		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
 	}
-	buf, err := t.serialize.MarshalTraces(model)
+	buf, err := t.encoder.EncodeTraces(model)
 	if err != nil {
 		return nil, fmt.Errorf("marshal failed: %w", err)
 	}

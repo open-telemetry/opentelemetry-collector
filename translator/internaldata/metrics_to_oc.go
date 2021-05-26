@@ -189,13 +189,13 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
 	case pdata.MetricDataTypeIntSum:
 		sd := metric.IntSum()
-		if sd.IsMonotonic() || sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if sd.IsMonotonic() && sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_INT64
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
 	case pdata.MetricDataTypeDoubleSum:
 		sd := metric.DoubleSum()
-		if sd.IsMonotonic() || sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if sd.IsMonotonic() && sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE

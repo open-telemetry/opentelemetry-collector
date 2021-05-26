@@ -52,7 +52,13 @@ func createTracesExporter(
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
-	return exporterhelper.NewTracesExporter(cfg, params.Logger, fe.Unwrap().(*fileExporter).ConsumeTraces)
+	return exporterhelper.NewTracesExporter(
+		cfg,
+		params.Logger,
+		fe.Unwrap().(*fileExporter).ConsumeTraces,
+		exporterhelper.WithStart(fe.Start),
+		exporterhelper.WithShutdown(fe.Shutdown),
+	)
 }
 
 func createMetricsExporter(
@@ -63,7 +69,13 @@ func createMetricsExporter(
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
-	return exporterhelper.NewMetricsExporter(cfg, params.Logger, fe.Unwrap().(*fileExporter).ConsumeMetrics)
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		params.Logger,
+		fe.Unwrap().(*fileExporter).ConsumeMetrics,
+		exporterhelper.WithStart(fe.Start),
+		exporterhelper.WithShutdown(fe.Shutdown),
+	)
 }
 
 func createLogsExporter(
@@ -74,7 +86,13 @@ func createLogsExporter(
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
-	return exporterhelper.NewLogsExporter(cfg, params.Logger, fe.Unwrap().(*fileExporter).ConsumeLogs)
+	return exporterhelper.NewLogsExporter(
+		cfg,
+		params.Logger,
+		fe.Unwrap().(*fileExporter).ConsumeLogs,
+		exporterhelper.WithStart(fe.Start),
+		exporterhelper.WithShutdown(fe.Shutdown),
+	)
 }
 
 // This is the map of already created File exporters for particular configurations.

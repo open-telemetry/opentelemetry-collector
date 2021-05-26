@@ -26,7 +26,7 @@ type Exporters map[ComponentID]Exporter
 
 // ExporterSettings defines common settings for an exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
-// When embedded in the exporter config it must be with `mapstructure:",squash"` tag.
+// When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
 type ExporterSettings struct {
 	id ComponentID `mapstructure:"-"`
 }

@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -123,15 +124,15 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel, parseStringTa
 }
 
 func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span, parseStringTags bool) error {
-	dest.SetTraceID(tracetranslator.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
-	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(zspan.ID)))
+	dest.SetTraceID(idutils.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
+	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(zspan.ID)))
 	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
 		dest.SetTraceState(pdata.TraceState(value))
 		delete(tags, tracetranslator.TagW3CTraceState)
 	}
 	parentID := zspan.ParentID
 	if parentID != nil && *parentID != zspan.ID {
-		dest.SetParentSpanID(tracetranslator.UInt64ToSpanID(uint64(*parentID)))
+		dest.SetParentSpanID(idutils.UInt64ToSpanID(uint64(*parentID)))
 	}
 
 	dest.SetName(zspan.Name)

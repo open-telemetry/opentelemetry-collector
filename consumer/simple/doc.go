@@ -12,21 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
-
-import "go.opentelemetry.io/collector/consumer/pdata"
-
-type MetricsEncoder interface {
-	// EncodeMetrics converts pdata to protocol-specific data model.
-	EncodeMetrics(md pdata.Metrics) (interface{}, error)
-}
-
-type TracesEncoder interface {
-	// EncodeTraces converts pdata to protocol-specific data model.
-	EncodeTraces(td pdata.Traces) (interface{}, error)
-}
-
-type LogsEncoder interface {
-	// EncodeLogs converts pdata to protocol-specific data model.
-	EncodeLogs(ld pdata.Logs) (interface{}, error)
-}
+// Package simple facilitates building pdata.Metrics in receivers in an
+// easier and more fluent way than using pdata.Metrics directly.
+package simple

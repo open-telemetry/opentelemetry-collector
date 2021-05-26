@@ -17,11 +17,11 @@ The following settings are required:
 The following settings can be optionally configured:
 
 - `traces_endpoint` (no default): The target URL to send trace data to (e.g.: https://example.com:55681/v1/traces).
-   If this setting is present the the `endpoint` setting is ignored for traces.
+   If this setting is present the `endpoint` setting is ignored for traces.
 - `metrics_endpoint` (no default): The target URL to send metric data to (e.g.: https://example.com:55681/v1/metrics).
-   If this setting is present the the `endpoint` setting is ignored for metrics.
+   If this setting is present the `endpoint` setting is ignored for metrics.
 - `logs_endpoint` (no default): The target URL to send log data to (e.g.: https://example.com:55681/v1/logs).
-   If this setting is present the the `endpoint` setting is ignored logs.
+   If this setting is present the `endpoint` setting is ignored logs.
 
 - `insecure` (default = false): when set to true disables verifying the server's
   certificate chain and host name. The connection is still encrypted but server identity

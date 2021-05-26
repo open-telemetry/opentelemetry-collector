@@ -12,19 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serializer
-
-// MetricsMarshaler encodes protocol-specific data model into bytes.
-type MetricsMarshaler interface {
-	MarshalMetrics(model interface{}) ([]byte, error)
-}
-
-// TracesMarshaler encodes protocol-specific data model into bytes.
-type TracesMarshaler interface {
-	MarshalTraces(model interface{}) ([]byte, error)
-}
-
-// LogsMarshaler encodes protocol-specific data model into bytes.
-type LogsMarshaler interface {
-	MarshalLogs(model interface{}) ([]byte, error)
-}
+// Package configauth implements the configuration settings to
+// ensure authentication on incoming requests, and allows
+// exporters to add authentication on outgoing requests.
+package configauth

@@ -15,11 +15,7 @@
 package testutil
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
 	"net"
-	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -32,16 +28,6 @@ import (
 type portpair struct {
 	first string
 	last  string
-}
-
-// TempSocketName provides a temporary Unix socket name for testing.
-func TempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
-	require.NoError(t, err)
-	require.NoError(t, tmpfile.Close())
-	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
-	return socket
 }
 
 // GetAvailableLocalAddress finds an available local port and returns an endpoint
@@ -122,26 +108,4 @@ func createExclusionsList(exclusionsText string, t *testing.T) []portpair {
 		}
 	}
 	return exclusions
-}
-
-// LimitedWriter is an io.Writer that will return an EOF error after MaxLen has
-// been reached.  If MaxLen is 0, Writes will always succeed.
-type LimitedWriter struct {
-	bytes.Buffer
-	MaxLen int
-}
-
-var _ io.Writer = new(LimitedWriter)
-
-// Write writes bytes to the underlying buffer until reaching the maximum length.
-func (lw *LimitedWriter) Write(p []byte) (n int, err error) {
-	if lw.MaxLen != 0 && len(p)+lw.Len() > lw.MaxLen {
-		return 0, io.EOF
-	}
-	return lw.Buffer.Write(p)
-}
-
-// Close closes the writer.
-func (lw *LimitedWriter) Close() error {
-	return nil
 }

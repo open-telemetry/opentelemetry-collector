@@ -12,16 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
-
-import (
-	"testing"
-
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"github.com/stretchr/testify/assert"
-)
-
-func TestNewErrIncompatibleType(t *testing.T) {
-	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
-	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
-}
+// Package confignet implements the configuration settings for protocols to
+// connect and transport data information.
+package confignet

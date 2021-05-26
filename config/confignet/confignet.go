@@ -42,7 +42,7 @@ func (na *NetAddr) Listen() (net.Listener, error) {
 	return net.Listen(na.Transport, na.Endpoint)
 }
 
-// TCPAddr represents a tcp endpoint address.
+// TCPAddr represents a TCP endpoint address.
 type TCPAddr struct {
 	// Endpoint configures the address for this network connection.
 	// The address has the form "host:port". The host must be a literal IP address, or a host name that can be

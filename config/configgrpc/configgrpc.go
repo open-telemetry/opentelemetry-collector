@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configgrpc defines the gRPC configuration settings.
 package configgrpc
 
 import (
@@ -34,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-// Compression gRPC keys for supported compression types within collector
+// Compression gRPC keys for supported compression types within collector.
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
@@ -43,13 +42,13 @@ const (
 )
 
 var (
-	// Map of opentelemetry compression types to grpc registered compression types
+	// Map of opentelemetry compression types to grpc registered compression types.
 	grpcCompressionKeyMap = map[string]string{
 		CompressionGzip: gzip.Name,
 	}
 )
 
-// Allowed balancer names to be set in grpclb_policy to discover the servers
+// Allowed balancer names to be set in grpclb_policy to discover the servers.
 var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
@@ -75,15 +74,15 @@ type GRPCClientSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
-	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams
+	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive"`
 
-	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize
+	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
-	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize
+	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
@@ -94,18 +93,27 @@ type GRPCClientSettings struct {
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
 
-	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first
+	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis.
+	PerRPCAuth *PerRPCAuthConfig `mapstructure:"per_rpc_auth"`
+
+	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
-
-	// Auth configuration for outgoing RPCs.
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
+}
+
+// PerRPCAuthConfig specifies how the Per-RPC authentication data should be obtained.
+type PerRPCAuthConfig struct {
+	// AuthType represents the authentication type to use. Currently, only 'bearer' is supported.
+	AuthType string `mapstructure:"type,omitempty"`
+
+	// BearerToken specifies the bearer token to use for every RPC.
+	BearerToken string `mapstructure:"bearer_token,omitempty"`
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -143,11 +151,11 @@ type GRPCServerSettings struct {
 	// It has effect only for streaming RPCs.
 	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams"`
 
-	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize
+	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
-	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize
+	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
@@ -158,8 +166,8 @@ type GRPCServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
-// ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
-func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
+// ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
+func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
@@ -196,26 +204,14 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 		opts = append(opts, keepAliveOption)
 	}
 
-	if gcs.Auth != nil {
-		if ext == nil {
-			return nil, fmt.Errorf("no extensions configuration available")
+	if gcs.PerRPCAuth != nil {
+		if strings.EqualFold(gcs.PerRPCAuth.AuthType, PerRPCAuthTypeBearer) {
+			sToken := gcs.PerRPCAuth.BearerToken
+			token := BearerToken(sToken)
+			opts = append(opts, grpc.WithPerRPCCredentials(token))
+		} else {
+			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.PerRPCAuth.AuthType)
 		}
-
-		componentID, cperr := config.NewIDFromString(gcs.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, componentID)
-		if cerr != nil {
-			return nil, cerr
-		}
-
-		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
-		if perr != nil {
-			return nil, err
-		}
-		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
 
 	if gcs.BalancerName != "" {
@@ -243,7 +239,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 	return gss.NetAddr.Listen()
 }
 
-// ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
+// ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
 func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]component.Extension) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
@@ -300,12 +296,7 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	}
 
 	if gss.Auth != nil {
-		componentID, cperr := config.NewIDFromString(gss.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		authenticator, err := configauth.GetServerAuthenticator(ext, componentID)
+		authenticator, err := configauth.GetAuthenticator(ext, gss.Auth.AuthenticatorName)
 		if err != nil {
 			return nil, err
 		}
@@ -320,7 +311,7 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 }
 
 // GetGRPCCompressionKey returns the grpc registered compression key if the
-// passed in compression key is supported, and CompressionUnsupported otherwise
+// passed in compression key is supported, and CompressionUnsupported otherwise.
 func GetGRPCCompressionKey(compressionType string) string {
 	compressionKey := strings.ToLower(compressionType)
 	if encodingKey, ok := grpcCompressionKeyMap[compressionKey]; ok {

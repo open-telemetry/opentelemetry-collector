@@ -7,6 +7,12 @@
 - Remove unused logstest package (#3222)
 - Introduce `AppSettings` instead of `Parameters` (#3163)
 - Rename `service.Application` to `service.Collector` (#3268)
+- Remove unused testutil.TempSocketName (#3291)
+- Move BigEndian helper functions in `tracetranslator` to an internal package.(#3298)
+
+## 💡 Enhancements 💡
+
+- Add `doc.go` files to the consumer package and its subpackages (#3270)
 
 ## v0.27.0 Beta
 
