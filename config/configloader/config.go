@@ -94,7 +94,7 @@ type pipelineSettings struct {
 }
 
 // Load loads a Config from Parser.
-// After loading the config, `ValidateConfig` must be called to validate.
+// After loading the config, `Validate()` must be called to validate.
 func Load(v *config.Parser, factories component.Factories) (*config.Config, error) {
 
 	var cfg config.Config
