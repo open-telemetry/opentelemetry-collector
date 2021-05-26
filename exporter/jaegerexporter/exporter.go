@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -40,24 +41,7 @@ import (
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
-	opts, err := cfg.GRPCClientSettings.ToDialOptions()
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := grpc.Dial(cfg.GRPCClientSettings.Endpoint, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	collectorServiceClient := jaegerproto.NewCollectorServiceClient(conn)
-	s := newProtoGRPCSender(logger,
-		cfg.ID().String(),
-		collectorServiceClient,
-		metadata.New(cfg.GRPCClientSettings.Headers),
-		cfg.WaitForReady,
-		conn,
-	)
+	s := newProtoGRPCSender(cfg, logger)
 	return exporterhelper.NewTracesExporter(
 		cfg, logger, s.pushTraceData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -82,23 +66,21 @@ type protoGRPCSender struct {
 	connStateReporterInterval time.Duration
 	stateChangeCallbacks      []func(connectivity.State)
 
-	stopCh   chan struct{}
-	stopped  bool
-	stopLock sync.Mutex
+	stopCh         chan struct{}
+	stopped        bool
+	stopLock       sync.Mutex
+	clientSettings *configgrpc.GRPCClientSettings
 }
 
-func newProtoGRPCSender(logger *zap.Logger, name string, cl jaegerproto.CollectorServiceClient, md metadata.MD, waitForReady bool, conn stateReporter) *protoGRPCSender {
+func newProtoGRPCSender(cfg *Config, logger *zap.Logger) *protoGRPCSender {
 	s := &protoGRPCSender{
-		name:         name,
-		logger:       logger,
-		client:       cl,
-		metadata:     md,
-		waitForReady: waitForReady,
-
-		conn:                      conn,
+		name:                      cfg.ID().String(),
+		logger:                    logger,
+		metadata:                  metadata.New(cfg.GRPCClientSettings.Headers),
+		waitForReady:              cfg.WaitForReady,
 		connStateReporterInterval: time.Second,
-
-		stopCh: make(chan struct{}),
+		stopCh:                    make(chan struct{}),
+		clientSettings:            &cfg.GRPCClientSettings,
 	}
 	s.AddStateChangeCallback(s.onStateChange)
 	return s
@@ -144,7 +126,23 @@ func (s *protoGRPCSender) shutdown(context.Context) error {
 	return nil
 }
 
-func (s *protoGRPCSender) start(context.Context, component.Host) error {
+func (s *protoGRPCSender) start(_ context.Context, host component.Host) error {
+	if s.clientSettings == nil {
+		return fmt.Errorf("client settings not found")
+	}
+	opts, err := s.clientSettings.ToDialOptions()
+	if err != nil {
+		return err
+	}
+
+	conn, err := grpc.Dial(s.clientSettings.Endpoint, opts...)
+	if err != nil {
+		return err
+	}
+
+	s.client = jaegerproto.NewCollectorServiceClient(conn)
+	s.conn = conn
+
 	go s.startConnectionStatusReporter()
 	return nil
 }
