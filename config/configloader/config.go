@@ -35,7 +35,9 @@ import (
 type configErrorCode int
 
 const (
-	_ configErrorCode = iota // skip 0, start errors codes from 1.
+	// Skip 0, start errors codes from 1.
+	_ configErrorCode = iota
+
 	errInvalidTypeAndNameKey
 	errUnknownType
 	errDuplicateName
@@ -43,15 +45,18 @@ const (
 )
 
 type configError struct {
-	msg  string          // human readable error message.
-	code configErrorCode // internal error code.
+	// Human readable error message.
+	msg string
+
+	// Internal error code.
+	code configErrorCode
 }
 
 func (e *configError) Error() string {
 	return e.msg
 }
 
-// YAML top-level configuration keys
+// YAML top-level configuration keys.
 const (
 	// extensionsKeyName is the configuration key name for extensions section.
 	extensionsKeyName = "extensions"
@@ -89,7 +94,7 @@ type pipelineSettings struct {
 }
 
 // Load loads a Config from Parser.
-// After loading the config, need to check if it is valid by calling `ValidateConfig`.
+// After loading the config, `Validate()` must be called to validate.
 func Load(v *config.Parser, factories component.Factories) (*config.Config, error) {
 
 	var cfg config.Config
@@ -196,7 +201,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 			return nil, errorUnknownType(extensionsKeyName, id)
 		}
 
-		// Create the default config for this extension
+		// Create the default config for this extension.
 		extensionCfg := factory.CreateDefaultConfig()
 		extensionCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(extensionCfg)
@@ -255,7 +260,7 @@ func LoadReceiver(componentConfig *config.Parser, id config.ComponentID, factory
 }
 
 func loadReceivers(recvs map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (config.Receivers, error) {
-	// Prepare resulting map
+	// Prepare resulting map.
 	receivers := make(config.Receivers)
 
 	// Iterate over input map and create a config for each.
@@ -269,7 +274,7 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 			return nil, errorInvalidTypeAndNameKey(receiversKeyName, key, err)
 		}
 
-		// Find receiver factory based on "type" that we read from config source
+		// Find receiver factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
 			return nil, errorUnknownType(receiversKeyName, id)
@@ -292,7 +297,7 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 }
 
 func loadExporters(exps map[string]interface{}, factories map[config.Type]component.ExporterFactory) (config.Exporters, error) {
-	// Prepare resulting map
+	// Prepare resulting map.
 	exporters := make(config.Exporters)
 
 	// Iterate over Exporters and create a config for each.
@@ -306,13 +311,13 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 			return nil, errorInvalidTypeAndNameKey(exportersKeyName, key, err)
 		}
 
-		// Find exporter factory based on "type" that we read from config source
+		// Find exporter factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
 			return nil, errorUnknownType(exportersKeyName, id)
 		}
 
-		// Create the default config for this exporter
+		// Create the default config for this exporter.
 		exporterCfg := factory.CreateDefaultConfig()
 		exporterCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(exporterCfg)
@@ -477,27 +482,33 @@ func expandEnvLoadedConfigPointer(s interface{}) {
 	if value.Kind() != reflect.Ptr {
 		return
 	}
-	// Run expandLoadedConfigValue on the value behind the pointer
+	// Run expandLoadedConfigValue on the value behind the pointer.
 	expandEnvLoadedConfigValue(value.Elem())
 }
 
 func expandEnvLoadedConfigValue(value reflect.Value) {
-	// The value given is a string, we expand it (if allowed)
+	// The value given is a string, we expand it (if allowed).
 	if value.Kind() == reflect.String && value.CanSet() {
 		value.SetString(expandEnv(value.String()))
 	}
-	// The value given is a struct, we go through its fields
+	// The value given is a struct, we go through its fields.
 	if value.Kind() == reflect.Struct {
 		for i := 0; i < value.NumField(); i++ {
-			field := value.Field(i) // Returns the content of the field
-			if field.CanSet() {     // Only try to modify a field if it can be modified (eg. skip unexported private fields)
+			// Returns the content of the field.
+			field := value.Field(i)
+
+			// Only try to modify a field if it can be modified (eg. skip unexported private fields).
+			if field.CanSet() {
 				switch field.Kind() {
-				case reflect.String: // The current field is a string, we want to expand it
-					field.SetString(expandEnv(field.String())) // Expand env variables in the string
-				case reflect.Ptr: // The current field is a pointer
-					expandEnvLoadedConfigPointer(field.Interface()) // Run the expansion function on the pointer
-				case reflect.Struct: // The current field is a nested struct
-					expandEnvLoadedConfigValue(field) // Go through the nested struct
+				case reflect.String:
+					// The current field is a string, expand env variables in the string.
+					field.SetString(expandEnv(field.String()))
+				case reflect.Ptr:
+					// The current field is a pointer, run the expansion function on the pointer.
+					expandEnvLoadedConfigPointer(field.Interface())
+				case reflect.Struct:
+					// The current field is a nested struct, go through the nested struct
+					expandEnvLoadedConfigValue(field)
 				}
 			}
 		}

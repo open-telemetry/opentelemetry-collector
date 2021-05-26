@@ -27,13 +27,13 @@ var (
 	errAuthenticatorNotProvided = errors.New("authenticator not provided")
 )
 
-// Authentication defines the auth settings for the receiver
+// Authentication defines the auth settings for the receiver.
 type Authentication struct {
 	// Authenticator specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorName string `mapstructure:"authenticator"`
 }
 
-// GetAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
+// GetAuthenticator attempts to select the appropriate Authenticator from the list of extensions, based on the requested extension name.
 // If an authenticator is not found, an error is returned.
 func GetAuthenticator(extensions map[config.ComponentID]component.Extension, requested string) (Authenticator, error) {
 	if requested == "" {
