@@ -18,12 +18,11 @@ import (
 	"context"
 	"testing"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
