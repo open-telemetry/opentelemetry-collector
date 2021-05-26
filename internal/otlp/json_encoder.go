@@ -29,19 +29,23 @@ type encoder struct {
 	delegate jsonpb.Marshaler
 }
 
+func newEncoder() *encoder {
+	return &encoder{delegate: jsonpb.Marshaler{}}
+}
+
 // NewJSONTracesEncoder returns a serializer.TracesUnmarshaler to encode to OTLP json bytes.
 func NewJSONTracesEncoder() model.TracesEncoder {
-	return &encoder{delegate: jsonpb.Marshaler{}}
+	return newEncoder()
 }
 
 // NewJSONMetricsEncoder returns a serializer.MetricsEncoder to encode to OTLP json bytes.
 func NewJSONMetricsEncoder() model.MetricsEncoder {
-	return &encoder{delegate: jsonpb.Marshaler{}}
+	return newEncoder()
 }
 
 // NewJSONLogsEncoder returns a serializer.LogsEncoder to encode to OTLP json bytes.
 func NewJSONLogsEncoder() model.LogsEncoder {
-	return &encoder{delegate: jsonpb.Marshaler{}}
+	return newEncoder()
 }
 
 func (e *encoder) EncodeLogs(modelData interface{}) ([]byte, error) {

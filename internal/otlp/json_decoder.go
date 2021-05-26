@@ -29,19 +29,23 @@ type decoder struct {
 	delegate jsonpb.Unmarshaler
 }
 
+func newDecoder() *decoder {
+	return &decoder{delegate: jsonpb.Unmarshaler{}}
+}
+
 // NewJSONTracesDecoder returns a serializer.TracesDecoder to decode from OTLP json bytes.
 func NewJSONTracesDecoder() model.TracesDecoder {
-	return &decoder{delegate: jsonpb.Unmarshaler{}}
+	return newDecoder()
 }
 
 // NewJSONMetricsDecoder returns a serializer.MetricsDecoder to decode from OTLP json bytes.
 func NewJSONMetricsDecoder() model.MetricsDecoder {
-	return &decoder{delegate: jsonpb.Unmarshaler{}}
+	return newDecoder()
 }
 
 // NewJSONLogsDecoder returns a serializer.LogsDecoder to decode from OTLP json bytes.
 func NewJSONLogsDecoder() model.LogsDecoder {
-	return &decoder{delegate: jsonpb.Unmarshaler{}}
+	return newDecoder()
 }
 
 func (d *decoder) DecodeLogs(buf []byte) (interface{}, error) {
