@@ -28,6 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -414,7 +415,7 @@ func hexTraceIDToOCTraceID(hex string) ([]byte, error) {
 		return nil, errHexTraceIDZero
 	}
 
-	tidBytes := tracetranslator.UInt64ToTraceID(high, low).Bytes()
+	tidBytes := idutils.UInt64ToTraceID(high, low).Bytes()
 	return tidBytes[:], nil
 }
 
@@ -433,7 +434,7 @@ func hexIDToOCID(hex string) ([]byte, error) {
 		return nil, errHexIDZero
 	}
 
-	idBytes := tracetranslator.UInt64ToSpanID(idValue).Bytes()
+	idBytes := idutils.UInt64ToSpanID(idValue).Bytes()
 	return idBytes[:], nil
 }
 

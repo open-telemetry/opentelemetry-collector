@@ -52,44 +52,53 @@ func Test_createMetricsExporter(t *testing.T) {
 		ServerName: "",
 	}
 	tests := []struct {
-		name        string
-		cfg         config.Exporter
-		params      component.ExporterCreateParams
-		returnError bool
-		startError  bool
+		name                string
+		cfg                 config.Exporter
+		params              component.ExporterCreateParams
+		returnErrorOnCreate bool
+		returnErrorOnStart  bool
 	}{
-		{name: "success_case",
-			cfg:    createDefaultConfig(),
-			params: component.ExporterCreateParams{Logger: zap.NewNop()},
+		{"success_case",
+			createDefaultConfig(),
+			component.ExporterCreateParams{Logger: zap.NewNop()},
+			false,
+			false,
 		},
-		{name: "fail_case",
-			params:      component.ExporterCreateParams{Logger: zap.NewNop()},
-			returnError: true,
+		{"fail_case",
+			nil,
+			component.ExporterCreateParams{Logger: zap.NewNop()},
+			true,
+			false,
 		},
-		{name: "invalid_config_case",
-			cfg:         invalidConfig,
-			params:      component.ExporterCreateParams{Logger: zap.NewNop()},
-			returnError: true,
+		{"invalid_config_case",
+			invalidConfig,
+			component.ExporterCreateParams{Logger: zap.NewNop()},
+			true,
+			false,
 		},
-		{name: "invalid_tls_config_case",
-			cfg:         invalidTLSConfig,
-			params:      component.ExporterCreateParams{Logger: zap.NewNop()},
-			returnError: false,
-			startError:  true,
+		{"invalid_tls_config_case",
+			invalidTLSConfig,
+			component.ExporterCreateParams{Logger: zap.NewNop()},
+			false,
+			true,
 		},
-	} // run tests
+	}
+	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exp, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
-			if tt.returnError {
+			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
+			assert.NotNil(t, exp)
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
-			if tt.startError {
+			if tt.returnErrorOnStart {
 				assert.Error(t, err)
+				return
 			}
+			assert.NoError(t, err)
 		})
 	}
 }

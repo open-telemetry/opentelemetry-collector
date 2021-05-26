@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configloader implements configuration loading from a config.Parser.
-// The implementation relies on registered factories that allow creating
-// default configuration for each type of receiver/exporter/processor.
 package configloader
 
 import (
@@ -28,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -35,7 +33,9 @@ import (
 type configErrorCode int
 
 const (
-	_ configErrorCode = iota // skip 0, start errors codes from 1.
+	// Skip 0, start errors codes from 1.
+	_ configErrorCode = iota
+
 	errInvalidTypeAndNameKey
 	errUnknownType
 	errDuplicateName
@@ -43,15 +43,18 @@ const (
 )
 
 type configError struct {
-	msg  string          // human readable error message.
-	code configErrorCode // internal error code.
+	// Human readable error message.
+	msg string
+
+	// Internal error code.
+	code configErrorCode
 }
 
 func (e *configError) Error() string {
 	return e.msg
 }
 
-// YAML top-level configuration keys
+// YAML top-level configuration keys.
 const (
 	// extensionsKeyName is the configuration key name for extensions section.
 	extensionsKeyName = "extensions"
@@ -89,9 +92,8 @@ type pipelineSettings struct {
 }
 
 // Load loads a Config from Parser.
-// After loading the config, need to check if it is valid by calling `ValidateConfig`.
-func Load(v *config.Parser, factories component.Factories) (*config.Config, error) {
-
+// After loading the config, `Validate()` must be called to validate.
+func Load(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
 	// Load the config.
@@ -181,7 +183,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -196,7 +198,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 			return nil, errorUnknownType(extensionsKeyName, id)
 		}
 
-		// Create the default config for this extension
+		// Create the default config for this extension.
 		extensionCfg := factory.CreateDefaultConfig()
 		extensionCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(extensionCfg)
@@ -238,7 +240,7 @@ func loadService(rawService serviceSettings) (config.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *config.Parser, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
+func LoadReceiver(componentConfig *configparser.Parser, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(id.Name())
@@ -255,12 +257,12 @@ func LoadReceiver(componentConfig *config.Parser, id config.ComponentID, factory
 }
 
 func loadReceivers(recvs map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (config.Receivers, error) {
-	// Prepare resulting map
+	// Prepare resulting map.
 	receivers := make(config.Receivers)
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -269,7 +271,7 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 			return nil, errorInvalidTypeAndNameKey(receiversKeyName, key, err)
 		}
 
-		// Find receiver factory based on "type" that we read from config source
+		// Find receiver factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
 			return nil, errorUnknownType(receiversKeyName, id)
@@ -292,12 +294,12 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 }
 
 func loadExporters(exps map[string]interface{}, factories map[config.Type]component.ExporterFactory) (config.Exporters, error) {
-	// Prepare resulting map
+	// Prepare resulting map.
 	exporters := make(config.Exporters)
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -306,13 +308,13 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 			return nil, errorInvalidTypeAndNameKey(exportersKeyName, key, err)
 		}
 
-		// Find exporter factory based on "type" that we read from config source
+		// Find exporter factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
 			return nil, errorUnknownType(exportersKeyName, id)
 		}
 
-		// Create the default config for this exporter
+		// Create the default config for this exporter.
 		exporterCfg := factory.CreateDefaultConfig()
 		exporterCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(exporterCfg)
@@ -340,7 +342,7 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -438,7 +440,7 @@ func parseIDNames(pipelineID config.ComponentID, componentType string, names []s
 
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
-func expandEnvConfig(v *config.Parser) {
+func expandEnvConfig(v *configparser.Parser) {
 	for _, k := range v.AllKeys() {
 		v.Set(k, expandStringValues(v.Get(k)))
 	}
@@ -477,27 +479,33 @@ func expandEnvLoadedConfigPointer(s interface{}) {
 	if value.Kind() != reflect.Ptr {
 		return
 	}
-	// Run expandLoadedConfigValue on the value behind the pointer
+	// Run expandLoadedConfigValue on the value behind the pointer.
 	expandEnvLoadedConfigValue(value.Elem())
 }
 
 func expandEnvLoadedConfigValue(value reflect.Value) {
-	// The value given is a string, we expand it (if allowed)
+	// The value given is a string, we expand it (if allowed).
 	if value.Kind() == reflect.String && value.CanSet() {
 		value.SetString(expandEnv(value.String()))
 	}
-	// The value given is a struct, we go through its fields
+	// The value given is a struct, we go through its fields.
 	if value.Kind() == reflect.Struct {
 		for i := 0; i < value.NumField(); i++ {
-			field := value.Field(i) // Returns the content of the field
-			if field.CanSet() {     // Only try to modify a field if it can be modified (eg. skip unexported private fields)
+			// Returns the content of the field.
+			field := value.Field(i)
+
+			// Only try to modify a field if it can be modified (eg. skip unexported private fields).
+			if field.CanSet() {
 				switch field.Kind() {
-				case reflect.String: // The current field is a string, we want to expand it
-					field.SetString(expandEnv(field.String())) // Expand env variables in the string
-				case reflect.Ptr: // The current field is a pointer
-					expandEnvLoadedConfigPointer(field.Interface()) // Run the expansion function on the pointer
-				case reflect.Struct: // The current field is a nested struct
-					expandEnvLoadedConfigValue(field) // Go through the nested struct
+				case reflect.String:
+					// The current field is a string, expand env variables in the string.
+					field.SetString(expandEnv(field.String()))
+				case reflect.Ptr:
+					// The current field is a pointer, run the expansion function on the pointer.
+					expandEnvLoadedConfigPointer(field.Interface())
+				case reflect.Struct:
+					// The current field is a nested struct, go through the nested struct
+					expandEnvLoadedConfigValue(field)
 				}
 			}
 		}
@@ -529,7 +537,7 @@ type deprecatedUnmarshaler interface {
 	Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error
 }
 
-func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
+func unmarshal(componentSection *configparser.Parser, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.CustomUnmarshable); ok {
 		return cu.Unmarshal(componentSection)
 	}
@@ -538,9 +546,9 @@ func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
 }
 
 // unmarshaler returns an unmarshaling function. It should be removed when deprecatedUnmarshaler is removed.
-func unmarshaler(factory component.Factory) func(componentViperSection *config.Parser, intoCfg interface{}) error {
+func unmarshaler(factory component.Factory) func(componentViperSection *configparser.Parser, intoCfg interface{}) error {
 	if _, ok := factory.(deprecatedUnmarshaler); ok {
-		return func(componentParser *config.Parser, intoCfg interface{}) error {
+		return func(componentParser *configparser.Parser, intoCfg interface{}) error {
 			return errors.New("deprecated way to specify custom unmarshaler no longer supported")
 		}
 	}
