@@ -1,4 +1,5 @@
 # OpenTelemetry Collector builder
+[![CI](https://github.com/open-telemetry/opentelemetry-collector-builder/actions/workflows/go.yaml/badge.svg)](https://github.com/open-telemetry/opentelemetry-collector-builder/actions/workflows/go.yaml?query=branch%3Amain)
 
 This program generates a custom OpenTelemetry Collector binary based on a given configuration.
 
