@@ -91,6 +91,7 @@ func Test_createMetricsExporter(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+			assert.NoError(t, err)
 			assert.NotNil(t, exp)
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
 			if tt.returnErrorOnStart {
