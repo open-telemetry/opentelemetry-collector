@@ -127,13 +127,9 @@ func TestMetrics10kDPSScraped(t *testing.T) {
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 15,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 90,
 			},
-			map[string]string{
-				"batch": `batch:
-    send_batch_max_size: 5000
-`,
-			},
+			map[string]string{},
 			scrapeInterval,
 		},
 	}

@@ -232,7 +232,6 @@ func Scenario10kScrapeItemsPerSecond(
 	}
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	log.Printf(configStr)
 
 	configCleanup, err := agentProc.PrepareConfig(configStr)
 	require.NoError(t, err)
