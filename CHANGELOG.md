@@ -12,6 +12,7 @@
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
+- Automate triggering of doc-update on release (#3234)
 
 ## v0.27.0 Beta
 
