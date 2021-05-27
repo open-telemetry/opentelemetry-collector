@@ -78,9 +78,9 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, ld pdata.Logs) error 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = r.obsrecv.StartLogsReceiveOp(ctx)
+	ctx = r.obsrecv.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndLogsReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return err
 }

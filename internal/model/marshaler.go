@@ -21,13 +21,25 @@ import (
 )
 
 // TracesMarshaler marshals pdata.Traces into bytes.
-type TracesMarshaler struct {
+type TracesMarshaler interface {
+	Marshal(td pdata.Traces) ([]byte, error)
+}
+
+type tracesMarshaler struct {
 	encoder    TracesEncoder
 	translator FromTracesTranslator
 }
 
+// NewTracesMarshaler returns a new TracesMarshaler.
+func NewTracesMarshaler(encoder TracesEncoder, translator FromTracesTranslator) TracesMarshaler {
+	return &tracesMarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
+}
+
 // Marshal pdata.Traces into bytes. On error []byte is nil.
-func (t *TracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
+func (t *tracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
 	model, err := t.translator.FromTraces(td)
 	if err != nil {
 		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
