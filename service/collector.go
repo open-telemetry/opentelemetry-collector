@@ -79,7 +79,7 @@ type Collector struct {
 	asyncErrorChannel chan error
 }
 
-// New creates and returns a new instance of Application.
+// New creates and returns a new instance of Collector.
 func New(set CollectorSettings) (*Collector, error) {
 	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
 		return nil, err

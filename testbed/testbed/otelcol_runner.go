@@ -84,7 +84,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 }
 
 func (ipp *InProcessCollector) Start(args StartParams) error {
-	settings := service.ColSettings{
+	settings := service.CollectorSettings{
 		BuildInfo: component.BuildInfo{
 			Command: "otelcol",
 			Version: version.Version,

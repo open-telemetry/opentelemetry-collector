@@ -31,7 +31,7 @@ type WindowsService struct {
 	app      *Collector
 }
 
-func NewWindowsService(set AppSettings) *WindowsService {
+func NewWindowsService(set CollectorSettings) *WindowsService {
 	return &WindowsService{settings: set}
 }
 
