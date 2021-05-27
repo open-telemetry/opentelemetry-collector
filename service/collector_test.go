@@ -51,7 +51,7 @@ func TestCollector_Start(t *testing.T) {
 		return nil
 	}
 
-	col, err := New(ColSettings{
+	col, err := New(CollectorSettings{
 		BuildInfo:      component.DefaultBuildInfo(),
 		Factories:      factories,
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
@@ -123,7 +123,7 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	col, err := New(ColSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
+	col, err := New(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
 	require.NoError(t, err)
 
 	col.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
@@ -146,7 +146,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	set := ColSettings{
+	set := CollectorSettings{
 		BuildInfo:      component.DefaultBuildInfo(),
 		Factories:      factories,
 		ParserProvider: new(minimalParserLoader),

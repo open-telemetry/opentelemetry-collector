@@ -21,7 +21,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/jaegertracing/jaeger/cmd/collector/app"
 	"os"
 	"os/signal"
 	"runtime"
@@ -81,7 +80,7 @@ type Collector struct {
 }
 
 // New creates and returns a new instance of Collector.
-func New(set ColSettings) (*Collector, error) {
+func New(set CollectorSettings) (*Collector, error) {
 	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
 		return nil, err
 	}

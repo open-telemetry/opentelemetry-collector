@@ -31,7 +31,7 @@ type WindowsService struct {
 	col      *Collector
 }
 
-func NewWindowsService(set ColSettings) *WindowsService {
+func NewWindowsService(set CollectorSettings) *WindowsService {
 	return &WindowsService{settings: set}
 }
 
@@ -120,7 +120,7 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithWindowsEventLogCore(set ColSettings, elog *eventlog.Log) (*Collector, error) {
+func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
 	set.LoggingOptions = append(
 		set.LoggingOptions,
 		zap.WrapCore(withWindowsCore(elog)),
