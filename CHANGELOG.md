@@ -12,6 +12,7 @@
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
+- Change obsreport helpers for scraper to use the same pattern as Processor/Exporter (#3327)
 
 ## v0.27.0 Beta
 
