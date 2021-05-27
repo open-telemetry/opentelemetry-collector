@@ -15,21 +15,22 @@
 package resourceprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// AttributesActions specifies the list of actions to be applied on resource attributes.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	AttributesActions []processorhelper.ActionKeyValue `mapstructure:"attributes"`
+}
 
-	// ResourceType field is deprecated. Set "opencensus.type" key in "attributes.upsert" map instead.
-	ResourceType string `mapstructure:"type"`
+var _ config.Processor = (*Config)(nil)
 
-	// Deprecated: Use "attributes.upsert" instead.
-	Labels map[string]string `mapstructure:"labels"`
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

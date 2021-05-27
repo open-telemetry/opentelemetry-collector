@@ -15,37 +15,18 @@
 package filtermetric
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-
-	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// Matcher matches metrics by metric properties against prespecified values for each property.
-type Matcher struct {
-	nameFilters filterset.FilterSet
+type Matcher interface {
+	MatchMetric(metric pdata.Metric) (bool, error)
 }
 
-// MatchMetric matches a metric using the metric properties configured on the Matcher.
-// A metric only matches if every metric property configured on the Matcher is a match.
-func (m *Matcher) MatchMetric(metric *metricspb.Metric) bool {
-	name := metric.GetMetricDescriptor().GetName()
-	return m.nameFilters.Matches(name)
-}
-
-// NewMatcher constructs a metric Matcher that can be used to match metrics by metric properties.
-// For each supported metric property, the Matcher accepts a set of prespecified values. An incoming metric
-// matches on a property if the property matches at least one of the prespecified values.
-// A metric only matches if every metric property configured on the Matcher is a match.
-//
-// The metric Matcher supports matching by the following metric properties:
-// - Metric name
+// NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
+// returns an expr matcher, otherwise a name matcher.
 func NewMatcher(config *MatchProperties) (Matcher, error) {
-	nameFS, err := filterset.CreateFilterSet(config.MetricNames, &config.Config)
-	if err != nil {
-		return Matcher{}, err
+	if config.MatchType == Expr {
+		return newExprMatcher(config.Expressions)
 	}
-
-	return Matcher{
-		nameFilters: nameFS,
-	}, nil
+	return newNameMatcher(config)
 }

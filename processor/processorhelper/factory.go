@@ -17,11 +17,8 @@ package processorhelper
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -29,37 +26,30 @@ import (
 type FactoryOption func(o *factory)
 
 // CreateDefaultConfig is the equivalent of component.ProcessorFactory.CreateDefaultConfig()
-type CreateDefaultConfig func() configmodels.Processor
+type CreateDefaultConfig func() config.Processor
 
-// CreateTraceProcessor is the equivalent of component.ProcessorFactory.CreateTraceProcessor()
-type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.TraceConsumer) (component.TraceProcessor, error)
+// CreateTracesProcessor is the equivalent of component.ProcessorFactory.CreateTracesProcessor()
+type CreateTracesProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error)
 
 // CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
-type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.MetricsConsumer) (component.MetricsProcessor, error)
+type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Metrics) (component.MetricsProcessor, error)
 
 // CreateLogsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
-type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (component.LogsProcessor, error)
+type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Logs) (component.LogsProcessor, error)
 
 type factory struct {
-	cfgType                configmodels.Type
-	customUnmarshaler      component.CustomUnmarshaler
+	component.BaseProcessorFactory
+	cfgType                config.Type
 	createDefaultConfig    CreateDefaultConfig
-	createTraceProcessor   CreateTraceProcessor
+	createTracesProcessor  CreateTracesProcessor
 	createMetricsProcessor CreateMetricsProcessor
 	createLogsProcessor    CreateLogsProcessor
 }
 
-// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
-func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
+// WithTraces overrides the default "error not supported" implementation for CreateTracesProcessor.
+func WithTraces(createTracesProcessor CreateTracesProcessor) FactoryOption {
 	return func(o *factory) {
-		o.customUnmarshaler = customUnmarshaler
-	}
-}
-
-// WithTraces overrides the default "error not supported" implementation for CreateTraceProcessor.
-func WithTraces(createTraceProcessor CreateTraceProcessor) FactoryOption {
-	return func(o *factory) {
-		o.createTraceProcessor = createTraceProcessor
+		o.createTracesProcessor = createTracesProcessor
 	}
 }
 
@@ -79,7 +69,7 @@ func WithLogs(createLogsProcessor CreateLogsProcessor) FactoryOption {
 
 // NewFactory returns a component.ProcessorFactory.
 func NewFactory(
-	cfgType configmodels.Type,
+	cfgType config.Type,
 	createDefaultConfig CreateDefaultConfig,
 	options ...FactoryOption) component.ProcessorFactory {
 	f := &factory{
@@ -89,61 +79,54 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	var ret component.ProcessorFactory
-	if f.customUnmarshaler != nil {
-		ret = &factoryWithUnmarshaler{f}
-	} else {
-		ret = f
-	}
-	return ret
+	return f
 }
 
 // Type gets the type of the Processor config created by this factory.
-func (f *factory) Type() configmodels.Type {
+func (f *factory) Type() config.Type {
 	return f.cfgType
 }
 
 // CreateDefaultConfig creates the default configuration for processor.
-func (f *factory) CreateDefaultConfig() configmodels.Processor {
+func (f *factory) CreateDefaultConfig() config.Processor {
 	return f.createDefaultConfig()
 }
 
-// CreateTraceProcessor creates a component.TraceProcessor based on this config.
-func (f *factory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
-	if f.createTraceProcessor != nil {
-		return f.createTraceProcessor(ctx, params, cfg, nextConsumer)
+// CreateTracesProcessor creates a component.TracesProcessor based on this config.
+func (f *factory) CreateTracesProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
+) (component.TracesProcessor, error) {
+	if f.createTracesProcessor == nil {
+		return f.BaseProcessorFactory.CreateTracesProcessor(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return f.createTracesProcessor(ctx, params, cfg, nextConsumer)
 }
 
-// CreateMetricsProcessor creates a consumer.MetricsConsumer based on this config.
-func (f *factory) CreateMetricsProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
-	if f.createMetricsProcessor != nil {
-		return f.createMetricsProcessor(ctx, params, cfg, nextConsumer)
+// CreateMetricsProcessor creates a component.MetricsProcessor based on this config.
+func (f *factory) CreateMetricsProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
+) (component.MetricsProcessor, error) {
+	if f.createMetricsProcessor == nil {
+		return f.BaseProcessorFactory.CreateMetricsProcessor(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return f.createMetricsProcessor(ctx, params, cfg, nextConsumer)
 }
 
-// CreateLogsProcessor creates a metrics processor based on this config.
+// CreateLogsProcessor creates a component.LogsProcessor based on this config.
 func (f *factory) CreateLogsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	if f.createLogsProcessor != nil {
-		return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
+	if f.createLogsProcessor == nil {
+		return f.BaseProcessorFactory.CreateLogsProcessor(ctx, params, cfg, nextConsumer)
 	}
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
-
-type factoryWithUnmarshaler struct {
-	*factory
-}
-
-// Unmarshal un-marshals the config using the provided custom unmarshaler.
-func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return f.customUnmarshaler(componentViperSection, intoCfg)
+	return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
 }

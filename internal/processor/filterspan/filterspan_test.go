@@ -21,7 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -33,24 +36,31 @@ func createConfig(matchType filterset.MatchType) *filterset.Config {
 func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	testcases := []struct {
 		name        string
-		property    MatchProperties
+		property    filterconfig.MatchProperties
 		errorString string
 	}{
 		{
 			name:        "empty_property",
-			property:    MatchProperties{},
-			errorString: errAtLeastOneMatchFieldNeeded.Error(),
+			property:    filterconfig.MatchProperties{},
+			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
-			property: MatchProperties{
+			property: filterconfig.MatchProperties{
 				Services: []string{},
 			},
-			errorString: errAtLeastOneMatchFieldNeeded.Error(),
+			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+		},
+		{
+			name: "log_properties",
+			property: filterconfig.MatchProperties{
+				LogNames: []string{"log"},
+			},
+			errorString: "log_names should not be specified for trace spans",
 		},
 		{
 			name: "invalid_match_type",
-			property: MatchProperties{
+			property: filterconfig.MatchProperties{
 				Config:   *createConfig("wrong_match_type"),
 				Services: []string{"abc"},
 			},
@@ -58,57 +68,33 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "missing_match_type",
-			property: MatchProperties{
+			property: filterconfig.MatchProperties{
 				Services: []string{"abc"},
 			},
 			errorString: "error creating service name filters: unrecognized match_type: '', valid types are: [regexp strict]",
 		},
 		{
-			name: "regexp_match_type_for_attributes",
-			property: MatchProperties{
-				Config: *createConfig(filterset.Regexp),
-				Attributes: []Attribute{
-					{Key: "key", Value: "value"},
-				},
-			},
-			errorString: `match_type=regexp is not supported for "attributes"`,
-		},
-		{
-			name: "invalid_regexp_pattern",
-			property: MatchProperties{
+			name: "invalid_regexp_pattern_service",
+			property: filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Regexp),
 				Services: []string{"["},
 			},
 			errorString: "error creating service name filters: error parsing regexp: missing closing ]: `[`",
 		},
 		{
-			name: "invalid_regexp_pattern2",
-			property: MatchProperties{
+			name: "invalid_regexp_pattern_span",
+			property: filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				SpanNames: []string{"["},
 			},
 			errorString: "error creating span name filters: error parsing regexp: missing closing ]: `[`",
-		},
-		{
-			name: "empty_key_name_in_attributes_list",
-			property: MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				Services: []string{"a"},
-				Attributes: []Attribute{
-					{
-						Key: "",
-					},
-				},
-			},
-			errorString: "error creating processor. Can't have empty key in the list of attributes",
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := NewMatcher(&tc.property)
 			assert.Nil(t, output)
-			require.NotNil(t, err)
-			assert.Equal(t, tc.errorString, err.Error())
+			assert.EqualError(t, err, tc.errorString)
 		})
 	}
 }
@@ -116,127 +102,67 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 func TestSpan_Matching_False(t *testing.T) {
 	testcases := []struct {
 		name       string
-		properties *MatchProperties
+		properties *filterconfig.MatchProperties
 	}{
 		{
 			name: "service_name_doesnt_match_regexp",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				Services:   []string{"svcA"},
-				Attributes: []Attribute{},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 
 		{
 			name: "service_name_doesnt_match_strict",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Strict),
 				Services:   []string{"svcA"},
-				Attributes: []Attribute{},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 
 		{
 			name: "span_name_doesnt_match",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				SpanNames:  []string{"spanNo.*Name"},
-				Attributes: []Attribute{},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 
 		{
 			name: "span_name_doesnt_match_any",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
 				SpanNames: []string{
 					"spanNo.*Name",
 					"non-matching?pattern",
 					"regular string",
 				},
-				Attributes: []Attribute{},
-			},
-		},
-
-		{
-			name: "wrong_property_value",
-			properties: &MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				Services: []string{},
-				Attributes: []Attribute{
-					{
-						Key:   "keyInt",
-						Value: 1234,
-					},
-				},
-			},
-		},
-		{
-			name: "incompatible_property_value",
-			properties: &MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				Services: []string{},
-				Attributes: []Attribute{
-					{
-						Key:   "keyInt",
-						Value: "123",
-					},
-				},
-			},
-		},
-		{
-			name: "property_key_does_not_exist",
-			properties: &MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				Services: []string{},
-				Attributes: []Attribute{
-					{
-						Key:   "doesnotexist",
-						Value: nil,
-					},
-				},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 	}
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("spanName")
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{"keyInt": pdata.NewAttributeValueInt(123)})
+	library := pdata.NewInstrumentationLibrary()
+	resource := pdata.NewResource()
+
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher, err := NewMatcher(tc.properties)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, matcher)
 
-			assert.False(t, matcher.MatchSpan(span, "wrongSvc"))
+			assert.False(t, matcher.MatchSpan(span, resource, library))
 		})
 	}
 }
 
-func TestSpan_MatchingCornerCases(t *testing.T) {
-	cfg := &MatchProperties{
-		Config:   *createConfig(filterset.Strict),
-		Services: []string{"svcA"},
-		Attributes: []Attribute{
-			{
-				Key:   "keyOne",
-				Value: nil,
-			},
-		},
-	}
-
-	mp, err := NewMatcher(cfg)
-	assert.Nil(t, err)
-	assert.NotNil(t, mp)
-
-	emptySpan := pdata.NewSpan()
-	emptySpan.InitEmpty()
-	assert.False(t, mp.MatchSpan(emptySpan, "svcA"))
-}
-
 func TestSpan_MissingServiceName(t *testing.T) {
-	cfg := &MatchProperties{
+	cfg := &filterconfig.MatchProperties{
 		Config:   *createConfig(filterset.Regexp),
 		Services: []string{"svcA"},
 	}
@@ -246,42 +172,41 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := pdata.NewSpan()
-	emptySpan.InitEmpty()
-	assert.False(t, mp.MatchSpan(emptySpan, ""))
+	assert.False(t, mp.MatchSpan(emptySpan, pdata.NewResource(), pdata.NewInstrumentationLibrary()))
 }
 
 func TestSpan_Matching_True(t *testing.T) {
 	testcases := []struct {
 		name       string
-		properties *MatchProperties
+		properties *filterconfig.MatchProperties
 	}{
 		{
 			name: "service_name_match_regexp",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				Services:   []string{"svcA"},
-				Attributes: []Attribute{},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 		{
 			name: "service_name_match_strict",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Strict),
 				Services:   []string{"svcA"},
-				Attributes: []Attribute{},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 		{
 			name: "span_name_match",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				SpanNames:  []string{"span.*"},
-				Attributes: []Attribute{},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 		{
 			name: "span_name_second_match",
-			properties: &MatchProperties{
+			properties: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
 				SpanNames: []string{
 					"wrong.*pattern",
@@ -289,68 +214,12 @@ func TestSpan_Matching_True(t *testing.T) {
 					"yet another?pattern",
 					"regularstring",
 				},
-				Attributes: []Attribute{},
-			},
-		},
-		{
-			name: "property_exact_value_match",
-			properties: &MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				Services: []string{},
-				Attributes: []Attribute{
-					{
-						Key:   "keyString",
-						Value: "arithmetic",
-					},
-					{
-						Key:   "keyInt",
-						Value: 123,
-					},
-					{
-						Key:   "keyDouble",
-						Value: 3245.6,
-					},
-					{
-						Key:   "keyBool",
-						Value: true,
-					},
-				},
-			},
-		},
-		{
-			name: "property_exists",
-			properties: &MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				Services: []string{"svcA"},
-				Attributes: []Attribute{
-					{
-						Key:   "keyExists",
-						Value: nil,
-					},
-				},
-			},
-		},
-		{
-			name: "match_all_settings_exists",
-			properties: &MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				Services: []string{"svcA"},
-				Attributes: []Attribute{
-					{
-						Key:   "keyExists",
-						Value: nil,
-					},
-					{
-						Key:   "keyString",
-						Value: "arithmetic",
-					},
-				},
+				Attributes: []filterconfig.Attribute{},
 			},
 		},
 	}
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("spanName")
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"keyString": pdata.NewAttributeValueString("arithmetic"),
@@ -359,90 +228,34 @@ func TestSpan_Matching_True(t *testing.T) {
 		"keyBool":   pdata.NewAttributeValueBool(true),
 		"keyExists": pdata.NewAttributeValueString("present"),
 	})
+	assert.NotNil(t, span)
+
+	resource := pdata.NewResource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
+	})
+
+	library := pdata.NewInstrumentationLibrary()
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mp, err := NewMatcher(tc.properties)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			assert.NotNil(t, span)
-			// assert.True(t, mp.MatchSpan(span, "svcA"))
-
+			assert.True(t, mp.MatchSpan(span, resource, library))
 		})
 	}
 }
 
-func TestSpan_validateMatchesConfigurationForAttributes(t *testing.T) {
-	testcase := []struct {
-		name   string
-		input  MatchProperties
-		output Matcher
-	}{
-		{
-			name: "attributes_build",
-			input: MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: &propertiesMatcher{
-				Attributes: []attributeMatcher{
-					{
-						Key: "key1",
-					},
-					{
-						Key:            "key2",
-						AttributeValue: newAttributeValueInt(1234),
-					},
-				},
-			},
-		},
+func TestServiceNameForResource(t *testing.T) {
+	td := testdata.GenerateTracesOneSpanNoResource()
+	require.Equal(t, serviceNameForResource(td.ResourceSpans().At(0).Resource()), "<nil-service-name>")
 
-		{
-			name: "both_set_of_attributes",
-			input: MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: &propertiesMatcher{
-				Attributes: []attributeMatcher{
-					{
-						Key: "key1",
-					},
-					{
-						Key:            "key2",
-						AttributeValue: newAttributeValueInt(1234),
-					},
-				},
-			},
-		},
-	}
-	for _, tc := range testcase {
-		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.input)
-			require.NoError(t, err)
-			assert.Equal(t, tc.output, output)
-		})
-	}
-}
+	td = testdata.GenerateTracesOneSpan()
+	resource := td.ResourceSpans().At(0).Resource()
+	require.Equal(t, serviceNameForResource(resource), "<nil-service-name>")
 
-func newAttributeValueInt(v int64) *pdata.AttributeValue {
-	attr := pdata.NewAttributeValueInt(v)
-	return &attr
+	resource.Attributes().InsertString(conventions.AttributeServiceName, "test-service")
+	require.Equal(t, serviceNameForResource(resource), "test-service")
 }

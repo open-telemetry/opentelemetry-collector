@@ -16,7 +16,6 @@ package prometheusreceiver
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/prometheus/prometheus/discovery"
@@ -29,18 +28,19 @@ import (
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver/internal"
 )
 
+const transport = "http"
+
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
-	startOnce sync.Once
-	stopOnce  sync.Once
-	cfg       *Config
-	consumer  consumer.MetricsConsumer
-	cancel    context.CancelFunc
-	logger    *zap.Logger
+	cfg        *Config
+	consumer   consumer.Metrics
+	cancelFunc context.CancelFunc
+
+	logger *zap.Logger
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumer) *pReceiver {
+func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metrics) *pReceiver {
 	pr := &pReceiver{
 		cfg:      cfg,
 		consumer: next,
@@ -51,62 +51,60 @@ func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metric
 
 // Start is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
-func (pr *pReceiver) Start(_ context.Context, host component.Host) error {
-	pr.startOnce.Do(func() {
-		ctx := context.Background()
-		c, cancel := context.WithCancel(ctx)
-		pr.cancel = cancel
-		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http", pr.cfg.Name())
-		var jobsMap *internal.JobsMap
-		if !pr.cfg.UseStartTimeMetric {
-			jobsMap = internal.NewJobsMap(2 * time.Minute)
-		}
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger, jobsMap, pr.cfg.UseStartTimeMetric, pr.cfg.StartTimeMetricRegex, pr.cfg.Name())
-		// need to use a logger with the gokitLog interface
-		l := internal.NewZapToGokitLogAdapter(pr.logger)
-		scrapeManager := scrape.NewManager(l, app)
-		app.SetScrapeManager(scrapeManager)
-		discoveryManagerScrape := discovery.NewManager(ctx, l)
-		go func() {
-			if err := discoveryManagerScrape.Run(); err != nil {
-				host.ReportFatalError(err)
-			}
-		}()
-		if err := scrapeManager.ApplyConfig(pr.cfg.PrometheusConfig); err != nil {
+func (r *pReceiver) Start(_ context.Context, host component.Host) error {
+	discoveryCtx, cancel := context.WithCancel(context.Background())
+	r.cancelFunc = cancel
+
+	logger := internal.NewZapToGokitLogAdapter(r.logger)
+
+	discoveryManager := discovery.NewManager(discoveryCtx, logger)
+	discoveryCfg := make(map[string]discovery.Configs)
+	for _, scrapeConfig := range r.cfg.PrometheusConfig.ScrapeConfigs {
+		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
+	}
+	if err := discoveryManager.ApplyConfig(discoveryCfg); err != nil {
+		return err
+	}
+	go func() {
+		if err := discoveryManager.Run(); err != nil {
+			r.logger.Error("Discovery manager failed", zap.Error(err))
 			host.ReportFatalError(err)
-			return
 		}
+	}()
 
-		// Run the scrape manager.
-		syncConfig := make(chan bool)
-		errsChan := make(chan error, 1)
-		go func() {
-			defer close(errsChan)
-			<-time.After(100 * time.Millisecond)
-			close(syncConfig)
-			if err := scrapeManager.Run(discoveryManagerScrape.SyncCh()); err != nil {
-				errsChan <- err
-			}
-		}()
-		<-syncConfig
-		// By this point we've given time to the scrape manager
-		// to start applying its original configuration.
-
-		discoveryCfg := make(map[string]discovery.Configs)
-		for _, scrapeConfig := range pr.cfg.PrometheusConfig.ScrapeConfigs {
-			discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
+	var jobsMap *internal.JobsMap
+	if !r.cfg.UseStartTimeMetric {
+		jobsMap = internal.NewJobsMap(2 * time.Minute)
+	}
+	// Per component.Component Start instructions, for async operations we should not use the
+	// incoming context, it may get cancelled.
+	receiverCtx := obsreport.ReceiverContext(context.Background(), r.cfg.ID(), transport)
+	ocaStore := internal.NewOcaStore(
+		receiverCtx,
+		r.consumer,
+		r.logger,
+		jobsMap,
+		r.cfg.UseStartTimeMetric,
+		r.cfg.StartTimeMetricRegex,
+		r.cfg.ID(),
+		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
+	)
+	scrapeManager := scrape.NewManager(logger, ocaStore)
+	ocaStore.SetScrapeManager(scrapeManager)
+	if err := scrapeManager.ApplyConfig(r.cfg.PrometheusConfig); err != nil {
+		return err
+	}
+	go func() {
+		if err := scrapeManager.Run(discoveryManager.SyncCh()); err != nil {
+			r.logger.Error("Scrape manager failed", zap.Error(err))
+			host.ReportFatalError(err)
 		}
-
-		// Now trigger the discovery notification to the scrape manager.
-		if err := discoveryManagerScrape.ApplyConfig(discoveryCfg); err != nil {
-			errsChan <- err
-		}
-	})
+	}()
 	return nil
 }
 
 // Shutdown stops and cancels the underlying Prometheus scrapers.
-func (pr *pReceiver) Shutdown(context.Context) error {
-	pr.stopOnce.Do(pr.cancel)
+func (r *pReceiver) Shutdown(context.Context) error {
+	r.cancelFunc()
 	return nil
 }

@@ -15,15 +15,37 @@
 package exporterhelper
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/jaegertracing/jaeger/pkg/queue"
+	"go.opencensus.io/metric"
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
+
+var (
+	r = metric.NewRegistry()
+
+	queueSizeGauge, _ = r.AddInt64DerivedGauge(
+		obsmetrics.ExporterKey+"/queue_size",
+		metric.WithDescription("Current size of the retry queue (in batches)"),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+)
+
+func init() {
+	metricproducer.GlobalManager().AddProducer(r)
+}
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
@@ -35,8 +57,8 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
-// CreateDefaultQueueSettings returns the default settings for QueueSettings.
-func CreateDefaultQueueSettings() QueueSettings {
+// DefaultQueueSettings returns the default settings for QueueSettings.
+func DefaultQueueSettings() QueueSettings {
 	return QueueSettings{
 		Enabled:      true,
 		NumConsumers: 10,
@@ -63,8 +85,8 @@ type RetrySettings struct {
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
 
-// CreateDefaultRetrySettings returns the default settings for RetrySettings.
-func CreateDefaultRetrySettings() RetrySettings {
+// DefaultRetrySettings returns the default settings for RetrySettings.
+func DefaultRetrySettings() RetrySettings {
 	return RetrySettings{
 		Enabled:         true,
 		InitialInterval: 5 * time.Second,
@@ -74,51 +96,115 @@ func CreateDefaultRetrySettings() RetrySettings {
 }
 
 type queuedRetrySender struct {
-	cfg            QueueSettings
-	consumerSender requestSender
-	queue          *queue.BoundedQueue
-	retryStopCh    chan struct{}
+	fullName        string
+	cfg             QueueSettings
+	consumerSender  requestSender
+	queue           *queue.BoundedQueue
+	retryStopCh     chan struct{}
+	traceAttributes []trace.Attribute
+	logger          *zap.Logger
 }
 
-var errorRefused = errors.New("failed to add to the queue")
+func createSampledLogger(logger *zap.Logger) *zap.Logger {
+	if logger.Core().Enabled(zapcore.DebugLevel) {
+		// Debugging is enabled. Don't do any sampling.
+		return logger
+	}
 
-func newQueuedRetrySender(qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender) *queuedRetrySender {
+	// Create a logger that samples all messages to 1 per 10 seconds initially,
+	// and 1/100 of messages after that.
+	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(
+			core,
+			10*time.Second,
+			1,
+			100,
+		)
+	})
+	return logger.WithOptions(opts)
+}
+
+func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
+	sampledLogger := createSampledLogger(logger)
+	traceAttr := trace.StringAttribute(obsmetrics.ExporterKey, fullName)
 	return &queuedRetrySender{
-		cfg: qCfg,
+		fullName: fullName,
+		cfg:      qCfg,
 		consumerSender: &retrySender{
-			cfg:        rCfg,
-			nextSender: nextSender,
-			stopCh:     retryStopCh,
+			traceAttribute: traceAttr,
+			cfg:            rCfg,
+			nextSender:     nextSender,
+			stopCh:         retryStopCh,
+			logger:         sampledLogger,
 		},
-		queue:       queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
-		retryStopCh: retryStopCh,
+		queue:           queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
+		retryStopCh:     retryStopCh,
+		traceAttributes: []trace.Attribute{traceAttr},
+		logger:          sampledLogger,
 	}
 }
 
 // start is invoked during service startup.
-func (qrs *queuedRetrySender) start() {
+func (qrs *queuedRetrySender) start() error {
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
-		value := item.(request)
-		_, _ = qrs.consumerSender.send(value)
+		req := item.(request)
+		_ = qrs.consumerSender.send(req)
 	})
+
+	// Start reporting queue length metric
+	if qrs.cfg.Enabled {
+		err := queueSizeGauge.UpsertEntry(func() int64 {
+			return int64(qrs.queue.Size())
+		}, metricdata.NewLabelValue(qrs.fullName))
+		if err != nil {
+			return fmt.Errorf("failed to create retry queue size metric: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // send implements the requestSender interface
-func (qrs *queuedRetrySender) send(req request) (int, error) {
+func (qrs *queuedRetrySender) send(req request) error {
 	if !qrs.cfg.Enabled {
-		return qrs.consumerSender.send(req)
+		err := qrs.consumerSender.send(req)
+		if err != nil {
+			qrs.logger.Error(
+				"Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
+				zap.Int("dropped_items", req.count()),
+			)
+		}
+		return err
 	}
 
+	// Prevent cancellation and deadline to propagate to the context stored in the queue.
+	// The grpc/http based receivers will cancel the request context after this function returns.
+	req.setContext(noCancellationContext{Context: req.context()})
+
+	span := trace.FromContext(req.context())
 	if !qrs.queue.Produce(req) {
-		return req.count(), errorRefused
+		qrs.logger.Error(
+			"Dropping data because sending_queue is full. Try increasing queue_size.",
+			zap.Int("dropped_items", req.count()),
+		)
+		span.Annotate(qrs.traceAttributes, "Dropped item, sending_queue is full.")
+		return errors.New("sending_queue is full")
 	}
 
-	return 0, nil
+	span.Annotate(qrs.traceAttributes, "Enqueued item.")
+	return nil
 }
 
 // shutdown is invoked during service shutdown.
 func (qrs *queuedRetrySender) shutdown() {
+	// Cleanup queue metrics reporting
+	if qrs.cfg.Enabled {
+		_ = queueSizeGauge.UpsertEntry(func() int64 {
+			return int64(0)
+		}, metricdata.NewLabelValue(qrs.fullName))
+	}
+
 	// First stop the retry goroutines, so that unblocks the queue workers.
 	close(qrs.retryStopCh)
 
@@ -133,6 +219,7 @@ type throttleRetry struct {
 	delay time.Duration
 }
 
+// NewThrottleRetry creates a new throttle retry error.
 func NewThrottleRetry(err error, delay time.Duration) error {
 	return &throttleRetry{
 		error: err,
@@ -141,15 +228,24 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	cfg        RetrySettings
-	nextSender requestSender
-	stopCh     chan struct{}
+	traceAttribute trace.Attribute
+	cfg            RetrySettings
+	nextSender     requestSender
+	stopCh         chan struct{}
+	logger         *zap.Logger
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(req request) (int, error) {
+func (rs *retrySender) send(req request) error {
 	if !rs.cfg.Enabled {
-		return rs.nextSender.send(req)
+		err := rs.nextSender.send(req)
+		if err != nil {
+			rs.logger.Error(
+				"Exporting failed. Try enabling retry_on_failure config option.",
+				zap.Error(err),
+			)
+		}
+		return err
 	}
 
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
@@ -160,43 +256,74 @@ func (rs *retrySender) send(req request) (int, error) {
 		Multiplier:          backoff.DefaultMultiplier,
 		MaxInterval:         rs.cfg.MaxInterval,
 		MaxElapsedTime:      rs.cfg.MaxElapsedTime,
+		Stop:                backoff.Stop,
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
+	span := trace.FromContext(req.context())
+	retryNum := int64(0)
 	for {
-		droppedItems, err := rs.nextSender.send(req)
+		span.Annotate(
+			[]trace.Attribute{
+				rs.traceAttribute,
+				trace.Int64Attribute("retry_num", retryNum)},
+			"Sending request.")
 
+		err := rs.nextSender.send(req)
 		if err == nil {
-			return droppedItems, nil
+			return nil
 		}
 
 		// Immediately drop data on permanent errors.
 		if consumererror.IsPermanent(err) {
-			return droppedItems, err
+			rs.logger.Error(
+				"Exporting failed. The error is not retryable. Dropping data.",
+				zap.Error(err),
+				zap.Int("dropped_items", req.count()),
+			)
+			return err
 		}
 
-		// If partial error, update data and stats with non exported data.
-		if partialErr, isPartial := err.(consumererror.PartialError); isPartial {
-			req = req.onPartialError(partialErr)
-		}
+		// Give the request a chance to extract signal data to retry if only some data
+		// failed to process.
+		req = req.onError(err)
 
 		backoffDelay := expBackoff.NextBackOff()
-
 		if backoffDelay == backoff.Stop {
 			// throw away the batch
-			return req.count(), fmt.Errorf("max elapsed time expired %w", err)
+			err = fmt.Errorf("max elapsed time expired %w", err)
+			rs.logger.Error(
+				"Exporting failed. No more retries left. Dropping data.",
+				zap.Error(err),
+				zap.Int("dropped_items", req.count()),
+			)
+			return err
 		}
 
 		if throttleErr, isThrottle := err.(*throttleRetry); isThrottle {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
+		backoffDelayStr := backoffDelay.String()
+		span.Annotate(
+			[]trace.Attribute{
+				rs.traceAttribute,
+				trace.StringAttribute("interval", backoffDelayStr),
+				trace.StringAttribute("error", err.Error())},
+			"Exporting failed. Will retry the request after interval.")
+		rs.logger.Info(
+			"Exporting failed. Will retry the request after interval.",
+			zap.Error(err),
+			zap.String("interval", backoffDelayStr),
+		)
+		retryNum++
+
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-req.context().Done():
-			return req.count(), fmt.Errorf("request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return req.count(), fmt.Errorf("interrupted due to shutdown %w", err)
+			return fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}
@@ -208,4 +335,20 @@ func max(x, y time.Duration) time.Duration {
 		return y
 	}
 	return x
+}
+
+type noCancellationContext struct {
+	context.Context
+}
+
+func (noCancellationContext) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (noCancellationContext) Done() <-chan struct{} {
+	return nil
+}
+
+func (noCancellationContext) Err() error {
+	return nil
 }

@@ -16,37 +16,38 @@ package service
 
 import (
 	"flag"
+	"fmt"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (
 	logLevelCfg   = "log-level"
 	logProfileCfg = "log-profile"
+	logFormatCfg  = "log-format"
 )
 
 var (
 	// Command line pointer to logger level flag configuration.
-	loggerLevelPtr   *string
+	loggerLevelPtr   *zapcore.Level
 	loggerProfilePtr *string
+	loggerFormatPtr  *string
 )
 
 func loggerFlags(flags *flag.FlagSet) {
-	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
-	loggerProfilePtr = flags.String(logProfileCfg, "", "Logging profile to use (dev, prod)")
+	defaultLevel := zapcore.InfoLevel
+	loggerLevelPtr = &defaultLevel
+	flags.Var(loggerLevelPtr, logLevelCfg, "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
+
+	loggerProfilePtr = flags.String(logProfileCfg, "prod", "Logging profile to use (dev, prod)")
+
+	// Note: we use "console" by default for more human-friendly mode of logging (tab delimited, formatted timestamps).
+	loggerFormatPtr = flags.String(logFormatCfg, "console", "Format of logs to use (json, console)")
 }
 
-func newLogger(hooks ...func(zapcore.Entry) error) (*zap.Logger, error) {
-	var level zapcore.Level
-	err := (&level).UnmarshalText([]byte(*loggerLevelPtr))
-	if err != nil {
-		return nil, err
-	}
-
-	conf := zap.NewProductionConfig()
+func newLogger(options []zap.Option) (*zap.Logger, error) {
+	var conf zap.Config
 
 	// Use logger profile if set on command line before falling back
 	// to default based on build type.
@@ -56,11 +57,15 @@ func newLogger(hooks ...func(zapcore.Entry) error) (*zap.Logger, error) {
 	case "prod":
 		conf = zap.NewProductionConfig()
 	default:
-		if version.IsDevBuild() {
-			conf = zap.NewDevelopmentConfig()
-		}
+		return nil, fmt.Errorf("invalid value %s for %s flag", *loggerProfilePtr, logProfileCfg)
 	}
 
-	conf.Level.SetLevel(level)
-	return conf.Build(zap.Hooks(hooks...))
+	conf.Encoding = *loggerFormatPtr
+	if conf.Encoding == "console" {
+		// Human-readable timestamps for console format of logs.
+		conf.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	}
+
+	conf.Level.SetLevel(*loggerLevelPtr)
+	return conf.Build(options...)
 }

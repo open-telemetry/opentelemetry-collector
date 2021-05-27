@@ -16,16 +16,16 @@ package internal
 
 import (
 	"context"
-	"io"
-	"sync"
+	"errors"
 	"sync/atomic"
 
+	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -38,54 +38,67 @@ const (
 var idSeq int64
 var noop = &noopAppender{}
 
-// OcaStore is an interface combines io.Closer and prometheus' scrape.Appendable
-type OcaStore interface {
-	storage.Appendable
-	io.Closer
-	SetScrapeManager(*scrape.Manager)
-}
+// OcaStore translates Prometheus scraping diffs into OpenCensus format.
+type OcaStore struct {
+	ctx context.Context
 
-// OpenCensus Store for prometheus
-type ocaStore struct {
-	running              int32
-	logger               *zap.Logger
-	sink                 consumer.MetricsConsumer
-	mc                   *mService
-	once                 *sync.Once
-	ctx                  context.Context
+	running              int32 // access atomically
+	sink                 consumer.Metrics
+	mc                   *metadataService
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
-	receiverName         string
+	receiverID           config.ComponentID
+	externalLabels       labels.Labels
+
+	logger *zap.Logger
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string) OcaStore {
-	return &ocaStore{
+func NewOcaStore(
+	ctx context.Context,
+	sink consumer.Metrics,
+	logger *zap.Logger,
+	jobsMap *JobsMap,
+	useStartTimeMetric bool,
+	startTimeMetricRegex string,
+	receiverID config.ComponentID,
+	externalLabels labels.Labels) *OcaStore {
+	return &OcaStore{
 		running:              runningStateInit,
 		ctx:                  ctx,
 		sink:                 sink,
 		logger:               logger,
-		once:                 &sync.Once{},
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverName:         receiverName,
+		receiverID:           receiverID,
+		externalLabels:       externalLabels,
 	}
 }
 
 // SetScrapeManager is used to config the underlying scrape.Manager as it's needed for OcaStore, otherwise OcaStore
 // cannot accept any Appender() request
-func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
+func (o *OcaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 	if scrapeManager != nil && atomic.CompareAndSwapInt32(&o.running, runningStateInit, runningStateReady) {
-		o.mc = &mService{sm: scrapeManager}
+		o.mc = &metadataService{sm: scrapeManager}
 	}
 }
 
-func (o *ocaStore) Appender(context.Context) storage.Appender {
+func (o *OcaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverName, o.mc, o.sink, o.logger)
+		return newTransaction(
+			o.ctx,
+			o.jobsMap,
+			o.useStartTimeMetric,
+			o.startTimeMetricRegex,
+			o.receiverID,
+			o.mc,
+			o.sink,
+			o.externalLabels,
+			o.logger,
+		)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}
@@ -93,7 +106,7 @@ func (o *ocaStore) Appender(context.Context) storage.Appender {
 	return noop
 }
 
-func (o *ocaStore) Close() error {
+func (o *OcaStore) Close() error {
 	atomic.CompareAndSwapInt32(&o.running, runningStateReady, runningStateStop)
 	return nil
 }
@@ -101,16 +114,18 @@ func (o *ocaStore) Close() error {
 // noopAppender, always return error on any operations
 type noopAppender struct{}
 
-func (*noopAppender) Add(labels.Labels, int64, float64) (uint64, error) {
-	return 0, componenterror.ErrAlreadyStopped
+var errAlreadyStopped = errors.New("already stopped")
+
+func (*noopAppender) Append(uint64, labels.Labels, int64, float64) (uint64, error) {
+	return 0, errAlreadyStopped
 }
 
-func (*noopAppender) AddFast(uint64, int64, float64) error {
-	return componenterror.ErrAlreadyStopped
+func (*noopAppender) AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error) {
+	return 0, errAlreadyStopped
 }
 
 func (*noopAppender) Commit() error {
-	return componenterror.ErrAlreadyStopped
+	return errAlreadyStopped
 }
 
 func (*noopAppender) Rollback() error {

@@ -17,28 +17,29 @@ desired reliability level.
 
 ### Low on CPU Resources
 
-This depends on the CPU metrics available on the deployment, eg.: 
-`kube_pod_container_resource_limits_cpu_cores` for Kubernetes. Let's call it 
-`available_cores` below. The idea here is to have an upper bound of the number 
-of available cores, and the maximum expected ingestion rate considered safe, 
+This depends on the CPU metrics available on the deployment, eg.:
+`kube_pod_container_resource_limits_cpu_cores` for Kubernetes. Let's call it
+`available_cores` below. The idea here is to have an upper bound of the number
+of available cores, and the maximum expected ingestion rate considered safe,
 let's call it `safe_rate`, per core. This should trigger increase of resources/
 instances (or raise an alert as appropriate) whenever 
 `(actual_rate/available_cores) < safe_rate`.
 
-The `safe_rate` depends on the specific configuration being used. 
+The `safe_rate` depends on the specific configuration being used.
 // TODO: Provide reference `safe_rate` for a few selected configurations.
 
 ## Secondary Monitoring
 
 ### Queue Length
 
-The `queued_retry` processor is recommended as the retry mechanism for the
-Collector and as such should be used in any production deployment.
-The `queued_retry` processor provides the
-`otelcol_processor_queued_retry_queue_length` metric, besides others.
-When this metric is growing constantly it is an indication that the Collector
-is not able to send data as fast as it is receiving.
-This will precede data loss and also can indicate a Collector low on resources.
+Most exporters offer a [queue/retry mechanism](../exporter/exporterhelper/README.md)
+that is recommended as the retry mechanism for the Collector and as such should
+be used in any production deployment.
+
+**TODO:** Add metric to monitor queue length.
+
+Currently, the queue/retry mechanism only supports logging for monitoring. Check
+the logs for messages like `"Dropping data because sending_queue is full"`.
 
 ### Receive Failures
 

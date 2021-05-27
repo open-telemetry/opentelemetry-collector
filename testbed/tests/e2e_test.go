@@ -13,12 +13,11 @@
 // limitations under the License.
 
 // Package tests contains test cases. To run the tests go to tests directory and run:
-// TESTBED_CONFIG=local.yaml go test -v
+// RUN_TESTBED=1 go test -v
 
 package tests
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -42,7 +41,7 @@ func TestIdleMode(t *testing.T) {
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 50})
+	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 70})
 	tc.StartAgent()
 
 	tc.Sleep(tc.Duration)
@@ -53,7 +52,7 @@ func TestBallastMemory(t *testing.T) {
 		ballastSize uint32
 		maxRSS      uint32
 	}{
-		{100, 50},
+		{100, 60},
 		{500, 70},
 		{1000, 100},
 	}
@@ -85,7 +84,11 @@ func TestBallastMemory(t *testing.T) {
 			return vms > test.ballastSize
 		}, time.Second*2, "VMS must be greater than %d", test.ballastSize)
 
-		assert.True(t, rss <= test.maxRSS, fmt.Sprintf("RSS must be less than or equal to %d", test.maxRSS))
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/3233
+		// given that the maxRSS isn't an absolute maximum and that the actual maximum might be a bit off,
+		// we give some room here instead of failing when the memory usage isn't that much higher than the max
+		lenientMax := 1.1 * float32(test.maxRSS)
+		assert.LessOrEqual(t, float32(rss), lenientMax)
 		tc.Stop()
 	}
 }

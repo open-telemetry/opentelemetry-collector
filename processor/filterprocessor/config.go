@@ -15,17 +15,18 @@
 package filterprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
-	Metrics                        MetricFilters `mapstructure:"metrics"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	Metrics MetricFilters `mapstructure:"metrics"`
 }
 
-// MetricFilter filters by Metric properties.
+// MetricFilters filters by Metric properties.
 type MetricFilters struct {
 	// Include match properties describe metrics that should be included in the Collector Service pipeline,
 	// all other metrics should be dropped from further processing.
@@ -36,4 +37,11 @@ type MetricFilters struct {
 	// all other metrics should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filtermetric.MatchProperties `mapstructure:"exclude"`
+}
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

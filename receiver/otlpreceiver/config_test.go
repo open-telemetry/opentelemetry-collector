@@ -23,16 +23,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -42,26 +42,23 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 9)
+	assert.Equal(t, len(cfg.Receivers), 10)
 
-	assert.Equal(t, cfg.Receivers["otlp"], factory.CreateDefaultConfig())
+	assert.Equal(t, cfg.Receivers[config.NewID(typeStr)], factory.CreateDefaultConfig())
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.SetName("otlp/only_grpc")
+	defaultOnlyGRPC.SetIDName("only_grpc")
 	defaultOnlyGRPC.HTTP = nil
-	assert.Equal(t, cfg.Receivers["otlp/only_grpc"], defaultOnlyGRPC)
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "only_grpc")], defaultOnlyGRPC)
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.SetName("otlp/only_http")
+	defaultOnlyHTTP.SetIDName("only_http")
 	defaultOnlyHTTP.GRPC = nil
-	assert.Equal(t, cfg.Receivers["otlp/only_http"], defaultOnlyHTTP)
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "only_http")], defaultOnlyHTTP)
 
-	assert.Equal(t, cfg.Receivers["otlp/customname"],
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "customname")],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "otlp/customname",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -73,16 +70,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers["otlp/keepalive"],
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "keepalive")],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "otlp/keepalive",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "keepalive")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55680",
+						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
 					ReadBufferSize: 512 * 1024,
@@ -103,16 +97,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers["otlp/msg-size-conc-connect-max-idle"],
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle")],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "otlp/msg-size-conc-connect-max-idle",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55680",
+						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
 					MaxRecvMsgSizeMiB:    32,
@@ -130,16 +121,13 @@ func TestLoadConfig(t *testing.T) {
 
 	// NOTE: Once the config loader checks for the files existence, this test may fail and require
 	// 	use of fake cert/key for test purposes.
-	assert.Equal(t, cfg.Receivers["otlp/tlscredentials"],
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "tlscredentials")],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "otlp/tlscredentials",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tlscredentials")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55680",
+						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
 					TLSSetting: &configtls.TLSServerSetting{
@@ -162,12 +150,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers["otlp/cors"],
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "cors")],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "otlp/cors",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "cors")),
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
 					Endpoint:    "0.0.0.0:55681",
@@ -176,12 +161,21 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers["otlp/uds"],
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "corsheader")],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "otlp/uds",
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "corsheader")),
+			Protocols: Protocols{
+				HTTP: &confighttp.HTTPServerSettings{
+					Endpoint:    "0.0.0.0:55681",
+					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+					CorsHeaders: []string{"ExampleHeader"},
+				},
 			},
+		})
+
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "uds")],
+		&Config{
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "uds")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -199,7 +193,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestFailedLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -211,7 +205,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	assert.EqualError(t, err, "error reading receivers configuration for otlp: 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
 
 	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for otlp: must specify at least one protocol when using the OTLP receiver")
+	assert.EqualError(t, err, "receiver \"otlp\" has invalid configuration: must specify at least one protocol when using the OTLP receiver")
 
 	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for otlp: empty config for OTLP receiver")

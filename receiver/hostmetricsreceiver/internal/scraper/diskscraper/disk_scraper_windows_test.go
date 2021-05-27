@@ -24,10 +24,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-func TestScrapeMetrics_Error(t *testing.T) {
+func TestScrape_Error(t *testing.T) {
 	type testCase struct {
 		name         string
 		scrapeErr    error
@@ -61,12 +63,17 @@ func TestScrapeMetrics_Error(t *testing.T) {
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr)
 
-			err = scraper.Initialize(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			_, err = scraper.ScrapeMetrics(context.Background())
+			_, err = scraper.scrape(context.Background())
 			assert.EqualError(t, err, test.expectedErr)
+
+			isPartial := scrapererror.IsPartialScrapeError(err)
+			assert.True(t, isPartial)
+			if isPartial {
+				assert.Equal(t, metricsLen, err.(scrapererror.PartialScrapeError).Failed)
+			}
 		})
 	}
 }

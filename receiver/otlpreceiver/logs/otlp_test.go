@@ -16,8 +16,7 @@ package logs
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
+	"errors"
 	"net"
 	"testing"
 
@@ -26,137 +25,82 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal"
-	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlplog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
-	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
+	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
-
-var _ collectorlog.LogsServiceServer = (*Receiver)(nil)
 
 func TestExport(t *testing.T) {
 	// given
 
-	logSink := new(exportertest.SinkLogsExporter)
+	logSink := new(consumertest.LogsSink)
 
-	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeLogsServiceClient(port)
+	traceClient, traceClientDoneFn, err := makeLogsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	// when
-
-	unixnanos := uint64(12578940000000012345)
-
-	traceID, err := base64.StdEncoding.DecodeString("SEhaOVO7YSQ=")
-	assert.NoError(t, err)
-
-	spanID, err := base64.StdEncoding.DecodeString("QuHicGYRg4U=")
-	assert.NoError(t, err)
-
-	resourceLogs := []*otlplog.ResourceLogs{
-		{
-			InstrumentationLibraryLogs: []*otlplog.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplog.LogRecord{
-						{
-							TraceId:      v1.NewTraceID(traceID),
-							SpanId:       spanID,
-							Name:         "operationB",
-							TimeUnixNano: unixnanos,
-						},
-					},
-				},
-			},
-		},
-	}
-
+	req := testdata.GenerateLogsOneLogRecord()
 	// Keep log data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := pdata.LogsFromInternalRep(internal.LogsFromOtlp(resourceLogs)).Clone()
-
-	req := &collectorlog.ExportLogsServiceRequest{
-		ResourceLogs: resourceLogs,
-	}
+	logData := req.Clone()
 
 	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
-	// assert
-
-	require.Equal(t, 1, len(logSink.AllLogs()), "unexpected length: %v", len(logSink.AllLogs()))
-
-	assert.EqualValues(t, traceData, logSink.AllLogs()[0])
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.EqualValues(t, logData, lds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	logSink := new(exportertest.SinkLogsExporter)
+	logSink := new(consumertest.LogsSink)
 
-	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()
 
-	logClient, logClientDoneFn, err := makeLogsServiceClient(port)
+	logClient, logClientDoneFn, err := makeLogsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer logClientDoneFn()
 
-	resp, err := logClient.Export(context.Background(), &collectorlog.ExportLogsServiceRequest{})
+	resp, err := logClient.Export(context.Background(), pdata.NewLogs())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	logSink := new(exportertest.SinkLogsExporter)
-	logSink.SetConsumeLogError(fmt.Errorf("error"))
-
-	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
-	logClient, logClientDoneFn, err := makeLogsServiceClient(port)
+	logClient, logClientDoneFn, err := makeLogsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer logClientDoneFn()
 
-	req := &collectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplog.ResourceLogs{
-			{
-				InstrumentationLibraryLogs: []*otlplog.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplog.LogRecord{
-							{
-								Name: "operationB",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	req := testdata.GenerateLogsOneLogRecord()
 
 	resp, err := logClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = error")
+	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Nil(t, resp)
 }
 
-func makeLogsServiceClient(port int) (collectorlog.LogsServiceClient, func(), error) {
-	addr := fmt.Sprintf(":%d", port)
-	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func makeLogsServiceClient(addr net.Addr) (pdatagrpc.LogsClient, func(), error) {
+	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
 
-	logClient := collectorlog.NewLogsServiceClient(cc)
+	logClient := pdatagrpc.NewLogsClient(cc)
 
 	doneFn := func() { _ = cc.Close() }
 	return logClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.LogsConsumer) (int, func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Logs) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -167,21 +111,15 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.LogsConsumer) (int, func
 		}
 	}
 
-	_, port, err := testutil.HostPortFromAddr(ln.Addr())
-	if err != nil {
-		done()
-		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
-	}
-
-	r := New(receiverTagValue, tc)
+	r := New(receiverID, tc)
 	require.NoError(t, err)
 
 	// Now run it as a gRPC server
-	srv := obsreport.GRPCServerWithObservabilityEnabled()
+	srv := grpc.NewServer()
 	collectorlog.RegisterLogsServiceServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()
 
-	return port, done
+	return ln.Addr(), done
 }

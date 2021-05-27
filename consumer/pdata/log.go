@@ -15,11 +15,9 @@
 package pdata
 
 import (
-	"github.com/gogo/protobuf/proto"
-
 	"go.opentelemetry.io/collector/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
 // This file defines in-memory data structures to represent logs.
@@ -31,46 +29,53 @@ import (
 // Must use NewLogs functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Logs struct {
-	orig *[]*otlplogs.ResourceLogs
+	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
 
 // NewLogs creates a new Logs.
 func NewLogs() Logs {
-	orig := []*otlplogs.ResourceLogs(nil)
-	return Logs{&orig}
+	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
 }
 
 // LogsFromInternalRep creates the internal Logs representation from the ProtoBuf. Should
 // not be used outside this module. This is intended to be used only by OTLP exporter and
 // File exporter, which legitimately need to work with OTLP Protobuf structs.
-func LogsFromInternalRep(logs internal.OtlpLogsWrapper) Logs {
-	return Logs{logs.Orig}
+func LogsFromInternalRep(logs internal.LogsWrapper) Logs {
+	return Logs{orig: internal.LogsToOtlp(logs)}
+}
+
+// LogsFromOtlpProtoBytes converts OTLP Collector ExportLogsServiceRequest
+// ProtoBuf bytes to the internal Logs.
+//
+// Returns an invalid Logs instance if error is not nil.
+func LogsFromOtlpProtoBytes(data []byte) (Logs, error) {
+	req := otlpcollectorlog.ExportLogsServiceRequest{}
+	if err := req.Unmarshal(data); err != nil {
+		return Logs{}, err
+	}
+	return Logs{orig: &req}, nil
 }
 
 // InternalRep returns internal representation of the logs. Should not be used outside
 // this module. This is intended to be used only by OTLP exporter and File exporter,
 // which legitimately need to work with OTLP Protobuf structs.
-func (ld Logs) InternalRep() internal.OtlpLogsWrapper {
-	return internal.OtlpLogsWrapper{Orig: ld.orig}
+func (ld Logs) InternalRep() internal.LogsWrapper {
+	return internal.LogsFromOtlp(ld.orig)
 }
 
-// ToOtlpProtoBytes returns the internal Logs to OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes. This is intended to export OTLP Protobuf bytes for OTLP/HTTP transports.
+// ToOtlpProtoBytes converts this Logs to the OTLP Collector ExportLogsServiceRequest
+// ProtoBuf bytes.
+//
+// Returns an nil byte-array if error is not nil.
 func (ld Logs) ToOtlpProtoBytes() ([]byte, error) {
-	return proto.Marshal(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: *ld.orig,
-	})
+	return ld.orig.Marshal()
 }
 
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
-	otlp := *ld.orig
-	resourceSpansClones := make([]*otlplogs.ResourceLogs, 0, len(otlp))
-	for _, resourceSpans := range otlp {
-		resourceSpansClones = append(resourceSpansClones,
-			proto.Clone(resourceSpans).(*otlplogs.ResourceLogs))
-	}
-	return Logs{orig: &resourceSpansClones}
+	cloneLd := NewLogs()
+	ld.ResourceLogs().CopyTo(cloneLd.ResourceLogs())
+	return cloneLd
 }
 
 // LogRecordCount calculates the total number of log records.
@@ -79,38 +84,28 @@ func (ld Logs) LogRecordCount() int {
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		ill := rs.InstrumentationLibraryLogs()
 		for i := 0; i < ill.Len(); i++ {
 			logs := ill.At(i)
-			if logs.IsNil() {
-				continue
-			}
 			logCount += logs.Logs().Len()
 		}
 	}
 	return logCount
 }
 
-// SizeBytes returns the number of bytes in the internal representation of the
-// logs.
-func (ld Logs) SizeBytes() int {
-	size := 0
-	for i := range *ld.orig {
-		size += (*ld.orig)[i].Size()
-	}
-	return size
+// OtlpProtoSize returns the size in bytes of this Logs encoded as OTLP Collector
+// ExportLogsServiceRequest ProtoBuf bytes.
+func (ld Logs) OtlpProtoSize() int {
+	return ld.orig.Size()
 }
 
+// ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ld Logs) ResourceLogs() ResourceLogsSlice {
-	return ResourceLogsSlice(ld)
+	return newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
 
 // SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.
-type SeverityNumber otlplogs.SeverityNumber
+type SeverityNumber int32
 
 const (
 	SeverityNumberUNDEFINED = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED)
@@ -139,3 +134,5 @@ const (
 	SeverityNumberFATAL3    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL3)
 	SeverityNumberFATAL4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
 )
+
+func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }

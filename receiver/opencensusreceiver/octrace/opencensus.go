@@ -25,14 +25,14 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 const (
-	receiverTagValue   = "oc_trace"
 	receiverTransport  = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
 	receiverDataFormat = "protobuf"
 )
@@ -40,19 +40,21 @@ const (
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
 	agenttracepb.UnimplementedTraceServiceServer
-	nextConsumer consumer.TraceConsumer
-	instanceName string
+	nextConsumer consumer.Traces
+	id           config.ComponentID
+	obsrecv      *obsreport.Receiver
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(instanceName string, nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Traces, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	ocr := &Receiver{
 		nextConsumer: nextConsumer,
-		instanceName: instanceName,
+		id:           id,
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
 	for _, opt := range opts {
 		opt(ocr)
@@ -81,7 +83,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.instanceName, receiverTransport, receiverTagValue)
+	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.id, receiverTransport)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -136,31 +138,18 @@ func (ocr *Receiver) processReceivedMsg(
 		resource = recv.Resource
 	}
 
-	td := consumerdata.TraceData{
-		Node:         lastNonNilNode,
-		Resource:     resource,
-		Spans:        recv.Spans,
-		SourceFormat: "oc_trace",
-	}
-
+	td := internaldata.OCToTraces(lastNonNilNode, resource, recv.Spans)
 	err := ocr.sendToNextConsumer(longLivedRPCCtx, td)
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata consumerdata.TraceData) error {
-	ctx := obsreport.StartTraceDataReceiveOp(
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
+	ctx := ocr.obsrecv.StartTraceDataReceiveOp(
 		longLivedRPCCtx,
-		ocr.instanceName,
-		receiverTransport,
 		obsreport.WithLongLivedCtx())
 
-	var err error
-	numSpans := len(tracedata.Spans)
-	if numSpans != 0 {
-		err = ocr.nextConsumer.ConsumeTraces(ctx, internaldata.OCToTraceData(tracedata))
-	}
-
-	obsreport.EndTraceDataReceiveOp(ctx, receiverDataFormat, numSpans, err)
+	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
+	ocr.obsrecv.EndTraceDataReceiveOp(ctx, receiverDataFormat, td.SpanCount(), err)
 
 	return err
 }

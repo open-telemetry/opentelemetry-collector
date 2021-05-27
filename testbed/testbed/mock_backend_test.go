@@ -31,14 +31,14 @@ func TestGeneratorAndBackend(t *testing.T) {
 		sender   DataSender
 	}{
 		{
-			"Jaeger-JaegerGRPC",
-			NewJaegerDataReceiver(port),
-			NewJaegerGRPCDataSender(DefaultHost, port),
+			name:     "Jaeger-JaegerGRPC",
+			receiver: NewJaegerDataReceiver(port),
+			sender:   NewJaegerGRPCDataSender(DefaultHost, port),
 		},
 		{
-			"Zipkin-Zipkin",
-			NewZipkinDataReceiver(port),
-			NewZipkinDataSender(DefaultHost, port),
+			name:     "Zipkin-Zipkin",
+			receiver: NewZipkinDataReceiver(port),
+			sender:   NewZipkinDataSender(DefaultHost, port),
 		},
 	}
 
@@ -47,9 +47,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 			mb := NewMockBackend("mockbackend.log", test.receiver)
 
 			assert.EqualValues(t, 0, mb.DataItemsReceived())
-
-			err := mb.Start()
-			require.NoError(t, err, "Cannot start backend")
+			require.NoError(t, mb.Start(), "Cannot start backend")
 
 			defer mb.Stop()
 

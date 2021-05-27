@@ -1,7 +1,5 @@
 codecov:
-  notify:
-    require_ci_to_pass: yes
-  strict_yaml_branch: master  # only use the latest copy on master branch
+  strict_yaml_branch: main  # only use the latest copy on main branch
 
 coverage:
   precision: 2
@@ -18,4 +16,8 @@ coverage:
         target: 95%
 
 ignore:
-  - **/*/metadata/generated_metrics.go
+  - "service/internal/zpages/tmplgen/**/*"
+  - "*/**/metadata/generated_metrics.go"
+  - "internal/data/protogen/**/*"
+  - "testbed/**/*"
+  - "*/**/third_party/**/*"

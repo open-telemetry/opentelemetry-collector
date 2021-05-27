@@ -9,15 +9,20 @@ The following settings are required:
 
 The following settings can be optionally configured:
 - `brokers` (default = localhost:9092): The list of kafka brokers
-- `topic` (default = otlp_spans): The name of the kafka topic to export to
-- `encoding` (default = otlp_proto): The encoding of the payload sent to kafka. Available encodings:
-  - `otlp_proto`: the payload is serialized to `ExportTraceServiceRequest`.
-  - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`.
-  - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`.
+- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to export to.
+- `encoding` (default = otlp_proto): The encoding of the traces sent to kafka. All available encodings:
+  - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs.
+  - The following encodings are valid *only* for **traces**.
+    - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
+    - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
     - `password`: The password to use
+  - `sasl`
+    - `username`: The username to use.
+    - `password`: The password to use
+    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512 or PLAIN)
   - `tls`
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
       only be used if `insecure` is set to true.
@@ -50,7 +55,7 @@ The following settings can be optionally configured:
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue`
-  - `enabled` (default = false)
+  - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data; ignored if `enabled` is `false`;
   User should calculate this as `num_seconds * requests_per_second` where:

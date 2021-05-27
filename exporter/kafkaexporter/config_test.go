@@ -23,27 +23,24 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(cfg.Receivers))
+	require.Equal(t, 1, len(cfg.Exporters))
 
-	c := cfg.Exporters[typeStr].(*Config)
+	c := cfg.Exporters[config.NewID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},

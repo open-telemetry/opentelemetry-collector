@@ -9,6 +9,9 @@
       <Property Id="ARPNOREPAIR" Value="1"/>
       <Property Id="ARPNOMODIFY" Value="1"/>
 
+      <MajorUpgrade
+         DowngradeErrorMessage="A later version of OpenTelemetry Collector Contrib is already installed. Setup will now exit."/>
+
       <Feature Id="Feature" Level="1">
          <ComponentRef Id="ApplicationComponent"/>
       </Feature>

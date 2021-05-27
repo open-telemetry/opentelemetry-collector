@@ -49,11 +49,11 @@ type File struct {
 	Name        string
 	imports     []string
 	testImports []string
-	// Can be any of sliceStruct or messageStruct
+	// Can be any of sliceOfPtrs, sliceOfValues, messageValueStruct, or messagePtrStruct
 	structs []baseStruct
 }
 
-// GenerateFile generates the file string.
+// GenerateFile generates the configured data structures for this File.
 func (f *File) GenerateFile() string {
 	var sb strings.Builder
 
@@ -75,6 +75,7 @@ func (f *File) GenerateFile() string {
 	return sb.String()
 }
 
+// GenerateTestFile generates tests for the configured data structures for this File.
 func (f *File) GenerateTestFile() string {
 	var sb strings.Builder
 

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
@@ -28,14 +29,13 @@ func TestNewInProcessPipeline(t *testing.T) {
 	assert.NoError(t, err)
 	sender := NewOTLPTraceDataSender(DefaultHost, GetAvailablePort(t))
 	receiver := NewOTLPDataReceiver(DefaultOTLPPort)
-	runner := NewInProcessCollector(factories, sender.Port)
+	runner := NewInProcessCollector(factories)
 
 	format := `
 receivers:%v
 exporters:%v
 processors:
   batch:
-  queued_retry:
 
 extensions:
 
@@ -44,7 +44,7 @@ service:
   pipelines:
     traces:
       receivers: [%v]
-      processors: [batch, queued_retry]
+      processors: [batch]
       exporters: [%v]
 `
 	config := fmt.Sprintf(
@@ -58,12 +58,12 @@ service:
 	defer configCleanup()
 	assert.NoError(t, cfgErr)
 	assert.NotNil(t, configCleanup)
-	assert.NotNil(t, runner.config)
+	assert.NotEmpty(t, runner.configStr)
 	args := StartParams{}
-	defer runner.Stop()
-	endpoint, startErr := runner.Start(args)
-	assert.NoError(t, startErr)
-	receiverAddr := fmt.Sprintf("%s:%d", DefaultHost, sender.Port)
-	assert.Equal(t, receiverAddr, endpoint)
+	defer func() {
+		_, err := runner.Stop()
+		require.NoError(t, err)
+	}()
+	assert.NoError(t, runner.Start(args))
 	assert.NotNil(t, runner.svc)
 }

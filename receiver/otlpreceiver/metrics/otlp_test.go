@@ -16,7 +16,7 @@ package metrics
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net"
 	"testing"
 
@@ -25,21 +25,17 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/testutil"
+	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
-
-var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
 
 func TestExport(t *testing.T) {
 	// given
 
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -50,62 +46,11 @@ func TestExport(t *testing.T) {
 
 	// when
 
-	unixnanos1 := uint64(12578940000000012345)
-	unixnanos2 := uint64(12578940000000054321)
-
-	resourceMetrics := []*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						{
-							Name:        "mymetric",
-							Description: "My metric",
-							Unit:        "ms",
-							Data: &otlpmetrics.Metric_IntSum{
-								IntSum: &otlpmetrics.IntSum{
-									IsMonotonic:            true,
-									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-									DataPoints: []*otlpmetrics.IntDataPoint{
-										{
-											Labels: []*otlpcommon.StringKeyValue{
-												{
-													Key:   "key1",
-													Value: "value1",
-												},
-											},
-											StartTimeUnixNano: unixnanos1,
-											TimeUnixNano:      unixnanos2,
-											Value:             123,
-										},
-										{
-											Labels: []*otlpcommon.StringKeyValue{
-												{
-													Key:   "key2",
-													Value: "value2",
-												},
-											},
-											StartTimeUnixNano: unixnanos1,
-											TimeUnixNano:      unixnanos2,
-											Value:             456,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	req := testdata.GenerateMetricsOneMetric()
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := pdata.MetricsFromOtlp(resourceMetrics).Clone()
-
-	req := &collectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: resourceMetrics,
-	}
+	metricData := req.Clone()
 
 	resp, err := metricsClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export metrics: %v", err)
@@ -113,25 +58,24 @@ func TestExport(t *testing.T) {
 
 	// assert
 
-	require.Equal(t, 1, len(metricSink.AllMetrics()),
-		"unexpected length: %v", len(metricSink.AllMetrics()))
-
-	assert.EqualValues(t, metricData, metricSink.AllMetrics()[0])
+	mds := metricSink.AllMetrics()
+	require.Len(t, mds, 1)
+	assert.EqualValues(t, metricData, mds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
 	// given
 
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
-	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
+	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
-	resp, err := metricsClient.Export(context.Background(), &collectormetrics.ExportMetricsServiceRequest{})
+	resp, err := metricsClient.Export(context.Background(), pdata.NewMetrics())
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
@@ -139,64 +83,33 @@ func TestExport_EmptyRequest(t *testing.T) {
 func TestExport_ErrorConsumer(t *testing.T) {
 	// given
 
-	metricSink := new(exportertest.SinkMetricsExporter)
-	metricSink.SetConsumeMetricsError(fmt.Errorf("error"))
-
-	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
+	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
-	req := &collectormetrics.ExportMetricsServiceRequest{ResourceMetrics: []*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						{
-							Name:        "mymetric",
-							Description: "My metric",
-							Unit:        "ms",
-							Data: &otlpmetrics.Metric_IntSum{
-								IntSum: &otlpmetrics.IntSum{
-									IsMonotonic:            true,
-									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-									DataPoints: []*otlpmetrics.IntDataPoint{
-										{
-											Value: 123,
-										},
-										{
-											Value: 456,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}}
+	req := testdata.GenerateMetricsOneMetric()
+
 	resp, err := metricsClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = error")
+	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Nil(t, resp)
 }
 
-func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, func(), error) {
-	addr := fmt.Sprintf(":%d", port)
-	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func makeMetricsServiceClient(addr net.Addr) (pdatagrpc.MetricsClient, func(), error) {
+	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
 
-	metricsClient := collectormetrics.NewMetricsServiceClient(cc)
+	metricsClient := pdatagrpc.NewMetricsClient(cc)
 
 	doneFn := func() { _ = cc.Close() }
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (int, func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -207,16 +120,13 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (int, f
 		}
 	}
 
-	_, port, err := testutil.HostPortFromAddr(ln.Addr())
-	require.NoError(t, err)
-
-	r := New(receiverTagValue, mc)
+	r := New(receiverID, mc)
 	// Now run it as a gRPC server
-	srv := obsreport.GRPCServerWithObservabilityEnabled()
+	srv := grpc.NewServer()
 	collectormetrics.RegisterMetricsServiceServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()
 
-	return port, done
+	return ln.Addr(), done
 }

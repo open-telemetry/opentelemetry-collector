@@ -18,42 +18,34 @@ import (
 	"bytes"
 	"fmt"
 	"runtime"
+	"time"
 )
 
-const (
-	buildDev     = "dev"
-	buildRelease = "release"
+var (
+	// Version variable will be replaced at link time after `make` has been run.
+	Version = "latest"
+
+	// startTime
+	startTime time.Time
 )
 
-// Version variable will be replaced at link time after `make` has been run.
-var Version = "latest"
-
-// GitHash variable will be replaced at link time after `make` has been run.
-var GitHash = "<NOT PROPERLY GENERATED>"
-
-// BuildType should be one of (dev, release).
-var BuildType = buildDev
-
-// IsDevBuild returns true if this is a development (local) build.
-func IsDevBuild() bool {
-	return BuildType == buildDev
-}
-
-// IsReleaseBuild returns true if this is a release build.
-func IsReleaseBuild() bool {
-	return BuildType == buildRelease
+func init() {
+	startTime = time.Now()
 }
 
 // InfoVar is a singleton instance of the Info struct.
-var InfoVar = Info([][2]string{
+var InfoVar = Info{
 	{"Version", Version},
-	{"GitHash", GitHash},
-	{"BuildType", BuildType},
-	{"Goversion", runtime.Version()},
+	{"GoVersion", runtime.Version()},
 	{"OS", runtime.GOOS},
 	{"Architecture", runtime.GOARCH},
 	// Add other valuable build-time information here.
-})
+}
+
+// RuntimeVar returns the InfoVar plus runtime information like uptime.
+func RuntimeVar() Info {
+	return append(InfoVar, [2]string{"StartTimestamp", startTime.String()}, [2]string{"Uptime", time.Since(startTime).String()})
+}
 
 // Info has properties about the build and runtime.
 type Info [][2]string

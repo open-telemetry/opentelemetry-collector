@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -41,15 +41,14 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTracesExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: defaultTimeout,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -60,11 +59,11 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
-	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
 	zc := cfg.(*Config)
 
 	if zc.Endpoint == "" {
@@ -72,5 +71,17 @@ func createTraceExporter(
 		return nil, errors.New("exporter config requires a non-empty 'endpoint'")
 	}
 
-	return newTraceExporter(zc)
+	ze, err := createZipkinExporter(zc)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewTracesExporter(
+		zc,
+		params.Logger,
+		ze.pushTraceData,
+		exporterhelper.WithStart(ze.start),
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithQueue(zc.QueueSettings),
+		exporterhelper.WithRetry(zc.RetrySettings))
 }

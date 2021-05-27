@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterhelper"
 )
 
-// Settings
+// Settings specifies the processor settings.
 type Settings struct {
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
@@ -133,6 +133,7 @@ type attributeAction struct {
 	AttributeValue *pdata.AttributeValue
 }
 
+// AttrProc is an attribute processor.
 type AttrProc struct {
 	actions []attributeAction
 }
@@ -223,6 +224,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 	return &AttrProc{actions: attributeActions}, nil
 }
 
+// Process applies the AttrProc to an attribute map.
 func (ap *AttrProc) Process(attrs pdata.AttributeMap) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
@@ -285,7 +287,7 @@ func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pdata.AttributeValueSTRING {
+	if !found || value.Type() != pdata.AttributeValueTypeString {
 		return
 	}
 

@@ -16,18 +16,22 @@ package testbed
 
 import (
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
-	"io"
 	"log"
-	"math/rand"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
 	"go.uber.org/atomic"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlplogscol "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	otlpmetricscol "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlptracecol "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
@@ -40,8 +44,6 @@ type DataProvider interface {
 	GenerateTraces() (pdata.Traces, bool)
 	// GenerateMetrics returns an internal MetricData instance with an OTLP ResourceMetrics slice of test data.
 	GenerateMetrics() (pdata.Metrics, bool)
-	// GetGeneratedSpan returns the generated Span matching the provided traceId and spanId or else nil if no match found.
-	GetGeneratedSpan(traceID pdata.TraceID, spanID []byte) *otlptrace.Span
 	// GenerateLogs returns the internal pdata.Logs format
 	GenerateLogs() (pdata.Logs, bool)
 }
@@ -70,10 +72,7 @@ func (dp *PerfTestDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomi
 func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 	traceData := pdata.NewTraces()
-	traceData.ResourceSpans().Resize(1)
-	ilss := traceData.ResourceSpans().At(0).InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	spans := ilss.At(0).Spans()
+	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
 	spans.Resize(dp.options.ItemsPerBatch)
 
 	traceID := dp.batchesGenerated.Inc()
@@ -90,7 +89,7 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 		span.SetTraceID(GenerateSequentialTraceID(traceID))
 		span.SetSpanID(GenerateSequentialSpanID(spanID))
 		span.SetName("load-generator-span")
-		span.SetKind(pdata.SpanKindCLIENT)
+		span.SetKind(pdata.SpanKindClient)
 		attrs := span.Attributes()
 		attrs.UpsertInt("load_generator.span_seq_num", int64(spanID))
 		attrs.UpsertInt("load_generator.trace_seq_num", int64(traceID))
@@ -98,8 +97,8 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
-		span.SetStartTime(pdata.TimestampUnixNano(uint64(startTime.UnixNano())))
-		span.SetEndTime(pdata.TimestampUnixNano(uint64(endTime.UnixNano())))
+		span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+		span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 	}
 	return traceData, false
 }
@@ -107,13 +106,13 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 func GenerateSequentialTraceID(id uint64) pdata.TraceID {
 	var traceID [16]byte
 	binary.PutUvarint(traceID[:], id)
-	return pdata.NewTraceID(traceID[:])
+	return pdata.NewTraceID(traceID)
 }
 
-func GenerateSequentialSpanID(id uint64) []byte {
+func GenerateSequentialSpanID(id uint64) pdata.SpanID {
 	var spanID [8]byte
 	binary.PutUvarint(spanID[:], id)
-	return spanID[:]
+	return pdata.NewSpanID(spanID)
 }
 
 func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
@@ -122,16 +121,15 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	const dataPointsPerMetric = 7
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(1)
-	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
+	rm := md.ResourceMetrics().AppendEmpty()
 	if dp.options.Attributes != nil {
-		attrs := md.ResourceMetrics().At(0).Resource().Attributes()
-		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		attrs := rm.Resource().Attributes()
+		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 	metrics.Resize(dp.options.ItemsPerBatch)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
@@ -140,16 +138,15 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		gauge := metric.IntGauge()
-		gauge.InitEmpty()
 
 		batchIndex := dp.batchesGenerated.Inc()
 
+		dps := metric.IntGauge().DataPoints()
 		// Generate data points for the metric.
-		gauge.DataPoints().Resize(dataPointsPerMetric)
+		dps.Resize(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
-			dataPoint := gauge.DataPoints().At(j)
-			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+			dataPoint := dps.At(j)
+			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))
 			dataPoint.LabelsMap().InitFromMap(map[string]string{
@@ -161,33 +158,26 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	return md, false
 }
 
-func (dp *PerfTestDataProvider) GetGeneratedSpan(pdata.TraceID, []byte) *otlptrace.Span {
-	// function not supported for this data provider
-	return nil
-}
-
 func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	rl := logs.ResourceLogs().AppendEmpty()
 	if dp.options.Attributes != nil {
-		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
-		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		attrs := rl.Resource().Attributes()
+		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
 	}
-	logRecords := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
 	logRecords.Resize(dp.options.ItemsPerBatch)
 
-	now := pdata.TimestampUnixNano(time.Now().UnixNano())
+	now := pdata.TimestampFromTime(time.Now())
 
 	batchIndex := dp.batchesGenerated.Inc()
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
 		record := logRecords.At(i)
-		record.InitEmpty()
 		record.SetSeverityNumber(pdata.SeverityNumberINFO3)
 		record.SetSeverityText("INFO3")
 		record.SetName("load_generator_" + strconv.Itoa(i))
@@ -211,12 +201,11 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 type GoldenDataProvider struct {
 	tracePairsFile     string
 	spanPairsFile      string
-	random             io.Reader
 	batchesGenerated   *atomic.Uint64
 	dataItemsGenerated *atomic.Uint64
-	resourceSpans      []*otlptrace.ResourceSpans
-	spansIndex         int
-	spansMap           map[string]*otlptrace.Span
+
+	tracesGenerated []pdata.Traces
+	tracesIndex     int
 
 	metricPairsFile  string
 	metricsGenerated []pdata.Metrics
@@ -225,13 +214,11 @@ type GoldenDataProvider struct {
 
 // NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
 // on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
-// The supplied randomSeed is used to initialize the random number generator used in generating tracing IDs.
-func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string, randomSeed int64) *GoldenDataProvider {
+func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string) *GoldenDataProvider {
 	return &GoldenDataProvider{
 		tracePairsFile:  tracePairsFile,
 		spanPairsFile:   spanPairsFile,
 		metricPairsFile: metricPairsFile,
-		random:          io.Reader(rand.New(rand.NewSource(randomSeed))),
 	}
 }
 
@@ -241,27 +228,22 @@ func (dp *GoldenDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.
 }
 
 func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
-	if dp.resourceSpans == nil {
+	if dp.tracesGenerated == nil {
 		var err error
-		dp.resourceSpans, err = goldendataset.GenerateResourceSpans(dp.tracePairsFile, dp.spanPairsFile, dp.random)
+		dp.tracesGenerated, err = goldendataset.GenerateTraces(dp.tracePairsFile, dp.spanPairsFile)
 		if err != nil {
 			log.Printf("cannot generate traces: %s", err)
-			dp.resourceSpans = make([]*otlptrace.ResourceSpans, 0)
+			dp.tracesGenerated = nil
 		}
 	}
 	dp.batchesGenerated.Inc()
-	if dp.spansIndex >= len(dp.resourceSpans) {
-		return pdata.TracesFromOtlp(make([]*otlptrace.ResourceSpans, 0)), true
+	if dp.tracesIndex >= len(dp.tracesGenerated) {
+		return pdata.NewTraces(), true
 	}
-	resourceSpans := make([]*otlptrace.ResourceSpans, 1)
-	resourceSpans[0] = dp.resourceSpans[dp.spansIndex]
-	dp.spansIndex++
-	spanCount := uint64(0)
-	for _, libSpans := range resourceSpans[0].InstrumentationLibrarySpans {
-		spanCount += uint64(len(libSpans.Spans))
-	}
-	dp.dataItemsGenerated.Add(spanCount)
-	return pdata.TracesFromOtlp(resourceSpans), false
+	td := dp.tracesGenerated[dp.tracesIndex]
+	dp.tracesIndex++
+	dp.dataItemsGenerated.Add(uint64(td.SpanCount()))
+	return td, false
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
@@ -272,8 +254,8 @@ func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			log.Printf("cannot generate metrics: %s", err)
 		}
 	}
-	numMetricsGenerated := len(dp.metricsGenerated)
-	if dp.metricsIndex == numMetricsGenerated {
+	dp.batchesGenerated.Inc()
+	if dp.metricsIndex == len(dp.metricsGenerated) {
 		return pdata.Metrics{}, true
 	}
 	pdm := dp.metricsGenerated[dp.metricsIndex]
@@ -287,27 +269,91 @@ func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	return pdata.NewLogs(), true
 }
 
-func (dp *GoldenDataProvider) GetGeneratedSpan(traceID pdata.TraceID, spanID []byte) *otlptrace.Span {
-	if dp.spansMap == nil {
-		dp.spansMap = populateSpansMap(dp.resourceSpans)
-	}
-	key := traceIDAndSpanIDToString(traceID, spanID)
-	return dp.spansMap[key]
+// FileDataProvider in an implementation of the DataProvider for use in performance tests.
+// The data to send is loaded from a file. The file should contain one JSON-encoded
+// Export*ServiceRequest Protobuf message. The file can be recorded using the "file"
+// exporter (note: "file" exporter writes one JSON message per line, FileDataProvider
+// expects just a single JSON message in the entire file).
+type FileDataProvider struct {
+	batchesGenerated   *atomic.Uint64
+	dataItemsGenerated *atomic.Uint64
+	message            proto.Message
+	ItemsPerBatch      int
 }
 
-func populateSpansMap(resourceSpansList []*otlptrace.ResourceSpans) map[string]*otlptrace.Span {
-	spansMap := make(map[string]*otlptrace.Span)
-	for _, resourceSpans := range resourceSpansList {
-		for _, libSpans := range resourceSpans.InstrumentationLibrarySpans {
-			for _, span := range libSpans.Spans {
-				key := traceIDAndSpanIDToString(pdata.TraceID(span.TraceId), span.SpanId)
-				spansMap[key] = span
-			}
+// NewFileDataProvider creates an instance of FileDataProvider which generates test data
+// loaded from a file.
+func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataProvider, error) {
+	file, err := os.OpenFile(filepath.Clean(filePath), os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var message proto.Message
+	var dataPointCount int
+
+	// Load the message from the file and count the data points.
+
+	switch dataType {
+	case config.TracesDataType:
+		var msg otlptracecol.ExportTraceServiceRequest
+		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
+			return nil, err
 		}
+		message = &msg
+
+		md := pdata.TracesFromInternalRep(internal.TracesFromOtlp(&msg))
+		dataPointCount = md.SpanCount()
+
+	case config.MetricsDataType:
+		var msg otlpmetricscol.ExportMetricsServiceRequest
+		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
+			return nil, err
+		}
+		message = &msg
+
+		md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&msg))
+		_, dataPointCount = md.MetricAndDataPointCount()
+
+	case config.LogsDataType:
+		var msg otlplogscol.ExportLogsServiceRequest
+		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
+			return nil, err
+		}
+		message = &msg
+
+		md := pdata.LogsFromInternalRep(internal.LogsFromOtlp(&msg))
+		dataPointCount = md.LogRecordCount()
 	}
-	return spansMap
+
+	return &FileDataProvider{
+		message:       message,
+		ItemsPerBatch: dataPointCount,
+	}, nil
 }
 
-func traceIDAndSpanIDToString(traceID pdata.TraceID, spanID []byte) string {
-	return fmt.Sprintf("%s-%s", hex.EncodeToString(traceID.Bytes()), hex.EncodeToString(spanID))
+func (dp *FileDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.Uint64, dataItemsGenerated *atomic.Uint64) {
+	dp.batchesGenerated = batchesGenerated
+	dp.dataItemsGenerated = dataItemsGenerated
+}
+
+// Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
+var protobufJSONUnmarshaler = &jsonpb.Unmarshaler{}
+
+func (dp *FileDataProvider) GenerateTraces() (pdata.Traces, bool) {
+	// TODO: implement similar to GenerateMetrics.
+	return pdata.NewTraces(), true
+}
+
+func (dp *FileDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
+	md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(dp.message.(*otlpmetricscol.ExportMetricsServiceRequest)))
+	dp.batchesGenerated.Inc()
+	_, dataPointCount := md.MetricAndDataPointCount()
+	dp.dataItemsGenerated.Add(uint64(dataPointCount))
+	return md, false
+}
+
+func (dp *FileDataProvider) GenerateLogs() (pdata.Logs, bool) {
+	// TODO: implement similar to GenerateMetrics.
+	return pdata.NewLogs(), true
 }

@@ -43,17 +43,15 @@ func TestNewStrictFilterSet(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fs, err := NewFilterSet(test.filters)
+			fs := NewFilterSet(test.filters)
 			assert.Equal(t, test.success, fs != nil)
-			assert.Equal(t, test.success, err == nil)
 		})
 	}
 }
 
 func TestStrictMatches(t *testing.T) {
-	fs, err := NewFilterSet(validStrictFilters)
+	fs := NewFilterSet(validStrictFilters)
 	assert.NotNil(t, fs)
-	assert.NoError(t, err)
 
 	matches := []string{
 		"exact_string_match",

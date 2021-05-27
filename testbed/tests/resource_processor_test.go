@@ -15,6 +15,7 @@
 package tests
 
 import (
+	"context"
 	"path"
 	"path/filepath"
 	"testing"
@@ -22,19 +23,21 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
 var (
 	mockedConsumedResourceWithType = &otlpmetrics.ResourceMetrics{
-		Resource: &otlpresource.Resource{
-			Attributes: []*otlpcommon.KeyValue{
+		Resource: otlpresource.Resource{
+			Attributes: []otlpcommon.KeyValue{
 				{
 					Key: "opencensus.resourcetype",
-					Value: &otlpcommon.AnyValue{
+					Value: otlpcommon.AnyValue{
 						Value: &otlpcommon.AnyValue_StringValue{
 							StringValue: "host",
 						},
@@ -42,7 +45,7 @@ var (
 				},
 				{
 					Key: "label-key",
-					Value: &otlpcommon.AnyValue{
+					Value: otlpcommon.AnyValue{
 						Value: &otlpcommon.AnyValue_StringValue{
 							StringValue: "label-value",
 						},
@@ -96,8 +99,8 @@ var (
 	}
 
 	mockedConsumedResourceWithoutAttributes = &otlpmetrics.ResourceMetrics{
-		Resource: &otlpresource.Resource{
-			Attributes: []*otlpcommon.KeyValue{},
+		Resource: otlpresource.Resource{
+			Attributes: []otlpcommon.KeyValue{},
 		},
 		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 			{
@@ -129,7 +132,7 @@ type resourceProcessorTestCase struct {
 	expectedMetricData       pdata.Metrics
 }
 
-func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
+func getResourceProcessorTestCases() []resourceProcessorTestCase {
 
 	tests := []resourceProcessorTestCase{
 		{
@@ -146,17 +149,17 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
     - key: opencensus.resourcetype
       action: delete
 `,
-			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceWithType),
-			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
+			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceWithType),
+			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
+				Resource: otlpresource.Resource{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "resource-type",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "host"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "host"}},
 						},
 						{
 							Key:   "label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "new-label-value"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "new-label-value"}},
 						},
 					},
 				},
@@ -172,14 +175,13 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
       action: insert
 
 `,
-			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceNil),
-			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-
-				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
+			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceNil),
+			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
+				Resource: otlpresource.Resource{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
 					},
 				},
@@ -194,14 +196,13 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
       value: additional-label-value
       action: insert
 `,
-			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceWithoutAttributes),
-			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-
-				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
+			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceWithoutAttributes),
+			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
+				Resource: otlpresource.Resource{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
 					},
 				},
@@ -212,19 +213,17 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 	return tests
 }
 
-func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdata.MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{rm})
-}
-
-func getMetricDataFrom(t *testing.T, rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdata.MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{rm})
+func metricsFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
+	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{rm},
+	}))
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
 	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 
-	tests := getResourceProcessorTestCases(t)
+	tests := getResourceProcessorTestCases()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -259,7 +258,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			tc.EnableRecording()
 
-			sender.Start()
+			require.NoError(t, sender.Start())
 
 			// Clear previously received metrics.
 			tc.MockBackend.ClearReceivedItems()
@@ -268,8 +267,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			sender, ok := tc.Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
-			err = sender.SendMetrics(test.mockedConsumedMetricData)
-			require.NoError(t, err, "failed to send metrics", err)
+			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetricData))
 
 			// We bypass the load generator in this test, but make sure to increment the
 			// counter since it is used in final reports.
@@ -290,4 +288,13 @@ func TestMetricResourceProcessor(t *testing.T) {
 			)
 		})
 	}
+}
+
+func attributesToMap(attributes pdata.AttributeMap) map[string]pdata.AttributeValue {
+	out := map[string]pdata.AttributeValue{}
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+		out[k] = v
+		return true
+	})
+	return out
 }

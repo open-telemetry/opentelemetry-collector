@@ -26,14 +26,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -43,16 +43,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["jaeger"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters["jaeger/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "jaeger/2",
-				TypeVal: "jaeger",
-			},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
 			},
@@ -75,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 		})
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := factory.CreateTraceExporter(context.Background(), params, e1)
+	te, err := factory.CreateTracesExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }

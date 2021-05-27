@@ -19,9 +19,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal"
+	v1 "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 const expectedJSON = `{
@@ -37,9 +37,12 @@ const expectedJSON = `{
   },
   "instrumentationLibrarySpans": [
     {
+      "instrumentationLibrary": {},
       "spans": [
         {
           "traceId": "",
+          "spanId": "",
+          "parentSpanId": "",
           "name": "operationA",
           "startTimeUnixNano": "1581452772000000321",
           "endTimeUnixNano": "1581452773000000789",
@@ -66,8 +69,9 @@ const expectedJSON = `{
           ],
           "droppedEventsCount": 1,
           "status": {
-            "code": "STATUS_CODE_CANCELLED",
-            "message": "status-cancelled"
+            "deprecatedCode": "DEPRECATED_STATUS_CODE_UNKNOWN_ERROR",
+            "message": "status-cancelled",
+            "code": "STATUS_CODE_ERROR"
           }
         }
       ]
@@ -79,11 +83,11 @@ func TestJSONPbMarshal(t *testing.T) {
 	jpb := JSONPb{
 		Indent: "  ",
 	}
-	td := testdata.GenerateTraceDataOneSpan()
-	otlp := pdata.TracesToOtlp(td)
-	bytes, err := jpb.Marshal(otlp[0])
+	td := testdata.GenerateTracesOneSpan()
+	otlp := internal.TracesToOtlp(td.InternalRep())
+	bytes, err := jpb.Marshal(otlp.ResourceSpans[0])
 	assert.NoError(t, err)
-	assert.EqualValues(t, expectedJSON, string(bytes))
+	assert.JSONEq(t, expectedJSON, string(bytes))
 }
 
 func TestJSONPbUnmarshal(t *testing.T) {
@@ -93,7 +97,7 @@ func TestJSONPbUnmarshal(t *testing.T) {
 	var proto v1.ResourceSpans
 	err := jpb.Unmarshal([]byte(expectedJSON), &proto)
 	assert.NoError(t, err)
-	td := testdata.GenerateTraceDataOneSpan()
-	otlp := pdata.TracesToOtlp(td)
-	assert.EqualValues(t, &proto, otlp[0])
+	td := testdata.GenerateTracesOneSpan()
+	otlp := internal.TracesToOtlp(td.InternalRep())
+	assert.EqualValues(t, &proto, otlp.ResourceSpans[0])
 }

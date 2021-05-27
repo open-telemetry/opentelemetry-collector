@@ -19,16 +19,13 @@ import (
 	"strings"
 
 	"github.com/shirou/gopsutil/process"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // OtelcolRunner defines the interface for configuring, starting and stopping one or more instances of
@@ -38,10 +35,10 @@ type OtelcolRunner interface {
 	// instance(s) this runner manages. If successful, it returns the cleanup config function to be executed after
 	// the test is executed.
 	PrepareConfig(configStr string) (configCleanup func(), err error)
-	// Starts the otelcol instance(s) if not already running which is the subject of the test to be run.
+	// Start starts the otelcol instance(s) if not already running which is the subject of the test to be run.
 	// It returns the host:port of the data receiver to post test data to.
-	Start(args StartParams) (receiverAddr string, err error)
-	// Stops the otelcol instance(s) which are the subject of the test just run if applicable. Returns whether
+	Start(args StartParams) error
+	// Stop stops the otelcol instance(s) which are the subject of the test just run if applicable. Returns whether
 	// the instance was actually stopped or not.
 	Stop() (stopped bool, err error)
 	// WatchResourceConsumption toggles on the monitoring of resource consumpution by the otelcol instance under test.
@@ -57,20 +54,18 @@ type OtelcolRunner interface {
 // InProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
 // same process as the test executor.
 type InProcessCollector struct {
-	logger       *zap.Logger
-	factories    component.Factories
-	receiverPort int
-	config       *configmodels.Config
-	svc          *service.Application
-	appDone      chan struct{}
-	stopped      bool
+	logger    *zap.Logger
+	factories component.Factories
+	configStr string
+	svc       *service.Application
+	appDone   chan struct{}
+	stopped   bool
 }
 
 // NewInProcessCollector crewtes a new InProcessCollector using the supplied component factories.
-func NewInProcessCollector(factories component.Factories, receiverPort int) *InProcessCollector {
+func NewInProcessCollector(factories component.Factories) *InProcessCollector {
 	return &InProcessCollector{
-		factories:    factories,
-		receiverPort: receiverPort,
+		factories: factories,
 	}
 }
 
@@ -84,37 +79,23 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 		return configCleanup, err
 	}
 	ipp.logger = logger
-	v := config.NewViper()
-	v.SetConfigType("yaml")
-	v.ReadConfig(strings.NewReader(configStr))
-	cfg, err := config.Load(v, ipp.factories)
-	if err != nil {
-		return configCleanup, err
-	}
-	err = config.ValidateConfig(cfg, zap.NewNop())
-	if err != nil {
-		return configCleanup, err
-	}
-	ipp.config = cfg
+	ipp.configStr = configStr
 	return configCleanup, err
 }
 
-func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err error) {
-	params := service.Parameters{
-		ApplicationStartInfo: component.ApplicationStartInfo{
-			ExeName:  "otelcol",
-			LongName: "InProcess Collector",
-			Version:  version.Version,
-			GitHash:  version.GitHash,
+func (ipp *InProcessCollector) Start(args StartParams) error {
+	settings := service.AppSettings{
+		BuildInfo: component.BuildInfo{
+			Command: "otelcol",
+			Version: version.Version,
 		},
-		ConfigFactory: func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
-			return ipp.config, nil
-		},
-		Factories: ipp.factories,
+		Factories:      ipp.factories,
+		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 	}
-	ipp.svc, err = service.New(params)
+	var err error
+	ipp.svc, err = service.New(settings)
 	if err != nil {
-		return receiverAddr, err
+		return err
 	}
 	ipp.svc.Command().SetArgs(args.CmdArgs)
 
@@ -132,19 +113,18 @@ func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err
 		case service.Starting:
 			// NoOp
 		case service.Running:
-			receiverAddr = fmt.Sprintf("%s:%d", DefaultHost, ipp.receiverPort)
-			return receiverAddr, err
+			return err
 		default:
 			err = fmt.Errorf("unable to start, otelcol state is %d", state)
 		}
 	}
-	return receiverAddr, err
+	return err
 }
 
 func (ipp *InProcessCollector) Stop() (stopped bool, err error) {
 	if !ipp.stopped {
 		ipp.stopped = true
-		ipp.svc.SignalTestComplete()
+		ipp.svc.Shutdown()
 	}
 	<-ipp.appDone
 	stopped = ipp.stopped

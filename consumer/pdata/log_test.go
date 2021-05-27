@@ -17,49 +17,54 @@ package pdata
 import (
 	"testing"
 
-	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/internal"
-	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
 func TestLogRecordCount(t *testing.T) {
 	md := NewLogs()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().Resize(1)
+	rl := md.ResourceLogs().AppendEmpty()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	ill.Logs().AppendEmpty()
 	assert.EqualValues(t, 1, md.LogRecordCount())
 
 	rms := md.ResourceLogs()
 	rms.Resize(3)
-	rms.At(0).InstrumentationLibraryLogs().Resize(1)
-	rms.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
-	rms.At(1).InstrumentationLibraryLogs().Resize(1)
-	rms.At(2).InstrumentationLibraryLogs().Resize(1)
-	rms.At(2).InstrumentationLibraryLogs().At(0).Logs().Resize(5)
+	rms.At(1).InstrumentationLibraryLogs().AppendEmpty()
+	rms.At(2).InstrumentationLibraryLogs().AppendEmpty().Logs().Resize(5)
+	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.LogRecordCount())
 }
 
-func TestLogRecordCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{nil, {}})).LogRecordCount())
-	assert.EqualValues(t, 0, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{
-		{
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{nil, {}},
+func TestLogRecordCountWithEmpty(t *testing.T) {
+	assert.Zero(t, NewLogs().LogRecordCount())
+	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{{}},
+	})).LogRecordCount())
+	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
+			},
 		},
 	})).LogRecordCount())
-	assert.EqualValues(t, 2, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{
-		{
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{nil, {}},
+	assert.Equal(t, 1, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{{}},
+					},
 				},
 			},
 		},
@@ -67,20 +72,68 @@ func TestLogRecordCountWithNils(t *testing.T) {
 }
 
 func TestToFromLogProto(t *testing.T) {
-	otlp := []*otlplogs.ResourceLogs(nil)
-	td := LogsFromInternalRep(internal.LogsFromOtlp(otlp))
-	assert.EqualValues(t, NewLogs(), td)
-	assert.EqualValues(t, otlp, *td.orig)
+	wrapper := internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{})
+	ld := LogsFromInternalRep(wrapper)
+	assert.EqualValues(t, NewLogs(), ld)
+	assert.EqualValues(t, &otlpcollectorlog.ExportLogsServiceRequest{}, ld.orig)
 }
 
-func TestLogs_ToOtlpProtoBytes(t *testing.T) {
-	otlp := []*otlplogs.ResourceLogs(nil)
-	ld := LogsFromInternalRep(internal.LogsFromOtlp(otlp))
-	bytes, err := ld.ToOtlpProtoBytes()
-	assert.Nil(t, err)
+func TestLogsToFromOtlpProtoBytes(t *testing.T) {
+	send := NewLogs()
+	fillTestResourceLogsSlice(send.ResourceLogs())
+	bytes, err := send.ToOtlpProtoBytes()
+	assert.NoError(t, err)
 
-	elsr := otlpcollectorlogs.ExportLogsServiceRequest{}
-	err = gogoproto.Unmarshal(bytes, &elsr)
-	assert.Nil(t, err)
-	assert.EqualValues(t, elsr.ResourceLogs, *ld.orig)
+	recv, err := LogsFromOtlpProtoBytes(bytes)
+	assert.NoError(t, err)
+	assert.EqualValues(t, send, recv)
+}
+
+func TestLogsFromInvalidOtlpProtoBytes(t *testing.T) {
+	_, err := LogsFromOtlpProtoBytes([]byte{0xFF})
+	assert.EqualError(t, err, "unexpected EOF")
+}
+
+func TestLogsClone(t *testing.T) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	assert.EqualValues(t, logs, logs.Clone())
+}
+
+func BenchmarkLogsClone(b *testing.B) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		clone := logs.Clone()
+		if clone.ResourceLogs().Len() != logs.ResourceLogs().Len() {
+			b.Fail()
+		}
+	}
+}
+
+func BenchmarkLogsToOtlp(b *testing.B) {
+	traces := NewLogs()
+	fillTestResourceLogsSlice(traces.ResourceLogs())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := traces.ToOtlpProtoBytes()
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkLogsFromOtlp(b *testing.B) {
+	baseLogs := NewLogs()
+	fillTestResourceLogsSlice(baseLogs.ResourceLogs())
+	buf, err := baseLogs.ToOtlpProtoBytes()
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		logs, err := LogsFromOtlpProtoBytes(buf)
+		require.NoError(b, err)
+		assert.Equal(b, baseLogs.ResourceLogs().Len(), logs.ResourceLogs().Len())
+	}
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -83,7 +84,7 @@ func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	require.NoError(b, err, "Failed to unmarshal json into zipkin v1 thrift")
 
 	for n := 0; n < b.N; n++ {
-		v1ThriftBatchToOCProto(ztSpans)
+		v1ThriftBatchToOCProto(ztSpans) // nolint:errcheck
 	}
 }
 
@@ -186,7 +187,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -230,7 +231,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -269,7 +270,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -306,7 +307,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -381,7 +382,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					tracetranslator.TagHTTPStatusCode: {
+					conventions.AttributeHTTPStatusCode: {
 						Value: &tracepb.AttributeValue_IntValue{
 							IntValue: 404,
 						},
@@ -419,7 +420,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 
 func TestThriftHTTPToGRPCStatusCode(t *testing.T) {
 	for i := int32(100); i <= 600; i++ {
-		wantStatus := tracetranslator.OCStatusCodeFromHTTP(i)
+		wantStatus := ocStatusCodeFromHTTP(i)
 		gb, err := v1ThriftBatchToOCProto([]*zipkincore.Span{{
 			ID:      1,
 			TraceID: 1,

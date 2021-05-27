@@ -12,8 +12,8 @@ receivers:
       disk:
       filesystem:
       network:
+      paging:
       processes:
-      swap:
 
 exporters:
   logging:

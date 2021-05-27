@@ -17,7 +17,7 @@ package internal
 var resourceFile = &File{
 	Name: "resource",
 	imports: []string{
-		`otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"`,
+		`otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
@@ -29,7 +29,7 @@ var resourceFile = &File{
 	},
 }
 
-var resource = &messageStruct{
+var resource = &messageValueStruct{
 	structName:     "Resource",
 	description:    "// Resource information.",
 	originFullName: "otlpresource.Resource",
@@ -38,7 +38,7 @@ var resource = &messageStruct{
 	},
 }
 
-var resourceField = &messageField{
+var resourceField = &messageValueField{
 	fieldName:       "Resource",
 	originFieldName: "Resource",
 	returnMessage:   resource,

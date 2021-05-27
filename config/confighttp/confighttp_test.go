@@ -15,6 +15,7 @@
 package confighttp
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -31,19 +32,52 @@ import (
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
-	hcs := &HTTPClientSettings{
-		Endpoint: "localhost:1234",
-		TLSSetting: configtls.TLSClientSetting{
-			Insecure: false,
+	tests := []struct {
+		name        string
+		settings    HTTPClientSettings
+		shouldError bool
+	}{
+		{
+			name: "all_valid_settings",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			},
+			shouldError: false,
 		},
-		ReadBufferSize:  1024,
-		WriteBufferSize: 512,
+		{
+			name: "error_round_tripper_returned",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return nil, errors.New("error") },
+			},
+			shouldError: true,
+		},
 	}
-	client, err := hcs.ToClient()
-	assert.NoError(t, err)
-	transport := client.Transport.(*http.Transport)
-	assert.EqualValues(t, 1024, transport.ReadBufferSize)
-	assert.EqualValues(t, 512, transport.WriteBufferSize)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := test.settings.ToClient()
+			if test.shouldError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			transport := client.Transport.(*http.Transport)
+			assert.EqualValues(t, 1024, transport.ReadBufferSize)
+			assert.EqualValues(t, 512, transport.WriteBufferSize)
+		})
+	}
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
@@ -282,37 +316,93 @@ func TestHttpReception(t *testing.T) {
 }
 
 func TestHttpCors(t *testing.T) {
-	hss := &HTTPServerSettings{
-		Endpoint:    "localhost:0",
-		CorsOrigins: []string{"allowed-*.com"},
+	tests := []struct {
+		name             string
+		CorsOrigins      []string
+		CorsHeaders      []string
+		allowedWorks     bool
+		disallowedWorks  bool
+		extraHeaderWorks bool
+	}{
+		{
+			name:             "noCORS",
+			allowedWorks:     false,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
+			name:             "OriginCORS",
+			CorsOrigins:      []string{"allowed-*.com"},
+			CorsHeaders:      []string{},
+			allowedWorks:     true,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
+			name:             "HeaderCORS",
+			CorsOrigins:      []string{"allowed-*.com"},
+			CorsHeaders:      []string{"ExtraHeader"},
+			allowedWorks:     true,
+			disallowedWorks:  false,
+			extraHeaderWorks: true,
+		},
 	}
 
-	ln, err := hss.ToListener()
-	assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hss := &HTTPServerSettings{
+				Endpoint:    "localhost:0",
+				CorsOrigins: tt.CorsOrigins,
+				CorsHeaders: tt.CorsHeaders,
+			}
+
+			ln, err := hss.ToListener()
+			assert.NoError(t, err)
+			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			go func() {
+				_ = s.Serve(ln)
+			}()
+
+			// TODO: make starting server deterministic
+			// Wait for the servers to start
+			<-time.After(10 * time.Millisecond)
+
+			url := fmt.Sprintf("http://%s", ln.Addr().String())
+
+			// Verify allowed domain gets responses that allow CORS.
+			verifyCorsResp(t, url, "allowed-origin.com", false, 200, tt.allowedWorks)
+
+			// Verify allowed domain and extra headers gets responses that allow CORS.
+			verifyCorsResp(t, url, "allowed-origin.com", true, 200, tt.extraHeaderWorks)
+
+			// Verify disallowed domain gets responses that disallow CORS.
+			verifyCorsResp(t, url, "disallowed-origin.com", false, 200, tt.disallowedWorks)
+
+			require.NoError(t, s.Close())
+		})
+	}
+}
+
+func TestHttpCorsInvalidSettings(t *testing.T) {
+	hss := &HTTPServerSettings{
+		Endpoint:    "localhost:0",
+		CorsHeaders: []string{"some-header"},
+	}
+
+	// This effectively does not enable CORS but should also not cause an error
 	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	go func() {
-		_ = s.Serve(ln)
-	}()
-
-	// TODO: make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
-
-	url := fmt.Sprintf("http://%s", ln.Addr().String())
-
-	// Verify allowed domain gets responses that allow CORS.
-	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
-
-	// Verify disallowed domain gets responses that disallow CORS.
-	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
-
+	require.NotNil(t, s)
 	require.NoError(t, s.Close())
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest("OPTIONS", url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
+	if extraHeader {
+		req.Header.Set("ExtraHeader", "foo")
+		req.Header.Set("Access-Control-Request-Headers", "ExtraHeader")
+	}
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -387,7 +477,8 @@ func TestHttpHeaders(t *testing.T) {
 			client, _ := setting.ToClient()
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
-			client.Do(req)
+			_, err = client.Do(req)
+			assert.NoError(t, err)
 		})
 	}
 }

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configgrpc defines the gRPC configuration settings.
 package configgrpc
 
 import (
@@ -21,17 +20,21 @@ import (
 	"strings"
 	"time"
 
+	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-// Compression gRPC keys for supported compression types within collector
+// Compression gRPC keys for supported compression types within collector.
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
@@ -40,13 +43,13 @@ const (
 )
 
 var (
-	// Map of opentelemetry compression types to grpc registered compression types
+	// Map of opentelemetry compression types to grpc registered compression types.
 	grpcCompressionKeyMap = map[string]string{
 		CompressionGzip: gzip.Name,
 	}
 )
 
-// Allowed balancer names to be set in grpclb_policy to discover the servers
+// Allowed balancer names to be set in grpclb_policy to discover the servers.
 var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
@@ -72,15 +75,15 @@ type GRPCClientSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
-	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams
+	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive"`
 
-	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize
+	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
-	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize
+	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
@@ -94,11 +97,12 @@ type GRPCClientSettings struct {
 	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis.
 	PerRPCAuth *PerRPCAuthConfig `mapstructure:"per_rpc_auth"`
 
-	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first
+	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 }
 
+// KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
@@ -132,6 +136,7 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
+// GRPCServerSettings defines common settings for a gRPC server configuration.
 type GRPCServerSettings struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
 	NetAddr confignet.NetAddr `mapstructure:",squash"`
@@ -147,19 +152,22 @@ type GRPCServerSettings struct {
 	// It has effect only for streaming RPCs.
 	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams"`
 
-	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize
+	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
-	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize
+	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive,omitempty"`
+
+	// Auth for this receiver
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
-// ToServerOption maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
+// ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
@@ -227,12 +235,13 @@ func validateBalancerName(balancerName string) bool {
 	return false
 }
 
+// ToListener returns the net.Listener constructed from the settings.
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 	return gss.NetAddr.Listen()
 }
 
-// ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
-func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
+// ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
+func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]component.Extension) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -287,11 +296,27 @@ func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 		}
 	}
 
+	if gss.Auth != nil {
+		authenticator, err := configauth.GetAuthenticator(ext, gss.Auth.AuthenticatorName)
+		if err != nil {
+			return nil, err
+		}
+
+		opts = append(opts,
+			grpc.UnaryInterceptor(authenticator.GrpcUnaryServerInterceptor),
+			grpc.StreamInterceptor(authenticator.GrpcStreamServerInterceptor),
+		)
+	}
+
+	// Enable OpenCensus observability plugin.
+	// TODO: Change to OpenTelemetry when collector is changed.
+	opts = append(opts, grpc.StatsHandler(&ocgrpc.ServerHandler{}))
+
 	return opts, nil
 }
 
 // GetGRPCCompressionKey returns the grpc registered compression key if the
-// passed in compression key is supported, and CompressionUnsupported otherwise
+// passed in compression key is supported, and CompressionUnsupported otherwise.
 func GetGRPCCompressionKey(compressionType string) string {
 	compressionKey := strings.ToLower(compressionType)
 	if encodingKey, ok := grpcCompressionKeyMap[compressionKey]; ok {

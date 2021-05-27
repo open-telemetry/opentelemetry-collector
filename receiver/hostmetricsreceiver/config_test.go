@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -33,13 +33,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -51,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["hostmetrics"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	defaultConfigCPUScraper := factory.CreateDefaultConfig()
 	defaultConfigCPUScraper.(*Config).Scrapers = map[string]internal.Config{
 		cpuscraper.TypeStr: (&cpuscraper.Factory{}).CreateDefaultConfig(),
@@ -59,13 +60,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, defaultConfigCPUScraper, r0)
 
-	r1 := cfg.Receivers["hostmetrics/customname"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
 	expectedConfig := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "hostmetrics/customname",
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
+			CollectionInterval: 30 * time.Second,
 		},
-		CollectionInterval: 30 * time.Second,
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        &cpuscraper.Config{},
 			diskscraper.TypeStr:       &diskscraper.Config{},
@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			processesscraper.TypeStr: &processesscraper.Config{},
-			swapscraper.TypeStr:      &swapscraper.Config{},
+			pagingscraper.TypeStr:    &pagingscraper.Config{},
 			processscraper.TypeStr: &processscraper.Config{
 				Include: processscraper.MatchConfig{
 					Names:  []string{"test2", "test3"},
@@ -93,18 +93,18 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config-noscrapers.yaml"), factories)
 
-	require.EqualError(t, err, "error reading receivers configuration for hostmetrics: must specify at least one scraper when using hostmetrics receiver")
+	require.EqualError(t, err, "receiver \"hostmetrics\" has invalid configuration: must specify at least one scraper when using hostmetrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()

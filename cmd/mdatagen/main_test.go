@@ -68,7 +68,7 @@ func Test_runContents(t *testing.T) {
 			})
 
 			metadataFile := path.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, ioutil.WriteFile(metadataFile, []byte(tt.args.yml), 0666))
+			require.NoError(t, ioutil.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
 
 			err = run(metadataFile)
 

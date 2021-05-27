@@ -20,6 +20,8 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Gauge creates a gauge metric.
@@ -61,7 +63,7 @@ func Summary(name string, keys []string, timeseries ...*metricspb.TimeSeries) *m
 // with the label keys in the overall metric), and the value of the timeseries.
 func Timeseries(sts time.Time, vals []string, point *metricspb.Point) *metricspb.TimeSeries {
 	return &metricspb.TimeSeries{
-		StartTimestamp: Timestamp(sts),
+		StartTimestamp: timestamppb.New(sts),
 		Points:         []*metricspb.Point{point},
 		LabelValues:    toVals(vals),
 	}
@@ -69,7 +71,7 @@ func Timeseries(sts time.Time, vals []string, point *metricspb.Point) *metricspb
 
 // Double creates a double point.
 func Double(ts time.Time, value float64) *metricspb.Point {
-	return &metricspb.Point{Timestamp: Timestamp(ts), Value: &metricspb.Point_DoubleValue{DoubleValue: value}}
+	return &metricspb.Point{Timestamp: timestamppb.New(ts), Value: &metricspb.Point_DoubleValue{DoubleValue: value}}
 }
 
 // DistPt creates a distribution point. It takes the time stamp, the bucket boundaries for the distribution, and
@@ -102,7 +104,7 @@ func DistPt(ts time.Time, bounds []float64, counts []int64) *metricspb.Point {
 		Buckets: buckets,
 		// There's no way to compute SumOfSquaredDeviation from prometheus data
 	}
-	return &metricspb.Point{Timestamp: Timestamp(ts), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
+	return &metricspb.Point{Timestamp: timestamppb.New(ts), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
 }
 
 // SummPt creates a summary point.
@@ -112,21 +114,13 @@ func SummPt(ts time.Time, count int64, sum float64, percent, vals []float64) *me
 		percentiles[i] = &metricspb.SummaryValue_Snapshot_ValueAtPercentile{Percentile: percent[i], Value: vals[i]}
 	}
 	summaryValue := &metricspb.SummaryValue{
-		Sum:   &wrapperspb.DoubleValue{Value: sum},
-		Count: &wrapperspb.Int64Value{Value: count},
+		Sum:   wrapperspb.Double(sum),
+		Count: wrapperspb.Int64(count),
 		Snapshot: &metricspb.SummaryValue_Snapshot{
 			PercentileValues: percentiles,
 		},
 	}
-	return &metricspb.Point{Timestamp: Timestamp(ts), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}
-}
-
-// Timestamp creates a timestamp.
-func Timestamp(ts time.Time) *timestamppb.Timestamp {
-	return &timestamppb.Timestamp{
-		Seconds: ts.Unix(),
-		Nanos:   int32(ts.Nanosecond()),
-	}
+	return &metricspb.Point{Timestamp: timestamppb.New(ts), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}
 }
 
 func metric(ty metricspb.MetricDescriptor_Type, name string, keys []string, timeseries []*metricspb.TimeSeries) *metricspb.Metric {
@@ -156,4 +150,47 @@ func toVals(vals []string) []*metricspb.LabelValue {
 		res = append(res, &metricspb.LabelValue{Value: val, HasValue: true})
 	}
 	return res
+}
+
+// SortedMetrics is mainly useful for tests.  It gets all of the attributes and
+// labels in sorted order so they can be consistently tested.
+func SortedMetrics(metrics pdata.Metrics) pdata.Metrics {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		rm.Resource().Attributes().Sort()
+
+		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				m := ilm.Metrics().At(k)
+				switch m.DataType() {
+				case pdata.MetricDataTypeIntGauge:
+					for l := 0; l < m.IntGauge().DataPoints().Len(); l++ {
+						m.IntGauge().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeIntSum:
+					for l := 0; l < m.IntSum().DataPoints().Len(); l++ {
+						m.IntSum().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeDoubleGauge:
+					for l := 0; l < m.DoubleGauge().DataPoints().Len(); l++ {
+						m.DoubleGauge().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeDoubleSum:
+					for l := 0; l < m.DoubleSum().DataPoints().Len(); l++ {
+						m.DoubleSum().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeIntHistogram:
+					for l := 0; l < m.IntHistogram().DataPoints().Len(); l++ {
+						m.IntHistogram().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeHistogram:
+					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
+						m.Histogram().DataPoints().At(l).LabelsMap().Sort()
+					}
+				}
+			}
+		}
+	}
+	return metrics
 }

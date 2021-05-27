@@ -15,14 +15,15 @@
 package batchprocessor
 
 import (
+	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for batch processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
@@ -30,7 +31,18 @@ type Config struct {
 	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
 	SendBatchSize uint32 `mapstructure:"send_batch_size,omitempty"`
 
-	// SendBatchMaxSize is the maximum size of a batch. Larger batches are split into smaller units.
+	// SendBatchMaxSize is the maximum size of a batch. It must be larger than SendBatchSize.
+	// Larger batches are split into smaller units.
 	// Default value is 0, that means no maximum size.
 	SendBatchMaxSize uint32 `mapstructure:"send_batch_max_size,omitempty"`
+}
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
+	if cfg.SendBatchMaxSize > 0 && cfg.SendBatchMaxSize < cfg.SendBatchSize {
+		return errors.New("send_batch_max_size must be greater or equal to send_batch_size")
+	}
+	return nil
 }

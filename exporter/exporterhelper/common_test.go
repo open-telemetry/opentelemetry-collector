@@ -19,17 +19,24 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
-var defaultExporterCfg = &configmodels.ExporterSettings{
-	TypeVal: "test",
-	NameVal: "test",
-}
+var (
+	okStatus = trace.Status{Code: trace.StatusCodeOK}
+
+	defaultExporterCfg  = config.NewExporterSettings(config.NewID(typeStr))
+	exporterTag, _      = tag.NewKey("exporter")
+	defaultExporterTags = []tag.Tag{
+		{Key: exporterTag, Value: "test"},
+	}
+)
 
 func TestErrorToStatus(t *testing.T) {
 	require.Equal(t, okStatus, errToStatus(nil))
@@ -37,18 +44,24 @@ func TestErrorToStatus(t *testing.T) {
 }
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(defaultExporterCfg)
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestBaseExporterWithOptions(t *testing.T) {
+	want := errors.New("my error")
 	be := newBaseExporter(
-		defaultExporterCfg,
-		WithStart(func(ctx context.Context, host component.Host) error { return errors.New("my error") }),
-		WithShutdown(func(ctx context.Context) error { return errors.New("my error") }))
-	require.Error(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	require.Error(t, be.Shutdown(context.Background()))
+		&defaultExporterCfg,
+		zap.NewNop(),
+		fromOptions(
+			WithStart(func(ctx context.Context, host component.Host) error { return want }),
+			WithShutdown(func(ctx context.Context) error { return want }),
+			WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()),
+			WithTimeout(DefaultTimeoutSettings())),
+	)
+	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.Equal(t, want, be.Shutdown(context.Background()))
 }
 
 func errToStatus(err error) trace.Status {

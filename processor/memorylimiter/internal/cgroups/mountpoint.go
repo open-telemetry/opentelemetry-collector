@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Keep the the original Uber license.
+// Keep the original Uber license.
 
 // Copyright (c) 2017 Uber Technologies, Inc.
 //
@@ -160,7 +160,7 @@ func (mp *MountPoint) Translate(absPath string) (string, error) {
 // parseMountInfo parses procPathMountInfo (usually at `/proc/$PID/mountinfo`)
 // and yields parsed *MountPoint into newMountPoint.
 func parseMountInfo(procPathMountInfo string, newMountPoint func(*MountPoint) error) error {
-	mountInfoFile, err := os.Open(procPathMountInfo)
+	mountInfoFile, err := os.Open(filepath.Clean(procPathMountInfo))
 	if err != nil {
 		return err
 	}

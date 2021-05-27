@@ -19,16 +19,17 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func V1JSONBatchToInternalTraces(blob []byte) (pdata.Traces, error) {
+// V1JSONBatchToInternalTraces transforms a JSON blob with a list of Zipkin v1 spans into pdata.Traces.
+func V1JSONBatchToInternalTraces(blob []byte, parseStringTags bool) (pdata.Traces, error) {
 	traces := pdata.NewTraces()
 
-	ocTraces, err := v1JSONBatchToOCProto(blob)
+	ocTraces, err := v1JSONBatchToOCProto(blob, parseStringTags)
 	if err != nil {
 		return traces, err
 	}
 
 	for _, td := range ocTraces {
-		tmp := internaldata.OCToTraceData(td)
+		tmp := internaldata.OCToTraces(td.Node, td.Resource, td.Spans)
 		tmp.ResourceSpans().MoveAndAppendTo(traces.ResourceSpans())
 	}
 	return traces, nil

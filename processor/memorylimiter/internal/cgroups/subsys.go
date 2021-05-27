@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Keep the the original Uber license.
+// Keep the original Uber license.
 
 // Copyright (c) 2017 Uber Technologies, Inc.
 //
@@ -41,6 +41,7 @@ package cgroups
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -91,7 +92,7 @@ func NewCGroupSubsysFromLine(line string) (*CGroupSubsys, error) {
 // parseCGroupSubsystems parses procPathCGroup (usually at `/proc/$PID/cgroup`)
 // and returns a new map[string]*CGroupSubsys.
 func parseCGroupSubsystems(procPathCGroup string) (map[string]*CGroupSubsys, error) {
-	cgroupFile, err := os.Open(procPathCGroup)
+	cgroupFile, err := os.Open(filepath.Clean(procPathCGroup))
 	if err != nil {
 		return nil, err
 	}

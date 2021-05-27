@@ -18,8 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -33,23 +34,17 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
-	// TODO: Enable the queued settings.
-	qs := exporterhelper.CreateDefaultQueueSettings()
-	qs.Enabled = false
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   qs,
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -58,76 +53,70 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
-	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg)
 	if err != nil {
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
+		params.Logger,
 		oce.pushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown))
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	oce, err := newExporter(cfg)
 	if err != nil {
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporter(
 		cfg,
+		params.Logger,
 		oce.pushMetricsData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }
 
 func createLogsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oce, err := newExporter(cfg)
 	if err != nil {
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogsExporter(
 		cfg,
+		params.Logger,
 		oce.pushLogData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
 }

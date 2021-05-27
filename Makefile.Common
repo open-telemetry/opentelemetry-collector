@@ -1,0 +1,30 @@
+# ALL_PKGS is the list of all packages where ALL_SRC files reside.
+ALL_PKGS := $(sort $(shell go list ./...))
+
+# Use a single process (-p 1) on go test to avoid tests clashing on machine
+# wide resources, e.g. ports.
+GOTEST_OPT?= -v -p 1 -race -timeout 180s
+GOTEST=go test
+LINT=golangci-lint
+IMPI=impi
+
+.PHONY: test
+test:
+	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
+
+.PHONY: benchmark
+benchmark:
+	$(GOTEST) -bench=. -run=notests ./...
+
+.PHONY: fmt
+fmt:
+	gofmt -w -s ./
+	goimports -w  -local go.opentelemetry.io/collector ./
+
+.PHONY: lint
+lint:
+	$(LINT) run --allow-parallel-runners
+
+.PHONY: impi
+impi:
+	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...

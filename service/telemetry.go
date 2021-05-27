@@ -15,7 +15,6 @@
 package service
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
@@ -26,13 +25,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
-	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/queuedprocessor"
-	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
-	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -52,11 +48,7 @@ type appTelemetry struct {
 }
 
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
-	level, err := telemetry.GetLevel()
-	if err != nil {
-		return fmt.Errorf("failed to parse metrics level: %w", err)
-	}
-
+	level := configtelemetry.GetMetricsLevelFlagValue()
 	metricsAddr := telemetry.GetMetricsAddr()
 
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
@@ -69,14 +61,13 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	}
 
 	var views []*view.View
-	views = append(views, obsreport.Configure(telemetry.UseLegacyMetrics(), telemetry.UseNewMetrics())...)
-	views = append(views, processor.MetricViews(level)...)
-	views = append(views, queuedprocessor.MetricViews(level)...)
-	views = append(views, batchprocessor.MetricViews(level)...)
-	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
+	obsMetrics := obsreportconfig.Configure(level)
+	views = append(views, batchprocessor.MetricViews()...)
+	views = append(views, jaegerexporter.MetricViews()...)
 	views = append(views, kafkareceiver.MetricViews()...)
+	views = append(views, obsMetrics.Views...)
 	views = append(views, processMetricsViews.Views()...)
-	views = append(views, fluentobserv.Views(level)...)
+
 	tel.views = views
 	if err = view.Register(views...); err != nil {
 		return err
@@ -108,8 +99,6 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	logger.Info(
 		"Serving Prometheus metrics",
 		zap.String("address", metricsAddr),
-		zap.Bool("legacy_metrics", telemetry.UseLegacyMetrics()),
-		zap.Bool("new_metrics", telemetry.UseNewMetrics()),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
 		zap.String(conventions.AttributeServiceInstance, instanceID),
 	)

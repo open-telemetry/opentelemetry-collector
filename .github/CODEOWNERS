@@ -5,11 +5,15 @@
 #####################################################
 #
 # Learn about membership in OpenTelemetry community:
-#  https://github.com/open-telemetry/community/blob/master/community-membership.md
+#  https://github.com/open-telemetry/community/blob/main/community-membership.md
 # 
 #
 # Learn about CODEOWNERS file format: 
 #  https://help.github.com/en/articles/about-code-owners
 #
 
-* @bogdandrutu @dmitryax @james-bebbington @nilebox @tigrannajaryan @owais @pjanotti
+* @open-telemetry/collector-approvers
+
+exporter/prometheusexporter @open-telemetry/collector-approvers @alolita @Aneurysm9 @dashpole @rakyll
+exporter/prometheusremotewriteexporter @open-telemetry/collector-approvers @alolita @Aneurysm9 @dashpole @rakyll
+receiver/prometheusreceiver @open-telemetry/collector-approvers @alolita @Aneurysm9 @dashpole @rakyll

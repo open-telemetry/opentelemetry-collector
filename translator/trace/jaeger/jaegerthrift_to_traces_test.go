@@ -23,7 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -83,7 +84,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 		{
 			name: "empty",
 			jb:   &jaeger.Batch{},
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 		},
 
 		{
@@ -91,7 +92,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 			jb: &jaeger.Batch{
 				Process: generateThriftProcess(),
 			},
-			td: testdata.GenerateTraceDataNoLibraries(),
+			td: testdata.GenerateTracesNoLibraries(),
 		},
 
 		{
@@ -154,7 +155,7 @@ func generateThriftSpan() *jaeger.Span {
 	intAttrVal := int64(123)
 	eventName := "event-with-attr"
 	eventStrAttrVal := "span-event-attr-val"
-	statusCode := int64(tracetranslator.OCCancelled)
+	statusCode := int64(pdata.StatusCodeError)
 	statusMsg := "status-cancelled"
 	kind := string(tracetranslator.OpenTracingSpanKindClient)
 
@@ -228,7 +229,7 @@ func generateThriftChildSpan() *jaeger.Span {
 		Duration:      spanEndTs - spanStartTs,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   tracetranslator.TagHTTPStatusCode,
+				Key:   conventions.AttributeHTTPStatusCode,
 				VType: jaeger.TagType_LONG,
 				VLong: &notFoundAttrVal,
 			},
@@ -242,7 +243,7 @@ func generateThriftChildSpan() *jaeger.Span {
 }
 
 func generateThriftFollowerSpan() *jaeger.Span {
-	statusCode := int64(tracetranslator.OCOK)
+	statusCode := int64(pdata.StatusCodeOk)
 	statusMsg := "status-ok"
 	kind := string(tracetranslator.OpenTracingSpanKindConsumer)
 
@@ -281,7 +282,7 @@ func generateThriftFollowerSpan() *jaeger.Span {
 	}
 }
 
-func unixNanoToMicroseconds(ns pdata.TimestampUnixNano) int64 {
+func unixNanoToMicroseconds(ns pdata.Timestamp) int64 {
 	return int64(ns / 1000)
 }
 

@@ -15,7 +15,6 @@
 package testutil
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"testing"
@@ -34,22 +33,6 @@ func TestGetAvailablePort(t *testing.T) {
 	testEndpointAvailable(t, "localhost:"+portStr)
 }
 
-func TestWaitForPort(t *testing.T) {
-	port := GetAvailablePort(t)
-	err := WaitForPort(t, port)
-	require.Error(t, err)
-
-	port = GetAvailablePort(t)
-	l, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
-	require.NoError(t, err)
-
-	err = WaitForPort(t, port)
-	require.NoError(t, err)
-
-	err = l.Close()
-	require.NoError(t, err)
-}
-
 func testEndpointAvailable(t *testing.T, endpoint string) {
 	// Endpoint should be free.
 	ln0, err := net.Listen("tcp", endpoint)
@@ -62,4 +45,31 @@ func testEndpointAvailable(t *testing.T, endpoint string) {
 	ln1, err := net.Listen("tcp", endpoint)
 	require.Error(t, err)
 	require.Nil(t, ln1)
+}
+
+func TestCreateExclusionsList(t *testing.T) {
+	// Test two examples of typical output from "netsh interface ipv4 show excludedportrange protocol=tcp"
+	emptyExclusionsText := `
+
+Protocol tcp Port Exclusion Ranges
+
+Start Port    End Port      
+----------    --------      
+
+* - Administered port exclusions.`
+
+	exclusionsText := `
+
+Start Port    End Port
+----------    --------
+     49697       49796
+     49797       49896
+
+* - Administered port exclusions.
+`
+	exclusions := createExclusionsList(exclusionsText, t)
+	require.Equal(t, len(exclusions), 2)
+
+	emptyExclusions := createExclusionsList(emptyExclusionsText, t)
+	require.Equal(t, len(emptyExclusions), 0)
 }

@@ -1,0 +1,41 @@
+receivers:
+    nop:
+
+processors:
+    filter/empty:
+        metrics:
+            include:
+                match_type: expr
+    filter/include:
+        metrics:
+            include:
+                match_type: expr
+                expressions:
+                    - Label("foo") == "bar"
+                    - HasLabel("baz")
+    filter/exclude:
+        metrics:
+            exclude:
+                match_type: expr
+                expressions:
+                    - Label("foo") == "bar"
+                    - HasLabel("baz")
+    filter/includeexclude:
+        metrics:
+            include:
+                match_type: expr
+                expressions:
+                    - HasLabel("foo")
+            exclude:
+                match_type: expr
+                expressions:
+                    - HasLabel("bar")
+exporters:
+    nop:
+
+service:
+    pipelines:
+        metrics:
+            receivers: [nop]
+            processors: [filter/empty]
+            exporters: [nop]

@@ -18,7 +18,7 @@
 package pdata
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
 
 // InstrumentationLibrary is a message representing the instrumentation library information.
@@ -29,73 +29,42 @@ import (
 // Must use NewInstrumentationLibrary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrary struct {
-	// orig points to the pointer otlpcommon.InstrumentationLibrary field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpcommon.InstrumentationLibrary
+	orig *otlpcommon.InstrumentationLibrary
 }
 
-func newInstrumentationLibrary(orig **otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
-	return InstrumentationLibrary{orig}
+func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+	return InstrumentationLibrary{orig: orig}
 }
 
-// NewInstrumentationLibrary creates a new "nil" InstrumentationLibrary.
-// To initialize the struct call "InitEmpty".
+// NewInstrumentationLibrary creates a new empty InstrumentationLibrary.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibrary() InstrumentationLibrary {
-	orig := (*otlpcommon.InstrumentationLibrary)(nil)
-	return newInstrumentationLibrary(&orig)
-}
-
-// InitEmpty overwrites the current value with empty.
-func (ms InstrumentationLibrary) InitEmpty() {
-	*ms.orig = &otlpcommon.InstrumentationLibrary{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms InstrumentationLibrary) IsNil() bool {
-	return *ms.orig == nil
+	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
 }
 
 // Name returns the name associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Name() string {
 	return (*ms.orig).Name
 }
 
 // SetName replaces the name associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetName(v string) {
 	(*ms.orig).Name = v
 }
 
 // Version returns the version associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Version() string {
 	return (*ms.orig).Version
 }
 
 // SetVersion replaces the version associated with this InstrumentationLibrary.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetVersion(v string) {
 	(*ms.orig).Version = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
 }
@@ -110,17 +79,17 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 type AnyValueArray struct {
 	// orig points to the slice otlpcommon.AnyValue field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
-	orig *[]*otlpcommon.AnyValue
+	orig *[]otlpcommon.AnyValue
 }
 
-func newAnyValueArray(orig *[]*otlpcommon.AnyValue) AnyValueArray {
+func newAnyValueArray(orig *[]otlpcommon.AnyValue) AnyValueArray {
 	return AnyValueArray{orig}
 }
 
 // NewAnyValueArray creates a AnyValueArray with 0 elements.
 // Can use "Resize" to initialize with a given length.
 func NewAnyValueArray() AnyValueArray {
-	orig := []*otlpcommon.AnyValue(nil)
+	orig := []otlpcommon.AnyValue(nil)
 	return AnyValueArray{&orig}
 }
 
@@ -142,52 +111,24 @@ func (es AnyValueArray) At(ix int) AttributeValue {
 	return newAttributeValue(&(*es.orig)[ix])
 }
 
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
-		*dest.orig = *es.orig
-		*es.orig = nil
-		return
-	}
-	*dest.orig = append(*dest.orig, *es.orig...)
-	*es.orig = nil
-	return
-}
-
 // CopyTo copies all elements from the current slice to the dest.
 func (es AnyValueArray) CopyTo(dest AnyValueArray) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlpcommon.AnyValue(nil)
-		return
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+	} else {
+		(*dest.orig) = make([]otlpcommon.AnyValue, srcLen)
 	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newAttributeValue(&el).CopyTo(newAttributeValue(&(*dest.orig)[i]))
-		}
-		return
+
+	for i := range *es.orig {
+		newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&(*dest.orig)[i]))
 	}
-	origs := make([]otlpcommon.AnyValue, newLen)
-	wrappers := make([]*otlpcommon.AnyValue, newLen)
-	for i, el := range *es.orig {
-		wrappers[i] = &origs[i]
-		newAttributeValue(&el).CopyTo(newAttributeValue(&wrappers[i]))
-	}
-	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new AnyValueArray can be initialized:
 // es := NewAnyValueArray()
@@ -197,28 +138,70 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 //     // Here should set all the values for e.
 // }
 func (es AnyValueArray) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlpcommon.AnyValue(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlpcommon.AnyValue, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]otlpcommon.AnyValue, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	empty := otlpcommon.AnyValue{}
+	for i := oldLen; i < newLen; i++ {
+		*es.orig = append(*es.orig, empty)
+	}
 }
 
 // Append will increase the length of the AnyValueArray by one and set the
 // given AttributeValue at that new position.  The original AttributeValue
 // could still be referenced so do not reuse it after passing it to this
 // method.
+// Deprecated: Use AppendEmpty.
 func (es AnyValueArray) Append(e AttributeValue) {
 	*es.orig = append(*es.orig, *e.orig)
+}
+
+// AppendEmpty will append to the end of the slice an empty AttributeValue.
+// It returns the newly added AttributeValue.
+func (es AnyValueArray) AppendEmpty() AttributeValue {
+	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
+	return es.At(es.Len() - 1)
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.orig = *es.orig
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
+	}
+	*es.orig = nil
+}
+
+// RemoveIf calls f sequentially for each element present in the slice.
+// If f returns true, the element is removed from the slice.
+func (es AnyValueArray) RemoveIf(f func(AttributeValue) bool) {
+	newLen := 0
+	for i := 0; i < len(*es.orig); i++ {
+		if f(es.At(i)) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*es.orig)[newLen] = (*es.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*es.orig = (*es.orig)[:newLen]
 }

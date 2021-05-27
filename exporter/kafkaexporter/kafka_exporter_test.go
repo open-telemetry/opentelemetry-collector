@@ -28,21 +28,63 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
+	texp, err := newTracesExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, tracesMarshalers())
 	assert.Error(t, err)
-	assert.Nil(t, exp)
+	assert.Nil(t, texp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
+	texp, err := newTracesExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, tracesMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, exp)
+	assert.Nil(t, texp)
+}
+
+func TestNewMetricsExporter_err_version(t *testing.T) {
+	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	assert.Error(t, err)
+	assert.Nil(t, mexp)
+}
+
+func TestNewMetricsExporter_err_encoding(t *testing.T) {
+	c := Config{Encoding: "bar"}
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, mexp)
+}
+
+func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
+	c := Config{Encoding: "jaeger_proto"}
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, mexp)
+}
+
+func TestNewLogsExporter_err_version(t *testing.T) {
+	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
+	mexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	assert.Error(t, err)
+	assert.Nil(t, mexp)
+}
+
+func TestNewLogsExporter_err_encoding(t *testing.T) {
+	c := Config{Encoding: "bar"}
+	mexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, mexp)
+}
+
+func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
+	c := Config{Encoding: "jaeger_proto"}
+	mexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, mexp)
 }
 
 func TestNewExporter_err_auth_type(t *testing.T) {
@@ -60,10 +102,19 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
+	texp, err := newTracesExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, tracesMarshalers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, exp)
+	assert.Nil(t, texp)
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.Nil(t, mexp)
+	lexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.Nil(t, lexp)
+
 }
 
 func TestTraceDataPusher(t *testing.T) {
@@ -71,16 +122,15 @@ func TestTraceDataPusher(t *testing.T) {
 	producer := mocks.NewSyncProducer(t, c)
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaProducer{
-		producer:   producer,
-		marshaller: &otlpProtoMarshaller{},
+	p := kafkaTracesProducer{
+		producer:  producer,
+		marshaler: &otlpTracesPbMarshaler{},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	droppedSpans, err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
+	err := p.traceDataPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
 	require.NoError(t, err)
-	assert.Equal(t, 0, droppedSpans)
 }
 
 func TestTraceDataPusher_err(t *testing.T) {
@@ -89,43 +139,159 @@ func TestTraceDataPusher_err(t *testing.T) {
 	expErr := fmt.Errorf("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
-	p := kafkaProducer{
-		producer:   producer,
-		marshaller: &otlpProtoMarshaller{},
-		logger:     zap.NewNop(),
+	p := kafkaTracesProducer{
+		producer:  producer,
+		marshaler: &otlpTracesPbMarshaler{},
+		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	droppedSpans, err := p.traceDataPusher(context.Background(), td)
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	err := p.traceDataPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
-	assert.Equal(t, td.SpanCount(), droppedSpans)
 }
 
-func TestTraceDataPusher_marshall_error(t *testing.T) {
-	expErr := fmt.Errorf("failed to marshall")
-	p := kafkaProducer{
-		marshaller: &errorMarshaller{err: expErr},
-		logger:     zap.NewNop(),
+func TestTraceDataPusher_marshal_error(t *testing.T) {
+	expErr := fmt.Errorf("failed to marshal")
+	p := kafkaTracesProducer{
+		marshaler: &tracesErrorMarshaler{err: expErr},
+		logger:    zap.NewNop(),
 	}
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	droppedSpans, err := p.traceDataPusher(context.Background(), td)
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	err := p.traceDataPusher(context.Background(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
-	assert.Equal(t, td.SpanCount(), droppedSpans)
 }
 
-type errorMarshaller struct {
+func TestMetricsDataPusher(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		producer:  producer,
+		marshaler: &otlpMetricsPbMarshaler{},
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	require.NoError(t, err)
+}
+
+func TestMetricsDataPusher_err(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	expErr := fmt.Errorf("failed to send")
+	producer.ExpectSendMessageAndFail(expErr)
+
+	p := kafkaMetricsProducer{
+		producer:  producer,
+		marshaler: &otlpMetricsPbMarshaler{},
+		logger:    zap.NewNop(),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	md := testdata.GenerateMetricsTwoMetrics()
+	err := p.metricsDataPusher(context.Background(), md)
+	assert.EqualError(t, err, expErr.Error())
+}
+
+func TestMetricsDataPusher_marshal_error(t *testing.T) {
+	expErr := fmt.Errorf("failed to marshal")
+	p := kafkaMetricsProducer{
+		marshaler: &metricsErrorMarshaler{err: expErr},
+		logger:    zap.NewNop(),
+	}
+	md := testdata.GenerateMetricsTwoMetrics()
+	err := p.metricsDataPusher(context.Background(), md)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), expErr.Error())
+}
+
+func TestLogsDataPusher(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: &otlpLogsPbMarshaler{},
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogsOneLogRecord())
+	require.NoError(t, err)
+}
+
+func TestLogsDataPusher_err(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	expErr := fmt.Errorf("failed to send")
+	producer.ExpectSendMessageAndFail(expErr)
+
+	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: &otlpLogsPbMarshaler{},
+		logger:    zap.NewNop(),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	ld := testdata.GenerateLogsOneLogRecord()
+	err := p.logsDataPusher(context.Background(), ld)
+	assert.EqualError(t, err, expErr.Error())
+}
+
+func TestLogsDataPusher_marshal_error(t *testing.T) {
+	expErr := fmt.Errorf("failed to marshal")
+	p := kafkaLogsProducer{
+		marshaler: &logsErrorMarshaler{err: expErr},
+		logger:    zap.NewNop(),
+	}
+	ld := testdata.GenerateLogsOneLogRecord()
+	err := p.logsDataPusher(context.Background(), ld)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), expErr.Error())
+}
+
+type tracesErrorMarshaler struct {
 	err error
 }
 
-var _ Marshaller = (*errorMarshaller)(nil)
+type metricsErrorMarshaler struct {
+	err error
+}
 
-func (e errorMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
+type logsErrorMarshaler struct {
+	err error
+}
+
+func (e metricsErrorMarshaler) Marshal(_ pdata.Metrics, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
-func (e errorMarshaller) Encoding() string {
+func (e metricsErrorMarshaler) Encoding() string {
+	panic("implement me")
+}
+
+var _ TracesMarshaler = (*tracesErrorMarshaler)(nil)
+
+func (e tracesErrorMarshaler) Marshal(_ pdata.Traces, _ string) ([]*sarama.ProducerMessage, error) {
+	return nil, e.err
+}
+
+func (e tracesErrorMarshaler) Encoding() string {
+	panic("implement me")
+}
+
+func (e logsErrorMarshaler) Marshal(_ pdata.Logs, _ string) ([]*sarama.ProducerMessage, error) {
+	return nil, e.err
+}
+
+func (e logsErrorMarshaler) Encoding() string {
 	panic("implement me")
 }

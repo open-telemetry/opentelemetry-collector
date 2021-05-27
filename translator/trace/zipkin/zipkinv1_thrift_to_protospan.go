@@ -27,12 +27,11 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 )
 
 // v1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
-func v1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]consumerdata.TraceData, error) {
+func v1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]traceData, error) {
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
 		ocSpan, parsedAnnotations := zipkinV1ThriftToOCSpan(zSpan)
@@ -56,11 +55,12 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	// failures on the receivers in general are silent at this moment, so letting them
 	// proceed for now. We should validate the traceID, spanID and parentID are good with
 	// OC proto requirements.
-	traceID := tracetranslator.Int64ToByteTraceID(traceIDHigh, zSpan.TraceID)
-	spanID := tracetranslator.Int64ToByteSpanID(zSpan.ID)
+	traceID := idutils.UInt64ToTraceID(uint64(traceIDHigh), uint64(zSpan.TraceID)).Bytes()
+	spanID := idutils.UInt64ToSpanID(uint64(zSpan.ID)).Bytes()
 	var parentID []byte
 	if zSpan.ParentID != nil {
-		parentID = tracetranslator.Int64ToByteSpanID(*zSpan.ParentID)
+		parentIDBytes := idutils.UInt64ToSpanID(uint64(*zSpan.ParentID)).Bytes()
+		parentID = parentIDBytes[:]
 	}
 
 	parsedAnnotations := parseZipkinV1ThriftAnnotations(zSpan.Annotations)
@@ -83,8 +83,8 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	}
 
 	ocSpan := &tracepb.Span{
-		TraceId:      traceID,
-		SpanId:       spanID,
+		TraceId:      traceID[:],
+		SpanId:       spanID[:],
 		ParentSpanId: parentID,
 		Status:       ocStatus,
 		Kind:         parsedAnnotations.Kind,

@@ -24,9 +24,12 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -37,12 +40,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings.Enabled, true, "default retry is enabled")
-	assert.Equal(t, ocfg.RetrySettings.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
-	assert.Equal(t, ocfg.RetrySettings.InitialInterval, 5*time.Second, "default retry InitialInterval")
-	assert.Equal(t, ocfg.RetrySettings.MaxInterval, 30*time.Second, "default retry MaxInterval")
-	assert.Equal(t, ocfg.QueueSettings.Enabled, false, "default sending queue is disabled")
-	assert.Equal(t, ocfg.Timeout, 5*time.Second, "default timeout is 5 second")
+	assert.Equal(t, ocfg.RetrySettings, exporterhelper.DefaultRetrySettings())
+	assert.Equal(t, ocfg.QueueSettings, exporterhelper.DefaultQueueSettings())
+	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.DefaultTimeoutSettings())
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -56,26 +56,28 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
-
 	tests := []struct {
-		name     string
-		config   Config
-		mustFail bool
+		name             string
+		config           Config
+		mustFailOnCreate bool
+		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "",
 				},
 			},
-			mustFail: true,
+			mustFailOnCreate: true,
 		},
 		{
 			name: "UseSecure",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -87,6 +89,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "Keepalive",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
@@ -100,6 +103,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "Compression",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configgrpc.CompressionGzip,
@@ -109,6 +113,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "Headers",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]string{
@@ -121,6 +126,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "NumConsumers",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				},
@@ -129,16 +135,18 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "CompressionError",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: "unknown compression",
 				},
 			},
-			mustFail: true,
+			mustFailOnStart: true,
 		},
 		{
 			name: "CaCert",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -152,6 +160,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -161,7 +170,7 @@ func TestCreateTraceExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail: true,
+			mustFailOnStart: true,
 		},
 	}
 
@@ -169,20 +178,24 @@ func TestCreateTraceExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-			consumer, err := factory.CreateTraceExporter(context.Background(), creationParams, &tt.config)
-
-			if tt.mustFail {
+			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
+			if tt.mustFailOnCreate {
 				assert.NotNil(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, consumer)
-
-				err = consumer.Shutdown(context.Background())
-				if err != nil {
-					// Since the endpoint of OTLP exporter doesn't actually exist,
-					// exporter may already stop because it cannot connect.
-					assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
-				}
+				return
+			}
+			assert.NoError(t, err)
+			assert.NotNil(t, consumer)
+			err = consumer.Start(context.Background(), componenttest.NewNopHost())
+			if tt.mustFailOnStart {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			err = consumer.Shutdown(context.Background())
+			if err != nil {
+				// Since the endpoint of OTLP exporter doesn't actually exist,
+				// exporter may already stop because it cannot connect.
+				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
 			}
 		})
 	}

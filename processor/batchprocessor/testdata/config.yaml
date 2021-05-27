@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   batch:
@@ -9,11 +9,11 @@ processors:
     send_batch_max_size: 11000
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [batch/2]
-      exporters: [exampleexporter]
+      exporters: [nop]

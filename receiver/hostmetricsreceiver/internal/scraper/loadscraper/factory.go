@@ -20,13 +20,13 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/obsreportscraper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // This file implements Factory for Load scraper.
 
 const (
-	// The value of "type" key in configuration.
+	// TypeStr the value of "type" key in configuration.
 	TypeStr = "load"
 )
 
@@ -44,7 +44,16 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	logger *zap.Logger,
 	config internal.Config,
-) (internal.Scraper, error) {
+) (scraperhelper.MetricsScraper, error) {
 	cfg := config.(*Config)
-	return obsreportscraper.WrapScraper(newLoadScraper(ctx, logger, cfg), TypeStr), nil
+	s := newLoadScraper(ctx, logger, cfg)
+
+	ms := scraperhelper.NewMetricsScraper(
+		TypeStr,
+		s.scrape,
+		scraperhelper.WithStart(s.start),
+		scraperhelper.WithShutdown(s.shutdown),
+	)
+
+	return ms, nil
 }

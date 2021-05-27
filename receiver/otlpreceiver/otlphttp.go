@@ -36,7 +36,7 @@ func (*xProtobufMarshaler) ContentType() string {
 	return "application/x-protobuf"
 }
 
-var jsonMarshaller = &jsonpb.Marshaler{}
+var jsonMarshaler = &jsonpb.Marshaler{}
 
 // errorHandler encodes the HTTP error message inside a rpc.Status message as required
 // by the OTLP protocol.
@@ -59,7 +59,7 @@ func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusC
 	contentType := r.Header.Get("Content-Type")
 	if contentType == "application/json" {
 		buf := new(bytes.Buffer)
-		err = jsonMarshaller.Marshal(buf, s.Proto())
+		err = jsonMarshaler.Marshal(buf, s.Proto())
 		msg = buf.Bytes()
 	} else {
 		msg, err = proto.Marshal(s.Proto())
@@ -72,5 +72,5 @@ func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusC
 
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(statusCode)
-	w.Write(msg)
+	w.Write(msg) // nolint:errcheck
 }

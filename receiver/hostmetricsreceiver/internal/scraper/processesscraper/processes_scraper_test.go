@@ -24,18 +24,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-var systemSpecificMetrics = map[string][]pdata.Metric{
-	"linux":   {processesRunningDescriptor, processesBlockedDescriptor},
-	"darwin":  {processesRunningDescriptor, processesBlockedDescriptor},
-	"freebsd": {processesRunningDescriptor, processesBlockedDescriptor},
-	"openbsd": {processesRunningDescriptor, processesBlockedDescriptor},
-}
-
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name        string
 		miscFunc    func() (*load.MiscStat, error)
@@ -53,29 +49,49 @@ func TestScrapeMetrics(t *testing.T) {
 		},
 	}
 
-	expectedMetrics := systemSpecificMetrics[runtime.GOOS]
-
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			expectProcessesCountMetric := runtime.GOOS == "linux" || runtime.GOOS == "openbsd" || runtime.GOOS == "darwin" || runtime.GOOS == "freebsd"
+			expectProcessesCreatedMetric := runtime.GOOS == "linux" || runtime.GOOS == "openbsd"
+
 			scraper := newProcessesScraper(context.Background(), &Config{})
 			if test.miscFunc != nil {
 				scraper.misc = test.miscFunc
 			}
 
-			err := scraper.Initialize(context.Background())
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize processes scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
-			if len(expectedMetrics) > 0 && test.expectedErr != "" {
+			metrics, err := scraper.scrape(context.Background())
+
+			expectedMetricCount := 0
+			if expectProcessesCountMetric {
+				expectedMetricCount++
+			}
+			if expectProcessesCreatedMetric {
+				expectedMetricCount++
+			}
+
+			if (expectProcessesCountMetric || expectProcessesCreatedMetric) && test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
+
+				isPartial := scrapererror.IsPartialScrapeError(err)
+				assert.True(t, isPartial)
+				if isPartial {
+					assert.Equal(t, expectedMetricCount, err.(scrapererror.PartialScrapeError).Failed)
+				}
+
 				return
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assert.Equal(t, len(expectedMetrics), metrics.Len())
-			for i, expectedMetricDescriptor := range expectedMetrics {
-				assertProcessesMetricValid(t, metrics.At(i), expectedMetricDescriptor)
+			assert.Equal(t, expectedMetricCount, metrics.Len())
+
+			if expectProcessesCountMetric {
+				assertProcessesCountMetricValid(t, metrics.At(0))
+			}
+			if expectProcessesCreatedMetric {
+				assertProcessesCreatedMetricValid(t, metrics.At(1))
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -83,8 +99,15 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertProcessesMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
-	assert.Equal(t, metric.IntSum().DataPoints().Len(), 1)
-	assert.Equal(t, metric.IntSum().DataPoints().At(0).LabelsMap().Len(), 0)
+func assertProcessesCountMetricValid(t *testing.T, metric pdata.Metric) {
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), metric)
+	assert.Equal(t, 2, metric.IntSum().DataPoints().Len())
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "status", "running")
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "status", "blocked")
+}
+
+func assertProcessesCreatedMetricValid(t *testing.T, metric pdata.Metric) {
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCreated.New(), metric)
+	assert.Equal(t, 1, metric.IntSum().DataPoints().Len())
+	assert.Equal(t, 0, metric.IntSum().DataPoints().At(0).LabelsMap().Len())
 }

@@ -15,7 +15,6 @@
 package internaldata
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -40,23 +40,23 @@ type ocInferredResourceType struct {
 // NOTE: defined in the priority order (first match wins)
 var labelPresenceToResourceType = []ocInferredResourceType{
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/container.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/container.md
 		labelKeyPresent: conventions.AttributeContainerName,
 		resourceType:    resourcekeys.ContainerType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/k8s.md#pod
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#pod
 		labelKeyPresent: conventions.AttributeK8sPod,
 		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
 		resourceType: resourcekeys.K8SType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/host.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/host.md
 		labelKeyPresent: conventions.AttributeHostName,
 		resourceType:    resourcekeys.HostType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
 		labelKeyPresent: conventions.AttributeCloudProvider,
 		resourceType:    resourcekeys.CloudType,
 	},
@@ -80,75 +80,52 @@ func getSDKLangToOCLangCodeMap() map[string]int32 {
 }
 
 func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.Resource) {
-	if resource.IsNil() {
+	attrs := resource.Attributes()
+	if attrs.Len() == 0 {
 		return nil, nil
 	}
-	attrs := resource.Attributes()
 
-	ocNode := occommon.Node{}
-	ocResource := ocresource.Resource{}
-
-	if attrs.Len() == 0 {
-		return &ocNode, &ocResource
-	}
-
+	ocNode := &occommon.Node{}
+	ocResource := &ocresource.Resource{}
 	labels := make(map[string]string, attrs.Len())
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
-		val := attributeValueToString(v, false)
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+		val := tracetranslator.AttributeValueToString(v)
 
 		switch k {
-		case conventions.OCAttributeResourceType:
+		case conventions.AttributeCloudAvailabilityZone:
+			labels[resourcekeys.CloudKeyZone] = val
+		case occonventions.AttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
-			if ocNode.ServiceInfo == nil {
-				ocNode.ServiceInfo = &occommon.ServiceInfo{}
-			}
-			ocNode.ServiceInfo.Name = val
-		case conventions.OCAttributeProcessStartTime:
+			getServiceInfo(ocNode).Name = val
+		case occonventions.AttributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
-				return
+				return true
 			}
 			ts := timestamppb.New(t)
-			if ocNode.Identifier == nil {
-				ocNode.Identifier = &occommon.ProcessIdentifier{}
-			}
-			ocNode.Identifier.StartTimestamp = ts
-		case conventions.AttributeHostHostname:
-			if ocNode.Identifier == nil {
-				ocNode.Identifier = &occommon.ProcessIdentifier{}
-			}
-			ocNode.Identifier.HostName = val
-		case conventions.OCAttributeProcessID:
+			getProcessIdentifier(ocNode).StartTimestamp = ts
+		case conventions.AttributeHostName:
+			getProcessIdentifier(ocNode).HostName = val
+		case conventions.AttributeProcessID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {
 				pid = defaultProcessID
 			}
-			if ocNode.Identifier == nil {
-				ocNode.Identifier = &occommon.ProcessIdentifier{}
-			}
-			ocNode.Identifier.Pid = uint32(pid)
+			getProcessIdentifier(ocNode).Pid = uint32(pid)
 		case conventions.AttributeTelemetrySDKVersion:
-			if ocNode.LibraryInfo == nil {
-				ocNode.LibraryInfo = &occommon.LibraryInfo{}
-			}
-			ocNode.LibraryInfo.CoreLibraryVersion = val
-		case conventions.OCAttributeExporterVersion:
-			if ocNode.LibraryInfo == nil {
-				ocNode.LibraryInfo = &occommon.LibraryInfo{}
-			}
-			ocNode.LibraryInfo.ExporterVersion = val
+			getLibraryInfo(ocNode).CoreLibraryVersion = val
+		case occonventions.AttributeExporterVersion:
+			getLibraryInfo(ocNode).ExporterVersion = val
 		case conventions.AttributeTelemetrySDKLanguage:
 			if code, ok := langToOCLangCodeMap[val]; ok {
-				if ocNode.LibraryInfo == nil {
-					ocNode.LibraryInfo = &occommon.LibraryInfo{}
-				}
-				ocNode.LibraryInfo.Language = occommon.LibraryInfo_Language(code)
+				getLibraryInfo(ocNode).Language = occommon.LibraryInfo_Language(code)
 			}
 		default:
 			// Not a special attribute, put it into resource labels
 			labels[k] = val
 		}
+		return true
 	})
 	ocResource.Labels = labels
 
@@ -160,40 +137,28 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		}
 	}
 
-	return &ocNode, &ocResource
+	return ocNode, ocResource
 }
 
-func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
-	switch attr.Type() {
-	case pdata.AttributeValueNULL:
-		if jsonLike {
-			return "null"
-		}
-		return ""
-	case pdata.AttributeValueSTRING:
-		if jsonLike {
-			return fmt.Sprintf("%q", attr.StringVal())
-		}
-		return attr.StringVal()
-
-	case pdata.AttributeValueBOOL:
-		return strconv.FormatBool(attr.BoolVal())
-
-	case pdata.AttributeValueDOUBLE:
-		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
-
-	case pdata.AttributeValueINT:
-		return strconv.FormatInt(attr.IntVal(), 10)
-
-	case pdata.AttributeValueMAP:
-		return tracetranslator.AttributeValueToString(attr, false)
-
-	case pdata.AttributeValueARRAY:
-		return tracetranslator.AttributeValueToString(attr, false)
-
-	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
+func getProcessIdentifier(ocNode *occommon.Node) *occommon.ProcessIdentifier {
+	if ocNode.Identifier == nil {
+		ocNode.Identifier = &occommon.ProcessIdentifier{}
 	}
+	return ocNode.Identifier
+}
+
+func getLibraryInfo(ocNode *occommon.Node) *occommon.LibraryInfo {
+	if ocNode.LibraryInfo == nil {
+		ocNode.LibraryInfo = &occommon.LibraryInfo{}
+	}
+	return ocNode.LibraryInfo
+}
+
+func getServiceInfo(ocNode *occommon.Node) *occommon.ServiceInfo {
+	if ocNode.ServiceInfo == nil {
+		ocNode.ServiceInfo = &occommon.ServiceInfo{}
+	}
+	return ocNode.ServiceInfo
 }
 
 func inferResourceType(labels map[string]string) (string, bool) {

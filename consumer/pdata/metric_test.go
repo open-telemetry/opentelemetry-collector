@@ -23,10 +23,11 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 )
 
 const (
@@ -80,7 +81,7 @@ func TestCopyData(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleHistogram",
+			name: "Histogram",
 			src: &otlpmetrics.Metric{
 				Data: &otlpmetrics.Metric_DoubleHistogram{
 					DoubleHistogram: &otlpmetrics.DoubleHistogram{},
@@ -102,28 +103,21 @@ func TestCopyData(t *testing.T) {
 
 func TestDataType(t *testing.T) {
 	m := NewMetric()
-	m.InitEmpty()
 	assert.Equal(t, MetricDataTypeNone, m.DataType())
 	m.SetDataType(MetricDataTypeIntGauge)
 	assert.Equal(t, MetricDataTypeIntGauge, m.DataType())
-	assert.True(t, m.IntGauge().IsNil())
 	m.SetDataType(MetricDataTypeDoubleGauge)
 	assert.Equal(t, MetricDataTypeDoubleGauge, m.DataType())
-	assert.True(t, m.DoubleGauge().IsNil())
 	m.SetDataType(MetricDataTypeIntSum)
 	assert.Equal(t, MetricDataTypeIntSum, m.DataType())
-	assert.True(t, m.IntSum().IsNil())
 	m.SetDataType(MetricDataTypeDoubleSum)
 	assert.Equal(t, MetricDataTypeDoubleSum, m.DataType())
-	assert.True(t, m.DoubleSum().IsNil())
 	m.SetDataType(MetricDataTypeIntHistogram)
 	assert.Equal(t, MetricDataTypeIntHistogram, m.DataType())
-	assert.True(t, m.IntHistogram().IsNil())
-	m.SetDataType(MetricDataTypeDoubleHistogram)
-	assert.Equal(t, MetricDataTypeDoubleHistogram, m.DataType())
-	assert.True(t, m.DoubleHistogram().IsNil())
-	m.InitEmpty()
-	assert.Equal(t, MetricDataTypeNone, m.DataType())
+	m.SetDataType(MetricDataTypeHistogram)
+	assert.Equal(t, MetricDataTypeHistogram, m.DataType())
+	m.SetDataType(MetricDataTypeSummary)
+	assert.Equal(t, MetricDataTypeSummary, m.DataType())
 }
 
 func TestResourceMetricsWireCompatibility(t *testing.T) {
@@ -135,7 +129,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 	pdataRM := generateTestResourceMetrics()
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(*pdataRM.orig)
+	wire1, err := gogoproto.Marshal(pdataRM.orig)
 	assert.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -156,79 +150,56 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.True(t, assert.EqualValues(t, *pdataRM.orig, &gogoprotoRM))
+	assert.True(t, assert.EqualValues(t, pdataRM.orig, &gogoprotoRM))
 }
 
 func TestMetricCount(t *testing.T) {
 	md := NewMetrics()
 	assert.EqualValues(t, 0, md.MetricCount())
 
-	md.ResourceMetrics().Resize(1)
+	rm := md.ResourceMetrics().AppendEmpty()
 	assert.EqualValues(t, 0, md.MetricCount())
 
-	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	assert.EqualValues(t, 0, md.MetricCount())
 
-	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
+	ilm.Metrics().AppendEmpty()
 	assert.EqualValues(t, 1, md.MetricCount())
 
 	rms := md.ResourceMetrics()
 	rms.Resize(3)
-	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
-	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
-	rms.At(1).InstrumentationLibraryMetrics().Resize(1)
-	rms.At(2).InstrumentationLibraryMetrics().Resize(1)
-	rms.At(2).InstrumentationLibraryMetrics().At(0).Metrics().Resize(5)
+	rms.At(1).InstrumentationLibraryMetrics().AppendEmpty()
+	rms.At(2).InstrumentationLibraryMetrics().AppendEmpty().Metrics().Resize(5)
+	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.MetricCount())
 }
 
 func TestMetricSize(t *testing.T) {
 	md := NewMetrics()
-	assert.Equal(t, 0, md.Size())
+	assert.Equal(t, 0, md.OtlpProtoSize())
 	rms := md.ResourceMetrics()
-	rms.Resize(1)
-	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
-	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
-	metric := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-	metric.SetDataType(MetricDataTypeDoubleHistogram)
-	doubleHistogram := metric.DoubleHistogram()
-	doubleHistogram.InitEmpty()
-	doubleHistogram.DataPoints().Resize(1)
-	doubleHistogram.DataPoints().At(0).SetCount(123)
-	doubleHistogram.DataPoints().At(0).SetSum(123)
-	otlp := MetricsToOtlp(md)
-	size := 0
-	sizeBytes := 0
-	for _, rmerics := range otlp {
-		size += rmerics.Size()
-		bts, err := rmerics.Marshal()
-		require.NoError(t, err)
-		sizeBytes += len(bts)
-	}
-	assert.Equal(t, size, md.Size())
-	assert.Equal(t, sizeBytes, md.Size())
+	metric := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetDataType(MetricDataTypeHistogram)
+	doubleHistogram := metric.Histogram()
+	pt := doubleHistogram.DataPoints().AppendEmpty()
+	pt.SetCount(123)
+	pt.SetSum(123)
+	otlp := internal.MetricsToOtlp(md.InternalRep())
+	size := otlp.Size()
+	bytes, err := otlp.Marshal()
+	require.NoError(t, err)
+	assert.Equal(t, size, md.OtlpProtoSize())
+	assert.Equal(t, len(bytes), md.OtlpProtoSize())
 }
 
-func TestMetricsSizeWithNils(t *testing.T) {
-	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).Size())
+func TestMetricsSizeWithNil(t *testing.T) {
+	assert.Equal(t, 0, NewMetrics().OtlpProtoSize())
 }
 
-func TestMetricCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).MetricCount())
-	assert.EqualValues(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{nil, {}},
-		},
-	}).MetricCount())
-	assert.EqualValues(t, 2, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{nil, {}},
-				},
-			},
-		},
-	}).MetricCount())
+func TestMetricCountWithEmpty(t *testing.T) {
+	assert.EqualValues(t, 0, generateMetricsEmptyResource().MetricCount())
+	assert.EqualValues(t, 0, generateMetricsEmptyInstrumentation().MetricCount())
+	assert.EqualValues(t, 1, generateMetricsEmptyMetrics().MetricCount())
 }
 
 func TestMetricAndDataPointCount(t *testing.T) {
@@ -255,7 +226,6 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	assert.EqualValues(t, 0, dps)
 	ilms.At(0).Metrics().At(0).SetDataType(MetricDataTypeIntSum)
 	intSum := ilms.At(0).Metrics().At(0).IntSum()
-	intSum.InitEmpty()
 	intSum.DataPoints().Resize(3)
 	_, dps = md.MetricAndDataPointCount()
 	assert.EqualValues(t, 3, dps)
@@ -275,76 +245,70 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	assert.EqualValues(t, 0, dps)
 	ilms.At(0).Metrics().At(1).SetDataType(MetricDataTypeDoubleGauge)
 	doubleGauge := ilms.At(0).Metrics().At(1).DoubleGauge()
-	doubleGauge.InitEmpty()
 	doubleGauge.DataPoints().Resize(1)
 	ilms.At(0).Metrics().At(3).SetDataType(MetricDataTypeIntHistogram)
 	intHistogram := ilms.At(0).Metrics().At(3).IntHistogram()
-	intHistogram.InitEmpty()
 	intHistogram.DataPoints().Resize(3)
 	ms, dps = md.MetricAndDataPointCount()
 	assert.EqualValues(t, 6, ms)
 	assert.EqualValues(t, 4, dps)
 }
 
-func TestMetricAndDataPointCountWithNil(t *testing.T) {
-	ms, dps := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).MetricAndDataPointCount()
+func TestMetricAndDataPointCountWithEmpty(t *testing.T) {
+	ms, dps := generateMetricsEmptyResource().MetricAndDataPointCount()
 	assert.EqualValues(t, 0, ms)
 	assert.EqualValues(t, 0, dps)
 
-	ms, dps = MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{nil, {}},
-		},
-	}).MetricAndDataPointCount()
+	ms, dps = generateMetricsEmptyInstrumentation().MetricAndDataPointCount()
 	assert.EqualValues(t, 0, ms)
 	assert.EqualValues(t, 0, dps)
 
-	ms, dps = MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{nil, {}},
-				},
-			},
-		},
-	}).MetricAndDataPointCount()
-	assert.EqualValues(t, 2, ms)
-	assert.EqualValues(t, 0, dps)
-
-	ms, dps = MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{{
-						Data: &otlpmetrics.Metric_DoubleGauge{
-							DoubleGauge: &otlpmetrics.DoubleGauge{
-								DataPoints: []*otlpmetrics.DoubleDataPoint{
-									nil, {},
-								},
-							},
-						},
-					}},
-				},
-			},
-		},
-	}).MetricAndDataPointCount()
+	ms, dps = generateMetricsEmptyMetrics().MetricAndDataPointCount()
 	assert.EqualValues(t, 1, ms)
-	assert.EqualValues(t, 2, dps)
+	assert.EqualValues(t, 0, dps)
+
+	ms, dps = generateMetricsEmptyDataPoints().MetricAndDataPointCount()
+	assert.EqualValues(t, 1, ms)
+	assert.EqualValues(t, 1, dps)
 
 }
 
+func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
+	metrics := NewMetrics()
+	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	intGauge := ilm.Metrics().AppendEmpty()
+	intGauge.SetDataType(MetricDataTypeIntGauge)
+	doubleGauge := ilm.Metrics().AppendEmpty()
+	doubleGauge.SetDataType(MetricDataTypeDoubleGauge)
+	intHistogram := ilm.Metrics().AppendEmpty()
+	intHistogram.SetDataType(MetricDataTypeIntHistogram)
+	doubleHistogram := ilm.Metrics().AppendEmpty()
+	doubleHistogram.SetDataType(MetricDataTypeHistogram)
+	intSum := ilm.Metrics().AppendEmpty()
+	intSum.SetDataType(MetricDataTypeIntSum)
+	doubleSum := ilm.Metrics().AppendEmpty()
+	doubleSum.SetDataType(MetricDataTypeDoubleSum)
+
+	ms, dps := metrics.MetricAndDataPointCount()
+
+	assert.EqualValues(t, 6, ms)
+	assert.EqualValues(t, 0, dps)
+}
+
 func TestOtlpToInternalReadOnly(t *testing.T) {
-	metricData := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+	metricData := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+					},
 				},
 			},
 		},
-	})
+	}))
 	resourceMetrics := metricData.ResourceMetrics()
 	assert.EqualValues(t, 1, resourceMetrics.Len())
 
@@ -364,12 +328,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	int64DataPoints := metricInt.IntGauge().DataPoints()
 	assert.EqualValues(t, 2, int64DataPoints.Len())
 	// First point
-	assert.EqualValues(t, startTime, int64DataPoints.At(0).StartTime())
+	assert.EqualValues(t, startTime, int64DataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, int64DataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123, int64DataPoints.At(0).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), int64DataPoints.At(0).LabelsMap())
 	// Second point
-	assert.EqualValues(t, startTime, int64DataPoints.At(1).StartTime())
+	assert.EqualValues(t, startTime, int64DataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, int64DataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456, int64DataPoints.At(1).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), int64DataPoints.At(1).LabelsMap())
@@ -385,12 +349,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	doubleDataPoints := dsd.DataPoints()
 	assert.EqualValues(t, 2, doubleDataPoints.Len())
 	// First point
-	assert.EqualValues(t, startTime, doubleDataPoints.At(0).StartTime())
+	assert.EqualValues(t, startTime, doubleDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, doubleDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123.1, doubleDataPoints.At(0).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), doubleDataPoints.At(0).LabelsMap())
 	// Second point
-	assert.EqualValues(t, startTime, doubleDataPoints.At(1).StartTime())
+	assert.EqualValues(t, startTime, doubleDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, doubleDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456.1, doubleDataPoints.At(1).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), doubleDataPoints.At(1).LabelsMap())
@@ -400,19 +364,19 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.Name())
 	assert.EqualValues(t, "My metric", metricHistogram.Description())
 	assert.EqualValues(t, "ms", metricHistogram.Unit())
-	assert.EqualValues(t, MetricDataTypeDoubleHistogram, metricHistogram.DataType())
-	dhd := metricHistogram.DoubleHistogram()
+	assert.EqualValues(t, MetricDataTypeHistogram, metricHistogram.DataType())
+	dhd := metricHistogram.Histogram()
 	assert.EqualValues(t, AggregationTemporalityDelta, dhd.AggregationTemporality())
 	histogramDataPoints := dhd.DataPoints()
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
 	// First point
-	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTime())
+	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).ExplicitBounds())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), histogramDataPoints.At(0).LabelsMap())
 	assert.EqualValues(t, []uint64{10, 15, 1}, histogramDataPoints.At(0).BucketCounts())
 	// Second point
-	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTime())
+	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).ExplicitBounds())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), histogramDataPoints.At(1).LabelsMap())
@@ -420,46 +384,52 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
-	metricData := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+	metricData := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+					},
 				},
 			},
 		},
-	})
+	}))
 	// Test that nothing changed
-	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+					},
 				},
 			},
 		},
-	}, MetricsToOtlp(metricData))
+	}, internal.MetricsToOtlp(metricData.InternalRep()))
 }
 
 func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 
-	metricData := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric()},
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric()},
+					},
 				},
 			},
 		},
-	})
-	resourceMetrics := metricData.ResourceMetrics()
+	}))
+	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_int")
@@ -474,9 +444,9 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 	igd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, igd.DataPoints().Len())
 	int64DataPoints := igd.DataPoints()
-	int64DataPoints.At(0).SetStartTime(TimestampUnixNano(startTime + 1))
-	assert.EqualValues(t, startTime+1, int64DataPoints.At(0).StartTime())
-	int64DataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
+	int64DataPoints.At(0).SetStartTimestamp(Timestamp(startTime + 1))
+	assert.EqualValues(t, startTime+1, int64DataPoints.At(0).StartTimestamp())
+	int64DataPoints.At(0).SetTimestamp(Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, int64DataPoints.At(0).Timestamp())
 	int64DataPoints.At(0).SetValue(124)
 	assert.EqualValues(t, 124, int64DataPoints.At(0).Value())
@@ -485,30 +455,32 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 	assert.EqualValues(t, newLabels, int64DataPoints.At(0).LabelsMap())
 
 	// Test that everything is updated.
-	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics: []*otlpmetrics.Metric{
-						{
-							Name:        "new_my_metric_int",
-							Description: "My new metric",
-							Unit:        "1",
-							Data: &otlpmetrics.Metric_IntGauge{
-								IntGauge: &otlpmetrics.IntGauge{
-									DataPoints: []*otlpmetrics.IntDataPoint{
-										{
-											Labels: []*otlpcommon.StringKeyValue{
-												{
-													Key:   "k",
-													Value: "v",
+	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics: []*otlpmetrics.Metric{
+							{
+								Name:        "new_my_metric_int",
+								Description: "My new metric",
+								Unit:        "1",
+								Data: &otlpmetrics.Metric_IntGauge{
+									IntGauge: &otlpmetrics.IntGauge{
+										DataPoints: []*otlpmetrics.IntDataPoint{
+											{
+												Labels: []otlpcommon.StringKeyValue{
+													{
+														Key:   "k",
+														Value: "v",
+													},
 												},
+												StartTimeUnixNano: startTime + 1,
+												TimeUnixNano:      endTime + 1,
+												Value:             124,
 											},
-											StartTimeUnixNano: startTime + 1,
-											TimeUnixNano:      endTime + 1,
-											Value:             124,
 										},
 									},
 								},
@@ -518,24 +490,26 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 				},
 			},
 		},
-	}, MetricsToOtlp(metricData))
+	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
 func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 
-	metricData := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleSumMetric()},
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleSumMetric()},
+					},
 				},
 			},
 		},
-	})
-	resourceMetrics := metricData.ResourceMetrics()
+	}))
+	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_double")
@@ -550,9 +524,9 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 	dsd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, dsd.DataPoints().Len())
 	doubleDataPoints := dsd.DataPoints()
-	doubleDataPoints.At(0).SetStartTime(TimestampUnixNano(startTime + 1))
-	assert.EqualValues(t, startTime+1, doubleDataPoints.At(0).StartTime())
-	doubleDataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
+	doubleDataPoints.At(0).SetStartTimestamp(Timestamp(startTime + 1))
+	assert.EqualValues(t, startTime+1, doubleDataPoints.At(0).StartTimestamp())
+	doubleDataPoints.At(0).SetTimestamp(Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
 	doubleDataPoints.At(0).SetValue(124.1)
 	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).Value())
@@ -561,31 +535,33 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 	assert.EqualValues(t, newLabels, doubleDataPoints.At(0).LabelsMap())
 
 	// Test that everything is updated.
-	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics: []*otlpmetrics.Metric{
-						{
-							Name:        "new_my_metric_double",
-							Description: "My new metric",
-							Unit:        "1",
-							Data: &otlpmetrics.Metric_DoubleSum{
-								DoubleSum: &otlpmetrics.DoubleSum{
-									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-									DataPoints: []*otlpmetrics.DoubleDataPoint{
-										{
-											Labels: []*otlpcommon.StringKeyValue{
-												{
-													Key:   "k",
-													Value: "v",
+	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics: []*otlpmetrics.Metric{
+							{
+								Name:        "new_my_metric_double",
+								Description: "My new metric",
+								Unit:        "1",
+								Data: &otlpmetrics.Metric_DoubleSum{
+									DoubleSum: &otlpmetrics.DoubleSum{
+										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+										DataPoints: []*otlpmetrics.DoubleDataPoint{
+											{
+												Labels: []otlpcommon.StringKeyValue{
+													{
+														Key:   "k",
+														Value: "v",
+													},
 												},
+												StartTimeUnixNano: startTime + 1,
+												TimeUnixNano:      endTime + 1,
+												Value:             124.1,
 											},
-											StartTimeUnixNano: startTime + 1,
-											TimeUnixNano:      endTime + 1,
-											Value:             124.1,
 										},
 									},
 								},
@@ -595,24 +571,26 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 				},
 			},
 		},
-	}, MetricsToOtlp(metricData))
+	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
 func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 
-	metricData := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+					},
 				},
 			},
 		},
-	})
-	resourceMetrics := metricData.ResourceMetrics()
+	}))
+	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_histogram")
@@ -622,14 +600,14 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	metric.SetUnit("1")
 	assert.EqualValues(t, "1", metric.Unit())
 	// Mutate DataPoints
-	dhd := metric.DoubleHistogram()
+	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
 	dhd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, dhd.DataPoints().Len())
 	histogramDataPoints := dhd.DataPoints()
-	histogramDataPoints.At(0).SetStartTime(TimestampUnixNano(startTime + 1))
-	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTime())
-	histogramDataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
+	histogramDataPoints.At(0).SetStartTimestamp(Timestamp(startTime + 1))
+	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTimestamp())
+	histogramDataPoints.At(0).SetTimestamp(Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
 	histogramDataPoints.At(0).LabelsMap().Delete("key0")
 	histogramDataPoints.At(0).LabelsMap().Upsert("k", "v")
@@ -638,32 +616,34 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds())
 	histogramDataPoints.At(0).SetBucketCounts([]uint64{21, 32})
 	// Test that everything is updated.
-	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics: []*otlpmetrics.Metric{
-						{
-							Name:        "new_my_metric_histogram",
-							Description: "My new metric",
-							Unit:        "1",
-							Data: &otlpmetrics.Metric_DoubleHistogram{
-								DoubleHistogram: &otlpmetrics.DoubleHistogram{
-									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
-									DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
-										{
-											Labels: []*otlpcommon.StringKeyValue{
-												{
-													Key:   "k",
-													Value: "v",
+	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics: []*otlpmetrics.Metric{
+							{
+								Name:        "new_my_metric_histogram",
+								Description: "My new metric",
+								Unit:        "1",
+								Data: &otlpmetrics.Metric_DoubleHistogram{
+									DoubleHistogram: &otlpmetrics.DoubleHistogram{
+										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+										DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
+											{
+												Labels: []otlpcommon.StringKeyValue{
+													{
+														Key:   "k",
+														Value: "v",
+													},
 												},
+												StartTimeUnixNano: startTime + 1,
+												TimeUnixNano:      endTime + 1,
+												BucketCounts:      []uint64{21, 32},
+												ExplicitBounds:    []float64{1},
 											},
-											StartTimeUnixNano: startTime + 1,
-											TimeUnixNano:      endTime + 1,
-											BucketCounts:      []uint64{21, 32},
-											ExplicitBounds:    []float64{1},
 										},
 									},
 								},
@@ -673,38 +653,53 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 				},
 			},
 		},
-	}, MetricsToOtlp(metricData))
+	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
-func TestMetrics_ToOtlpProtoBytes(t *testing.T) {
-	md := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
-				},
-			},
-		},
-	})
-	bytes, err := md.ToOtlpProtoBytes()
-	assert.Nil(t, err)
+func TestMetricsToFromOtlpProtoBytes(t *testing.T) {
+	send := NewMetrics()
+	fillTestResourceMetricsSlice(send.ResourceMetrics())
+	bytes, err := send.ToOtlpProtoBytes()
+	assert.NoError(t, err)
 
-	emsr := otlpcollectormetrics.ExportMetricsServiceRequest{}
-	err = gogoproto.Unmarshal(bytes, &emsr)
-	assert.Nil(t, err)
-	assert.EqualValues(t, emsr.GetResourceMetrics(), MetricsToOtlp(md))
+	recv, err := MetricsFromOtlpProtoBytes(bytes)
+	assert.NoError(t, err)
+	assert.EqualValues(t, send, recv)
+}
+
+func TestMetricsFromInvalidOtlpProtoBytes(t *testing.T) {
+	_, err := MetricsFromOtlpProtoBytes([]byte{0xFF})
+	assert.EqualError(t, err, "unexpected EOF")
+}
+
+func TestMetricsClone(t *testing.T) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	assert.EqualValues(t, metrics, metrics.Clone())
+}
+
+func BenchmarkMetricsClone(b *testing.B) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		clone := metrics.Clone()
+		if clone.ResourceMetrics().Len() != metrics.ResourceMetrics().Len() {
+			b.Fail()
+		}
+	}
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
-	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+					},
 				},
 			},
 		},
@@ -712,19 +707,24 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := MetricsFromOtlp(resourceMetricsList)
-		MetricsToOtlp(md)
+		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
+		newReq := internal.MetricsToOtlp(md.InternalRep())
+		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
+			b.Fail()
+		}
 	}
 }
 
 func BenchmarkOtlpToFromInternal_IntGauge_MutateOneLabel(b *testing.B) {
-	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric()},
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric()},
+					},
 				},
 			},
 		},
@@ -732,20 +732,25 @@ func BenchmarkOtlpToFromInternal_IntGauge_MutateOneLabel(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := MetricsFromOtlp(resourceMetricsList)
+		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
 		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
-		MetricsToOtlp(md)
+		newReq := internal.MetricsToOtlp(md.InternalRep())
+		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
+			b.Fail()
+		}
 	}
 }
 
 func BenchmarkOtlpToFromInternal_DoubleSum_MutateOneLabel(b *testing.B) {
-	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleSumMetric()},
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleSumMetric()},
+					},
 				},
 			},
 		},
@@ -753,20 +758,25 @@ func BenchmarkOtlpToFromInternal_DoubleSum_MutateOneLabel(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := MetricsFromOtlp(resourceMetricsList)
+		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
 		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleSum().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
-		MetricsToOtlp(md)
+		newReq := internal.MetricsToOtlp(md.InternalRep())
+		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
+			b.Fail()
+		}
 	}
 }
 
 func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
-	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+					},
 				},
 			},
 		},
@@ -774,44 +784,76 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := MetricsFromOtlp(resourceMetricsList)
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleHistogram().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
-		MetricsToOtlp(md)
+		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
+		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
+		newReq := internal.MetricsToOtlp(md.InternalRep())
+		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
+			b.Fail()
+		}
 	}
 }
 
 func BenchmarkMetrics_ToOtlpProtoBytes_PassThrough(b *testing.B) {
-	metrics := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+					},
 				},
 			},
 		},
-	})
+	}
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _ = metrics.ToOtlpProtoBytes()
+		_, _ = md.ToOtlpProtoBytes()
 	}
 }
 
-func generateTestProtoResource() *otlpresource.Resource {
-	return &otlpresource.Resource{
-		Attributes: []*otlpcommon.KeyValue{
+func BenchmarkMetricsToOtlp(b *testing.B) {
+	traces := NewMetrics()
+	fillTestResourceMetricsSlice(traces.ResourceMetrics())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := traces.ToOtlpProtoBytes()
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkMetricsFromOtlp(b *testing.B) {
+	baseMetrics := NewMetrics()
+	fillTestResourceMetricsSlice(baseMetrics.ResourceMetrics())
+	buf, err := baseMetrics.ToOtlpProtoBytes()
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		md, err := MetricsFromOtlpProtoBytes(buf)
+		require.NoError(b, err)
+		assert.Equal(b, baseMetrics.ResourceMetrics().Len(), md.ResourceMetrics().Len())
+	}
+}
+
+func generateTestProtoResource() otlpresource.Resource {
+	return otlpresource.Resource{
+		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "string",
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
 			},
 		},
 	}
 }
 
-func generateTestProtoInstrumentationLibrary() *otlpcommon.InstrumentationLibrary {
-	return &otlpcommon.InstrumentationLibrary{
+func generateTestProtoInstrumentationLibrary() otlpcommon.InstrumentationLibrary {
+	return otlpcommon.InstrumentationLibrary{
 		Name:    "test",
 		Version: "",
 	}
@@ -826,7 +868,7 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 			IntGauge: &otlpmetrics.IntGauge{
 				DataPoints: []*otlpmetrics.IntDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -837,7 +879,7 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 						Value:             123,
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -862,7 +904,7 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 				DataPoints: []*otlpmetrics.DoubleDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -873,7 +915,7 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 						Value:             123.1,
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -899,7 +941,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 				DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -911,7 +953,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 						ExplicitBounds:    []float64{1, 2},
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -926,4 +968,58 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 			},
 		},
 	}
+}
+
+func generateMetricsEmptyResource() Metrics {
+	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
+	}))
+}
+
+func generateMetricsEmptyInstrumentation() Metrics {
+	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{{}},
+			},
+		},
+	}))
+}
+
+func generateMetricsEmptyMetrics() Metrics {
+	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{{}},
+					},
+				},
+			},
+		},
+	}))
+}
+
+func generateMetricsEmptyDataPoints() Metrics {
+	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{
+							{
+								Data: &otlpmetrics.Metric_DoubleGauge{
+									DoubleGauge: &otlpmetrics.DoubleGauge{
+										DataPoints: []*otlpmetrics.DoubleDataPoint{
+											{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}))
 }

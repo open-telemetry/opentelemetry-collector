@@ -6,14 +6,14 @@ receivers:
         endpoint: "127.0.0.1:123"
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
      receivers: [jaeger]
-     processors: [exampleprocessor]
-     exporters: [exampleexporter]
+     processors: [nop]
+     exporters: [nop]

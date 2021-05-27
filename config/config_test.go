@@ -15,569 +15,246 @@
 package config
 
 import (
-	"os"
-	"path"
-	"path/filepath"
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/confignet"
 )
 
-func TestDecodeConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
+var errInvalidRecvConfig = errors.New("invalid receiver config")
+var errInvalidExpConfig = errors.New("invalid exporter config")
+var errInvalidProcConfig = errors.New("invalid processor config")
+var errInvalidExtConfig = errors.New("invalid extension config")
 
-	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
-	require.NoError(t, err, "Unable to load config")
-
-	// Verify extensions.
-	assert.Equal(t, 3, len(config.Extensions))
-	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*componenttest.ExampleExtensionCfg).ExtraSetting)
-
-	// Verify service.
-	assert.Equal(t, 2, len(config.Service.Extensions))
-	assert.Equal(t, "exampleextension/0", config.Service.Extensions[0])
-	assert.Equal(t, "exampleextension/1", config.Service.Extensions[1])
-
-	// Verify receivers
-	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
-
-	assert.Equal(t,
-		&componenttest.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver",
-			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:1000",
-			},
-			ExtraSetting: "some string",
-		},
-		config.Receivers["examplereceiver"],
-		"Did not load receiver config correctly")
-
-	assert.Equal(t,
-		&componenttest.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver/myreceiver",
-			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:12345",
-			},
-			ExtraSetting: "some string",
-		},
-		config.Receivers["examplereceiver/myreceiver"],
-		"Did not load receiver config correctly")
-
-	// Verify exporters
-	assert.Equal(t, 2, len(config.Exporters), "Incorrect exporters count")
-
-	assert.Equal(t,
-		&componenttest.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "exampleexporter",
-				TypeVal: "exampleexporter",
-			},
-			ExtraSetting: "some export string",
-		},
-		config.Exporters["exampleexporter"],
-		"Did not load exporter config correctly")
-
-	assert.Equal(t,
-		&componenttest.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "exampleexporter/myexporter",
-				TypeVal: "exampleexporter",
-			},
-			ExtraSetting: "some export string 2",
-		},
-		config.Exporters["exampleexporter/myexporter"],
-		"Did not load exporter config correctly")
-
-	// Verify Processors
-	assert.Equal(t, 1, len(config.Processors), "Incorrect processors count")
-
-	assert.Equal(t,
-		&componenttest.ExampleProcessorCfg{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "exampleprocessor",
-				NameVal: "exampleprocessor",
-			},
-			ExtraSetting: "some export string",
-		},
-		config.Processors["exampleprocessor"],
-		"Did not load processor config correctly")
-
-	// Verify Pipelines
-	assert.Equal(t, 1, len(config.Service.Pipelines), "Incorrect pipelines count")
-
-	assert.Equal(t,
-		&configmodels.Pipeline{
-			Name:       "traces",
-			InputType:  configmodels.TracesDataType,
-			Receivers:  []string{"examplereceiver"},
-			Processors: []string{"exampleprocessor"},
-			Exporters:  []string{"exampleexporter"},
-		},
-		config.Service.Pipelines["traces"],
-		"Did not load pipeline config correctly")
+type nopRecvConfig struct {
+	ReceiverSettings
 }
 
-func TestSimpleConfig(t *testing.T) {
+func (nc *nopRecvConfig) Validate() error {
+	if nc.ID() != NewID("nop") {
+		return errInvalidRecvConfig
+	}
+	return nil
+}
+
+type nopExpConfig struct {
+	ExporterSettings
+}
+
+func (nc *nopExpConfig) Validate() error {
+	if nc.ID() != NewID("nop") {
+		return errInvalidExpConfig
+	}
+	return nil
+}
+
+type nopProcConfig struct {
+	ProcessorSettings
+}
+
+func (nc *nopProcConfig) Validate() error {
+	if nc.ID() != NewID("nop") {
+		return errInvalidProcConfig
+	}
+	return nil
+}
+
+type nopExtConfig struct {
+	ExtensionSettings
+}
+
+func (nc *nopExtConfig) Validate() error {
+	if nc.ID() != NewID("nop") {
+		return errInvalidExtConfig
+	}
+	return nil
+}
+
+func TestConfigValidate(t *testing.T) {
 	var testCases = []struct {
-		name string // test case name (also file name containing config yaml)
+		name     string // test case name (also file name containing config yaml)
+		cfgFn    func() *Config
+		expected error
 	}{
-		{name: "simple-config-with-no-env"},
-		{name: "simple-config-with-partial-env"},
-		{name: "simple-config-with-all-env"},
-	}
-
-	const extensionExtra = "some extension string"
-	const extensionExtraMapValue = "some extension map value"
-	const extensionExtraListElement = "some extension list value"
-	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA", extensionExtra))
-	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1", extensionExtraMapValue+"_1"))
-	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2", extensionExtraMapValue+"_2"))
-	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1", extensionExtraListElement+"_1"))
-	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2", extensionExtraListElement+"_2"))
-
-	const receiverExtra = "some receiver string"
-	const receiverExtraMapValue = "some receiver map value"
-	const receiverExtraListElement = "some receiver list value"
-	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA", receiverExtra))
-	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_1", receiverExtraMapValue+"_1"))
-	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2", receiverExtraMapValue+"_2"))
-	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", receiverExtraListElement+"_1"))
-	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2", receiverExtraListElement+"_2"))
-
-	const processorExtra = "some processor string"
-	const processorExtraMapValue = "some processor map value"
-	const processorExtraListElement = "some processor list value"
-	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA", processorExtra))
-	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", processorExtraMapValue+"_1"))
-	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2", processorExtraMapValue+"_2"))
-	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", processorExtraListElement+"_1"))
-	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2", processorExtraListElement+"_2"))
-
-	const exporterExtra = "some exporter string"
-	const exporterExtraMapValue = "some exporter map value"
-	const exporterExtraListElement = "some exporter list value"
-	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT", "65"))
-	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA", exporterExtra))
-	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1", exporterExtraMapValue+"_1"))
-	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2", exporterExtraMapValue+"_2"))
-	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1", exporterExtraListElement+"_1"))
-	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2", exporterExtraListElement+"_2"))
-
-	defer func() {
-		assert.NoError(t, os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA"))
-		assert.NoError(t, os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE"))
-		assert.NoError(t, os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1"))
-
-		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA"))
-		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE"))
-		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1"))
-
-		assert.NoError(t, os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA"))
-		assert.NoError(t, os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE"))
-		assert.NoError(t, os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1"))
-
-		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT"))
-		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA"))
-		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE"))
-		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1"))
-	}()
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			factories, err := componenttest.ExampleComponents()
-			assert.NoError(t, err)
-
-			// Load the config
-			config, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
-			require.NoError(t, err, "Unable to load config")
-
-			// Verify extensions.
-			assert.Equalf(t, 1, len(config.Extensions), "TEST[%s]", test.name)
-			assert.Equalf(t,
-				&componenttest.ExampleExtensionCfg{
-					ExtensionSettings: configmodels.ExtensionSettings{
-						TypeVal: "exampleextension",
-						NameVal: "exampleextension",
-					},
-					ExtraSetting:     extensionExtra,
-					ExtraMapSetting:  map[string]string{"ext-1": extensionExtraMapValue + "_1", "ext-2": extensionExtraMapValue + "_2"},
-					ExtraListSetting: []string{extensionExtraListElement + "_1", extensionExtraListElement + "_2"},
-				},
-				config.Extensions["exampleextension"],
-				"TEST[%s] Did not load extension config correctly", test.name)
-
-			// Verify service.
-			assert.Equalf(t, 1, len(config.Service.Extensions), "TEST[%s]", test.name)
-			assert.Equalf(t, "exampleextension", config.Service.Extensions[0], "TEST[%s]", test.name)
-
-			// Verify receivers
-			assert.Equalf(t, 1, len(config.Receivers), "TEST[%s]", test.name)
-
-			assert.Equalf(t,
-				&componenttest.ExampleReceiver{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						TypeVal: "examplereceiver",
-						NameVal: "examplereceiver",
-					},
-					TCPAddr: confignet.TCPAddr{
-						Endpoint: "localhost:1234",
-					},
-					ExtraSetting:     receiverExtra,
-					ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
-					ExtraListSetting: []string{receiverExtraListElement + "_1", receiverExtraListElement + "_2"},
-				},
-				config.Receivers["examplereceiver"],
-				"TEST[%s] Did not load receiver config correctly", test.name)
-
-			// Verify exporters
-			assert.Equalf(t, 1, len(config.Exporters), "TEST[%s]", test.name)
-
-			assert.Equalf(t,
-				&componenttest.ExampleExporter{
-					ExporterSettings: configmodels.ExporterSettings{
-						NameVal: "exampleexporter",
-						TypeVal: "exampleexporter",
-					},
-					ExtraInt:         65,
-					ExtraSetting:     exporterExtra,
-					ExtraMapSetting:  map[string]string{"exp_1": exporterExtraMapValue + "_1", "exp_2": exporterExtraMapValue + "_2"},
-					ExtraListSetting: []string{exporterExtraListElement + "_1", exporterExtraListElement + "_2"},
-				},
-				config.Exporters["exampleexporter"],
-				"TEST[%s] Did not load exporter config correctly", test.name)
-
-			// Verify Processors
-			assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
-
-			assert.Equalf(t,
-				&componenttest.ExampleProcessorCfg{
-					ProcessorSettings: configmodels.ProcessorSettings{
-						TypeVal: "exampleprocessor",
-						NameVal: "exampleprocessor",
-					},
-					ExtraSetting:     processorExtra,
-					ExtraMapSetting:  map[string]string{"proc_1": processorExtraMapValue + "_1", "proc_2": processorExtraMapValue + "_2"},
-					ExtraListSetting: []string{processorExtraListElement + "_1", processorExtraListElement + "_2"},
-				},
-				config.Processors["exampleprocessor"],
-				"TEST[%s] Did not load processor config correctly", test.name)
-
-			// Verify Pipelines
-			assert.Equalf(t, 1, len(config.Service.Pipelines), "TEST[%s]", test.name)
-
-			assert.Equalf(t,
-				&configmodels.Pipeline{
-					Name:       "traces",
-					InputType:  configmodels.TracesDataType,
-					Receivers:  []string{"examplereceiver"},
-					Processors: []string{"exampleprocessor"},
-					Exporters:  []string{"exampleexporter"},
-				},
-				config.Service.Pipelines["traces"],
-				"TEST[%s] Did not load pipeline config correctly", test.name)
-		})
-	}
-}
-
-func TestEscapedEnvVars(t *testing.T) {
-	const receiverExtraMapValue = "some receiver map value"
-	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2", receiverExtraMapValue))
-	defer func() {
-		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2"))
-	}()
-
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
-	require.NoError(t, err, "Unable to load config")
-
-	// Verify extensions.
-	assert.Equal(t, 1, len(config.Extensions))
-	assert.Equal(t,
-		&componenttest.ExampleExtensionCfg{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "exampleextension",
-				NameVal: "exampleextension",
-			},
-			ExtraSetting:     "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}",
-			ExtraMapSetting:  map[string]string{"ext-1": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1}", "ext-2": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2}"},
-			ExtraListSetting: []string{"${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1}", "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2}"},
+		{
+			name:     "valid",
+			cfgFn:    generateConfig,
+			expected: nil,
 		},
-		config.Extensions["exampleextension"],
-		"Did not load extension config correctly")
-
-	// Verify service.
-	assert.Equal(t, 1, len(config.Service.Extensions))
-	assert.Equal(t, "exampleextension", config.Service.Extensions[0])
-
-	// Verify receivers
-	assert.Equal(t, 1, len(config.Receivers))
-
-	assert.Equal(t,
-		&componenttest.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver",
+		{
+			name: "missing-exporters",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Exporters = nil
+				return cfg
 			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:1234",
-			},
-			ExtraSetting: "$RECEIVERS_EXAMPLERECEIVER_EXTRA",
-			ExtraMapSetting: map[string]string{
-				// $$ -> escaped $
-				"recv.1": "$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_1",
-				// $$$ -> escaped $ + substituted env var
-				"recv.2": "$" + receiverExtraMapValue,
-				// $$$$ -> two escaped $
-				"recv.3": "$$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_3",
-				// escaped $ in the middle
-				"recv.4": "some${RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_4}text",
-				// $$$$ -> two escaped $
-				"recv.5": "${ONE}${TWO}",
-				// trailing escaped $
-				"recv.6": "text$",
-				// escaped $ alone
-				"recv.7": "$",
-			},
-			ExtraListSetting: []string{"$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", "$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2"},
+			expected: errMissingExporters,
 		},
-		config.Receivers["examplereceiver"],
-		"Did not load receiver config correctly")
-
-	// Verify exporters
-	assert.Equal(t, 1, len(config.Exporters))
-
-	assert.Equal(t,
-		&componenttest.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "exampleexporter",
-				TypeVal: "exampleexporter",
+		{
+			name: "missing-receivers",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Receivers = nil
+				return cfg
 			},
-			ExtraSetting:     "${EXPORTERS_EXAMPLEEXPORTER_EXTRA}",
-			ExtraMapSetting:  map[string]string{"exp_1": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1}", "exp_2": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2}"},
-			ExtraListSetting: []string{"${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1}", "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2}"},
+			expected: errMissingReceivers,
 		},
-		config.Exporters["exampleexporter"],
-		"Did not load exporter config correctly")
-
-	// Verify Processors
-	assert.Equal(t, 1, len(config.Processors))
-
-	assert.Equal(t,
-		&componenttest.ExampleProcessorCfg{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "exampleprocessor",
-				NameVal: "exampleprocessor",
+		{
+			name: "invalid-extension-reference",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Extensions = append(cfg.Service.Extensions, NewIDWithName("nop", "2"))
+				return cfg
 			},
-			ExtraSetting:     "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA",
-			ExtraMapSetting:  map[string]string{"proc_1": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", "proc_2": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2"},
-			ExtraListSetting: []string{"$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2"},
+			expected: errors.New(`service references extension "nop/2" which does not exist`),
 		},
-		config.Processors["exampleprocessor"],
-		"Did not load processor config correctly")
-
-	// Verify Pipelines
-	assert.Equal(t, 1, len(config.Service.Pipelines))
-
-	assert.Equal(t,
-		&configmodels.Pipeline{
-			Name:       "traces",
-			InputType:  configmodels.TracesDataType,
-			Receivers:  []string{"examplereceiver"},
-			Processors: []string{"exampleprocessor"},
-			Exporters:  []string{"exampleexporter"},
+		{
+			name: "invalid-receiver-reference",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines["traces"]
+				pipe.Receivers = append(pipe.Receivers, NewIDWithName("nop", "2"))
+				return cfg
+			},
+			expected: errors.New(`pipeline "traces" references receiver "nop/2" which does not exist`),
 		},
-		config.Service.Pipelines["traces"],
-		"Did not load pipeline config correctly")
-}
-
-func TestDecodeConfig_MultiProto(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
-	require.NoError(t, err, "Unable to load config")
-
-	// Verify receivers
-	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
-
-	assert.Equal(t,
-		&componenttest.MultiProtoReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "multireceiver",
-				NameVal: "multireceiver",
+		{
+			name: "invalid-processor-reference",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines["traces"]
+				pipe.Processors = append(pipe.Processors, NewIDWithName("nop", "2"))
+				return cfg
 			},
-			Protocols: map[string]componenttest.MultiProtoReceiverOneCfg{
-				"http": {
-					Endpoint:     "example.com:8888",
-					ExtraSetting: "extra string 1",
-				},
-				"tcp": {
-					Endpoint:     "omnition.com:9999",
-					ExtraSetting: "extra string 2",
-				},
-			},
+			expected: errors.New(`pipeline "traces" references processor "nop/2" which does not exist`),
 		},
-		config.Receivers["multireceiver"],
-		"Did not load receiver config correctly")
-
-	assert.Equal(t,
-		&componenttest.MultiProtoReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "multireceiver",
-				NameVal: "multireceiver/myreceiver",
+		{
+			name: "invalid-exporter-reference",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines["traces"]
+				pipe.Exporters = append(pipe.Exporters, NewIDWithName("nop", "2"))
+				return cfg
 			},
-			Protocols: map[string]componenttest.MultiProtoReceiverOneCfg{
-				"http": {
-					Endpoint:     "localhost:12345",
-					ExtraSetting: "some string 1",
-				},
-				"tcp": {
-					Endpoint:     "0.0.0.0:4567",
-					ExtraSetting: "some string 2",
-				},
-			},
+			expected: errors.New(`pipeline "traces" references exporter "nop/2" which does not exist`),
 		},
-		config.Receivers["multireceiver/myreceiver"],
-		"Did not load receiver config correctly")
-}
-
-func TestDecodeConfig_Invalid(t *testing.T) {
-
-	var testCases = []struct {
-		name            string          // test case name (also file name containing config yaml)
-		expected        configErrorCode // expected error (if nil any error is acceptable)
-		expectedMessage string          // string that the error must contain
-	}{
-		{name: "empty-config"},
-		{name: "missing-all-sections"},
-		{name: "missing-exporters", expected: errMissingExporters},
-		{name: "missing-receivers", expected: errMissingReceivers},
-		{name: "missing-processors"},
-		{name: "invalid-extension-name", expected: errExtensionNotExists},
-		{name: "invalid-receiver-name"},
-		{name: "invalid-receiver-reference", expected: errPipelineReceiverNotExists},
-		{name: "missing-extension-type", expected: errInvalidTypeAndNameKey},
-		{name: "missing-receiver-type", expected: errInvalidTypeAndNameKey},
-		{name: "missing-exporter-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "missing-processor-type", expected: errInvalidTypeAndNameKey},
-		{name: "missing-pipelines", expected: errMissingPipelines},
-		{name: "pipeline-must-have-exporter", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-exporter2", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-receiver", expected: errPipelineMustHaveReceiver},
-		{name: "pipeline-must-have-receiver2", expected: errPipelineMustHaveReceiver},
-		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
-		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
-		{name: "unknown-extension-type", expected: errUnknownType, expectedMessage: "extensions"},
-		{name: "unknown-receiver-type", expected: errUnknownType, expectedMessage: "receivers"},
-		{name: "unknown-exporter-type", expected: errUnknownType, expectedMessage: "exporters"},
-		{name: "unknown-processor-type", expected: errUnknownType, expectedMessage: "processors"},
-		{name: "invalid-service-extensions-value", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
-		{name: "invalid-sequence-value", expected: errUnmarshalTopLevelStructureError, expectedMessage: "pipelines"},
-		{name: "invalid-pipeline-type", expected: errUnknownType, expectedMessage: "pipelines"},
-		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
-		{name: "duplicate-extension", expected: errDuplicateName, expectedMessage: "extensions"},
-		{name: "duplicate-receiver", expected: errDuplicateName, expectedMessage: "receivers"},
-		{name: "duplicate-exporter", expected: errDuplicateName, expectedMessage: "exporters"},
-		{name: "duplicate-processor", expected: errDuplicateName, expectedMessage: "processors"},
-		{name: "duplicate-pipeline", expected: errDuplicateName, expectedMessage: "pipelines"},
-		{name: "invalid-top-level-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "top level"},
-		{name: "invalid-extension-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "extensions"},
-		{name: "invalid-service-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
-		{name: "invalid-receiver-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "receivers"},
-		{name: "invalid-processor-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "processors"},
-		{name: "invalid-exporter-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "exporters"},
-		{name: "invalid-pipeline-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "pipelines"},
-		{name: "invalid-extension-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-exporter-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-processor-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-receiver-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-pipeline-sub-config", expected: errUnmarshalTopLevelStructureError},
-	}
-
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
-			if err == nil {
-				t.Error("expected error but succeeded")
-			} else if test.expected != 0 {
-				cfgErr, ok := err.(*configError)
-				if !ok {
-					t.Errorf("expected config error code %v but got a different error '%v'", test.expected, err)
-				} else {
-					assert.Equal(t, test.expected, cfgErr.code, err)
-					if test.expectedMessage != "" {
-						assert.Contains(t, cfgErr.Error(), test.expectedMessage)
-					}
-					assert.NotEmpty(t, cfgErr.Error(), "returned config error %v with empty error message", cfgErr.code)
+		{
+			name: "missing-pipeline-receivers",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines["traces"]
+				pipe.Receivers = nil
+				return cfg
+			},
+			expected: errors.New(`pipeline "traces" must have at least one receiver`),
+		},
+		{
+			name: "missing-pipeline-exporters",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines["traces"]
+				pipe.Exporters = nil
+				return cfg
+			},
+			expected: errors.New(`pipeline "traces" must have at least one exporter`),
+		},
+		{
+			name: "missing-pipelines",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Pipelines = nil
+				return cfg
+			},
+			expected: errMissingServicePipelines,
+		},
+		{
+			name: "invalid-receiver-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Receivers[NewID("nop")] = &nopRecvConfig{
+					ReceiverSettings: NewReceiverSettings(NewID("invalid_rec_type")),
 				}
-			}
+				return cfg
+			},
+			expected: fmt.Errorf(`receiver "nop" has invalid configuration: %w`, errInvalidRecvConfig),
+		},
+		{
+			name: "invalid-exporter-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Exporters[NewID("nop")] = &nopExpConfig{
+					ExporterSettings: NewExporterSettings(NewID("invalid_rec_type")),
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`exporter "nop" has invalid configuration: %w`, errInvalidExpConfig),
+		},
+		{
+			name: "invalid-processor-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Processors[NewID("nop")] = &nopProcConfig{
+					ProcessorSettings: NewProcessorSettings(NewID("invalid_rec_type")),
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`processor "nop" has invalid configuration: %w`, errInvalidProcConfig),
+		},
+		{
+			name: "invalid-extension-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Extensions[NewID("nop")] = &nopExtConfig{
+					ExtensionSettings: NewExtensionSettings(NewID("invalid_rec_type")),
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := test.cfgFn()
+			assert.Equal(t, test.expected, cfg.Validate())
 		})
 	}
 }
 
-func TestLoadEmptyConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	// Open the file for reading.
-	file, err := os.Open(path.Join(".", "testdata", "empty-config.yaml"))
-	require.NoError(t, err)
-
-	defer func() {
-		require.NoError(t, file.Close())
-	}()
-
-	// Read yaml config from file
-	v := NewViper()
-	v.SetConfigType("yaml")
-	require.NoError(t, v.ReadConfig(file))
-
-	// Load the config from viper using the given factories.
-	_, err = Load(v, factories)
-	assert.NoError(t, err)
-}
-
-func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
-	// Open the file for reading.
-	file, err := os.Open(filepath.Clean(fileName))
-	require.NoErrorf(t, err, "unable to open the file %v", fileName)
-	require.NotNil(t, file)
-
-	defer func() {
-		require.NoErrorf(t, file.Close(), "unable to close the file %v", fileName)
-	}()
-
-	// Read yaml config from file
-	v := NewViper()
-	v.SetConfigType("yaml")
-	require.NoErrorf(t, v.ReadConfig(file), "unable to read the file %v", fileName)
-
-	// Load the config from viper using the given factories.
-	cfg, err := Load(v, factories)
-	if err != nil {
-		return nil, err
+func generateConfig() *Config {
+	return &Config{
+		Receivers: map[ComponentID]Receiver{
+			NewID("nop"): &nopRecvConfig{
+				ReceiverSettings: NewReceiverSettings(NewID("nop")),
+			},
+		},
+		Exporters: map[ComponentID]Exporter{
+			NewID("nop"): &nopExpConfig{
+				ExporterSettings: NewExporterSettings(NewID("nop")),
+			},
+		},
+		Processors: map[ComponentID]Processor{
+			NewID("nop"): &nopProcConfig{
+				ProcessorSettings: NewProcessorSettings(NewID("nop")),
+			},
+		},
+		Extensions: map[ComponentID]Extension{
+			NewID("nop"): &nopExtConfig{
+				ExtensionSettings: NewExtensionSettings(NewID("nop")),
+			},
+		},
+		Service: Service{
+			Extensions: []ComponentID{NewID("nop")},
+			Pipelines: map[string]*Pipeline{
+				"traces": {
+					Name:       "traces",
+					InputType:  TracesDataType,
+					Receivers:  []ComponentID{NewID("nop")},
+					Processors: []ComponentID{NewID("nop")},
+					Exporters:  []ComponentID{NewID("nop")},
+				},
+			},
+		},
 	}
-	return cfg, ValidateConfig(cfg, zap.NewNop())
 }

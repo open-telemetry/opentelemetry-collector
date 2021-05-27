@@ -19,7 +19,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -29,7 +29,7 @@ const (
 	typeStr = "span"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
@@ -42,24 +42,21 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor))
+		processorhelper.WithTraces(createTracesProcessor))
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	}
 }
 
-func createTraceProcessor(
+func createTracesProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceProcessor, error) {
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
+) (component.TracesProcessor, error) {
 
 	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
 	// processor to be valid. If not set and not enforced, the processor would do no work.
@@ -73,7 +70,7 @@ func createTraceProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTraceProcessor(
+	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
 		sp,

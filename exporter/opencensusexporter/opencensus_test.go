@@ -17,6 +17,7 @@ package opencensusexporter
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,21 +27,20 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestSendTraces(t *testing.T) {
-	sink := &exportertest.SinkTraceExporter{}
+	sink := new(consumertest.TracesSink)
 	rFactory := opencensusreceiver.NewFactory()
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.GRPCServerSettings.NetAddr.Endpoint = endpoint
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	recv, err := rFactory.CreateTraceReceiver(context.Background(), params, rCfg, sink)
+	recv, err := rFactory.CreateTracesReceiver(context.Background(), params, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -56,7 +56,7 @@ func TestSendTraces(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -65,27 +65,26 @@ func TestSendTraces(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	traces := sink.AllTraces()
 	require.Len(t, traces, 1)
 	assert.Equal(t, td, traces[0])
 
 	sink.Reset()
 	// Sending data no Node.
-	pdata.NewResource().CopyTo(td.ResourceSpans().At(0).Resource())
+	td.ResourceSpans().At(0).Resource().Attributes().Clear()
+	td = td.Clone()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	traces = sink.AllTraces()
 	require.Len(t, traces, 1)
-	// The conversion will initialize the Resource
-	td.ResourceSpans().At(0).Resource().InitEmpty()
-	assert.Equal(t, td, traces[0])
+	assert.EqualValues(t, td, traces[0])
 }
 
 func TestSendTraces_NoBackend(t *testing.T) {
@@ -97,7 +96,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -106,7 +105,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	for i := 0; i < 10000; i++ {
 		assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 	}
@@ -121,19 +120,19 @@ func TestSendTraces_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	td := testdata.GenerateTraceDataOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
 func TestSendMetrics(t *testing.T) {
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 	rFactory := opencensusreceiver.NewFactory()
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
@@ -166,24 +165,22 @@ func TestSendMetrics(t *testing.T) {
 
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	metrics := sink.AllMetrics()
 	require.Len(t, metrics, 1)
 	assert.Equal(t, md, metrics[0])
 
 	// Sending data no node.
 	sink.Reset()
-	pdata.NewResource().CopyTo(md.ResourceMetrics().At(0).Resource())
+	md.ResourceMetrics().At(0).Resource().Attributes().Clear()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-	testutil.WaitFor(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
-	})
+	}, 10*time.Second, 5*time.Millisecond)
 	metrics = sink.AllMetrics()
 	require.Len(t, metrics, 1)
-	// The conversion will initialize the Resource
-	md.ResourceMetrics().At(0).Resource().InitEmpty()
 	assert.Equal(t, md, metrics[0])
 }
 

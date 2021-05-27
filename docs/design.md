@@ -29,12 +29,12 @@ A pipeline configuration typically looks like this:
 service:
   pipelines: # section that can contain multiple subsections, one per pipeline
     traces:  # type of the pipeline
-      receivers: [opencensus, jaeger, zipkin]
-      processors: [tags, tail_sampling, batch, queued_retry]
-      exporters: [opencensus, jaeger, stackdriver, zipkin]
+      receivers: [otlp, jaeger, zipkin]
+      processors: [memory_limiter, batch]
+      exporters: [otlp, jaeger, zipkin]
 ```
 
-The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 4 processors and 4 exporters.
+The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 2 processors and 3 exporters.
 
 For details of config file format see [this document](https://docs.google.com/document/d/1NeheFG7DmcUYo_h2vLtNRlia9x5wOJMlV4QKEK05FhQ/edit#).
 
@@ -51,7 +51,7 @@ service:
   pipelines:
     traces:  # a pipeline of “traces” type
       receivers: [opencensus]
-      processors: [tags, tail_sampling, batch, queued_retry]
+      processors: [memory_limiter, batch]
       exporters: [jaeger]
     traces/2:  # another pipeline of “traces” type
       receivers: [opencensus]
@@ -62,6 +62,7 @@ service:
 In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in [this document](https://docs.google.com/document/d/1NeheFG7DmcUYo_h2vLtNRlia9x5wOJMlV4QKEK05FhQ/edit#)).
 
 When the Collector loads this config the result will look like this (part of processors and exporters are omitted from the diagram for brevity):
+
 
 ![Receivers](images/design-receivers.png)
 
@@ -94,15 +95,16 @@ service:
   pipelines:
     traces:  # a pipeline of “traces” type
       receivers: [zipkin]
-      processors: [tags, tail_sampling, batch, queued_retry]
+      processors: [memory_limiter]
       exporters: [jaeger]
     traces/2:  # another pipeline of “traces” type
-      receivers: [opencensus]
+      receivers: [otlp]
       processors: [batch]
       exporters: [jaeger]
 ```
 
 In the above example “jaeger” exporter will get data from pipeline “traces” and from pipeline “traces/2”. When the Collector loads this config the result will look like this (part of processors and receivers are omitted from the diagram for brevity):
+
 
 ![Exporters](images/design-exporters.png)
 
@@ -112,32 +114,32 @@ A pipeline can contain sequentially connected processors. The first processor ge
 
 Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how “sampling” processor works), they can also generate new data (this is how for example how a “persistent-queue” processor can work after Collector restarts by reading previously saved data from a local file and forwarding it on the pipeline).
 
-The same name of the processor can be referenced in the “processors” key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always gets its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if “queued_retry” processor is used several pipelines each pipeline will have its own queue (although the queues will be configured exactly the same way if the reference the same key in the config file). As an example, given the following config:
+The same name of the processor can be referenced in the “processors” key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always gets its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if “batch” processor is used in several pipelines each pipeline will have its own batch processor (although the batch processor will be configured exactly the same way if the reference the same key in the config file). As an example, given the following config:
 
 ```yaml
 processors:
-  queued_retry:
-    size: 50
-    per-exporter: true
-    enabled: true
+  batch:
+    send_batch_size: 10000
+    timeout: 10s
 
 service:
   pipelines:
     traces:  # a pipeline of “traces” type
       receivers: [zipkin]
-      processors: [queued_retry]
+      processors: [batch]
       exporters: [jaeger]
     traces/2:  # another pipeline of “traces” type
-      receivers: [opencensus]
-      processors: [queued_retry]
-      exporters: [opencensus]
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]
 ```
 
 When the Collector loads this config the result will look like this:
 
+
 ![Processors](images/design-processors.png)
 
-Note that each “queued_retry” processor is an independent instance, although both are configured the same way, i.e. each have a size of 50.
+Note that each “batch” processor is an independent instance, although both are configured the same way, i.e. each have a send_batch_size of 10000.
 
 ## <a name="opentelemetry-agent"></a>Running as an Agent
 
@@ -169,9 +171,8 @@ give Agent the ability to push configurations (e.g sampling probability) to
 Library. For those languages that cannot do stats aggregation in process, they
 should also be able to send raw measurements and have Agent do the aggregation.
 
-TODO: update the diagram below.
 
-![agent-architecture](https://user-images.githubusercontent.com/10536136/48792454-2a69b900-eca9-11e8-96eb-c65b2b1e4e83.png)
+![agent-architecture](images/design-collector-agent.png)
 
 For developers/maintainers of other libraries: Agent can also
 accept spans/stats/metrics from other tracing/monitoring libraries, such as
@@ -186,9 +187,8 @@ tasks/agents that emit in one of the supported protocols. The Collector is
 configured to send data to the configured exporter(s). The following figure
 summarizes the deployment architecture:
 
-TODO: update the diagram below.
 
-![OpenTelemetry Collector Architecture](https://user-images.githubusercontent.com/10536136/46637070-65f05f80-cb0f-11e8-96e6-bc56468486b3.png "OpenTelemetry Collector Architecture")
+![OpenTelemetry Collector Architecture](images/design-collector-service.png "OpenTelemetry Collector Architecture")
 
 The OpenTelemetry Collector can also be deployed in other configurations, such
 as receiving data from other agents or clients in one of the formats supported
@@ -216,7 +216,7 @@ dedicated port for Agent, while there could be multiple instrumented processes. 
    were sent in a subsequent message. Identifier is no longer needed once the
    streams are established.
 3. On Sender side, if connection to Collector failed, Sender should retry
-   indefintely if possible, subject to available/configured memory buffer size.
+   indefinitely if possible, subject to available/configured memory buffer size.
    (Reason: consider environments where the running applications are already
    instrumented with OpenTelemetry Library but Collector is not deployed yet.
    Sometime in the future, we can simply roll out the Collector to those

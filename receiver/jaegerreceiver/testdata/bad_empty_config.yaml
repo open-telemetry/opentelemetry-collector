@@ -2,14 +2,14 @@ receivers:
   jaeger:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
      receivers: [jaeger]
-     processors: [exampleprocessor]
-     exporters: [exampleexporter]
+     processors: [nop]
+     exporters: [nop]

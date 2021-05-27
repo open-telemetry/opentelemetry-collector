@@ -15,14 +15,14 @@
 package goldendataset
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 // GenerateResource generates a OTLP Resource object with representative attributes for the
 // underlying resource type specified by the rscID input parameter.
-func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
+func GenerateResource(rscID PICTInputResource) otlpresource.Resource {
 	var attrs map[string]interface{}
 	switch rscID {
 	case ResourceNil:
@@ -50,7 +50,7 @@ func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
 	} else {
 		dropped = uint32(len(attrs) % 4)
 	}
-	return &otlpresource.Resource{
+	return otlpresource.Resource{
 		Attributes:             convertMapToAttributeKeyValues(attrs),
 		DroppedAttributesCount: dropped,
 	}
@@ -92,9 +92,8 @@ func generateCloudVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
 	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
 	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
-	attrMap[conventions.AttributeHostHostname] = "env-check"
 	attrMap[conventions.AttributeHostID] = "57e8add1f79a454bae9fb1f7756a009a"
-	attrMap[conventions.AttributeHostName] = "10.0.0.4"
+	attrMap[conventions.AttributeHostName] = "env-check"
 	attrMap[conventions.AttributeHostImageID] = "5.3.0-1020-azure"
 	attrMap[conventions.AttributeHostType] = "B1ms"
 	attrMap[conventions.AttributeCloudProvider] = "azure"
@@ -111,8 +110,7 @@ func generateOnpremK8sAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeK8sNamespace] = "cert-manager"
 	attrMap[conventions.AttributeK8sDeployment] = "cm-1-cert-manager"
 	attrMap[conventions.AttributeK8sPod] = "cm-1-cert-manager-6448b4949b-t2jtd"
-	attrMap[conventions.AttributeHostHostname] = "docker-desktop"
-	attrMap[conventions.AttributeHostName] = "192.168.65.3"
+	attrMap[conventions.AttributeHostName] = "docker-desktop"
 	return attrMap
 }
 
@@ -136,7 +134,7 @@ func generateCloudK8sAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeCloudProvider] = "aws"
 	attrMap[conventions.AttributeCloudAccount] = "12345678901"
 	attrMap[conventions.AttributeCloudRegion] = "us-east-1"
-	attrMap[conventions.AttributeCloudZone] = "us-east-1c"
+	attrMap[conventions.AttributeCloudAvailabilityZone] = "us-east-1c"
 	return attrMap
 }
 
@@ -148,17 +146,17 @@ func generateFassAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeCloudProvider] = "gcp"
 	attrMap[conventions.AttributeCloudAccount] = "opentelemetry"
 	attrMap[conventions.AttributeCloudRegion] = "us-central1"
-	attrMap[conventions.AttributeCloudZone] = "us-central1-a"
+	attrMap[conventions.AttributeCloudAvailabilityZone] = "us-central1-a"
 	return attrMap
 }
 
 func generateExecAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeProcessExecutableName] = "otelcol"
-	parts := make([]*otlpcommon.AnyValue, 3)
-	parts[0] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "otelcol"}}
-	parts[1] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--config=/etc/otel-collector-config.yaml"}}
-	parts[2] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--mem-ballast-size-mib=683"}}
+	parts := make([]otlpcommon.AnyValue, 3)
+	parts[0] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "otelcol"}}
+	parts[1] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--config=/etc/otel-collector-config.yaml"}}
+	parts[2] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--mem-ballast-size-mib=683"}}
 	attrMap[conventions.AttributeProcessCommandLine] = &otlpcommon.ArrayValue{
 		Values: parts,
 	}

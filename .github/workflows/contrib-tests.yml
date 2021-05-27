@@ -1,0 +1,23 @@
+name: contrib-tests
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+.*
+  pull_request:
+
+jobs:
+  contrib_tests:
+    runs-on: ubuntu-latest
+    container:
+      image: cimg/go:1.16
+    steps:
+      - name: Setup Permissions
+        run: sudo chmod -R 777 $GITHUB_WORKSPACE /github /__w/_temp
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Run Contrib Tests
+        run: |
+          contrib_path=/tmp/opentelemetry-collector-contrib
+          git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
+          make CONTRIB_PATH=$contrib_path check-contrib

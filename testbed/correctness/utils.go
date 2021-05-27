@@ -108,7 +108,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		s := strings.Split(scanner.Text(), "\t")
-		if "Receiver" == s[0] {
+		if s[0] == "Receiver" {
 			continue
 		}
 

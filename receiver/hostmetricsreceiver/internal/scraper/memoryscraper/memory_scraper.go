@@ -21,9 +21,11 @@ import (
 	"github.com/shirou/gopsutil/mem"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
+
+const metricsLen = 1
 
 // scraper for Memory Metrics
 type scraper struct {
@@ -38,40 +40,29 @@ func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
 	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory}
 }
 
-// Initialize
-func (s *scraper) Initialize(_ context.Context) error {
-	return nil
-}
-
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := internal.TimeToUnixNano(time.Now())
+	now := pdata.TimestampFromTime(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
-		return metrics, err
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.Resize(1)
+	metrics.Resize(metricsLen)
 	initializeMemoryUsageMetric(metrics.At(0), now, memInfo)
 	return metrics, nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
-	metadata.Metrics.SystemMemoryUsage.CopyTo(metric)
+func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	metadata.Metrics.SystemMemoryUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(memStatesLen)
 	appendMemoryUsageStateDataPoints(idps, now, memInfo)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
+func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.MemState, stateLabel)
 	dataPoint.SetTimestamp(now)

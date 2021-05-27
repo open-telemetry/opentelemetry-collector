@@ -16,8 +16,10 @@ package pprofextension
 
 import (
 	"context"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"testing"
 
@@ -25,12 +27,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	config := Config{
-		Endpoint:             testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 		BlockProfileFraction: 3,
 		MutexProfileFraction: 5,
 	}
@@ -39,12 +44,12 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	defer pprofExt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(context.Background())) })
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, pprofPort, err := net.SplitHostPort(config.Endpoint)
+	_, pprofPort, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}
@@ -62,7 +67,9 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		Endpoint: endpoint,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: endpoint,
+		},
 	}
 	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
@@ -72,22 +79,26 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
-	defer pprofExt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, pprofExt.Shutdown(context.Background())) })
 
-	// Try to start it again, it will fail since it is on the same endpoint.
+	// The instance is already active it will fail.
 	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	pprofExt := newServer(config, zap.NewNop())
@@ -100,11 +111,35 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 
 func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
+	require.NoError(t, pprofExt.Shutdown(context.Background()))
+}
+
+func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
+	tmpFile, err := ioutil.TempFile("", "pprof*.yaml")
+	require.NoError(t, err)
+	defer func() {
+		os.Remove(tmpFile.Name())
+	}()
+	require.NoError(t, tmpFile.Close())
+
+	config := Config{
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		SaveToFile: tmpFile.Name(),
+	}
+
+	pprofExt := newServer(config, zap.NewNop())
+	require.NotNil(t, pprofExt)
+
+	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, pprofExt.Shutdown(context.Background()))
 }

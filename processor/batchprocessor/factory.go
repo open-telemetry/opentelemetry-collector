@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -38,52 +38,45 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithTraces(createTracesProcessor),
 		processorhelper.WithMetrics(createMetricsProcessor),
 		processorhelper.WithLogs(createLogsProcessor))
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		SendBatchSize: defaultSendBatchSize,
-		Timeout:       defaultTimeout,
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		SendBatchSize:     defaultSendBatchSize,
+		Timeout:           defaultTimeout,
 	}
 }
 
-func createTraceProcessor(
+func createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceProcessor, error) {
-	oCfg := cfg.(*Config)
-	// error can be ignored, level is parsed at the service startup
-	level, _ := telemetry.GetLevel()
-	return newBatchTracesProcessor(params, nextConsumer, oCfg, level), nil
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
+) (component.TracesProcessor, error) {
+	level := configtelemetry.GetMetricsLevelFlagValue()
+	return newBatchTracesProcessor(params, nextConsumer, cfg.(*Config), level)
 }
 
 func createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	oCfg := cfg.(*Config)
-	level, _ := telemetry.GetLevel()
-	return newBatchMetricsProcessor(params, nextConsumer, oCfg, level), nil
+	level := configtelemetry.GetMetricsLevelFlagValue()
+	return newBatchMetricsProcessor(params, nextConsumer, cfg.(*Config), level)
 }
 
 func createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	oCfg := cfg.(*Config)
-	level, _ := telemetry.GetLevel()
-	return newBatchLogsProcessor(params, nextConsumer, oCfg, level), nil
+	level := configtelemetry.GetMetricsLevelFlagValue()
+	return newBatchLogsProcessor(params, nextConsumer, cfg.(*Config), level)
 }

@@ -27,20 +27,36 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
-func TestMetricsGoldenData(t *testing.T) {
-	tests, err := correctness.LoadPictOutputPipelineDefs("../testdata/generated_pict_pairs_metrics_pipeline.txt")
+// tests with the prefix "TestHarness_" get run in the "correctness-metrics" ci job
+func TestHarness_MetricsGoldenData(t *testing.T) {
+	tests, err := correctness.LoadPictOutputPipelineDefs(
+		"testdata/generated_pict_pairs_metrics_pipeline.txt",
+	)
 	require.NoError(t, err)
+
+	res := results{}
+	res.Init("results")
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
 		test.DataSender = correctness.ConstructMetricsSender(t, test.Receiver)
 		test.DataReceiver = correctness.ConstructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
-			testWithMetricsGoldenDataset(t, test.DataSender.(testbed.MetricDataSender), test.DataReceiver)
+			r := testWithMetricsGoldenDataset(
+				t,
+				test.DataSender.(testbed.MetricDataSender),
+				test.DataReceiver,
+			)
+			res.Add("", r)
 		})
 	}
+	res.Save()
 }
 
-func testWithMetricsGoldenDataset(t *testing.T, sender testbed.MetricDataSender, receiver testbed.DataReceiver) {
+func testWithMetricsGoldenDataset(
+	t *testing.T,
+	sender testbed.MetricDataSender,
+	receiver testbed.DataReceiver,
+) result {
 	mds := getTestMetrics(t)
 	accumulator := newDiffAccumulator()
 	h := newTestHarness(
@@ -62,9 +78,16 @@ func testWithMetricsGoldenDataset(t *testing.T, sender testbed.MetricDataSender,
 	tc.stopTestbedReceiver()
 	tc.stopCollector()
 
-	if accumulator.foundDiffs {
+	r := result{
+		testName:   t.Name(),
+		testResult: "PASS",
+		numDiffs:   accumulator.numDiffs,
+	}
+	if accumulator.numDiffs > 0 {
+		r.testResult = "FAIL"
 		t.Fail()
 	}
+	return r
 }
 
 func getTestMetrics(t *testing.T) []pdata.Metrics {
@@ -75,7 +98,7 @@ func getTestMetrics(t *testing.T) []pdata.Metrics {
 }
 
 type diffAccumulator struct {
-	foundDiffs bool
+	numDiffs int
 }
 
 var _ diffConsumer = (*diffAccumulator)(nil)
@@ -86,7 +109,7 @@ func newDiffAccumulator() *diffAccumulator {
 
 func (d *diffAccumulator) accept(metricName string, diffs []*MetricDiff) {
 	if len(diffs) > 0 {
-		d.foundDiffs = true
+		d.numDiffs++
 		log.Printf("Found diffs for [%v]\n%v", metricName, diffs)
 	}
 }

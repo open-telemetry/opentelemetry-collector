@@ -27,8 +27,8 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -86,7 +86,7 @@ type binaryAnnotation struct {
 }
 
 // v1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func v1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
+func v1JSONBatchToOCProto(blob []byte, parseStringTags bool) ([]traceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, fmt.Errorf("%s: %w", msgZipkinV1JSONUnmarshalError, err)
@@ -94,7 +94,7 @@ func v1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
 
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
-		ocSpan, parsedAnnotations, err := zipkinV1ToOCSpan(zSpan)
+		ocSpan, parsedAnnotations, err := zipkinV1ToOCSpan(zSpan, parseStringTags)
 		if err != nil {
 			// error from internal package function, it already wraps the error to give better context.
 			return nil, err
@@ -113,22 +113,22 @@ type ocSpanAndParsedAnnotations struct {
 	parsedAnnotations *annotationParseResult
 }
 
-func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]consumerdata.TraceData, error) {
+func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]traceData, error) {
 	// Service to batch maps the service name to the trace request with the corresponding node.
-	svcToTD := make(map[string]*consumerdata.TraceData)
+	svcToTD := make(map[string]*traceData)
 	for _, curr := range ocSpansAndParsedAnnotations {
 		req := getOrCreateNodeRequest(svcToTD, curr.parsedAnnotations.Endpoint)
 		req.Spans = append(req.Spans, curr.ocSpan)
 	}
 
-	tds := make([]consumerdata.TraceData, 0, len(svcToTD))
+	tds := make([]traceData, 0, len(svcToTD))
 	for _, v := range svcToTD {
 		tds = append(tds, *v)
 	}
 	return tds, nil
 }
 
-func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResult, error) {
+func zipkinV1ToOCSpan(zSpan *zipkinV1Span, parseStringTags bool) (*tracepb.Span, *annotationParseResult, error) {
 	traceID, err := hexTraceIDToOCTraceID(zSpan.TraceID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%s: %w", msgZipkinV1TraceIDError, err)
@@ -147,7 +147,7 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	}
 
 	parsedAnnotations := parseZipkinV1Annotations(zSpan.Annotations)
-	attributes, ocStatus, localComponent := zipkinV1BinAnnotationsToOCAttributes(zSpan.BinaryAnnotations)
+	attributes, ocStatus, localComponent := zipkinV1BinAnnotationsToOCAttributes(zSpan.BinaryAnnotations, parseStringTags)
 	if parsedAnnotations.Endpoint.ServiceName == unknownServiceName && localComponent != "" {
 		parsedAnnotations.Endpoint.ServiceName = localComponent
 	}
@@ -202,7 +202,7 @@ func setSpanKind(ocSpan *tracepb.Span, kind tracepb.Span_SpanKind, extendedKind 
 	}
 }
 
-func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (attributes *tracepb.Span_Attributes, status *tracepb.Status, fallbackServiceName string) {
+func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation, parseStringTags bool) (attributes *tracepb.Span_Attributes, status *tracepb.Status, fallbackServiceName string) {
 	if len(binAnnotations) == 0 {
 		return nil, nil, ""
 	}
@@ -216,7 +216,7 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 			fallbackServiceName = binAnnotation.Endpoint.ServiceName
 		}
 
-		pbAttrib := parseAnnotationValue(binAnnotation.Value)
+		pbAttrib := parseAnnotationValue(binAnnotation.Value, parseStringTags)
 
 		key := binAnnotation.Key
 
@@ -250,20 +250,24 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 	return attributes, status, fallbackServiceName
 }
 
-func parseAnnotationValue(value string) *tracepb.AttributeValue {
+func parseAnnotationValue(value string, parseStringTags bool) *tracepb.AttributeValue {
 	pbAttrib := &tracepb.AttributeValue{}
 
-	switch tracetranslator.DetermineValueType(value, false) {
-	case pdata.AttributeValueINT:
-		iValue, _ := strconv.ParseInt(value, 10, 64)
-		pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-	case pdata.AttributeValueDOUBLE:
-		fValue, _ := strconv.ParseFloat(value, 64)
-		pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
-	case pdata.AttributeValueBOOL:
-		bValue, _ := strconv.ParseBool(value)
-		pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
-	default:
+	if parseStringTags {
+		switch determineValueType(value) {
+		case pdata.AttributeValueTypeInt:
+			iValue, _ := strconv.ParseInt(value, 10, 64)
+			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
+		case pdata.AttributeValueTypeDouble:
+			fValue, _ := strconv.ParseFloat(value, 64)
+			pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
+		case pdata.AttributeValueTypeBool:
+			bValue, _ := strconv.ParseBool(value)
+			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
+		default:
+			pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
+		}
+	} else {
 		pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
 	}
 
@@ -411,7 +415,8 @@ func hexTraceIDToOCTraceID(hex string) ([]byte, error) {
 		return nil, errHexTraceIDZero
 	}
 
-	return tracetranslator.UInt64ToByteTraceID(high, low), nil
+	tidBytes := idutils.UInt64ToTraceID(high, low).Bytes()
+	return tidBytes[:], nil
 }
 
 func hexIDToOCID(hex string) ([]byte, error) {
@@ -429,7 +434,8 @@ func hexIDToOCID(hex string) ([]byte, error) {
 		return nil, errHexIDZero
 	}
 
-	return tracetranslator.UInt64ToByteSpanID(idValue), nil
+	idBytes := idutils.UInt64ToSpanID(idValue).Bytes()
+	return idBytes[:], nil
 }
 
 func epochMicrosecondsToTimestamp(msecs int64) *timestamppb.Timestamp {
@@ -442,7 +448,7 @@ func epochMicrosecondsToTimestamp(msecs int64) *timestamppb.Timestamp {
 	return t
 }
 
-func getOrCreateNodeRequest(m map[string]*consumerdata.TraceData, endpoint *endpoint) *consumerdata.TraceData {
+func getOrCreateNodeRequest(m map[string]*traceData, endpoint *endpoint) *traceData {
 	// this private function assumes that the caller never passes an nil endpoint
 	nodeKey := endpoint.string()
 	req := m[nodeKey]
@@ -451,7 +457,7 @@ func getOrCreateNodeRequest(m map[string]*consumerdata.TraceData, endpoint *endp
 		return req
 	}
 
-	req = &consumerdata.TraceData{
+	req = &traceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: endpoint.ServiceName},
 		},
@@ -503,7 +509,7 @@ func setTimestampsIfUnset(span *tracepb.Span) {
 		if span.Attributes.AttributeMap == nil {
 			span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 1)
 		}
-		span.Attributes.AttributeMap[StartTimeAbsent] = &tracepb.AttributeValue{
+		span.Attributes.AttributeMap[startTimeAbsent] = &tracepb.AttributeValue{
 			Value: &tracepb.AttributeValue_BoolValue{
 				BoolValue: true,
 			}}

@@ -21,14 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/internal/processor/filterspan"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -39,36 +39,27 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	p0 := cfg.Processors["span/custom"]
+	p0 := cfg.Processors[config.NewIDWithName("span", "custom")]
 	assert.Equal(t, p0, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/custom",
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "custom")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "::",
 		},
 	})
 
-	p1 := cfg.Processors["span/no-separator"]
+	p1 := cfg.Processors[config.NewIDWithName("span", "no-separator")]
 	assert.Equal(t, p1, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/no-separator",
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "no-separator")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "",
 		},
 	})
 
-	p2 := cfg.Processors["span/to_attributes"]
+	p2 := cfg.Processors[config.NewIDWithName("span", "to_attributes")]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/to_attributes",
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "to_attributes")),
 		Rename: Name{
 			ToAttributes: &ToAttributes{
 				Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
@@ -76,19 +67,16 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	p3 := cfg.Processors["span/includeexclude"]
+	p3 := cfg.Processors[config.NewIDWithName("span", "includeexclude")]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: "span/includeexclude",
-		},
-		MatchConfig: filterspan.MatchConfig{
-			Include: &filterspan.MatchProperties{
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "includeexclude")),
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
 				Config:    *createMatchConfig(filterset.Regexp),
 				Services:  []string{`banks`},
 				SpanNames: []string{"^(.*?)/(.*?)$"},
 			},
-			Exclude: &filterspan.MatchProperties{
+			Exclude: &filterconfig.MatchProperties{
 				Config:    *createMatchConfig(filterset.Strict),
 				SpanNames: []string{`donot/change`},
 			},

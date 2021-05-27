@@ -23,14 +23,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -39,17 +39,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Receivers))
 
-	r := cfg.Receivers[typeStr].(*Config)
+	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
-		Topic:    "spans",
-		Encoding: "otlp_proto",
-		Brokers:  []string{"foo:123", "bar:456"},
-		ClientID: "otel-collector",
-		GroupID:  "otel-collector",
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		Topic:            "spans",
+		Encoding:         "otlp_proto",
+		Brokers:          []string{"foo:123", "bar:456"},
+		ClientID:         "otel-collector",
+		GroupID:          "otel-collector",
 		Authentication: kafkaexporter.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{

@@ -21,35 +21,29 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte, err := newTraceExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+func TestLoggingTracesExporterNoErrors(t *testing.T) {
+	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilResourceSpans()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpanOneNil()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTracesTwoSpansSameResourceOneDifferent()))
 
 	assert.NoError(t, lte.Shutdown(context.Background()))
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := newMetricsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilResourceMetrics()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilInstrumentationLibrary()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetricOneNil()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsWithCountersHistograms()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesNilDataPoint()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GeneratMetricsAllTypesWithSampleDatapoints()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
 
@@ -57,15 +51,14 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	lle, err := newLogsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataEmpty()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyResourceLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyOneNilResourceLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataNoLogRecords()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyResourceLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsNoLogRecords()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyLogRecord()))
 
 	assert.NoError(t, lle.Shutdown(context.Background()))
 }

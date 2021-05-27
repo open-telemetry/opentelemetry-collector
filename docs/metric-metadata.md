@@ -14,6 +14,6 @@ If adding a new receiver a `codegen.go` file should also be added to trigger the
 
 When `go generate` is run (it is run automatically in the make build targets) there are a few special build directives in `codegen.go` files:
 
-[/codegen.go](../codegen.go) Results in `cmd/mdatagen` being installed to `GOBIN`
+`make install-tools` results in `cmd/mdatagen` being installed to `GOBIN`
 
 [/receiver/hostmetricsreceiver/codegen.go](../receiver/hostmetricsreceiver/codegen.go) Runs `mdatagen` for the `hostmetricsreceiver` metadata.yaml which generates [/receiver/hostmetricsreceiver/internal/metadata](../receiver/hostmetricsreceiver/internal/metadata) package which has Go files containing metric and label metadata.

@@ -28,14 +28,16 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
+	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestResourceToOC(t *testing.T) {
 	emptyResource := pdata.NewResource()
-	emptyResource.InitEmpty()
 
 	ocNode := generateOcNode()
 	ocResource := generateOcResource()
@@ -60,8 +62,8 @@ func TestResourceToOC(t *testing.T) {
 		{
 			name:       "empty",
 			resource:   emptyResource,
-			ocNode:     &occommon.Node{},
-			ocResource: &ocresource.Resource{},
+			ocNode:     nil,
+			ocResource: nil,
 		},
 
 		{
@@ -83,14 +85,13 @@ func TestResourceToOC(t *testing.T) {
 
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("cluster1"),
-		conventions.AttributeK8sPod:        pdata.NewAttributeValueString("pod1"),
-		conventions.AttributeK8sNamespace:  pdata.NewAttributeValueString("namespace1"),
-		conventions.AttributeContainerName: pdata.NewAttributeValueString("container-name1"),
-		conventions.AttributeCloudAccount:  pdata.NewAttributeValueString("proj1"),
-		conventions.AttributeCloudZone:     pdata.NewAttributeValueString("zone1"),
+		conventions.AttributeK8sCluster:            pdata.NewAttributeValueString("cluster1"),
+		conventions.AttributeK8sPod:                pdata.NewAttributeValueString("pod1"),
+		conventions.AttributeK8sNamespace:          pdata.NewAttributeValueString("namespace1"),
+		conventions.AttributeContainerName:         pdata.NewAttributeValueString("container-name1"),
+		conventions.AttributeCloudAccount:          pdata.NewAttributeValueString("proj1"),
+		conventions.AttributeCloudAvailabilityZone: pdata.NewAttributeValueString("zone1"),
 	})
 
 	want := &ocresource.Resource{
@@ -111,40 +112,13 @@ func TestContainerResourceToOC(t *testing.T) {
 	}
 
 	// Also test that the explicit resource type is preserved if present
-	resource.Attributes().InsertString(conventions.OCAttributeResourceType, "other-type")
+	resource.Attributes().InsertString(occonventions.AttributeResourceType, "other-type")
 	want.Type = "other-type"
 
 	_, ocResource = internalResourceToOC(resource)
 	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
 		t.Errorf("Unexpected difference:\n%v", diff)
 	}
-}
-
-func TestAttributeValueToString(t *testing.T) {
-	assert.EqualValues(t, "", attributeValueToString(pdata.NewAttributeValueNull(), false))
-	assert.EqualValues(t, "abc", attributeValueToString(pdata.NewAttributeValueString("abc"), false))
-	assert.EqualValues(t, `"abc"`, attributeValueToString(pdata.NewAttributeValueString("abc"), true))
-	assert.EqualValues(t, "123", attributeValueToString(pdata.NewAttributeValueInt(123), false))
-	assert.EqualValues(t, "1.23", attributeValueToString(pdata.NewAttributeValueDouble(1.23), false))
-	assert.EqualValues(t, "true", attributeValueToString(pdata.NewAttributeValueBool(true), false))
-
-	v := pdata.NewAttributeValueMap()
-	v.MapVal().InsertString(`a"\`, `b"\`)
-	v.MapVal().InsertInt("c", 123)
-	v.MapVal().Insert("d", pdata.NewAttributeValueNull())
-	v.MapVal().Insert("e", v)
-	assert.EqualValues(t, `{"a\"\\":"b\"\\","c":123,"d":null,"e":{"a\"\\":"b\"\\","c":123,"d":null}}`, attributeValueToString(v, false))
-
-	v = pdata.NewAttributeValueArray()
-	av := pdata.NewAttributeValueString(`b"\`)
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueInt(123)
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueNull()
-	v.ArrayVal().Append(av)
-	av = pdata.NewAttributeValueArray()
-	v.ArrayVal().Append(av)
-	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, attributeValueToString(v, false))
 }
 
 func TestInferResourceType(t *testing.T) {
@@ -162,12 +136,12 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "container",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:    "cluster1",
-				conventions.AttributeK8sPod:        "pod1",
-				conventions.AttributeK8sNamespace:  "namespace1",
-				conventions.AttributeContainerName: "container-name1",
-				conventions.AttributeCloudAccount:  "proj1",
-				conventions.AttributeCloudZone:     "zone1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeK8sPod:                "pod1",
+				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeContainerName:         "container-name1",
+				conventions.AttributeCloudAccount:          "proj1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.ContainerType,
 			wantOk:           true,
@@ -175,10 +149,10 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "pod",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:   "cluster1",
-				conventions.AttributeK8sPod:       "pod1",
-				conventions.AttributeK8sNamespace: "namespace1",
-				conventions.AttributeCloudZone:    "zone1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeK8sPod:                "pod1",
+				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.K8SType,
 			wantOk:           true,
@@ -186,9 +160,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "host",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster: "cluster1",
-				conventions.AttributeCloudZone:  "zone1",
-				conventions.AttributeHostName:   "node1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
+				conventions.AttributeHostName:              "node1",
 			},
 			wantResourceType: resourcekeys.HostType,
 			wantOk:           true,
@@ -196,9 +170,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "gce",
 			labels: map[string]string{
-				conventions.AttributeCloudProvider: "gcp",
-				conventions.AttributeHostID:        "inst1",
-				conventions.AttributeCloudZone:     "zone1",
+				conventions.AttributeCloudProvider:         "gcp",
+				conventions.AttributeHostID:                "inst1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.CloudType,
 			wantOk:           true,
@@ -232,32 +206,34 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			rSpans := make([]*otlptrace.ResourceSpans, 1)
-			rSpans[0] = &otlptrace.ResourceSpans{
-				Resource:                    goldendataset.GenerateResource(test),
-				InstrumentationLibrarySpans: nil,
-			}
-			traces := pdata.TracesFromOtlp(rSpans)
+			traces := pdata.TracesFromInternalRep(internal.TracesFromOtlp(&otlpcollectortrace.ExportTraceServiceRequest{
+				ResourceSpans: []*otlptrace.ResourceSpans{{Resource: goldendataset.GenerateResource(test)}},
+			}))
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
-			if expected.IsNil() {
-				assert.True(t, actual.IsNil())
-			} else {
-				expected.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-					a, ok := actual.Attributes().Get(k)
-					assert.True(t, ok)
-					switch v.Type() {
-					case pdata.AttributeValueINT:
+			// Remove opencensus resource type from actual. This will be added during translation.
+			actual.Attributes().Delete(occonventions.AttributeResourceType)
+			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
+			expected.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+				a, ok := actual.Attributes().Get(k)
+				assert.True(t, ok)
+				switch v.Type() {
+				case pdata.AttributeValueTypeInt:
+					// conventions.AttributeProcessID is special because we preserve the type for this.
+					if k == conventions.AttributeProcessID {
+						assert.Equal(t, v.IntVal(), a.IntVal())
+					} else {
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
-					case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
-						assert.Equal(t, a, a)
-					default:
-						assert.Equal(t, v, a)
 					}
-				})
-			}
+				case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
+					assert.Equal(t, a, a)
+				default:
+					assert.Equal(t, v, a)
+				}
+				return true
+			})
 		})
 	}
 }

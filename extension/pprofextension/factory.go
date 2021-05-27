@@ -17,16 +17,18 @@ package pprofextension
 import (
 	"context"
 	"errors"
-	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "pprof"
+
+	defaultEndpoint = "localhost:1777"
 )
 
 // NewFactory creates a factory for pprof extension.
@@ -37,41 +39,20 @@ func NewFactory() component.ExtensionFactory {
 		createExtension)
 }
 
-func createDefaultConfig() configmodels.Extension {
+func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
+		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: defaultEndpoint,
 		},
-		Endpoint: "localhost:1777",
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
-	if config.Endpoint == "" {
+	if config.TCPAddr.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
-	}
-
-	// The runtime settings are global to the application, so while in principle it
-	// is possible to have more than one instance, running multiple will mean that
-	// the settings of the last started instance will prevail. In order to avoid
-	// this issue we will allow the creation of a single instance once per process
-	// while keeping the private function that allow the creation of multiple
-	// instances for unit tests. Summary: only a single instance can be created
-	// via the factory.
-	// TODO: Move this as an option to extensionhelper.
-	if !atomic.CompareAndSwapInt32(&instanceState, instanceNotCreated, instanceCreated) {
-		return nil, errors.New("only a single pprof extension instance can be created per process")
 	}
 
 	return newServer(*config, params.Logger), nil
 }
-
-// See comment in createExtension how these are used.
-var instanceState int32
-
-const (
-	instanceNotCreated int32 = 0
-	instanceCreated    int32 = 1
-)

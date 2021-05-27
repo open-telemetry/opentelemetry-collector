@@ -24,11 +24,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name        string
 		loadFunc    func() (*load.AvgStat, error)
@@ -53,13 +56,20 @@ func TestScrapeMetrics(t *testing.T) {
 				scraper.load = test.loadFunc
 			}
 
-			err := scraper.Initialize(context.Background())
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize load scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+			defer func() { assert.NoError(t, scraper.shutdown(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			metrics, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
+
+				isPartial := scrapererror.IsPartialScrapeError(err)
+				assert.True(t, isPartial)
+				if isPartial {
+					assert.Equal(t, metricsLen, err.(scrapererror.PartialScrapeError).Failed)
+				}
+
 				return
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
@@ -68,9 +78,9 @@ func TestScrapeMetrics(t *testing.T) {
 			assert.Equal(t, 3, metrics.Len())
 
 			// expect a single datapoint for 1m, 5m & 15m load metrics
-			assertMetricHasSingleDatapoint(t, metrics.At(0), loadAvg1MDescriptor)
-			assertMetricHasSingleDatapoint(t, metrics.At(1), loadAvg5mDescriptor)
-			assertMetricHasSingleDatapoint(t, metrics.At(2), loadAvg15mDescriptor)
+			assertMetricHasSingleDatapoint(t, metrics.At(0), metadata.Metrics.SystemCPULoadAverage1m.New())
+			assertMetricHasSingleDatapoint(t, metrics.At(1), metadata.Metrics.SystemCPULoadAverage5m.New())
+			assertMetricHasSingleDatapoint(t, metrics.At(2), metadata.Metrics.SystemCPULoadAverage15m.New())
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})

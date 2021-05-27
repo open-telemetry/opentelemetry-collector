@@ -31,21 +31,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to build default components: %v", err)
 	}
-
-	info := component.ApplicationStartInfo{
-		ExeName:  "otelcol",
-		LongName: "OpenTelemetry Collector",
-		Version:  version.Version,
-		GitHash:  version.GitHash,
+	info := component.BuildInfo{
+		Command:     "otelcol",
+		Description: "OpenTelemetry Collector",
+		Version:     version.Version,
 	}
 
-	if err := run(service.Parameters{ApplicationStartInfo: info, Factories: factories}); err != nil {
+	if err := run(service.AppSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(params service.Parameters) error {
-	app, err := service.New(params)
+func runInteractive(settings service.AppSettings) error {
+	app, err := service.New(settings)
 	if err != nil {
 		return fmt.Errorf("failed to construct the application: %w", err)
 	}

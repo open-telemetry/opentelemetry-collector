@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   zipkin:
@@ -11,10 +11,19 @@ exporters:
     endpoint: "https://somedest:1234/api/v2/spans"
     format: proto
     default_service_name: test_name
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [zipkin, zipkin/2]

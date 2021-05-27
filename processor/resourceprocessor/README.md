@@ -14,7 +14,7 @@ Examples:
 processors:
   resource:
     attributes:
-    - key: cloud.zone
+    - key: cloud.availability_zone
       value: "zone-1"
       action: upsert
     - key: k8s.cluster.name

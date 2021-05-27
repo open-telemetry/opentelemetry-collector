@@ -1,0 +1,25 @@
+envvar: envvar_value
+escapedDelim: $envvar
+envvar_bracketed: envvar_valuetests
+envvar_legacy_00: $/not/valid$
+envvar_legacy_01: /test
+envvar_legacy_02: /test
+envvar_legacy_03: /test
+envvar_legacy_04: /test
+envvar_legacy_05: /test
+cfgsrc_suffix: prefix-42
+cfgsrc_middle: prefix-42-suffix
+cfgsrc_in_str: integer 42 injected as string
+cfgsrc_params0:
+  p0: true
+  p1: envvar_value
+  p2: 42
+cfgsrc_params1:
+  p0: false
+  p1: 42
+  p2: envvar_value
+cfgsrc_params2:
+  p0: $envvar
+multi_line_envvars:
+  p0: envvar_value
+  p1: ${envvar}

@@ -15,14 +15,17 @@
 package prometheusexporter
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// The address on which the Prometheus scrape handler will be run on.
 	Endpoint string `mapstructure:"endpoint"`
@@ -32,4 +35,20 @@ type Config struct {
 
 	// ConstLabels are values that are applied for every exported metric.
 	ConstLabels prometheus.Labels `mapstructure:"const_labels"`
+
+	// SendTimestamps will send the underlying scrape timestamp with the export
+	SendTimestamps bool `mapstructure:"send_timestamps"`
+
+	// MetricExpiration defines how long metrics are kept without updates
+	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
+
+	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
+	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
+}
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

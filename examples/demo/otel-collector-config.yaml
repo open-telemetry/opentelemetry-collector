@@ -1,5 +1,7 @@
 receivers:
-  opencensus:
+  otlp:
+    protocols:
+      grpc:
 
 exporters:
   prometheus:
@@ -17,15 +19,8 @@ exporters:
     endpoint: jaeger-all-in-one:14250
     insecure: true
 
-# Alternatively, use jaeger_thrift_http with the settings below. In this case
-# update the list of exporters on the traces pipeline.
-#
-#  jaeger_thrift_http:
-#    url: http://jaeger-all-in-one:14268/api/traces
-
 processors:
   batch:
-  queued_retry:
 
 extensions:
   health_check:
@@ -38,10 +33,10 @@ service:
   extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
-      receivers: [opencensus]
-      processors: [batch, queued_retry]
+      receivers: [otlp]
+      processors: [batch]
       exporters: [logging, zipkin, jaeger]
     metrics:
-      receivers: [opencensus]
+      receivers: [otlp]
       processors: [batch]
-      exporters: [logging,prometheus]
+      exporters: [logging, prometheus]

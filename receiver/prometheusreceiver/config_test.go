@@ -26,32 +26,27 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["prometheus"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["prometheus/customname"].(*Config)
-	assert.Equal(t, r1.ReceiverSettings,
-		configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "prometheus/customname",
-		})
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
+	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")))
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
@@ -63,7 +58,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	const jobnamevar = "JOBNAME"
 	os.Setenv(jobnamevar, jobname)
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -72,12 +67,8 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers["prometheus"].(*Config)
-	assert.Equal(t, r.ReceiverSettings,
-		configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "prometheus",
-		})
+	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
 	assert.Equal(t, r.PrometheusConfig.ScrapeConfigs[0].JobName, jobname)
 	os.Unsetenv(jobnamevar)
 }
@@ -88,7 +79,7 @@ func TestLoadConfigK8s(t *testing.T) {
 	os.Setenv(nodenamevar, node)
 	defer os.Unsetenv(nodenamevar)
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -97,12 +88,8 @@ func TestLoadConfigK8s(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers["prometheus"].(*Config)
-	assert.Equal(t, r.ReceiverSettings,
-		configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "prometheus",
-		})
+	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
 
 	scrapeConfig := r.PrometheusConfig.ScrapeConfigs[0]
 	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)
@@ -115,7 +102,7 @@ func TestLoadConfigK8s(t *testing.T) {
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -132,7 +119,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 // configuration as a subkey, ensure that invalid configuration
 // within the subkey will also raise an error.
 func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()

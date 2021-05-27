@@ -28,7 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -44,12 +45,12 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneReceiverFn()
 
 	n := 20
 	// Now for the traceExporter that sends 0 length spans
-	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
+	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the trace service client: %v", err)
 	spans := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte("12345678")}}
 	for i := 0; i < n; i++ {
@@ -58,7 +59,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTracesViews(t, "oc_trace", "grpc", int64(n), 0)
+	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", int64(n), 0)
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
@@ -66,7 +67,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneFn()
 
 	n := 20
@@ -79,7 +80,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTracesViews(t, "oc_trace", "grpc", 0, 0)
+	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", 0, 0)
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
@@ -92,11 +93,11 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	// Denoise this test by setting the sampler to never sample
 	defer trace.ApplyConfig(trace.Config{DefaultSampler: trace.NeverSample()})
 
-	ocSpansSaver := new(testOCTraceExporter)
+	ocSpansSaver := new(testOCTracesExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -145,7 +146,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	if g, w := receiverSpanData.Links[0], wantLink; !reflect.DeepEqual(g, w) {
 		t.Errorf("Link:\nGot: %#v\nWant: %#v\n", g, w)
 	}
-	if g, w := receiverSpanData.Name, "receiver/oc_trace/TraceDataReceived"; g != w {
+	if g, w := receiverSpanData.Name, "receiver/opencensus/TraceDataReceived"; g != w {
 		t.Errorf("ReceiverExport span's SpanData.Name:\nGot:  %q\nWant: %q\n", g, w)
 	}
 
@@ -163,12 +164,12 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	}
 }
 
-type testOCTraceExporter struct {
+type testOCTracesExporter struct {
 	mu       sync.Mutex
 	spanData []*trace.SpanData
 }
 
-func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
+func (tote *testOCTracesExporter) ExportSpan(sd *trace.SpanData) {
 	tote.mu.Lock()
 	defer tote.mu.Unlock()
 

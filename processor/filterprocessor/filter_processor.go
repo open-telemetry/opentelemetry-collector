@@ -17,86 +17,168 @@ package filterprocessor
 import (
 	"context"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
+	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 type filterMetricProcessor struct {
-	cfg     *Config
-	include *filtermetric.Matcher
-	exclude *filtermetric.Matcher
+	cfg              *Config
+	include          filtermetric.Matcher
+	includeAttribute filtermatcher.AttributesMatcher
+	exclude          filtermetric.Matcher
+	excludeAttribute filtermatcher.AttributesMatcher
+	logger           *zap.Logger
 }
 
-func newFilterMetricProcessor(cfg *Config) (*filterMetricProcessor, error) {
-	inc, err := createMatcher(cfg.Metrics.Include)
+func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
+
+	inc, includeAttr, err := createMatcher(cfg.Metrics.Include)
 	if err != nil {
 		return nil, err
 	}
 
-	exc, err := createMatcher(cfg.Metrics.Exclude)
+	exc, excludeAttr, err := createMatcher(cfg.Metrics.Exclude)
 	if err != nil {
 		return nil, err
 	}
+
+	includeMatchType := ""
+	var includeExpressions []string
+	var includeMetricNames []string
+	var includeResourceAttributes []filterconfig.Attribute
+	if cfg.Metrics.Include != nil {
+		includeMatchType = string(cfg.Metrics.Include.MatchType)
+		includeExpressions = cfg.Metrics.Include.Expressions
+		includeMetricNames = cfg.Metrics.Include.MetricNames
+		includeResourceAttributes = cfg.Metrics.Include.ResourceAttributes
+	}
+
+	excludeMatchType := ""
+	var excludeExpressions []string
+	var excludeMetricNames []string
+	var excludeResourceAttributes []filterconfig.Attribute
+	if cfg.Metrics.Exclude != nil {
+		excludeMatchType = string(cfg.Metrics.Exclude.MatchType)
+		excludeExpressions = cfg.Metrics.Exclude.Expressions
+		excludeMetricNames = cfg.Metrics.Exclude.MetricNames
+		excludeResourceAttributes = cfg.Metrics.Exclude.ResourceAttributes
+	}
+
+	logger.Info(
+		"Metric filter configured",
+		zap.String("include match_type", includeMatchType),
+		zap.Strings("include expressions", includeExpressions),
+		zap.Strings("include metric names", includeMetricNames),
+		zap.Any("include metrics with resource attributes", includeResourceAttributes),
+		zap.String("exclude match_type", excludeMatchType),
+		zap.Strings("exclude expressions", excludeExpressions),
+		zap.Strings("exclude metric names", excludeMetricNames),
+		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
+	)
 
 	return &filterMetricProcessor{
-		cfg:     cfg,
-		include: inc,
-		exclude: exc,
+		cfg:              cfg,
+		include:          inc,
+		includeAttribute: includeAttr,
+		exclude:          exc,
+		excludeAttribute: excludeAttr,
+		logger:           logger,
 	}, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, error) {
+func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
 	// Nothing specified in configuration
 	if mp == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
-
-	matcher, err := filtermetric.NewMatcher(mp)
+	var attributeMatcher filtermatcher.AttributesMatcher
+	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
+		filterset.Config{
+			MatchType:    filterset.MatchType(mp.MatchType),
+			RegexpConfig: mp.RegexpConfig,
+		},
+		mp.ResourceAttributes,
+	)
 	if err != nil {
-		return nil, err
+		return nil, attributeMatcher, err
 	}
 
-	return &matcher, nil
+	nameMatcher, err := filtermetric.NewMatcher(mp)
+	return nameMatcher, attributeMatcher, err
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	mds := internaldata.MetricsToOC(md)
-	foundMetricToKeep := false
-	for i := range mds {
-		if len(mds[i].Metrics) == 0 {
-			continue
+func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
+	pdm.ResourceMetrics().RemoveIf(func(rm pdata.ResourceMetrics) bool {
+		keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
+		if !keepMetricsForResource {
+			return true
 		}
-		keep := make([]*metricspb.Metric, 0, len(mds[i].Metrics))
-		for _, m := range mds[i].Metrics {
-			if fmp.shouldKeepMetric(m) {
-				foundMetricToKeep = true
-				keep = append(keep, m)
-			}
-		}
-		mds[i].Metrics = keep
+		rm.InstrumentationLibraryMetrics().RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
+			ilm.Metrics().RemoveIf(func(m pdata.Metric) bool {
+				keep, err := fmp.shouldKeepMetric(m)
+				if err != nil {
+					fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))
+					// don't `return`, keep the metric if there's an error
+				}
+				return !keep
+			})
+			// Filter out empty InstrumentationLibraryMetrics
+			return ilm.Metrics().Len() == 0
+		})
+		// Filter out empty ResourceMetrics
+		return rm.InstrumentationLibraryMetrics().Len() == 0
+	})
+	if pdm.ResourceMetrics().Len() == 0 {
+		return pdm, processorhelper.ErrSkipProcessingData
 	}
-
-	if !foundMetricToKeep {
-		return md, processorhelper.ErrSkipProcessingData
-	}
-	return internaldata.OCSliceToMetrics(mds), nil
+	return pdm, nil
 }
 
-// shouldKeepMetric determines whether a metric should be kept based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) shouldKeepMetric(metric *metricspb.Metric) bool {
+func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) (bool, error) {
 	if fmp.include != nil {
-		if !fmp.include.MatchMetric(metric) {
-			return false
+		matches, err := fmp.include.MatchMetric(metric)
+		if err != nil {
+			// default to keep if there's an error
+			return true, err
+		}
+		if !matches {
+			return false, nil
 		}
 	}
 
 	if fmp.exclude != nil {
-		if fmp.exclude.MatchMetric(metric) {
+		matches, err := fmp.exclude.MatchMetric(metric)
+		if err != nil {
+			return true, err
+		}
+		if matches {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pdata.Resource) bool {
+	resourceAttributes := resource.Attributes()
+
+	if fmp.include != nil && fmp.includeAttribute != nil {
+		matches := fmp.includeAttribute.Match(resourceAttributes)
+		if !matches {
+			return false
+		}
+	}
+
+	if fmp.exclude != nil && fmp.excludeAttribute != nil {
+		matches := fmp.excludeAttribute.Match(resourceAttributes)
+		if matches {
 			return false
 		}
 	}

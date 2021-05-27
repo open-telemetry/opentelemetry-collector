@@ -1,47 +1,43 @@
-# All source code excluding any third party code and excluding the testbed.
-# This is the code that we want to run tests for and lint, staticcheck, etc.
-ALL_SRC := $(shell find . -name '*.go' \
-							-not -path './testbed/*' \
-							-not -path '*/internal/data/opentelemetry-proto/*' \
-							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
-							-not -path './.circleci/scripts/reportgenerator/*' \
-							-not -path './examples/demo/app/*' \
-							-type f | sort)
+include ./Makefile.Common
 
-# ALL_PKGS is the list of all packages where ALL_SRC files reside.
-ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
+# This is the code that we want to run lint, etc.
+ALL_SRC := $(shell find . -name '*.go' \
+							-not -path './cmd/issuegenerator/*' \
+							-not -path './cmd/mdatagen/*' \
+							-not -path './cmd/schemagen/*' \
+							-not -path './cmd/checkdoc/*' \
+							-not -path './internal/tools/*' \
+							-not -path './examples/demo/app/*' \
+							-not -path './internal/data/protogen/*' \
+							-not -path './service/internal/zpages/tmplgen/*' \
+							-type f | sort)
 
 # All source code and documents. Used in spell check.
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
-GOTEST_OPT?= -v -race -timeout 180s
-GO_ACC=go-acc
-GOTEST=go test
+# ALL_MODULES includes ./* dirs (excludes . dir)
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+
+CMD?=
+TOOLS_MOD_DIR := ./internal/tools
+
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
-ADDLICENSE= addlicense
+
+BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
+VERSION=$(shell git describe --match "v[0-9]*" HEAD)
+BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
+
+RUN_CONFIG?=examples/local/otel-config.yaml
+CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
+COMP_REL_PATH=service/defaultcomponents/defaults.go
+MOD_NAME=go.opentelemetry.io/collector
+
+GO_ACC=go-acc
+ADDLICENSE=addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
-LINT=golangci-lint
-IMPI=impi
-GOSEC=gosec
-STATIC_CHECK=staticcheck
-# BUILD_TYPE should be one of (dev, release).
-BUILD_TYPE?=release
-
-GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
-ifdef VERSION
-BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-endif
-BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
-
-RUN_CONFIG?=examples/otel-local-config.yaml
-
-CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
@@ -51,53 +47,80 @@ $(1)
 
 endef
 
-all-srcs:
-	@echo $(ALL_SRC) | tr ' ' '\n' | sort
-
-all-pkgs:
-	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
-
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: checklicense impi lint misspell test otelcol
+all: checklicense checkdoc misspell goimpi golint gotest otelcol
+
+all-modules:
+	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 .PHONY: testbed-loadtest
 testbed-loadtest: otelcol
 	cd ./testbed/tests && ./runtests.sh
 
-.PHONY: testbed-correctness
-testbed-correctness: otelcol
+.PHONY: testbed-correctness-traces
+testbed-correctness-traces: otelcol
 	cd ./testbed/correctness/traces && ./runtests.sh
+
+.PHONY: testbed-correctness-metrics
+testbed-correctness-metrics: otelcol
+	cd ./testbed/correctness/metrics && ./runtests.sh
 
 .PHONY: testbed-list-loadtest
 testbed-list-loadtest:
-	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
+	RUN_TESTBED=1 $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
 
-.PHONY: testbed-list-correctness
-testbed-list-correctness:
-	TESTBED_CONFIG=inprocess.yaml $(GOTEST) -v ./testbed/correctness --test.list '.*'| grep "^Test"
+.PHONY: gomoddownload
+gomoddownload:
+	@$(MAKE) for-all CMD="go mod download"
 
-.PHONY: test
-test:
-	echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
+.PHONY: gotestinstall
+gotestinstall:
+	@$(MAKE) for-all CMD="make test GOTEST_OPT=\"-i\""
 
-.PHONY: benchmark
-benchmark:
-	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
+.PHONY: gotest
+gotest:
+	@$(MAKE) for-all CMD="make test"
 
-.PHONY: test-with-cover
-test-with-cover:
-	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector,.,$(ALL_PKGS))
+.PHONY: gobenchmark
+gobenchmark:
+	@$(MAKE) for-all CMD="make benchmark"
+
+.PHONY: gotest-with-cover
+gotest-with-cover:
 	@echo pre-compiling tests
-	@time go test -i $(ALL_PKGS)
-	$(GO_ACC) $(ALL_PKGS)
+	@time $(GOTEST) -i ./...
+	$(GO_ACC) ./...
 	go tool cover -html=coverage.txt -o coverage.html
+
+.PHONY: golint
+golint:
+	@$(MAKE) for-all CMD="make lint"
+
+.PHONY: goimpi
+goimpi:
+	@$(MAKE) for-all CMD="make impi"
+
+.PHONY: gofmt
+gofmt:
+	@$(MAKE) for-all CMD="make fmt"
+
+.PHONY: gotidy
+gotidy:
+	$(MAKE) for-all CMD="rm -fr go.sum"
+	$(MAKE) for-all CMD="go mod tidy"
 
 .PHONY: addlicense
 addlicense:
-	$(ADDLICENSE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC)
+	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
+			exit 1; \
+		else \
+			echo "Add License finished successfully"; \
+		fi
 
 .PHONY: checklicense
 checklicense:
@@ -119,57 +142,29 @@ misspell:
 misspell-correction:
 	$(MISSPELL_CORRECTION) $(ALL_DOC)
 
-.PHONY: lint-gosec
-lint-gosec:
-	# TODO: Consider to use gosec from golangci-lint
-	$(GOSEC) -quiet -exclude=G104 $(ALL_PKGS)
-
-.PHONY: lint-static-check
-lint-static-check:
-	@STATIC_CHECK_OUT=`$(STATIC_CHECK) $(ALL_PKGS) 2>&1`; \
-		if [ "$$STATIC_CHECK_OUT" ]; then \
-			echo "$(STATIC_CHECK) FAILED => static check errors:\n"; \
-			echo "$$STATIC_CHECK_OUT\n"; \
-			exit 1; \
-		else \
-			echo "Static check finished successfully"; \
-		fi
-
-.PHONY: lint
-lint: lint-static-check
-	$(LINT) run
-
-.PHONY: impi
-impi:
-	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal --skip internal/data/opentelemetry-proto ./...
-
-.PHONY: fmt
-fmt:
-	gofmt  -w -s ./
-	goimports -w  -local go.opentelemetry.io/collector ./
-
 .PHONY: install-tools
 install-tools:
-	go install github.com/client9/misspell/cmd/misspell
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	go install github.com/google/addlicense
-	go install github.com/jstemmer/go-junit-report
-	go install github.com/mjibson/esc
-	go install github.com/ory/go-acc
-	go install github.com/pavius/impi/cmd/impi
-	go install github.com/securego/gosec/cmd/gosec
-	go install github.com/tcnksm/ghr
-	go install golang.org/x/tools/cmd/goimports
-	go install honnef.co/go/tools/cmd/staticcheck
+	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
+	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
+	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
+	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
+	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
+	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd cmd/mdatagen && go install ./
+	cd cmd/checkdoc && go install ./
 
 .PHONY: otelcol
 otelcol:
 	go generate ./...
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+	$(MAKE) build-binary-internal
 
 .PHONY: run
 run:
-	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG}
+	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -177,6 +172,16 @@ docker-component: check-component
 	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
+
+.PHONY: for-all
+for-all:
+	@echo "running $${CMD} in root"
+	@$${CMD}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (cd "$${dir}" && \
+	  	echo "running $${CMD} in $${dir}" && \
+	 	$${CMD} ); \
+	done
 
 .PHONY: check-component
 check-component:
@@ -189,38 +194,63 @@ add-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Adding tag ${TAG}"
 	@git tag -a ${TAG} -s -m "Version ${TAG}"
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Adding tag "$${dir:2}/$${TAG}" && \
+	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
+	done
+
+.PHONY: push-tag
+push-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Pushing tag ${TAG}"
+	@git push upstream ${TAG}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
+	 	git push upstream "$${dir:2}/$${TAG}"); \
+	done
 
 .PHONY: delete-tag
 delete-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Deleting tag ${TAG}"
 	@git tag -d ${TAG}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
+	 	git tag -d "$${dir:2}/$${TAG}" ); \
+	done
 
 .PHONY: docker-otelcol
 docker-otelcol:
 	COMPONENT=otelcol $(MAKE) docker-component
 
-.PHONY: binaries
-binaries: otelcol
-
+# build collector binaries with different OS and Architecture
 .PHONY: binaries-all-sys
-binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
+binaries-all-sys: binaries-darwin_amd64 binaries-darwin_arm64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
 
 .PHONY: binaries-darwin_amd64
 binaries-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal
+
+.PHONY: binaries-darwin_arm64
+binaries-darwin_arm64:
+	GOOS=darwin  GOARCH=arm64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-linux_amd64
 binaries-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux   GOARCH=amd64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-linux_arm64
 binaries-linux_arm64:
-	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
+	GOOS=linux   GOARCH=arm64 $(MAKE) build-binary-internal
 
 .PHONY: binaries-windows_amd64
 binaries-windows_amd64:
-	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) binaries
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) build-binary-internal
+
+.PHONY: build-binary-internal
+build-binary-internal:
+	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
@@ -228,6 +258,32 @@ binaries-windows_amd64:
 	$(MAKE) binaries-linux_$(ARCH)
 	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
+
+.PHONY: genmdata
+genmdata:
+	$(MAKE) for-all CMD="go generate ./..."
+
+DEPENDABOT_PATH=".github/dependabot.yml"
+.PHONY: internal-gendependabot
+internal-gendependabot:
+	@echo "Add rule for \"${PACKAGE}\" in \"${DIR}\"";
+	@echo "  - package-ecosystem: \"${PACKAGE}\"" >> ${DEPENDABOT_PATH};
+	@echo "    directory: \"${DIR}\"" >> ${DEPENDABOT_PATH};
+	@echo "    schedule:" >> ${DEPENDABOT_PATH};
+	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH};
+
+.PHONY: gendependabot
+gendependabot:
+	@echo "Recreating ${DEPENDABOT_PATH} file"
+	@echo "# File generated by \"make gendependabot\"; DO NOT EDIT." > ${DEPENDABOT_PATH}
+	@echo "" >> ${DEPENDABOT_PATH}
+	@echo "version: 2" >> ${DEPENDABOT_PATH}
+	@echo "updates:" >> ${DEPENDABOT_PATH}
+	$(MAKE) internal-gendependabot DIR="/" PACKAGE="docker"
+	$(MAKE) internal-gendependabot DIR="/" PACKAGE="gomod"
+	@set -e; for dir in $(ALL_MODULES); do \
+		$(MAKE) internal-gendependabot DIR=$${dir:1} PACKAGE="gomod"; \
+	done
 
 # Definitions for ProtoBuf generation.
 
@@ -238,7 +294,7 @@ OPENTELEMETRY_PROTO_SRC_DIR=internal/data/opentelemetry-proto
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
 
 # Target directory to write generated files to.
-PROTO_TARGET_GEN_DIR=internal/data/opentelemetry-proto-gen
+PROTO_TARGET_GEN_DIR=internal/data/protogen
 
 # Go package name to use for generated files.
 PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
@@ -246,7 +302,7 @@ PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 # Intermediate directory used during generation.
 PROTO_INTERMEDIATE_DIR=internal/data/.patched-otlp-proto
 
-DOCKER_PROTOBUF ?= otel/build-protobuf:latest
+DOCKER_PROTOBUF ?= otel/build-protobuf:0.2.1
 PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
 PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
 
@@ -269,18 +325,9 @@ genproto_sub:
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)/opentelemetry
 	cp -R $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/* $(PROTO_INTERMEDIATE_DIR)/opentelemetry
 
-	@echo Modify them in the intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed 's+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g' $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
-
 	# Patch proto files. See proto_patch.sed for patching rules.
-	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/trace/v1/trace.proto \
-	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/trace/v1/trace.proto
-
-	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/logs/v1/logs.proto \
-	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
-
-	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/metrics/v1/metrics.proto \
-	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
+	@echo Modify them in the intermediate directory.
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
 
 	@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,$(PROTOC) $(PROTO_INCLUDES) --gogofaster_out=plugins=grpc:./ $(file)))
@@ -329,3 +376,18 @@ certs:
 .PHONY: certs-dryrun
 certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
+
+# Verify existence of READMEs for components specified as default components in the collector.
+.PHONY: checkdoc
+checkdoc:
+	go run cmd/checkdoc/main.go cmd/checkdoc/docs.go --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+
+# Construct new API state snapshots
+.PHONY: apidiff-build
+apidiff-build:
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
+
+# Compare API state snapshots
+.PHONY: apidiff-compare
+apidiff-compare:
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))

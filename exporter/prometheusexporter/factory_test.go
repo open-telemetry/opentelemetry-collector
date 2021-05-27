@@ -43,3 +43,19 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.Equal(t, errBlankPrometheusAddress, err)
 	require.Nil(t, exp)
 }
+
+func TestCreateMetricsExporterExportHelperError(t *testing.T) {
+	cfg, ok := createDefaultConfig().(*Config)
+	require.True(t, ok)
+
+	cfg.Endpoint = "http://localhost:8889"
+
+	// Should give us an exporterhelper.errNilLogger
+	exp, err := createMetricsExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: nil},
+		cfg)
+
+	assert.Nil(t, exp)
+	assert.Error(t, err)
+}

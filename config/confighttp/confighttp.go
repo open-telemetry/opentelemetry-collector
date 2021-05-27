@@ -26,8 +26,9 @@ import (
 	"go.opentelemetry.io/collector/internal/middleware"
 )
 
+// HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
-	// The target URL to send data to (e.g.: http://some.url:9411/v1/trace).
+	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
@@ -45,8 +46,12 @@ type HTTPClientSettings struct {
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
+
+	// Custom Round Tripper to allow for individual components to intercept HTTP requests
+	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 }
 
+// ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
@@ -62,15 +67,20 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
-	var clientTransport http.RoundTripper
 
-	if hcs.Headers != nil && len(hcs.Headers) > 0 {
-		clientTransport = &clientInterceptorRoundTripper{
+	clientTransport := (http.RoundTripper)(transport)
+	if len(hcs.Headers) > 0 {
+		clientTransport = &headerRoundTripper{
 			transport: transport,
 			headers:   hcs.Headers,
 		}
-	} else {
-		clientTransport = transport
+	}
+
+	if hcs.CustomRoundTripper != nil {
+		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &http.Client{
@@ -79,23 +89,22 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	}, nil
 }
 
-// Custom RoundTripper that add headers
-type clientInterceptorRoundTripper struct {
+// Custom RoundTripper that add headers.
+type headerRoundTripper struct {
 	transport http.RoundTripper
 	headers   map[string]string
 }
 
-// Custom RoundTrip that add headers
-func (interceptor *clientInterceptorRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+// RoundTrip is a custom RoundTripper that adds headers to the request.
+func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	for k, v := range interceptor.headers {
 		req.Header.Set(k, v)
 	}
-	// Send the request to Cortex
-	response, err := interceptor.transport.RoundTrip(req)
-
-	return response, err
+	// Send the request to next transport.
+	return interceptor.transport.RoundTrip(req)
 }
 
+// HTTPServerSettings defines settings for creating an HTTP server.
 type HTTPServerSettings struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint"`
@@ -108,8 +117,15 @@ type HTTPServerSettings struct {
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
 	// used to match any origin or one or more characters of an origin.
 	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
+
+	// CorsHeaders are the allowed CORS headers for HTTP/JSON requests to grpc-gateway adapter
+	// for the OTLP receiver. See github.com/rs/cors
+	// CORS needs to be enabled first by providing a non-empty list in CorsOrigins
+	// A wildcard (*) can be used to match any header.
+	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
 }
 
+// ToListener creates a net.Listener.
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
@@ -133,6 +149,8 @@ type toServerOptions struct {
 	errorHandler middleware.ErrorHandler
 }
 
+// ToServerOption is an option to change the behavior of the HTTP server
+// returned by HTTPServerSettings.ToServer().
 type ToServerOption func(opts *toServerOptions)
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
@@ -143,15 +161,18 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 	}
 }
 
+// ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOption) *http.Server {
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
 	}
 	if len(hss.CorsOrigins) > 0 {
-		co := cors.Options{AllowedOrigins: hss.CorsOrigins}
+		co := cors.Options{AllowedOrigins: hss.CorsOrigins, AllowedHeaders: hss.CorsHeaders}
 		handler = cors.New(co).Handler(handler)
 	}
+	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
+
 	handler = middleware.HTTPContentDecompressor(
 		handler,
 		middleware.WithErrorHandler(serverOpts.errorHandler),

@@ -24,13 +24,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -43,28 +43,22 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	config := cfg.(*Config)
-	config.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	config.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, new(exportertest.SinkTraceExporter))
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, new(exportertest.SinkMetricsExporter))
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := configmodels.ReceiverSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -83,7 +77,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -93,10 +87,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_port",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -112,10 +103,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "invalid_http_port",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -130,12 +118,13 @@ func TestCreateTraceReceiver(t *testing.T) {
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporter)
-			tr, err := factory.CreateTraceReceiver(ctx, creationParams, tt.cfg, sink)
+			sink := new(consumertest.TracesSink)
+			tr, err := factory.CreateTracesReceiver(ctx, creationParams, tt.cfg, sink)
 			assert.NoError(t, err)
 			require.NotNil(t, tr)
 			if tt.wantErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(context.Background()))
 			} else {
 				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, tr.Shutdown(context.Background()))
@@ -146,10 +135,6 @@ func TestCreateTraceReceiver(t *testing.T) {
 
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := configmodels.ReceiverSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -168,7 +153,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -178,10 +163,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -197,10 +179,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -215,7 +194,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			mr, err := factory.CreateMetricsReceiver(ctx, creationParams, tt.cfg, sink)
 			assert.NoError(t, err)
 			require.NotNil(t, mr)
@@ -231,10 +210,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 
 func TestCreateLogReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultReceiverSettings := configmodels.ReceiverSettings{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -250,26 +225,23 @@ func TestCreateLogReceiver(t *testing.T) {
 		cfg          *Config
 		wantStartErr bool
 		wantErr      bool
-		sink         consumer.LogsConsumer
+		sink         consumer.Logs
 	}{
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
 				},
 			},
-			sink: new(exportertest.SinkLogsExporter),
+			sink: new(consumertest.LogsSink),
 		},
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -281,15 +253,12 @@ func TestCreateLogReceiver(t *testing.T) {
 				},
 			},
 			wantStartErr: true,
-			sink:         new(exportertest.SinkLogsExporter),
+			sink:         new(consumertest.LogsSink),
 		},
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -298,15 +267,12 @@ func TestCreateLogReceiver(t *testing.T) {
 				},
 			},
 			wantStartErr: true,
-			sink:         new(exportertest.SinkLogsExporter),
+			sink:         new(consumertest.LogsSink),
 		},
 		{
 			name: "no_next_consumer",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -320,14 +286,11 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-				Protocols: Protocols{},
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				Protocols:        Protocols{},
 			},
 			wantErr: false,
-			sink:    new(exportertest.SinkLogsExporter),
+			sink:    new(consumertest.LogsSink),
 		},
 	}
 	ctx := context.Background()
@@ -344,11 +307,11 @@ func TestCreateLogReceiver(t *testing.T) {
 
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(context.Background()))
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))
 			}
-			receivers = map[*Config]*otlpReceiver{}
 		})
 	}
 }

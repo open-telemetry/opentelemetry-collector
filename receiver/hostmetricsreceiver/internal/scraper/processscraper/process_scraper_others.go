@@ -24,7 +24,7 @@ import (
 
 const cpuStatesLen = 0
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat) {
 }
 
 func getProcessExecutable(processHandle) (*executableMetadata, error) {

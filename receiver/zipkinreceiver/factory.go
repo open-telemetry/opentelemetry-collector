@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -27,7 +27,6 @@ import (
 // This file implements factory for Zipkin receiver.
 
 const (
-	// The value of "type" key in configuration.
 	typeStr = "zipkin"
 
 	defaultBindEndpoint = "0.0.0.0:9411"
@@ -38,30 +37,28 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver),
+		receiverhelper.WithTraces(createTracesReceiver),
 	)
 }
 
 // createDefaultConfig creates the default configuration for Zipkin receiver.
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultBindEndpoint,
 		},
+		ParseStringTags: false,
 	}
 }
 
-// createTraceReceiver creates a trace receiver based on provided config.
-func createTraceReceiver(
+// createTracesReceiver creates a trace receiver based on provided config.
+func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
+	cfg config.Receiver,
+	nextConsumer consumer.Traces,
+) (component.TracesReceiver, error) {
 	rCfg := cfg.(*Config)
 	return New(rCfg, nextConsumer)
 }

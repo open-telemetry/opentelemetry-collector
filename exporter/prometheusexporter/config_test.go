@@ -17,17 +17,18 @@ package prometheusexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -37,21 +38,20 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["prometheus"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters["prometheus/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "prometheus/2",
-				TypeVal: "prometheus",
-			},
-			Endpoint:  "1.2.3.4:1234",
-			Namespace: "test-space",
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			Endpoint:         "1.2.3.4:1234",
+			Namespace:        "test-space",
 			ConstLabels: map[string]string{
 				"label1":        "value1",
 				"another label": "spaced value",
 			},
+			SendTimestamps:   true,
+			MetricExpiration: 60 * time.Minute,
 		})
 }

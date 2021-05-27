@@ -15,8 +15,6 @@
 package internaldata
 
 import (
-	"io"
-	"math/rand"
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -27,12 +25,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/internal/occonventions"
+	"go.opentelemetry.io/collector/internal/testdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -106,27 +102,27 @@ func TestSpanKindToOC(t *testing.T) {
 		ocKind octrace.Span_SpanKind
 	}{
 		{
-			kind:   pdata.SpanKindCLIENT,
+			kind:   pdata.SpanKindClient,
 			ocKind: octrace.Span_CLIENT,
 		},
 		{
-			kind:   pdata.SpanKindSERVER,
+			kind:   pdata.SpanKindServer,
 			ocKind: octrace.Span_SERVER,
 		},
 		{
-			kind:   pdata.SpanKindCONSUMER,
+			kind:   pdata.SpanKindConsumer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindPRODUCER,
+			kind:   pdata.SpanKindProducer,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindUNSPECIFIED,
+			kind:   pdata.SpanKindUnspecified,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 		{
-			kind:   pdata.SpanKindINTERNAL,
+			kind:   pdata.SpanKindInternal,
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 		},
 	}
@@ -143,13 +139,13 @@ func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
 	attr := pdata.NewAttributeMap()
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 
-	attr.UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, true)
+	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, true)
 	assert.True(t, proto.Equal(wrapperspb.Bool(true), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, false)
+	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, false)
 	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpdateInt(conventions.OCAttributeSameProcessAsParentSpan, 13)
+	attr.UpdateInt(occonventions.AttributeSameProcessAsParentSpan, 13)
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 }
 
@@ -159,7 +155,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 		ocAttribute *octrace.AttributeValue
 	}{
 		{
-			kind: pdata.SpanKindCONSUMER,
+			kind: pdata.SpanKindConsumer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -169,7 +165,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindPRODUCER,
+			kind: pdata.SpanKindProducer,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -179,7 +175,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind: pdata.SpanKindINTERNAL,
+			kind: pdata.SpanKindInternal,
 			ocAttribute: &octrace.AttributeValue{
 				Value: &octrace.AttributeValue_StringValue{
 					StringValue: &octrace.TruncatableString{
@@ -189,15 +185,15 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 			},
 		},
 		{
-			kind:        pdata.SpanKindUNSPECIFIED,
+			kind:        pdata.SpanKindUnspecified,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindSERVER,
+			kind:        pdata.SpanKindServer,
 			ocAttribute: nil,
 		},
 		{
-			kind:        pdata.SpanKindCLIENT,
+			kind:        pdata.SpanKindClient,
 			ocAttribute: nil,
 		},
 	}
@@ -213,7 +209,6 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 func TestInternalToOC(t *testing.T) {
 	ocNode := &occommon.Node{}
 	ocResource1 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-1"}}
-	ocResource2 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-2"}}
 
 	startTime := timestamppb.New(testdata.TestSpanStartTime)
 	eventTime := timestamppb.New(testdata.TestSpanEventTime)
@@ -260,7 +255,7 @@ func TestInternalToOC(t *testing.T) {
 		Attributes: &octrace.Span_Attributes{
 			DroppedAttributesCount: 1,
 		},
-		Status: &octrace.Status{Message: "status-cancelled", Code: 1},
+		Status: &octrace.Status{Message: "status-cancelled", Code: 2},
 	}
 
 	ocSpan2 := &octrace.Span{
@@ -289,196 +284,84 @@ func TestInternalToOC(t *testing.T) {
 			},
 			DroppedLinksCount: 3,
 		},
-	}
-
-	ocSpan3 := &octrace.Span{
-		Name:      &octrace.TruncatableString{Value: "operationC"},
-		StartTime: startTime,
-		EndTime:   endTime,
-		// TODO: Set resource here and put it in the same TraceDataOld.
-		Attributes: &octrace.Span_Attributes{
-			AttributeMap: map[string]*octrace.AttributeValue{
-				"span-attr": {
-					Value: &octrace.AttributeValue_StringValue{
-						StringValue: &octrace.TruncatableString{Value: "span-attr-val"},
-					},
-				},
-			},
-			DroppedAttributesCount: 5,
-		},
+		Status: &octrace.Status{},
 	}
 
 	tests := []struct {
-		name string
-		td   pdata.Traces
-		oc   []consumerdata.TraceData
+		name     string
+		td       pdata.Traces
+		Node     *occommon.Node
+		Resource *ocresource.Resource
+		Spans    []*octrace.Span
 	}{
 		{
-			name: "empty",
-			td:   testdata.GenerateTraceDataEmpty(),
-			oc:   []consumerdata.TraceData(nil),
+			name:     "one-empty-resource-spans",
+			td:       testdata.GenerateTracesOneEmptyResourceSpans(),
+			Node:     nil,
+			Resource: nil,
+			Spans:    []*octrace.Span(nil),
 		},
 
 		{
-			name: "one-empty-resource-spans",
-			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         nil,
-					Resource:     nil,
-					Spans:        []*octrace.Span(nil),
-					SourceFormat: sourceFormat,
-				},
-			},
+			name:     "no-libraries",
+			td:       testdata.GenerateTracesNoLibraries(),
+			Node:     ocNode,
+			Resource: ocResource1,
+			Spans:    []*octrace.Span(nil),
 		},
 
 		{
-			name: "one-empty-one-nil-resource-spans",
-			td:   testdata.GenerateTraceDataOneEmptyOneNilResourceSpans(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         nil,
-					Resource:     nil,
-					Spans:        []*octrace.Span(nil),
-					SourceFormat: sourceFormat,
-				},
-			},
+			name:     "one-empty-instrumentation-library",
+			td:       testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
+			Node:     ocNode,
+			Resource: ocResource1,
+			Spans:    []*octrace.Span{},
 		},
 
 		{
-			name: "no-libraries",
-			td:   testdata.GenerateTraceDataNoLibraries(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span(nil),
-					SourceFormat: sourceFormat,
-				},
-			},
+			name:     "one-span-no-resource",
+			td:       testdata.GenerateTracesOneSpanNoResource(),
+			Node:     nil,
+			Resource: nil,
+			Spans:    []*octrace.Span{ocSpan1},
 		},
 
 		{
-			name: "one-empty-instrumentation-library",
-			td:   testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{},
-					SourceFormat: sourceFormat,
-				},
-			},
+			name:     "one-span",
+			td:       testdata.GenerateTracesOneSpan(),
+			Node:     ocNode,
+			Resource: ocResource1,
+			Spans:    []*octrace.Span{ocSpan1},
 		},
 
 		{
-			name: "one-empty-one-nil-instrumentation-library",
-			td:   testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{},
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
-			name: "one-span-no-resource",
-			td:   testdata.GenerateTraceDataOneSpanNoResource(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         nil,
-					Resource:     nil,
-					Spans:        []*octrace.Span{ocSpan1},
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
-			name: "one-span",
-			td:   testdata.GenerateTraceDataOneSpan(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{ocSpan1},
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
-			name: "one-span-one-nil",
-			td:   testdata.GenerateTraceDataOneSpanOneNil(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{ocSpan1},
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
-			name: "two-spans-same-resource",
-			td:   testdata.GenerateTraceDataTwoSpansSameResource(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{ocSpan1, ocSpan2},
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
-			name: "two-spans-same-resource-one-different",
-			td:   testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{ocSpan1, ocSpan2},
-					SourceFormat: sourceFormat,
-				},
-				{
-					Node:         ocNode,
-					Resource:     ocResource2,
-					Spans:        []*octrace.Span{ocSpan3},
-					SourceFormat: sourceFormat,
-				},
-			},
+			name:     "two-spans-same-resource",
+			td:       testdata.GenerateTracesTwoSpansSameResource(),
+			Node:     ocNode,
+			Resource: ocResource1,
+			Spans:    []*octrace.Span{ocSpan1, ocSpan2},
 		},
 	}
 
-	assert.EqualValues(t, testdata.NumTraceTests, len(tests))
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.EqualValues(t, test.oc, TraceDataToOC(test.td))
+			gotNode, gotResource, gotSpans := ResourceSpansToOC(test.td.ResourceSpans().At(0))
+			assert.EqualValues(t, test.Node, gotNode)
+			assert.EqualValues(t, test.Resource, gotResource)
+			assert.EqualValues(t, test.Spans, gotSpans)
 		})
 	}
 }
 
 func TestInternalTracesToOCTracesAndBack(t *testing.T) {
-	rscSpans, err := goldendataset.GenerateResourceSpans(
+	tds, err := goldendataset.GenerateTraces(
 		"../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
-		io.Reader(rand.New(rand.NewSource(2004))))
+		"../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
-	for _, rs := range rscSpans {
-		orig := make([]*otlptrace.ResourceSpans, 1)
-		orig[0] = rs
-		td := pdata.TracesFromOtlp(orig)
-		ocTraceData := TraceDataToOC(td)
-		assert.Equal(t, 1, len(ocTraceData))
-		assert.Equal(t, td.SpanCount(), len(ocTraceData[0].Spans))
-		tdFromOC := OCToTraceData(ocTraceData[0])
+	for _, td := range tds {
+		ocNode, ocResource, ocSpans := ResourceSpansToOC(td.ResourceSpans().At(0))
+		assert.Equal(t, td.SpanCount(), len(ocSpans))
+		tdFromOC := OCToTraces(ocNode, ocResource, ocSpans)
 		assert.NotNil(t, tdFromOC)
 		assert.Equal(t, td.SpanCount(), tdFromOC.SpanCount())
 	}

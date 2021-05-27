@@ -17,6 +17,7 @@ package exporterhelper
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -24,17 +25,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
+	"go.opencensus.io/tag"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
-	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	qCfg := DefaultQueueSettings()
+	rCfg := DefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -45,9 +50,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	mockR := newMockRequest(context.Background(), 2, consumererror.Permanent(errors.New("bad data")))
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(mockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
 	// In the newMockConcurrentExporter we count requests and items even for failed requests
@@ -57,10 +60,10 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 }
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
-	rCfg := CreateDefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.Enabled = false
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -71,9 +74,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	mockR := newMockRequest(context.Background(), 2, errors.New("transient error"))
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(mockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
 	// In the newMockConcurrentExporter we count requests and items even for failed requests
@@ -82,12 +83,12 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	ocs.checkDroppedItemsCount(t, 2)
 }
 
-func TestQueuedRetry_PartialError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+func TestQueuedRetry_OnError(t *testing.T) {
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -95,13 +96,11 @@ func TestQueuedRetry_PartialError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
-	mockR := newMockRequest(context.Background(), 2, partialErr)
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTracesOneSpan())
+	mockR := newMockRequest(context.Background(), 2, traceErr)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(mockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -112,10 +111,10 @@ func TestQueuedRetry_PartialError(t *testing.T) {
 }
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	rCfg := DefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -123,18 +122,14 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	firstMockR := newMockRequest(context.Background(), 2, errors.New("transient error"))
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(firstMockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(firstMockR))
 	})
 
 	// Enqueue another request to ensure when calling shutdown we drain the queue.
 	secondMockR := newMockRequest(context.Background(), 3, nil)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(secondMockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(secondMockR))
 	})
 
 	assert.NoError(t, be.Shutdown(context.Background()))
@@ -145,49 +140,43 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	// secondMockR.checkNumRequests(t, 1)
 	// ocs.checkSendItemsCount(t, 3)
 	ocs.checkDroppedItemsCount(t, 2)
-	// require.Zero(t, be.qrSender.queue.Size())
+	// require.Zero(t, be.qrSender.queue.OtlpProtoSize())
 }
 
-func TestQueuedRetry_PreserveCancellation(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	rCfg := DefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, be.Shutdown(context.Background()))
+	})
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	mockR := newMockRequest(ctx, 2, errors.New("transient error"))
-	start := time.Now()
+	cancelFunc()
+	mockR := newMockRequest(ctx, 2, nil)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(mockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(mockR))
 	})
-	cancelFunc()
+	ocs.awaitAsyncProcessing()
 
-	// Stop should succeed and not retry.
-	assert.NoError(t, be.Shutdown(context.Background()))
-
-	// We should ensure that we actually did not wait for the initial backoff (5 sec).
-	assert.True(t, 5*time.Second > time.Since(start))
-
-	// In the newMockConcurrentExporter we count requests and items even for failed requests.
 	mockR.checkNumRequests(t, 1)
-	ocs.checkSendItemsCount(t, 0)
-	ocs.checkDroppedItemsCount(t, 2)
+	ocs.checkSendItemsCount(t, 2)
+	ocs.checkDroppedItemsCount(t, 0)
 	require.Zero(t, be.qrSender.queue.Size())
 }
 
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -197,25 +186,21 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 
 	ocs.run(func() {
 		// Add an item that will always fail.
-		droppedItems, err := be.sender.send(newErrorRequest(context.Background()))
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(newErrorRequest(context.Background())))
 	})
 
 	mockR := newMockRequest(context.Background(), 2, nil)
 	start := time.Now()
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(mockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
-	// We should ensure that we wait for more than MaxElapsedTime, but not too much.
+	// We should ensure that we wait for more than 50ms but less than 150ms (50% less and 50% more than max elapsed).
 	waitingTime := time.Since(start)
-	assert.True(t, 100*time.Millisecond < waitingTime)
-	assert.True(t, 5*time.Second > waitingTime)
+	assert.Less(t, 50*time.Millisecond, waitingTime)
+	assert.Less(t, waitingTime, 150*time.Millisecond)
 
 	// In the newMockConcurrentExporter we count requests and items even for failed requests.
 	mockR.checkNumRequests(t, 1)
@@ -225,11 +210,11 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 }
 
 func TestQueuedRetry_ThrottleError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = 10 * time.Millisecond
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -241,9 +226,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	start := time.Now()
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(mockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -257,12 +240,12 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 }
 
 func TestQueuedRetry_RetryOnError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -273,9 +256,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	mockR := newMockRequest(context.Background(), 2, errors.New("transient error"))
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		droppedItems, err := be.sender.send(mockR)
-		require.NoError(t, err)
-		assert.Equal(t, 0, droppedItems)
+		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -287,19 +268,18 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 }
 
 func TestQueuedRetry_DropOnFull(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.QueueSize = 0
-	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	rCfg := DefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
-	droppedItems, err := be.sender.send(newMockRequest(context.Background(), 2, errors.New("transient error")))
+	err := be.sender.send(newMockRequest(context.Background(), 2, errors.New("transient error")))
 	require.Error(t, err)
-	assert.Equal(t, 2, droppedItems)
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
@@ -307,9 +287,9 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	qCfg := CreateDefaultQueueSettings()
-	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	qCfg := DefaultQueueSettings()
+	rCfg := DefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -318,30 +298,68 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	})
 
 	wantRequests := 10
+	reqs := make([]*mockRequest, 0, 10)
 	for i := 0; i < wantRequests; i++ {
 		ocs.run(func() {
-			droppedItems, err := be.sender.send(newMockRequest(context.Background(), 2, nil))
-			require.NoError(t, err)
-			assert.Equal(t, 0, droppedItems)
+			req := newMockRequest(context.Background(), 2, nil)
+			reqs = append(reqs, req)
+			require.NoError(t, be.sender.send(req))
 		})
 	}
 
 	// Wait until all batches received
 	ocs.awaitAsyncProcessing()
 
+	require.Len(t, reqs, wantRequests)
+	for _, req := range reqs {
+		req.checkNumRequests(t, 1)
+	}
+
 	ocs.checkSendItemsCount(t, 2*wantRequests)
 	ocs.checkDroppedItemsCount(t, 0)
+}
+
+func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
+	qCfg := DefaultQueueSettings()
+	qCfg.NumConsumers = 0 // to make every request go straight to the queue
+	rCfg := DefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)))
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+
+	for i := 0; i < 7; i++ {
+		require.NoError(t, be.sender.send(newErrorRequest(context.Background())))
+	}
+	checkValueForProducer(t, defaultExporterTags, int64(7), "exporter/queue_size")
+
+	assert.NoError(t, be.Shutdown(context.Background()))
+	checkValueForProducer(t, defaultExporterTags, int64(0), "exporter/queue_size")
+}
+
+func TestNoCancellationContext(t *testing.T) {
+	deadline := time.Now().Add(1 * time.Second)
+	ctx, cancelFunc := context.WithDeadline(context.Background(), deadline)
+	cancelFunc()
+	require.Error(t, ctx.Err())
+	d, ok := ctx.Deadline()
+	require.True(t, ok)
+	require.Equal(t, deadline, d)
+
+	nctx := noCancellationContext{Context: ctx}
+	assert.NoError(t, nctx.Err())
+	d, ok = nctx.Deadline()
+	assert.False(t, ok)
+	assert.True(t, d.IsZero())
 }
 
 type mockErrorRequest struct {
 	baseRequest
 }
 
-func (mer *mockErrorRequest) export(_ context.Context) (int, error) {
-	return 0, errors.New("transient error")
+func (mer *mockErrorRequest) export(_ context.Context) error {
+	return errors.New("transient error")
 }
 
-func (mer *mockErrorRequest) onPartialError(consumererror.PartialError) request {
+func (mer *mockErrorRequest) onError(error) request {
 	return mer
 }
 
@@ -363,19 +381,20 @@ type mockRequest struct {
 	requestCount *int64
 }
 
-func (m *mockRequest) export(_ context.Context) (int, error) {
+func (m *mockRequest) export(ctx context.Context) error {
 	atomic.AddInt64(m.requestCount, 1)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	err := m.consumeError
 	m.consumeError = nil
 	if err != nil {
-		return m.cnt, err
+		return err
 	}
-	return 0, nil
+	// Respond like gRPC/HTTP, if context is cancelled, return error
+	return ctx.Err()
 }
 
-func (m *mockRequest) onPartialError(consumererror.PartialError) request {
+func (m *mockRequest) onError(error) request {
 	return &mockRequest{
 		baseRequest:  m.baseRequest,
 		cnt:          1,
@@ -414,12 +433,15 @@ func newObservabilityConsumerSender(nextSender requestSender) *observabilityCons
 	return &observabilityConsumerSender{waitGroup: new(sync.WaitGroup), nextSender: nextSender}
 }
 
-func (ocs *observabilityConsumerSender) send(req request) (int, error) {
-	dic, err := ocs.nextSender.send(req)
-	atomic.AddInt64(&ocs.sentItemsCount, int64(req.count()-dic))
-	atomic.AddInt64(&ocs.droppedItemsCount, int64(dic))
+func (ocs *observabilityConsumerSender) send(req request) error {
+	err := ocs.nextSender.send(req)
+	if err != nil {
+		atomic.AddInt64(&ocs.droppedItemsCount, int64(req.count()))
+	} else {
+		atomic.AddInt64(&ocs.sentItemsCount, int64(req.count()))
+	}
 	ocs.waitGroup.Done()
-	return dic, err
+	return err
 }
 
 func (ocs *observabilityConsumerSender) run(fn func()) {
@@ -437,4 +459,41 @@ func (ocs *observabilityConsumerSender) checkSendItemsCount(t *testing.T, want i
 
 func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, want int) {
 	assert.EqualValues(t, want, atomic.LoadInt64(&ocs.droppedItemsCount))
+}
+
+// checkValueForProducer checks that the given metrics with wantTags is reported by one of the
+// metric producers
+func checkValueForProducer(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
+	producers := metricproducer.GlobalManager().GetAll()
+	for _, producer := range producers {
+		for _, metric := range producer.Read() {
+			if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
+				lastValue := metric.TimeSeries[len(metric.TimeSeries)-1]
+				if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, lastValue.LabelValues) {
+					require.Equal(t, value, lastValue.Points[len(lastValue.Points)-1].Value.(int64))
+					return
+				}
+
+			}
+		}
+	}
+
+	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
+}
+
+// tagsMatchLabelKeys returns true if provided tags match keys and values
+func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []metricdata.LabelValue) bool {
+	if len(tags) != len(keys) {
+		return false
+	}
+	for i := 0; i < len(tags); i++ {
+		var labelVal string
+		if labels[i].Present {
+			labelVal = labels[i].Value
+		}
+		if tags[i].Key.Name() != keys[i].Key || tags[i].Value != labelVal {
+			return false
+		}
+	}
+	return true
 }

@@ -1,3 +1,26 @@
+# Using Contexts:
+#   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
+#   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
+#   
+#   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
+#   explicitly enables the context for the job. 
+#
+#   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
+#   part of the approved security groups for the given context. This means that contributors who are not part of the
+#   OpenTelemetry GitHub organisation will not be able to run jobs that depend on contexts. As a result, PR pipelines
+#   should never depend on any contexts and never use any tokens/secrets.
+#
+#   This CI pipeline uses two contexts:
+#      - github-release-and-issues-api-token
+#        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
+#        We use this to report failures as issues back to the GitHub project.
+#        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
+#        
+#      - dockerhub-token
+#        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
+#        This is used to publish docker images to Docker Hub.
+#        Only project approvers and maintainers can run jobs that depend on this context such e.g, publish-stable.
+
 version: 2.1
 
 orbs:
@@ -6,7 +29,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
 
 commands:
   verify_dist_files_exist:
@@ -84,49 +107,29 @@ commands:
     steps:
       - when:
           condition:
-            equal: [master, << pipeline.git.branch >>]
+            equal: [main, << pipeline.git.branch >>]
           steps:
             - run:
                 name: Generate GitHub Issue
                 command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 
-  install_fluentbit:
+  run_loadtest:
     steps:
-      - run: |
-          sudo chmod 0777 -R /opt
-      - restore_cache: # restores saved cache if no changes are detected since last run
-          keys:
-            - "cimg-fluentbit-{{ arch }}-1.5.3"
-      - run: |
-          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
-
-          if [[ -f /opt/td-agent-bit/bin/td-agent-bit ]]; then
-            exit 0
-          fi
-
-          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
-          sudo dpkg -i ./td-agent-bit*.deb
-      - save_cache:
-          key: cimg-fluentbit-{{ arch }}-1.5.3
-          paths:
-            - /opt/td-agent-bit
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: TEST_ARGS="-test.run=$(make -s testbed-list-loadtest | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-loadtest
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
 
 workflows:
   version: 2
   build-and-test:
     jobs:
-      - windows-test:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - setup-environment:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - lint:
-          requires:
-            - setup-environment
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
@@ -136,30 +139,22 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - loadtest-with-github-reports:
+          context:
+            - github-release-and-issues-api-token
+          requires:
+            - cross-compile
+          filters:
+            branches:
+              only: main
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
           requires:
             - cross-compile
           filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - correctness:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - test:
-          requires:
-            - setup-environment
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - gosec:
-          requires:
-            - setup-environment
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+            branches:
+              ignore: main
       - coverage:
           requires:
             - setup-environment
@@ -173,28 +168,37 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
+          name: publish-check-main
           requires:
             - cross-compile
-            - correctness
-            - lint
-            - loadtest
-            - test
-            - gosec
+            - loadtest-with-github-reports
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
-      - publish-stable:
+          filters:
+            branches:
+              only: main
+      - publish-check:
+          name: publish-check-pr
           requires:
             - cross-compile
-            - correctness
-            - lint
             - loadtest
-            - test
-            - gosec
             - coverage
-            - windows-test
+            - windows-msi
+            - deb-package
+            - rpm-package
+          filters:
+            branches:
+              ignore: main
+      - publish-stable:
+          context:
+            - github-release-and-issues-api-token
+            - dockerhub-token
+          requires:
+            - cross-compile
+            - loadtest
+            - coverage
             - windows-msi
             - deb-package
             - rpm-package
@@ -204,27 +208,20 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-dev:
+          context:
+            - dockerhub-token
           requires:
             - cross-compile
-            - correctness
-            - lint
             - loadtest
-            - test
-            - gosec
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
           filters:
             branches:
-              only: master
+              only: main
             tags:
               ignore: /.*/
-      - check-links:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-package:
           name: deb-package
           package_type: deb
@@ -238,18 +235,6 @@ workflows:
           package_type: rpm
           requires:
             - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-  contrib-test:
-    jobs:
-      - setup-environment:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - contribtest:
-          requires:
-            - setup-environment
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
@@ -273,14 +258,6 @@ jobs:
           root: ~/
           paths: go/bin
 
-  lint:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Lint
-          command: make -j4 checklicense impi lint misspell
-
   cross-compile:
     executor: golang
     parallelism: 4
@@ -289,9 +266,22 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - run:
+          name: Log checksums to console
+          command: shasum -a 256 bin/*
       - persist_to_workspace:
           root: ~/
           paths: project/bin
+
+  loadtest-with-github-reports:
+    executor: golang
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    parallelism: 6
+    resource_class: medium+
+    steps:
+      - run_loadtest
+      - github_issue_generator
 
   loadtest:
     executor: golang
@@ -300,69 +290,7 @@ jobs:
     parallelism: 6
     resource_class: medium+
     steps:
-      - attach_to_workspace
-      - install_fluentbit
-      - run:
-          name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -s testbed-list-loadtest | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-loadtest
-      - store_artifacts:
-          path: testbed/tests/results
-      - store_test_results:
-          path: testbed/tests/results/junit
-      - github_issue_generator
-
-  correctness:
-    executor: golang
-    environment:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
-    parallelism: 4
-    resource_class: medium+
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness
-      - github_issue_generator
-
-  test:
-    executor: golang
-    environment:
-      TEST_RESULTS: unit-test-results/junit/results.xml
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Unit tests
-          command: |
-            mkdir -p unit-test-results/junit
-            trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
-            make test | tee unit-test-results/go-unit-tests.out
-      - store_artifacts:
-          path: unit-test-results
-      - store_test_results:
-          path: unit-test-results/junit
-      - save_module_cache
-      - github_issue_generator
-
-  contribtest:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Contrib repo tests
-          command: |
-            contrib_path=/tmp/opentelemetry-collector-contrib
-            git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
-            make CONTRIB_PATH=$contrib_path check-contrib
-
-      - save_module_cache
-
-  gosec:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Golang Security Checker
-          command: make lint-gosec
+      - run_loadtest
 
   coverage:
     executor: golang
@@ -373,14 +301,15 @@ jobs:
           command: sudo apt update && sudo apt-get install bzr time
       - run:
           name: Coverage tests
-          command: make test-with-cover
-      - run:
-          name: Code coverage
-          command: bash <(curl -s https://codecov.io/bash)
+          command: make gotest-with-cover
+# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
+#      - run:
+#          name: Code coverage
+#          command: bash <(curl -s https://codecov.io/bash)
 
   publish-check:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -396,7 +325,7 @@ jobs:
 
   publish-stable:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - verify_dist_files_exist
@@ -417,7 +346,7 @@ jobs:
 
   publish-dev:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - verify_dist_files_exist
@@ -425,40 +354,6 @@ jobs:
       - publish_docker_images:
           repo: opentelemetry-collector-dev
           tag: ${CIRCLE_SHA1}
-
-  windows-test:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    environment:
-      GOPATH=~/go
-    steps:
-      - checkout
-      - restore_module_cache
-      - run:
-          name: Upgrade golang
-          command: |
-            choco upgrade golang --version=1.15
-            refreshenv
-      - run:
-          name: Unit tests
-          command: go test ./...
-      - save_module_cache
-      - github_issue_generator
-
-  check-links:
-    docker:
-      - image: circleci/node:9.10
-    steps:
-      - checkout
-      - run:
-          name: Check links in markdown docs
-          command: |
-            pushd $HOME
-            npm install --save-dev markdown-link-check@3.8.1
-            popd
-            export NODE_PATH=$HOME/node_modules
-            bash .circleci/check-links/check-links.sh
 
   windows-msi:
     executor:

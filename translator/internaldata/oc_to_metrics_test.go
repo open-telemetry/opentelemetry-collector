@@ -18,13 +18,13 @@ import (
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 func TestOCToMetrics(t *testing.T) {
@@ -32,33 +32,33 @@ func TestOCToMetrics(t *testing.T) {
 	allTypesNoDataPoints := testdata.GenerateMetricsAllTypesNoDataPoints()
 	dh := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
 	ih := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
-	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	dh.DoubleHistogram().CopyTo(ih.DoubleHistogram())
+	ih.SetDataType(pdata.MetricDataTypeHistogram)
+	dh.Histogram().CopyTo(ih.Histogram())
 
-	sampleMetricData := testdata.GenerateMetricsWithCountersHistograms()
+	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2)
 	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3)
-	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	dh.DoubleHistogram().CopyTo(ih.DoubleHistogram())
+	ih.SetDataType(pdata.MetricDataTypeHistogram)
+	dh.Histogram().CopyTo(ih.Histogram())
 
 	tests := []struct {
 		name     string
-		oc       consumerdata.MetricsData
+		oc       *agentmetricspb.ExportMetricsServiceRequest
 		internal pdata.Metrics
 	}{
 		{
 			name:     "empty",
-			oc:       consumerdata.MetricsData{},
-			internal: testdata.GenerateMetricsEmpty(),
+			oc:       &agentmetricspb.ExportMetricsServiceRequest{},
+			internal: pdata.NewMetrics(),
 		},
 
 		{
 			name: "one-empty-resource-metrics",
-			oc: consumerdata.MetricsData{
+			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Node:     &occommon.Node{},
 				Resource: &ocresource.Resource{},
 			},
-			internal: wrapMetricsWithEmptyResource(testdata.GenerateMetricsOneEmptyResourceMetrics()),
+			internal: testdata.GenerateMetricsOneEmptyResourceMetrics(),
 		},
 
 		{
@@ -87,14 +87,14 @@ func TestOCToMetrics(t *testing.T) {
 
 		{
 			name: "one-metric-one-summary",
-			oc: consumerdata.MetricsData{
+			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
 					generateOCTestMetricInt(),
-					generateOCTestMetricSummary(),
+					generateOCTestMetricDoubleSummary(),
 				},
 			},
-			internal: testdata.GenerateMetricsOneMetricOneNil(),
+			internal: testdata.GenerateMetricsOneCounterOneSummaryMetrics(),
 		},
 
 		{
@@ -123,13 +123,14 @@ func TestOCToMetrics(t *testing.T) {
 
 		{
 			name: "sample-metric",
-			oc: consumerdata.MetricsData{
+			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
 					generateOCTestMetricInt(),
 					generateOCTestMetricDouble(),
 					generateOCTestMetricDoubleHistogram(),
 					generateOCTestMetricIntHistogram(),
+					generateOCTestMetricDoubleSummary(),
 				},
 			},
 			internal: sampleMetricData,
@@ -138,29 +139,10 @@ func TestOCToMetrics(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := OCToMetrics(test.oc)
+			got := OCToMetrics(test.oc.Node, test.oc.Resource, test.oc.Metrics)
 			assert.EqualValues(t, test.internal, got)
-
-			ocslice := []consumerdata.MetricsData{
-				test.oc,
-				test.oc,
-			}
-			wantSlice := pdata.NewMetrics()
-			// Double the ResourceMetrics only if not empty.
-			if test.internal.ResourceMetrics().Len() != 0 {
-				test.internal.Clone().ResourceMetrics().MoveAndAppendTo(wantSlice.ResourceMetrics())
-				test.internal.Clone().ResourceMetrics().MoveAndAppendTo(wantSlice.ResourceMetrics())
-			}
-			gotSlice := OCSliceToMetrics(ocslice)
-			assert.EqualValues(t, wantSlice, gotSlice)
 		})
 	}
-}
-
-// TODO: Try to avoid unnecessary Resource object allocation.
-func wrapMetricsWithEmptyResource(md pdata.Metrics) pdata.Metrics {
-	md.ResourceMetrics().At(0).Resource().InitEmpty()
-	return md
 }
 
 func TestOCToMetrics_ResourceInMetric(t *testing.T) {
@@ -174,7 +156,7 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	oc.Metrics = append(oc.Metrics, oc2.Metrics...)
 	oc.Metrics[1].Resource = oc2.Resource
 	oc.Metrics[1].Resource.Labels["resource-attr"] = "another-value"
-	got := OCToMetrics(oc)
+	got := OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 	assert.EqualValues(t, want, got)
 }
 
@@ -187,55 +169,49 @@ func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 	// We shouldn't have a "combined" resource after conversion
 	oc.Metrics[0].Resource = oc.Resource
 	oc.Resource = nil
-	got := OCToMetrics(oc)
+	got := OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 	assert.EqualValues(t, want, got)
 }
 
 func BenchmarkMetricIntOCToMetrics(b *testing.B) {
-	ocMetric := consumerdata.MetricsData{
-		Resource: generateOCTestResource(),
-		Metrics: []*ocmetrics.Metric{
-			generateOCTestMetricInt(),
-			generateOCTestMetricInt(),
-			generateOCTestMetricInt(),
-		},
+	ocResource := generateOCTestResource()
+	ocMetrics := []*ocmetrics.Metric{
+		generateOCTestMetricInt(),
+		generateOCTestMetricInt(),
+		generateOCTestMetricInt(),
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		OCToMetrics(ocMetric)
+		OCToMetrics(nil, ocResource, ocMetrics)
 	}
 }
 
 func BenchmarkMetricDoubleOCToMetrics(b *testing.B) {
-	ocMetric := consumerdata.MetricsData{
-		Resource: generateOCTestResource(),
-		Metrics: []*ocmetrics.Metric{
-			generateOCTestMetricDouble(),
-			generateOCTestMetricDouble(),
-			generateOCTestMetricDouble(),
-		},
+	ocResource := generateOCTestResource()
+	ocMetrics := []*ocmetrics.Metric{
+		generateOCTestMetricDouble(),
+		generateOCTestMetricDouble(),
+		generateOCTestMetricDouble(),
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		OCToMetrics(ocMetric)
+		OCToMetrics(nil, ocResource, ocMetrics)
 	}
 }
 
 func BenchmarkMetricHistogramOCToMetrics(b *testing.B) {
-	ocMetric := consumerdata.MetricsData{
-		Resource: generateOCTestResource(),
-		Metrics: []*ocmetrics.Metric{
-			generateOCTestMetricDoubleHistogram(),
-			generateOCTestMetricDoubleHistogram(),
-			generateOCTestMetricDoubleHistogram(),
-		},
+	ocResource := generateOCTestResource()
+	ocMetrics := []*ocmetrics.Metric{
+		generateOCTestMetricDoubleHistogram(),
+		generateOCTestMetricDoubleHistogram(),
+		generateOCTestMetricDoubleHistogram(),
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		OCToMetrics(ocMetric)
+		OCToMetrics(nil, ocResource, ocMetrics)
 	}
 }
 

@@ -16,6 +16,7 @@ package internal
 
 import (
 	"reflect"
+	"runtime"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -960,28 +961,56 @@ func Test_metricBuilder_histogram(t *testing.T) {
 			},
 		},
 		{
-			name: "corrupted-no-buckets",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_sum", 99),
-						createDataPoint("hist_test_count", 10),
-					},
-				},
-			},
-			wants: [][]*metricspb.Metric{
-				{},
-			},
-		},
-		{
-			name: "corrupted-no-sum",
+			name: "no-sum",
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{
 						createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
 						createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
 						createDataPoint("hist_test", 3, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_count", 3),
+						createDataPoint("hist_test_count", 3, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "hist_test",
+							Type:      metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								StartTimestamp: timestampFromMs(startTs),
+								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+										DistributionValue: &metricspb.DistributionValue{
+											BucketOptions: &metricspb.DistributionValue_BucketOptions{
+												Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+													Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+														Bounds: []float64{10, 20},
+													},
+												},
+											},
+											Count:   3,
+											Sum:     0,
+											Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 1}, {Count: 1}},
+										}}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "corrupted-no-buckets",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("hist_test_sum", 99),
+						createDataPoint("hist_test_count", 10),
 					},
 				},
 			},
@@ -997,7 +1026,7 @@ func Test_metricBuilder_histogram(t *testing.T) {
 						createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
 						createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
 						createDataPoint("hist_test", 3, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_sum", 99),
+						createDataPoint("hist_test_sum", 99, "foo", "bar"),
 					},
 				},
 			},
@@ -1023,6 +1052,64 @@ func Test_metricBuilder_summary(t *testing.T) {
 			},
 			wants: [][]*metricspb.Metric{
 				{},
+			},
+		},
+		{
+			name: "no-count",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("summary_test", 1, "foo", "bar", "quantile", "0.5"),
+						createDataPoint("summary_test", 2, "foo", "bar", "quantile", "0.75"),
+						createDataPoint("summary_test", 5, "foo", "bar", "quantile", "1"),
+						createDataPoint("summary_test_sum", 500, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{},
+			},
+		},
+		{
+			name: "no-sum",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("summary_test", 1, "foo", "bar", "quantile", "0.5"),
+						createDataPoint("summary_test", 2, "foo", "bar", "quantile", "0.75"),
+						createDataPoint("summary_test", 5, "foo", "bar", "quantile", "1"),
+						createDataPoint("summary_test_count", 500, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "summary_test",
+							Type:      metricspb.MetricDescriptor_SUMMARY,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								StartTimestamp: timestampFromMs(startTs),
+								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_SummaryValue{
+										SummaryValue: &metricspb.SummaryValue{
+											Sum:   &wrapperspb.DoubleValue{Value: 0.0},
+											Count: &wrapperspb.Int64Value{Value: 500},
+											Snapshot: &metricspb.SummaryValue_Snapshot{
+												PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+													{Percentile: 50.0, Value: 1},
+													{Percentile: 75.0, Value: 2},
+													{Percentile: 100.0, Value: 5},
+												},
+											}}}},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -1205,6 +1292,15 @@ func Test_isUsefulLabel(t *testing.T) {
 	}
 }
 
+func Benchmark_dpgSignature(b *testing.B) {
+	knownLabelKeys := []string{"a", "b"}
+	labels := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		runtime.KeepAlive(dpgSignature(knownLabelKeys, labels))
+	}
+}
+
 func Test_dpgSignature(t *testing.T) {
 	knownLabelKeys := []string{"a", "b"}
 
@@ -1213,16 +1309,16 @@ func Test_dpgSignature(t *testing.T) {
 		ls   labels.Labels
 		want string
 	}{
-		{"1st label", labels.FromStrings("a", "va"), `[]string{"a=va"}`},
-		{"2nd label", labels.FromStrings("b", "vb"), `[]string{"b=vb"}`},
-		{"two labels", labels.FromStrings("a", "va", "b", "vb"), `[]string{"a=va", "b=vb"}`},
-		{"extra label", labels.FromStrings("a", "va", "b", "vb", "x", "xa"), `[]string{"a=va", "b=vb"}`},
-		{"different order", labels.FromStrings("b", "vb", "a", "va"), `[]string{"a=va", "b=vb"}`},
+		{"1st label", labels.FromStrings("a", "va"), `"a=va"`},
+		{"2nd label", labels.FromStrings("b", "vb"), `"b=vb"`},
+		{"two labels", labels.FromStrings("a", "va", "b", "vb"), `"a=va""b=vb"`},
+		{"extra label", labels.FromStrings("a", "va", "b", "vb", "x", "xa"), `"a=va""b=vb"`},
+		{"different order", labels.FromStrings("b", "vb", "a", "va"), `"a=va""b=vb"`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := dpgSignature(knownLabelKeys, tt.ls); got != tt.want {
-				t.Errorf("dpgSignature() = %v, want %v", got, tt.want)
+				t.Errorf("dpgSignature() = %q, want %q", got, tt.want)
 			}
 		})
 	}

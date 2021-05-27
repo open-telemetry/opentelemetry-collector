@@ -15,15 +15,29 @@
 package healthcheckextension
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Port is the port used to publish the health check status.
 	// The default value is 13133.
+	// Deprecated: use Endpoint instead.
 	Port uint16 `mapstructure:"port"`
+
+	// TCPAddr represents a tcp endpoint address that is to publish the health
+	// check status.
+	// The default endpoint is "0.0.0.0:13133".
+	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
+}
+
+var _ config.Extension = (*Config)(nil)
+
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

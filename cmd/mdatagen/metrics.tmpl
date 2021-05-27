@@ -17,42 +17,103 @@
 package {{ .Package }}
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Type is the component type name.
-const Type configmodels.Type = "{{ .Name }}"
+const Type config.Type = "{{ .Name }}"
 
-{{- /* Renders metric descriptors. */}}
-// Metrics contains the metric descriptors for the possible metrics.
-var Metrics = struct {
-	{{- range $name, $metric := .Metrics }}
-	// {{ $name.Render }} in {{ $metric.Unit }} ({{ $metric.Description }})
-	{{ $name.Render }} pdata.Metric
-	{{- end }}
-}{
-	{{- range $name, $metric := .Metrics }}
-	func() pdata.Metric {
-		metric := pdata.NewMetric()
-		metric.InitEmpty()
-		metric.SetName("{{ $name }}")
-		metric.SetDescription("{{ $metric.Description }}")
-		metric.SetUnit("{{ $metric.Unit }}")
-		metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
-		data := metric.{{ $metric.Data.Type }}()
-		data.InitEmpty()
-		{{- if $metric.Data.HasMonotonic }}
-		data.SetIsMonotonic({{ $metric.Data.Monotonic }})
-		{{- end }}
-		{{- if $metric.Data.HasAggregated }}
-		data.SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
-		{{- end }}
+// MetricIntf is an interface to generically interact with generated metric.
+type MetricIntf interface {
+	Name() string
+	New() pdata.Metric
+	Init(metric pdata.Metric)
+}
 
-		return metric
-    }(),
+// Intentionally not exposing this so that it is opaque and can change freely.
+type metricImpl struct {
+	name string
+	initFunc func(pdata.Metric)
+}
+
+// Name returns the metric name.
+func (m *metricImpl) Name() string {
+	return m.name
+}
+
+// New creates a metric object preinitialized.
+func (m *metricImpl) New() pdata.Metric {
+	metric := pdata.NewMetric()
+	m.Init(metric)
+	return metric
+}
+
+// Init initializes the provided metric object.
+func (m *metricImpl) Init(metric pdata.Metric) {
+	m.initFunc(metric)
+}
+
+type metricStruct struct {
+	{{- range $name, $metric := .Metrics }}
+	{{ $name.Render }} MetricIntf
 	{{- end }}
 }
+
+// Names returns a list of all the metric name strings.
+func (m *metricStruct) Names() []string {
+    return []string {
+    {{- range $name, $metric := .Metrics }}
+        "{{ $name }}",
+    {{- end }}
+    }
+}
+
+var metricsByName = map[string]MetricIntf {
+{{- range $name, $metric := .Metrics }}
+  "{{ $name }}": Metrics.{{ $name.Render }},
+{{- end }}
+}
+
+func (m *metricStruct) ByName(n string) MetricIntf {
+    return metricsByName[n]
+}
+
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+    return map[string]func(pdata.Metric) {
+    {{- range $name, $metric := .Metrics }}
+      Metrics.{{ $name.Render }}.Name(): Metrics.{{ $name.Render }}.Init,
+    {{- end }}
+    }
+}
+
+
+{{- /* Renders metric descriptors. */}}
+// Metrics contains a set of methods for each metric that help with
+// manipulating those metrics.
+var Metrics = &metricStruct{
+	{{- range $name, $metric := .Metrics }}
+	&metricImpl{
+		"{{ $name }}",
+		func(metric pdata.Metric) {
+			metric.SetName("{{ $name }}")
+			metric.SetDescription("{{ $metric.Description }}")
+			metric.SetUnit("{{ $metric.Unit }}")
+			metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
+			{{- if $metric.Data.HasMonotonic }}
+			metric.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
+			{{- end }}
+			{{- if $metric.Data.HasAggregated }}
+			metric.{{ $metric.Data.Type }}().SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
+			{{- end }}
+		},
+	},
+	{{- end }}
+}
+
+// M contains a set of methods for each metric that help with
+// manipulating those metrics. M is an alias for Metrics
+var M = Metrics
 
 {{- /* Renders label names. */}}
 // Labels contains the possible metric labels that can be used.
@@ -70,6 +131,10 @@ var Labels = struct {
     {{- end }}
     {{- end }}
 }
+
+// L contains the possible metric labels that can be used. L is an alias for
+// Labels.
+var L = Labels
 
 {{- /* Renders label enum values. */}}
 

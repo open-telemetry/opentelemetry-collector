@@ -1,27 +1,39 @@
 # Contributing Guide
 
-We'd love your help!
+We'd love your help! Please join our weekly [SIG
+meeting](https://github.com/open-telemetry/community#special-interest-groups).
 
 ## How to structure PRs to get expedient reviews?
 
-We recommend that any PR (unless it is trivial) to be smaller than 500 lines (excluding go mod/sum changes) in order to help reviewers to do a thorough and reasonably fast reviews.
+We recommend that any PR (unless it is trivial) to be smaller than 500 lines
+(excluding go mod/sum changes) in order to help reviewers to do a thorough and
+reasonably fast reviews.
 
 ### When adding a new component
 
-Consider submitting different PRs for (more details about adding new components [here](#adding-new-components)) :
+Consider submitting different PRs for (more details about adding new components
+[here](#adding-new-components)) :
 
 * First PR should include the overall structure of the new component:
-  * Readme, configuration, and factory implementation usually using the helper factory structs.
-  * This PR is usually trivial to review, so the size limit does not apply to it.
-* Second PR should include the concrete implementation of the component.
-If the size of this PR is larger than the recommended size consider splitting it in multiple PRs.
-* Last PR should enable the new component and add it to the `otelcontribcol` binary by updating the `components.go` file.
-The component must be enabled only after sufficient testing, and there is enough confidence in the stability and quality of the component.
+  * Readme, configuration, and factory implementation usually using the helper
+    factory structs.
+  * This PR is usually trivial to review, so the size limit does not apply to
+    it.
+* Second PR should include the concrete implementation of the component. If the
+  size of this PR is larger than the recommended size consider splitting it in
+  multiple PRs.
+* Last PR should enable the new component and add it to the `otelcontribcol`
+  binary by updating the `components.go` file. The component must be enabled
+  only after sufficient testing, and there is enough confidence in the
+  stability and quality of the component.
+* Once a new component has been added to the executable, please add the component 
+  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Refactoring Work
 
-Any refactoring work must be split in its own PR that does not include any behavior changes.
-It is important to do this to avoid hidden changes in large and trivial refactoring PRs.
+Any refactoring work must be split in its own PR that does not include any
+behavior changes. It is important to do this to avoid hidden changes in large
+and trivial refactoring PRs.
 
 ## Report a bug or requesting feature
 
@@ -36,7 +48,7 @@ Reporting bugs is an important contribution. Please make sure to include:
 ### Before you start
 
 Please read project contribution
-[guide](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md)
+[guide](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md)
 for general practices for OpenTelemetry project.
 
 Select a good issue from the links below (ordered by difficulty/complexity):
@@ -63,7 +75,7 @@ Follow the instructions below to create your PR.
 In the interest of keeping this repository clean and manageable, you should
 work from a fork. To create a fork, click the 'Fork' button at the top of the
 repository, then clone the fork locally using `git clone
-git@github.com:USERNAME/opentelemetry-service.git`.
+git@github.com:USERNAME/opentelemetry-collector.git`.
 
 You should also add this repository as an "upstream" repo to your local copy,
 in order to keep it up to date. You can add this as a remote like so:
@@ -74,19 +86,20 @@ Verify that the upstream exists:
 
 `git remote -v`
 
-To update your fork, fetch the upstream repo's branches and commits, then merge your master with upstream's master:
+To update your fork, fetch the upstream repo's branches and commits, then merge
+your `main` with upstream's `main`:
 
 ```
 git fetch upstream
-git checkout master
-git merge upstream/master
+git checkout main
+git merge upstream/main
 ```
 
 Remember to always work in a branch of your local copy, as you might otherwise
-have to contend with conflicts in master.
+have to contend with conflicts in `main`.
 
 Please also see [GitHub
-workflow](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md#github-workflow)
+workflow](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md#github-workflow)
 section of general project contributing guide.
 
 ## Required Tools
@@ -94,7 +107,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.14 and up)
+2. [go](https://golang.org/) (version 1.16 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -103,14 +116,14 @@ Working with the project sources requires the following tools:
 Fork the repo, checkout the upstream repo to your GOPATH by:
 
 ```
-$ GO111MODULE="" go get -d go.opentelemetry.io/collector
+$ git clone git@github.com:open-telemetry/opentelemetry-collector.git
 ```
 
 Add your fork as an origin:
 
 ```shell
-$ cd $(go env GOPATH)/src/go.opentelemetry.io/collector
-$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-service.git
+$ cd opentelemetry-collector
+$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collector.git
 ```
 
 Run tests, fmt and lint:
@@ -120,7 +133,8 @@ $ make install-tools # Only first time.
 $ make
 ```
 
-*Note:* the default build target requires tools that are installed at `$(go env GOPATH)/bin`, ensure that `$(go env GOPATH)/bin` is included in your `PATH`.
+*Note:* the default build target requires tools that are installed at `$(go env
+GOPATH)/bin`, ensure that `$(go env GOPATH)/bin` is included in your `PATH`.
 
 ## Creating a PR
 
@@ -138,7 +152,7 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.14.* and CircleCI.
+This project uses Go 1.16.* and CircleCI.
 
 CircleCI uses the Makefile with the `ci` target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
@@ -232,6 +246,16 @@ the event happens.
 Make log message human readable and also include data that is needed for easier
 understanding of what happened and in what context.
 
+### Observability
+
+Out of the box, your users should be able to observe the state of your component. 
+The collector exposes an OpenMetrics endpoint at `http://localhost:8888/metrics`
+where your data will land.
+
+When using the regular helpers, you should have some metrics added around key 
+events automatically. For instance, exporters should have `otelcol_exporter_sent_spans` 
+tracked without your exporter doing anything.
+
 ### Resource Usage
 
 Limit usage of CPU, RAM or other resources that the code can use. Do not write code
@@ -273,3 +297,20 @@ the automated [Testbed](testbed/README.md).
 ## Release
 
 See [release](docs/release.md) for details.
+
+## Contributing Images
+If you are adding any new images, please use [Excalidraw](https://excalidraw.com). It's a free and open source web application and doesn't require any account to get started. Once you've created the design, while exporting the image, make sure to tick **"Embed scene into exported file"** option. This allows the image to be imported in an editable format for other contributors later.
+
+## Common Issues
+
+Build fails due to dependency issues, e.g.
+
+```sh
+go: github.com/golangci/golangci-lint@v1.31.0 requires
+	github.com/tommy-muehle/go-mnd@v1.3.1-0.20200224220436-e6f9a994e8fa: invalid pseudo-version: git fetch --unshallow -f origin in /root/go/pkg/mod/cache/vcs/053b1e985f53e43f78db2b3feaeb7e40a2ae482c92734ba3982ca463d5bf19ce: exit status 128:
+	fatal: git fetch-pack: expected shallow list
+ ```
+
+`go env GOPROXY` should return `https://proxy.golang.org,direct`. If it does not, set it as an environment variable:
+
+`export GOPROXY=https://proxy.golang.org,direct`

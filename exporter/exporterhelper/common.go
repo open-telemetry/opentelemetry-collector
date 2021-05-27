@@ -16,29 +16,25 @@ package exporterhelper
 
 import (
 	"context"
-	"sync"
 	"time"
 
-	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/component/componenthelper"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 )
 
-var (
-	okStatus = trace.Status{Code: trace.StatusCodeOK}
-)
-
-// Settings for timeout. The timeout applies to individual attempts to send data to the backend.
+// TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
 type TimeoutSettings struct {
 	// Timeout is the timeout for every attempt to send data to the backend.
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// CreateDefaultTimeoutSettings returns the default settings for TimeoutSettings.
-func CreateDefaultTimeoutSettings() TimeoutSettings {
+// DefaultTimeoutSettings returns the default settings for TimeoutSettings.
+func DefaultTimeoutSettings() TimeoutSettings {
 	return TimeoutSettings{
 		Timeout: 5 * time.Second,
 	}
@@ -50,16 +46,17 @@ type request interface {
 	context() context.Context
 	// setContext updates the Context of the requests.
 	setContext(context.Context)
-	export(ctx context.Context) (int, error)
-	// Returns a new request that contains the items left to be sent.
-	onPartialError(consumererror.PartialError) request
+	export(ctx context.Context) error
+	// Returns a new request may contain the items left to be sent if some items failed to process and can be retried.
+	// Otherwise, it should return the original request.
+	onError(error) request
 	// Returns the count of spans/metric points or log records.
 	count() int
 }
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
-	send(req request) (int, error)
+	send(req request) error
 }
 
 // baseRequest is a base implementation for the request.
@@ -75,32 +72,26 @@ func (req *baseRequest) setContext(ctx context.Context) {
 	req.ctx = ctx
 }
 
-// Start specifies the function invoked when the exporter is being started.
-type Start func(context.Context, component.Host) error
-
-// Shutdown specifies the function invoked when the exporter is being shutdown.
-type Shutdown func(context.Context) error
-
-// internalOptions represents all the options that users can configure.
-type internalOptions struct {
+// baseSettings represents all the options that users can configure.
+type baseSettings struct {
+	componentOptions []componenthelper.Option
+	consumerOptions  []consumerhelper.Option
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
-	Start
-	Shutdown
+	ResourceToTelemetrySettings
 }
 
-// fromConfiguredOptions returns the internal options starting from the default and applying all configured options.
-func fromConfiguredOptions(options ...ExporterOption) *internalOptions {
+// fromOptions returns the internal options starting from the default and applying all configured options.
+func fromOptions(options ...Option) *baseSettings {
 	// Start from the default options:
-	opts := &internalOptions{
-		TimeoutSettings: CreateDefaultTimeoutSettings(),
-		// TODO: Enable queuing by default (call CreateDefaultQueueSettings)
+	opts := &baseSettings{
+		TimeoutSettings: DefaultTimeoutSettings(),
+		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
-		// TODO: Enable retry by default (call CreateDefaultRetrySettings)
-		RetrySettings: RetrySettings{Enabled: false},
-		Start:         func(ctx context.Context, host component.Host) error { return nil },
-		Shutdown:      func(ctx context.Context) error { return nil },
+		// TODO: Enable retry by default (call DefaultRetrySettings)
+		RetrySettings:               RetrySettings{Enabled: false},
+		ResourceToTelemetrySettings: defaultResourceToTelemetrySettings(),
 	}
 
 	for _, op := range options {
@@ -110,69 +101,79 @@ func fromConfiguredOptions(options ...ExporterOption) *internalOptions {
 	return opts
 }
 
-// ExporterOption apply changes to internalOptions.
-type ExporterOption func(*internalOptions)
+// Option apply changes to baseSettings.
+type Option func(*baseSettings)
 
-// WithShutdown overrides the default Shutdown function for an exporter.
-// The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown Shutdown) ExporterOption {
-	return func(o *internalOptions) {
-		o.Shutdown = shutdown
+// WithStart overrides the default Start function for an exporter.
+// The default start function does nothing and always returns nil.
+func WithStart(start componenthelper.StartFunc) Option {
+	return func(o *baseSettings) {
+		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
 	}
 }
 
-// WithStart overrides the default Start function for an exporter.
+// WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
-func WithStart(start Start) ExporterOption {
-	return func(o *internalOptions) {
-		o.Start = start
+func WithShutdown(shutdown componenthelper.ShutdownFunc) Option {
+	return func(o *baseSettings) {
+		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
 }
 
 // WithTimeout overrides the default TimeoutSettings for an exporter.
 // The default TimeoutSettings is 5 seconds.
-func WithTimeout(timeoutSettings TimeoutSettings) ExporterOption {
-	return func(o *internalOptions) {
+func WithTimeout(timeoutSettings TimeoutSettings) Option {
+	return func(o *baseSettings) {
 		o.TimeoutSettings = timeoutSettings
 	}
 }
 
 // WithRetry overrides the default RetrySettings for an exporter.
 // The default RetrySettings is to disable retries.
-func WithRetry(retrySettings RetrySettings) ExporterOption {
-	return func(o *internalOptions) {
+func WithRetry(retrySettings RetrySettings) Option {
+	return func(o *baseSettings) {
 		o.RetrySettings = retrySettings
 	}
 }
 
 // WithQueue overrides the default QueueSettings for an exporter.
 // The default QueueSettings is to disable queueing.
-func WithQueue(queueSettings QueueSettings) ExporterOption {
-	return func(o *internalOptions) {
+func WithQueue(queueSettings QueueSettings) Option {
+	return func(o *baseSettings) {
 		o.QueueSettings = queueSettings
+	}
+}
+
+// WithCapabilities overrides the default Capabilities() function for a Consumer.
+// The default is non-mutable data.
+// TODO: Verify if we can change the default to be mutable as we do for processors.
+func WithCapabilities(capabilities consumer.Capabilities) Option {
+	return func(o *baseSettings) {
+		o.consumerOptions = append(o.consumerOptions, consumerhelper.WithCapabilities(capabilities))
+	}
+}
+
+// WithResourceToTelemetryConversion overrides the default ResourceToTelemetrySettings for an exporter.
+// The default ResourceToTelemetrySettings is to disable resource attributes to metric labels conversion.
+func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTelemetrySettings) Option {
+	return func(o *baseSettings) {
+		o.ResourceToTelemetrySettings = resourceToTelemetrySettings
 	}
 }
 
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
-	cfg          configmodels.Exporter
-	sender       requestSender
-	qrSender     *queuedRetrySender
-	start        Start
-	shutdown     Shutdown
-	startOnce    sync.Once
-	shutdownOnce sync.Once
+	component.Component
+	sender   requestSender
+	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg configmodels.Exporter, options ...ExporterOption) *baseExporter {
-	opts := fromConfiguredOptions(options...)
+func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings) *baseExporter {
 	be := &baseExporter{
-		cfg:      cfg,
-		start:    opts.Start,
-		shutdown: opts.Shutdown,
+		Component: componenthelper.New(bs.componentOptions...),
 	}
 
-	be.qrSender = newQueuedRetrySender(opts.QueueSettings, opts.RetrySettings, &timeoutSender{cfg: opts.TimeoutSettings})
+	be.qrSender = newQueuedRetrySender(cfg.ID().String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
 	return be
@@ -186,31 +187,21 @@ func (be *baseExporter) wrapConsumerSender(f func(consumer requestSender) reques
 
 // Start all senders and exporter and is invoked during service start.
 func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
-	err := componenterror.ErrAlreadyStarted
-	be.startOnce.Do(func() {
-		// First start the wrapped exporter.
-		err = be.start(ctx, host)
-		if err != nil {
-			// TODO: Log errors, or check if it is recorded by the caller.
-			return
-		}
+	// First start the wrapped exporter.
+	if err := be.Component.Start(ctx, host); err != nil {
+		return err
+	}
 
-		// If no error then start the queuedRetrySender.
-		be.qrSender.start()
-	})
-	return err
+	// If no error then start the queuedRetrySender.
+	return be.qrSender.start()
 }
 
 // Shutdown all senders and exporter and is invoked during service shutdown.
 func (be *baseExporter) Shutdown(ctx context.Context) error {
-	err := componenterror.ErrAlreadyStopped
-	be.shutdownOnce.Do(func() {
-		// First shutdown the queued retry sender
-		be.qrSender.shutdown()
-		// Last shutdown the wrapped exporter itself.
-		err = be.shutdown(ctx)
-	})
-	return err
+	// First shutdown the queued retry sender
+	be.qrSender.shutdown()
+	// Last shutdown the wrapped exporter itself.
+	return be.Component.Shutdown(ctx)
 }
 
 // timeoutSender is a request sender that adds a `timeout` to every request that passes this sender.
@@ -219,7 +210,7 @@ type timeoutSender struct {
 }
 
 // send implements the requestSender interface
-func (ts *timeoutSender) send(req request) (int, error) {
+func (ts *timeoutSender) send(req request) error {
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
 	ctx := req.context()

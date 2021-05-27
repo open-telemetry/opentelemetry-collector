@@ -29,6 +29,7 @@ SERVICE_NAME="otel-collector"
 PROCESS_NAME="otelcol"
 
 SERVICE_PATH="$FPM_DIR/$SERVICE_NAME.service"
+ENVFILE_PATH="$FPM_DIR/$SERVICE_NAME.conf"
 PREINSTALL_PATH="$FPM_DIR/preinstall.sh"
 POSTINSTALL_PATH="$FPM_DIR/postinstall.sh"
 PREUNINSTALL_PATH="$FPM_DIR/preuninstall.sh"
@@ -38,7 +39,7 @@ install_pkg() {
     local pkg_base=$( basename "$pkg_path" )
 
     echo "Installing $pkg_base ..."
-    docker cp "$pkg_path" $image_name:/tmp/$pkg_base
+    docker cp "$pkg_path" $image_name:/tmp/$pkg_base & wait $!
     if [[ "${pkg_base##*.}" = "deb" ]]; then
         $docker_exec dpkg -i /tmp/$pkg_base
     else

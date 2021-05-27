@@ -24,9 +24,12 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-func TestScrapeMetrics_Others(t *testing.T) {
+func TestScrape_Others(t *testing.T) {
 	type testCase struct {
 		name           string
 		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
@@ -50,12 +53,17 @@ func TestScrapeMetrics_Others(t *testing.T) {
 				scraper.ioCounters = test.ioCountersFunc
 			}
 
-			err = scraper.Initialize(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			_, err = scraper.ScrapeMetrics(context.Background())
+			_, err = scraper.scrape(context.Background())
 			assert.EqualError(t, err, test.expectedErr)
+
+			isPartial := scrapererror.IsPartialScrapeError(err)
+			assert.True(t, isPartial)
+			if isPartial {
+				assert.Equal(t, metricsLen, err.(scrapererror.PartialScrapeError).Failed)
+			}
 		})
 	}
 }

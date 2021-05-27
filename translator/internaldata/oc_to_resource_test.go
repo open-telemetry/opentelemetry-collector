@@ -25,18 +25,18 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/internal/occonventions"
 )
 
 func TestOcNodeResourceToInternal(t *testing.T) {
 	resource := pdata.NewResource()
 	ocNodeResourceToInternal(nil, nil, resource)
-	assert.EqualValues(t, true, resource.IsNil())
+	assert.Equal(t, 0, resource.Attributes().Len())
 
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
-	assert.EqualValues(t, false, resource.IsNil())
+	assert.Equal(t, 0, resource.Attributes().Len())
 
 	ocNode = generateOcNode()
 	ocResource = generateOcResource()
@@ -48,13 +48,14 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
-	expectedAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+	expectedAttrs.Range(func(k string, v pdata.AttributeValue) bool {
 		// Set all except "attr1" which is not a hard-coded field to some bogus values.
 		if !strings.Contains(k, "-attr") {
 			ocNode.Attributes[k] = "this will be overridden 1"
 		}
+		return true
 	})
-	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
+	ocResource.Labels[occonventions.AttributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
 	resource = pdata.NewResource()

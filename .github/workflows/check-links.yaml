@@ -1,0 +1,22 @@
+name: check-links
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: gaurav-nelson/github-action-markdown-link-check@1.0.12
+        with:
+          base-branch: 'main'
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/workflows/check_links_config.json'
+          check-modified-files-only: 'yes'
+          folder-path: ''

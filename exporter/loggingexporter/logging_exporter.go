@@ -16,272 +16,18 @@ package loggingexporter
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"strconv"
 	"strings"
-	"syscall"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/otlptext"
 )
-
-type logDataBuffer struct {
-	str strings.Builder
-}
-
-func (b *logDataBuffer) logEntry(format string, a ...interface{}) {
-	b.str.WriteString(fmt.Sprintf(format, a...))
-	b.str.WriteString("\n")
-}
-
-func (b *logDataBuffer) logAttr(label string, value string) {
-	b.logEntry("    %-15s: %s", label, value)
-}
-
-func (b *logDataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
-	if am.Len() == 0 {
-		return
-	}
-
-	b.logEntry("%s:", label)
-	am.ForEach(func(k string, v pdata.AttributeValue) {
-		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
-	})
-}
-
-func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
-	if sm.Len() == 0 {
-		return
-	}
-
-	b.logEntry("%s:", description)
-	sm.ForEach(func(k string, v pdata.StringValue) {
-		b.logEntry("     -> %s: %s", k, v.Value())
-	})
-}
-
-func (b *logDataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrary) {
-	b.logEntry(
-		"InstrumentationLibrary %s %s",
-		il.Name(),
-		il.Version())
-}
-
-func (b *logDataBuffer) logMetricDescriptor(md pdata.Metric) {
-	b.logEntry("Descriptor:")
-	b.logEntry("     -> Name: %s", md.Name())
-	b.logEntry("     -> Description: %s", md.Description())
-	b.logEntry("     -> Unit: %s", md.Unit())
-	b.logEntry("     -> DataType: %s", md.DataType().String())
-}
-
-func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
-	switch m.DataType() {
-	case pdata.MetricDataTypeNone:
-		return
-	case pdata.MetricDataTypeIntGauge:
-		b.logIntDataPoints(m.IntGauge().DataPoints())
-	case pdata.MetricDataTypeDoubleGauge:
-		b.logDoubleDataPoints(m.DoubleGauge().DataPoints())
-	case pdata.MetricDataTypeIntSum:
-		data := m.IntSum()
-		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
-		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logIntDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleSum:
-		data := m.DoubleSum()
-		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
-		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logDoubleDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeIntHistogram:
-		data := m.IntHistogram()
-		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logIntHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleHistogram:
-		data := m.DoubleHistogram()
-		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logDoubleHistogramDataPoints(data.DataPoints())
-	}
-}
-
-func (b *logDataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
-		b.logEntry("IntDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
-
-		b.logEntry("StartTime: %d", p.StartTime())
-		b.logEntry("Timestamp: %d", p.Timestamp())
-		b.logEntry("Value: %d", p.Value())
-	}
-}
-
-func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
-		b.logEntry("DoubleDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
-
-		b.logEntry("StartTime: %d", p.StartTime())
-		b.logEntry("Timestamp: %d", p.Timestamp())
-		b.logEntry("Value: %f", p.Value())
-	}
-}
-
-func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
-		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
-
-		b.logEntry("StartTime: %d", p.StartTime())
-		b.logEntry("Timestamp: %d", p.Timestamp())
-		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
-
-		bounds := p.ExplicitBounds()
-		if len(bounds) != 0 {
-			for i, bound := range bounds {
-				b.logEntry("ExplicitBounds #%d: %f", i, bound)
-			}
-		}
-
-		buckets := p.BucketCounts()
-		if len(buckets) != 0 {
-			for _, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", i, bucket)
-			}
-		}
-	}
-}
-
-func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
-		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
-
-		b.logEntry("StartTime: %d", p.StartTime())
-		b.logEntry("Timestamp: %d", p.Timestamp())
-		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %d", p.Sum())
-
-		bounds := p.ExplicitBounds()
-		if len(bounds) != 0 {
-			for i, bound := range bounds {
-				b.logEntry("ExplicitBounds #%d: %f", i, bound)
-			}
-		}
-
-		buckets := p.BucketCounts()
-		if len(buckets) != 0 {
-			for _, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", i, bucket)
-			}
-		}
-	}
-}
-
-func (b *logDataBuffer) logDataPointLabels(labels pdata.StringMap) {
-	b.logStringMap("Data point labels", labels)
-}
-
-func (b *logDataBuffer) logLogRecord(lr pdata.LogRecord) {
-	b.logEntry("Timestamp: %d", lr.Timestamp())
-	b.logEntry("Severity: %s", lr.SeverityText())
-	b.logEntry("ShortName: %s", lr.Name())
-	b.logEntry("Body: %s", attributeValueToString(lr.Body()))
-	b.logAttributeMap("Attributes", lr.Attributes())
-}
-
-func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
-	if se.Len() == 0 {
-		return
-	}
-
-	b.logEntry("%s:", description)
-	for i := 0; i < se.Len(); i++ {
-		e := se.At(i)
-		if e.IsNil() {
-			continue
-		}
-		b.logEntry("SpanEvent #%d", i)
-		b.logEntry("     -> Name: %s", e.Name())
-		b.logEntry("     -> Timestamp: %d", e.Timestamp())
-		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
-
-		if e.Attributes().Len() == 0 {
-			return
-		}
-		b.logEntry("     -> Attributes:")
-		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
-		})
-	}
-}
-
-func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
-	if sl.Len() == 0 {
-		return
-	}
-
-	b.logEntry("%s:", description)
-
-	for i := 0; i < sl.Len(); i++ {
-		l := sl.At(i)
-		if l.IsNil() {
-			continue
-		}
-		b.logEntry("SpanLink #%d", i)
-		b.logEntry("     -> Trace ID: %s", l.TraceID().HexString())
-		b.logEntry("     -> ID: %s", l.SpanID().String())
-		b.logEntry("     -> TraceState: %s", l.TraceState())
-		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
-		if l.Attributes().Len() == 0 {
-			return
-		}
-		b.logEntry("     -> Attributes:")
-		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
-		})
-	}
-}
-
-func attributeValueToString(av pdata.AttributeValue) string {
-	switch av.Type() {
-	case pdata.AttributeValueSTRING:
-		return av.StringVal()
-	case pdata.AttributeValueBOOL:
-		return strconv.FormatBool(av.BoolVal())
-	case pdata.AttributeValueDOUBLE:
-		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
-	case pdata.AttributeValueINT:
-		return strconv.FormatInt(av.IntVal(), 10)
-	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
-	}
-}
 
 type loggingExporter struct {
 	logger *zap.Logger
@@ -291,134 +37,47 @@ type loggingExporter struct {
 func (s *loggingExporter) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
-) (int, error) {
+) error {
 
-	s.logger.Info("TraceExporter", zap.Int("#spans", td.SpanCount()))
+	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
-	buf := logDataBuffer{}
-	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		buf.logEntry("ResourceSpans #%d", i)
-		rs := rss.At(i)
-		if rs.IsNil() {
-			buf.logEntry("* Nil ResourceSpans")
-			continue
-		}
-		if !rs.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
-		}
-		ilss := rs.InstrumentationLibrarySpans()
-		for j := 0; j < ilss.Len(); j++ {
-			buf.logEntry("InstrumentationLibrarySpans #%d", j)
-			ils := ilss.At(j)
-			if ils.IsNil() {
-				buf.logEntry("* Nil InstrumentationLibrarySpans")
-				continue
-			}
-			if !ils.InstrumentationLibrary().IsNil() {
-				buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
-			}
+	s.logger.Debug(otlptext.Traces(td))
 
-			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				buf.logEntry("Span #%d", k)
-				span := spans.At(k)
-				if span.IsNil() {
-					buf.logEntry("* Nil Span")
-					continue
-				}
-
-				buf.logAttr("Trace ID", span.TraceID().HexString())
-				buf.logAttr("Parent ID", span.ParentSpanID().String())
-				buf.logAttr("ID", span.SpanID().String())
-				buf.logAttr("Name", span.Name())
-				buf.logAttr("Kind", span.Kind().String())
-				buf.logAttr("Start time", span.StartTime().String())
-				buf.logAttr("End time", span.EndTime().String())
-				if !span.Status().IsNil() {
-					buf.logAttr("Status code", span.Status().Code().String())
-					buf.logAttr("Status message", span.Status().Message())
-				}
-
-				buf.logAttributeMap("Attributes", span.Attributes())
-				buf.logEvents("Events", span.Events())
-				buf.logLinks("Links", span.Links())
-			}
-		}
-	}
-	s.logger.Debug(buf.str.String())
-
-	return 0, nil
+	return nil
 }
 
 func (s *loggingExporter) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
-) (int, error) {
+) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
-	buf := logDataBuffer{}
-	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		buf.logEntry("ResourceMetrics #%d", i)
-		rm := rms.At(i)
-		if rm.IsNil() {
-			buf.logEntry("* Nil ResourceMetrics")
-			continue
-		}
-		if !rm.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
-		}
-		ilms := rm.InstrumentationLibraryMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
-			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				buf.logEntry("* Nil InstrumentationLibraryMetrics")
-				continue
-			}
-			if !ilm.InstrumentationLibrary().IsNil() {
-				buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
-			}
-			metrics := ilm.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
-				buf.logEntry("Metric #%d", k)
-				metric := metrics.At(k)
-				if metric.IsNil() {
-					buf.logEntry("* Nil Metric")
-					continue
-				}
+	s.logger.Debug(otlptext.Metrics(md))
 
-				buf.logMetricDescriptor(metric)
-				buf.logMetricDataPoints(metric)
-			}
-		}
-	}
-
-	s.logger.Debug(buf.str.String())
-
-	return 0, nil
+	return nil
 }
 
-// newTraceExporter creates an exporter.TraceExporter that just drops the
+// newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TraceExporter, error) {
+func newTracesExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
+		logger,
 		s.pushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -429,15 +88,17 @@ func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
+func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
 	return exporterhelper.NewMetricsExporter(
 		config,
+		logger,
 		s.pushMetricsData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -448,15 +109,17 @@ func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
+func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
 	return exporterhelper.NewLogsExporter(
 		config,
+		logger,
 		s.pushLogData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -468,70 +131,26 @@ func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Log
 func (s *loggingExporter) pushLogData(
 	_ context.Context,
 	ld pdata.Logs,
-) (int, error) {
+) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
-	buf := logDataBuffer{}
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		buf.logEntry("ResourceLog #%d", i)
-		rl := rls.At(i)
-		if rl.IsNil() {
-			buf.logEntry("* Nil ResourceLog")
-			continue
-		}
-		if !rl.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
-		}
+	s.logger.Debug(otlptext.Logs(ld))
 
-		ills := rl.InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			buf.logEntry("InstrumentationLibraryLogs #%d", j)
-			ils := ills.At(j)
-			if ils.IsNil() {
-				buf.logEntry("* Nil InstrumentationLibraryLogs")
-				continue
-			}
-			if !ils.InstrumentationLibrary().IsNil() {
-				buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
-			}
-
-			logs := ils.Logs()
-			for j := 0; j < logs.Len(); j++ {
-				buf.logEntry("LogRecord #%d", j)
-				lr := logs.At(j)
-				if lr.IsNil() {
-					buf.logEntry("* Nil LogRecord")
-					continue
-				}
-				buf.logLogRecord(lr)
-			}
-		}
-	}
-
-	s.logger.Debug(buf.str.String())
-
-	return 0, nil
+	return nil
 }
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
 	return func(context.Context) error {
-		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
-		// respectively:
-		//
-		// - sync /dev/stdout: invalid argument
-		// - sync /dev/stdout: inappropriate ioctl for device
-		//
+		// Currently Sync() return a different error depending on the OS.
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
 		if osErr, ok := err.(*os.PathError); ok {
 			wrappedErr := osErr.Unwrap()
-			switch wrappedErr {
-			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
+			if knownSyncError(wrappedErr) {
 				err = nil
 			}
 		}

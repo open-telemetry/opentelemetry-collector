@@ -23,7 +23,7 @@ import (
 // Simple utilities for generating metrics for testing
 
 // MetricCfg holds parameters for generating dummy metrics for testing. Set values on this struct to generate
-// metrics with the corresponding number/type of attributes and pass into MetricDataFromCfg to generate metrics.
+// metrics with the corresponding number/type of attributes and pass into MetricsFromCfg to generate metrics.
 type MetricCfg struct {
 	// The type of metric to generate
 	MetricDescriptorType pdata.MetricDataType
@@ -69,32 +69,27 @@ func DefaultCfg() MetricCfg {
 	}
 }
 
-// DefaultMetricData produces MetricData with a default config.
-func DefaultMetricData() pdata.Metrics {
-	return MetricDataFromCfg(DefaultCfg())
-}
-
-// MetricDataFromCfg produces MetricData with the passed-in config.
-func MetricDataFromCfg(cfg MetricCfg) pdata.Metrics {
-	return newMetricGenerator().genMetricDataFromCfg(cfg)
+// MetricsFromCfg produces pdata.Metrics with the passed-in config.
+func MetricsFromCfg(cfg MetricCfg) pdata.Metrics {
+	mg := newMetricGenerator()
+	return mg.genMetricFromCfg(cfg)
 }
 
 type metricGenerator struct {
 	metricID int
 }
 
-func newMetricGenerator() *metricGenerator {
-	return &metricGenerator{}
+func newMetricGenerator() metricGenerator {
+	return metricGenerator{}
 }
 
-func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) pdata.Metrics {
+func (g *metricGenerator) genMetricFromCfg(cfg MetricCfg) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rms.Resize(cfg.NumResourceMetrics)
 	for i := 0; i < cfg.NumResourceMetrics; i++ {
 		rm := rms.At(i)
 		resource := rm.Resource()
-		resource.InitEmpty()
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
 			resource.Attributes().Insert(
 				fmt.Sprintf("resource-attr-name-%d", j),
@@ -124,36 +119,30 @@ func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.Instrumentati
 		switch cfg.MetricDescriptorType {
 		case pdata.MetricDataTypeIntGauge:
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			metric.IntGauge().InitEmpty()
 			populateIntPoints(cfg, metric.IntGauge().DataPoints())
 		case pdata.MetricDataTypeDoubleGauge:
 			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			metric.DoubleGauge().InitEmpty()
 			populateDoublePoints(cfg, metric.DoubleGauge().DataPoints())
 		case pdata.MetricDataTypeIntSum:
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			sum := metric.IntSum()
-			sum.InitEmpty()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntPoints(cfg, sum.DataPoints())
 		case pdata.MetricDataTypeDoubleSum:
 			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 			sum := metric.DoubleSum()
-			sum.InitEmpty()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoublePoints(cfg, sum.DataPoints())
 		case pdata.MetricDataTypeIntHistogram:
 			metric.SetDataType(pdata.MetricDataTypeIntHistogram)
 			histo := metric.IntHistogram()
-			histo.InitEmpty()
 			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntHistogram(cfg, histo)
-		case pdata.MetricDataTypeDoubleHistogram:
-			metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-			histo := metric.DoubleHistogram()
-			histo.InitEmpty()
+		case pdata.MetricDataTypeHistogram:
+			metric.SetDataType(pdata.MetricDataTypeHistogram)
+			histo := metric.Histogram()
 			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
 		}
@@ -161,7 +150,6 @@ func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.Instrumentati
 }
 
 func (g *metricGenerator) populateMetricDesc(cfg MetricCfg, metric pdata.Metric) {
-	metric.InitEmpty()
 	metric.SetName(fmt.Sprintf("%smetric_%d", cfg.MetricNamePrefix, g.metricID))
 	g.metricID++
 	metric.SetDescription("my-md-description")
@@ -172,7 +160,7 @@ func populateIntPoints(cfg MetricCfg, pts pdata.IntDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(int64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
@@ -183,19 +171,19 @@ func populateDoublePoints(cfg MetricCfg, pts pdata.DoubleDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(float64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
 }
 
-func populateDoubleHistogram(cfg MetricCfg, dh pdata.DoubleHistogram) {
+func populateDoubleHistogram(cfg MetricCfg, dh pdata.Histogram) {
 	pts := dh.DataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
 		pt.SetTimestamp(ts)
 		populatePtLabels(cfg, pt.LabelsMap())
@@ -208,12 +196,12 @@ func populateDoubleHistogram(cfg MetricCfg, dh pdata.DoubleHistogram) {
 	}
 }
 
-func setDoubleHistogramBounds(hdp pdata.DoubleHistogramDataPoint, bounds ...float64) {
+func setDoubleHistogramBounds(hdp pdata.HistogramDataPoint, bounds ...float64) {
 	hdp.SetBucketCounts(make([]uint64, len(bounds)))
 	hdp.SetExplicitBounds(bounds)
 }
 
-func addDoubleHistogramVal(hdp pdata.DoubleHistogramDataPoint, val float64) {
+func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
 	buckets := hdp.BucketCounts()
@@ -232,7 +220,7 @@ func populateIntHistogram(cfg MetricCfg, dh pdata.IntHistogram) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
+		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
 		pt.SetTimestamp(ts)
 		populatePtLabels(cfg, pt.LabelsMap())
@@ -272,6 +260,6 @@ func populatePtLabels(cfg MetricCfg, lm pdata.StringMap) {
 	}
 }
 
-func getTimestamp(startTime uint64, stepSize uint64, i int) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano(startTime + (stepSize * uint64(i+1)))
+func getTimestamp(startTime uint64, stepSize uint64, i int) pdata.Timestamp {
+	return pdata.Timestamp(startTime + (stepSize * uint64(i+1)))
 }

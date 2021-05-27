@@ -22,12 +22,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -37,20 +38,19 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	ext0 := cfg.Extensions["health_check"]
+	ext0 := cfg.Extensions[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions["health_check/1"]
+	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "health_check",
-				NameVal: "health_check/1",
+			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:13",
 			},
-			Port: 13,
 		},
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, "health_check/1", cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
 }

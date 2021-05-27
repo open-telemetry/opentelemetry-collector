@@ -24,17 +24,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		bootTimeFunc      func() (uint64, error)
 		timesFunc         func(bool) ([]cpu.TimesStat, error)
-		expectedStartTime pdata.TimestampUnixNano
+		expectedStartTime pdata.Timestamp
 		initializationErr string
 		expectedErr       string
 	}
@@ -70,24 +72,30 @@ func TestScrapeMetrics(t *testing.T) {
 				scraper.times = test.timesFunc
 			}
 
-			err := scraper.Initialize(context.Background())
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			metrics, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
+
+				isPartial := scrapererror.IsPartialScrapeError(err)
+				assert.True(t, isPartial)
+				if isPartial {
+					assert.Equal(t, 1, err.(scrapererror.PartialScrapeError).Failed)
+				}
+
 				return
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, 1, metrics.Len())
 
-			assertCPUMetricValid(t, metrics.At(0), metadata.Metrics.SystemCPUTime, test.expectedStartTime)
+			assertCPUMetricValid(t, metrics.At(0), metadata.Metrics.SystemCPUTime.New(), test.expectedStartTime)
 
 			if runtime.GOOS == "linux" {
 				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
@@ -98,7 +106,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)

@@ -22,14 +22,15 @@ import (
 
 	"github.com/spf13/cast"
 
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	"go.opentelemetry.io/collector/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
 
-func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcommon.KeyValue {
+func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []otlpcommon.KeyValue {
 	if attrsMap == nil {
 		return nil
 	}
-	attrList := make([]*otlpcommon.KeyValue, len(attrsMap))
+	attrList := make([]otlpcommon.KeyValue, len(attrsMap))
 	index := 0
 	for key, value := range attrsMap {
 		attrList[index] = constructAttributeKeyValue(key, value)
@@ -38,41 +39,41 @@ func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcomm
 	return attrList
 }
 
-func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.KeyValue {
+func constructAttributeKeyValue(key string, value interface{}) otlpcommon.KeyValue {
 	var attr otlpcommon.KeyValue
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: cast.ToInt64(val)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: cast.ToInt64(val)}},
 		}
 	case float32, float64:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}},
 		}
 	case bool:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: cast.ToBool(val)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: cast.ToBool(val)}},
 		}
 	case *otlpcommon.ArrayValue:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: val}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: val}},
 		}
 	case *otlpcommon.KeyValueList:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: val}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: val}},
 		}
 	default:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: val.(string)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: val.(string)}},
 		}
 	}
-	return &attr
+	return attr
 }
 
 func loadPictOutputFile(fileName string) ([][]string, error) {
@@ -93,20 +94,20 @@ func loadPictOutputFile(fileName string) ([][]string, error) {
 	return reader.ReadAll()
 }
 
-func generateTraceID(random io.Reader) otlpcommon.TraceID {
+func generateTraceID(random io.Reader) data.TraceID {
 	var r [16]byte
 	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return otlpcommon.NewTraceID(r[:])
+	return data.NewTraceID(r)
 }
 
-func generateSpanID(random io.Reader) []byte {
+func generateSpanID(random io.Reader) data.SpanID {
 	var r [8]byte
 	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return data.NewSpanID(r)
 }

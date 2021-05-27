@@ -30,6 +30,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -38,25 +39,29 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data"
+	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/internal/internalconsumertest"
+	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-const otlpReceiverName = "otlp_receiver_test"
+const otlpReceiverName = "receiver_test"
 
 var traceJSON = []byte(`
 	{
@@ -65,7 +70,7 @@ var traceJSON = []byte(`
 		  "resource": {
 			"attributes": [
 			  {
-				"key": "host.hostname",
+				"key": "host.name",
 				"value": { "stringValue": "testHost" }
 			  }
 			]
@@ -75,7 +80,7 @@ var traceJSON = []byte(`
 			  "spans": [
 				{
 				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
-				  "span_id": "7uGbfsPBsXM=",
+				  "span_id": "EEE19B7EC3C1B173",
 				  "name": "testSpan",
 				  "start_time_unix_nano": 1544712660000000000,
 				  "end_time_unix_nano": 1544712661000000000,
@@ -94,12 +99,11 @@ var traceJSON = []byte(`
 	}`)
 
 var resourceSpansOtlp = otlptrace.ResourceSpans{
-
-	Resource: &otlpresource.Resource{
-		Attributes: []*otlpcommon.KeyValue{
+	Resource: otlpresource.Resource{
+		Attributes: []otlpcommon.KeyValue{
 			{
-				Key:   conventions.AttributeHostHostname,
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
+				Key:   conventions.AttributeHostName,
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
 			},
 		},
 	},
@@ -107,15 +111,15 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 		{
 			Spans: []*otlptrace.Span{
 				{
-					TraceId:           otlpcommon.NewTraceID([]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
-					SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
+					TraceId:           data.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
+					SpanId:            data.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}),
 					Name:              "testSpan",
 					StartTimeUnixNano: 1544712660000000000,
 					EndTimeUnixNano:   1544712661000000000,
-					Attributes: []*otlpcommon.KeyValue{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "attr1",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
 						},
 					},
 				},
@@ -124,7 +128,9 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 	},
 }
 
-var traceOtlp = pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{&resourceSpansOtlp})
+var traceOtlp = pdata.TracesFromInternalRep(internal.TracesFromOtlp(&collectortrace.ExportTraceServiceRequest{
+	ResourceSpans: []*otlptrace.ResourceSpans{&resourceSpansOtlp},
+}))
 
 func TestJsonHttp(t *testing.T) {
 	tests := []struct {
@@ -154,70 +160,87 @@ func TestJsonHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 	ocr := newHTTPReceiver(t, addr, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
+	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
+	// is /v1/traces. We currently support both on the receiving side to give graceful
+	// period for senders to roll out a fix, so we test for both paths to make sure
+	// the receiver works correctly.
+	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var buf *bytes.Buffer
-			var err error
-			switch test.encoding {
-			case "gzip":
-				buf, err = compressGzip(traceJSON)
-				require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-			default:
-				buf = bytes.NewBuffer(traceJSON)
-			}
-			sink.SetConsumeTraceError(test.err)
-			req, err := http.NewRequest("POST", url, buf)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Content-Encoding", test.encoding)
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
-
-			respBytes, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				t.Errorf("Error reading response from trace grpc-gateway, %v", err)
-			}
-			respStr := string(respBytes)
-			err = resp.Body.Close()
-			if err != nil {
-				t.Errorf("Error closing response body, %v", err)
-			}
-
-			if test.err == nil {
-				assert.Equal(t, 200, resp.StatusCode)
-				var respJSON map[string]interface{}
-				assert.NoError(t, json.Unmarshal([]byte(respStr), &respJSON))
-				assert.Len(t, respJSON, 0, "Got unexpected response from trace grpc-gateway")
-			} else {
-				errStatus := &spb.Status{}
-				assert.NoError(t, json.Unmarshal([]byte(respStr), errStatus))
-				if s, ok := status.FromError(test.err); ok {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, s.Proto()))
-				} else {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
-				}
-			}
-
-			got := sink.AllTraces()[0]
-			assert.EqualValues(t, got, traceOtlp)
-		})
+		for _, targetURLPath := range targetURLPaths {
+			t.Run(test.name+targetURLPath, func(t *testing.T) {
+				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
+				sink.Reset()
+				testHTTPJSONRequest(t, url, sink, test.encoding, test.err)
+			})
+		}
 	}
+}
+
+func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.ErrOrSinkConsumer, encoding string, expectedErr error) {
+	var buf *bytes.Buffer
+	var err error
+	switch encoding {
+	case "gzip":
+		buf, err = compressGzip(traceJSON)
+		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
+	default:
+		buf = bytes.NewBuffer(traceJSON)
+	}
+	sink.SetConsumeError(expectedErr)
+	req, err := http.NewRequest("POST", url, buf)
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", encoding)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
+	}
+	respStr := string(respBytes)
+	err = resp.Body.Close()
+	if err != nil {
+		t.Errorf("Error closing response body, %v", err)
+	}
+
+	allTraces := sink.AllTraces()
+	if expectedErr == nil {
+		assert.Equal(t, 200, resp.StatusCode)
+		var respJSON map[string]interface{}
+		assert.NoError(t, json.Unmarshal([]byte(respStr), &respJSON))
+		assert.Len(t, respJSON, 0, "Got unexpected response from trace grpc-gateway")
+
+		require.Len(t, allTraces, 1)
+
+		got := allTraces[0]
+		assert.EqualValues(t, got, traceOtlp)
+	} else {
+		errStatus := &spb.Status{}
+		assert.NoError(t, json.Unmarshal([]byte(respStr), errStatus))
+		if s, ok := status.FromError(expectedErr); ok {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, s.Proto()))
+		} else {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+		}
+		require.Len(t, allTraces, 0)
+	}
+
 }
 
 func TestJsonMarshaling(t *testing.T) {
@@ -246,22 +269,22 @@ func TestJsonUnmarshaling(t *testing.T) {
 		  ]
 		}`, &resourceSpansOtlp2)
 	assert.NoError(t, err)
-	assert.EqualValues(t, otlpcommon.TraceID{}, resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
+	assert.EqualValues(t, data.TraceID{}, resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
 
 	tests := []struct {
 		name  string
 		json  string
-		bytes []byte
+		bytes [16]byte
 	}{
 		{
 			name:  "empty string trace id",
 			json:  `""`,
-			bytes: nil,
+			bytes: [16]byte{},
 		},
 		{
 			name:  "zero bytes trace id",
 			json:  `"00000000000000000000000000000000"`,
-			bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			bytes: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}
 
@@ -282,7 +305,7 @@ func TestJsonUnmarshaling(t *testing.T) {
 			}`, test.json)
 			err := jsonpb.UnmarshalString(jsonStr, &resourceSpansOtlp2)
 			assert.NoError(t, err)
-			assert.EqualValues(t, otlpcommon.NewTraceID(test.bytes), resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
+			assert.EqualValues(t, data.NewTraceID(test.bytes), resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
 		})
 	}
 }
@@ -315,86 +338,105 @@ func TestProtoHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	tSink := new(exportertest.SinkTraceExporter)
-	mSink := new(exportertest.SinkMetricsExporter)
-	ocr := newHTTPReceiver(t, addr, tSink, mSink)
+	tSink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
-
-	wantOtlp := pdata.TracesToOtlp(testdata.GenerateTraceDataOneSpan())
-	traceProto := collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: wantOtlp,
-	}
-	traceBytes, err := traceProto.Marshal()
+	traceData := testdata.GenerateTracesOneSpan()
+	traceBytes, err := traceData.ToOtlpProtoBytes()
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
+
+	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
+	// is /v1/traces. We currently support both on the receiving side to give graceful
+	// period for senders to roll out a fix, so we test for both paths to make sure
+	// the receiver works correctly.
+	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
+
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var buf *bytes.Buffer
-			var err error
-			switch test.encoding {
-			case "gzip":
-				buf, err = compressGzip(traceBytes)
-				require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-			default:
-				buf = bytes.NewBuffer(traceBytes)
-			}
-			tSink.SetConsumeTraceError(test.err)
-			req, err := http.NewRequest("POST", url, buf)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
-			req.Header.Set("Content-Type", "application/x-protobuf")
-			req.Header.Set("Content-Encoding", test.encoding)
+		for _, targetURLPath := range targetURLPaths {
+			t.Run(test.name+targetURLPath, func(t *testing.T) {
+				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
+				tSink.Reset()
+				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, traceData)
+			})
+		}
+	}
+}
 
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+func createHTTPProtobufRequest(
+	t *testing.T,
+	url string,
+	encoding string,
+	traceBytes []byte,
+) *http.Request {
+	var buf *bytes.Buffer
+	var err error
+	switch encoding {
+	case "gzip":
+		buf, err = compressGzip(traceBytes)
+		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
+	default:
+		buf = bytes.NewBuffer(traceBytes)
+	}
+	req, err := http.NewRequest("POST", url, buf)
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("Content-Encoding", encoding)
+	return req
+}
 
-			respBytes, err := ioutil.ReadAll(resp.Body)
-			require.NoError(t, err, "Error reading response from trace grpc-gateway")
-			require.NoError(t, resp.Body.Close(), "Error closing response body")
+func testHTTPProtobufRequest(
+	t *testing.T,
+	url string,
+	tSink *internalconsumertest.ErrOrSinkConsumer,
+	encoding string,
+	traceBytes []byte,
+	expectedErr error,
+	wantData pdata.Traces,
+) {
+	tSink.SetConsumeError(expectedErr)
 
-			if test.err == nil {
-				require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-				tmp := &collectortrace.ExportTraceServiceResponse{}
-				err = tmp.Unmarshal(respBytes)
-				require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
-			} else {
-				errStatus := &spb.Status{}
-				assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
-				if s, ok := status.FromError(test.err); ok {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, s.Proto()))
-				} else {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
-				}
-			}
+	req := createHTTPProtobufRequest(t, url, encoding, traceBytes)
 
-			require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-			gotOtlp := pdata.TracesToOtlp(tSink.AllTraces()[0])
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err, "Error reading response from trace grpc-gateway")
+	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
-			if len(gotOtlp) != len(wantOtlp) {
-				t.Fatalf("len(traces):\nGot: %d\nWant: %d\n", len(gotOtlp), len(wantOtlp))
-			}
+	require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
-			got := gotOtlp[0]
-			want := wantOtlp[0]
+	allTraces := tSink.AllTraces()
 
-			if !assert.EqualValues(t, got, want) {
-				t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
-					got.String(),
-					want.String())
-			}
-		})
+	if expectedErr == nil {
+		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
+		tmp := &collectortrace.ExportTraceServiceResponse{}
+		err := tmp.Unmarshal(respBytes)
+		require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
+
+		require.Len(t, allTraces, 1)
+		assert.EqualValues(t, allTraces[0], wantData)
+	} else {
+		errStatus := &spb.Status{}
+		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
+		if s, ok := status.FromError(expectedErr); ok {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, s.Proto()))
+		} else {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+		}
+		require.Len(t, allTraces, 0)
 	}
 }
 
@@ -435,14 +477,14 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	tSink := new(exportertest.SinkTraceExporter)
-	mSink := new(exportertest.SinkMetricsExporter)
+	tSink := new(consumertest.TracesSink)
+	mSink := new(consumertest.MetricsSink)
 	ocr := newHTTPReceiver(t, addr, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
+	url := fmt.Sprintf("http://%s/v1/traces", addr)
 
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
@@ -480,7 +522,7 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r := newGRPCReceiver(t, otlpReceiverName, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r := newGRPCReceiver(t, otlpReceiverName, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -492,24 +534,14 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r := newHTTPReceiver(t, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r := newHTTPReceiver(t, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestGRPCStartWithoutConsumers(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	r := newGRPCReceiver(t, otlpReceiverName, addr, nil, nil)
-	require.NotNil(t, r)
-	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
-}
-
-func TestHTTPStartWithoutConsumers(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	r := newHTTPReceiver(t, addr, nil, nil)
-	require.NotNil(t, r)
-	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+func createSingleSpanTrace() pdata.Traces {
+	return testdata.GenerateTracesOneSpan()
 }
 
 // TestOTLPReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
@@ -551,48 +583,17 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	req := &collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
-			{
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-					{
-						Spans: []*otlptrace.Span{
-							{
-								TraceId: otlpcommon.NewTraceID(
-									[]byte{
-										0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-										0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-									},
-								),
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	exportBidiFn := func(
-		t *testing.T,
-		cc *grpc.ClientConn,
-		msg *collectortrace.ExportTraceServiceRequest) error {
-
-		acc := collectortrace.NewTraceServiceClient(cc)
-		_, err := acc.Export(context.Background(), req)
-
-		return err
-	}
+	req := createSingleSpanTrace()
 
 	exporters := []struct {
 		receiverTag string
 		exportFn    func(
-			t *testing.T,
 			cc *grpc.ClientConn,
-			msg *collectortrace.ExportTraceServiceRequest) error
+			td pdata.Traces) error
 	}{
 		{
-			receiverTag: "otlp_trace",
-			exportFn:    exportBidiFn,
+			receiverTag: "trace",
+			exportFn:    exportTraces,
 		},
 	}
 	for _, exporter := range exporters {
@@ -602,12 +603,12 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(exportertest.SinkTraceExporter)
+				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				ocr := newGRPCReceiver(t, exporter.receiverTag, addr, sink, nil)
 				require.NotNil(t, ocr)
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-				defer ocr.Shutdown(context.Background())
+				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 				require.NoError(t, err)
@@ -615,12 +616,12 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				for _, ingestionState := range tt.ingestionStates {
 					if ingestionState.okToIngest {
-						sink.SetConsumeTraceError(nil)
+						sink.SetConsumeError(nil)
 					} else {
-						sink.SetConsumeTraceError(fmt.Errorf("%q: consumer error", tt.name))
+						sink.SetConsumeError(fmt.Errorf("%q: consumer error", tt.name))
 					}
 
-					err = exporter.exportFn(t, cc, req)
+					err = exporter.exportFn(cc, req)
 
 					status, ok := status.FromError(err)
 					require.True(t, ok)
@@ -629,7 +630,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
 
-				obsreporttest.CheckReceiverTracesViews(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				obsreporttest.CheckReceiverTraces(t, config.NewIDWithName(typeStr, exporter.receiverTag), "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}
@@ -637,9 +638,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			NameVal: "IncorrectTLS",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -655,17 +654,22 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	// TLS is resolved during Creation of the receiver for GRPC.
-	_, err := createReceiver(cfg)
-	assert.EqualError(t, err,
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+
+	assert.EqualError(t,
+		r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			NameVal: "IncorrectTLS",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -679,40 +683,45 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Start for HTTP.
-	r := newReceiver(t, NewFactory(), cfg, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, r)
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
-func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *otlpReceiver {
+func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetName(name)
+	cfg.SetIDName(name)
 	cfg.GRPC.NetAddr.Endpoint = endpoint
 	cfg.HTTP = nil
 	return newReceiver(t, factory, cfg, tc, mc)
 }
 
-func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *otlpReceiver {
+func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetName(otlpReceiverName)
+	cfg.SetIDName(otlpReceiverName)
 	cfg.HTTP.Endpoint = endpoint
 	cfg.GRPC = nil
 	return newReceiver(t, factory, cfg, tc, mc)
 }
 
-func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *otlpReceiver {
-	r, err := createReceiver(cfg)
-	require.NoError(t, err)
+func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) component.Component {
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	var r component.Component
+	var err error
 	if tc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+		r, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
+		r, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
 		require.NoError(t, err)
 	}
 	return r
@@ -730,4 +739,115 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	}
 
 	return &buf, nil
+}
+
+type senderFunc func(td pdata.Traces)
+
+func TestShutdown(t *testing.T) {
+	endpointGrpc := testutil.GetAvailableLocalAddress(t)
+	endpointHTTP := testutil.GetAvailableLocalAddress(t)
+
+	nextSink := new(consumertest.TracesSink)
+
+	// Create OTLP receiver with gRPC and HTTP protocols.
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SetIDName(otlpReceiverName)
+	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	cfg.HTTP.Endpoint = endpointHTTP
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		nextSink)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	conn, err := grpc.Dial(endpointGrpc, grpc.WithInsecure(), grpc.WithBlock())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	doneSignalGrpc := make(chan bool)
+	doneSignalHTTP := make(chan bool)
+
+	senderGrpc := func(td pdata.Traces) {
+		// Ignore error, may be executed after the receiver shutdown.
+		_ = exportTraces(conn, td)
+	}
+	senderHTTP := func(td pdata.Traces) {
+		// Send request via OTLP/HTTP.
+		traceBytes, err2 := td.ToOtlpProtoBytes()
+		if err2 != nil {
+			t.Errorf("Error marshaling protobuf: %v", err2)
+		}
+		url := fmt.Sprintf("http://%s/v1/traces", endpointHTTP)
+		req := createHTTPProtobufRequest(t, url, "", traceBytes)
+		client := &http.Client{}
+		resp, err2 := client.Do(req)
+		if err2 == nil {
+			resp.Body.Close()
+		}
+	}
+
+	// Send traces to the receiver until we signal via done channel, and then
+	// send one more trace after that.
+	go generateTraces(senderGrpc, doneSignalGrpc)
+	go generateTraces(senderHTTP, doneSignalHTTP)
+
+	// Wait until the receiver outputs anything to the sink.
+	assert.Eventually(t, func() bool {
+		return nextSink.SpansCount() > 0
+	}, time.Second, 10*time.Millisecond)
+
+	// Now shutdown the receiver, while continuing sending traces to it.
+	ctx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelFn()
+	err = r.Shutdown(ctx)
+	assert.NoError(t, err)
+
+	// Remember how many spans the sink received. This number should not change after this
+	// point because after Shutdown() returns the component is not allowed to produce
+	// any more data.
+	sinkSpanCountAfterShutdown := nextSink.SpansCount()
+
+	// Now signal to generateTraces to exit the main generation loop, then send
+	// one more trace and stop.
+	doneSignalGrpc <- true
+	doneSignalHTTP <- true
+
+	// Wait until all follow up traces are sent.
+	<-doneSignalGrpc
+	<-doneSignalHTTP
+
+	// The last, additional trace should not be received by sink, so the number of spans in
+	// the sink should not change.
+	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpansCount())
+}
+
+func generateTraces(senderFn senderFunc, doneSignal chan bool) {
+	// Continuously generate spans until signaled to stop.
+loop:
+	for {
+		select {
+		case <-doneSignal:
+			break loop
+		default:
+		}
+		senderFn(createSingleSpanTrace())
+	}
+
+	// After getting the signal to stop, send one more span and then
+	// finally stop. We should never receive this last span.
+	senderFn(createSingleSpanTrace())
+
+	// Indicate that we are done.
+	close(doneSignal)
+}
+
+func exportTraces(cc *grpc.ClientConn, td pdata.Traces) error {
+	acc := pdatagrpc.NewTracesClient(cc)
+	_, err := acc.Export(context.Background(), td)
+
+	return err
 }
