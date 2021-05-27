@@ -33,14 +33,15 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const maxBatchByteSize = 3000000
 
-// PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
-type PrwExporter struct {
+// PRWExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
+type PRWExporter struct {
 	namespace       string
 	externalLabels  map[string]string
 	endpointURL     *url.URL
@@ -49,42 +50,44 @@ type PrwExporter struct {
 	closeChan       chan struct{}
 	concurrency     int
 	userAgentHeader string
+	clientSettings  *confighttp.HTTPClientSettings
 }
 
-// NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
-// client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string, concurrency int, buildInfo component.BuildInfo) (*PrwExporter, error) {
-	if client == nil {
-		return nil, errors.New("http client cannot be nil")
-	}
-
-	sanitizedLabels, err := validateAndSanitizeExternalLabels(externalLabels)
+// NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
+func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, error) {
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.HTTPClientSettings.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
-	return &PrwExporter{
-		namespace:       namespace,
+	return &PRWExporter{
+		namespace:       cfg.Namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
-		client:          client,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
-		concurrency:     concurrency,
+		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:  &cfg.HTTPClientSettings,
 	}, nil
+}
+
+// Start creates the prometheus client
+func (prwe *PRWExporter) Start(_ context.Context, _ component.Host) (err error) {
+	prwe.client, err = prwe.clientSettings.ToClient()
+	return err
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (prwe *PrwExporter) Shutdown(context.Context) error {
+func (prwe *PRWExporter) Shutdown(context.Context) error {
 	close(prwe.closeChan)
 	prwe.wg.Wait()
 	return nil
@@ -93,7 +96,7 @@ func (prwe *PrwExporter) Shutdown(context.Context) error {
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
@@ -185,7 +188,7 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
-func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+func (prwe *PRWExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	switch metric.DataType() {
 	// int points
 	case pdata.MetricDataTypeDoubleGauge:
@@ -229,7 +232,7 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
-func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+func (prwe *PRWExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntHistogram:
 		dataPoints := metric.IntHistogram().DataPoints()
@@ -254,7 +257,7 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 // handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
 // quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
-func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+func (prwe *PRWExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	dataPoints := metric.Summary().DataPoints()
 	if dataPoints.Len() == 0 {
 		return fmt.Errorf("empty data points. %s is dropped", metric.Name())
@@ -266,7 +269,7 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
+func (prwe *PRWExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
 	var errs []error
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
@@ -308,7 +311,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	return errs
 }
 
-func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
+func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(writeReq)
 	if err != nil {

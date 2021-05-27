@@ -218,7 +218,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	transportTag := transportType(r, asZipkinv1)
 	ctx = obsreport.ReceiverContext(ctx, zr.id, transportTag)
 	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: zr.id, Transport: transportTag})
-	ctx = obsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = obsrecv.StartTracesOp(ctx)
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)
@@ -246,7 +246,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if asZipkinv1 {
 		receiverTagValue = zipkinV1TagValue
 	}
-	obsrecv.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
+	obsrecv.EndTracesOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
 
 	if consumerErr != nil {
 		// Transient error, due to some internal condition.

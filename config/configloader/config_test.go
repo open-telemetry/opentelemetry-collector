@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
@@ -455,7 +456,7 @@ func TestLoadEmptyAllSections(t *testing.T) {
 }
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
-	v, err := config.NewParserFromFile(fileName)
+	v, err := configparser.NewParserFromFile(fileName)
 	require.NoError(t, err)
 
 	// Load the config from viper using the given factories.

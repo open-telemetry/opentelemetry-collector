@@ -16,7 +16,7 @@ package config
 
 // Processor is the configuration of a processor. Specific processors must implement this
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.
-// Embedded validatable will force each processor to implement Validate() function
+// Embedded validatable will force each processor to implement Validate() function.
 type Processor interface {
 	identifiable
 	validatable

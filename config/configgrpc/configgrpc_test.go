@@ -16,6 +16,8 @@ package configgrpc
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
 	"path"
 	"runtime"
 	"testing"
@@ -31,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	otelcol "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
@@ -75,7 +76,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Len(t, opts, 0)
+	assert.Len(t, opts, 1)
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
@@ -108,7 +109,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Len(t, opts, 7)
+	assert.Len(t, opts, 8)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
@@ -453,7 +454,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
-	socketName := testutil.TempSocketName(t)
+	socketName := tempSocketName(t)
 	gss := &GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  socketName,
@@ -524,4 +525,14 @@ func TestWithPerRPCAuthInvalidAuthType(t *testing.T) {
 	// verify
 	assert.Error(t, err)
 	assert.Nil(t, dialOpts)
+}
+
+// tempSocketName provides a temporary Unix socket name for testing.
+func tempSocketName(t *testing.T) string {
+	tmpfile, err := ioutil.TempFile("", "sock")
+	require.NoError(t, err)
+	require.NoError(t, tmpfile.Close())
+	socket := tmpfile.Name()
+	require.NoError(t, os.Remove(socket))
+	return socket
 }

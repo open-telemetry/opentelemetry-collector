@@ -12,16 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
-
-import (
-	"testing"
-
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"github.com/stretchr/testify/assert"
-)
-
-func TestNewErrIncompatibleType(t *testing.T) {
-	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
-	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
-}
+// Package configloader implements configuration loading from a config.Parser.
+// The implementation relies on registered factories that allow creating
+// default configuration for each type of receiver/exporter/processor.
+package configloader

@@ -12,20 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serializer
+package model
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"fmt"
 )
 
-func TestNewErrUnavailableEncoding(t *testing.T) {
-	err := NewErrUnavailableEncoding("unknown")
-	assert.IsType(t, &ErrUnavailableEncoding{}, err)
-	assert.EqualError(t, err, `unsupported encoding "unknown"`)
-}
-
-func TestEncoding_String(t *testing.T) {
-	assert.Equal(t, "protobuf", Protobuf.String())
+// NewErrIncompatibleType returns errIncompatibleType instance
+func NewErrIncompatibleType(expected, given interface{}) error {
+	return fmt.Errorf("expected model type %T but given %T", expected, given)
 }

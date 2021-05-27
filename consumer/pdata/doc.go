@@ -22,7 +22,7 @@
 // protocol. Note that the underlying data structure is kept private so that we are
 // free to make changes to it in the future.
 //
-// Most of internal data structures must be created via New* functions. Zero-initialized
+// Most of the internal data structures must be created via New* functions. Zero-initialized
 // structures, in most cases, are not valid (read comments for each struct to know if that
 // is the case). This is a slight deviation from idiomatic Go to avoid unnecessary
 // pointer checks in dozens of functions which assume the invariant that "orig" member

@@ -12,19 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serializer
-
-// MetricsUnmarshaler decodes bytes into protocol-specific data model.
-type MetricsUnmarshaler interface {
-	UnmarshalMetrics(buf []byte) (interface{}, error)
-}
-
-// TracesUnmarshaler decodes bytes into protocol-specific data model.
-type TracesUnmarshaler interface {
-	UnmarshalTraces(buf []byte) (interface{}, error)
-}
-
-// LogsUnmarshaler decodes bytes into protocol-specific data model.
-type LogsUnmarshaler interface {
-	UnmarshalLogs(buf []byte) (interface{}, error)
-}
+// Package configgrpc defines the  configuration settings to create
+// a gRPC client and server.
+package configgrpc

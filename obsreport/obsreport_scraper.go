@@ -23,37 +23,9 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-)
-
-const (
-	// ScraperKey used to identify scrapers in metrics and traces.
-	ScraperKey = "scraper"
-
-	// ScrapedMetricPointsKey used to identify metric points scraped by the
-	// Collector.
-	ScrapedMetricPointsKey = "scraped_metric_points"
-	// ErroredMetricPointsKey used to identify metric points errored (i.e.
-	// unable to be scraped) by the Collector.
-	ErroredMetricPointsKey = "errored_metric_points"
-)
-
-const (
-	scraperPrefix                 = ScraperKey + nameSep
-	scraperMetricsOperationSuffix = nameSep + "MetricsScraped"
-)
-
-var (
-	tagKeyScraper, _ = tag.NewKey(ScraperKey)
-
-	mScraperScrapedMetricPoints = stats.Int64(
-		scraperPrefix+ScrapedMetricPointsKey,
-		"Number of metric points successfully scraped.",
-		stats.UnitDimensionless)
-	mScraperErroredMetricPoints = stats.Int64(
-		scraperPrefix+ErroredMetricPointsKey,
-		"Number of metric points that were unable to be scraped.",
-		stats.UnitDimensionless)
 )
 
 // ScraperContext adds the keys used when recording observability metrics to
@@ -67,8 +39,8 @@ func ScraperContext(
 ) context.Context {
 	ctx, _ = tag.New(
 		ctx,
-		tag.Upsert(tagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-		tag.Upsert(tagKeyScraper, scraper.String(), tag.WithTTL(tag.TTLNoPropagation)))
+		tag.Upsert(obsmetrics.TagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
+		tag.Upsert(obsmetrics.TagKeyScraper, scraper.String(), tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
 }
@@ -81,7 +53,7 @@ func StartMetricsScrapeOp(
 	receiverID config.ComponentID,
 	scraper config.ComponentID,
 ) context.Context {
-	spanName := scraperPrefix + receiverID.String() + nameSep + scraper.String() + scraperMetricsOperationSuffix
+	spanName := obsmetrics.ScraperPrefix + receiverID.String() + obsmetrics.NameSep + scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
 	ctx, _ := trace.StartSpan(scraperCtx, spanName)
 	return ctx
 }
@@ -105,19 +77,19 @@ func EndMetricsScrapeOp(
 
 	span := trace.FromContext(scraperCtx)
 
-	if gLevel != configtelemetry.LevelNone {
+	if obsreportconfig.Level != configtelemetry.LevelNone {
 		stats.Record(
 			scraperCtx,
-			mScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),
-			mScraperErroredMetricPoints.M(int64(numErroredMetrics)))
+			obsmetrics.ScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),
+			obsmetrics.ScraperErroredMetricPoints.M(int64(numErroredMetrics)))
 	}
 
 	// end span according to errors
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
-			trace.StringAttribute(FormatKey, string(config.MetricsDataType)),
-			trace.Int64Attribute(ScrapedMetricPointsKey, int64(numScrapedMetrics)),
-			trace.Int64Attribute(ErroredMetricPointsKey, int64(numErroredMetrics)),
+			trace.StringAttribute(obsmetrics.FormatKey, string(config.MetricsDataType)),
+			trace.Int64Attribute(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
+			trace.Int64Attribute(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)
 
 		span.SetStatus(errToStatus(err))

@@ -12,13 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
-
-import (
-	"fmt"
-)
-
-// NewErrIncompatibleType returns errIncompatibleType instance
-func NewErrIncompatibleType(expected, given interface{}) error {
-	return fmt.Errorf("expected model type %T but given %T", expected, given)
-}
+// Package simple facilitates building pdata.Metrics in receivers in an
+// easier and more fluent way than using pdata.Metrics directly.
+package simple

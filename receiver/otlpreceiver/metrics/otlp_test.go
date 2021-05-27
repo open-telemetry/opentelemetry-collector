@@ -30,7 +30,6 @@ import (
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 func TestExport(t *testing.T) {
@@ -123,7 +122,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func
 
 	r := New(receiverID, mc)
 	// Now run it as a gRPC server
-	srv := obsreport.GRPCServerWithObservabilityEnabled()
+	srv := grpc.NewServer()
 	collectormetrics.RegisterMetricsServiceServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)

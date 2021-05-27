@@ -34,7 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -51,7 +51,11 @@ func TestApplication_Start(t *testing.T) {
 		return nil
 	}
 
-	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
+	app, err := New(AppSettings{
+		BuildInfo:      component.DefaultBuildInfo(),
+		Factories:      factories,
+		LoggingOptions: []zap.Option{zap.Hooks(hook)},
+	})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 
@@ -119,7 +123,7 @@ func TestApplication_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	app, err := New(Parameters{Factories: factories, BuildInfo: component.DefaultBuildInfo()})
+	app, err := New(AppSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
 	require.NoError(t, err)
 
 	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
@@ -142,12 +146,12 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	params := Parameters{
+	set := AppSettings{
 		BuildInfo:      component.DefaultBuildInfo(),
-		ParserProvider: new(minimalParserLoader),
 		Factories:      factories,
+		ParserProvider: new(minimalParserLoader),
 	}
-	app, err := New(params)
+	app, err := New(set)
 	require.NoError(t, err)
 
 	appDone := make(chan struct{})
@@ -243,7 +247,7 @@ func assertZPages(t *testing.T) {
 
 type minimalParserLoader struct{}
 
-func (*minimalParserLoader) Get() (*config.Parser, error) {
+func (*minimalParserLoader) Get() (*configparser.Parser, error) {
 	configStr := `
 receivers:
   otlp:
@@ -264,14 +268,14 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	return config.NewParserFromBuffer(strings.NewReader(configStr))
+	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
 }
 
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get() (*config.Parser, error) {
+func (epl *errParserLoader) Get() (*configparser.Parser, error) {
 	return nil, epl.err
 }
 
