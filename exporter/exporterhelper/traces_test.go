@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -239,7 +239,7 @@ func checkWrapSpanForTracesExporter(t *testing.T, te component.TracesExporter, w
 			failedToSendSpans = numSpans
 		}
 
-		require.Equalf(t, sentSpans, sd.Attributes[obsreport.SentSpansKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendSpans, sd.Attributes[obsreport.FailedToSendSpansKey], "SpanData %v", sd)
+		require.Equalf(t, sentSpans, sd.Attributes[obsmetrics.SentSpansKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendSpans, sd.Attributes[obsmetrics.FailedToSendSpansKey], "SpanData %v", sd)
 	}
 }

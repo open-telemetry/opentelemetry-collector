@@ -102,7 +102,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 					generateThriftSpan(),
 				},
 			},
-			td: generateTraceDataOneSpanNoResource(),
+			td: generateTracesOneSpanNoResource(),
 		},
 		{
 			name: "two-spans-child-parent",
@@ -112,7 +112,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 					generateThriftChildSpan(),
 				},
 			},
-			td: generateTraceDataTwoSpansChildParent(),
+			td: generateTracesTwoSpansChildParent(),
 		},
 
 		{
@@ -123,7 +123,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 					generateThriftFollowerSpan(),
 				},
 			},
-			td: generateTraceDataTwoSpansWithFollower(),
+			td: generateTracesTwoSpansWithFollower(),
 		},
 	}
 

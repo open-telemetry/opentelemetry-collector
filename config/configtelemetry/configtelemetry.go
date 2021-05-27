@@ -40,7 +40,7 @@ const (
 
 var metricsLevelPtr = new(Level)
 
-// Flags is a helper func, to add the telemetry config flags to the service that exposes
+// Flags is a helper function to add telemetry config flags to the service that exposes
 // the application flags.
 func Flags(flags *flag.FlagSet) {
 	flags.Var(

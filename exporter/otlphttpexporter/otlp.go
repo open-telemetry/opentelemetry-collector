@@ -92,7 +92,7 @@ func (e *exporter) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *exporter) pushTraceData(ctx context.Context, traces pdata.Traces) error {
+func (e *exporter) pushTraces(ctx context.Context, traces pdata.Traces) error {
 	request, err := traces.ToOtlpProtoBytes()
 	if err != nil {
 		return consumererror.Permanent(err)
@@ -101,7 +101,7 @@ func (e *exporter) pushTraceData(ctx context.Context, traces pdata.Traces) error
 	return e.export(ctx, e.tracesURL, request)
 }
 
-func (e *exporter) pushMetricsData(ctx context.Context, metrics pdata.Metrics) error {
+func (e *exporter) pushMetrics(ctx context.Context, metrics pdata.Metrics) error {
 	request, err := metrics.ToOtlpProtoBytes()
 	if err != nil {
 		return consumererror.Permanent(err)
@@ -109,7 +109,7 @@ func (e *exporter) pushMetricsData(ctx context.Context, metrics pdata.Metrics) e
 	return e.export(ctx, e.metricsURL, request)
 }
 
-func (e *exporter) pushLogData(ctx context.Context, logs pdata.Logs) error {
+func (e *exporter) pushLogs(ctx context.Context, logs pdata.Logs) error {
 	request, err := logs.ToOtlpProtoBytes()
 	if err != nil {
 		return consumererror.Permanent(err)
