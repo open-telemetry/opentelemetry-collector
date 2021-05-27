@@ -42,7 +42,6 @@ type metricGroupPdata struct {
 	// fields progressively, when we are ready to make changes.
 	metricGroup
 	family *metricFamilyPdata
-	groups map[string]*metricGroupPdata
 }
 
 func newMetricFamilyPdata(metricName string, mc MetadataCache) MetricFamily {
@@ -88,14 +87,17 @@ func (mf *metricFamilyPdata) updateLabelKeys(ls labels.Labels) {
 				mf.labelKeys[l.Name] = true
 				// use insertion sort to maintain order
 				i := sort.SearchStrings(mf.labelKeysOrdered, l.Name)
-				labelKeys := append(mf.labelKeysOrdered, "")
-				copy(labelKeys[i+1:], labelKeys[i:])
-				labelKeys[i] = l.Name
-				mf.labelKeysOrdered = labelKeys
+				mf.labelKeysOrdered = append(mf.labelKeysOrdered, "")
+				copy(mf.labelKeysOrdered[i+1:], mf.labelKeysOrdered[i:])
+				mf.labelKeysOrdered[i] = l.Name
+
 			}
 		}
 	}
 }
+
+// Purposefully being referenced to avoid lint warnings about being "unused".
+var _ = (*metricFamilyPdata)(nil).updateLabelKeys
 
 func (mf *metricFamilyPdata) isCumulativeTypePdata() bool {
 	return mf.mtype == pdata.MetricDataTypeDoubleSum ||
