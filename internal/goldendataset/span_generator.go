@@ -46,13 +46,13 @@ var statusMsgMap = map[PICTInputStatus]string{
 // The return values are the slice with the generated spans, the starting position for the next generation
 // run and the error which caused the spans generation to fail. If err is not nil, the spans slice will
 // have nil values.
-func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) ([]*pdata.Span, int, error) {
+func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) ([]pdata.Span, int, error) {
 	pairsData, err := loadPictOutputFile(pictFile)
 	if err != nil {
 		return nil, 0, err
 	}
 	pairsTotal := len(pairsData)
-	spanList := make([]*pdata.Span, count)
+	spanList := make([]pdata.Span, count)
 	index := startPos + 1
 	var inputs []string
 	var spanInputs *PICTSpanInputs
@@ -107,7 +107,7 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 //
 // The generated span is returned.
 func GenerateSpan(traceID pdata.TraceID, parentID pdata.SpanID, spanName string, spanInputs *PICTSpanInputs,
-	random io.Reader) *pdata.Span {
+	random io.Reader) pdata.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	span := pdata.NewSpan()
 	span.SetTraceID(traceID)
@@ -125,7 +125,7 @@ func GenerateSpan(traceID pdata.TraceID, parentID pdata.SpanID, spanName string,
 	generateSpanLinks(spanInputs.Links, random).CopyTo(span.Links())
 	span.SetDroppedLinksCount(0)
 	generateStatus(spanInputs.Status).CopyTo(span.Status())
-	return &span
+	return span
 }
 
 func generateTraceState(tracestate PICTInputTracestate) pdata.TraceState {
@@ -201,8 +201,7 @@ func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputS
 	default:
 		attrs = generateGRPCClientAttributes()
 	}
-	attrMap := convertMapToAttributeKeyValues(attrs)
-	return pdata.NewAttributeMapFromKeyValues(&attrMap)
+	return convertMapToAttributeMap(attrs)
 }
 
 func generateStatus(statusStr PICTInputStatus) pdata.SpanStatus {
@@ -497,14 +496,12 @@ func generateEventNameAndAttributes(index int) (string, pdata.AttributeMap) {
 		attrMap[conventions.AttributeMessageID] = int64(index / 4)
 		attrMap[conventions.AttributeMessageCompressedSize] = int64(17 * index)
 		attrMap[conventions.AttributeMessageUncompressedSize] = int64(24 * index)
-		keyValues := convertMapToAttributeKeyValues(attrMap)
-		return "message", pdata.NewAttributeMapFromKeyValues(&keyValues)
+		return "message", convertMapToAttributeMap(attrMap)
 	case 1:
-		keyValues := convertMapToAttributeKeyValues(map[string]interface{}{
+		return "custom", convertMapToAttributeMap(map[string]interface{}{
 			"app.inretry":  true,
 			"app.progress": 0.6,
 			"app.statemap": "14|5|202"})
-		return "custom", pdata.NewAttributeMapFromKeyValues(&keyValues)
 	default:
 		return "annotation", pdata.NewAttributeMap()
 	}
@@ -530,6 +527,5 @@ func generateLinkAttributes(index int) pdata.AttributeMap {
 		attrMap["app.progress"] = 0.6
 		attrMap["app.statemap"] = "14|5|202"
 	}
-	keyValues := convertMapToAttributeKeyValues(attrMap)
-	return pdata.NewAttributeMapFromKeyValues(&keyValues)
+	return convertMapToAttributeMap(attrMap)
 }

@@ -48,7 +48,7 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces
 			err = spanErr
 		}
 		resourceSpansSlice := pdata.NewResourceSpansSlice()
-		resourceSpansSlice.Append(*rscSpan)
+		resourceSpansSlice.Append(rscSpan)
 		traces[index-1] = pdata.NewTraces()
 		resourceSpansSlice.CopyTo(traces[index-1].ResourceSpans())
 	}
@@ -62,16 +62,16 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces
 //
 // The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
 func generateResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader) (*pdata.ResourceSpans, error) {
+	random io.Reader) (pdata.ResourceSpans, error) {
 	resourceSpan := pdata.NewResourceSpans()
 	libSpansSlice, err := generateLibrarySpansArray(tracingInputs, spanPairsFile, random)
 	libSpansSlice.CopyTo(resourceSpan.InstrumentationLibrarySpans())
 	generatePDataResource(tracingInputs.Resource).CopyTo(resourceSpan.Resource())
-	return &resourceSpan, err
+	return resourceSpan, err
 }
 
 func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader) (*pdata.InstrumentationLibrarySpansSlice, error) {
+	random io.Reader) (pdata.InstrumentationLibrarySpansSlice, error) {
 	var count int
 	switch tracingInputs.InstrumentationLibrary {
 	case LibraryNone:
@@ -82,26 +82,26 @@ func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile s
 		count = 2
 	}
 	var err error
-	var libSpans *pdata.InstrumentationLibrarySpans
+	var libSpans pdata.InstrumentationLibrarySpans
 	instrumentationLibrarySpansSlice := pdata.NewInstrumentationLibrarySpansSlice()
 	for i := 0; i < count; i++ {
 		libSpans, err = generateLibrarySpans(tracingInputs, i, spanPairsFile, random)
-		instrumentationLibrarySpansSlice.Append(*libSpans)
+		instrumentationLibrarySpansSlice.Append(libSpans)
 	}
-	return &instrumentationLibrarySpansSlice, err
+	return instrumentationLibrarySpansSlice, err
 }
 
 func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string,
-	random io.Reader) (*pdata.InstrumentationLibrarySpans, error) {
+	random io.Reader) (pdata.InstrumentationLibrarySpans, error) {
 	instrumentationLibrarySpans := pdata.NewInstrumentationLibrarySpans()
 	spanCaseCount, err := countTotalSpanCases(spanPairsFile)
 	if err != nil {
-		return &instrumentationLibrarySpans, err
+		return instrumentationLibrarySpans, err
 	}
-	var spans []*pdata.Span
+	var spans []pdata.Span
 	switch tracingInputs.Spans {
 	case LibrarySpansNone:
-		spans = make([]*pdata.Span, 0)
+		spans = make([]pdata.Span, 0)
 	case LibrarySpansOne:
 		spans, _, err = GenerateSpans(1, 0, spanPairsFile, random)
 	case LibrarySpansSeveral:
@@ -113,11 +113,11 @@ func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairs
 	}
 	spanSlice := pdata.NewSpanSlice()
 	for _, span := range spans {
-		spanSlice.Append(*span)
+		spanSlice.Append(span)
 	}
 	generateInstrumentationLibrary(tracingInputs, index).CopyTo(instrumentationLibrarySpans.InstrumentationLibrary())
 	spanSlice.CopyTo(instrumentationLibrarySpans.Spans())
-	return &instrumentationLibrarySpans, err
+	return instrumentationLibrarySpans, err
 }
 
 func countTotalSpanCases(spanPairsFile string) (int, error) {
@@ -129,10 +129,10 @@ func countTotalSpanCases(spanPairsFile string) (int, error) {
 	return count, err
 }
 
-func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int) *pdata.InstrumentationLibrary {
+func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int) pdata.InstrumentationLibrary {
 	instrumentationLibrary := pdata.NewInstrumentationLibrary()
 	if LibraryNone == tracingInputs.InstrumentationLibrary {
-		return &instrumentationLibrary
+		return instrumentationLibrary
 	}
 	nameStr := fmt.Sprintf("%s-%s-%s-%d", tracingInputs.Resource, tracingInputs.InstrumentationLibrary,
 		tracingInputs.Spans, index)
@@ -142,5 +142,5 @@ func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int)
 	}
 	instrumentationLibrary.SetName(nameStr)
 	instrumentationLibrary.SetVersion(verStr)
-	return &instrumentationLibrary
+	return instrumentationLibrary
 }
