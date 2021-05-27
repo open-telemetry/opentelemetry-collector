@@ -26,7 +26,7 @@ var (
 	errAuthenticatorNotFound = errors.New("authenticator not found")
 )
 
-// Authentication defines the auth settings for the receiver
+// Authentication defines the auth settings for the receiver.
 type Authentication struct {
 	// AuthenticatorName specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorName string `mapstructure:"authenticator"`
