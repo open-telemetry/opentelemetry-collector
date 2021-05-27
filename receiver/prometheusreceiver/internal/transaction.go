@@ -171,11 +171,11 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
-	ctx := tr.obsrecv.StartMetricsReceiveOp(tr.ctx)
+	ctx := tr.obsrecv.StartMetricsOp(tr.ctx)
 	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {
 		// Only error by Build() is errNoDataToBuild, with numReceivedPoints set to zero.
-		tr.obsrecv.EndMetricsReceiveOp(ctx, dataformat, 0, err)
+		tr.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
 	}
 
@@ -186,7 +186,7 @@ func (tr *transaction) Commit() error {
 			// Since we are unable to adjust metrics properly, we will drop them
 			// and return an error.
 			err = errNoStartTimeMetrics
-			tr.obsrecv.EndMetricsReceiveOp(ctx, dataformat, 0, err)
+			tr.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 			return err
 		}
 
@@ -203,7 +203,7 @@ func (tr *transaction) Commit() error {
 		_, numPoints = md.MetricAndDataPointCount()
 		err = tr.sink.ConsumeMetrics(ctx, md)
 	}
-	tr.obsrecv.EndMetricsReceiveOp(ctx, dataformat, numPoints, err)
+	tr.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
 	return err
 }
 
