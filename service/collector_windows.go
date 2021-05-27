@@ -27,7 +27,7 @@ import (
 )
 
 type WindowsService struct {
-	settings colSettings
+	settings CollectorSettings
 	col      *Collector
 }
 
