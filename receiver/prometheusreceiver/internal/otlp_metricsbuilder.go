@@ -15,31 +15,14 @@
 package internal
 
 import (
-	"regexp"
 	"strconv"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-type pdataMetricBuilder struct {
-	hasData              bool
-	hasInternalMetric    bool
-	mc                   MetadataCache
-	metrics              []*metricspb.Metric
-	numTimeseries        int
-	droppedTimeseries    int
-	useStartTimeMetric   bool
-	startTimeMetricRegex *regexp.Regexp
-	startTime            float64
-	logger               *zap.Logger
-	currentMf            MetricFamily
-}
 
 func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {
 	switch labelKey {

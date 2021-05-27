@@ -25,15 +25,21 @@ import (
 )
 
 type metricFamilyPdata struct {
+	// We are composing the already present metricFamily to
+	// make for a scalable migration, so that we only edit target
+	// fields progressively, when we are ready to make changes.
 	metricFamily
 	mtype  pdata.MetricDataType
 	groups map[string]*metricGroupPdata
 }
 
-// metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
+// metricGroupPdata, represents a single metric of a metric family. for example a histogram metric is usually represent by
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroupPdata struct {
+	// We are composing the already present metricGroup to
+	// make for a scalable migration, so that we only edit target
+	// fields progressively, when we are ready to make changes.
 	metricGroup
 	family *metricFamilyPdata
 	groups map[string]*metricGroupPdata
