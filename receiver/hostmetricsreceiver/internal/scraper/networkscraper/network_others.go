@@ -16,6 +16,10 @@
 
 package networkscraper
 
+import (
+	"go.opentelemetry.io/collector/consumer/pdata"
+)
+
 var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSED",
@@ -29,4 +33,8 @@ var allTCPStates = []string{
 	"SYN_SENT",
 	"SYN_RECEIVED",
 	"TIME_WAIT",
+}
+
+func scrapeAndAppendConntrackMetrics(s *scraper, metrics pdata.MetricSlice) error {
+	return nil
 }
