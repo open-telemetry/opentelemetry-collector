@@ -25,13 +25,15 @@ import (
 )
 
 func TestOTLPTracesPbMarshaler(t *testing.T) {
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	td := testdata.GenerateTracesTwoSpansSameResource()
 	m := otlpTracesPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
-	messages, err := m.Marshal(td)
+	messages, err := m.Marshal(td, "topic")
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
-	extracted, err := pdata.TracesFromOtlpProtoBytes(messages[0].Value)
+	messageBytes, err := messages[0].Value.Encode()
+	require.NoError(t, err)
+	extracted, err := pdata.TracesFromOtlpProtoBytes(messageBytes)
 	require.NoError(t, err)
 	assert.EqualValues(t, td, extracted)
 }
@@ -40,22 +42,26 @@ func TestOTLPMetricsPbMarshaler(t *testing.T) {
 	md := testdata.GenerateMetricsTwoMetrics()
 	m := otlpMetricsPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
-	messages, err := m.Marshal(md)
+	messages, err := m.Marshal(md, "topic")
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
-	extracted, err := pdata.MetricsFromOtlpProtoBytes(messages[0].Value)
+	messageBytes, err := messages[0].Value.Encode()
+	require.NoError(t, err)
+	extracted, err := pdata.MetricsFromOtlpProtoBytes(messageBytes)
 	require.NoError(t, err)
 	assert.EqualValues(t, md, extracted)
 }
 
 func TestOTLPLogsPbMarshaler(t *testing.T) {
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	m := otlpLogsPbMarshaler{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
-	messages, err := m.Marshal(ld)
+	messages, err := m.Marshal(ld, "topic")
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
-	extracted, err := pdata.LogsFromOtlpProtoBytes(messages[0].Value)
+	messageBytes, err := messages[0].Value.Encode()
+	require.NoError(t, err)
+	extracted, err := pdata.LogsFromOtlpProtoBytes(messageBytes)
 	require.NoError(t, err)
 	assert.EqualValues(t, ld, extracted)
 }

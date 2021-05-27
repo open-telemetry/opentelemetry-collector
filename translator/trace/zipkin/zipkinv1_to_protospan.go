@@ -28,6 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -254,13 +255,13 @@ func parseAnnotationValue(value string, parseStringTags bool) *tracepb.Attribute
 
 	if parseStringTags {
 		switch determineValueType(value) {
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			iValue, _ := strconv.ParseInt(value, 10, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			fValue, _ := strconv.ParseFloat(value, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			bValue, _ := strconv.ParseBool(value)
 			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
 		default:
@@ -414,7 +415,7 @@ func hexTraceIDToOCTraceID(hex string) ([]byte, error) {
 		return nil, errHexTraceIDZero
 	}
 
-	tidBytes := tracetranslator.UInt64ToTraceID(high, low).Bytes()
+	tidBytes := idutils.UInt64ToTraceID(high, low).Bytes()
 	return tidBytes[:], nil
 }
 
@@ -433,7 +434,7 @@ func hexIDToOCID(hex string) ([]byte, error) {
 		return nil, errHexIDZero
 	}
 
-	idBytes := tracetranslator.UInt64ToSpanID(idValue).Bytes()
+	idBytes := idutils.UInt64ToSpanID(idValue).Bytes()
 	return idBytes[:], nil
 }
 

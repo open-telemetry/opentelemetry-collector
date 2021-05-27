@@ -26,79 +26,57 @@ func TestAttributeValueToString(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    pdata.AttributeValue
-		jsonLike bool
 		expected string
 	}{
 		{
 			name:     "string",
 			input:    pdata.NewAttributeValueString("string value"),
-			jsonLike: false,
 			expected: "string value",
-		},
-		{
-			name:     "json string",
-			input:    pdata.NewAttributeValueString("string value"),
-			jsonLike: true,
-			expected: "\"string value\"",
 		},
 		{
 			name:     "int64",
 			input:    pdata.NewAttributeValueInt(42),
-			jsonLike: false,
 			expected: "42",
 		},
 		{
 			name:     "float64",
 			input:    pdata.NewAttributeValueDouble(1.61803399),
-			jsonLike: false,
 			expected: "1.61803399",
 		},
 		{
 			name:     "boolean",
 			input:    pdata.NewAttributeValueBool(true),
-			jsonLike: false,
 			expected: "true",
 		},
 		{
 			name:     "empty_map",
 			input:    pdata.NewAttributeValueMap(),
-			jsonLike: false,
 			expected: "{}",
 		},
 		{
 			name:     "simple_map",
 			input:    simpleAttributeValueMap(),
-			jsonLike: false,
 			expected: "{\"arrKey\":[\"strOne\",\"strTwo\"],\"boolKey\":false,\"floatKey\":18.6,\"intKey\":7,\"mapKey\":{\"keyOne\":\"valOne\",\"keyTwo\":\"valTwo\"},\"nullKey\":null,\"strKey\":\"strVal\"}",
 		},
 		{
 			name:     "empty_array",
 			input:    pdata.NewAttributeValueArray(),
-			jsonLike: false,
 			expected: "[]",
 		},
 		{
 			name:     "simple_array",
 			input:    simpleAttributeValueArray(),
-			jsonLike: false,
 			expected: "[\"strVal\",7,18.6,false,null]",
 		},
 		{
 			name:     "null",
 			input:    pdata.NewAttributeValueNull(),
-			jsonLike: false,
 			expected: "",
-		},
-		{
-			name:     "null_json",
-			input:    pdata.NewAttributeValueNull(),
-			jsonLike: true,
-			expected: "null",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := AttributeValueToString(test.input, test.jsonLike)
+			actual := AttributeValueToString(test.input)
 			assert.Equal(t, test.expected, actual)
 		})
 	}

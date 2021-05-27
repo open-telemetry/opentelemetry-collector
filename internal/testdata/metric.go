@@ -43,17 +43,8 @@ const (
 	TestDoubleSummaryMetricName   = "double-summary"
 )
 
-func GenerateMetricsEmpty() pdata.Metrics {
-	md := pdata.NewMetrics()
-	return md
-}
-
-func generateMetricsOtlpEmpty() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return &otlpcollectormetrics.ExportMetricsServiceRequest{}
-}
-
 func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
-	md := GenerateMetricsEmpty()
+	md := pdata.NewMetrics()
 	md.ResourceMetrics().AppendEmpty()
 	return md
 }

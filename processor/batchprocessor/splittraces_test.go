@@ -24,7 +24,7 @@ import (
 )
 
 func TestSplitTraces_noop(t *testing.T) {
-	td := testdata.GenerateTraceDataManySpansSameResource(20)
+	td := testdata.GenerateTracesManySpansSameResource(20)
 	splitSize := 40
 	split := splitTraces(splitSize, td)
 	assert.Equal(t, td, split)
@@ -34,7 +34,7 @@ func TestSplitTraces_noop(t *testing.T) {
 }
 
 func TestSplitTraces(t *testing.T) {
-	td := testdata.GenerateTraceDataManySpansSameResource(20)
+	td := testdata.GenerateTracesManySpansSameResource(20)
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
@@ -77,13 +77,13 @@ func TestSplitTraces(t *testing.T) {
 }
 
 func TestSplitTracesMultipleResourceSpans(t *testing.T) {
-	td := testdata.GenerateTraceDataManySpansSameResource(20)
+	td := testdata.GenerateTracesManySpansSameResource(20)
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	}
 	// add second index to resource spans
-	testdata.GenerateTraceDataManySpansSameResource(20).
+	testdata.GenerateTracesManySpansSameResource(20).
 		ResourceSpans().At(0).CopyTo(td.ResourceSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
@@ -99,14 +99,14 @@ func TestSplitTracesMultipleResourceSpans(t *testing.T) {
 }
 
 func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testing.T) {
-	td := testdata.GenerateTraceDataManySpansSameResource(20)
+	td := testdata.GenerateTracesManySpansSameResource(20)
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	}
 	td.ResourceSpans().Resize(2)
 	// add second index to resource spans
-	testdata.GenerateTraceDataManySpansSameResource(20).
+	testdata.GenerateTracesManySpansSameResource(20).
 		ResourceSpans().At(0).CopyTo(td.ResourceSpans().At(1))
 	spans = td.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {

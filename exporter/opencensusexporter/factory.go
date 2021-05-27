@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -59,7 +60,8 @@ func createTracesExporter(ctx context.Context, params component.ExporterCreatePa
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
-		oce.pushTraceData,
+		oce.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(oce.shutdown))
@@ -75,7 +77,8 @@ func createMetricsExporter(ctx context.Context, params component.ExporterCreateP
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		oce.pushMetricsData,
+		oce.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(oce.shutdown))

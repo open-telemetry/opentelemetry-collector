@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/otlptext"
@@ -33,7 +34,7 @@ type loggingExporter struct {
 	debug  bool
 }
 
-func (s *loggingExporter) pushTraceData(
+func (s *loggingExporter) pushTraces(
 	_ context.Context,
 	td pdata.Traces,
 ) error {
@@ -49,7 +50,7 @@ func (s *loggingExporter) pushTraceData(
 	return nil
 }
 
-func (s *loggingExporter) pushMetricsData(
+func (s *loggingExporter) pushMetrics(
 	_ context.Context,
 	md pdata.Metrics,
 ) error {
@@ -75,7 +76,8 @@ func newTracesExporter(config config.Exporter, level string, logger *zap.Logger)
 	return exporterhelper.NewTracesExporter(
 		config,
 		logger,
-		s.pushTraceData,
+		s.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -95,7 +97,8 @@ func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger
 	return exporterhelper.NewMetricsExporter(
 		config,
 		logger,
-		s.pushMetricsData,
+		s.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -115,7 +118,8 @@ func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (
 	return exporterhelper.NewLogsExporter(
 		config,
 		logger,
-		s.pushLogData,
+		s.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -124,7 +128,7 @@ func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (
 	)
 }
 
-func (s *loggingExporter) pushLogData(
+func (s *loggingExporter) pushLogs(
 	_ context.Context,
 	ld pdata.Logs,
 ) error {

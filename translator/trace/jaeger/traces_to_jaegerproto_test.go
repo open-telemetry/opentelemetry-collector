@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -104,14 +103,14 @@ func TestGetTagFromSpanKind(t *testing.T) {
 	}{
 		{
 			name: "unspecified",
-			kind: pdata.SpanKindUNSPECIFIED,
+			kind: pdata.SpanKindUnspecified,
 			tag:  model.KeyValue{},
 			ok:   false,
 		},
 
 		{
 			name: "client",
-			kind: pdata.SpanKindCLIENT,
+			kind: pdata.SpanKindClient,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -122,7 +121,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "server",
-			kind: pdata.SpanKindSERVER,
+			kind: pdata.SpanKindServer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -133,7 +132,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "producer",
-			kind: pdata.SpanKindPRODUCER,
+			kind: pdata.SpanKindProducer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -144,7 +143,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "consumer",
-			kind: pdata.SpanKindCONSUMER,
+			kind: pdata.SpanKindConsumer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -155,7 +154,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "internal",
-			kind: pdata.SpanKindINTERNAL,
+			kind: pdata.SpanKindInternal,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -229,13 +228,13 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 	}{
 		{
 			name: "empty",
-			td:   testdata.GenerateTraceDataEmpty(),
+			td:   pdata.NewTraces(),
 			err:  nil,
 		},
 
 		{
 			name: "no-spans",
-			td:   generateTraceDataResourceOnly(),
+			td:   generateTracesResourceOnly(),
 			jb: &model.Batch{
 				Process: generateProtoProcess(),
 			},
@@ -244,13 +243,13 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 		{
 			name: "no-resource-attrs",
-			td:   generateTraceDataResourceOnlyWithNoAttrs(),
+			td:   generateTracesResourceOnlyWithNoAttrs(),
 			err:  nil,
 		},
 
 		{
 			name: "one-span-no-resources",
-			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
+			td:   generateTracesOneSpanNoResourceWithTraceState(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -263,7 +262,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 		{
 			name: "library-info",
-			td:   generateTraceDataWithLibraryInfo(),
+			td:   generateTracesWithLibraryInfo(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -276,7 +275,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 		{
 			name: "two-spans-child-parent",
-			td:   generateTraceDataTwoSpansChildParent(),
+			td:   generateTracesTwoSpansChildParent(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -291,7 +290,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 		{
 			name: "two-spans-with-follower",
-			td:   generateTraceDataTwoSpansWithFollower(),
+			td:   generateTracesTwoSpansWithFollower(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -353,8 +352,8 @@ func generateProtoChildSpanWithErrorTags() *model.Span {
 }
 
 func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
-	td := generateTraceDataTwoSpansChildParent()
-	resource := generateTraceDataResourceOnly().ResourceSpans().At(0).Resource()
+	td := generateTracesTwoSpansChildParent()
+	resource := generateTracesResourceOnly().ResourceSpans().At(0).Resource()
 	resource.CopyTo(td.ResourceSpans().At(0).Resource())
 
 	b.ResetTimer()

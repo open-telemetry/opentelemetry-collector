@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -47,10 +47,10 @@ var (
 func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsOneMetric(), nil)
 
-	metricsErr := consumererror.NewMetrics(errors.New("some error"), testdata.GenerateMetricsEmpty())
+	metricsErr := consumererror.NewMetrics(errors.New("some error"), pdata.NewMetrics())
 	assert.EqualValues(
 		t,
-		newMetricsRequest(context.Background(), testdata.GenerateMetricsEmpty(), nil),
+		newMetricsRequest(context.Background(), pdata.NewMetrics(), nil),
 		mr.onError(metricsErr),
 	)
 }
@@ -74,7 +74,7 @@ func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
-	md := testdata.GenerateMetricsEmpty()
+	md := pdata.NewMetrics()
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
@@ -95,7 +95,7 @@ func TestMetricsExporter_WithCapabilities(t *testing.T) {
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
-	md := testdata.GenerateMetricsEmpty()
+	md := pdata.NewMetrics()
 	want := errors.New("my_error")
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(want))
 	require.NoError(t, err)
@@ -246,7 +246,7 @@ func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporter,
 			sentMetricPoints = 0
 			failedToSendMetricPoints = numMetricPoints
 		}
-		require.Equalf(t, sentMetricPoints, sd.Attributes[obsreport.SentMetricPointsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsreport.FailedToSendMetricPointsKey], "SpanData %v", sd)
+		require.Equalf(t, sentMetricPoints, sd.Attributes[obsmetrics.SentMetricPointsKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsmetrics.FailedToSendMetricPointsKey], "SpanData %v", sd)
 	}
 }

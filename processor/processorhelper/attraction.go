@@ -266,7 +266,7 @@ func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pdata.AttributeValueSTRING {
+	if !found || value.Type() != pdata.AttributeValueTypeString {
 		return
 	}
 

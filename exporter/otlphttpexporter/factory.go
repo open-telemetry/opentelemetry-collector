@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -90,7 +91,9 @@ func createTracesExporter(
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
-		oce.pushTraceData,
+		oce.pushTraces,
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -116,7 +119,9 @@ func createMetricsExporter(
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		oce.pushMetricsData,
+		oce.pushMetrics,
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -142,7 +147,9 @@ func createLogsExporter(
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		params.Logger,
-		oce.pushLogData,
+		oce.pushLogs,
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

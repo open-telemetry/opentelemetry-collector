@@ -12,24 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logstest
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
-)
-
-func TestLogs(t *testing.T) {
-	logs := Logs(Log{
-		Timestamp: 1,
-		Body:      pdata.NewAttributeValueString("asdf"),
-		Attributes: map[string]pdata.AttributeValue{
-			"a": pdata.NewAttributeValueString("b"),
-		},
-	})
-
-	require.Equal(t, 1, logs.LogRecordCount())
-}
+// Package configgrpc defines the  configuration settings to create
+// a gRPC client and server.
+package configgrpc

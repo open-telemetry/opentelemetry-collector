@@ -295,16 +295,12 @@ func Test_getPromMetricName(t *testing.T) {
 			validDoubleGauge,
 		},
 		{
-			"total_suffix",
+			// Ensure removed functionality stays removed.
+			// See https://github.com/open-telemetry/opentelemetry-collector/pull/2993 for context
+			"no_counter_suffix",
 			validMetrics1[validIntSum],
 			ns1,
-			"test_ns_" + validIntSum + counterSuffix,
-		},
-		{
-			"already_has_total_suffix",
-			validMetrics1[suffixedCounter],
-			ns1,
-			"test_ns_" + suffixedCounter,
+			"test_ns_" + validIntSum,
 		},
 		{
 			"dirty_string",

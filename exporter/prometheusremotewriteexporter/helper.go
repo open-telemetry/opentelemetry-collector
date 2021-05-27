@@ -30,16 +30,14 @@ import (
 )
 
 const (
-	nameStr       = "__name__"
-	sumStr        = "_sum"
-	countStr      = "_count"
-	bucketStr     = "_bucket"
-	leStr         = "le"
-	quantileStr   = "quantile"
-	pInfStr       = "+Inf"
-	counterSuffix = "_total"
-	delimiter     = "_"
-	keyStr        = "key"
+	nameStr     = "__name__"
+	sumStr      = "_sum"
+	countStr    = "_count"
+	bucketStr   = "_bucket"
+	leStr       = "le"
+	quantileStr = "quantile"
+	pInfStr     = "+Inf"
+	keyStr      = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -190,35 +188,14 @@ func isUsefulResourceAttribute(key string) bool {
 	return false
 }
 
-// getPromMetricName creates a Prometheus metric name by attaching namespace prefix, and _total suffix for Monotonic
-// metrics.
+// getPromMetricName creates a Prometheus metric name by attaching namespace prefix for Monotonic metrics.
 func getPromMetricName(metric pdata.Metric, ns string) string {
-	// if the metric is counter, _total suffix should be applied
-	isCounter := metric.DataType() == pdata.MetricDataTypeDoubleSum || metric.DataType() == pdata.MetricDataTypeIntSum
-
-	b := strings.Builder{}
-
-	b.WriteString(ns)
-
-	if b.Len() > 0 {
-		b.WriteString(delimiter)
-	}
 	name := metric.Name()
-	b.WriteString(name)
-
-	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
-	// units are different.
-	/*
-		if b.Len() > 0 && len(desc.GetUnit()) > 0{
-			fmt.Fprintf(&b, delimeter)
-			fmt.Fprintf(&b, desc.GetUnit())
-		}
-	*/
-
-	if b.Len() > 0 && isCounter && !strings.HasSuffix(name, counterSuffix) {
-		b.WriteString(counterSuffix)
+	if len(ns) > 0 {
+		name = ns + "_" + name
 	}
-	return sanitize(b.String())
+
+	return sanitize(name)
 }
 
 // batchTimeSeries splits series into multiple batch write requests.
@@ -271,7 +248,7 @@ func sanitize(s string) string {
 	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
 	s = strings.Map(sanitizeRune, s)
 	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + delimiter + s
+		s = keyStr + "_" + s
 	}
 	if s[0] == '_' {
 		s = keyStr + s

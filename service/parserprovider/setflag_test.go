@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 func TestSetFlags(t *testing.T) {
@@ -59,6 +59,6 @@ func TestSetFlags_empty(t *testing.T) {
 
 type emptyProvider struct{}
 
-func (el *emptyProvider) Get() (*config.Parser, error) {
-	return config.NewParser(), nil
+func (el *emptyProvider) Get() (*configparser.Parser, error) {
+	return configparser.NewParser(), nil
 }

@@ -117,7 +117,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 
 }
 
-func TestTraceDataPusher(t *testing.T) {
+func TestTracesPusher(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
 	producer.ExpectSendMessageAndSucceed()
@@ -129,11 +129,11 @@ func TestTraceDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
+	err := p.tracesPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
 	require.NoError(t, err)
 }
 
-func TestTraceDataPusher_err(t *testing.T) {
+func TestTracesPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
 	expErr := fmt.Errorf("failed to send")
@@ -147,19 +147,19 @@ func TestTraceDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	err := p.traceDataPusher(context.Background(), td)
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	err := p.tracesPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
 }
 
-func TestTraceDataPusher_marshal_error(t *testing.T) {
+func TestTracesPusher_marshal_error(t *testing.T) {
 	expErr := fmt.Errorf("failed to marshal")
 	p := kafkaTracesProducer{
 		marshaler: &tracesErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	err := p.traceDataPusher(context.Background(), td)
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	err := p.tracesPusher(context.Background(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
 }
@@ -223,7 +223,7 @@ func TestLogsDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.logsDataPusher(context.Background(), testdata.GenerateLogDataOneLog())
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogsOneLogRecord())
 	require.NoError(t, err)
 }
 
@@ -241,7 +241,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	err := p.logsDataPusher(context.Background(), ld)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -252,7 +252,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 		marshaler: &logsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	ld := testdata.GenerateLogDataOneLog()
+	ld := testdata.GenerateLogsOneLogRecord()
 	err := p.logsDataPusher(context.Background(), ld)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
@@ -270,7 +270,7 @@ type logsErrorMarshaler struct {
 	err error
 }
 
-func (e metricsErrorMarshaler) Marshal(_ pdata.Metrics) ([]Message, error) {
+func (e metricsErrorMarshaler) Marshal(_ pdata.Metrics, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
@@ -280,7 +280,7 @@ func (e metricsErrorMarshaler) Encoding() string {
 
 var _ TracesMarshaler = (*tracesErrorMarshaler)(nil)
 
-func (e tracesErrorMarshaler) Marshal(_ pdata.Traces) ([]Message, error) {
+func (e tracesErrorMarshaler) Marshal(_ pdata.Traces, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
@@ -288,7 +288,7 @@ func (e tracesErrorMarshaler) Encoding() string {
 	panic("implement me")
 }
 
-func (e logsErrorMarshaler) Marshal(_ pdata.Logs) ([]Message, error) {
+func (e logsErrorMarshaler) Marshal(_ pdata.Logs, _ string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 

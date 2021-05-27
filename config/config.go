@@ -12,26 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config defines the data models for entities. This file defines the
-// models for configuration format. The defined entities are:
-// Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
-//
-// Receivers, Exporters and Processors typically have common configuration settings, however
-// sometimes specific implementations will have extra configuration settings.
-// This requires the configuration data for these entities to be polymorphic.
-//
-// To satisfy these requirements we declare interfaces Receiver, Exporter, Processor,
-// which define the behavior. We also provide helper structs ReceiverSettings, ExporterSettings,
-// ProcessorSettings, which define the common settings and un-marshaling from config files.
-//
-// Specific Receivers/Exporters/Processors are expected to at the minimum implement the
-// corresponding interface and if they have additional settings they must also extend
-// the corresponding common settings struct (the easiest approach is to embed the common struct).
 package config
 
 import (
 	"errors"
 	"fmt"
+
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 var (
@@ -97,7 +84,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// Check that all enabled extensions in the service are configured
+	// Check that all enabled extensions in the service are configured.
 	if err := cfg.validateServiceExtensions(); err != nil {
 		return err
 	}
@@ -110,7 +97,7 @@ func (cfg *Config) Validate() error {
 func (cfg *Config) validateServiceExtensions() error {
 	// Validate extensions.
 	for _, ref := range cfg.Service.Extensions {
-		// Check that the name referenced in the Service extensions exists in the top-level extensions
+		// Check that the name referenced in the Service extensions exists in the top-level extensions.
 		if cfg.Extensions[ref] == nil {
 			return fmt.Errorf("service references extension %q which does not exist", ref)
 		}
@@ -134,13 +121,13 @@ func (cfg *Config) validateServicePipelines() error {
 
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
-			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers
+			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
 			if cfg.Receivers[ref] == nil {
 				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipeline.Name, ref)
 			}
 		}
 
-		// Validate pipeline processor name references
+		// Validate pipeline processor name references.
 		for _, ref := range pipeline.Processors {
 			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
 			if cfg.Processors[ref] == nil {
@@ -148,14 +135,14 @@ func (cfg *Config) validateServicePipelines() error {
 			}
 		}
 
-		// Validate pipeline has at least one exporter
+		// Validate pipeline has at least one exporter.
 		if len(pipeline.Exporters) == 0 {
 			return fmt.Errorf("pipeline %q must have at least one exporter", pipeline.Name)
 		}
 
 		// Validate pipeline exporter name references.
 		for _, ref := range pipeline.Exporters {
-			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters
+			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
 			if cfg.Exporters[ref] == nil {
 				return fmt.Errorf("pipeline %q references exporter %q which does not exist", pipeline.Name, ref)
 			}
@@ -166,10 +153,10 @@ func (cfg *Config) validateServicePipelines() error {
 
 // Service defines the configurable components of the service.
 type Service struct {
-	// Extensions is the ordered list of extensions configured for the service.
+	// Extensions are the ordered list of extensions configured for the service.
 	Extensions []ComponentID
 
-	// Pipelines is the set of data pipelines configured for the service.
+	// Pipelines are the set of data pipelines configured for the service.
 	Pipelines Pipelines
 }
 
@@ -188,7 +175,7 @@ type CustomUnmarshable interface {
 	// Unmarshal is a function that un-marshals a Parser into the unmarshable struct in a custom way.
 	// componentSection *Parser
 	//   The config for this specific component. May be nil or empty if no config available.
-	Unmarshal(componentSection *Parser) error
+	Unmarshal(componentSection *configparser.Parser) error
 }
 
 // DataType is the data type that is supported for collection. We currently support

@@ -25,6 +25,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	idutils "go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -164,15 +165,15 @@ type instrumentationLibrary struct {
 
 func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	dest := pdata.NewSpan()
-	dest.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
-	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(span.SpanID)))
+	dest.SetTraceID(idutils.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
+	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
 	dest.SetStartTimestamp(pdata.TimestampFromTime(span.StartTime))
 	dest.SetEndTimestamp(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
-		dest.SetParentSpanID(tracetranslator.UInt64ToSpanID(uint64(parentSpanID)))
+		dest.SetParentSpanID(idutils.UInt64ToSpanID(uint64(parentSpanID)))
 	}
 
 	attrs := dest.Attributes()
@@ -275,9 +276,9 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 func getStatusCodeValFromAttr(attrVal pdata.AttributeValue) (int, error) {
 	var codeVal int64
 	switch attrVal.Type() {
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		codeVal = attrVal.IntVal()
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		i, err := strconv.Atoi(attrVal.StringVal())
 		if err != nil {
 			return 0, err
@@ -304,17 +305,17 @@ func getStatusCodeFromHTTPStatusAttr(attrVal pdata.AttributeValue) (pdata.Status
 func jSpanKindToInternal(spanKind string) pdata.SpanKind {
 	switch spanKind {
 	case "client":
-		return pdata.SpanKindCLIENT
+		return pdata.SpanKindClient
 	case "server":
-		return pdata.SpanKindSERVER
+		return pdata.SpanKindServer
 	case "producer":
-		return pdata.SpanKindPRODUCER
+		return pdata.SpanKindProducer
 	case "consumer":
-		return pdata.SpanKindCONSUMER
+		return pdata.SpanKindConsumer
 	case "internal":
-		return pdata.SpanKindINTERNAL
+		return pdata.SpanKindInternal
 	}
-	return pdata.SpanKindUNSPECIFIED
+	return pdata.SpanKindUnspecified
 }
 
 func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
@@ -357,8 +358,8 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 			continue
 		}
 
-		link.SetTraceID(tracetranslator.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
-		link.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(ref.SpanID)))
+		link.SetTraceID(idutils.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
+		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanID)))
 		i++
 	}
 
