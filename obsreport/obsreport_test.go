@@ -72,10 +72,10 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartTraceDataReceiveOp(receiverCtx)
+		ctx := rec.StartTracesOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndTraceDataReceiveOp(
+		rec.EndTracesOp(
 			ctx,
 			format,
 			rcvdSpans[i],
@@ -133,10 +133,10 @@ func TestReceiveLogsOp(t *testing.T) {
 	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartLogsReceiveOp(receiverCtx)
+		ctx := rec.StartLogsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndLogsReceiveOp(
+		rec.EndLogsOp(
 			ctx,
 			format,
 			rcvdLogRecords[i],
@@ -194,10 +194,10 @@ func TestReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartMetricsReceiveOp(receiverCtx)
+		ctx := rec.StartMetricsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndMetricsReceiveOp(
+		rec.EndMetricsOp(
 			ctx,
 			format,
 			rcvdMetricPts[i],
@@ -465,12 +465,12 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
-		ctx := rec.StartTraceDataReceiveOp(
+		ctx := rec.StartTracesOp(
 			longLivedCtx,
 			WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 
-		rec.EndTraceDataReceiveOp(
+		rec.EndTracesOp(
 			ctx,
 			format,
 			op.numSpans,
