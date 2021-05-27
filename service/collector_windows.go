@@ -28,7 +28,7 @@ import (
 
 type WindowsService struct {
 	settings CollectorSettings
-	app      *Collector
+	col      *Collector
 }
 
 func NewWindowsService(set CollectorSettings) *WindowsService {
