@@ -66,7 +66,7 @@ func generateResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string
 	resourceSpan := pdata.NewResourceSpans()
 	libSpansSlice, err := generateLibrarySpansArray(tracingInputs, spanPairsFile, random)
 	libSpansSlice.CopyTo(resourceSpan.InstrumentationLibrarySpans())
-	generatePDataResource(tracingInputs.Resource).CopyTo(resourceSpan.Resource())
+	GenerateResource(tracingInputs.Resource).CopyTo(resourceSpan.Resource())
 	return resourceSpan, err
 }
 
