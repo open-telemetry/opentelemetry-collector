@@ -4,7 +4,7 @@ This module allows server types, such as gRPC and HTTP, to be configured to perf
 
 The currently known authenticators:
 
-- [oidc](../../extension/authoidcextension)
+- [oidc](../../extension/oidcauthextension)
 
 Examples:
 ```yaml
