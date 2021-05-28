@@ -16,6 +16,7 @@ package defaultcomponents
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,6 +64,14 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "bearertokenauth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
+				cfg.BearerToken = "sometoken"
 				return cfg
 			},
 		},
