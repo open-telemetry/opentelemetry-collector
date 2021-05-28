@@ -297,7 +297,12 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	}
 
 	if gss.Auth != nil {
-		authenticator, err := configauth.GetAuthenticator(ext, gss.Auth.AuthenticatorName)
+		componentID, cperr := config.NewIDFromString(gss.Auth.AuthenticatorName)
+		if cperr != nil {
+			return nil, cperr
+		}
+
+		authenticator, err := configauth.GetServerAuthenticator(ext, componentID)
 		if err != nil {
 			return nil, err
 		}

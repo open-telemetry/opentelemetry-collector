@@ -1,6 +1,6 @@
 # Authenticator - OIDC
 
-This extension implements a `configauth.Authenticator`, to be used in receivers inside the `auth` settings. The authenticator type has to be set to `oidc`.
+This extension implements a `configauth.ServerAuthenticator`, to be used in receivers inside the `auth` settings. The authenticator type has to be set to `oidc`.
 
 ## Configuration
 
