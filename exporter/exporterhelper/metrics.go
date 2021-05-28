@@ -115,8 +115,8 @@ type metricsSenderWithObservability struct {
 }
 
 func (mewo *metricsSenderWithObservability) send(req request) error {
-	req.setContext(mewo.obsrep.StartMetricsExportOp(req.context()))
+	req.setContext(mewo.obsrep.StartMetricsOp(req.context()))
 	err := mewo.nextSender.send(req)
-	mewo.obsrep.EndMetricsExportOp(req.context(), req.count(), err)
+	mewo.obsrep.EndMetricsOp(req.context(), req.count(), err)
 	return err
 }
