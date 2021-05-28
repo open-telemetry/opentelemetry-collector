@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cast"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -48,7 +49,7 @@ func (cfg *Config) Validate() error {
 }
 
 // Unmarshal a config.Parser into the config struct.
-func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 	if componentParser == nil {
 		return nil
 	}

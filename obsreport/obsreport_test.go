@@ -22,13 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -75,10 +72,10 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartTraceDataReceiveOp(receiverCtx)
+		ctx := rec.StartTracesOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndTraceDataReceiveOp(
+		rec.EndTracesOp(
 			ctx,
 			format,
 			rcvdSpans[i],
@@ -136,10 +133,10 @@ func TestReceiveLogsOp(t *testing.T) {
 	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartLogsReceiveOp(receiverCtx)
+		ctx := rec.StartLogsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndLogsReceiveOp(
+		rec.EndLogsOp(
 			ctx,
 			format,
 			rcvdLogRecords[i],
@@ -197,10 +194,10 @@ func TestReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartMetricsReceiveOp(receiverCtx)
+		ctx := rec.StartMetricsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndMetricsReceiveOp(
+		rec.EndMetricsOp(
 			ctx,
 			format,
 			rcvdMetricPts[i],
@@ -312,9 +309,9 @@ func TestExportTraceDataOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx := obsrep.StartTracesExportOp(parentCtx)
+		ctx := obsrep.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
-		obsrep.EndTracesExportOp(ctx, numExportedSpans[i], err)
+		obsrep.EndTracesOp(ctx, numExportedSpans[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -360,10 +357,10 @@ func TestExportMetricsOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartMetricsExportOp(parentCtx)
+		ctx := obsrep.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndMetricsExportOp(ctx, toSendMetricPoints[i], err)
+		obsrep.EndMetricsOp(ctx, toSendMetricPoints[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -408,10 +405,10 @@ func TestExportLogsOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartLogsExportOp(parentCtx)
+		ctx := obsrep.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndLogsExportOp(ctx, toSendLogRecords[i], err)
+		obsrep.EndLogsOp(ctx, toSendLogRecords[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -468,12 +465,12 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
-		ctx := rec.StartTraceDataReceiveOp(
+		ctx := rec.StartTracesOp(
 			longLivedCtx,
 			WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 
-		rec.EndTraceDataReceiveOp(
+		rec.EndTracesOp(
 			ctx,
 			format,
 			op.numSpans,
@@ -541,56 +538,24 @@ func TestProcessorMetricsData(t *testing.T) {
 	obsreporttest.CheckProcessorMetrics(t, processor, acceptedPoints, refusedPoints, droppedPoints)
 }
 
-func TestProcessorMetricViews(t *testing.T) {
-	measures := []stats.Measure{
-		stats.Int64("firstMeasure", "test firstMeasure", stats.UnitDimensionless),
-		stats.Int64("secondMeasure", "test secondMeasure", stats.UnitBytes),
-	}
-	legacyViews := []*view.View{
-		{
-			Name:        measures[0].Name(),
-			Description: measures[0].Description(),
-			Measure:     measures[0],
-			Aggregation: view.Sum(),
-		},
-		{
-			Measure:     measures[1],
-			Aggregation: view.Count(),
-		},
-	}
-
+func TestBuildProcessorCustomMetricName(t *testing.T) {
 	tests := []struct {
-		name  string
-		level configtelemetry.Level
-		want  []*view.View
+		name string
+		want string
 	}{
 		{
-			name:  "none",
-			level: configtelemetry.LevelNone,
+			name: "firstMeasure",
+			want: "processor/test_type/firstMeasure",
 		},
 		{
-			name:  "basic",
-			level: configtelemetry.LevelBasic,
-			want: []*view.View{
-				{
-					Name:        "processor/test_type/" + measures[0].Name(),
-					Description: measures[0].Description(),
-					Measure:     measures[0],
-					Aggregation: view.Sum(),
-				},
-				{
-					Name:        "processor/test_type/" + measures[1].Name(),
-					Measure:     measures[1],
-					Aggregation: view.Count(),
-				},
-			},
+			name: "secondMeasure",
+			want: "processor/test_type/secondMeasure",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			obsreportconfig.Configure(tt.level)
-			got := ProcessorMetricViews("test_type", &obsreportconfig.ObsMetrics{Views: legacyViews})
-			assert.Equal(t, tt.want, got.Views)
+			got := BuildProcessorCustomMetricName("test_type", tt.name)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

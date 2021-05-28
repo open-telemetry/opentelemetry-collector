@@ -213,9 +213,9 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 
 	_, dataPointCount := metrics.MetricAndDataPointCount()
 
-	ctx = sc.obsrecv.StartMetricsReceiveOp(ctx)
+	ctx = sc.obsrecv.StartMetricsOp(ctx)
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
-	sc.obsrecv.EndMetricsReceiveOp(ctx, "", dataPointCount, err)
+	sc.obsrecv.EndMetricsOp(ctx, "", dataPointCount, err)
 }
 
 // stopScraping stops the ticker

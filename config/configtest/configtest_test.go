@@ -24,12 +24,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestLoadConfigFile(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
-	cfg, err := LoadConfigFile(t, "testdata/config.yaml", factories)
-	require.NoError(t, err, "Unable to load config")
+	cfg, err := LoadConfig("testdata/config.yaml", factories)
+	require.NoError(t, err)
 
 	// Verify extensions.
 	require.Len(t, cfg.Extensions, 2)
@@ -65,4 +65,17 @@ func TestLoadConfigFile(t *testing.T) {
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
+}
+
+func TestLoadConfigAndValidate(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	cfgValidate, errValidate := LoadConfigAndValidate("testdata/config.yaml", factories)
+	require.NoError(t, errValidate)
+
+	cfg, errLoad := LoadConfig("testdata/config.yaml", factories)
+	require.NoError(t, errLoad)
+
+	assert.Equal(t, cfg, cfgValidate)
 }
