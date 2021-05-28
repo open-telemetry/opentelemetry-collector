@@ -12,7 +12,7 @@
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
-- Remove the proto dependency in `goldendataset` for traces (#TBD)
+- Remove the proto dependency in `goldendataset` for traces (#3322)
 
 ## v0.27.0 Beta
 
