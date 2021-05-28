@@ -43,6 +43,34 @@ func (m *mockEncoder) DecodeTraces(bytes []byte) (interface{}, error) {
 	return args.Get(0), args.Error(1)
 }
 
+func (m *mockEncoder) EncodeMetrics(model interface{}) ([]byte, error) {
+	args := m.Called(model)
+	err := args.Error(1)
+	if err != nil {
+		return nil, err
+	}
+	return args.Get(0).([]byte), err
+}
+
+func (m *mockEncoder) DecodeMetrics(bytes []byte) (interface{}, error) {
+	args := m.Called(bytes)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *mockEncoder) EncodeLogs(model interface{}) ([]byte, error) {
+	args := m.Called(model)
+	err := args.Error(1)
+	if err != nil {
+		return nil, err
+	}
+	return args.Get(0).([]byte), err
+}
+
+func (m *mockEncoder) DecodeLogs(bytes []byte) (interface{}, error) {
+	args := m.Called(bytes)
+	return args.Get(0), args.Error(1)
+}
+
 var (
 	_ ToTracesTranslator   = (*mockTranslator)(nil)
 	_ FromTracesTranslator = (*mockTranslator)(nil)
@@ -58,6 +86,26 @@ func (m *mockTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
 }
 
 func (m *mockTranslator) FromTraces(md pdata.Traces) (interface{}, error) {
+	args := m.Called(md)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *mockTranslator) ToMetrics(src interface{}) (pdata.Metrics, error) {
+	args := m.Called(src)
+	return args.Get(0).(pdata.Metrics), args.Error(1)
+}
+
+func (m *mockTranslator) FromMetrics(md pdata.Metrics) (interface{}, error) {
+	args := m.Called(md)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *mockTranslator) ToLogs(src interface{}) (pdata.Logs, error) {
+	args := m.Called(src)
+	return args.Get(0).(pdata.Logs), args.Error(1)
+}
+
+func (m *mockTranslator) FromLogs(md pdata.Logs) (interface{}, error) {
 	args := m.Called(md)
 	return args.Get(0), args.Error(1)
 }
