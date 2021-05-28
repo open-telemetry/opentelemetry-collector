@@ -34,10 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	factories.Processors[typeStr] = factory
 	require.NoError(t, err)
 
-	cfg, err := configtest.LoadConfigFile(
-		t,
-		path.Join(".", "testdata", "config.yaml"),
-		factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)

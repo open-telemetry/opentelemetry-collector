@@ -46,7 +46,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_strict.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_strict.yaml"), factories)
 
 	assert.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -128,7 +128,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_regexp.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_regexp.yaml"), factories)
 
 	assert.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -193,7 +193,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_expr.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_expr.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
