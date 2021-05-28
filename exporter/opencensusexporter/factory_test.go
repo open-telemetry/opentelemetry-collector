@@ -41,10 +41,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
-		name            string
-		config          Config
-		mustFail        bool
-		mustFailOnStart bool
+		name             string
+		config           Config
+		mustFailOnCreate bool
+		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
@@ -55,7 +55,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 3,
 			},
-			mustFail: true,
+			mustFailOnCreate: true,
 		},
 		{
 			name: "ZeroNumWorkers",
@@ -69,7 +69,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 0,
 			},
-			mustFail: true,
+			mustFailOnCreate: true,
 		},
 		{
 			name: "UseSecure",
@@ -134,8 +134,8 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 3,
 			},
-			mustFail:        false,
-			mustFailOnStart: true,
+			mustFailOnCreate: false,
+			mustFailOnStart:  true,
 		},
 		{
 			name: "CaCert",
@@ -166,8 +166,8 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 3,
 			},
-			mustFail:        false,
-			mustFailOnStart: true,
+			mustFailOnCreate: false,
+			mustFailOnStart:  true,
 		},
 	}
 
@@ -175,15 +175,15 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			params := component.ExporterCreateParams{Logger: zap.NewNop()}
 			tExporter, tErr := createTracesExporter(context.Background(), params, &tt.config)
-			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFail, tt.mustFailOnStart)
+			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 			mExporter, mErr := createMetricsExporter(context.Background(), params, &tt.config)
-			checkErrorsAndStartAndShutdown(t, mExporter, mErr, tt.mustFail, tt.mustFailOnStart)
+			checkErrorsAndStartAndShutdown(t, mExporter, mErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 		})
 	}
 }
 
-func checkErrorsAndStartAndShutdown(t *testing.T, exporter component.Exporter, err error, mustFail, mustFailOnStart bool) {
-	if mustFail {
+func checkErrorsAndStartAndShutdown(t *testing.T, exporter component.Exporter, err error, mustFailOnCreate, mustFailOnStart bool) {
+	if mustFailOnCreate {
 		assert.NotNil(t, err)
 		return
 	}
