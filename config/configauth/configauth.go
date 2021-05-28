@@ -35,9 +35,9 @@ type Authentication struct {
 // GetServerAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
 // If an authenticator is not found, an error is returned.
 func GetServerAuthenticator(extensions map[config.ComponentID]component.Extension, componentID config.ComponentID) (ServerAuthenticator, error) {
-	for name, ext := range extensions {
+	for id, ext := range extensions {
 		if auth, ok := ext.(ServerAuthenticator); ok {
-			if name == componentID {
+			if id == componentID {
 				return auth, nil
 			}
 		}
