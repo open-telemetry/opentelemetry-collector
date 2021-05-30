@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -46,7 +48,7 @@ type metricFamily struct {
 	groups            map[string]*metricGroup
 }
 
-func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
+func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -63,12 +65,12 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 			metadata.Type = textparse.MetricTypeUnknown
 		}
 	} else if !ok && isInternalMetric(metricName) {
-		metadata = defineInternalMetric(metricName, metadata)
+		metadata = defineInternalMetric(metricName, metadata, logger)
 	}
 	//TODO convert it to OtelMetrics ?
 	ocaMetricType := convToOCAMetricType(metadata.Type)
 	if ocaMetricType == metricspb.MetricDescriptor_UNSPECIFIED {
-		//b.logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
+		logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
 	}
 
 	return &metricFamily{
@@ -85,9 +87,9 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 }
 
 // Define manualy the metadata of prometheus scrapper internal metrics
-func defineInternalMetric(metricName string, metadata scrape.MetricMetadata) scrape.MetricMetadata {
+func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, logger *zap.Logger) scrape.MetricMetadata {
 	if metadata.Metric != "" && metadata.Type != "" && metadata.Unit != "" && metadata.Help != "" {
-		//b.logger.Debug("Internal metric seems already fully defined")
+		logger.Debug("Internal metric seems already fully defined")
 		return metadata
 	}
 	metadata.Metric = metricName
@@ -114,7 +116,7 @@ func defineInternalMetric(metricName string, metadata scrape.MetricMetadata) scr
 		metadata.Type = textparse.MetricTypeGauge
 		metadata.Help = "The number of samples remaining after metric relabeling was applied"
 	}
-	//b.logger.Info("Internal metric defined", zap.String("metadata", fmt.Sprintf("%+v", metadata)))
+	logger.Info("Internal metric defined", zap.String("metadata", fmt.Sprintf("%+v", metadata)))
 	return metadata
 }
 
