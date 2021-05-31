@@ -46,7 +46,7 @@ type PipelineWatcher interface {
 	NotReady() error
 }
 
-// ExtensionCreateParams is passed to ExtensionFactory.Create* functions.
+// ExtensionCreateSettings is passed to ExtensionFactory.Create* functions.
 type ExtensionCreateSettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.

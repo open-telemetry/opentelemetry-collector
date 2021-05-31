@@ -95,7 +95,7 @@ type getExtensionConfigFn func() config.Extension
 func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	extCreateParams := component.ExtensionCreateParams{
+	extCreateSet := component.ExtensionCreateSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: component.DefaultBuildInfo(),
 	}
@@ -104,12 +104,12 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		getConfigFn = factory.CreateDefaultConfig
 	}
 
-	firstExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	firstExt, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
 	require.NoError(t, err)
 	require.NoError(t, firstExt.Start(ctx, host))
 	require.NoError(t, firstExt.Shutdown(ctx))
 
-	secondExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	secondExt, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
 	require.NoError(t, err)
 	require.NoError(t, secondExt.Start(ctx, host))
 	require.NoError(t, secondExt.Shutdown(ctx))

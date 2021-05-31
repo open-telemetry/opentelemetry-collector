@@ -48,6 +48,6 @@ func createExtensionDefaultConfig() config.Extension {
 }
 
 // CreateExtension creates an Extension based on this config.
-func createExtension(context.Context, component.ExtensionCreateParams, config.Extension) (component.Extension, error) {
+func createExtension(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error) {
 	return componenthelper.New(), nil
 }
