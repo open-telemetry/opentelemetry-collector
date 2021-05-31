@@ -16,8 +16,9 @@ package defaultcomponents
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"testing"
+
+	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
