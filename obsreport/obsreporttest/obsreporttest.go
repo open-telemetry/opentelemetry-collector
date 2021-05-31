@@ -65,6 +65,13 @@ func CheckExporterTraces(t *testing.T, exporter config.ComponentID, acceptedSpan
 	checkValueForView(t, exporterTags, droppedSpans, "exporter/send_failed_spans")
 }
 
+// CheckExporterEnqueueFailedTraces checks that reported number of spans failed to enqueue match given values.
+// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckExporterEnqueueFailedTraces(t *testing.T, exporter config.ComponentID, spans int64) {
+	exporterTags := tagsForExporterView(exporter)
+	checkValueForView(t, exporterTags, spans, "exporter/enqueue_failed_spans")
+}
+
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckExporterMetrics(t *testing.T, exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) {
@@ -73,12 +80,26 @@ func CheckExporterMetrics(t *testing.T, exporter config.ComponentID, acceptedMet
 	checkValueForView(t, exporterTags, droppedMetricsPoints, "exporter/send_failed_metric_points")
 }
 
+// CheckExporterEnqueueFailedMetrics checks that reported number of metric points failed to enqueue match given values.
+// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckExporterEnqueueFailedMetrics(t *testing.T, exporter config.ComponentID, metricPoints int64) {
+	exporterTags := tagsForExporterView(exporter)
+	checkValueForView(t, exporterTags, metricPoints, "exporter/enqueue_failed_metric_points")
+}
+
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckExporterLogs(t *testing.T, exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, acceptedLogRecords, "exporter/sent_log_records")
 	checkValueForView(t, exporterTags, droppedLogRecords, "exporter/send_failed_log_records")
+}
+
+// CheckExporterEnqueueFailedLogs checks that reported number of log records failed to enqueue match given values.
+// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckExporterEnqueueFailedLogs(t *testing.T, exporter config.ComponentID, logRecords int64) {
+	exporterTags := tagsForExporterView(exporter)
+	checkValueForView(t, exporterTags, logRecords, "exporter/enqueue_failed_log_records")
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.

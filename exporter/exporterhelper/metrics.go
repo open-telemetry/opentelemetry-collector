@@ -16,12 +16,12 @@ package exporterhelper
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
@@ -88,10 +88,7 @@ func NewMetricsExporter(
 	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
-			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
-				Level:      configtelemetry.GetMetricsLevelFlagValue(),
-				ExporterID: cfg.ID(),
-			}),
+			obsrep:     be.obsrep,
 			nextSender: nextSender,
 		}
 	})
@@ -100,7 +97,12 @@ func NewMetricsExporter(
 		if bs.ResourceToTelemetrySettings.Enabled {
 			md = convertResourceToLabels(md)
 		}
-		return be.sender.send(newMetricsRequest(ctx, md, pusher))
+		req := newMetricsRequest(ctx, md, pusher)
+		err := be.sender.send(req)
+		if errors.Is(err, errSendingQueueIsFull) {
+			be.obsrep.RecordMetricsEnqueueFailure(req.context(), req.count())
+		}
+		return err
 	}, bs.consumerOptions...)
 
 	return &metricsExporter{
