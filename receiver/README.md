@@ -23,8 +23,8 @@ Available metric receivers (sorted alphabetically):
 
 Available log receivers (sorted alphabetically):
 
-- [OTLP Receiver](otlpreceiver/README.md)
 - [Kafka Receiver](kafkareceiver/README.md)
+- [OTLP Receiver](otlpreceiver/README.md)
 
 The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more receivers that can be added to custom builds of the collector.
