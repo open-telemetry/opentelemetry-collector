@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestGenerateResource(t *testing.T) {
@@ -31,8 +30,5 @@ func TestGenerateResource(t *testing.T) {
 		} else {
 			assert.True(t, rsc.Attributes().Len() > 0)
 		}
-		copy := pdata.NewResource()
-		rsc.CopyTo(copy)
-		assert.EqualValues(t, rsc.Attributes().Len(), copy.Attributes().Len())
 	}
 }

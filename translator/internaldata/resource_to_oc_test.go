@@ -203,12 +203,8 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			resourceSpan := pdata.NewResourceSpans()
-			goldendataset.GenerateResource(test).CopyTo(resourceSpan.Resource())
-			resourceSpansSlice := pdata.NewResourceSpansSlice()
-			resourceSpansSlice.Append(resourceSpan)
 			traces := pdata.NewTraces()
-			resourceSpansSlice.CopyTo(traces.ResourceSpans())
+			goldendataset.GenerateResource(test).CopyTo(traces.ResourceSpans().AppendEmpty().Resource())
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
