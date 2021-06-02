@@ -154,7 +154,7 @@ $ sudo journalctl -u otel-collector
 
 ### Windows Packaging
 
-Every Collector release includes EXE and MSI packaging for Linux amd64 systems.
+Every Collector release includes EXE and MSI packaging for Windows amd64 systems.
 The MSI packaging includes a default configuration that can be found at
 `\Program Files\OpenTelemetry Collector\config.yaml`.
 
