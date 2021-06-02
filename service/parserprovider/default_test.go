@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configloader"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
@@ -44,7 +45,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *config.Parser
+		var cp *configparser.Parser
 		cp, err = pl.Get()
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -64,7 +65,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *config.Parser
+		var cp *configparser.Parser
 		cp, err = pl.Get()
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -100,7 +101,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *config.Parser
+		var cp *configparser.Parser
 		cp, err = pl.Get()
 		require.NoError(t, err)
 		require.NotNil(t, cp)

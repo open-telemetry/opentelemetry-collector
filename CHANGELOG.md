@@ -8,11 +8,14 @@
 - Introduce `AppSettings` instead of `Parameters` (#3163)
 - Remove unused testutil.TempSocketName (#3291)
 - Move BigEndian helper functions in `tracetranslator` to an internal package.(#3298)
+- Rename `configtest.LoadConfigFile` to `configtest.LoadConfigAndValidate` (#3306)
+- Replace `ExtensionCreateParams` with `ExtensionCreateSettings` (#3294)
 
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
 - Remove the proto dependency in `goldendataset` for traces (#3322)
+- Enable Dependabot for Github Actions (#3312)
 
 ## v0.27.0 Beta
 

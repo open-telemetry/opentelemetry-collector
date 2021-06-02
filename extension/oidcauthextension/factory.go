@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authoidcextension
+package oidcauthextension
 
 import (
 	"context"
@@ -44,6 +44,6 @@ func createDefaultConfig() config.Extension {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
-	return newExtension(cfg.(*Config), params.Logger)
+func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+	return newExtension(cfg.(*Config), set.Logger)
 }

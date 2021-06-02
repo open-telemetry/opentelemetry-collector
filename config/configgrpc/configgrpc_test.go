@@ -76,7 +76,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Len(t, opts, 0)
+	assert.Len(t, opts, 1)
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
@@ -109,7 +109,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Len(t, opts, 7)
+	assert.Len(t, opts, 8)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {

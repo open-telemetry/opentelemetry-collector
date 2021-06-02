@@ -91,7 +91,7 @@ func createTracesExporter(
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
-		oce.pushTraceData,
+		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
@@ -119,7 +119,7 @@ func createMetricsExporter(
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		oce.pushMetricsData,
+		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
@@ -147,7 +147,7 @@ func createLogsExporter(
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		params.Logger,
-		oce.pushLogData,
+		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.

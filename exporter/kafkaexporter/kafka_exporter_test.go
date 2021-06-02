@@ -117,7 +117,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 
 }
 
-func TestTraceDataPusher(t *testing.T) {
+func TestTracesPusher(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
 	producer.ExpectSendMessageAndSucceed()
@@ -129,11 +129,11 @@ func TestTraceDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.traceDataPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
+	err := p.tracesPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
 	require.NoError(t, err)
 }
 
-func TestTraceDataPusher_err(t *testing.T) {
+func TestTracesPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
 	expErr := fmt.Errorf("failed to send")
@@ -148,18 +148,18 @@ func TestTraceDataPusher_err(t *testing.T) {
 		require.NoError(t, p.Close(context.Background()))
 	})
 	td := testdata.GenerateTracesTwoSpansSameResource()
-	err := p.traceDataPusher(context.Background(), td)
+	err := p.tracesPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
 }
 
-func TestTraceDataPusher_marshal_error(t *testing.T) {
+func TestTracesPusher_marshal_error(t *testing.T) {
 	expErr := fmt.Errorf("failed to marshal")
 	p := kafkaTracesProducer{
 		marshaler: &tracesErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
 	td := testdata.GenerateTracesTwoSpansSameResource()
-	err := p.traceDataPusher(context.Background(), td)
+	err := p.tracesPusher(context.Background(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
 }

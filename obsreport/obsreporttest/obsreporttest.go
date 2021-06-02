@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 var (
@@ -45,7 +45,8 @@ var (
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
 // The returned function should be deferred.
 func SetupRecordedMetricsTest() (func(), error) {
-	views := obsreport.Configure(configtelemetry.LevelNormal)
+	obsMetrics := obsreportconfig.Configure(configtelemetry.LevelNormal)
+	views := obsMetrics.Views
 	err := view.Register(views...)
 	if err != nil {
 		return nil, err
