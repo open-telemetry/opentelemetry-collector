@@ -29,13 +29,13 @@ type FactoryOption func(o *factory)
 type CreateDefaultConfig func() config.Exporter
 
 // CreateTracesExporter is the equivalent of component.ExporterFactory.CreateTracesExporter()
-type CreateTracesExporter func(context.Context, component.ExporterCreateParams, config.Exporter) (component.TracesExporter, error)
+type CreateTracesExporter func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error)
 
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateMetricsExporter()
-type CreateMetricsExporter func(context.Context, component.ExporterCreateParams, config.Exporter) (component.MetricsExporter, error)
+type CreateMetricsExporter func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error)
 
 // CreateLogsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
-type CreateLogsExporter func(context.Context, component.ExporterCreateParams, config.Exporter) (component.LogsExporter, error)
+type CreateLogsExporter func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error)
 
 type factory struct {
 	cfgType               config.Type
@@ -94,10 +94,10 @@ func (f *factory) CreateDefaultConfig() config.Exporter {
 // CreateTracesExporter creates a component.TracesExporter based on this config.
 func (f *factory) CreateTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
 	if f.createTracesExporter != nil {
-		return f.createTracesExporter(ctx, params, cfg)
+		return f.createTracesExporter(ctx, set, cfg)
 	}
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
@@ -105,10 +105,10 @@ func (f *factory) CreateTracesExporter(
 // CreateMetricsExporter creates a component.MetricsExporter based on this config.
 func (f *factory) CreateMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 	if f.createMetricsExporter != nil {
-		return f.createMetricsExporter(ctx, params, cfg)
+		return f.createMetricsExporter(ctx, set, cfg)
 	}
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
@@ -116,11 +116,11 @@ func (f *factory) CreateMetricsExporter(
 // CreateLogsExporter creates a metrics processor based on this config.
 func (f *factory) CreateLogsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	if f.createLogsExporter != nil {
-		return f.createLogsExporter(ctx, params, cfg)
+		return f.createLogsExporter(ctx, set, cfg)
 	}
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }

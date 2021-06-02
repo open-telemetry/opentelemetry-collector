@@ -117,7 +117,7 @@ type getProcessorConfigFn func() config.Processor
 func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, getConfigFn getProcessorConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	processorCreateParams := component.ProcessorCreateParams{
+	processorCreationSet := component.ProcessorCreateSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: component.DefaultBuildInfo(),
 	}
@@ -133,7 +133,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 	}
 
 	for _, createFn := range createFns {
-		firstExp, err := createFn(ctx, processorCreateParams, getConfigFn())
+		firstExp, err := createFn(ctx, processorCreationSet, getConfigFn())
 		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			continue
 		}
@@ -141,7 +141,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 		require.NoError(t, firstExp.Start(ctx, host))
 		require.NoError(t, firstExp.Shutdown(ctx))
 
-		secondExp, err := createFn(ctx, processorCreateParams, getConfigFn())
+		secondExp, err := createFn(ctx, processorCreationSet, getConfigFn())
 		require.NoError(t, err)
 		require.NoError(t, secondExp.Start(ctx, host))
 		require.NoError(t, secondExp.Shutdown(ctx))
@@ -150,24 +150,24 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 type createProcessorFn func(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 ) (component.Processor, error)
 
 func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateLogsProcessor(ctx, params, cfg, consumertest.NewNop())
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg config.Processor) (component.Processor, error) {
+		return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateMetricsProcessor(ctx, params, cfg, consumertest.NewNop())
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg config.Processor) (component.Processor, error) {
+		return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
-		return factory.CreateTracesProcessor(ctx, params, cfg, consumertest.NewNop())
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg config.Processor) (component.Processor, error) {
+		return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }

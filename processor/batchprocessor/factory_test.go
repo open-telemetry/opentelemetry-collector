@@ -37,16 +37,16 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	tp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, nil)
+	creationSet := component.ProcessorCreateSettings{Logger: zap.NewNop()}
+	tp, err := factory.CreateTracesProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, nil)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mp)
 	assert.NoError(t, err, "cannot create metric processor")
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, nil)
+	lp, err := factory.CreateLogsProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, lp)
 	assert.NoError(t, err, "cannot create logs processor")
 }

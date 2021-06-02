@@ -37,7 +37,7 @@ func Test_loadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -89,7 +89,7 @@ func TestNegativeQueueSize(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "negative_queue_size.yaml"), factories)
+	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "negative_queue_size.yaml"), factories)
 	assert.Error(t, err)
 }
 
@@ -99,6 +99,6 @@ func TestNegativeNumConsumers(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "negative_num_consumers.yaml"), factories)
+	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "negative_num_consumers.yaml"), factories)
 	assert.Error(t, err)
 }

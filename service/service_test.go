@@ -101,7 +101,7 @@ func createExampleService(t *testing.T) *service {
 	// Create some factories.
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "otelcol-nop.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "otelcol-nop.yaml"), factories)
 	require.NoError(t, err)
 
 	srv, err := newService(&svcSettings{

@@ -34,7 +34,7 @@ func TestService_setupExtensions(t *testing.T) {
 			cfg := config.NewExtensionSettings(config.NewID("err"))
 			return &cfg
 		},
-		func(ctx context.Context, params component.ExtensionCreateParams, extension config.Extension) (component.Extension, error) {
+		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
 			return nil, fmt.Errorf("cannot create \"err\" extension type")
 		},
 	)
