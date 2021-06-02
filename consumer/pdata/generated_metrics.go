@@ -130,6 +130,7 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
@@ -309,6 +310,7 @@ func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibrar
 	*es.orig = append(*es.orig, &otlpmetrics.InstrumentationLibraryMetrics{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest InstrumentationLibraryMetricsSlice) {
@@ -488,6 +490,7 @@ func (es MetricSlice) AppendEmpty() Metric {
 	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
@@ -572,8 +575,6 @@ func (ms Metric) Unit() string {
 func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
-
-
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
@@ -982,6 +983,7 @@ func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.IntDataPoint{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
@@ -1194,6 +1196,7 @@ func (es DoubleDataPointSlice) AppendEmpty() DoubleDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleDataPoint{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
@@ -1406,6 +1409,7 @@ func (es IntHistogramDataPointSlice) AppendEmpty() IntHistogramDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.IntHistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntHistogramDataPointSlice) MoveAndAppendTo(dest IntHistogramDataPointSlice) {
@@ -1651,6 +1655,7 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleHistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
@@ -1896,6 +1901,7 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
@@ -2119,6 +2125,7 @@ func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
 	*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
@@ -2303,6 +2310,7 @@ func (es IntExemplarSlice) AppendEmpty() IntExemplar {
 	*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
@@ -2496,6 +2504,7 @@ func (es ExemplarSlice) AppendEmpty() Exemplar {
 	*es.orig = append(*es.orig, otlpmetrics.DoubleExemplar{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {

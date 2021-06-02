@@ -130,6 +130,7 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
@@ -309,6 +310,7 @@ func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibraryS
 	*es.orig = append(*es.orig, &otlptrace.InstrumentationLibrarySpans{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationLibrarySpansSlice) {
@@ -488,6 +490,7 @@ func (es SpanSlice) AppendEmpty() Span {
 	*es.orig = append(*es.orig, &otlptrace.Span{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
@@ -801,6 +804,7 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
@@ -1008,6 +1012,7 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {

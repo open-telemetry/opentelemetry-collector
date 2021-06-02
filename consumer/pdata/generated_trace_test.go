@@ -140,7 +140,7 @@ func TestResourceSpansSlice_MoveAndAppendTo(t *testing.T) {
 func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewResourceSpansSlice()
-	emptySlice.RemoveIf(func (el ResourceSpans) bool {
+	emptySlice.RemoveIf(func(el ResourceSpans) bool {
 		t.Fail()
 		return false
 	})
@@ -148,13 +148,12 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestResourceSpansSlice()
 	pos := 0
-	filtered.RemoveIf(func (el ResourceSpans) bool {
+	filtered.RemoveIf(func(el ResourceSpans) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestResourceSpans_CopyTo(t *testing.T) {
 	ms := NewResourceSpans()
@@ -291,7 +290,7 @@ func TestInstrumentationLibrarySpansSlice_MoveAndAppendTo(t *testing.T) {
 func TestInstrumentationLibrarySpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewInstrumentationLibrarySpansSlice()
-	emptySlice.RemoveIf(func (el InstrumentationLibrarySpans) bool {
+	emptySlice.RemoveIf(func(el InstrumentationLibrarySpans) bool {
 		t.Fail()
 		return false
 	})
@@ -299,13 +298,12 @@ func TestInstrumentationLibrarySpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestInstrumentationLibrarySpansSlice()
 	pos := 0
-	filtered.RemoveIf(func (el InstrumentationLibrarySpans) bool {
+	filtered.RemoveIf(func(el InstrumentationLibrarySpans) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
@@ -442,7 +440,7 @@ func TestSpanSlice_MoveAndAppendTo(t *testing.T) {
 func TestSpanSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewSpanSlice()
-	emptySlice.RemoveIf(func (el Span) bool {
+	emptySlice.RemoveIf(func(el Span) bool {
 		t.Fail()
 		return false
 	})
@@ -450,13 +448,12 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestSpanSlice()
 	pos := 0
-	filtered.RemoveIf(func (el Span) bool {
+	filtered.RemoveIf(func(el Span) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestSpan_CopyTo(t *testing.T) {
 	ms := NewSpan()
@@ -697,7 +694,7 @@ func TestSpanEventSlice_MoveAndAppendTo(t *testing.T) {
 func TestSpanEventSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewSpanEventSlice()
-	emptySlice.RemoveIf(func (el SpanEvent) bool {
+	emptySlice.RemoveIf(func(el SpanEvent) bool {
 		t.Fail()
 		return false
 	})
@@ -705,13 +702,12 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestSpanEventSlice()
 	pos := 0
-	filtered.RemoveIf(func (el SpanEvent) bool {
+	filtered.RemoveIf(func(el SpanEvent) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestSpanEvent_CopyTo(t *testing.T) {
 	ms := NewSpanEvent()
@@ -866,7 +862,7 @@ func TestSpanLinkSlice_MoveAndAppendTo(t *testing.T) {
 func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewSpanLinkSlice()
-	emptySlice.RemoveIf(func (el SpanLink) bool {
+	emptySlice.RemoveIf(func(el SpanLink) bool {
 		t.Fail()
 		return false
 	})
@@ -874,13 +870,12 @@ func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestSpanLinkSlice()
 	pos := 0
-	filtered.RemoveIf(func (el SpanLink) bool {
+	filtered.RemoveIf(func(el SpanLink) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestSpanLink_CopyTo(t *testing.T) {
 	ms := NewSpanLink()
@@ -927,7 +922,6 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
 	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
 }
-
 
 func TestSpanStatus_CopyTo(t *testing.T) {
 	ms := NewSpanStatus()
