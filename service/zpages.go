@@ -84,7 +84,8 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 	}
 
 	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(srv.builtPipelines))
-	for c, p := range srv.builtPipelines {
+	for name, p := range srv.builtPipelines {
+		c := srv.config.Service.Pipelines[name]
 		// TODO: Change the template to use ID.
 		var recvs []string
 		for _, recvID := range c.Receivers {
