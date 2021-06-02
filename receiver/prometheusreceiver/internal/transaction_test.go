@@ -54,6 +54,10 @@ func Test_transaction(t *testing.T) {
 			Name:  model.InstanceLabel,
 			Value: "localhost:8080",
 		},
+		labels.Label{
+			Name:  model.JobLabel,
+			Value: "testJobOverridden",
+		},
 	)
 
 	ms := &metadataService{
@@ -115,6 +119,43 @@ func Test_transaction(t *testing.T) {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
 		expectedNode, expectedResource := createNodeAndResource("test", "localhost:8080", "http")
+		mds := sink.AllMetrics()
+		if len(mds) != 1 {
+			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())
+		}
+		var ocmds []*agentmetricspb.ExportMetricsServiceRequest
+		rms := mds[0].ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+			ocmds = append(ocmds, ocmd)
+		}
+		require.Len(t, ocmds, 1)
+		if !proto.Equal(ocmds[0].Node, expectedNode) {
+			t.Errorf("generated node %v and expected node %v is different\n", ocmds[0].Node, expectedNode)
+		}
+		if !proto.Equal(ocmds[0].Resource, expectedResource) {
+			t.Errorf("generated resource %v and expected resource %v is different\n", ocmds[0].Resource, expectedResource)
+		}
+
+		// TODO: re-enable this when handle unspecified OC type
+		// assert.Len(t, ocmds[0].Metrics, 1)
+	})
+
+	goodLabelsJobOverridden := labels.Labels([]labels.Label{{Name: "instance", Value: "localhost:8080"},
+		{Name: "job", Value: "testJobOverridden"},
+		{Name: "__name__", Value: "foo"}})
+	t.Run("Job label can be overridden", func(t *testing.T) {
+		sink := new(consumertest.MetricsSink)
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
+		if _, got := tr.Append(0, goodLabelsJobOverridden, time.Now().Unix()*1000, 1.0); got != nil {
+			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
+		}
+		tr.metricBuilder.startTime = 1.0 // set to a non-zero value
+		if got := tr.Commit(); got != nil {
+			t.Errorf("expecting nil from Commit() but got err %v", got)
+		}
+		expectedNode, expectedResource := createNodeAndResource("testJobOverridden", "localhost:8080", "http")
 		mds := sink.AllMetrics()
 		if len(mds) != 1 {
 			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())

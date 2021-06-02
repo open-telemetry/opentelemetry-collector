@@ -37,18 +37,18 @@ type metadataService struct {
 }
 
 func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
-	targetGroup, ok := s.sm.TargetsAll()[job]
-	if !ok {
-		return nil, errors.New("unable to find a target group with job=" + job)
-	}
-
-	// from the same targetGroup, instance is not going to be duplicated
-	for _, target := range targetGroup {
-		if target.Labels().Get(model.InstanceLabel) == instance {
-			return &mCache{target}, nil
+	for originalJobLabel, targetGroup := range s.sm.TargetsAll() {
+		for _, target := range targetGroup {
+			switch {
+			case target.Labels().Get(model.InstanceLabel) == instance && originalJobLabel == job:
+				// job label was not rewritten
+				return &mCache{target}, nil
+			case target.Labels().Get(model.InstanceLabel) == instance && target.Labels().Get(model.JobLabel) == job:
+				// job label was overridden by file_sd, relabel_configs, etc
+				return &mCache{target}, nil
+			}
 		}
 	}
-
 	return nil, errors.New("unable to find a target with job=" + job + ", and instance=" + instance)
 }
 
