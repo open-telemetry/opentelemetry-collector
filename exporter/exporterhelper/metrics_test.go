@@ -141,7 +141,7 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 5 metric points rejected due to queue overflow
-	obsreporttest.CheckExporterEnqueueFailedMetrics(t, fakeMetricsExporterName, int64(5))
+	checkExporterEnqueueFailedMetricsStats(t, fakeMetricsExporterName, int64(5))
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {

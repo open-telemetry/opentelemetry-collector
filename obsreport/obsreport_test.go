@@ -436,26 +436,6 @@ func TestExportLogsOp(t *testing.T) {
 	obsreporttest.CheckExporterLogs(t, exporter, int64(sentLogRecords), int64(failedToSendLogRecords))
 }
 
-func TestExportEnqueueFailure(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
-	require.NoError(t, err)
-	defer doneFn()
-
-	obsrep := NewExporter(ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
-
-	logRecords := 7
-	obsrep.RecordLogsEnqueueFailure(context.Background(), logRecords)
-	obsreporttest.CheckExporterEnqueueFailedLogs(t, exporter, int64(logRecords))
-
-	spans := 12
-	obsrep.RecordTracesEnqueueFailure(context.Background(), spans)
-	obsreporttest.CheckExporterEnqueueFailedTraces(t, exporter, int64(spans))
-
-	metricPoints := 21
-	obsrep.RecordMetricsEnqueueFailure(context.Background(), metricPoints)
-	obsreporttest.CheckExporterEnqueueFailedMetrics(t, exporter, int64(metricPoints))
-}
-
 func TestReceiveWithLongLivedCtx(t *testing.T) {
 	ss := &spanStore{}
 	trace.RegisterExporter(ss)

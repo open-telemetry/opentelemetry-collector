@@ -63,11 +63,6 @@ func (eor *Exporter) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
-// RecordTracesEnqueueFailure records number of spans that failed to be added to the sending queue.
-func (eor *Exporter) RecordTracesEnqueueFailure(ctx context.Context, numSpans int) {
-	_ = stats.RecordWithTags(ctx, eor.mutators, obsmetrics.ExporterFailedToEnqueueSpans.M(int64(numSpans)))
-}
-
 // StartMetricsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
@@ -83,11 +78,6 @@ func (eor *Exporter) EndMetricsOp(ctx context.Context, numMetricPoints int, err 
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
-// RecordMetricsEnqueueFailure records number of metric points that failed to be added to the sending queue.
-func (eor *Exporter) RecordMetricsEnqueueFailure(ctx context.Context, numMetricPoints int) {
-	_ = stats.RecordWithTags(ctx, eor.mutators, obsmetrics.ExporterFailedToEnqueueMetricPoints.M(int64(numMetricPoints)))
-}
-
 // StartLogsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
@@ -100,11 +90,6 @@ func (eor *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
 	eor.recordMetrics(ctx, numSent, numFailedToSend, obsmetrics.ExporterSentLogRecords, obsmetrics.ExporterFailedToSendLogRecords)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
-}
-
-// RecordLogsEnqueueFailure records number of log records that failed to be added to the sending queue.
-func (eor *Exporter) RecordLogsEnqueueFailure(ctx context.Context, numLogRecords int) {
-	_ = stats.RecordWithTags(ctx, eor.mutators, obsmetrics.ExporterFailedToEnqueueLogRecords.M(int64(numLogRecords)))
 }
 
 // startSpan creates the span used to trace the operation. Returning

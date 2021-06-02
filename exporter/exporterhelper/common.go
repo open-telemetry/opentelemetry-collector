@@ -166,7 +166,7 @@ func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTel
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.Component
-	obsrep   *obsreport.Exporter
+	obsrep   *obsExporter
 	sender   requestSender
 	qrSender *queuedRetrySender
 }
@@ -176,7 +176,7 @@ func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings) 
 		Component: componenthelper.New(bs.componentOptions...),
 	}
 
-	be.obsrep = obsreport.NewExporter(obsreport.ExporterSettings{
+	be.obsrep = newObsExporter(obsreport.ExporterSettings{
 		Level:      configtelemetry.GetMetricsLevelFlagValue(),
 		ExporterID: cfg.ID(),
 	})

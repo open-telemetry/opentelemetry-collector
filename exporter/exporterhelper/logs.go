@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 type logsRequest struct {
@@ -96,7 +95,7 @@ func NewLogsExporter(
 		req := newLogsRequest(ctx, ld, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {
-			be.obsrep.RecordLogsEnqueueFailure(req.context(), req.count())
+			be.obsrep.recordLogsEnqueueFailure(req.context(), req.count())
 		}
 		return err
 	}, bs.consumerOptions...)
@@ -108,7 +107,7 @@ func NewLogsExporter(
 }
 
 type logsExporterWithObservability struct {
-	obsrep     *obsreport.Exporter
+	obsrep     *obsExporter
 	nextSender requestSender
 }
 
