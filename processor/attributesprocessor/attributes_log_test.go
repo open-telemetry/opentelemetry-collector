@@ -106,7 +106,7 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogsProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewNop())
+		context.Background(), component.ProcessorCreateSettings{Logger: zap.NewNop()}, oCfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
@@ -169,7 +169,7 @@ func TestAttributes_FilterLogs(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -232,7 +232,7 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 		LogNames: []string{"dont_apply"},
 		Config:   *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -295,7 +295,7 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 		LogNames: []string{".*dont_apply$"},
 		Config:   *createConfig(filterset.Regexp),
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -354,7 +354,7 @@ func TestLogAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: processorhelper.HASH},
 	}
 
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -398,7 +398,7 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 	oCfg.Include = &filterconfig.MatchProperties{
 		LogNames: []string{"^apply.*"},
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
 	require.Nil(b, err)
 	require.NotNil(b, tp)
 

@@ -96,7 +96,7 @@ func newBadExtensionFactory() component.ExtensionFactory {
 				ExtensionSettings: config.NewExtensionSettings(config.NewID("bf")),
 			}
 		},
-		func(ctx context.Context, params component.ExtensionCreateParams, extension config.Extension) (component.Extension, error) {
+		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
 			return nil, nil
 		},
 	)

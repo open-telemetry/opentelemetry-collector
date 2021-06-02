@@ -32,7 +32,7 @@ func TestNewNopExtensionFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopExtensionConfig{ExtensionSettings: config.NewExtensionSettings(config.NewID("nop"))}, cfg)
 
-	traces, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{}, cfg)
+	traces, err := factory.CreateExtension(context.Background(), component.ExtensionCreateSettings{}, cfg)
 	require.NoError(t, err)
 	assert.NoError(t, traces.Start(context.Background(), NewNopHost()))
 	assert.NoError(t, traces.Shutdown(context.Background()))

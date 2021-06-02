@@ -33,56 +33,56 @@ import (
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	texp, err := newTracesExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, tracesMarshalers())
+	texp, err := newTracesExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, tracesMarshalers())
 	assert.Error(t, err)
 	assert.Nil(t, texp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	texp, err := newTracesExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, tracesMarshalers())
+	texp, err := newTracesExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, tracesMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, texp)
 }
 
 func TestNewMetricsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
 	assert.Error(t, err)
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	mexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
 	assert.Error(t, err)
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	mexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	mexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
@@ -102,15 +102,15 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	texp, err := newTracesExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, tracesMarshalers())
+	texp, err := newTracesExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, tracesMarshalers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, texp)
-	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, mexp)
-	lexp, err := newLogsExporter(c, component.ExporterCreateParams{Logger: zap.NewNop()}, logsMarshalers())
+	lexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, lexp)

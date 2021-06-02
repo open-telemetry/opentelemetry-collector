@@ -608,6 +608,6 @@ func (pds *PrometheusDataSender) ProtocolName() string {
 	return "prometheus"
 }
 
-func defaultExporterParams() component.ExporterCreateParams {
-	return component.ExporterCreateParams{Logger: zap.L()}
+func defaultExporterParams() component.ExporterCreateSettings {
+	return component.ExporterCreateSettings{Logger: zap.L()}
 }
