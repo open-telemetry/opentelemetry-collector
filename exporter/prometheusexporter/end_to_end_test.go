@@ -74,8 +74,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := exporterFactory.CreateMetricsExporter(ctx, creationParams, exporterCfg)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateParams := component.ReceiverCreateParams{
+	receiverCreateSettings := component.ReceiverCreateParams{
 		Logger: zap.NewNop(),
 	}
 	rcvCfg := &prometheusreceiver.Config{
@@ -110,7 +110,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		ReceiverSettings: config.NewReceiverSettings(config.NewID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
-	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateParams, rcvCfg, exporter)
+	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSettings, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
 	}

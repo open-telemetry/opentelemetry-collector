@@ -173,10 +173,10 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := component.ExporterCreateParams{Logger: zap.NewNop()}
-			tExporter, tErr := createTracesExporter(context.Background(), params, &tt.config)
+			set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+			tExporter, tErr := createTracesExporter(context.Background(), set, &tt.config)
 			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
-			mExporter, mErr := createMetricsExporter(context.Background(), params, &tt.config)
+			mExporter, mErr := createMetricsExporter(context.Background(), set, &tt.config)
 			checkErrorsAndStartAndShutdown(t, mExporter, mErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 		})
 	}
