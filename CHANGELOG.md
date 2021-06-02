@@ -13,6 +13,7 @@
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
+- Enable Dependabot for Github Actions (#3312)
 
 ## v0.27.0 Beta
 
