@@ -117,7 +117,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}, nil
 }
 
-// Custom RoundTripper that add headers
+// Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
 	headers   map[string]string
