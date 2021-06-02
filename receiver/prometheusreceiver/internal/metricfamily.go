@@ -67,7 +67,6 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) Me
 	} else if !ok && isInternalMetric(metricName) {
 		metadata = defineInternalMetric(metricName, metadata, logger)
 	}
-	//TODO convert it to OtelMetrics ?
 	ocaMetricType := convToOCAMetricType(metadata.Type)
 	if ocaMetricType == metricspb.MetricDescriptor_UNSPECIFIED {
 		logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
@@ -96,7 +95,6 @@ func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, log
 
 	switch metricName {
 	case scrapeUpMetricName:
-		metadata.Unit = "bool"
 		metadata.Type = textparse.MetricTypeGauge
 		metadata.Help = "The scraping was sucessful"
 	case "scrape_duration_seconds":
@@ -104,15 +102,12 @@ func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, log
 		metadata.Type = textparse.MetricTypeGauge
 		metadata.Help = "Duration of the scrape"
 	case "scrape_samples_scraped":
-		metadata.Unit = "count"
 		metadata.Type = textparse.MetricTypeGauge
 		metadata.Help = "The number of samples the target exposed"
 	case "scrape_series_added":
-		metadata.Unit = "count"
 		metadata.Type = textparse.MetricTypeGauge
 		metadata.Help = "The approximate number of new series in this scrape"
 	case "scrape_samples_post_metric_relabeling":
-		metadata.Unit = "count"
 		metadata.Type = textparse.MetricTypeGauge
 		metadata.Help = "The number of samples remaining after metric relabeling was applied"
 	}
