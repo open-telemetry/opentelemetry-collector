@@ -46,8 +46,8 @@ type PipelineWatcher interface {
 	NotReady() error
 }
 
-// ExtensionCreateParams is passed to ExtensionFactory.Create* functions.
-type ExtensionCreateParams struct {
+// ExtensionCreateSettings is passed to ExtensionFactory.Create* functions.
+type ExtensionCreateSettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -70,5 +70,5 @@ type ExtensionFactory interface {
 	CreateDefaultConfig() config.Extension
 
 	// CreateExtension creates a service extension based on the given config.
-	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg config.Extension) (Extension, error)
+	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg config.Extension) (Extension, error)
 }
