@@ -28,12 +28,12 @@ var (
 	errMetadataNotFound = errors.New("no request metadata found")
 )
 
-// Authenticator is an Extension that can be used as an authenticator for the configauth.Authentication option.
+// ServerAuthenticator is an Extension that can be used as an authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
-// names from the Authentication configuration. Each Authenticator is free to define its own behavior and configuration options,
+// names from the Authentication configuration. Each ServerAuthenticator is free to define its own behavior and configuration options,
 // but note that the expectations that come as part of Extensions exist here as well. For instance, multiple instances of the same
 // authenticator should be possible to exist under different names.
-type Authenticator interface {
+type ServerAuthenticator interface {
 	component.Extension
 
 	// Authenticate checks whether the given headers map contains valid auth data. Successfully authenticated calls will always return a nil error.
@@ -58,17 +58,17 @@ type Authenticator interface {
 }
 
 // AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the given headers map.
-// See Authenticator.Authenticate.
+// See ServerAuthenticator.Authenticate.
 type AuthenticateFunc func(ctx context.Context, headers map[string][]string) error
 
 // GrpcUnaryInterceptorFunc defines the signature for the function intercepting unary gRPC calls, useful for authenticators to use as
 // types for internal structs, making it easier to mock them in tests.
-// See Authenticator.GrpcUnaryServerInterceptor.
+// See ServerAuthenticator.GrpcUnaryServerInterceptor.
 type GrpcUnaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error)
 
 // GrpcStreamInterceptorFunc defines the signature for the function intercepting streaming gRPC calls, useful for authenticators to use as
 // types for internal structs, making it easier to mock them in tests.
-// See Authenticator.GrpcStreamServerInterceptor.
+// See ServerAuthenticator.GrpcStreamServerInterceptor.
 type GrpcStreamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error
 
 // DefaultGrpcUnaryServerInterceptor provides a default implementation of GrpcUnaryInterceptorFunc, useful for most authenticators.

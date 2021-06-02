@@ -309,9 +309,9 @@ func TestExportTraceDataOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx := obsrep.StartTracesExportOp(parentCtx)
+		ctx := obsrep.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
-		obsrep.EndTracesExportOp(ctx, numExportedSpans[i], err)
+		obsrep.EndTracesOp(ctx, numExportedSpans[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -357,10 +357,10 @@ func TestExportMetricsOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartMetricsExportOp(parentCtx)
+		ctx := obsrep.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndMetricsExportOp(ctx, toSendMetricPoints[i], err)
+		obsrep.EndMetricsOp(ctx, toSendMetricPoints[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -405,10 +405,10 @@ func TestExportLogsOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartLogsExportOp(parentCtx)
+		ctx := obsrep.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndLogsExportOp(ctx, toSendLogRecords[i], err)
+		obsrep.EndLogsOp(ctx, toSendLogRecords[i], err)
 	}
 
 	spans := ss.PullAllSpans()

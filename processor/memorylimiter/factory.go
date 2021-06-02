@@ -50,11 +50,11 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
+	ml, err := newMemoryLimiter(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +68,11 @@ func createTracesProcessor(
 
 func createMetricsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
+	ml, err := newMemoryLimiter(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -86,11 +86,11 @@ func createMetricsProcessor(
 
 func createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
+	ml, err := newMemoryLimiter(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
