@@ -25,6 +25,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
 
+
 func TestInstrumentationLibrary_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrary()
 	generateTestInstrumentationLibrary().CopyTo(ms)
@@ -162,7 +163,7 @@ func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
 func TestAnyValueArray_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewAnyValueArray()
-	emptySlice.RemoveIf(func(el AttributeValue) bool {
+	emptySlice.RemoveIf(func (el AttributeValue) bool {
 		t.Fail()
 		return false
 	})
@@ -170,7 +171,7 @@ func TestAnyValueArray_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestAnyValueArray()
 	pos := 0
-	filtered.RemoveIf(func(el AttributeValue) bool {
+	filtered.RemoveIf(func (el AttributeValue) bool {
 		pos++
 		return pos%3 == 0
 	})
