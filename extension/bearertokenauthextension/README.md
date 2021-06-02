@@ -1,6 +1,6 @@
 # Authenticator - Bearer
 
-This extension implements `configauth.GRPCClientAuthenticator` and is to be used in grpc receivers inside the `auth` settings as a means
+This extension implements `configauth.GRPCClientAuthenticator` and is to be used in gRPC receivers inside the `auth` settings as a means
 to embed a static token for every rpc call that will be made.
 
 The authenticator type has to be set to `bearertokenauth`.
