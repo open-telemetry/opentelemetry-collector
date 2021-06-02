@@ -51,12 +51,12 @@ func TestInvalidConfig(t *testing.T) {
 		},
 	}
 	f := NewFactory()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := f.CreateTracesExporter(context.Background(), params, config)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	_, err := f.CreateTracesExporter(context.Background(), set, config)
 	require.Error(t, err)
-	_, err = f.CreateMetricsExporter(context.Background(), params, config)
+	_, err = f.CreateMetricsExporter(context.Background(), set, config)
 	require.Error(t, err)
-	_, err = f.CreateLogsExporter(context.Background(), params, config)
+	_, err = f.CreateLogsExporter(context.Background(), set, config)
 	require.Error(t, err)
 }
 
@@ -165,7 +165,7 @@ func TestCompressionOptions(t *testing.T) {
 			factory := NewFactory()
 			cfg := createExporterConfig(test.baseURL, factory.CreateDefaultConfig())
 			cfg.Compression = test.compression
-			exp, _ := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			exp, _ := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 			err := exp.Start(context.Background(), componenttest.NewNopHost())
 			t.Cleanup(func() {
 				require.NoError(t, exp.Shutdown(context.Background()))
@@ -297,7 +297,7 @@ func startTracesExporter(t *testing.T, baseURL string, overrideURL string) compo
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -307,7 +307,7 @@ func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) comp
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
-	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -317,7 +317,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) compone
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL
-	exp, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -450,7 +450,7 @@ func TestErrorResponses(t *testing.T) {
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			exp, err := createTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 			require.NoError(t, err)
 
 			// start the exporter

@@ -46,8 +46,8 @@ type LogsExporter interface {
 	consumer.Logs
 }
 
-// ExporterCreateParams configures Exporter creators.
-type ExporterCreateParams struct {
+// ExporterCreateSettings configures Exporter creators.
+type ExporterCreateSettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -73,18 +73,18 @@ type ExporterFactory interface {
 	// CreateTracesExporter creates a trace exporter based on this config.
 	// If the exporter type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateTracesExporter(ctx context.Context, params ExporterCreateParams,
+	CreateTracesExporter(ctx context.Context, set ExporterCreateSettings,
 		cfg config.Exporter) (TracesExporter, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
 	// If the exporter type does not support metrics or if the config is not valid,
 	// an error will be returned instead.
-	CreateMetricsExporter(ctx context.Context, params ExporterCreateParams,
+	CreateMetricsExporter(ctx context.Context, set ExporterCreateSettings,
 		cfg config.Exporter) (MetricsExporter, error)
 
 	// CreateLogsExporter creates an exporter based on the config.
 	// If the exporter type does not support logs or if the config is not valid,
 	// an error will be returned instead.
-	CreateLogsExporter(ctx context.Context, params ExporterCreateParams,
+	CreateLogsExporter(ctx context.Context, set ExporterCreateSettings,
 		cfg config.Exporter) (LogsExporter, error)
 }
