@@ -120,13 +120,13 @@ func newJaegerReceiver(
 	id config.ComponentID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	params component.ReceiverCreateParams,
+	set component.ReceiverCreateSettings,
 ) *jReceiver {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
-		logger:       params.Logger,
+		logger:       set.Logger,
 		grpcObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: grpcTransport}),
 		httpObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: collectorHTTPTransport}),
 	}

@@ -55,8 +55,8 @@ type LogsReceiver interface {
 	Receiver
 }
 
-// ReceiverCreateParams configures Receiver creators.
-type ReceiverCreateParams struct {
+// ReceiverCreateSettings configures Receiver creators.
+type ReceiverCreateSettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -82,18 +82,18 @@ type ReceiverFactory interface {
 	// CreateTracesReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// an error will be returned instead.
-	CreateTracesReceiver(ctx context.Context, params ReceiverCreateParams,
+	CreateTracesReceiver(ctx context.Context, set ReceiverCreateSettings,
 		cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// an error will be returned instead.
-	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
+	CreateMetricsReceiver(ctx context.Context, set ReceiverCreateSettings,
 		cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
 
 	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// an error will be returned instead.
-	CreateLogsReceiver(ctx context.Context, params ReceiverCreateParams,
+	CreateLogsReceiver(ctx context.Context, set ReceiverCreateSettings,
 		cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
 }
