@@ -376,7 +376,7 @@ jobs:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Download Collector Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: collector-binaries
       - name: Extract Binaries Archive
@@ -418,7 +418,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: collector-binaries
       - name: Extract Binaries Archive
@@ -461,18 +461,18 @@ jobs:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: collector-binaries
       - name: Extract Binaries Archive
         run: tar -xvf collector-binaries/bin.tar
       - name: Download Packages
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: build-packages
           path: ./dist
       - name: Download MSI Packages
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: msi-binaries
           path: ./dist
@@ -521,18 +521,18 @@ jobs:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: collector-binaries
       - name: Extract Binaries Archive
         run: tar -xvf collector-binaries/bin.tar
       - name: Download Packages
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: build-packages
           path: ./dist
       - name: Download MSI Packages
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2.0.9
         with:
           name: msi-binaries
           path: ./dist
