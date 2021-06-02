@@ -51,7 +51,7 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, _ component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -62,7 +62,7 @@ func createTracesExporter(_ context.Context, _ component.ExporterCreateParams, c
 	return newTracesExporter(config, cfg.LogLevel, exporterLogger)
 }
 
-func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, _ component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -73,7 +73,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 	return newMetricsExporter(config, cfg.LogLevel, exporterLogger)
 }
 
-func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, _ component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)

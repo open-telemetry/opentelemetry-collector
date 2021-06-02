@@ -37,7 +37,7 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateParams,
+func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 
 	prwCfg, ok := cfg.(*Config)
@@ -45,7 +45,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := NewPRWExporter(prwCfg, params.BuildInfo)
+	prwe, err := NewPRWExporter(prwCfg, set.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	// "out of order samples" errors.
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
