@@ -279,6 +279,7 @@ gendependabot:
 	@echo "" >> ${DEPENDABOT_PATH}
 	@echo "version: 2" >> ${DEPENDABOT_PATH}
 	@echo "updates:" >> ${DEPENDABOT_PATH}
+	$(MAKE) internal-gendependabot DIR="/" PACKAGE="github-actions"
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="docker"
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="gomod"
 	@set -e; for dir in $(ALL_MODULES); do \

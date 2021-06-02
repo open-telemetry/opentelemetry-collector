@@ -36,7 +36,7 @@ type kafkaTracesProducer struct {
 	logger    *zap.Logger
 }
 
-func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces) error {
+func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) error {
 	messages, err := e.marshaler.Marshal(td, e.topic)
 	if err != nil {
 		return consumererror.Permanent(err)

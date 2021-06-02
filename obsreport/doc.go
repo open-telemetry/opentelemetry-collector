@@ -22,19 +22,25 @@
 // Receivers should use the respective start and end according to the data type
 // being received, ie.:
 //
-// 	* TraceData receive operations should use the pair:
-// 		StartTraceDataReceiveOp/EndTraceDataReceiveOp
+// 	* Traces receive operations should use the pair:
+// 		StartTracesOp/EndTracesOp
 //
 // 	* Metrics receive operations should use the pair:
-// 		StartMetricsReceiveOp/EndMetricsReceiveOp
+// 		StartMetricsOp/EndMetricsOp
+//
+// 	* Logs receive operations should use the pair:
+// 		StartLogsOp/EndLogsOp
 //
 // Similar for exporters:
 //
-// 	* TraceData export operations should use the pair:
-// 		StartTraceDataExportOp/EndTraceDataExportOp
+// 	* Traces export operations should use the pair:
+// 		StartTracesOp/EndTracesOp
 //
 // 	* Metrics export operations should use the pair:
-// 		StartMetricsExportOp/EndMetricsExportOp
+// 		StartMetricsOp/EndMetricsOp
+//
+// 	* Metrics export operations should use the pair:
+// 		StartLogsOp/EndLogsOp
 //
 // The package is capable of generating legacy metrics by using the
 // observability package allowing a controlled transition from legacy to the

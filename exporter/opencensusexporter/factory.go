@@ -60,10 +60,11 @@ func createTracesExporter(ctx context.Context, params component.ExporterCreatePa
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
-		oce.pushTraceData,
+		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown))
 }
 
@@ -77,9 +78,10 @@ func createMetricsExporter(ctx context.Context, params component.ExporterCreateP
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		oce.pushMetricsData,
+		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown))
 }

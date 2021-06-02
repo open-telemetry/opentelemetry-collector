@@ -78,9 +78,9 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.Traces) erro
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = r.obsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = r.obsrecv.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
-	r.obsrecv.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return err
 }
