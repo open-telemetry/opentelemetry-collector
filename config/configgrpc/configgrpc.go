@@ -235,9 +235,47 @@ func validateBalancerName(balancerName string) bool {
 	return false
 }
 
-// ToListener returns the net.Listener constructed from the settings.
+// muxListeners is a map of Endpoint to multiplexing listener
+var muxListeners = make(map[string]net.Listener)
+
+// ToListener creates a new net.Listener when it is called at the first time. After that,
+// whenever the same Endpoint is passed in, that listener will be returned.
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
-	return gss.NetAddr.Listen()
+	var addr net.Addr
+	var err error
+
+	// Get the network address according to the protocol type and the given endpoint.
+	switch gss.NetAddr.Transport {
+	case "tcp", "tcp4", "tcp6":
+		addr, err = net.ResolveTCPAddr(gss.NetAddr.Transport, gss.NetAddr.Endpoint)
+	case "udp", "udp4", "udp6":
+		addr, err = net.ResolveUDPAddr(gss.NetAddr.Transport, gss.NetAddr.Endpoint)
+	case "ip", "ip4", "ip6":
+		addr, err = net.ResolveIPAddr(gss.NetAddr.Transport, gss.NetAddr.Endpoint)
+	case "unix", "unixgram", "unixpacket":
+		addr, err = net.ResolveUnixAddr(gss.NetAddr.Transport, gss.NetAddr.Endpoint)
+	default:
+		return nil, fmt.Errorf("unknown network protocol")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// If the Endpoint is in use (i.e. it corresponds to a listener), use the existing
+	// listener. Otherwise, get a new listener.
+	if muxLs, ok := muxListeners[addr.String()]; ok {
+		return muxLs, nil
+	}
+
+	listener, err := gss.NetAddr.Listen()
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the multiplexing listener.
+	muxListeners[addr.String()] = listener
+
+	return listener, nil
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC

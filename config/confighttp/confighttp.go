@@ -125,11 +125,31 @@ type HTTPServerSettings struct {
 	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
 }
 
-// ToListener creates a net.Listener.
+// muxListeners is a map of Endpoint to multiplexing listener
+var muxListeners = make(map[string]net.Listener)
+
+// ToListener creates a new net.Listener when it is called at the first time. After that,
+// whenever the same Endpoint is passed in, that listener will be returned.
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
-	listener, err := net.Listen("tcp", hss.Endpoint)
+	var listener net.Listener
+	var addr net.Addr
+	var err error
+
+	// Get the tcp address according to the given endpoint.
+	addr, err = net.ResolveTCPAddr("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
+	}
+
+	// If the Endpoint is in use (i.e. it corresponds to a listener), use the existing
+	// listener. Otherwise, get a new listener.
+	if muxLs, ok := muxListeners[addr.String()]; ok {
+		listener = muxLs
+	} else {
+		listener, err = net.Listen("tcp", hss.Endpoint)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if hss.TLSSetting != nil {
@@ -140,6 +160,10 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 		}
 		listener = tls.NewListener(listener, tlsCfg)
 	}
+
+	// Set the multiplexing listener.
+	muxListeners[addr.String()] = listener
+
 	return listener, nil
 }
 

@@ -482,3 +482,22 @@ func TestHttpHeaders(t *testing.T) {
 		})
 	}
 }
+
+func TestHTTPPortReuse(t *testing.T) {
+	endpoint := "localhost: 6489"
+	t.Run("", func(t *testing.T) {
+		settings1 := createHTTPServerSettings(endpoint)
+		muxListener1, err := settings1.ToListener()
+		assert.NoError(t, err)
+		settings2 := createHTTPServerSettings(endpoint)
+		muxListener2, err := settings2.ToListener()
+		assert.NoError(t, err)
+		assert.Equal(t, muxListener1, muxListener2)
+	})
+}
+
+func createHTTPServerSettings(endpoint string) HTTPServerSettings {
+	return HTTPServerSettings{
+		Endpoint: endpoint,
+	}
+}

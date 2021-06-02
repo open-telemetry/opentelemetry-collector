@@ -536,3 +536,25 @@ func tempSocketName(t *testing.T) string {
 	require.NoError(t, os.Remove(socket))
 	return socket
 }
+
+func TestGRPCPortReuse(t *testing.T) {
+	endpoint := "localhost: 2873"
+	t.Run("", func(t *testing.T) {
+		settings1 := createGRPCServerSettings(endpoint)
+		muxListener1, err := settings1.ToListener()
+		assert.NoError(t, err)
+		settings2 := createGRPCServerSettings(endpoint)
+		muxListener2, err := settings2.ToListener()
+		assert.NoError(t, err)
+		assert.Equal(t, muxListener1, muxListener2)
+	})
+}
+
+func createGRPCServerSettings(endpoint string) GRPCServerSettings {
+	return GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint: endpoint,
+			Transport: "tcp",
+		},
+	}
+}
