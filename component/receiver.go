@@ -61,7 +61,7 @@ type ReceiverCreateParams struct {
 	// component to be used later as well.
 	Logger *zap.Logger
 
-	// BuildInfo can be used by components for informational purposes
+	// BuildInfo can be used by components for informational purposes.
 	BuildInfo BuildInfo
 }
 
@@ -75,25 +75,25 @@ type ReceiverFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Receiver.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
+	// 'configcheck.ValidateConfig'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Receiver
 
 	// CreateTracesReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
-	// error will be returned instead.
+	// an error will be returned instead.
 	CreateTracesReceiver(ctx context.Context, params ReceiverCreateParams,
 		cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
-	// error will be returned instead.
+	// an error will be returned instead.
 	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
 		cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
 
 	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
-	// error will be returned instead.
+	// an error will be returned instead.
 	CreateLogsReceiver(ctx context.Context, params ReceiverCreateParams,
 		cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
 }
