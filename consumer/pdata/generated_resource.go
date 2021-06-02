@@ -21,7 +21,7 @@ import (
 	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 )
 
-// Resource is a message representing the resource information.
+// Resource information.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.

@@ -31,7 +31,7 @@ var resourceFile = &File{
 
 var resource = &messageValueStruct{
 	structName:     "Resource",
-	description:    "// Resource is a message representing the resource information.",
+	description:    "// Resource information.",
 	originFullName: "otlpresource.Resource",
 	fields: []baseField{
 		attributes,
