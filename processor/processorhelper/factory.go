@@ -29,13 +29,13 @@ type FactoryOption func(o *factory)
 type CreateDefaultConfig func() config.Processor
 
 // CreateTracesProcessor is the equivalent of component.ProcessorFactory.CreateTracesProcessor()
-type CreateTracesProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error)
+type CreateTracesProcessor func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Traces) (component.TracesProcessor, error)
 
 // CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
-type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Metrics) (component.MetricsProcessor, error)
+type CreateMetricsProcessor func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Metrics) (component.MetricsProcessor, error)
 
 // CreateLogsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
-type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Logs) (component.LogsProcessor, error)
+type CreateLogsProcessor func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Logs) (component.LogsProcessor, error)
 
 type factory struct {
 	component.BaseProcessorFactory
@@ -95,38 +95,38 @@ func (f *factory) CreateDefaultConfig() config.Processor {
 // CreateTracesProcessor creates a component.TracesProcessor based on this config.
 func (f *factory) CreateTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	if f.createTracesProcessor == nil {
-		return f.BaseProcessorFactory.CreateTracesProcessor(ctx, params, cfg, nextConsumer)
+		return f.BaseProcessorFactory.CreateTracesProcessor(ctx, set, cfg, nextConsumer)
 	}
-	return f.createTracesProcessor(ctx, params, cfg, nextConsumer)
+	return f.createTracesProcessor(ctx, set, cfg, nextConsumer)
 }
 
 // CreateMetricsProcessor creates a component.MetricsProcessor based on this config.
 func (f *factory) CreateMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	if f.createMetricsProcessor == nil {
-		return f.BaseProcessorFactory.CreateMetricsProcessor(ctx, params, cfg, nextConsumer)
+		return f.BaseProcessorFactory.CreateMetricsProcessor(ctx, set, cfg, nextConsumer)
 	}
-	return f.createMetricsProcessor(ctx, params, cfg, nextConsumer)
+	return f.createMetricsProcessor(ctx, set, cfg, nextConsumer)
 }
 
 // CreateLogsProcessor creates a component.LogsProcessor based on this config.
 func (f *factory) CreateLogsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	if f.createLogsProcessor == nil {
-		return f.BaseProcessorFactory.CreateLogsProcessor(ctx, params, cfg, nextConsumer)
+		return f.BaseProcessorFactory.CreateLogsProcessor(ctx, set, cfg, nextConsumer)
 	}
-	return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
+	return f.createLogsProcessor(ctx, set, cfg, nextConsumer)
 }

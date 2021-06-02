@@ -35,11 +35,11 @@ func TestNewTrace(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
 }
 
@@ -53,13 +53,13 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
@@ -67,14 +67,14 @@ func defaultConfig() config.Processor {
 	return &defaultCfg
 }
 
-func createTracesProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
 	return nil, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
 	return nil, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Logs) (component.LogsProcessor, error) {
 	return nil, nil
 }
