@@ -130,7 +130,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			assert.NoError(t, err)
 
 			pipelineName := dataType
-			processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
+			processor := pipelineProcessors[pipelineName]
 
 			// Ensure pipeline has its fields correctly populated.
 			require.NotNil(t, processor)
@@ -194,7 +194,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 
 	assert.NoError(t, pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost()))
 
-	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
+	processor := pipelineProcessors[pipelineName]
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)
