@@ -11,6 +11,7 @@
 - Rename `configtest.LoadConfigFile` to `configtest.LoadConfigAndValidate` (#3306)
 - Replace `ExtensionCreateParams` with `ExtensionCreateSettings` (#3294)
 - Replace `ExporterCreateParams` with `ExporterCreateSettings` (#3164)
+- Replace `ReceiverCreateParams` with `ReceiverCreateSettings`. (#3167)
 
 ## 💡 Enhancements 💡
 
