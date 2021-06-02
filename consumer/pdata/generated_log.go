@@ -130,6 +130,7 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
@@ -309,6 +310,7 @@ func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLo
 	*es.orig = append(*es.orig, &otlplogs.InstrumentationLibraryLogs{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLibraryLogsSlice) {
@@ -488,6 +490,7 @@ func (es LogSlice) AppendEmpty() LogRecord {
 	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es LogSlice) MoveAndAppendTo(dest LogSlice) {
