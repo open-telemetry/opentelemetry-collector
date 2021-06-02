@@ -15,8 +15,8 @@ any data drops such as sampling.
 Please refer to [config.go](./config.go) for the config spec.
 
 The following configuration options can be modified:
-- `send_batch_size` (default = 8192): Number of spans or metrics after which a
-batch will be sent regardless of the timeout.
+- `send_batch_size` (default = 8192): Number of spans, metric data points, or log
+records after which a batch will be sent regardless of the timeout.
 - `timeout` (default = 200ms): Time duration after which a batch will be sent
 regardless of size.
 - `send_batch_max_size` (default = 0): The upper limit of the batch size.

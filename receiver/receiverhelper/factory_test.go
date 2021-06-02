@@ -35,11 +35,11 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
 }
 
@@ -53,13 +53,13 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 }
 
@@ -67,14 +67,14 @@ func defaultConfig() config.Receiver {
 	return &defaultCfg
 }
 
-func createTracesReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
+func createTracesReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
 	return nil, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Logs) (component.LogsReceiver, error) {
 	return nil, nil
 }

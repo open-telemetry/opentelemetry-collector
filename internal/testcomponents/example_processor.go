@@ -52,15 +52,15 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTracesProcessor(_ context.Context, _ component.ProcessorCreateParams, _ config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	return &exampleProcessor{Traces: nextConsumer}, nil
 }
 
-func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	return &exampleProcessor{Metrics: nextConsumer}, nil
 }
 
-func createLogsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	return &exampleProcessor{Logs: nextConsumer}, nil
 }
 
