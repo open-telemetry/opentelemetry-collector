@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -92,8 +93,7 @@ type pipelineSettings struct {
 
 // Load loads a Config from Parser.
 // After loading the config, `Validate()` must be called to validate.
-func Load(v *config.Parser, factories component.Factories) (*config.Config, error) {
-
+func Load(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
 	// Load the config.
@@ -183,7 +183,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -240,7 +240,7 @@ func loadService(rawService serviceSettings) (config.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *config.Parser, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
+func LoadReceiver(componentConfig *configparser.Parser, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(id.Name())
@@ -262,7 +262,7 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -299,7 +299,7 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -342,7 +342,7 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
-		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -440,7 +440,7 @@ func parseIDNames(pipelineID config.ComponentID, componentType string, names []s
 
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
-func expandEnvConfig(v *config.Parser) {
+func expandEnvConfig(v *configparser.Parser) {
 	for _, k := range v.AllKeys() {
 		v.Set(k, expandStringValues(v.Get(k)))
 	}
@@ -537,7 +537,7 @@ type deprecatedUnmarshaler interface {
 	Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error
 }
 
-func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
+func unmarshal(componentSection *configparser.Parser, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.CustomUnmarshable); ok {
 		return cu.Unmarshal(componentSection)
 	}
@@ -546,9 +546,9 @@ func unmarshal(componentSection *config.Parser, intoCfg interface{}) error {
 }
 
 // unmarshaler returns an unmarshaling function. It should be removed when deprecatedUnmarshaler is removed.
-func unmarshaler(factory component.Factory) func(componentViperSection *config.Parser, intoCfg interface{}) error {
+func unmarshaler(factory component.Factory) func(componentViperSection *configparser.Parser, intoCfg interface{}) error {
 	if _, ok := factory.(deprecatedUnmarshaler); ok {
-		return func(componentParser *config.Parser, intoCfg interface{}) error {
+		return func(componentParser *configparser.Parser, intoCfg interface{}) error {
 			return errors.New("deprecated way to specify custom unmarshaler no longer supported")
 		}
 	}

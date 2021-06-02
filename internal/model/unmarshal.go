@@ -21,13 +21,25 @@ import (
 )
 
 // TracesUnmarshaler unmarshalls bytes into pdata.Traces.
-type TracesUnmarshaler struct {
+type TracesUnmarshaler interface {
+	Unmarshal(buf []byte) (pdata.Traces, error)
+}
+
+type tracesUnmarshaler struct {
 	encoder    TracesDecoder
 	translator ToTracesTranslator
 }
 
+// NewTracesUnmarshaler returns a new TracesUnmarshaler.
+func NewTracesUnmarshaler(encoder TracesDecoder, translator ToTracesTranslator) TracesUnmarshaler {
+	return &tracesUnmarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
+}
+
 // Unmarshal bytes into pdata.Traces. On error pdata.Traces is invalid.
-func (t *TracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
+func (t *tracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
 	model, err := t.encoder.DecodeTraces(buf)
 	if err != nil {
 		return pdata.Traces{}, fmt.Errorf("unmarshal failed: %w", err)

@@ -70,7 +70,7 @@ func TestCreateProcessors(t *testing.T) {
 
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
-		cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
 		assert.Nil(t, err)
 
 		for name, cfg := range cfg.Processors {

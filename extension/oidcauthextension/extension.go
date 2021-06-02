@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authoidcextension
+package oidcauthextension
 
 import (
 	"context"
@@ -48,7 +48,7 @@ type oidcExtension struct {
 }
 
 var (
-	_ configauth.Authenticator = (*oidcExtension)(nil)
+	_ configauth.ServerAuthenticator = (*oidcExtension)(nil)
 
 	errNoAudienceProvided                = errors.New("no Audience provided for the OIDC configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
