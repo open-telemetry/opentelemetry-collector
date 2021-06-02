@@ -13,6 +13,7 @@
 - Replace `ProcessorCreateParams` with `ProcessorCreateSettings`. (#3181)
 - Replace `ExporterCreateParams` with `ExporterCreateSettings` (#3164)
 - Replace `ReceiverCreateParams` with `ReceiverCreateSettings`. (#3167)
+- Change `batchprocessor` logic to limit data points rather than metrics (#3141)
 
 ## 💡 Enhancements 💡
 
