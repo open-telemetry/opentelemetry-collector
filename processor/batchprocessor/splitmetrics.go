@@ -59,9 +59,8 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 					return false
 				}
 				// If the metric has more data points than free slots we should split it.
-				newMetric, remove := splitMetric(srcMetric, size-totalCopiedDataPoints)
-				newMetric.CopyTo(destIlm.Metrics().AppendEmpty())
-				totalCopiedDataPoints += metricDataPointCount(newMetric)
+				copiedDataPoints, remove := splitMetric(srcMetric, destIlm.Metrics().AppendEmpty(), size-totalCopiedDataPoints)
+				totalCopiedDataPoints += copiedDataPoints
 				return remove
 			})
 			return false
@@ -101,53 +100,52 @@ func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
 	return
 }
 
-// splitMetric removes metric points from the input data and returns new data of the specified size
-// and boolean describing, whether the metric should be removed from original slice.
-func splitMetric(ms pdata.Metric, size int) (pdata.Metric, bool) {
+// splitMetric removes metric points from the input data and moves data of the specified size to destination.
+// Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
+func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
+	ms.CopyTo(dest)
 	if metricDataPointCount(ms) <= size {
-		return ms, true
+		return metricDataPointCount(ms), true
 	}
 
-	result := pdata.NewMetric()
-	ms.CopyTo(result)
 	msSize, i := metricDataPointCount(ms)-size, 0
 	filterDataPoints := func() bool { i++; return i <= msSize }
 	switch ms.DataType() {
 	case pdata.MetricDataTypeIntGauge:
-		result.IntGauge().DataPoints().Resize(size)
+		dest.IntGauge().DataPoints().Resize(size)
 		ms.IntGauge().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeDoubleGauge:
-		result.DoubleGauge().DataPoints().Resize(size)
+		dest.DoubleGauge().DataPoints().Resize(size)
 		ms.DoubleGauge().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntSum:
-		result.IntSum().DataPoints().Resize(size)
+		dest.IntSum().DataPoints().Resize(size)
 		ms.IntSum().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeDoubleSum:
-		result.DoubleSum().DataPoints().Resize(size)
+		dest.DoubleSum().DataPoints().Resize(size)
 		ms.DoubleSum().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntHistogram:
-		result.IntHistogram().DataPoints().Resize(size)
+		dest.IntHistogram().DataPoints().Resize(size)
 		ms.IntHistogram().DataPoints().RemoveIf(func(_ pdata.IntHistogramDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeHistogram:
-		result.Histogram().DataPoints().Resize(size)
+		dest.Histogram().DataPoints().Resize(size)
 		ms.Histogram().DataPoints().RemoveIf(func(_ pdata.HistogramDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeSummary:
-		result.Summary().DataPoints().Resize(size)
+		dest.Summary().DataPoints().Resize(size)
 		ms.Summary().DataPoints().RemoveIf(func(_ pdata.SummaryDataPoint) bool {
 			return filterDataPoints()
 		})
 	}
-	return result, false
+	return size, false
 }

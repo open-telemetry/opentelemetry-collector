@@ -532,10 +532,10 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 	}
 	ctx := context.Background()
 	sink := new(metricsSink)
-	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationSet := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	metricsPerRequest := 1000
 
-	batcher, err := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(b, err)
 	require.NoError(b, batcher.Start(ctx, componenttest.NewNopHost()))
 
