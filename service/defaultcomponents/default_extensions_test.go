@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -63,6 +64,13 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "memory_ballast",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["memory_ballast"].CreateDefaultConfig().(*ballastextension.Config)
 				return cfg
 			},
 		},

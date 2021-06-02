@@ -18,11 +18,15 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Config has the configuration for the fluentbit extension.
+// Config has the configuration for the ballast extension.
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// SizeMiB is the size, in MiB, of the memory ballast
 	// to be created for this process.
-	SizeMiB uint32 `mapstructure:"size_mib"`
+	SizeMiB uint64 `mapstructure:"size_mib"`
+
+	// SizeInPercentage is the maximum amount of memory ballast, in %, targeted to be
+	// allocated. The fixed memory settings SizeMiB has a higher precedence.
+	SizeInPercentage uint64 `mapstructure:"size_in_percentage"`
 }

@@ -12,18 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
-
 package iruntime
 
 import (
-	"fmt"
+	"github.com/shirou/gopsutil/mem"
 )
 
-var errTotalMemoryNotAvailable = fmt.Errorf("reading cgroups total memory is available only on linux")
-
-// TotalMemory returns total available memory.
-// This is non-Linux version that returns -1 and errTotalMemoryNotAvailable.
-func TotalMemory() (int64, error) {
-	return -1, errTotalMemoryNotAvailable
+// readMemInfo returns the total memory
+// supports in linux, darwin and windows
+func readMemInfo() (uint64, error) {
+	vmStat, err := mem.VirtualMemory()
+	return vmStat.Total, err
 }

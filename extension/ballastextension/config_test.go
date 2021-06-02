@@ -45,6 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
 			SizeMiB:           123,
+			SizeInPercentage:  20,
 		},
 		ext1)
 

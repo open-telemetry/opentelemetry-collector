@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
-
 package iruntime
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestTotalMemory(t *testing.T) {
-	totalMemory, err := TotalMemory()
-	require.Error(t, err)
-	assert.Equal(t, int64(-1), totalMemory)
+func TestReadMemInfo(t *testing.T) {
+	vmStat, err := readMemInfo()
+	assert.NoError(t, err)
+	assert.True(t, vmStat > 0)
 }
