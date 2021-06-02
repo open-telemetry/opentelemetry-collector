@@ -39,7 +39,7 @@ func TestSendTraces(t *testing.T) {
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.GRPCServerSettings.NetAddr.Endpoint = endpoint
-	set := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	recv, err := rFactory.CreateTracesReceiver(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -137,7 +137,7 @@ func TestSendMetrics(t *testing.T) {
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.GRPCServerSettings.NetAddr.Endpoint = endpoint
-	set := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	recv, err := rFactory.CreateMetricsReceiver(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))

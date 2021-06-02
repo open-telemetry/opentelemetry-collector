@@ -102,7 +102,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateSettings := component.ReceiverCreateParams{
+	receiverCreateSet := component.ReceiverCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	rcvCfg := &prometheusreceiver.Config{
@@ -110,7 +110,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		ReceiverSettings: config.NewReceiverSettings(config.NewID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
-	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSettings, rcvCfg, exporter)
+	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
 	}
