@@ -28,9 +28,6 @@ type BuildInfo struct {
 }
 
 // DefaultBuildInfo returns the default BuildInfo.
-//   Command: otelcol
-//   Description: OpenTelemetry Collector
-//   Version: latest
 func DefaultBuildInfo() BuildInfo {
 	return BuildInfo{
 		Command:     "otelcol",
