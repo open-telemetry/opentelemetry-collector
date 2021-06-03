@@ -23,8 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
@@ -164,6 +166,7 @@ func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTel
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.Component
+	obsrep   *obsExporter
 	sender   requestSender
 	qrSender *queuedRetrySender
 }
@@ -173,6 +176,10 @@ func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings) 
 		Component: componenthelper.New(bs.componentOptions...),
 	}
 
+	be.obsrep = newObsExporter(obsreport.ExporterSettings{
+		Level:      configtelemetry.GetMetricsLevelFlagValue(),
+		ExporterID: cfg.ID(),
+	})
 	be.qrSender = newQueuedRetrySender(cfg.ID().String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
