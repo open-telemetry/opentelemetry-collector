@@ -27,16 +27,16 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-// StartReceiveOptions has the options related to starting a receive operation.
-type StartReceiveOptions struct {
+// startReceiveOptions has the options related to starting a receive operation.
+type startReceiveOptions struct {
 	// LongLivedCtx when true indicates that the context passed in the call
 	// outlives the individual receive operation. See WithLongLivedCtx() for
 	// more information.
 	LongLivedCtx bool
 }
 
-// StartReceiveOption function applues changes to StartReceiveOptions.
-type StartReceiveOption func(*StartReceiveOptions)
+// StartReceiveOption function applues changes to startReceiveOptions.
+type StartReceiveOption func(*startReceiveOptions)
 
 // WithLongLivedCtx indicates that the context passed in the call outlives the
 // receive operation at hand. Typically the long lived context is associated
@@ -74,7 +74,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 //    }
 //
 func WithLongLivedCtx() StartReceiveOption {
-	return func(opts *StartReceiveOptions) {
+	return func(opts *startReceiveOptions) {
 		opts.LongLivedCtx = true
 	}
 }
@@ -176,7 +176,7 @@ func (rec *Receiver) startOp(
 	operationSuffix string,
 	opt ...StartReceiveOption,
 ) context.Context {
-	var opts StartReceiveOptions
+	var opts startReceiveOptions
 	for _, o := range opt {
 		o(&opts)
 	}

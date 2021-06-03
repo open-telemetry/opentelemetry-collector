@@ -27,14 +27,13 @@ func TestTracesUnmarshal_EncodingError(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := NewTracesUnmarshaler(encoder, translator)
+	tu := NewTracesUnmarshaler(encoder, translator)
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
 	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, errors.New("decode failed"))
 
-	_, err := d.Unmarshal(expectedBytes)
-
+	_, err := tu.Unmarshal(expectedBytes)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "unmarshal failed: decode failed")
 }
@@ -43,15 +42,14 @@ func TestTracesUnmarshal_TranslationError(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := NewTracesUnmarshaler(encoder, translator)
+	tu := NewTracesUnmarshaler(encoder, translator)
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
 	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
 	translator.On("ToTraces", expectedModel).Return(pdata.NewTraces(), errors.New("translation failed"))
 
-	_, err := d.Unmarshal(expectedBytes)
-
+	_, err := tu.Unmarshal(expectedBytes)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
 }
@@ -60,7 +58,7 @@ func TestTracesUnmarshal_Decode(t *testing.T) {
 	translator := &mockTranslator{}
 	encoder := &mockEncoder{}
 
-	d := NewTracesUnmarshaler(encoder, translator)
+	tu := NewTracesUnmarshaler(encoder, translator)
 	expectedTraces := pdata.NewTraces()
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
@@ -68,8 +66,103 @@ func TestTracesUnmarshal_Decode(t *testing.T) {
 	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
 	translator.On("ToTraces", expectedModel).Return(expectedTraces, nil)
 
-	actualTraces, err := d.Unmarshal(expectedBytes)
-
+	actualTraces, err := tu.Unmarshal(expectedBytes)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedTraces, actualTraces)
+}
+
+func TestMetricsUnmarshal_EncodingError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, errors.New("decode failed"))
+
+	_, err := mu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unmarshal failed: decode failed")
+}
+
+func TestMetricsUnmarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToMetrics", expectedModel).Return(pdata.NewMetrics(), errors.New("translation failed"))
+
+	_, err := mu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
+}
+
+func TestMetricsUnmarshal_Decode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedMetrics := pdata.NewMetrics()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToMetrics", expectedModel).Return(expectedMetrics, nil)
+
+	actualMetrics, err := mu.Unmarshal(expectedBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMetrics, actualMetrics)
+}
+
+func TestLogsUnmarshal_EncodingError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lu := NewLogsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, errors.New("decode failed"))
+
+	_, err := lu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unmarshal failed: decode failed")
+}
+
+func TestLogsUnmarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lu := NewLogsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToLogs", expectedModel).Return(pdata.NewLogs(), errors.New("translation failed"))
+
+	_, err := lu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
+}
+
+func TestLogsUnmarshal_Decode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lu := NewLogsUnmarshaler(encoder, translator)
+	expectedLogs := pdata.NewLogs()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToLogs", expectedModel).Return(expectedLogs, nil)
+
+	actualLogs, err := lu.Unmarshal(expectedBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedLogs, actualLogs)
 }
