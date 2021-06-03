@@ -23,7 +23,7 @@ import (
 // StartFunc specifies the function invoked when the component.Component is being started.
 type StartFunc func(context.Context, component.Host) error
 
-// Start starts the component. 
+// Start starts the component.
 func (f StartFunc) Start(ctx context.Context, host component.Host) error {
 	return f(ctx, host)
 }
