@@ -76,7 +76,7 @@ func TestCreateExtension(t *testing.T) {
 			cfg.ClientSecret = testcase.settings.ClientSecret
 			cfg.TokenURL = testcase.settings.TokenURL
 			cfg.Scopes = testcase.settings.Scopes
-			ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
+			ext, err := createExtension(context.Background(), component.ExtensionCreateSettings{Logger: zap.NewNop()}, cfg)
 			if testcase.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, ext)

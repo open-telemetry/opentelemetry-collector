@@ -16,10 +16,10 @@ package clientcredentialsauthextension
 
 import (
 	"errors"
-	"go.opentelemetry.io/collector/config/configtls"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 var (
