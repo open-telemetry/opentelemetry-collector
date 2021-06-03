@@ -44,7 +44,10 @@ func GenerateResource(rscID PICTInputResource) pdata.Resource {
 		attrs = generateEmptyAttributes()
 	}
 	resource := pdata.NewResource()
-	convertMapToAttributeMap(attrs).CopyTo(resource.Attributes())
+	attributeMap := convertMapToAttributeMap(attrs)
+	if attributeMap != nil {
+		attributeMap.CopyTo(resource.Attributes())
+	}
 	return resource
 }
 

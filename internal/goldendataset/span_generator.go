@@ -117,11 +117,20 @@ func GenerateSpan(traceID pdata.TraceID, parentID pdata.SpanID, spanName string,
 	span.SetKind(lookupSpanKind(spanInputs.Kind))
 	span.SetStartTimestamp(pdata.Timestamp(endTime.Add(-215 * time.Millisecond).UnixNano()))
 	span.SetEndTimestamp(pdata.Timestamp(endTime.UnixNano()))
-	generateSpanAttributes(spanInputs.Attributes, spanInputs.Status).CopyTo(span.Attributes())
+	spanAttributes := generateSpanAttributes(spanInputs.Attributes, spanInputs.Status)
+	if spanAttributes != nil {
+		spanAttributes.CopyTo(span.Attributes())
+	}
 	span.SetDroppedAttributesCount(0)
-	generateSpanEvents(spanInputs.Events).CopyTo(span.Events())
+	spanEvents := generateSpanEvents(spanInputs.Events)
+	if spanEvents != nil {
+		spanEvents.CopyTo(span.Events())
+	}
 	span.SetDroppedEventsCount(0)
-	generateSpanLinks(spanInputs.Links, random).CopyTo(span.Links())
+	spanLinks := generateSpanLinks(spanInputs.Links, random)
+	if spanLinks != nil {
+		spanLinks.CopyTo(span.Links())
+	}
 	span.SetDroppedLinksCount(0)
 	generateStatus(spanInputs.Status).CopyTo(span.Status())
 	return span
@@ -159,7 +168,7 @@ func lookupSpanKind(kind PICTInputKind) pdata.SpanKind {
 	}
 }
 
-func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus) pdata.AttributeMap {
+func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus) *pdata.AttributeMap {
 	includeStatus := SpanStatusUnset != statusStr
 	var attrs map[string]interface{}
 	switch spanTypeID {
@@ -429,28 +438,28 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	return attrMap
 }
 
-func generateSpanEvents(eventCnt PICTInputSpanChild) pdata.SpanEventSlice {
+func generateSpanEvents(eventCnt PICTInputSpanChild) *pdata.SpanEventSlice {
 	spanEvents := pdata.NewSpanEventSlice()
 	if SpanChildCountNil == eventCnt {
-		return spanEvents
+		return nil
 	}
 	listSize := calculateListSize(eventCnt)
 	for i := 0; i < listSize; i++ {
 		spanEvents.Append(generateSpanEvent(i))
 	}
-	return spanEvents
+	return &spanEvents
 }
 
-func generateSpanLinks(linkCnt PICTInputSpanChild, random io.Reader) pdata.SpanLinkSlice {
+func generateSpanLinks(linkCnt PICTInputSpanChild, random io.Reader) *pdata.SpanLinkSlice {
 	spanLinks := pdata.NewSpanLinkSlice()
 	if SpanChildCountNil == linkCnt {
-		return spanLinks
+		return nil
 	}
 	listSize := calculateListSize(linkCnt)
 	for i := 0; i < listSize; i++ {
 		spanLinks.Append(generateSpanLink(random, i))
 	}
-	return spanLinks
+	return &spanLinks
 }
 
 func calculateListSize(listCnt PICTInputSpanChild) int {
@@ -474,12 +483,14 @@ func generateSpanEvent(index int) pdata.SpanEvent {
 	name, attributes := generateEventNameAndAttributes(index)
 	spanEvent.SetTimestamp(pdata.Timestamp(t.UnixNano()))
 	spanEvent.SetName(name)
-	attributes.CopyTo(spanEvent.Attributes())
+	if attributes != nil {
+		attributes.CopyTo(spanEvent.Attributes())
+	}
 	spanEvent.SetDroppedAttributesCount(0)
 	return spanEvent
 }
 
-func generateEventNameAndAttributes(index int) (string, pdata.AttributeMap) {
+func generateEventNameAndAttributes(index int) (string, *pdata.AttributeMap) {
 	switch index % 4 {
 	case 0, 3:
 		attrMap := make(map[string]interface{})
@@ -498,7 +509,7 @@ func generateEventNameAndAttributes(index int) (string, pdata.AttributeMap) {
 			"app.progress": 0.6,
 			"app.statemap": "14|5|202"})
 	default:
-		return "annotation", pdata.NewAttributeMap()
+		return "annotation", nil
 	}
 }
 
@@ -507,14 +518,16 @@ func generateSpanLink(random io.Reader, index int) pdata.SpanLink {
 	spanLink.SetTraceID(generatePDataTraceID(random))
 	spanLink.SetSpanID(generatePDataSpanID(random))
 	spanLink.SetTraceState("")
-	generateLinkAttributes(index).CopyTo(spanLink.Attributes())
+	if index%4 != 2 {
+		generateLinkAttributes(index).CopyTo(spanLink.Attributes())
+	}
 	spanLink.SetDroppedAttributesCount(0)
 	return spanLink
 }
 
-func generateLinkAttributes(index int) pdata.AttributeMap {
+func generateLinkAttributes(index int) *pdata.AttributeMap {
 	if index%4 == 2 {
-		return pdata.NewAttributeMap()
+		return nil
 	}
 	attrMap := generateMessagingConsumerAttributes()
 	if index%4 == 1 {

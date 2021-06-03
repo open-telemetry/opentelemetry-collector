@@ -25,15 +25,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func convertMapToAttributeMap(attrsMap map[string]interface{}) pdata.AttributeMap {
+func convertMapToAttributeMap(attrsMap map[string]interface{}) *pdata.AttributeMap {
 	attributeMap := pdata.NewAttributeMap()
 	if attrsMap == nil {
-		return attributeMap
+		return nil
 	}
 	for key, value := range attrsMap {
 		attributeMap.Insert(key, convertToAttributeValue(value))
 	}
-	return attributeMap
+	return &attributeMap
 }
 
 func convertToAttributeValue(value interface{}) pdata.AttributeValue {
