@@ -17,8 +17,6 @@ package internal
 var traceFile = &File{
 	Name: "trace",
 	imports: []string{
-		`"go.opentelemetry.io/collector/internal/data"`,
-		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
 		`otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"`,
 	},
 	testImports: []string{
@@ -50,7 +48,7 @@ var resourceSpansSlice = &sliceOfPtrs{
 
 var resourceSpans = &messageValueStruct{
 	structName:     "ResourceSpans",
-	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
+	description:    "// ResourceSpans is a collection of spans from a Resource.",
 	originFullName: "otlptrace.ResourceSpans",
 	fields: []baseField{
 		resourceField,
@@ -89,7 +87,7 @@ var spanSlice = &sliceOfPtrs{
 var span = &messageValueStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
-		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto#L37",
+		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
 	originFullName: "otlptrace.Span",
 	fields: []baseField{
 		traceIDField,
@@ -167,7 +165,8 @@ var spanLinkSlice = &sliceOfPtrs{
 var spanLink = &messageValueStruct{
 	structName: "SpanLink",
 	description: "// SpanLink is a pointer from the current span to another span in the same trace or in a\n" +
-		"// different trace. See OTLP for link definition.",
+		"// different trace.\n" +
+		"// See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
 	originFullName: "otlptrace.Span_Link",
 	fields: []baseField{
 		traceIDField,
@@ -180,8 +179,8 @@ var spanLink = &messageValueStruct{
 
 var spanStatus = &messageValueStruct{
 	structName: "SpanStatus",
-	description: "// SpanStatus is an optional final status for this span. Semantically when Status wasn't set\n" +
-		"// it is means span ended without errors and assume Status.Ok (code = 0).",
+	description: "// SpanStatus is an optional final status for this span. Semantically, when Status was not\n" +
+		"// set, that means the span ended without errors and to assume Status.Ok (code = 0).",
 	originFullName: "otlptrace.Status",
 	fields: []baseField{
 		&primitiveTypedField{

@@ -47,8 +47,6 @@ type ocReceiver struct {
 	corsOrigins        []string
 	grpcServerSettings configgrpc.GRPCServerSettings
 
-	traceReceiverOpts []octrace.Option
-
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
 
@@ -129,7 +127,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer)
 		if err != nil {
 			return
 		}
