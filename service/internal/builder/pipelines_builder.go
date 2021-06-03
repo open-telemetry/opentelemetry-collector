@@ -38,8 +38,18 @@ type builtPipeline struct {
 	// MutatesData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
 	MutatesData bool
+	btProcs     builtProcessors
+	processors  []component.Processor
+}
 
-	processors []component.Processor
+func (btPl *builtPipeline) Shutdown(ctx context.Context) error {
+	for i := len(btPl.processors) - 1; i >= 0; i-- {
+		btProc := btPl.btProcs[i]
+		if err := btProc.Shutdown(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
@@ -60,6 +70,43 @@ func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Ho
 		}
 		bp.logger.Info("Pipeline is started.")
 	}
+	return nil
+}
+
+func (bps BuiltPipelines) ReloadProcessors(ctx context.Context,
+	host component.Host,
+	buildInfo component.BuildInfo,
+	config *config.Config,
+	exporters Exporters,
+	factories map[config.Type]component.ProcessorFactory) error {
+	// Delete pipelines
+	delPls := make([]string, 0)
+	var err error
+	for name, btPl := range bps {
+		if config.Pipelines[name] == nil {
+			delPls = append(delPls, name)
+			continue
+		}
+
+		hostWrapper := newHostWrapper(host, btPl.logger)
+		for i := len(btPl.processors) - 1; i >= 0; i-- {
+			btProc := btPl.btProcs[i]
+			procCfg := config.Processors[btProc.id]
+
+			if err := btProc.Relaod(hostWrapper, ctx, procCfg); err != nil {
+				return fmt.Errorf("error when reload processor for pipeline:%v, during reload:%v", name, err)
+			}
+		}
+	}
+
+	for _, plName := range delPls {
+		btPl := bps[plName]
+		if err = btPl.Shutdown(ctx); err != nil {
+			return fmt.Errorf("error when shutdown pipeline:%v, during reload:%v", plName, err)
+		}
+		delete(bps, plName)
+	}
+
 	return nil
 }
 
@@ -146,7 +193,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	for i := len(pipelineCfg.Processors) - 1; i >= 0; i-- {
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
-		proc := btProcs[procName]
+		proc := btProcs[i]
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
@@ -204,6 +251,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		mc,
 		lc,
 		mutatesConsumedData,
+		btProcs,
 		processors,
 	}
 

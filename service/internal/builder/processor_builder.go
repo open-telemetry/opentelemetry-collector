@@ -12,6 +12,11 @@ import (
 )
 
 type builtProcessor struct {
+	dataType  config.DataType
+	cfg       config.Processor
+	factory   component.ProcessorFactory
+	buildInfo component.BuildInfo
+
 	tc consumer.Traces
 	mc consumer.Metrics
 	lc consumer.Logs
@@ -24,9 +29,10 @@ type builtProcessor struct {
 
 	mutatesData bool
 	processor   component.Processor
+	id          config.ComponentID
 }
 
-type builtProcessors map[config.ComponentID]*builtProcessor
+type builtProcessors map[int]*builtProcessor
 
 func (btProc *builtProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return btProc.tc.ConsumeTraces(ctx, td)
@@ -49,7 +55,96 @@ func (btProc *builtProcessor) Shutdown(ctx context.Context) error {
 }
 
 func (btProc *builtProcessor) Capabilities() consumer.Capabilities {
+	switch btProc.dataType {
+	case config.TracesDataType:
+		return btProc.tc.Capabilities()
+	case config.MetricsDataType:
+		return btProc.mc.Capabilities()
+	case config.LogsDataType:
+		return btProc.lc.Capabilities()
+	}
 	return consumer.Capabilities{btProc.mutatesData}
+}
+
+func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+	procCfg, ok := cfg.(config.Processor)
+	if !ok {
+		return fmt.Errorf("error when reaload processor:%q for invalid config:%v", btProc.id, cfg)
+	}
+
+	if procCfg.ID() != btProc.id {
+		return fmt.Errorf("error when reload processor:%q for invalid conf id:%v", btProc.id, procCfg.ID())
+	}
+
+	// TODO compare config to decide if reload is needed
+
+	if reloadableProc, ok := btProc.processor.(component.Reloadable); ok {
+		return reloadableProc.Relaod(host, ctx, cfg)
+	}
+
+	oldProcessor := btProc.processor
+
+	creationParams := component.ProcessorCreateParams{
+		Logger:    btProc.logger,
+		BuildInfo: btProc.buildInfo,
+	}
+
+	var err error
+	switch btProc.dataType {
+	case config.TracesDataType:
+		var proc component.TracesProcessor
+		proc, err = btProc.factory.CreateTracesProcessor(ctx, creationParams, procCfg, btProc.nextTc)
+
+		if proc != nil && err != nil {
+			err = proc.Start(ctx, host)
+		}
+
+		if proc != nil && err == nil {
+			btProc.mutatesData = proc.Capabilities().MutatesData
+			btProc.processor = proc
+			btProc.tc = proc
+		}
+	case config.MetricsDataType:
+		var proc component.MetricsProcessor
+		proc, err = btProc.factory.CreateMetricsProcessor(ctx, creationParams, procCfg, btProc.nextTc)
+
+		if proc != nil && err != nil {
+			err = proc.Start(ctx, host)
+		}
+
+		if proc != nil && err != nil {
+			btProc.mutatesData = proc.Capabilities().MutatesData
+			btProc.processor = proc
+			btProc.mc = proc
+		}
+	case config.LogsDataType:
+		var proc component.LogsProcessor
+		proc, err = btProc.factory.CreateLogsProcessor(ctx, creationParams, procCfg, btProc.nextTc)
+
+		if proc != nil && err != nil {
+			err = proc.Start(ctx, host)
+		}
+
+		if proc != nil && err != nil {
+			btProc.mutatesData = proc.Capabilities().MutatesData
+			btProc.processor = proc
+			btProc.lc = proc
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("error creating processor %q: during reload:%v", procCfg.ID(), err)
+	}
+
+	if err := btProc.Start(ctx, host); err != nil {
+		return fmt.Errorf("error when start processor:%q during reload:%v", btProc.id, err)
+	}
+
+	if err := oldProcessor.Shutdown(ctx); err != nil {
+		return fmt.Errorf("error when shutdown old processor:%q during reload:%v", btProc.id, err)
+	}
+
+	return nil
 }
 
 type processorsBuilder struct {
@@ -62,7 +157,7 @@ type processorsBuilder struct {
 func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataType config.DataType, processors []config.ComponentID) (builtProcessors, error) {
 	var err error
 	btProcs := make(builtProcessors)
-	for _, procId := range processors {
+	for i, procId := range processors {
 		procCfg := procBuilder.config.Processors[procId]
 		factory := procBuilder.factories[procCfg.ID().Type()]
 
@@ -81,24 +176,24 @@ func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataT
 			if proc != nil {
 				mutatesConsumedData = proc.Capabilities().MutatesData
 			}
-			btProc := &builtProcessor{proc, nil, nil, nextProc, nil, nil, creationParams.Logger, mutatesConsumedData, proc}
-			btProcs[procId] = btProc
+			btProc := &builtProcessor{config.TracesDataType, procCfg, factory, procBuilder.buildInfo, proc, nil, nil, nextProc, nil, nil, creationParams.Logger, mutatesConsumedData, proc, procId}
+			btProcs[i] = btProc
 		case config.MetricsDataType:
 			var proc component.MetricsProcessor
 			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, procCfg, nextProc)
 			if proc != nil {
 				mutatesConsumedData = proc.Capabilities().MutatesData
 			}
-			btProc := &builtProcessor{nil, proc, nil, nil, nextProc, nil, creationParams.Logger, mutatesConsumedData, proc}
-			btProcs[procId] = btProc
+			btProc := &builtProcessor{config.MetricsDataType, procCfg, factory, procBuilder.buildInfo, nil, proc, nil, nil, nextProc, nil, creationParams.Logger, mutatesConsumedData, proc, procId}
+			btProcs[i] = btProc
 		case config.LogsDataType:
 			var proc component.LogsProcessor
 			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, nextProc)
 			if proc != nil {
 				mutatesConsumedData = proc.Capabilities().MutatesData
 			}
-			btProc := &builtProcessor{nil, nil, proc, nil, nil, nextProc, creationParams.Logger, mutatesConsumedData, proc}
-			btProcs[procId] = btProc
+			btProc := &builtProcessor{config.LogsDataType, procCfg, factory, procBuilder.buildInfo, nil, nil, proc, nil, nil, nextProc, creationParams.Logger, mutatesConsumedData, proc, procId}
+			btProcs[i] = btProc
 		default:
 			return nil, fmt.Errorf("error creating processor %q , data type %s is not supported",
 				procId, dataType)

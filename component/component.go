@@ -60,6 +60,10 @@ type Component interface {
 	Shutdown(ctx context.Context) error
 }
 
+type Reloadable interface {
+	Relaod(host Host, ctx context.Context, config interface{}) error
+}
+
 // Kind represents component kinds.
 type Kind int
 
