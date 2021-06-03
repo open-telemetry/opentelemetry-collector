@@ -120,6 +120,30 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	checkRecordedMetricsForMetricsExporter(t, me, want)
 }
 
+func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	rCfg := DefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	qCfg.QueueSize = 2
+	wantErr := errors.New("some-error")
+	te, err := NewMetricsExporter(&fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	md := testdata.GenerateMetricsOneMetricOneDataPoint()
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		te.ConsumeMetrics(context.Background(), md)
+	}
+
+	// 2 batched must be in queue, and 5 metric points rejected due to queue overflow
+	checkExporterEnqueueFailedMetricsStats(t, fakeMetricsExporterName, int64(5))
+}
+
 func TestMetricsExporter_WithSpan(t *testing.T) {
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(nil))
 	require.NoError(t, err)

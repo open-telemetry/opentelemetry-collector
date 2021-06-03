@@ -27,16 +27,22 @@ const (
 	SentSpansKey = "sent_spans"
 	// FailedToSendSpansKey used to track spans that failed to be sent by exporters.
 	FailedToSendSpansKey = "send_failed_spans"
+	// FailedToEnqueueSpansKey used to track spans that failed to be added to the sending queue.
+	FailedToEnqueueSpansKey = "enqueue_failed_spans"
 
 	// SentMetricPointsKey used to track metric points sent by exporters.
 	SentMetricPointsKey = "sent_metric_points"
 	// FailedToSendMetricPointsKey used to track metric points that failed to be sent by exporters.
 	FailedToSendMetricPointsKey = "send_failed_metric_points"
+	// FailedToEnqueueMetricPointsKey used to track metric points that failed to be added to the sending queue.
+	FailedToEnqueueMetricPointsKey = "enqueue_failed_metric_points"
 
 	// SentLogRecordsKey used to track logs sent by exporters.
 	SentLogRecordsKey = "sent_log_records"
 	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
+	// FailedToEnqueueLogRecordsKey used to track logs records that failed to be added to the sending queue.
+	FailedToEnqueueLogRecordsKey = "enqueue_failed_log_records"
 )
 
 var (
@@ -60,6 +66,10 @@ var (
 		ExporterPrefix+FailedToSendSpansKey,
 		"Number of spans in failed attempts to send to destination.",
 		stats.UnitDimensionless)
+	ExporterFailedToEnqueueSpans = stats.Int64(
+		ExporterPrefix+FailedToEnqueueSpansKey,
+		"Number of spans failed to be added to the sending queue.",
+		stats.UnitDimensionless)
 	ExporterSentMetricPoints = stats.Int64(
 		ExporterPrefix+SentMetricPointsKey,
 		"Number of metric points successfully sent to destination.",
@@ -68,6 +78,10 @@ var (
 		ExporterPrefix+FailedToSendMetricPointsKey,
 		"Number of metric points in failed attempts to send to destination.",
 		stats.UnitDimensionless)
+	ExporterFailedToEnqueueMetricPoints = stats.Int64(
+		ExporterPrefix+FailedToEnqueueMetricPointsKey,
+		"Number of metric points failed to be added to the sending queue.",
+		stats.UnitDimensionless)
 	ExporterSentLogRecords = stats.Int64(
 		ExporterPrefix+SentLogRecordsKey,
 		"Number of log record successfully sent to destination.",
@@ -75,5 +89,9 @@ var (
 	ExporterFailedToSendLogRecords = stats.Int64(
 		ExporterPrefix+FailedToSendLogRecordsKey,
 		"Number of log records in failed attempts to send to destination.",
+		stats.UnitDimensionless)
+	ExporterFailedToEnqueueLogRecords = stats.Int64(
+		ExporterPrefix+FailedToEnqueueLogRecordsKey,
+		"Number of log records failed to be added to the sending queue.",
 		stats.UnitDimensionless)
 )
