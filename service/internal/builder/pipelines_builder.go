@@ -89,6 +89,7 @@ func (bps BuiltPipelines) ReloadProcessors(ctx context.Context,
 		}
 
 		hostWrapper := newHostWrapper(host, btPl.logger)
+		// TODO support add and delete processors
 		for i := len(btPl.processors) - 1; i >= 0; i-- {
 			btProc := btPl.btProcs[i]
 			procCfg := config.Processors[btProc.id]
@@ -262,7 +263,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterIDs []config.ComponentID) []*builtExporter {
 	var result []*builtExporter
 	for _, name := range exporterIDs {
-		exporter := pb.exporters[pb.config.Exporters[name]]
+		exporter := pb.exporters[name]
 		result = append(result, exporter)
 	}
 

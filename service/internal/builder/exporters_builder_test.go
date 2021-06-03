@@ -65,7 +65,7 @@ func TestBuildExporters(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[cfg.Exporters[config.NewID("opencensus")]]
+	e1 := exporters[config.NewID("opencensus")]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -93,7 +93,7 @@ func TestBuildExporters(t *testing.T) {
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
-	e1 = exporters[cfg.Exporters[config.NewID("opencensus")]]
+	e1 = exporters[config.NewID("opencensus")]
 
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
@@ -132,7 +132,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[cfg.Exporters[config.NewID("exampleexporter")]]
+	e1 := exporters[config.NewID("exampleexporter")]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -156,7 +156,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
-	e1 = exporters[cfg.Exporters[config.NewID("exampleexporter")]]
+	e1 = exporters[config.NewID("exampleexporter")]
 
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
@@ -172,7 +172,7 @@ func TestBuildExporters_StartAll(t *testing.T) {
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
-	exporters[expCfg] = &builtExporter{
+	exporters[expCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
 			config.TracesDataType:  traceExporter,
@@ -197,7 +197,7 @@ func TestBuildExporters_StopAll(t *testing.T) {
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
-	exporters[expCfg] = &builtExporter{
+	exporters[expCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
 			config.TracesDataType:  traceExporter,

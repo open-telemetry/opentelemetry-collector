@@ -120,7 +120,7 @@ func testReceivers(
 	var exporters []*builtExporter
 	for _, name := range test.exporterIDs {
 		// Ensure exporter is created.
-		exp := allExporters[cfg.Exporters[name]]
+		exp := allExporters[name]
 		require.NotNil(t, exp)
 		exporters = append(exporters, exp)
 	}
@@ -129,7 +129,7 @@ func testReceivers(
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
+		consumer := exporter.getTracesExporter().(*exporterWrapper).tc.(*testcomponents.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
@@ -149,7 +149,7 @@ func testReceivers(
 	// Now verify received data.
 	for _, name := range test.exporterIDs {
 		// Check that the data is received by exporter.
-		exporter := allExporters[cfg.Exporters[name]]
+		exporter := allExporters[name]
 
 		// Validate traces.
 		if test.hasTraces {
@@ -160,7 +160,7 @@ func testReceivers(
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
+			traceConsumer := exporter.getTracesExporter().(*exporterWrapper).tc.(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
@@ -170,7 +170,7 @@ func testReceivers(
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.getMetricExporter().(*testcomponents.ExampleExporterConsumer)
+			metricsConsumer := exporter.getMetricExporter().(*exporterWrapper).mc.(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assert.EqualValues(t, md, metricsConsumer.Metrics[0])
 		}
@@ -227,7 +227,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			var exporters []*builtExporter
 			for _, name := range exporterNames {
 				// Ensure exporter is created.
-				exp := allExporters[cfg.Exporters[name]]
+				exp := allExporters[name]
 				require.NotNil(t, exp)
 				exporters = append(exporters, exp)
 			}
@@ -236,7 +236,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 			// First check that there are no traces in the exporters yet.
 			for _, exporter := range exporters {
-				consumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
+				consumer := exporter.getLogExporter().(*exporterWrapper).lc.(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
 
@@ -248,10 +248,10 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			// Now verify received data.
 			for _, name := range exporterNames {
 				// Check that the data is received by exporter.
-				exporter := allExporters[cfg.Exporters[name]]
+				exporter := allExporters[name]
 
 				// Validate exported data.
-				consumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
+				consumer := exporter.getLogExporter().(*exporterWrapper).lc.(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, 1, len(consumer.Logs))
 				assert.EqualValues(t, log, consumer.Logs[0])
 			}

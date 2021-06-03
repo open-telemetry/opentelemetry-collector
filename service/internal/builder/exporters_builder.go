@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -84,7 +85,7 @@ func (bexp *builtExporter) getLogExporter() component.LogsExporter {
 }
 
 // Exporters is a map of exporters created from exporter configs.
-type Exporters map[config.Exporter]*builtExporter
+type Exporters map[config.ComponentID]*builtExporter
 
 // StartAll starts all exporters.
 func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
@@ -120,9 +121,9 @@ func (exps Exporters) ToMapByDataType() map[config.DataType]map[config.Component
 	exportersMap[config.MetricsDataType] = make(map[config.ComponentID]component.Exporter, len(exps))
 	exportersMap[config.LogsDataType] = make(map[config.ComponentID]component.Exporter, len(exps))
 
-	for cfg, bexp := range exps {
+	for id, bexp := range exps {
 		for t, exp := range bexp.expByDataType {
-			exportersMap[t][cfg.ID()] = exp
+			exportersMap[t][id] = exp
 		}
 	}
 
@@ -138,7 +139,7 @@ type dataTypeRequirement struct {
 type dataTypeRequirements map[config.DataType]dataTypeRequirement
 
 // Data type requirements for all exporters.
-type exportersRequiredDataTypes map[config.Exporter]dataTypeRequirements
+type exportersRequiredDataTypes map[config.ComponentID]dataTypeRequirements
 
 // exportersBuilder builds exporters from config.
 type exportersBuilder struct {
@@ -163,14 +164,14 @@ func BuildExporters(
 
 	exporters := make(Exporters)
 	// BuildExporters exporters based on configuration and required input data types.
-	for _, cfg := range eb.config.Exporters {
+	for id, cfg := range eb.config.Exporters {
 		componentLogger := eb.logger.With(zap.Stringer(zapNameKey, cfg.ID()))
 		exp, err := eb.buildExporter(context.Background(), componentLogger, eb.buildInfo, cfg, exporterInputDataTypes)
 		if err != nil {
 			return nil, err
 		}
 
-		exporters[cfg] = exp
+		exporters[id] = exp
 	}
 
 	return exporters, nil
@@ -194,16 +195,16 @@ func (eb *exportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 		// Iterate over all exporters for this pipeline.
 		for _, expName := range pipeline.Exporters {
 			// Find the exporter config by name.
-			exporter := eb.config.Exporters[expName]
+			// exporter := eb.config.Exporters[expName]
 
 			// Create the data type requirement for the exporter if it does not exist.
-			if result[exporter] == nil {
-				result[exporter] = make(dataTypeRequirements)
+			if result[expName] == nil {
+				result[expName] = make(dataTypeRequirements)
 			}
 
 			// Remember that this data type is required for the exporter and also which
 			// pipeline the requirement is coming from.
-			result[exporter][pipeline.InputType] = dataTypeRequirement{pipeline}
+			result[expName][pipeline.InputType] = dataTypeRequirement{pipeline}
 		}
 	}
 	return result
@@ -226,7 +227,7 @@ func (eb *exportersBuilder) buildExporter(
 		expByDataType: make(map[config.DataType]component.Exporter, 3),
 	}
 
-	inputDataTypes := exportersInputDataTypes[cfg]
+	inputDataTypes := exportersInputDataTypes[cfg.ID()]
 	if inputDataTypes == nil {
 		eb.logger.Info("Ignoring exporter as it is not used by any pipeline")
 		return exporter, nil
@@ -239,17 +240,15 @@ func (eb *exportersBuilder) buildExporter(
 
 	var err error
 	var createdExporter component.Exporter
+
 	for dataType, requirement := range inputDataTypes {
 		switch dataType {
 		case config.TracesDataType:
 			createdExporter, err = factory.CreateTracesExporter(ctx, creationParams, cfg)
-
 		case config.MetricsDataType:
 			createdExporter, err = factory.CreateMetricsExporter(ctx, creationParams, cfg)
-
 		case config.LogsDataType:
 			createdExporter, err = factory.CreateLogsExporter(ctx, creationParams, cfg)
-
 		default:
 			// Could not create because this exporter does not support this data type.
 			return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
@@ -268,7 +267,14 @@ func (eb *exportersBuilder) buildExporter(
 			return nil, fmt.Errorf("factory for %v produced a nil exporter", cfg.ID())
 		}
 
-		exporter.expByDataType[dataType] = createdExporter
+		switch dataType {
+		case config.TracesDataType:
+			exporter.expByDataType[dataType] = &exporterWrapper{dataType, nil, createdExporter.(consumer.Traces), nil, createdExporter}
+		case config.MetricsDataType:
+			exporter.expByDataType[dataType] = &exporterWrapper{dataType, createdExporter.(consumer.Metrics), nil, nil, createdExporter}
+		case config.LogsDataType:
+			exporter.expByDataType[dataType] = &exporterWrapper{dataType, nil, nil, createdExporter.(consumer.Logs), createdExporter}
+		}
 	}
 
 	eb.logger.Info("Exporter was built.", zap.Stringer("exporter", cfg.ID()))
