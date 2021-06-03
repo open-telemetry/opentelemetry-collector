@@ -60,8 +60,8 @@ import (
 var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, set)
 	require.NotNil(t, jr)
 }
 
@@ -146,8 +146,8 @@ func TestReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -175,8 +175,8 @@ func TestPortsNotOpen(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -204,8 +204,8 @@ func TestGRPCReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -259,8 +259,8 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -392,8 +392,8 @@ func TestSampling(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -443,8 +443,8 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -471,8 +471,8 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 }
@@ -530,7 +530,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg.Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 	}
-	exp, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), newAssertNoErrorHost(t)))
 	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })

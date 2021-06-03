@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,7 +38,7 @@ type ExampleExporter struct {
 }
 
 // Unmarshal a viper data into the config struct
-func (cfg *ExampleExporter) Unmarshal(componentParser *config.Parser) error {
+func (cfg *ExampleExporter) Unmarshal(componentParser *configparser.Parser) error {
 	return componentParser.UnmarshalExact(cfg)
 }
 
@@ -63,7 +64,7 @@ func createExporterDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.TracesExporter, error) {
 	return &ExampleExporterConsumer{}, nil
@@ -71,7 +72,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.MetricsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
@@ -79,7 +80,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.LogsExporter, error) {
 	return &ExampleExporterConsumer{}, nil

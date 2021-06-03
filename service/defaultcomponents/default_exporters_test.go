@@ -163,7 +163,7 @@ type getExporterConfigFn func() config.Exporter
 func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateParams := component.ExporterCreateParams{
+	expCreateSettings := component.ExporterCreateSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: component.DefaultBuildInfo(),
 	}
@@ -182,7 +182,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 	for i := 0; i < 2; i++ {
 		var exps []component.Exporter
 		for _, createFn := range createFns {
-			exp, err := createFn(ctx, expCreateParams, cfg)
+			exp, err := createFn(ctx, expCreateSettings, cfg)
 			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 				continue
 			}
@@ -198,24 +198,24 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 
 type createExporterFn func(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.Exporter, error)
 
 func wrapCreateLogsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.Exporter, error) {
-		return factory.CreateLogsExporter(ctx, params, cfg)
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.Exporter, error) {
+		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateTracesExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.Exporter, error) {
-		return factory.CreateTracesExporter(ctx, params, cfg)
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.Exporter, error) {
+		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateMetricsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.Exporter, error) {
-		return factory.CreateMetricsExporter(ctx, params, cfg)
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.Exporter, error) {
+		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

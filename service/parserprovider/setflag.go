@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 const setFlagFileType = "properties"
@@ -41,7 +41,7 @@ func NewSetFlag(base ParserProvider) ParserProvider {
 	}
 }
 
-func (sfl *setFlagProvider) Get() (*config.Parser, error) {
+func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
 		return sfl.base.Get()
@@ -54,7 +54,7 @@ func (sfl *setFlagProvider) Get() (*config.Parser, error) {
 			return nil, err
 		}
 	}
-	viperFlags := viper.NewWithOptions(viper.KeyDelimiter(config.KeyDelimiter))
+	viperFlags := viper.NewWithOptions(viper.KeyDelimiter(configparser.KeyDelimiter))
 	viperFlags.SetConfigType(setFlagFileType)
 	if err := viperFlags.ReadConfig(b); err != nil {
 		return nil, fmt.Errorf("failed to read set flag config: %v", err)
@@ -84,7 +84,7 @@ func (sfl *setFlagProvider) Get() (*config.Parser, error) {
 
 	rootKeys := map[string]struct{}{}
 	for _, k := range viperFlags.AllKeys() {
-		keys := strings.Split(k, config.KeyDelimiter)
+		keys := strings.Split(k, configparser.KeyDelimiter)
 		if len(keys) > 0 {
 			rootKeys[keys[0]] = struct{}{}
 		}

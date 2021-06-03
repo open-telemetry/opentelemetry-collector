@@ -101,11 +101,11 @@ func (or *OCDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consu
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	var err error
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	if or.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc); err != nil {
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	if or.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
-	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
+	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc); err != nil {
 		return err
 	}
 	if err = or.traceReceiver.Start(context.Background(), or); err != nil {
@@ -154,8 +154,8 @@ func (jr *JaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", jr.Port), Transport: "tcp"},
 	}
 	var err error
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
 	}
@@ -201,14 +201,14 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		cfg.GRPC = nil
 	}
 	var err error
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc); err != nil {
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
-	if bor.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
+	if bor.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc); err != nil {
 		return err
 	}
-	if bor.logReceiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, lc); err != nil {
+	if bor.logReceiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc); err != nil {
 		return err
 	}
 
@@ -296,9 +296,9 @@ func (zr *ZipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	var err error
-	zr.receiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
+	zr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 
 	if err != nil {
 		return err
@@ -359,8 +359,8 @@ func (dr *PrometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 		}},
 	}
 	var err error
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
+	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err
 	}

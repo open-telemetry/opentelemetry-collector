@@ -39,8 +39,8 @@ func TestCreateReceiver(t *testing.T) {
 
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
-	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	mReceiver, _ := createMetricsReceiver(context.Background(), creationParams, cfg, nil)
+	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mReceiver)
 }
 
@@ -50,7 +50,7 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_sd.yaml"), factories)
+	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_sd.yaml"), factories)
 
 	assert.NoError(t, err)
 }

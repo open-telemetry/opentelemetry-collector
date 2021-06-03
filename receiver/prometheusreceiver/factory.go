@@ -52,9 +52,9 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return newPrometheusReceiver(params.Logger, cfg.(*Config), nextConsumer), nil
+	return newPrometheusReceiver(set.Logger, cfg.(*Config), nextConsumer), nil
 }

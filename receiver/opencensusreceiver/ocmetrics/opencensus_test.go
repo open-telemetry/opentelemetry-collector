@@ -43,7 +43,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -58,7 +57,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
 	expCfg.Endpoint = addr.String()
 	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
+	oce, err := expFactory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
 	err = oce.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -365,7 +364,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (net.Addr, func()
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
-	srv := obsreport.GRPCServerWithObservabilityEnabled()
+	srv := grpc.NewServer()
 	agentmetricspb.RegisterMetricsServiceServer(srv, oci)
 	go func() {
 		_ = srv.Serve(ln)

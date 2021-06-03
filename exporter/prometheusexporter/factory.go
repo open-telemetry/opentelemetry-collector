@@ -48,19 +48,19 @@ func createDefaultConfig() config.Exporter {
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
-	prometheus, err := newPrometheusExporter(pcfg, params.Logger)
+	prometheus, err := newPrometheusExporter(pcfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		prometheus.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(prometheus.Start),
