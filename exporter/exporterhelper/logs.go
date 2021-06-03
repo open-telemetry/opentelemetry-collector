@@ -111,8 +111,8 @@ type logsExporterWithObservability struct {
 }
 
 func (lewo *logsExporterWithObservability) send(req request) error {
-	req.setContext(lewo.obsrep.StartLogsExportOp(req.context()))
+	req.setContext(lewo.obsrep.StartLogsOp(req.context()))
 	err := lewo.nextSender.send(req)
-	lewo.obsrep.EndLogsExportOp(req.context(), req.count(), err)
+	lewo.obsrep.EndLogsOp(req.context(), req.count(), err)
 	return err
 }

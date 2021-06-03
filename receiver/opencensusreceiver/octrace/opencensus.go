@@ -46,21 +46,16 @@ type Receiver struct {
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(id config.ComponentID, nextConsumer consumer.Traces, opts ...Option) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Traces) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	ocr := &Receiver{
+	return &Receiver{
 		nextConsumer: nextConsumer,
 		id:           id,
 		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
-	}
-	for _, opt := range opts {
-		opt(ocr)
-	}
-
-	return ocr, nil
+	}, nil
 }
 
 var _ agenttracepb.TraceServiceServer = (*Receiver)(nil)
@@ -144,12 +139,12 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
-	ctx := ocr.obsrecv.StartTraceDataReceiveOp(
+	ctx := ocr.obsrecv.StartTracesOp(
 		longLivedRPCCtx,
 		obsreport.WithLongLivedCtx())
 
 	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
-	ocr.obsrecv.EndTraceDataReceiveOp(ctx, receiverDataFormat, td.SpanCount(), err)
+	ocr.obsrecv.EndTracesOp(ctx, receiverDataFormat, td.SpanCount(), err)
 
 	return err
 }

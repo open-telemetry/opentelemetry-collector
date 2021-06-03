@@ -37,7 +37,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	tReceiver, err := createTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		cfg,
 		consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
@@ -45,7 +45,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	tReceiver, err = createTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		cfg,
 		consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")

@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -54,8 +53,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }
@@ -64,10 +63,10 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		name            string
-		config          Config
-		mustFail        bool
-		mustFailOnStart bool
+		name             string
+		config           Config
+		mustFailOnCreate bool
+		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
@@ -77,7 +76,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					Endpoint: "",
 				},
 			},
-			mustFail: true,
+			mustFailOnCreate: true,
 		},
 		{
 			name: "UseSecure",
@@ -131,45 +130,33 @@ func TestCreateTracesExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail:        false,
-			mustFailOnStart: true,
-		},
-		{
-			name: "ErrorWithAuthAndNoExtensionConfiguration",
-			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: endpoint,
-					Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
-				},
-			},
-			mustFail:        false,
-			mustFailOnStart: true,
+			mustFailOnCreate: false,
+			mustFailOnStart:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
+			set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+			consumer, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
 
-			if tt.mustFail {
+			if tt.mustFailOnCreate {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, consumer)
-				err = consumer.Start(context.Background(), componenttest.NewNopHost())
-				if tt.mustFailOnStart {
-					assert.Error(t, err)
-				}
+				return
+			}
+			assert.NoError(t, err)
+			assert.NotNil(t, consumer)
+			err = consumer.Start(context.Background(), componenttest.NewNopHost())
+			if tt.mustFailOnStart {
+				assert.Error(t, err)
+			}
 
-				err = consumer.Shutdown(context.Background())
-				if err != nil {
-					// Since the endpoint of OTLP exporter doesn't actually exist,
-					// exporter may already stop because it cannot connect.
-					assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
-				}
+			err = consumer.Shutdown(context.Background())
+			if err != nil {
+				// Since the endpoint of OTLP exporter doesn't actually exist,
+				// exporter may already stop because it cannot connect.
+				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
 			}
 		})
 	}
@@ -180,8 +167,8 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }

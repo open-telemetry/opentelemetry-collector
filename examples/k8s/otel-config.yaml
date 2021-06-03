@@ -15,7 +15,7 @@ data:
           http:
     exporters:
       otlp:
-        endpoint: "otel-collector.default:55680" # TODO: Update me
+        endpoint: "otel-collector.default:4317"
         insecure: true
         sending_queue:
           num_consumers: 4
@@ -78,7 +78,7 @@ spec:
             memory: 100Mi
         ports:
         - containerPort: 55679 # ZPages endpoint.
-        - containerPort: 55680 # Default OpenTelemetry receiver port.
+        - containerPort: 4317 # Default OpenTelemetry receiver port.
         - containerPort: 8888  # Metrics.
         volumeMounts:
         - name: otel-agent-config-vol
@@ -159,9 +159,9 @@ metadata:
 spec:
   ports:
   - name: otlp # Default endpoint for OpenTelemetry receiver.
-    port: 55680
+    port: 4317
     protocol: TCP
-    targetPort: 55680
+    targetPort: 4317
   - name: jaeger-grpc # Default endpoint for Jaeger gRPC receiver
     port: 14250
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
@@ -211,7 +211,7 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55679 # Default endpoint for ZPages.
-        - containerPort: 55680 # Default endpoint for OpenTelemetry receiver.
+        - containerPort: 4317 # Default endpoint for OpenTelemetry receiver.
         - containerPort: 14250 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.

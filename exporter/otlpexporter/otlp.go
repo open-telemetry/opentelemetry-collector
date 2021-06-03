@@ -49,41 +49,35 @@ func newExporter(cfg config.Exporter) (*exporter, error) {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
 
-	e := &exporter{}
-	e.config = oCfg
-	return e, nil
+	return &exporter{config: oCfg}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporter) start(_ context.Context, host component.Host) error {
-	w, err := newGrpcSender(e.config, host.GetExtensions())
-	if err != nil {
-		return err
-	}
-	e.w = w
-	return nil
+func (e *exporter) start(_ context.Context, _ component.Host) (err error) {
+	e.w, err = newGrpcSender(e.config)
+	return
 }
 
 func (e *exporter) shutdown(context.Context) error {
 	return e.w.stop()
 }
 
-func (e *exporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	if err := e.w.exportTrace(ctx, td); err != nil {
 		return fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
 	}
 	return nil
 }
 
-func (e *exporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 	if err := e.w.exportMetrics(ctx, md); err != nil {
 		return fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
 	}
 	return nil
 }
 
-func (e *exporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
+func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 	if err := e.w.exportLogs(ctx, ld); err != nil {
 		return fmt.Errorf("failed to push log data via OTLP exporter: %w", err)
 	}
@@ -100,8 +94,8 @@ type grpcSender struct {
 	callOptions    []grpc.CallOption
 }
 
-func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extension) (*grpcSender, error) {
-	dialOpts, err := config.GRPCClientSettings.ToDialOptions(ext)
+func newGrpcSender(config *Config) (*grpcSender, error) {
+	dialOpts, err := config.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
 	}

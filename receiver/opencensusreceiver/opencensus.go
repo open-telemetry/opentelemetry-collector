@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver/ocmetrics"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver/octrace"
 )
@@ -47,8 +46,6 @@ type ocReceiver struct {
 	gatewayMux         *gatewayruntime.ServeMux
 	corsOrigins        []string
 	grpcServerSettings configgrpc.GRPCServerSettings
-
-	traceReceiverOpts []octrace.Option
 
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
@@ -130,7 +127,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer)
 		if err != nil {
 			return
 		}
@@ -177,7 +174,7 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 		if err != nil {
 			return nil, err
 		}
-		ocr.serverGRPC = obsreport.GRPCServerWithObservabilityEnabled(opts...)
+		ocr.serverGRPC = grpc.NewServer(opts...)
 	}
 
 	return ocr.serverGRPC, nil

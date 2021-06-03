@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -67,14 +66,6 @@ func TestDefaultExtensions(t *testing.T) {
 				return cfg
 			},
 		},
-		{
-			extension: "bearertokenauth",
-			getConfigFn: func() config.Extension {
-				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
-				cfg.BearerToken = "dummysecret"
-				return cfg
-			},
-		},
 	}
 
 	// we have one more extension that we can't test here: the OIDC Auth extension requires
@@ -104,7 +95,7 @@ type getExtensionConfigFn func() config.Extension
 func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	extCreateParams := component.ExtensionCreateParams{
+	extCreateSet := component.ExtensionCreateSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: component.DefaultBuildInfo(),
 	}
@@ -113,12 +104,12 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		getConfigFn = factory.CreateDefaultConfig
 	}
 
-	firstExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	firstExt, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
 	require.NoError(t, err)
 	require.NoError(t, firstExt.Start(ctx, host))
 	require.NoError(t, firstExt.Shutdown(ctx))
 
-	secondExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	secondExt, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
 	require.NoError(t, err)
 	require.NoError(t, secondExt.Start(ctx, host))
 	require.NoError(t, secondExt.Shutdown(ctx))

@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 		Format:             "proto",
 		DefaultServiceName: "test_name",
 	}, e1)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err = factory.CreateTracesExporter(context.Background(), params, e1)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	_, err = factory.CreateTracesExporter(context.Background(), set, e1)
 	require.NoError(t, err)
 }

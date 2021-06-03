@@ -74,19 +74,15 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
-		clientSettings:  &cfg.HTTPClientSettings,
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:  &cfg.HTTPClientSettings,
 	}, nil
 }
 
-// Start creates the http client
-func (prwe *PRWExporter) Start(_ context.Context, host component.Host) error {
-	client, err := prwe.clientSettings.ToClient(host.GetExtensions())
-	if err != nil {
-		return err
-	}
-	prwe.client = client
-	return nil
+// Start creates the prometheus client
+func (prwe *PRWExporter) Start(_ context.Context, _ component.Host) (err error) {
+	prwe.client, err = prwe.clientSettings.ToClient()
+	return err
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations

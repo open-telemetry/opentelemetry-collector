@@ -16,6 +16,7 @@ package fileexporter
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -30,7 +31,6 @@ import (
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestFileTracesExporter(t *testing.T) {
@@ -51,9 +51,7 @@ func TestFileTracesExporter(t *testing.T) {
 }
 
 func TestFileTracesExporterError(t *testing.T) {
-	mf := &testutil.LimitedWriter{
-		MaxLen: 42,
-	}
+	mf := &errorWriter{}
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
@@ -81,9 +79,7 @@ func TestFileMetricsExporter(t *testing.T) {
 }
 
 func TestFileMetricsExporterError(t *testing.T) {
-	mf := &testutil.LimitedWriter{
-		MaxLen: 42,
-	}
+	mf := &errorWriter{}
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
@@ -111,9 +107,7 @@ func TestFileLogsExporter(t *testing.T) {
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
-	mf := &testutil.LimitedWriter{
-		MaxLen: 42,
-	}
+	mf := &errorWriter{}
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
@@ -131,4 +125,16 @@ func tempFileName(t *testing.T) string {
 	socket := tmpfile.Name()
 	require.NoError(t, os.Remove(socket))
 	return socket
+}
+
+// errorWriter is an io.Writer that will return an error all ways
+type errorWriter struct {
+}
+
+func (e errorWriter) Write(p []byte) (n int, err error) {
+	return 0, errors.New("all ways return error")
+}
+
+func (e *errorWriter) Close() error {
+	return nil
 }

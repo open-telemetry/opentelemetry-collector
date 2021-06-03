@@ -120,13 +120,13 @@ func newJaegerReceiver(
 	id config.ComponentID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	params component.ReceiverCreateParams,
+	set component.ReceiverCreateSettings,
 ) *jReceiver {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
-		logger:       params.Logger,
+		logger:       set.Logger,
 		grpcObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: grpcTransport}),
 		httpObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: collectorHTTPTransport}),
 	}
@@ -245,10 +245,10 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
 	ctx = obsreport.ReceiverContext(ctx, h.id, h.transport)
-	ctx = h.obsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = h.obsrecv.StartTracesOp(ctx)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
-	h.obsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+	h.obsrecv.EndTracesOp(ctx, thriftFormat, numSpans, err)
 	return err
 }
 
@@ -273,12 +273,12 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, grpcTransport)
-	ctx = jr.grpcObsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = jr.grpcObsrecv.StartTracesOp(ctx)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
 
 	err := jr.nextConsumer.ConsumeTraces(ctx, td)
-	jr.grpcObsrecv.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
+	jr.grpcObsrecv.EndTracesOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	// Start upstream grpc client before serving sampling endpoints over HTTP
 	if jr.config.RemoteSamplingClientSettings.Endpoint != "" {
-		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host.GetExtensions())
+		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions()
 		if err != nil {
 			jr.logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
 			return err
@@ -423,12 +423,12 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, jr.id, collectorHTTPTransport)
-	ctx = jr.httpObsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = jr.httpObsrecv.StartTracesOp(ctx)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {
 		http.Error(w, html.EscapeString(hErr.msg), hErr.statusCode)
-		jr.httpObsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
+		jr.httpObsrecv.EndTracesOp(ctx, thriftFormat, 0, hErr)
 		return
 	}
 
@@ -438,7 +438,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	} else {
 		w.WriteHeader(http.StatusAccepted)
 	}
-	jr.httpObsrecv.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+	jr.httpObsrecv.EndTracesOp(ctx, thriftFormat, numSpans, err)
 }
 
 func (jr *jReceiver) startCollector(host component.Host) error {

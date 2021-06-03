@@ -50,8 +50,8 @@ type GRPCClientAuthenticator interface {
 // This should be only used by HTTP clients.
 func GetHTTPClientAuthenticator(extensions map[config.ComponentID]component.Extension,
 	componentID config.ComponentID) (HTTPClientAuthenticator, error) {
-	for name, ext := range extensions {
-		if name == componentID {
+	for id, ext := range extensions {
+		if id == componentID {
 			if auth, ok := ext.(HTTPClientAuthenticator); ok {
 				return auth, nil
 			}
@@ -66,8 +66,8 @@ func GetHTTPClientAuthenticator(extensions map[config.ComponentID]component.Exte
 // This should only be used by gRPC clients.
 func GetGRPCClientAuthenticator(extensions map[config.ComponentID]component.Extension,
 	componentID config.ComponentID) (GRPCClientAuthenticator, error) {
-	for name, ext := range extensions {
-		if name == componentID {
+	for id, ext := range extensions {
+		if id == componentID {
 			if auth, ok := ext.(GRPCClientAuthenticator); ok {
 				return auth, nil
 			}

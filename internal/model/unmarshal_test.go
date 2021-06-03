@@ -23,19 +23,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TestTracesDecoder_SerializeError(t *testing.T) {
-	translate := &mockTranslator{}
-	serialize := &mockSerializer{}
+func TestTracesUnmarshal_EncodingError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
 
-	d := &TracesUnmarshaler{
-		translate: translate,
-		serialize: serialize,
-	}
-
+	d := NewTracesUnmarshaler(encoder, translator)
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
-	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, errors.New("decode failed"))
+	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, errors.New("decode failed"))
 
 	_, err := d.Unmarshal(expectedBytes)
 
@@ -43,20 +39,16 @@ func TestTracesDecoder_SerializeError(t *testing.T) {
 	assert.EqualError(t, err, "unmarshal failed: decode failed")
 }
 
-func TestTracesDecoder_TranslationError(t *testing.T) {
-	translate := &mockTranslator{}
-	serialize := &mockSerializer{}
+func TestTracesUnmarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
 
-	d := &TracesUnmarshaler{
-		translate: translate,
-		serialize: serialize,
-	}
-
+	d := NewTracesUnmarshaler(encoder, translator)
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
-	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, nil)
-	translate.On("DecodeTraces", expectedModel).Return(pdata.NewTraces(), errors.New("translation failed"))
+	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToTraces", expectedModel).Return(pdata.NewTraces(), errors.New("translation failed"))
 
 	_, err := d.Unmarshal(expectedBytes)
 
@@ -64,21 +56,17 @@ func TestTracesDecoder_TranslationError(t *testing.T) {
 	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
 }
 
-func TestTracesDecoder_Decode(t *testing.T) {
-	translate := &mockTranslator{}
-	serialize := &mockSerializer{}
+func TestTracesUnmarshal_Decode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
 
-	d := &TracesUnmarshaler{
-		translate: translate,
-		serialize: serialize,
-	}
-
+	d := NewTracesUnmarshaler(encoder, translator)
 	expectedTraces := pdata.NewTraces()
 	expectedBytes := []byte{1, 2, 3}
 	expectedModel := struct{}{}
 
-	serialize.On("UnmarshalTraces", expectedBytes).Return(expectedModel, nil)
-	translate.On("DecodeTraces", expectedModel).Return(expectedTraces, nil)
+	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToTraces", expectedModel).Return(expectedTraces, nil)
 
 	actualTraces, err := d.Unmarshal(expectedBytes)
 

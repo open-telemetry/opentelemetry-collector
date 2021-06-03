@@ -77,9 +77,9 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md pdata.Metrics) err
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
+	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, err)
+	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
 
 	return err
 }

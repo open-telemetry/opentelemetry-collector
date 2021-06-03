@@ -75,8 +75,8 @@ func newOcExporter(_ context.Context, cfg *Config) (*ocExporter, error) {
 }
 
 // start creates the gRPC client Connection
-func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
-	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host.GetExtensions())
+func (oce *ocExporter) start(ctx context.Context, _ component.Host) error {
+	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func newMetricsExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
 	return oce, nil
 }
 
-func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
+func (oce *ocExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 	// Get first available trace Client.
 	tClient, ok := <-oce.tracesClients
 	if !ok {
@@ -196,7 +196,7 @@ func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
 	return nil
 }
 
-func (oce *ocExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
+func (oce *ocExporter) pushMetrics(_ context.Context, md pdata.Metrics) error {
 	// Get first available mClient.
 	mClient, ok := <-oce.metricsClients
 	if !ok {

@@ -16,7 +16,7 @@ package config
 
 // Receiver is the configuration of a receiver. Specific receivers must implement this
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
-// Embedded validatable will force each receiver to implement Validate() function
+// Embedded validatable will force each receiver to implement Validate() function.
 type Receiver interface {
 	identifiable
 	validatable

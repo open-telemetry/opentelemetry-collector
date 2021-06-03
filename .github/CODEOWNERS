@@ -13,3 +13,7 @@
 #
 
 * @open-telemetry/collector-approvers
+
+exporter/prometheusexporter @open-telemetry/collector-approvers @alolita @Aneurysm9 @dashpole @rakyll
+exporter/prometheusremotewriteexporter @open-telemetry/collector-approvers @alolita @Aneurysm9 @dashpole @rakyll
+receiver/prometheusreceiver @open-telemetry/collector-approvers @alolita @Aneurysm9 @dashpole @rakyll

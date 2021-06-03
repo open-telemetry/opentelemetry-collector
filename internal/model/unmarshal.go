@@ -18,23 +18,33 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/model/serializer"
-	"go.opentelemetry.io/collector/internal/model/translator"
 )
 
 // TracesUnmarshaler unmarshalls bytes into pdata.Traces.
-type TracesUnmarshaler struct {
-	translate translator.TracesDecoder
-	serialize serializer.TracesUnmarshaler
+type TracesUnmarshaler interface {
+	Unmarshal(buf []byte) (pdata.Traces, error)
+}
+
+type tracesUnmarshaler struct {
+	encoder    TracesDecoder
+	translator ToTracesTranslator
+}
+
+// NewTracesUnmarshaler returns a new TracesUnmarshaler.
+func NewTracesUnmarshaler(encoder TracesDecoder, translator ToTracesTranslator) TracesUnmarshaler {
+	return &tracesUnmarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
 }
 
 // Unmarshal bytes into pdata.Traces. On error pdata.Traces is invalid.
-func (t *TracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
-	model, err := t.serialize.UnmarshalTraces(buf)
+func (t *tracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
+	model, err := t.encoder.DecodeTraces(buf)
 	if err != nil {
 		return pdata.Traces{}, fmt.Errorf("unmarshal failed: %w", err)
 	}
-	td, err := t.translate.DecodeTraces(model)
+	td, err := t.translator.ToTraces(model)
 	if err != nil {
 		return pdata.Traces{}, fmt.Errorf("converting model to pdata failed: %w", err)
 	}

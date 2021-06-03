@@ -18,20 +18,18 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/model/serializer"
-	"go.opentelemetry.io/collector/internal/model/translator"
 )
 
 var (
-	_ serializer.TracesMarshaler   = (*mockSerializer)(nil)
-	_ serializer.TracesUnmarshaler = (*mockSerializer)(nil)
+	_ TracesEncoder = (*mockEncoder)(nil)
+	_ TracesDecoder = (*mockEncoder)(nil)
 )
 
-type mockSerializer struct {
+type mockEncoder struct {
 	mock.Mock
 }
 
-func (m *mockSerializer) MarshalTraces(model interface{}) ([]byte, error) {
+func (m *mockEncoder) EncodeTraces(model interface{}) ([]byte, error) {
 	args := m.Called(model)
 	err := args.Error(1)
 	if err != nil {
@@ -40,26 +38,26 @@ func (m *mockSerializer) MarshalTraces(model interface{}) ([]byte, error) {
 	return args.Get(0).([]byte), err
 }
 
-func (m *mockSerializer) UnmarshalTraces(bytes []byte) (interface{}, error) {
+func (m *mockEncoder) DecodeTraces(bytes []byte) (interface{}, error) {
 	args := m.Called(bytes)
 	return args.Get(0), args.Error(1)
 }
 
 var (
-	_ translator.TracesEncoder = (*mockTranslator)(nil)
-	_ translator.TracesDecoder = (*mockTranslator)(nil)
+	_ ToTracesTranslator   = (*mockTranslator)(nil)
+	_ FromTracesTranslator = (*mockTranslator)(nil)
 )
 
 type mockTranslator struct {
 	mock.Mock
 }
 
-func (m *mockTranslator) DecodeTraces(src interface{}) (pdata.Traces, error) {
+func (m *mockTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
 	args := m.Called(src)
 	return args.Get(0).(pdata.Traces), args.Error(1)
 }
 
-func (m *mockTranslator) EncodeTraces(md pdata.Traces) (interface{}, error) {
+func (m *mockTranslator) FromTraces(md pdata.Traces) (interface{}, error) {
 	args := m.Called(md)
 	return args.Get(0), args.Error(1)
 }

@@ -223,7 +223,7 @@ func TestMutualTLS(t *testing.T) {
 			ServerName: "localhost",
 		},
 	}
-	exporter, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exporter, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -278,11 +278,20 @@ func TestConnectionStateChange(t *testing.T) {
 		wg.Done()
 	})
 
+	done := make(chan struct{})
 	go func() {
 		sender.startConnectionStatusReporter()
+		done <- struct{}{}
 	}()
 
-	t.Cleanup(func() { require.NoError(t, sender.shutdown(context.Background())) })
+	t.Cleanup(func() {
+		// set the stopped flag, and wait for statusReporter to finish and signal back
+		sender.stopLock.Lock()
+		sender.stopped = true
+		sender.stopLock.Unlock()
+		<-done
+	})
+
 	wg.Wait() // wait for the initial state to be propagated
 
 	// test

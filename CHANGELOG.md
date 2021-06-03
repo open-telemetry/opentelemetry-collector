@@ -6,6 +6,20 @@
 
 - Remove unused logstest package (#3222)
 - Introduce `AppSettings` instead of `Parameters` (#3163)
+- Remove unused testutil.TempSocketName (#3291)
+- Move BigEndian helper functions in `tracetranslator` to an internal package.(#3298)
+- Rename `configtest.LoadConfigFile` to `configtest.LoadConfigAndValidate` (#3306)
+- Replace `ExtensionCreateParams` with `ExtensionCreateSettings` (#3294)
+- Replace `ProcessorCreateParams` with `ProcessorCreateSettings`. (#3181)
+- Replace `ExporterCreateParams` with `ExporterCreateSettings` (#3164)
+- Replace `ReceiverCreateParams` with `ReceiverCreateSettings`. (#3167)
+- Change `batchprocessor` logic to limit data points rather than metrics (#3141)
+
+## 💡 Enhancements 💡
+
+- Add `doc.go` files to the consumer package and its subpackages (#3270)
+- Automate triggering of doc-update on release (#3234)
+- Enable Dependabot for Github Actions (#3312)
 
 ## v0.27.0 Beta
 

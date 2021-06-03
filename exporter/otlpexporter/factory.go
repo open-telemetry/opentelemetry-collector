@@ -55,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg)
@@ -65,8 +65,8 @@ func createTracesExporter(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
-		oce.pushTraceData,
+		set.Logger,
+		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -77,7 +77,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	oce, err := newExporter(cfg)
@@ -87,8 +87,8 @@ func createMetricsExporter(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
-		oce.pushMetricsData,
+		set.Logger,
+		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -100,7 +100,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oce, err := newExporter(cfg)
@@ -110,8 +110,8 @@ func createLogsExporter(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		params.Logger,
-		oce.pushLogData,
+		set.Logger,
+		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
