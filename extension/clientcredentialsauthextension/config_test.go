@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			ClientID:          "someclientid",
 			Scopes:            []string{"api.metrics"},
 			TokenURL:          "https://someserver.com/oauth2/default/v1/token",
-			Timeout: time.Second,
+			Timeout:           time.Second,
 		},
 		ext)
 
