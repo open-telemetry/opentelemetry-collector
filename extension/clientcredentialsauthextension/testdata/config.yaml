@@ -1,0 +1,23 @@
+extensions:
+  oauth2clientcredentials/1:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://someserver.com/oauth2/default/v1/token
+    scopes: ["api.metrics"]
+    timeout: 1s
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [oauth2clientcredentials/1]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

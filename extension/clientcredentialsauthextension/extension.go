@@ -53,14 +53,16 @@ func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCred
 		return nil, errNoTokenURLProvided
 	}
 
-	tlsCfg, err := cfg.TLSSetting.LoadTLSConfig()
-	if err != nil {
-		return nil, err
-	}
-
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if tlsCfg != nil {
-		transport.TLSClientConfig = tlsCfg
+
+	if cfg.TLSSetting != nil {
+		tlsCfg, err := cfg.TLSSetting.LoadTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+		if tlsCfg != nil {
+			transport.TLSClientConfig = tlsCfg
+		}
 	}
 
 	return &ClientCredentialsAuthenticator{
@@ -68,6 +70,7 @@ func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCred
 			ClientID:     cfg.ClientID,
 			ClientSecret: cfg.ClientSecret,
 			TokenURL:     cfg.TokenURL,
+			Scopes:       cfg.Scopes,
 		},
 		logger: logger,
 		client: &http.Client{
