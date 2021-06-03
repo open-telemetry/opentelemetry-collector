@@ -130,7 +130,7 @@ func (s *protoGRPCSender) start(_ context.Context, host component.Host) error {
 	if s.clientSettings == nil {
 		return fmt.Errorf("client settings not found")
 	}
-	opts, err := s.clientSettings.ToDialOptions()
+	opts, err := s.clientSettings.ToDialOptions(host.GetExtensions())
 	if err != nil {
 		return err
 	}

@@ -65,8 +65,8 @@ func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 }
 
 // start creates the http client
-func (ze *zipkinExporter) start(_ context.Context, _ component.Host) (err error) {
-	ze.client, err = ze.clientSettings.ToClient()
+func (ze *zipkinExporter) start(_ context.Context, host component.Host) (err error) {
+	ze.client, err = ze.clientSettings.ToClient(host.GetExtensions())
 	return
 }
 
