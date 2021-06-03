@@ -98,20 +98,20 @@ type kafkaExporterFactory struct {
 
 func (f *kafkaExporterFactory) createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	exp, err := newTracesExporter(*oCfg, params, f.tracesMarshalers)
+	exp, err := newTracesExporter(*oCfg, set, f.tracesMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		exp.tracesPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -124,20 +124,20 @@ func (f *kafkaExporterFactory) createTracesExporter(
 
 func (f *kafkaExporterFactory) createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	exp, err := newMetricsExporter(*oCfg, params, f.metricsMarshalers)
+	exp, err := newMetricsExporter(*oCfg, set, f.metricsMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		exp.metricsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -150,20 +150,20 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 
 func (f *kafkaExporterFactory) createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oCfg := cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	exp, err := newLogsExporter(*oCfg, params, f.logsMarshalers)
+	exp, err := newLogsExporter(*oCfg, set, f.logsMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		exp.logsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,

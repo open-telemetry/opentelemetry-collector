@@ -57,7 +57,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
 	expCfg.Endpoint = addr.String()
 	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
+	oce, err := expFactory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
 	err = oce.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

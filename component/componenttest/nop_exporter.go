@@ -52,7 +52,7 @@ func (f *nopExporterFactory) CreateDefaultConfig() config.Exporter {
 // CreateTracesExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateTracesExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.TracesExporter, error) {
 	return nopExporterInstance, nil
@@ -61,7 +61,7 @@ func (f *nopExporterFactory) CreateTracesExporter(
 // CreateMetricsExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.MetricsExporter, error) {
 	return nopExporterInstance, nil
@@ -70,7 +70,7 @@ func (f *nopExporterFactory) CreateMetricsExporter(
 // CreateLogsExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateLogsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.LogsExporter, error) {
 	return nopExporterInstance, nil

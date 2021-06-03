@@ -40,17 +40,17 @@ func (f *TestReceiverFactory) CreateDefaultConfig() config.Receiver {
 }
 
 // CreateTracesReceiver creates a trace receiver based on this config.
-func (f *TestReceiverFactory) CreateTracesReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Traces) (TracesReceiver, error) {
+func (f *TestReceiverFactory) CreateTracesReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Traces) (TracesReceiver, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Metrics) (MetricsReceiver, error) {
+func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Metrics) (MetricsReceiver, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateLogsReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Logs) (LogsReceiver, error) {
+func (f *TestReceiverFactory) CreateLogsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Logs) (LogsReceiver, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 

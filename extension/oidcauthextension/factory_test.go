@@ -46,7 +46,7 @@ func TestCreateExtension(t *testing.T) {
 	cfg.Audience = "collector"
 	cfg.IssuerURL = "https://auth.example.com"
 
-	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
+	ext, err := createExtension(context.Background(), component.ExtensionCreateSettings{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }

@@ -85,7 +85,7 @@ func createDefaultConfig() config.Receiver {
 // createTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -174,7 +174,7 @@ func createTracesReceiver(
 	}
 
 	// Create the receiver.
-	return newJaegerReceiver(rCfg.ID(), &config, nextConsumer, params), nil
+	return newJaegerReceiver(rCfg.ID(), &config, nextConsumer, set), nil
 }
 
 // extract the port number from string in "address:port" format. If the

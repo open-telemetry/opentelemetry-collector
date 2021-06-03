@@ -224,8 +224,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	factory := zipkinexporter.NewFactory()
 	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	config.Endpoint = backend.URL
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	ze, err := factory.CreateTracesExporter(context.Background(), params, config)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	ze, err := factory.CreateTracesExporter(context.Background(), set, config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
 	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))
