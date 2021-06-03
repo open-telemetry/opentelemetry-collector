@@ -66,7 +66,7 @@ var resourceMetricsSlice = &sliceOfPtrs{
 
 var resourceMetrics = &messageValueStruct{
 	structName:     "ResourceMetrics",
-	description:    "// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.",
+	description:    "// ResourceMetrics is a collection of metrics from a Resource.",
 	originFullName: "otlpmetrics.ResourceMetrics",
 	fields: []baseField{
 		resourceField,
@@ -332,7 +332,7 @@ var quantileValuesSlice = &sliceOfPtrs{
 
 var quantileValues = &messageValueStruct{
 	structName:     "ValueAtQuantile",
-	description:    "// ValueAtQuantile is a quantile value within a Summary data point",
+	description:    "// ValueAtQuantile is a quantile value within a Summary data point.",
 	originFullName: "otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile",
 	fields: []baseField{
 		quantileField,
