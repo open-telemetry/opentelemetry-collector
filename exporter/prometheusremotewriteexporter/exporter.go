@@ -132,39 +132,27 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 					switch metric.DataType() {
 					case pdata.MetricDataTypeDoubleGauge:
 						dataPoints := metric.DoubleGauge().DataPoints()
-						if dataPoints.Len() == 0 {
+						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleDoubleDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+							errs = append(errs, err)
 						}
 					case pdata.MetricDataTypeIntGauge:
 						dataPoints := metric.IntGauge().DataPoints()
-						if dataPoints.Len() == 0 {
+						if err := prwe.addIntDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleIntDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+							errs = append(errs, err)
 						}
 					case pdata.MetricDataTypeDoubleSum:
 						dataPoints := metric.DoubleSum().DataPoints()
-						if dataPoints.Len() == 0 {
+						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleDoubleDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+							errs = append(errs, err)
 						}
 					case pdata.MetricDataTypeIntSum:
 						dataPoints := metric.IntSum().DataPoints()
-						if dataPoints.Len() == 0 {
+						if err := prwe.addIntDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleIntDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+							errs = append(errs, err)
 						}
 					case pdata.MetricDataTypeIntHistogram:
 						dataPoints := metric.IntHistogram().DataPoints()
@@ -231,6 +219,26 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 	}
 
 	return sanitizedLabels, nil
+}
+
+func (prwe *PRWExporter) addIntDataPointSlice(dataPoints pdata.IntDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+	if dataPoints.Len() == 0 {
+		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+	}
+	for x := 0; x < dataPoints.Len(); x++ {
+		addSingleIntDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+	}
+	return nil
+}
+
+func (prwe *PRWExporter) addDoubleDataPointSlice(dataPoints pdata.DoubleDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+	if dataPoints.Len() == 0 {
+		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+	}
+	for x := 0; x < dataPoints.Len(); x++ {
+		addSingleDoubleDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+	}
+	return nil
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
