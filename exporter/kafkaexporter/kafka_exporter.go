@@ -129,7 +129,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
-func newMetricsExporter(config Config, params component.ExporterCreateParams, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
+func newMetricsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -143,13 +143,13 @@ func newMetricsExporter(config Config, params component.ExporterCreateParams, ma
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
-		logger:    params.Logger,
+		logger:    set.Logger,
 	}, nil
 
 }
 
 // newTracesExporter creates Kafka exporter.
-func newTracesExporter(config Config, params component.ExporterCreateParams, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
+func newTracesExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -162,11 +162,11 @@ func newTracesExporter(config Config, params component.ExporterCreateParams, mar
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
-		logger:    params.Logger,
+		logger:    set.Logger,
 	}, nil
 }
 
-func newLogsExporter(config Config, params component.ExporterCreateParams, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
+func newLogsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -180,7 +180,7 @@ func newLogsExporter(config Config, params component.ExporterCreateParams, marsh
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
-		logger:    params.Logger,
+		logger:    set.Logger,
 	}, nil
 
 }

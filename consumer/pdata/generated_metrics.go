@@ -23,7 +23,7 @@ import (
 
 // ResourceMetricsSlice logically represents a slice of ResourceMetrics.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewResourceMetricsSlice function to create new instances.
@@ -55,10 +55,10 @@ func (es ResourceMetricsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 	return newResourceMetrics((*es.orig)[ix])
 }
@@ -88,12 +88,12 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ResourceMetricsSlice can be initialized:
-// es := NewResourceMetricsSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewResourceMetricsSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ResourceMetricsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -163,7 +163,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
+// ResourceMetrics is a collection of metrics from a Resource.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -203,7 +203,7 @@ func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 
 // InstrumentationLibraryMetricsSlice logically represents a slice of InstrumentationLibraryMetrics.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibraryMetricsSlice function to create new instances.
@@ -235,10 +235,10 @@ func (es InstrumentationLibraryMetricsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es InstrumentationLibraryMetricsSlice) At(ix int) InstrumentationLibraryMetrics {
 	return newInstrumentationLibraryMetrics((*es.orig)[ix])
 }
@@ -268,12 +268,12 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new InstrumentationLibraryMetricsSlice can be initialized:
-// es := NewInstrumentationLibraryMetricsSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewInstrumentationLibraryMetricsSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -383,7 +383,7 @@ func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetric
 
 // MetricSlice logically represents a slice of Metric.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewMetricSlice function to create new instances.
@@ -415,10 +415,10 @@ func (es MetricSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es MetricSlice) At(ix int) Metric {
 	return newMetric((*es.orig)[ix])
 }
@@ -448,12 +448,12 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new MetricSlice can be initialized:
-// es := NewMetricSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewMetricSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es MetricSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -876,7 +876,7 @@ func (ms Summary) CopyTo(dest Summary) {
 
 // IntDataPointSlice logically represents a slice of IntDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewIntDataPointSlice function to create new instances.
@@ -908,10 +908,10 @@ func (es IntDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es IntDataPointSlice) At(ix int) IntDataPoint {
 	return newIntDataPoint((*es.orig)[ix])
 }
@@ -941,12 +941,12 @@ func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new IntDataPointSlice can be initialized:
-// es := NewIntDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewIntDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es IntDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1089,7 +1089,7 @@ func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
 
 // DoubleDataPointSlice logically represents a slice of DoubleDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewDoubleDataPointSlice function to create new instances.
@@ -1121,10 +1121,10 @@ func (es DoubleDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es DoubleDataPointSlice) At(ix int) DoubleDataPoint {
 	return newDoubleDataPoint((*es.orig)[ix])
 }
@@ -1154,12 +1154,12 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new DoubleDataPointSlice can be initialized:
-// es := NewDoubleDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewDoubleDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es DoubleDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1302,7 +1302,7 @@ func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
 
 // IntHistogramDataPointSlice logically represents a slice of IntHistogramDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewIntHistogramDataPointSlice function to create new instances.
@@ -1334,10 +1334,10 @@ func (es IntHistogramDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es IntHistogramDataPointSlice) At(ix int) IntHistogramDataPoint {
 	return newIntHistogramDataPoint((*es.orig)[ix])
 }
@@ -1367,12 +1367,12 @@ func (es IntHistogramDataPointSlice) CopyTo(dest IntHistogramDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new IntHistogramDataPointSlice can be initialized:
-// es := NewIntHistogramDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewIntHistogramDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es IntHistogramDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1548,7 +1548,7 @@ func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewHistogramDataPointSlice function to create new instances.
@@ -1580,10 +1580,10 @@ func (es HistogramDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
 	return newHistogramDataPoint((*es.orig)[ix])
 }
@@ -1613,12 +1613,12 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new HistogramDataPointSlice can be initialized:
-// es := NewHistogramDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewHistogramDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es HistogramDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1794,7 +1794,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewSummaryDataPointSlice function to create new instances.
@@ -1826,10 +1826,10 @@ func (es SummaryDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
 	return newSummaryDataPoint((*es.orig)[ix])
 }
@@ -1859,12 +1859,12 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new SummaryDataPointSlice can be initialized:
-// es := NewSummaryDataPointSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewSummaryDataPointSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es SummaryDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2018,7 +2018,7 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 
 // ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewValueAtQuantileSlice function to create new instances.
@@ -2050,10 +2050,10 @@ func (es ValueAtQuantileSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es ValueAtQuantileSlice) At(ix int) ValueAtQuantile {
 	return newValueAtQuantile((*es.orig)[ix])
 }
@@ -2083,12 +2083,12 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ValueAtQuantileSlice can be initialized:
-// es := NewValueAtQuantileSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewValueAtQuantileSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ValueAtQuantileSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2158,7 +2158,7 @@ func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// ValueAtQuantile is a quantile value within a Summary data point
+// ValueAtQuantile is a quantile value within a Summary data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -2208,7 +2208,7 @@ func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
 
 // IntExemplarSlice logically represents a slice of IntExemplar.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewIntExemplarSlice function to create new instances.
@@ -2240,10 +2240,10 @@ func (es IntExemplarSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es IntExemplarSlice) At(ix int) IntExemplar {
 	return newIntExemplar(&(*es.orig)[ix])
 }
@@ -2268,12 +2268,12 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new IntExemplarSlice can be initialized:
-// es := NewIntExemplarSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewIntExemplarSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es IntExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2402,7 +2402,7 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 
 // ExemplarSlice logically represents a slice of Exemplar.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewExemplarSlice function to create new instances.
@@ -2434,10 +2434,10 @@ func (es ExemplarSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es ExemplarSlice) At(ix int) Exemplar {
 	return newExemplar(&(*es.orig)[ix])
 }
@@ -2462,12 +2462,12 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ExemplarSlice can be initialized:
-// es := NewExemplarSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewExemplarSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)

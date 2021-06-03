@@ -34,13 +34,13 @@
 // Similar for exporters:
 //
 // 	* Traces export operations should use the pair:
-// 		StartTracesExportOp/EndTracesExportOp
+// 		StartTracesOp/EndTracesOp
 //
 // 	* Metrics export operations should use the pair:
-// 		StartMetricsExportOp/EndMetricsExportOp
+// 		StartMetricsOp/EndMetricsOp
 //
 // 	* Metrics export operations should use the pair:
-// 		StartLogsExportOp/EndLogsExportOp
+// 		StartLogsOp/EndLogsOp
 //
 // The package is capable of generating legacy metrics by using the
 // observability package allowing a controlled transition from legacy to the

@@ -72,11 +72,11 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
-			exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, tt.config)
+			exp, err := factory.CreateMetricsExporter(context.Background(), set, tt.config)
 
 			if tt.wantErr != "" {
 				require.Error(t, err)
@@ -114,8 +114,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -192,8 +192,8 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -273,8 +273,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
