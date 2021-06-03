@@ -71,7 +71,7 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 
 // AnyValueArray logically represents a slice of AttributeValue.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewAnyValueArray function to create new instances.
@@ -103,10 +103,10 @@ func (es AnyValueArray) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es AnyValueArray) At(ix int) AttributeValue {
 	return newAttributeValue(&(*es.orig)[ix])
 }
@@ -131,12 +131,12 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new AnyValueArray can be initialized:
-// es := NewAnyValueArray()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewAnyValueArray()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es AnyValueArray) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)

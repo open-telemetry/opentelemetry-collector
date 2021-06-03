@@ -149,7 +149,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
-			ExpectedMaxRAM:      170,
+			ExpectedMaxRAM:      190,
 			ExpectedMinFinalRAM: 100,
 		},
 		{

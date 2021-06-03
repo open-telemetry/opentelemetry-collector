@@ -32,9 +32,10 @@ import (
 	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/logs"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/metrics"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/trace"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 )
 
 // otlpReceiver is the type that exposes Trace and Metrics reception.
@@ -64,7 +65,7 @@ func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
 		// Use our custom JSON marshaler instead of default Protobuf JSON marshaler.
 		// This is needed because OTLP spec defines encoding for trace and span id
 		// and it is only possible to do using Gogoproto-compatible JSONPb marshaler.
-		jsonpb := &JSONPb{
+		jsonpb := &internal.JSONPb{
 			EmitDefaults: true,
 			Indent:       "  ",
 			OrigName:     true,
