@@ -84,8 +84,36 @@ func (bexp *builtExporter) getLogExporter() component.LogsExporter {
 	return exp.(component.LogsExporter)
 }
 
+func (bexp *builtExporter) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+	for _, exp := range bexp.expByDataType {
+		wrapper := exp.(*exporterWrapper)
+
+		if err := wrapper.Relaod(host, ctx, cfg); err != nil {
+			return fmt.Errorf("error when reload exporter:%q dataType:%v error:%v", wrapper.id, wrapper.inputType, err)
+		}
+	}
+
+	return nil
+}
+
 // Exporters is a map of exporters created from exporter configs.
 type Exporters map[config.ComponentID]*builtExporter
+
+func (exps Exporters) ReloadExporters(
+	ctx context.Context,
+	logger *zap.Logger,
+	buildInfo component.BuildInfo,
+	config *config.Config,
+	factories map[config.Type]component.ExporterFactory,
+	host component.Host) error {
+	for id, btExp := range exps {
+		if err := btExp.Relaod(host, ctx, config.Exporters[id]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // StartAll starts all exporters.
 func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
@@ -269,11 +297,11 @@ func (eb *exportersBuilder) buildExporter(
 
 		switch dataType {
 		case config.TracesDataType:
-			exporter.expByDataType[dataType] = &exporterWrapper{dataType, nil, createdExporter.(consumer.Traces), nil, createdExporter}
+			exporter.expByDataType[dataType] = &exporterWrapper{dataType, nil, createdExporter.(consumer.Traces), nil, createdExporter, cfg.ID(), logger, buildInfo, factory}
 		case config.MetricsDataType:
-			exporter.expByDataType[dataType] = &exporterWrapper{dataType, createdExporter.(consumer.Metrics), nil, nil, createdExporter}
+			exporter.expByDataType[dataType] = &exporterWrapper{dataType, createdExporter.(consumer.Metrics), nil, nil, createdExporter, cfg.ID(), logger, buildInfo, factory}
 		case config.LogsDataType:
-			exporter.expByDataType[dataType] = &exporterWrapper{dataType, nil, nil, createdExporter.(consumer.Logs), createdExporter}
+			exporter.expByDataType[dataType] = &exporterWrapper{dataType, nil, nil, createdExporter.(consumer.Logs), createdExporter, cfg.ID(), logger, buildInfo, factory}
 		}
 	}
 

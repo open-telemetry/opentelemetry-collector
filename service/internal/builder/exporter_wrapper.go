@@ -2,11 +2,13 @@ package builder
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 type exporterWrapper struct {
@@ -15,6 +17,10 @@ type exporterWrapper struct {
 	tc        consumer.Traces
 	lc        consumer.Logs
 	exporter  component.Exporter
+	id        config.ComponentID
+	logger    *zap.Logger
+	buildInfo component.BuildInfo
+	factory   component.ExporterFactory
 }
 
 func (wrapper *exporterWrapper) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
@@ -47,4 +53,86 @@ func (wrapper *exporterWrapper) Start(ctx context.Context, host component.Host) 
 
 func (wrapper *exporterWrapper) Shutdown(ctx context.Context) error {
 	return wrapper.exporter.Shutdown(ctx)
+}
+
+func (wrapper *exporterWrapper) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+	expCfg, ok := cfg.(config.Exporter)
+
+	if !ok {
+		return fmt.Errorf("error when reload exporter:%q for invalid cfg:%v", wrapper.id, cfg)
+	}
+
+	if expCfg.ID() != wrapper.id {
+		return fmt.Errorf("error when reload exporter:%q for invalid conf id:%v", wrapper.id, expCfg.ID())
+	}
+
+	if reloadableExp, ok := wrapper.exporter.(component.Reloadable); ok {
+		return reloadableExp.Relaod(host, ctx, cfg)
+	}
+
+	oldExp := wrapper.exporter
+
+	creationParams := component.ExporterCreateParams{
+		Logger:    wrapper.logger,
+		BuildInfo: wrapper.buildInfo,
+	}
+
+	var err error
+	switch wrapper.inputType {
+	case config.MetricsDataType:
+		var exp component.MetricsExporter
+		exp, err = wrapper.factory.CreateMetricsExporter(ctx, creationParams, expCfg)
+		if exp != nil && err == nil {
+			err = exp.Start(ctx, host)
+		}
+
+		if exp == nil {
+			return fmt.Errorf("factory produce nil exporter for component id:%q inputtype:%v config:%v during reload", wrapper.id, wrapper.inputType, expCfg)
+		}
+
+		if exp != nil && err == nil {
+			wrapper.exporter = exp
+			wrapper.mc = exp
+		}
+	case config.LogsDataType:
+		var exp component.LogsExporter
+		exp, err = wrapper.factory.CreateLogsExporter(ctx, creationParams, expCfg)
+		if exp != nil && err == nil {
+			err = exp.Start(ctx, host)
+		}
+
+		if exp == nil {
+			return fmt.Errorf("factory produce nil exporter for component id:%q inputtype:%v config:%v during reload", wrapper.id, wrapper.inputType, expCfg)
+		}
+
+		if exp != nil && err == nil {
+			wrapper.exporter = exp
+			wrapper.lc = exp
+		}
+	case config.TracesDataType:
+		var exp component.TracesExporter
+		exp, err = wrapper.factory.CreateTracesExporter(ctx, creationParams, expCfg)
+		if exp != nil && err == nil {
+			err = exp.Start(ctx, host)
+		}
+
+		if exp == nil {
+			return fmt.Errorf("factory produce nil exporter for component id:%q inputtype:%v config:%v during reload", wrapper.id, wrapper.inputType, expCfg)
+		}
+
+		if exp != nil && err == nil {
+			wrapper.exporter = exp
+			wrapper.tc = exp
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("error creating or start exporter:%q during reload:%v", expCfg.ID(), err)
+	}
+
+	if err := oldExp.Shutdown(ctx); err != nil {
+		return fmt.Errorf("error when shutdown old exporter:%q during reload:%v", expCfg.ID(), err)
+	}
+
+	return nil
 }

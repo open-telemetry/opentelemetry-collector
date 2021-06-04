@@ -79,17 +79,13 @@ func (bps BuiltPipelines) ReloadProcessors(ctx context.Context,
 	config *config.Config,
 	exporters Exporters,
 	factories map[config.Type]component.ProcessorFactory) error {
-	// Delete pipelines
-	delPls := make([]string, 0)
-	var err error
 	for name, btPl := range bps {
+		// TODO support add and delete processors
 		if config.Pipelines[name] == nil {
-			delPls = append(delPls, name)
 			continue
 		}
 
 		hostWrapper := newHostWrapper(host, btPl.logger)
-		// TODO support add and delete processors
 		for i := len(btPl.processors) - 1; i >= 0; i-- {
 			btProc := btPl.btProcs[i]
 			procCfg := config.Processors[btProc.id]
@@ -98,14 +94,6 @@ func (bps BuiltPipelines) ReloadProcessors(ctx context.Context,
 				return fmt.Errorf("error when reload processor for pipeline:%v, during reload:%v", name, err)
 			}
 		}
-	}
-
-	for _, plName := range delPls {
-		btPl := bps[plName]
-		if err = btPl.Shutdown(ctx); err != nil {
-			return fmt.Errorf("error when shutdown pipeline:%v, during reload:%v", plName, err)
-		}
-		delete(bps, plName)
 	}
 
 	return nil

@@ -63,7 +63,7 @@ func (btProc *builtProcessor) Capabilities() consumer.Capabilities {
 	case config.LogsDataType:
 		return btProc.lc.Capabilities()
 	}
-	return consumer.Capabilities{btProc.mutatesData}
+	return consumer.Capabilities{MutatesData: btProc.mutatesData}
 }
 
 func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
@@ -95,8 +95,12 @@ func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, c
 		var proc component.TracesProcessor
 		proc, err = btProc.factory.CreateTracesProcessor(ctx, creationParams, procCfg, btProc.nextTc)
 
-		if proc != nil && err != nil {
+		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)
+		}
+
+		if proc == nil {
+			return fmt.Errorf("factory produce nil processor for component id:%q inputtype:%v config:%v during reload", procCfg.ID(), btProc.dataType, procCfg)
 		}
 
 		if proc != nil && err == nil {
@@ -108,11 +112,15 @@ func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, c
 		var proc component.MetricsProcessor
 		proc, err = btProc.factory.CreateMetricsProcessor(ctx, creationParams, procCfg, btProc.nextTc)
 
-		if proc != nil && err != nil {
+		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)
 		}
 
-		if proc != nil && err != nil {
+		if proc == nil {
+			return fmt.Errorf("factory produce nil processor for component id:%q inputtype:%v config:%v during reload", procCfg.ID(), btProc.dataType, procCfg)
+		}
+
+		if proc != nil && err == nil {
 			btProc.mutatesData = proc.Capabilities().MutatesData
 			btProc.processor = proc
 			btProc.mc = proc
@@ -121,11 +129,15 @@ func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, c
 		var proc component.LogsProcessor
 		proc, err = btProc.factory.CreateLogsProcessor(ctx, creationParams, procCfg, btProc.nextTc)
 
-		if proc != nil && err != nil {
+		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)
 		}
 
-		if proc != nil && err != nil {
+		if proc == nil {
+			return fmt.Errorf("factory produce nil processor for component id:%q inputtype:%v config:%v during reload", procCfg.ID(), btProc.dataType, procCfg)
+		}
+
+		if proc != nil && err == nil {
 			btProc.mutatesData = proc.Capabilities().MutatesData
 			btProc.processor = proc
 			btProc.lc = proc
@@ -134,10 +146,6 @@ func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, c
 
 	if err != nil {
 		return fmt.Errorf("error creating processor %q: during reload:%v", procCfg.ID(), err)
-	}
-
-	if err := btProc.Start(ctx, host); err != nil {
-		return fmt.Errorf("error when start processor:%q during reload:%v", btProc.id, err)
 	}
 
 	if err := oldProcessor.Shutdown(ctx); err != nil {
