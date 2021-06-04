@@ -109,7 +109,7 @@ func testReceivers(
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
 
-	receiver := receivers[cfg.Receivers[test.receiverID]]
+	receiver := receivers[test.receiverID]
 
 	// Ensure receiver has its fields correctly populated.
 	require.NotNil(t, receiver)
@@ -215,7 +215,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, receivers)
 
-			receiver := receivers[cfg.Receivers[config.NewID("examplereceiver")]]
+			receiver := receivers[config.NewID("examplereceiver")]
 
 			// Ensure receiver has its fields correctly populated.
 			require.NotNil(t, receiver)
@@ -264,7 +264,7 @@ func TestBuildReceivers_StartAll(t *testing.T) {
 	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
-	receivers[rcvCfg] = &builtReceiver{
+	receivers[rcvCfg.ID()] = &builtReceiver{
 		logger:   zap.NewNop(),
 		receiver: receiver,
 	}
@@ -282,7 +282,7 @@ func TestBuildReceivers_StopAll(t *testing.T) {
 	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
-	receivers[rcvCfg] = &builtReceiver{
+	receivers[rcvCfg.ID()] = &builtReceiver{
 		logger:   zap.NewNop(),
 		receiver: receiver,
 	}
