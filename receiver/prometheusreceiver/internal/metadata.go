@@ -37,14 +37,18 @@ type metadataService struct {
 }
 
 func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
-	for originalJobLabel, targetGroup := range s.sm.TargetsAll() {
+	// Lookup against unaltered job label
+	if targetGroup, ok := s.sm.TargetsAll()[job]; ok {
 		for _, target := range targetGroup {
-			switch {
-			case target.Labels().Get(model.InstanceLabel) == instance && originalJobLabel == job:
-				// job label was not rewritten
+			if target.Labels().Get(model.InstanceLabel) == instance {
 				return &mCache{target}, nil
-			case target.Labels().Get(model.InstanceLabel) == instance && target.Labels().Get(model.JobLabel) == job:
-				// job label was overridden by file_sd, relabel_configs, etc
+			}
+		}
+	}
+	// Fallback to lookup through all target groups for cases where job was relabeled
+	for _, targetGroup := range s.sm.TargetsAll() {
+		for _, target := range targetGroup {
+			if target.Labels().Get(model.InstanceLabel) == instance && target.Labels().Get(model.JobLabel) == job {
 				return &mCache{target}, nil
 			}
 		}
