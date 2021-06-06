@@ -74,6 +74,8 @@ type metricStruct struct {
 	SystemFilesystemUsage       MetricIntf
 	SystemMemoryUsage           MetricIntf
 	SystemNetworkConnections    MetricIntf
+	SystemNetworkConntrackCount MetricIntf
+	SystemNetworkConntrackMax   MetricIntf
 	SystemNetworkDropped        MetricIntf
 	SystemNetworkErrors         MetricIntf
 	SystemNetworkIo             MetricIntf
@@ -107,6 +109,8 @@ func (m *metricStruct) Names() []string {
 		"system.filesystem.usage",
 		"system.memory.usage",
 		"system.network.connections",
+		"system.network.conntrack.count",
+		"system.network.conntrack.max",
 		"system.network.dropped",
 		"system.network.errors",
 		"system.network.io",
@@ -139,6 +143,8 @@ var metricsByName = map[string]MetricIntf{
 	"system.filesystem.usage":        Metrics.SystemFilesystemUsage,
 	"system.memory.usage":            Metrics.SystemMemoryUsage,
 	"system.network.connections":     Metrics.SystemNetworkConnections,
+	"system.network.conntrack.count": Metrics.SystemNetworkConntrackCount,
+	"system.network.conntrack.max":   Metrics.SystemNetworkConntrackMax,
 	"system.network.dropped":         Metrics.SystemNetworkDropped,
 	"system.network.errors":          Metrics.SystemNetworkErrors,
 	"system.network.io":              Metrics.SystemNetworkIo,
@@ -175,6 +181,8 @@ func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
 		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.Init,
 		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.Init,
 		Metrics.SystemNetworkConnections.Name():    Metrics.SystemNetworkConnections.Init,
+		Metrics.SystemNetworkConntrackCount.Name(): Metrics.SystemNetworkConntrackCount.Init,
+		Metrics.SystemNetworkConntrackMax.Name():   Metrics.SystemNetworkConntrackMax.Init,
 		Metrics.SystemNetworkDropped.Name():        Metrics.SystemNetworkDropped.Init,
 		Metrics.SystemNetworkErrors.Name():         Metrics.SystemNetworkErrors.Init,
 		Metrics.SystemNetworkIo.Name():             Metrics.SystemNetworkIo.Init,
@@ -388,6 +396,28 @@ var Metrics = &metricStruct{
 			metric.SetName("system.network.connections")
 			metric.SetDescription("The number of connections.")
 			metric.SetUnit("{connections}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.conntrack.count",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.conntrack.count")
+			metric.SetDescription("Number of currently allocated flow entries.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.conntrack.max",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.conntrack.max")
+			metric.SetDescription("Size of connection tracking table.")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(false)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)

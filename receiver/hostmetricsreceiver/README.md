@@ -71,7 +71,11 @@ network:
   <include|exclude>:
     interfaces: [ <interface name>, ... ]
     match_type: <strict|regexp>
+  scrape_conntrack: <true|false> # default = false
 ```
+
+scrape_conntrack (Connection tracking) is supported only for Linux OS and requires installing conntrack.
+
 
 ### Process
 

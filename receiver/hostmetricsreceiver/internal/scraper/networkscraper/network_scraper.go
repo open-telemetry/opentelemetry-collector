@@ -32,6 +32,7 @@ import (
 const (
 	networkMetricsLen     = 4
 	connectionsMetricsLen = 1
+	conntrackMetricsLen   = 2
 )
 
 // scraper for Network Metrics
@@ -45,11 +46,12 @@ type scraper struct {
 	bootTime    func() (uint64, error)
 	ioCounters  func(bool) ([]net.IOCountersStat, error)
 	connections func(string) ([]net.ConnectionStat, error)
+	conntrack   func() ([]net.FilterStat, error)
 }
 
 // newNetworkScraper creates a set of Network related metrics
 func newNetworkScraper(_ context.Context, cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
+	scraper := &scraper{config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections, conntrack: net.FilterCounters}
 
 	var err error
 
@@ -93,6 +95,13 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	err = s.scrapeAndAppendNetworkConnectionsMetric(metrics)
 	if err != nil {
 		errors.AddPartial(connectionsMetricsLen, err)
+	}
+
+	if s.config.ScrapeConntrack {
+		err = scrapeAndAppendConntrackMetrics(s, metrics)
+		if err != nil {
+			errors.AddPartial(conntrackMetricsLen, err)
+		}
 	}
 
 	return metrics, errors.Combine()
