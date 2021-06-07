@@ -25,7 +25,7 @@ import (
 
 func TestGenerateParentSpan(t *testing.T) {
 	random := rand.Reader
-	traceID := generatePDataTraceID(random)
+	traceID := generateTraceID(random)
 	spanInputs := &PICTSpanInputs{
 		Parent:     SpanParentRoot,
 		Tracestate: TraceStateEmpty,
@@ -35,7 +35,8 @@ func TestGenerateParentSpan(t *testing.T) {
 		Links:      SpanChildCountOne,
 		Status:     SpanStatusOk,
 	}
-	span := GenerateSpan(traceID, pdata.NewSpanID([8]byte{}), "/gotest-parent", spanInputs, random)
+	span := pdata.NewSpan()
+	fillSpan(traceID, pdata.NewSpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
 	assert.Equal(t, traceID, span.TraceID())
 	assert.True(t, span.ParentSpanID().IsEmpty())
 	assert.Equal(t, 11, span.Attributes().Len())
@@ -44,18 +45,19 @@ func TestGenerateParentSpan(t *testing.T) {
 
 func TestGenerateChildSpan(t *testing.T) {
 	random := rand.Reader
-	traceID := generatePDataTraceID(random)
-	parentID := generatePDataSpanID(random)
+	traceID := generateTraceID(random)
+	parentID := generateSpanID(random)
 	spanInputs := &PICTSpanInputs{
 		Parent:     SpanParentChild,
 		Tracestate: TraceStateEmpty,
 		Kind:       SpanKindClient,
 		Attributes: SpanAttrDatabaseSQL,
 		Events:     SpanChildCountEmpty,
-		Links:      SpanChildCountNil,
+		Links:      SpanChildCountEmpty,
 		Status:     SpanStatusOk,
 	}
-	span := GenerateSpan(traceID, parentID, "get_test_info", spanInputs, random)
+	span := pdata.NewSpan()
+	fillSpan(traceID, parentID, "get_test_info", spanInputs, random, span)
 	assert.Equal(t, traceID, span.TraceID())
 	assert.Equal(t, parentID, span.ParentSpanID())
 	assert.Equal(t, 12, span.Attributes().Len())
@@ -65,15 +67,20 @@ func TestGenerateChildSpan(t *testing.T) {
 func TestGenerateSpans(t *testing.T) {
 	random := rand.Reader
 	count1 := 16
-	spans, nextPos, err := GenerateSpans(count1, 0, "testdata/generated_pict_pairs_spans.txt", random)
-	assert.Nil(t, err)
-	assert.Equal(t, count1, len(spans))
+	spans := pdata.NewSpanSlice()
+	err := appendSpans(count1, "testdata/generated_pict_pairs_spans.txt", random, spans)
+	assert.NoError(t, err)
+	assert.Equal(t, count1, spans.Len())
+
 	count2 := 256
-	spans, nextPos, err = GenerateSpans(count2, nextPos, "testdata/generated_pict_pairs_spans.txt", random)
-	assert.Nil(t, err)
-	assert.Equal(t, count2, len(spans))
+	spans = pdata.NewSpanSlice()
+	err = appendSpans(count2, "testdata/generated_pict_pairs_spans.txt", random, spans)
+	assert.NoError(t, err)
+	assert.Equal(t, count2, spans.Len())
+
 	count3 := 118
-	spans, _, err = GenerateSpans(count3, nextPos, "testdata/generated_pict_pairs_spans.txt", random)
-	assert.Nil(t, err)
-	assert.Equal(t, count3, len(spans))
+	spans = pdata.NewSpanSlice()
+	err = appendSpans(count3, "testdata/generated_pict_pairs_spans.txt", random, spans)
+	assert.NoError(t, err)
+	assert.Equal(t, count3, spans.Len())
 }

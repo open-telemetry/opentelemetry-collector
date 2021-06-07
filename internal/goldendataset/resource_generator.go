@@ -22,140 +22,110 @@ import (
 // GenerateResource generates a PData Resource object with representative attributes for the
 // underlying resource type specified by the rscID input parameter.
 func GenerateResource(rscID PICTInputResource) pdata.Resource {
-	var attrs map[string]interface{}
-	switch rscID {
-	case ResourceNil:
-		attrs = generateNilAttributes()
-	case ResourceEmpty:
-		attrs = generateEmptyAttributes()
-	case ResourceVMOnPrem:
-		attrs = generateOnpremVMAttributes()
-	case ResourceVMCloud:
-		attrs = generateCloudVMAttributes()
-	case ResourceK8sOnPrem:
-		attrs = generateOnpremK8sAttributes()
-	case ResourceK8sCloud:
-		attrs = generateCloudK8sAttributes()
-	case ResourceFaas:
-		attrs = generateFassAttributes()
-	case ResourceExec:
-		attrs = generateExecAttributes()
-	default:
-		attrs = generateEmptyAttributes()
-	}
 	resource := pdata.NewResource()
-	attributeMap := convertMapToAttributeMap(attrs)
-	if attributeMap != nil {
-		attributeMap.CopyTo(resource.Attributes())
+	switch rscID {
+	case ResourceEmpty:
+		break
+	case ResourceVMOnPrem:
+		appendOnpremVMAttributes(resource.Attributes())
+	case ResourceVMCloud:
+		appendCloudVMAttributes(resource.Attributes())
+	case ResourceK8sOnPrem:
+		appendOnpremK8sAttributes(resource.Attributes())
+	case ResourceK8sCloud:
+		appendCloudK8sAttributes(resource.Attributes())
+	case ResourceFaas:
+		appendFassAttributes(resource.Attributes())
+	case ResourceExec:
+		appendExecAttributes(resource.Attributes())
 	}
 	return resource
 }
 
-func generateNilAttributes() map[string]interface{} {
-	return nil
+func appendOnpremVMAttributes(attrMap pdata.AttributeMap) {
+	attrMap.UpsertString(conventions.AttributeServiceName, "customers")
+	attrMap.UpsertString(conventions.AttributeServiceNamespace, "production")
+	attrMap.UpsertString(conventions.AttributeServiceVersion, "semver:0.7.3")
+	subMap := pdata.NewAttributeValueMap()
+	subMap.MapVal().InsertString("public", "tc-prod9.internal.example.com")
+	subMap.MapVal().InsertString("internal", "172.18.36.18")
+	attrMap.Upsert(conventions.AttributeHostName, subMap)
+	attrMap.UpsertString(conventions.AttributeHostImageID, "661ADFA6-E293-4870-9EFA-1AA052C49F18")
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeSDKLangValueJava)
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKName, "opentelemetry")
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKVersion, "0.3.0")
 }
 
-func generateEmptyAttributes() map[string]interface{} {
-	attrMap := make(map[string]interface{})
-	return attrMap
+func appendCloudVMAttributes(attrMap pdata.AttributeMap) {
+	attrMap.UpsertString(conventions.AttributeServiceName, "shoppingcart")
+	attrMap.UpsertString(conventions.AttributeServiceName, "customers")
+	attrMap.UpsertString(conventions.AttributeServiceNamespace, "production")
+	attrMap.UpsertString(conventions.AttributeServiceVersion, "semver:0.7.3")
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeSDKLangValueJava)
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKName, "opentelemetry")
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKVersion, "0.3.0")
+	attrMap.UpsertString(conventions.AttributeHostID, "57e8add1f79a454bae9fb1f7756a009a")
+	attrMap.UpsertString(conventions.AttributeHostName, "env-check")
+	attrMap.UpsertString(conventions.AttributeHostImageID, "5.3.0-1020-azure")
+	attrMap.UpsertString(conventions.AttributeHostType, "B1ms")
+	attrMap.UpsertString(conventions.AttributeCloudProvider, "azure")
+	attrMap.UpsertString(conventions.AttributeCloudAccount, "2f5b8278-4b80-4930-a6bb-d86fc63a2534")
+	attrMap.UpsertString(conventions.AttributeCloudRegion, "South Central US")
 }
 
-func generateOnpremVMAttributes() map[string]interface{} {
-	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeServiceName] = "customers"
-	attrMap[conventions.AttributeServiceNamespace] = "production"
-	attrMap[conventions.AttributeServiceVersion] = "semver:0.7.3"
-	subMap := pdata.NewAttributeMap()
-	subMap.InsertString("public", "tc-prod9.internal.example.com")
-	subMap.InsertString("internal", "172.18.36.18")
-	attrMap[conventions.AttributeHostName] = subMap
-	attrMap[conventions.AttributeHostImageID] = "661ADFA6-E293-4870-9EFA-1AA052C49F18"
-	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
-	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
-	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
-	return attrMap
+func appendOnpremK8sAttributes(attrMap pdata.AttributeMap) {
+	attrMap.UpsertString(conventions.AttributeContainerName, "cert-manager")
+	attrMap.UpsertString(conventions.AttributeContainerImage, "quay.io/jetstack/cert-manager-controller:v0.14.2")
+	attrMap.UpsertString(conventions.AttributeK8sCluster, "docker-desktop")
+	attrMap.UpsertString(conventions.AttributeK8sNamespace, "cert-manager")
+	attrMap.UpsertString(conventions.AttributeK8sDeployment, "cm-1-cert-manager")
+	attrMap.UpsertString(conventions.AttributeK8sPod, "cm-1-cert-manager-6448b4949b-t2jtd")
+	attrMap.UpsertString(conventions.AttributeHostName, "docker-desktop")
 }
 
-func generateCloudVMAttributes() map[string]interface{} {
-	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeServiceName] = "shoppingcart"
-	attrMap[conventions.AttributeServiceName] = "customers"
-	attrMap[conventions.AttributeServiceNamespace] = "production"
-	attrMap[conventions.AttributeServiceVersion] = "semver:0.7.3"
-	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
-	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
-	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
-	attrMap[conventions.AttributeHostID] = "57e8add1f79a454bae9fb1f7756a009a"
-	attrMap[conventions.AttributeHostName] = "env-check"
-	attrMap[conventions.AttributeHostImageID] = "5.3.0-1020-azure"
-	attrMap[conventions.AttributeHostType] = "B1ms"
-	attrMap[conventions.AttributeCloudProvider] = "azure"
-	attrMap[conventions.AttributeCloudAccount] = "2f5b8278-4b80-4930-a6bb-d86fc63a2534"
-	attrMap[conventions.AttributeCloudRegion] = "South Central US"
-	return attrMap
+func appendCloudK8sAttributes(attrMap pdata.AttributeMap) {
+	attrMap.UpsertString(conventions.AttributeContainerName, "otel-collector")
+	attrMap.UpsertString(conventions.AttributeContainerImage, "otel/opentelemetry-collector-contrib")
+	attrMap.UpsertString(conventions.AttributeContainerTag, "0.4.0")
+	attrMap.UpsertString(conventions.AttributeK8sCluster, "erp-dev")
+	attrMap.UpsertString(conventions.AttributeK8sNamespace, "monitoring")
+	attrMap.UpsertString(conventions.AttributeK8sDeployment, "otel-collector")
+	attrMap.UpsertString(conventions.AttributeK8sDeploymentUID, "4D614B27-EDAF-409B-B631-6963D8F6FCD4")
+	attrMap.UpsertString(conventions.AttributeK8sReplicaSet, "otel-collector-2983fd34")
+	attrMap.UpsertString(conventions.AttributeK8sReplicaSetUID, "EC7D59EF-D5B6-48B7-881E-DA6B7DD539B6")
+	attrMap.UpsertString(conventions.AttributeK8sPod, "otel-collector-6484db5844-c6f9m")
+	attrMap.UpsertString(conventions.AttributeK8sPodUID, "FDFD941E-2A7A-4945-B601-88DD486161A4")
+	attrMap.UpsertString(conventions.AttributeHostID, "ec2e3fdaffa294348bdf355156b94cda")
+	attrMap.UpsertString(conventions.AttributeHostName, "10.99.118.157")
+	attrMap.UpsertString(conventions.AttributeHostImageID, "ami-011c865bf7da41a9d")
+	attrMap.UpsertString(conventions.AttributeHostType, "m5.xlarge")
+	attrMap.UpsertString(conventions.AttributeCloudProvider, "aws")
+	attrMap.UpsertString(conventions.AttributeCloudAccount, "12345678901")
+	attrMap.UpsertString(conventions.AttributeCloudRegion, "us-east-1")
+	attrMap.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
 }
 
-func generateOnpremK8sAttributes() map[string]interface{} {
-	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeContainerName] = "cert-manager"
-	attrMap[conventions.AttributeContainerImage] = "quay.io/jetstack/cert-manager-controller:v0.14.2"
-	attrMap[conventions.AttributeK8sCluster] = "docker-desktop"
-	attrMap[conventions.AttributeK8sNamespace] = "cert-manager"
-	attrMap[conventions.AttributeK8sDeployment] = "cm-1-cert-manager"
-	attrMap[conventions.AttributeK8sPod] = "cm-1-cert-manager-6448b4949b-t2jtd"
-	attrMap[conventions.AttributeHostName] = "docker-desktop"
-	return attrMap
+func appendFassAttributes(attrMap pdata.AttributeMap) {
+	attrMap.UpsertString(conventions.AttributeFaasID, "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print")
+	attrMap.UpsertString(conventions.AttributeFaasName, "env-vars-print")
+	attrMap.UpsertString(conventions.AttributeFaasVersion, "semver:1.0.0")
+	attrMap.UpsertString(conventions.AttributeCloudProvider, "gcp")
+	attrMap.UpsertString(conventions.AttributeCloudAccount, "opentelemetry")
+	attrMap.UpsertString(conventions.AttributeCloudRegion, "us-central1")
+	attrMap.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-central1-a")
 }
 
-func generateCloudK8sAttributes() map[string]interface{} {
-	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeContainerName] = "otel-collector"
-	attrMap[conventions.AttributeContainerImage] = "otel/opentelemetry-collector-contrib"
-	attrMap[conventions.AttributeContainerTag] = "0.4.0"
-	attrMap[conventions.AttributeK8sCluster] = "erp-dev"
-	attrMap[conventions.AttributeK8sNamespace] = "monitoring"
-	attrMap[conventions.AttributeK8sDeployment] = "otel-collector"
-	attrMap[conventions.AttributeK8sDeploymentUID] = "4D614B27-EDAF-409B-B631-6963D8F6FCD4"
-	attrMap[conventions.AttributeK8sReplicaSet] = "otel-collector-2983fd34"
-	attrMap[conventions.AttributeK8sReplicaSetUID] = "EC7D59EF-D5B6-48B7-881E-DA6B7DD539B6"
-	attrMap[conventions.AttributeK8sPod] = "otel-collector-6484db5844-c6f9m"
-	attrMap[conventions.AttributeK8sPodUID] = "FDFD941E-2A7A-4945-B601-88DD486161A4"
-	attrMap[conventions.AttributeHostID] = "ec2e3fdaffa294348bdf355156b94cda"
-	attrMap[conventions.AttributeHostName] = "10.99.118.157"
-	attrMap[conventions.AttributeHostImageID] = "ami-011c865bf7da41a9d"
-	attrMap[conventions.AttributeHostType] = "m5.xlarge"
-	attrMap[conventions.AttributeCloudProvider] = "aws"
-	attrMap[conventions.AttributeCloudAccount] = "12345678901"
-	attrMap[conventions.AttributeCloudRegion] = "us-east-1"
-	attrMap[conventions.AttributeCloudAvailabilityZone] = "us-east-1c"
-	return attrMap
-}
-
-func generateFassAttributes() map[string]interface{} {
-	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeFaasID] = "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print"
-	attrMap[conventions.AttributeFaasName] = "env-vars-print"
-	attrMap[conventions.AttributeFaasVersion] = "semver:1.0.0"
-	attrMap[conventions.AttributeCloudProvider] = "gcp"
-	attrMap[conventions.AttributeCloudAccount] = "opentelemetry"
-	attrMap[conventions.AttributeCloudRegion] = "us-central1"
-	attrMap[conventions.AttributeCloudAvailabilityZone] = "us-central1-a"
-	return attrMap
-}
-
-func generateExecAttributes() map[string]interface{} {
-	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeProcessExecutableName] = "otelcol"
+func appendExecAttributes(attrMap pdata.AttributeMap) {
+	attrMap.UpsertString(conventions.AttributeProcessExecutableName, "otelcol")
 	parts := pdata.NewAttributeValueArray()
 	parts.ArrayVal().Append(pdata.NewAttributeValueString("otelcol"))
 	parts.ArrayVal().Append(pdata.NewAttributeValueString("--config=/etc/otel-collector-config.yaml"))
 	parts.ArrayVal().Append(pdata.NewAttributeValueString("--mem-ballast-size-mib=683"))
-	attrMap["conventions.AttributeProcessCommandLine"] = parts
-	attrMap[conventions.AttributeProcessExecutablePath] = "/usr/local/bin/otelcol"
-	attrMap[conventions.AttributeProcessID] = 2020
-	attrMap[conventions.AttributeProcessOwner] = "otel"
-	attrMap[conventions.AttributeOSType] = "LINUX"
-	attrMap[conventions.AttributeOSDescription] =
-		"Linux ubuntu 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux"
-	return attrMap
+	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)
+	attrMap.UpsertString(conventions.AttributeProcessExecutablePath, "/usr/local/bin/otelcol")
+	attrMap.UpsertInt(conventions.AttributeProcessID, 2020)
+	attrMap.UpsertString(conventions.AttributeProcessOwner, "otel")
+	attrMap.UpsertString(conventions.AttributeOSType, "LINUX")
+	attrMap.UpsertString(conventions.AttributeOSDescription,
+		"Linux ubuntu 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux")
 }

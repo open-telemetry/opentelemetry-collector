@@ -16,48 +16,9 @@ package goldendataset
 
 import (
 	"encoding/csv"
-	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/spf13/cast"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-func convertMapToAttributeMap(attrsMap map[string]interface{}) *pdata.AttributeMap {
-	attributeMap := pdata.NewAttributeMap()
-	if attrsMap == nil {
-		return nil
-	}
-	for key, value := range attrsMap {
-		attributeMap.Insert(key, convertToAttributeValue(value))
-	}
-	return &attributeMap
-}
-
-func convertToAttributeValue(value interface{}) pdata.AttributeValue {
-	var newValue pdata.AttributeValue
-	switch val := value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		newValue = pdata.NewAttributeValueInt(cast.ToInt64(val))
-	case float32, float64:
-		newValue = pdata.NewAttributeValueDouble(cast.ToFloat64(val))
-	case bool:
-		newValue = pdata.NewAttributeValueBool(cast.ToBool(val))
-	case pdata.AttributeMap:
-		newValue = pdata.NewAttributeValueMap()
-		val.CopyTo(newValue.MapVal())
-	case pdata.AnyValueArray:
-		newValue = pdata.NewAttributeValueArray()
-		val.CopyTo(newValue.ArrayVal())
-	case pdata.AttributeValue:
-		newValue = val
-	default:
-		newValue = pdata.NewAttributeValueString(val.(string))
-	}
-	return newValue
-}
 
 func loadPictOutputFile(fileName string) ([][]string, error) {
 	file, err := os.Open(filepath.Clean(fileName))
@@ -75,22 +36,4 @@ func loadPictOutputFile(fileName string) ([][]string, error) {
 	reader.Comma = '\t'
 
 	return reader.ReadAll()
-}
-
-func generatePDataTraceID(random io.Reader) pdata.TraceID {
-	var r [16]byte
-	_, err := random.Read(r[:])
-	if err != nil {
-		panic(err)
-	}
-	return pdata.NewTraceID(r)
-}
-
-func generatePDataSpanID(random io.Reader) pdata.SpanID {
-	var r [8]byte
-	_, err := random.Read(r[:])
-	if err != nil {
-		panic(err)
-	}
-	return pdata.NewSpanID(r)
 }
