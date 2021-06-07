@@ -347,9 +347,9 @@ func addSingleIntHistogramDataPoint(pt pdata.IntHistogramDataPoint, resource pda
 	addSample(tsMap, infBucket, infLabels, metric)
 }
 
-// addSingleDoubleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
+// addSingleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
-func addSingleDoubleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
+func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	time := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
@@ -398,8 +398,8 @@ func addSingleDoubleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pda
 	addSample(tsMap, infBucket, infLabels, metric)
 }
 
-// addSingleDoubleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.
-func addSingleDoubleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
+// addSingleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.
+func addSingleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	time := convertTimeStamp(pt.Timestamp())
 	// sum and count of the summary should append suffix to baseName
