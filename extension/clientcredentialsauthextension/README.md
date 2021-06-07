@@ -12,8 +12,14 @@ extensions:
     client_secret: someclientsecret
     token_url: https://someserver.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
+    # tls settings for the token client
+    insecure: true
+    ca_file: /var/lib/mycert.pem
+    cert_file: certfile
+    key_file: keyfile
+    # timeout for the token client
+    timeout: 2s
     
-
 receivers:
   hostmetrics:
     scrapers:
@@ -32,10 +38,10 @@ exporters:
     endpoint: 0.0.0.0:5000
     ca_file: /tmp/certs/ca.pem
     auth:
-      authenticator: oauth2
+      authenticator: oauth2clientcredentials
 
 service:
-  extensions: [oauth2]
+  extensions: [oauth2clientcredentials]
   pipelines:
     metrics:
       receivers: [hostmetrics]
