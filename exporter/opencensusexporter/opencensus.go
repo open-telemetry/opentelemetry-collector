@@ -75,8 +75,8 @@ func newOcExporter(_ context.Context, cfg *Config) (*ocExporter, error) {
 }
 
 // start creates the gRPC client Connection
-func (oce *ocExporter) start(ctx context.Context, _ component.Host) error {
-	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions()
+func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
+	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host.GetExtensions())
 	if err != nil {
 		return err
 	}

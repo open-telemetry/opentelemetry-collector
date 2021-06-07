@@ -20,13 +20,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/internal/data"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestGenerateParentSpan(t *testing.T) {
 	random := rand.Reader
-	traceID := generateTraceID(random)
+	traceID := generatePDataTraceID(random)
 	spanInputs := &PICTSpanInputs{
 		Parent:     SpanParentRoot,
 		Tracestate: TraceStateEmpty,
@@ -36,17 +35,17 @@ func TestGenerateParentSpan(t *testing.T) {
 		Links:      SpanChildCountOne,
 		Status:     SpanStatusOk,
 	}
-	span := GenerateSpan(traceID, data.NewSpanID([8]byte{}), "/gotest-parent", spanInputs, random)
-	assert.Equal(t, traceID, span.TraceId)
-	assert.True(t, span.ParentSpanId.IsEmpty())
-	assert.Equal(t, 11, len(span.Attributes))
-	assert.Equal(t, otlptrace.Status_STATUS_CODE_OK, span.Status.Code)
+	span := GenerateSpan(traceID, pdata.NewSpanID([8]byte{}), "/gotest-parent", spanInputs, random)
+	assert.Equal(t, traceID, span.TraceID())
+	assert.True(t, span.ParentSpanID().IsEmpty())
+	assert.Equal(t, 11, span.Attributes().Len())
+	assert.Equal(t, pdata.StatusCodeOk, span.Status().Code())
 }
 
 func TestGenerateChildSpan(t *testing.T) {
 	random := rand.Reader
-	traceID := generateTraceID(random)
-	parentID := generateSpanID(random)
+	traceID := generatePDataTraceID(random)
+	parentID := generatePDataSpanID(random)
 	spanInputs := &PICTSpanInputs{
 		Parent:     SpanParentChild,
 		Tracestate: TraceStateEmpty,
@@ -57,10 +56,10 @@ func TestGenerateChildSpan(t *testing.T) {
 		Status:     SpanStatusOk,
 	}
 	span := GenerateSpan(traceID, parentID, "get_test_info", spanInputs, random)
-	assert.Equal(t, traceID, span.TraceId)
-	assert.Equal(t, parentID, span.ParentSpanId)
-	assert.Equal(t, 12, len(span.Attributes))
-	assert.Equal(t, otlptrace.Status_STATUS_CODE_OK, span.Status.Code)
+	assert.Equal(t, traceID, span.TraceID())
+	assert.Equal(t, parentID, span.ParentSpanID())
+	assert.Equal(t, 12, span.Attributes().Len())
+	assert.Equal(t, pdata.StatusCodeOk, span.Status().Code())
 }
 
 func TestGenerateSpans(t *testing.T) {

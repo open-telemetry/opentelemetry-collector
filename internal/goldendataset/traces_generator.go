@@ -20,10 +20,6 @@ import (
 	"math/rand"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 // GenerateTraces generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise
@@ -51,31 +47,31 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces
 		if spanErr != nil {
 			err = spanErr
 		}
-		traces[index-1] = pdata.TracesFromInternalRep(
-			internal.TracesFromOtlp(&otlpcollectortrace.ExportTraceServiceRequest{
-				ResourceSpans: []*otlptrace.ResourceSpans{rscSpan},
-			}))
+		resourceSpansSlice := pdata.NewResourceSpansSlice()
+		resourceSpansSlice.Append(rscSpan)
+		traces[index-1] = pdata.NewTraces()
+		resourceSpansSlice.CopyTo(traces[index-1].ResourceSpans())
 	}
 	return traces, err
 }
 
-// generateResourceSpan generates a single OTLP ResourceSpans populated based on the provided inputs. They are:
+// generateResourceSpan generates a single PData ResourceSpans populated based on the provided inputs. They are:
 //   tracingInputs - the pairwise combination of field value variations for this ResourceSpans
 //   spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
 //   random - the random number generator to use in generating ID values
 //
 // The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
 func generateResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader) (*otlptrace.ResourceSpans, error) {
-	libSpans, err := generateLibrarySpansArray(tracingInputs, spanPairsFile, random)
-	return &otlptrace.ResourceSpans{
-		Resource:                    GenerateResource(tracingInputs.Resource),
-		InstrumentationLibrarySpans: libSpans,
-	}, err
+	random io.Reader) (pdata.ResourceSpans, error) {
+	resourceSpan := pdata.NewResourceSpans()
+	libSpansSlice, err := generateLibrarySpansArray(tracingInputs, spanPairsFile, random)
+	libSpansSlice.CopyTo(resourceSpan.InstrumentationLibrarySpans())
+	GenerateResource(tracingInputs.Resource).CopyTo(resourceSpan.Resource())
+	return resourceSpan, err
 }
 
 func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader) ([]*otlptrace.InstrumentationLibrarySpans, error) {
+	random io.Reader) (pdata.InstrumentationLibrarySpansSlice, error) {
 	var count int
 	switch tracingInputs.InstrumentationLibrary {
 	case LibraryNone:
@@ -86,23 +82,28 @@ func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile s
 		count = 2
 	}
 	var err error
-	libSpans := make([]*otlptrace.InstrumentationLibrarySpans, count)
+	var libSpans *pdata.InstrumentationLibrarySpans
+	instrumentationLibrarySpansSlice := pdata.NewInstrumentationLibrarySpansSlice()
 	for i := 0; i < count; i++ {
-		libSpans[i], err = generateLibrarySpans(tracingInputs, i, spanPairsFile, random)
+		libSpans, err = generateLibrarySpans(tracingInputs, i, spanPairsFile, random)
+		if err != nil {
+			instrumentationLibrarySpansSlice.Append(*libSpans)
+		}
 	}
-	return libSpans, err
+	return instrumentationLibrarySpansSlice, err
 }
 
 func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string,
-	random io.Reader) (*otlptrace.InstrumentationLibrarySpans, error) {
+	random io.Reader) (*pdata.InstrumentationLibrarySpans, error) {
+	instrumentationLibrarySpans := pdata.NewInstrumentationLibrarySpans()
 	spanCaseCount, err := countTotalSpanCases(spanPairsFile)
 	if err != nil {
 		return nil, err
 	}
-	var spans []*otlptrace.Span
+	var spans []pdata.Span
 	switch tracingInputs.Spans {
 	case LibrarySpansNone:
-		spans = make([]*otlptrace.Span, 0)
+		spans = make([]pdata.Span, 0)
 	case LibrarySpansOne:
 		spans, _, err = GenerateSpans(1, 0, spanPairsFile, random)
 	case LibrarySpansSeveral:
@@ -112,10 +113,13 @@ func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairs
 	default:
 		spans, _, err = GenerateSpans(16, 0, spanPairsFile, random)
 	}
-	return &otlptrace.InstrumentationLibrarySpans{
-		InstrumentationLibrary: generateInstrumentationLibrary(tracingInputs, index),
-		Spans:                  spans,
-	}, err
+	spanSlice := pdata.NewSpanSlice()
+	for _, span := range spans {
+		spanSlice.Append(span)
+	}
+	generateInstrumentationLibrary(tracingInputs, index).CopyTo(instrumentationLibrarySpans.InstrumentationLibrary())
+	spanSlice.CopyTo(instrumentationLibrarySpans.Spans())
+	return &instrumentationLibrarySpans, err
 }
 
 func countTotalSpanCases(spanPairsFile string) (int, error) {
@@ -127,9 +131,10 @@ func countTotalSpanCases(spanPairsFile string) (int, error) {
 	return count, err
 }
 
-func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int) otlpcommon.InstrumentationLibrary {
+func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int) pdata.InstrumentationLibrary {
+	instrumentationLibrary := pdata.NewInstrumentationLibrary()
 	if LibraryNone == tracingInputs.InstrumentationLibrary {
-		return otlpcommon.InstrumentationLibrary{}
+		return instrumentationLibrary
 	}
 	nameStr := fmt.Sprintf("%s-%s-%s-%d", tracingInputs.Resource, tracingInputs.InstrumentationLibrary,
 		tracingInputs.Spans, index)
@@ -137,8 +142,7 @@ func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int)
 	if index > 0 {
 		verStr = ""
 	}
-	return otlpcommon.InstrumentationLibrary{
-		Name:    nameStr,
-		Version: verStr,
-	}
+	instrumentationLibrary.SetName(nameStr)
+	instrumentationLibrary.SetVersion(verStr)
+	return instrumentationLibrary
 }

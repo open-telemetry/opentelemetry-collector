@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package octrace
-
-// Option interface defines for configuration settings to be applied to receivers.
-//
-// WithReceiver applies the configuration to the given receiver.
-type Option func(*Receiver)
+// Package componenterror provides helper functions to create and process
+// OpenTelemetry component errors.
+package componenterror

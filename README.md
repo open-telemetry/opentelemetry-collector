@@ -69,6 +69,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
 
 - [Alolita Sharma](https://github.com/alolita), AWS
+- [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
