@@ -20,6 +20,7 @@
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
 - Automate triggering of doc-update on release (#3234)
 - Enable Dependabot for Github Actions (#3312)
+- Remove the proto dependency in `goldendataset` for traces (#3322)
 - Add telemetry for dropped data due to exporter sending queue overflow (#3328)
 
 ## v0.27.0 Beta

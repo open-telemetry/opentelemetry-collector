@@ -15,14 +15,13 @@
 package goldendataset
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-// GenerateResource generates a OTLP Resource object with representative attributes for the
+// GenerateResource generates a PData Resource object with representative attributes for the
 // underlying resource type specified by the rscID input parameter.
-func GenerateResource(rscID PICTInputResource) otlpresource.Resource {
+func GenerateResource(rscID PICTInputResource) pdata.Resource {
 	var attrs map[string]interface{}
 	switch rscID {
 	case ResourceNil:
@@ -44,16 +43,12 @@ func GenerateResource(rscID PICTInputResource) otlpresource.Resource {
 	default:
 		attrs = generateEmptyAttributes()
 	}
-	var dropped uint32
-	if len(attrs) < 10 {
-		dropped = 0
-	} else {
-		dropped = uint32(len(attrs) % 4)
+	resource := pdata.NewResource()
+	attributeMap := convertMapToAttributeMap(attrs)
+	if attributeMap != nil {
+		attributeMap.CopyTo(resource.Attributes())
 	}
-	return otlpresource.Resource{
-		Attributes:             convertMapToAttributeKeyValues(attrs),
-		DroppedAttributesCount: dropped,
-	}
+	return resource
 }
 
 func generateNilAttributes() map[string]interface{} {
@@ -70,12 +65,10 @@ func generateOnpremVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeServiceName] = "customers"
 	attrMap[conventions.AttributeServiceNamespace] = "production"
 	attrMap[conventions.AttributeServiceVersion] = "semver:0.7.3"
-	subMap := make(map[string]interface{})
-	subMap["public"] = "tc-prod9.internal.example.com"
-	subMap["internal"] = "172.18.36.18"
-	attrMap[conventions.AttributeHostName] = &otlpcommon.KeyValueList{
-		Values: convertMapToAttributeKeyValues(subMap),
-	}
+	subMap := pdata.NewAttributeMap()
+	subMap.InsertString("public", "tc-prod9.internal.example.com")
+	subMap.InsertString("internal", "172.18.36.18")
+	attrMap[conventions.AttributeHostName] = subMap
 	attrMap[conventions.AttributeHostImageID] = "661ADFA6-E293-4870-9EFA-1AA052C49F18"
 	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
 	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
@@ -153,13 +146,11 @@ func generateFassAttributes() map[string]interface{} {
 func generateExecAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeProcessExecutableName] = "otelcol"
-	parts := make([]otlpcommon.AnyValue, 3)
-	parts[0] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "otelcol"}}
-	parts[1] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--config=/etc/otel-collector-config.yaml"}}
-	parts[2] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--mem-ballast-size-mib=683"}}
-	attrMap[conventions.AttributeProcessCommandLine] = &otlpcommon.ArrayValue{
-		Values: parts,
-	}
+	parts := pdata.NewAttributeValueArray()
+	parts.ArrayVal().Append(pdata.NewAttributeValueString("otelcol"))
+	parts.ArrayVal().Append(pdata.NewAttributeValueString("--config=/etc/otel-collector-config.yaml"))
+	parts.ArrayVal().Append(pdata.NewAttributeValueString("--mem-ballast-size-mib=683"))
+	attrMap["conventions.AttributeProcessCommandLine"] = parts
 	attrMap[conventions.AttributeProcessExecutablePath] = "/usr/local/bin/otelcol"
 	attrMap[conventions.AttributeProcessID] = 2020
 	attrMap[conventions.AttributeProcessOwner] = "otel"
