@@ -6,6 +6,20 @@ extensions:
     scopes: ["api.metrics"]
     timeout: 1s
 
+  oauth2clientcredentials/withtls:
+    client_id: someclientid2
+    client_secret: someclientsecret2
+    token_url: https://someserver2.com/oauth2/default/v1/token
+    scopes: ["api.metrics"]
+    timeout: 1s
+    # tls settings for the token client
+    insecure: true
+    ca_file: /var/lib/mycert.pem
+    cert_file: certfile
+    key_file: keyfile
+
+
+
 # Data pipeline is required to load the config.
 receivers:
   nop:
@@ -15,7 +29,7 @@ exporters:
   nop:
 
 service:
-  extensions: [oauth2clientcredentials/1]
+  extensions: [oauth2clientcredentials/1, oauth2clientcredentials/withtls]
   pipelines:
     traces:
       receivers: [nop]
