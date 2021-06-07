@@ -12,18 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenterror
-
-import (
-	"errors"
-)
-
-var (
-	// ErrNilNextConsumer indicates an error on nil next consumer.
-	ErrNilNextConsumer = errors.New("nil nextConsumer")
-
-	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor
-	// factory methods that create the entity if the particular telemetry
-	// data type is not supported by the receiver, exporter or processor.
-	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
-)
+// Package component outlines the components used in the collector
+// and provides a foundation for the component’s creation and
+// termination process. A component can be either a receiver, exporter,
+// processor, or an extension.
+package component

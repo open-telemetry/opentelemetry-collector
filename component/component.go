@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Component is either a receiver, exporter, processor or an extension.
+// Component is either a receiver, exporter, processor, or an extension.
 //
 // A component's lifecycle has the following phases:
 //
