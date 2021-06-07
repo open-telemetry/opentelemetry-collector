@@ -15,7 +15,6 @@
 package clientcredentialsauthextension
 
 import (
-	"fmt"
 	"path"
 	"testing"
 	"time"
@@ -93,27 +92,28 @@ func TestLoadConfigError(t *testing.T) {
 	assert.NoError(t, err)
 
 	tests := []struct {
-		configFile  string
+		configName  string
 		expectedErr error
 	}{
 		{
-			"config_missing_url",
+			"missingurl",
 			errNoTokenURLProvided,
 		},
 		{
-			"config_missing_client_id",
+			"missingid",
 			errNoClientIDProvided,
 		},
 		{
-			"config_missing_client_secret",
+			"missingsecret",
 			errNoClientSecretProvided,
 		},
 	}
 	for _, tt := range tests {
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
-		configFile := fmt.Sprintf("%s.yaml", tt.configFile)
-		_, ferr := configtest.LoadConfigAndValidate(path.Join(".", "testdata", configFile), factories)
-		require.ErrorIs(t, ferr, tt.expectedErr)
+		cfg, _ := configtest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		extension := cfg.Extensions[config.NewIDWithName(typeStr, tt.configName)]
+		verr := extension.Validate()
+		require.ErrorIs(t, verr, tt.expectedErr)
 	}
 }

@@ -1,0 +1,33 @@
+extensions:
+  oauth2clientcredentials/missingid:
+    client_secret: someclientsecret
+    token_url: https://someserver.com/oauth2/default/v1/token
+    scopes: ["api.metrics"]
+
+  oauth2clientcredentials/missingsecret:
+    client_id: someclientid
+    token_url: https://someserver.com/oauth2/default/v1/token
+    scopes: ["api.metrics"]
+
+  oauth2clientcredentials/missingurl:
+    client_id: someclientid
+    client_secret: someclientsecret
+    scopes: ["api.metrics"]
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [oauth2clientcredentials/missingid,
+               oauth2clientcredentials/missingsecret,
+               oauth2clientcredentials/missingurl]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
