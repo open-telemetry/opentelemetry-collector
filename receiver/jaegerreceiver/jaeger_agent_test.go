@@ -223,9 +223,9 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 	}
 	var protocolFactory thrift.TProtocolFactory
 	if binary {
-		protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
+		protocolFactory = thrift.NewTBinaryProtocolFactoryConf(nil)
 	} else {
-		protocolFactory = thrift.NewTCompactProtocolFactory()
+		protocolFactory = thrift.NewTCompactProtocolFactoryConf(nil)
 	}
 	return agent.NewAgentClientFactory(clientTransport, protocolFactory), nil
 }
