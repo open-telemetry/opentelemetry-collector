@@ -47,12 +47,12 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
@@ -115,11 +115,11 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tr, err := factory.CreateTracesReceiver(ctx, creationParams, tt.cfg, sink)
+			tr, err := factory.CreateTracesReceiver(ctx, creationSet, tt.cfg, sink)
 			assert.NoError(t, err)
 			require.NotNil(t, tr)
 			if tt.wantErr {
@@ -191,11 +191,11 @@ func TestCreateMetricReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
-			mr, err := factory.CreateMetricsReceiver(ctx, creationParams, tt.cfg, sink)
+			mr, err := factory.CreateMetricsReceiver(ctx, creationSet, tt.cfg, sink)
 			assert.NoError(t, err)
 			require.NotNil(t, mr)
 			if tt.wantErr {
@@ -294,10 +294,10 @@ func TestCreateLogReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mr, err := factory.CreateLogsReceiver(ctx, creationParams, tt.cfg, tt.sink)
+			mr, err := factory.CreateLogsReceiver(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

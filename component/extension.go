@@ -36,18 +36,18 @@ type Extension interface {
 type PipelineWatcher interface {
 	// Ready notifies the Extension that all pipelines were built and the
 	// receivers were started, i.e.: the service is ready to receive data
-	// (notice that it may already have received data when this method is called).
+	// (note that it may already have received data when this method is called).
 	Ready() error
 
 	// NotReady notifies the Extension that all receivers are about to be stopped,
 	// i.e.: pipeline receivers will not accept new data.
 	// This is sent before receivers are stopped, so the Extension can take any
-	// appropriate action before that happens.
+	// appropriate actions before that happens.
 	NotReady() error
 }
 
-// ExtensionCreateParams is passed to ExtensionFactory.Create* functions.
-type ExtensionCreateParams struct {
+// ExtensionCreateSettings is passed to ExtensionFactory.Create* functions.
+type ExtensionCreateSettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -65,10 +65,10 @@ type ExtensionFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Extension.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
+	// 'configcheck.ValidateConfig'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Extension
 
 	// CreateExtension creates a service extension based on the given config.
-	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg config.Extension) (Extension, error)
+	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg config.Extension) (Extension, error)
 }

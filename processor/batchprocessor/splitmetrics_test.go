@@ -36,8 +36,10 @@ func TestSplitMetrics_noop(t *testing.T) {
 func TestSplitMetrics(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	dataPointCount := metricDataPointCount(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
+		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
 	}
 	cp := pdata.NewMetrics()
 	cpMetrics := cp.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
@@ -52,9 +54,10 @@ func TestSplitMetrics(t *testing.T) {
 	metrics.At(3).CopyTo(cpMetrics.At(3))
 	metrics.At(4).CopyTo(cpMetrics.At(4))
 
-	splitSize := 5
+	splitMetricCount := 5
+	splitSize := splitMetricCount * dataPointCount
 	split := splitMetrics(splitSize, md)
-	assert.Equal(t, splitSize, split.MetricCount())
+	assert.Equal(t, splitMetricCount, split.MetricCount())
 	assert.Equal(t, cp, split)
 	assert.Equal(t, 15, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
@@ -79,8 +82,10 @@ func TestSplitMetrics(t *testing.T) {
 func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	dataPointCount := metricDataPointCount(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
+		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
 	}
 	// add second index to resource metrics
 	testdata.GenerateMetricsManyMetricsSameResource(20).
@@ -90,9 +95,10 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 		metrics.At(i).SetName(getTestMetricName(1, i))
 	}
 
-	splitSize := 5
+	splitMetricCount := 5
+	splitSize := splitMetricCount * dataPointCount
 	split := splitMetrics(splitSize, md)
-	assert.Equal(t, splitSize, split.MetricCount())
+	assert.Equal(t, splitMetricCount, split.MetricCount())
 	assert.Equal(t, 35, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
@@ -101,8 +107,10 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *testing.T) {
 	td := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := td.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	dataPointCount := metricDataPointCount(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
+		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
 	}
 	td.ResourceMetrics().Resize(2)
 	// add second index to resource metrics
@@ -113,10 +121,11 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 		metrics.At(i).SetName(getTestMetricName(1, i))
 	}
 
-	splitSize := 25
+	splitMetricCount := 25
+	splitSize := splitMetricCount * dataPointCount
 	split := splitMetrics(splitSize, td)
-	assert.Equal(t, splitSize, split.MetricCount())
-	assert.Equal(t, 40-splitSize, td.MetricCount())
+	assert.Equal(t, splitMetricCount, split.MetricCount())
+	assert.Equal(t, 40-splitMetricCount, td.MetricCount())
 	assert.Equal(t, 1, td.ResourceMetrics().Len())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-19", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(19).Name())
@@ -165,4 +174,62 @@ func BenchmarkCloneMetrics(b *testing.B) {
 			b.Fail()
 		}
 	}
+}
+
+func TestSplitMetricsUneven(t *testing.T) {
+	md := testdata.GenerateMetricsManyMetricsSameResource(10)
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	dataPointCount := 2
+	for i := 0; i < metrics.Len(); i++ {
+		metrics.At(i).SetName(getTestMetricName(0, i))
+		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+	}
+
+	splitSize := 9
+	split := splitMetrics(splitSize, md)
+	assert.Equal(t, 5, split.MetricCount())
+	assert.Equal(t, 6, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
+
+	split = splitMetrics(splitSize, md)
+	assert.Equal(t, 5, split.MetricCount())
+	assert.Equal(t, 1, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, "test-metric-int-0-8", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
+
+	split = splitMetrics(splitSize, md)
+	assert.Equal(t, 1, split.MetricCount())
+	assert.Equal(t, "test-metric-int-0-9", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+}
+
+func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
+	md := testdata.GenerateMetricsManyMetricsSameResource(2)
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	dataPointCount := 2
+	for i := 0; i < metrics.Len(); i++ {
+		metrics.At(i).SetName(getTestMetricName(0, i))
+		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+	}
+
+	splitSize := 1
+	split := splitMetrics(splitSize, md)
+	assert.Equal(t, 1, split.MetricCount())
+	assert.Equal(t, 2, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+
+	split = splitMetrics(splitSize, md)
+	assert.Equal(t, 1, split.MetricCount())
+	assert.Equal(t, 1, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+
+	split = splitMetrics(splitSize, md)
+	assert.Equal(t, 1, split.MetricCount())
+	assert.Equal(t, 1, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-1", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+
+	split = splitMetrics(splitSize, md)
+	assert.Equal(t, 1, split.MetricCount())
+	assert.Equal(t, 1, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-1", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
 }

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authoidcextension
+package bearertokenauthextension
 
 import (
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -26,32 +27,16 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 )
 
-func TestCreateDefaultConfig(t *testing.T) {
-	// prepare and test
-	expected := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
-		Attribute:         defaultAttribute,
-	}
-
-	// test
+func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-
-	// verify
-	assert.Equal(t, expected, cfg)
+	assert.Equal(t, &Config{ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr))}, cfg)
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Audience = "collector"
-	cfg.IssuerURL = "https://auth.example.com"
-
-	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, ext)
-}
-
-func TestNewFactory(t *testing.T) {
-	f := NewFactory()
-	assert.NotNil(t, f)
+	cfg.BearerToken = "somerandometoken"
+	ext, err := createExtension(context.Background(), component.ExtensionCreateSettings{Logger: zap.NewNop()}, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
 }

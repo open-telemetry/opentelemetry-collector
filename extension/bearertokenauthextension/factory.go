@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authoidcextension
+package bearertokenauthextension
 
 import (
 	"context"
@@ -24,12 +24,10 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "oidc"
-
-	defaultAttribute = "authorization"
+	typeStr = "bearertokenauth"
 )
 
-// NewFactory creates a factory for the OIDC Authenticator extension.
+// NewFactory creates a factory for the static bearer token Authenticator extension.
 func NewFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		typeStr,
@@ -40,10 +38,9 @@ func NewFactory() component.ExtensionFactory {
 func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
-		Attribute:         defaultAttribute,
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
-	return newExtension(cfg.(*Config), params.Logger)
+func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+	return newBearerTokenAuth(cfg.(*Config), set.Logger), nil
 }

@@ -54,31 +54,31 @@ func Test_createMetricsExporter(t *testing.T) {
 	tests := []struct {
 		name                string
 		cfg                 config.Exporter
-		params              component.ExporterCreateParams
+		set                 component.ExporterCreateSettings
 		returnErrorOnCreate bool
 		returnErrorOnStart  bool
 	}{
 		{"success_case",
 			createDefaultConfig(),
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ExporterCreateSettings{Logger: zap.NewNop()},
 			false,
 			false,
 		},
 		{"fail_case",
 			nil,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ExporterCreateSettings{Logger: zap.NewNop()},
 			true,
 			false,
 		},
 		{"invalid_config_case",
 			invalidConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ExporterCreateSettings{Logger: zap.NewNop()},
 			true,
 			false,
 		},
 		{"invalid_tls_config_case",
 			invalidTLSConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ExporterCreateSettings{Logger: zap.NewNop()},
 			false,
 			true,
 		},
@@ -86,7 +86,7 @@ func Test_createMetricsExporter(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exp, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
+			exp, err := createMetricsExporter(context.Background(), tt.set, tt.cfg)
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return

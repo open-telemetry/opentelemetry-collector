@@ -51,7 +51,7 @@ func (f *nopExtensionFactory) CreateDefaultConfig() config.Extension {
 // CreateExtension implements component.ExtensionFactory interface.
 func (f *nopExtensionFactory) CreateExtension(
 	_ context.Context,
-	_ component.ExtensionCreateParams,
+	_ component.ExtensionCreateSettings,
 	_ config.Extension,
 ) (component.Extension, error) {
 	return nopExtensionInstance, nil

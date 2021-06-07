@@ -120,13 +120,13 @@ func newJaegerReceiver(
 	id config.ComponentID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	params component.ReceiverCreateParams,
+	set component.ReceiverCreateSettings,
 ) *jReceiver {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
-		logger:       params.Logger,
+		logger:       set.Logger,
 		grpcObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: grpcTransport}),
 		httpObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: collectorHTTPTransport}),
 	}
@@ -329,7 +329,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	// Start upstream grpc client before serving sampling endpoints over HTTP
 	if jr.config.RemoteSamplingClientSettings.Endpoint != "" {
-		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions()
+		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host.GetExtensions())
 		if err != nil {
 			jr.logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
 			return err

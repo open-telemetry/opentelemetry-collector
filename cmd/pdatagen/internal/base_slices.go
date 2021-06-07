@@ -112,7 +112,7 @@ func fillTest${structName}(tv ${structName}) {
 
 const slicePtrTemplate = `// ${structName} logically represents a slice of ${elementName}.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use New${structName} function to create new instances.
@@ -144,10 +144,10 @@ func (es ${structName}) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es ${structName}) At(ix int) ${elementName} {
 	return new${elementName}((*es.orig)[ix])
 }
@@ -177,12 +177,12 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ${structName} can be initialized:
-// es := New${structName}()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := New${structName}()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ${structName}) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -309,7 +309,7 @@ func Test${structName}_Append(t *testing.T) {
 
 const sliceValueTemplate = `// ${structName} logically represents a slice of ${elementName}.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use New${structName} function to create new instances.
@@ -341,10 +341,10 @@ func (es ${structName}) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es ${structName}) At(ix int) ${elementName} {
 	return new${elementName}(&(*es.orig)[ix])
 }
@@ -369,12 +369,12 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ${structName} can be initialized:
-// es := New${structName}()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := New${structName}()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ${structName}) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)

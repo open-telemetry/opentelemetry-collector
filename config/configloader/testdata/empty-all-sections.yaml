@@ -2,4 +2,4 @@ receivers:
 exporters:
 processors:
 service:
-  pipeline:
+  pipelines:

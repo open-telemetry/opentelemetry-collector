@@ -180,7 +180,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.ComponentID) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
-	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigAndValidate("testdata/pipelines_builder.yaml", factories)
 	// Load the config
 	require.Nil(t, err)
 
@@ -256,7 +256,7 @@ func TestBuildPipelines_NotSupportedDataType(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.configFile, func(t *testing.T) {
 
-			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
+			cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
 			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
