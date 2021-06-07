@@ -20,9 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -47,7 +45,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	creationSet := componenttest.NewNopReceiverCreateSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -115,7 +113,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	creationSet := componenttest.NewNopReceiverCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
@@ -191,7 +189,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	creationSet := componenttest.NewNopReceiverCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
@@ -294,7 +292,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	creationSet := componenttest.NewNopReceiverCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogsReceiver(ctx, creationSet, tt.cfg, tt.sink)

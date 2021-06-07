@@ -20,9 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -39,7 +37,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
-	creationSet := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	creationSet := componenttest.NewNopReceiverCreateSettings()
 	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mReceiver)
 }
