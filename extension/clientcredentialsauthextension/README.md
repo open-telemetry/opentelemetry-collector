@@ -48,3 +48,5 @@ service:
       processors: []
       exporters: [otlphttp/withauth, otlp/withauth]
 ```
+
+For more information on client side tls settings, see [configtls README](../configtls/README.md).

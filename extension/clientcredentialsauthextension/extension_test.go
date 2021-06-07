@@ -23,6 +23,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
+
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestOAuthClientSettings(t *testing.T) {
@@ -30,7 +32,7 @@ func TestOAuthClientSettings(t *testing.T) {
 		name          string
 		settings      *Config
 		shouldError   bool
-		expectedError error
+		expectedError string
 	}{
 		{
 			name: "all_valid_settings",
@@ -39,9 +41,40 @@ func TestOAuthClientSettings(t *testing.T) {
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
+				Timeout:      2,
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile:   "testdata/testCA.pem",
+						CertFile: "testdata/test-cert.pem",
+						KeyFile:  "testdata/test-key.pem",
+					},
+					Insecure:           false,
+					InsecureSkipVerify: false,
+				},
 			},
 			shouldError:   false,
-			expectedError: nil,
+			expectedError: "",
+		},
+		{
+			name: "invalid_tls",
+			settings: &Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+				Timeout:      2,
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile:   "testdata/testCA.pem",
+						CertFile: "testdata/t/doestExist.pem",
+						KeyFile:  "testdata/test-key.pem",
+					},
+					Insecure:           false,
+					InsecureSkipVerify: false,
+				},
+			},
+			shouldError:   true,
+			expectedError: "failed to load TLS config: failed to load TLS cert and key",
 		},
 		{
 			name: "missing_client_id",
@@ -51,7 +84,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError:   true,
-			expectedError: errNoClientIDProvided,
+			expectedError: errNoClientIDProvided.Error(),
 		},
 		{
 			name: "missing_client_secret",
@@ -61,7 +94,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:   []string{"resource.read"},
 			},
 			shouldError:   true,
-			expectedError: errNoClientSecretProvided,
+			expectedError: errNoClientSecretProvided.Error(),
 		},
 		{
 			name: "missing_token_url",
@@ -71,7 +104,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError:   true,
-			expectedError: errNoTokenURLProvided,
+			expectedError: errNoTokenURLProvided.Error(),
 		},
 	}
 
@@ -79,8 +112,8 @@ func TestOAuthClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			rc, err := newClientCredentialsExtension(test.settings, zap.NewNop())
 			if test.shouldError {
-				assert.Error(t, err)
-				assert.Equal(t, test.expectedError, err)
+				assert.NotNil(t, err)
+				assert.Contains(t, err.Error(), test.expectedError)
 				return
 			}
 			assert.NoError(t, err)
@@ -88,6 +121,14 @@ func TestOAuthClientSettings(t *testing.T) {
 			assert.Equal(t, test.settings.TokenURL, rc.clientCredentials.TokenURL)
 			assert.Equal(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
 			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
+			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
+
+			// test tls settings
+			transport := rc.client.Transport.(*http.Transport)
+			tlsClientConfig := transport.TLSClientConfig
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
+			assert.Nil(t, err)
+			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
 	}
 }
@@ -169,6 +210,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
+				Timeout:      1,
 			},
 			shouldError: false,
 		},

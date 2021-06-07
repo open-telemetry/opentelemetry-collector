@@ -55,15 +55,11 @@ func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCred
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
-	if cfg.TLSSetting != nil {
-		tlsCfg, err := cfg.TLSSetting.LoadTLSConfig()
-		if err != nil {
-			return nil, err
-		}
-		if tlsCfg != nil {
-			transport.TLSClientConfig = tlsCfg
-		}
+	tlsCfg, err := cfg.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, err
 	}
+	transport.TLSClientConfig = tlsCfg
 
 	return &ClientCredentialsAuthenticator{
 		clientCredentials: &clientcredentials.Config{

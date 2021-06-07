@@ -13,10 +13,11 @@ extensions:
     scopes: ["api.metrics"]
     timeout: 1s
     # tls settings for the token client
-    insecure: true
-    ca_file: /var/lib/mycert.pem
-    cert_file: certfile
-    key_file: keyfile
+    tls:
+      insecure: true
+      ca_file: cafile
+      cert_file: certfile
+      key_file: keyfile
 
 
 

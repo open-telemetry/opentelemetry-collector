@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -57,8 +58,34 @@ func TestLoadConfig(t *testing.T) {
 		},
 		ext)
 
-	assert.Equal(t, 1, len(cfg.Service.Extensions))
+	assert.Equal(t, 2, len(cfg.Service.Extensions))
 	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+}
+
+func TestConfigTLSSettings(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Extensions[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	ext2 := cfg.Extensions[config.NewIDWithName(typeStr, "withtls")]
+
+	cfg2 := ext2.(*Config)
+	assert.Equal(t, cfg2.TLSSetting, configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   "cafile",
+			CertFile: "certfile",
+			KeyFile:  "keyfile",
+		},
+		Insecure:           true,
+		InsecureSkipVerify: false,
+		ServerName:         "",
+	})
 }
 
 func TestLoadConfigError(t *testing.T) {

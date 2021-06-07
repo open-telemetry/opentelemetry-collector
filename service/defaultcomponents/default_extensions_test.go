@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"go.opentelemetry.io/collector/extension/clientcredentialsauthextension"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -72,6 +74,18 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
 				cfg.BearerToken = "sometoken"
+				return cfg
+			},
+		},
+		{
+			extension: "oauth2clientcredentials",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["oauth2clientcredentials"].CreateDefaultConfig().(*clientcredentialsauthextension.Config)
+				cfg.ClientSecret = "someclientsecret"
+				cfg.ClientID = "someclientid"
+				cfg.Scopes = []string{"some.scope"}
+				cfg.Timeout = 2
+				cfg.TokenURL = "https://some.toke.url/v1/default"
 				return cfg
 			},
 		},

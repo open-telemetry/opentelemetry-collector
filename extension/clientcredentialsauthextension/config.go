@@ -45,9 +45,8 @@ type Config struct {
 	// Scope specifies optional requested permissions.
 	Scopes []string `mapstructure:"scopes,omitempty"`
 
-	// Configures the protocol to use TLS.
-	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings,omitempty"`
+	// TLSSetting struct exposes TLS client configuration.
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// Timeout parameter configures `http.Client.Timeout`.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
