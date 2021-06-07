@@ -49,4 +49,4 @@ service:
       exporters: [otlphttp/withauth, otlp/withauth]
 ```
 
-For more information on client side tls settings, see [configtls README](../config/configtls/README.md).
+For more information on client side tls settings, see [configtls README](../../config/configtls/README.md).
