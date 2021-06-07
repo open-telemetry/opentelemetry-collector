@@ -80,8 +80,8 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 }
 
 // Start creates the prometheus client
-func (prwe *PRWExporter) Start(_ context.Context, _ component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient()
+func (prwe *PRWExporter) Start(_ context.Context, host component.Host) (err error) {
+	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions())
 	return err
 }
 
