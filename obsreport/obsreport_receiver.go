@@ -64,6 +64,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *Receiver) StartTracesOp(operationCtx context.Context) context.Context {
+	operationCtx = recordPipelineStart(operationCtx)
 	return rec.startOp(operationCtx, obsmetrics.ReceiveTraceDataOperationSuffix)
 }
 
@@ -82,6 +83,7 @@ func (rec *Receiver) EndTracesOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *Receiver) StartLogsOp(operationCtx context.Context) context.Context {
+	operationCtx = recordPipelineStart(operationCtx)
 	return rec.startOp(operationCtx, obsmetrics.ReceiverLogsOperationSuffix)
 }
 
@@ -100,6 +102,7 @@ func (rec *Receiver) EndLogsOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *Receiver) StartMetricsOp(operationCtx context.Context) context.Context {
+	operationCtx = recordPipelineStart(operationCtx)
 	return rec.startOp(operationCtx, obsmetrics.ReceiverMetricsOperationSuffix)
 }
 

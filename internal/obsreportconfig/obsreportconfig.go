@@ -25,6 +25,8 @@ import (
 
 var (
 	Level = configtelemetry.LevelBasic
+
+	latencyDistribution = view.Distribution(0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1)
 )
 
 // ObsMetrics wraps OpenCensus View for Collector observability metrics
@@ -52,7 +54,7 @@ func Configure(level configtelemetry.Level) *ObsMetrics {
 func allViews() *ObsMetrics {
 	var views []*view.View
 	// Receiver views.
-	measures := []*stats.Int64Measure{
+	measures := []stats.Measure{
 		obsmetrics.ReceiverAcceptedSpans,
 		obsmetrics.ReceiverRefusedSpans,
 		obsmetrics.ReceiverAcceptedMetricPoints,
@@ -66,7 +68,7 @@ func allViews() *ObsMetrics {
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	// Scraper views.
-	measures = []*stats.Int64Measure{
+	measures = []stats.Measure{
 		obsmetrics.ScraperScrapedMetricPoints,
 		obsmetrics.ScraperErroredMetricPoints,
 	}
@@ -74,7 +76,7 @@ func allViews() *ObsMetrics {
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	// Exporter views.
-	measures = []*stats.Int64Measure{
+	measures = []stats.Measure{
 		obsmetrics.ExporterSentSpans,
 		obsmetrics.ExporterFailedToSendSpans,
 		obsmetrics.ExporterFailedToEnqueueSpans,
@@ -89,7 +91,7 @@ func allViews() *ObsMetrics {
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	// Processor views.
-	measures = []*stats.Int64Measure{
+	measures = []stats.Measure{
 		obsmetrics.ProcessorAcceptedSpans,
 		obsmetrics.ProcessorRefusedSpans,
 		obsmetrics.ProcessorDroppedSpans,
@@ -103,13 +105,20 @@ func allViews() *ObsMetrics {
 	tagKeys = []tag.Key{obsmetrics.TagKeyProcessor}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
+	// Pipeline views.
+	measures = []stats.Measure{
+		obsmetrics.PipelineProcessingDuration,
+	}
+	tagKeys = []tag.Key{obsmetrics.TagKeyPipeline}
+	views = append(views, genViews(measures, tagKeys, latencyDistribution)...)
+
 	return &ObsMetrics{
 		Views: views,
 	}
 }
 
 func genViews(
-	measures []*stats.Int64Measure,
+	measures []stats.Measure,
 	tagKeys []tag.Key,
 	aggregation *view.Aggregation,
 ) []*view.View {

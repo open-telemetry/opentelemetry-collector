@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -125,11 +126,11 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 	switch pipelineCfg.InputType {
 	case config.TracesDataType:
-		tc = pb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters)
+		tc = obsreport.NewTraces(pipelineCfg.Name, pb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters))
 	case config.MetricsDataType:
-		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
+		mc = obsreport.NewMetrics(pipelineCfg.Name, pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters))
 	case config.LogsDataType:
-		lc = pb.buildFanoutExportersLogConsumer(pipelineCfg.Exporters)
+		lc = obsreport.NewLogs(pipelineCfg.Name, pb.buildFanoutExportersLogConsumer(pipelineCfg.Exporters))
 	}
 
 	mutatesConsumedData := false
