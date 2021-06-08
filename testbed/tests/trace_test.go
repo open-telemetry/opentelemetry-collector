@@ -31,6 +31,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -337,8 +338,8 @@ func verifySingleSpan(
 		conventions.AttributeServiceName: pdata.NewAttributeValueString(serviceName),
 	})
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(testbed.GenerateSequentialTraceID(1))
-	span.SetSpanID(testbed.GenerateSequentialSpanID(1))
+	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
+	span.SetSpanID(idutils.UInt64ToSpanID(1))
 	span.SetName(spanName)
 
 	sender := tc.Sender.(testbed.TraceDataSender)
