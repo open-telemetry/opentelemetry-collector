@@ -22,9 +22,9 @@ import (
 
 // Simple utilities for generating metrics for testing
 
-// MetricCfg holds parameters for generating dummy metrics for testing. Set values on this struct to generate
+// MetricsCfg holds parameters for generating dummy metrics for testing. Set values on this struct to generate
 // metrics with the corresponding number/type of attributes and pass into MetricsFromCfg to generate metrics.
-type MetricCfg struct {
+type MetricsCfg struct {
 	// The type of metric to generate
 	MetricDescriptorType pdata.MetricDataType
 	// If MetricDescriptorType is one of the Sum, this describes if the sum is monotonic or not.
@@ -51,10 +51,10 @@ type MetricCfg struct {
 	StepSize uint64
 }
 
-// DefaultCfg produces a MetricCfg with default values. These should be good enough to produce sane
+// DefaultCfg produces a MetricsCfg with default values. These should be good enough to produce sane
 // (but boring) metrics, and can be used as a starting point for making alterations.
-func DefaultCfg() MetricCfg {
-	return MetricCfg{
+func DefaultCfg() MetricsCfg {
+	return MetricsCfg{
 		MetricDescriptorType: pdata.MetricDataTypeIntGauge,
 		MetricNamePrefix:     "",
 		NumILMPerResource:    1,
@@ -70,7 +70,7 @@ func DefaultCfg() MetricCfg {
 }
 
 // MetricsFromCfg produces pdata.Metrics with the passed-in config.
-func MetricsFromCfg(cfg MetricCfg) pdata.Metrics {
+func MetricsFromCfg(cfg MetricsCfg) pdata.Metrics {
 	mg := newMetricGenerator()
 	return mg.genMetricFromCfg(cfg)
 }
@@ -83,7 +83,7 @@ func newMetricGenerator() metricGenerator {
 	return metricGenerator{}
 }
 
-func (g *metricGenerator) genMetricFromCfg(cfg MetricCfg) pdata.Metrics {
+func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rms.Resize(cfg.NumResourceMetrics)
@@ -101,7 +101,7 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricCfg) pdata.Metrics {
 	return md
 }
 
-func (g *metricGenerator) populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
+func (g *metricGenerator) populateIlm(cfg MetricsCfg, rm pdata.ResourceMetrics) {
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilms.Resize(cfg.NumILMPerResource)
 	for i := 0; i < cfg.NumILMPerResource; i++ {
@@ -110,7 +110,7 @@ func (g *metricGenerator) populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
 	}
 }
 
-func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.InstrumentationLibraryMetrics) {
+func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.InstrumentationLibraryMetrics) {
 	metrics := ilm.Metrics()
 	metrics.Resize(cfg.NumMetricsPerILM)
 	for i := 0; i < cfg.NumMetricsPerILM; i++ {
@@ -149,14 +149,14 @@ func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.Instrumentati
 	}
 }
 
-func (g *metricGenerator) populateMetricDesc(cfg MetricCfg, metric pdata.Metric) {
+func (g *metricGenerator) populateMetricDesc(cfg MetricsCfg, metric pdata.Metric) {
 	metric.SetName(fmt.Sprintf("%smetric_%d", cfg.MetricNamePrefix, g.metricID))
 	g.metricID++
 	metric.SetDescription("my-md-description")
 	metric.SetUnit("my-md-units")
 }
 
-func populateIntPoints(cfg MetricCfg, pts pdata.IntDataPointSlice) {
+func populateIntPoints(cfg MetricsCfg, pts pdata.IntDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
@@ -167,7 +167,7 @@ func populateIntPoints(cfg MetricCfg, pts pdata.IntDataPointSlice) {
 	}
 }
 
-func populateDoublePoints(cfg MetricCfg, pts pdata.DoubleDataPointSlice) {
+func populateDoublePoints(cfg MetricsCfg, pts pdata.DoubleDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
@@ -178,7 +178,7 @@ func populateDoublePoints(cfg MetricCfg, pts pdata.DoubleDataPointSlice) {
 	}
 }
 
-func populateDoubleHistogram(cfg MetricCfg, dh pdata.Histogram) {
+func populateDoubleHistogram(cfg MetricsCfg, dh pdata.Histogram) {
 	pts := dh.DataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
@@ -215,7 +215,7 @@ func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 	}
 }
 
-func populateIntHistogram(cfg MetricCfg, dh pdata.IntHistogram) {
+func populateIntHistogram(cfg MetricsCfg, dh pdata.IntHistogram) {
 	pts := dh.DataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
@@ -252,7 +252,7 @@ func addIntHistogramVal(hdp pdata.IntHistogramDataPoint, val int64) {
 	}
 }
 
-func populatePtLabels(cfg MetricCfg, lm pdata.StringMap) {
+func populatePtLabels(cfg MetricsCfg, lm pdata.StringMap) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)

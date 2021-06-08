@@ -51,13 +51,13 @@ func TestNilOperations(t *testing.T) {
 	}
 
 	{
-		ret, err := m.GrpcUnaryServerInterceptor(origCtx, nil, nil, nil)
+		ret, err := m.GRPCUnaryServerInterceptor(origCtx, nil, nil, nil)
 		assert.Nil(t, ret)
 		assert.NoError(t, err)
 	}
 
 	{
-		err := m.GrpcStreamServerInterceptor(nil, nil, nil, nil)
+		err := m.GRPCStreamServerInterceptor(nil, nil, nil, nil)
 		assert.NoError(t, err)
 	}
 

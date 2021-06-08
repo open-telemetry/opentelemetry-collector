@@ -39,7 +39,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := DefaultGrpcUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := DefaultGRPCUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Nil(t, res)
@@ -63,7 +63,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := DefaultGrpcUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := DefaultGRPCUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Nil(t, res)
@@ -83,7 +83,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := DefaultGrpcUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := DefaultGRPCUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Nil(t, res)
@@ -108,7 +108,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := DefaultGrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := DefaultGRPCStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.NoError(t, err)
@@ -134,7 +134,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := DefaultGrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := DefaultGRPCStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Equal(t, expectedErr, err)
@@ -156,7 +156,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := DefaultGrpcStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := DefaultGRPCStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)

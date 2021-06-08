@@ -15,7 +15,6 @@
 package testbed
 
 import (
-	"encoding/binary"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,6 +32,7 @@ import (
 	otlpmetricscol "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlptracecol "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
+	"go.opentelemetry.io/collector/internal/idutils"
 )
 
 // DataProvider defines the interface for generators of test data used to drive various end-to-end tests.
@@ -86,8 +86,8 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 		span := spans.At(i)
 
 		// Create a span.
-		span.SetTraceID(GenerateSequentialTraceID(traceID))
-		span.SetSpanID(GenerateSequentialSpanID(spanID))
+		span.SetTraceID(idutils.UInt64ToTraceID(0, traceID))
+		span.SetSpanID(idutils.UInt64ToSpanID(spanID))
 		span.SetName("load-generator-span")
 		span.SetKind(pdata.SpanKindClient)
 		attrs := span.Attributes()
@@ -101,18 +101,6 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 		span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 	}
 	return traceData, false
-}
-
-func GenerateSequentialTraceID(id uint64) pdata.TraceID {
-	var traceID [16]byte
-	binary.PutUvarint(traceID[:], id)
-	return pdata.NewTraceID(traceID)
-}
-
-func GenerateSequentialSpanID(id uint64) pdata.SpanID {
-	var spanID [8]byte
-	binary.PutUvarint(spanID[:], id)
-	return pdata.NewSpanID(spanID)
 }
 
 func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
@@ -249,7 +237,7 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	if dp.metricsGenerated == nil {
 		var err error
-		dp.metricsGenerated, err = goldendataset.GenerateMetricDatas(dp.metricPairsFile)
+		dp.metricsGenerated, err = goldendataset.GenerateMetrics(dp.metricPairsFile)
 		if err != nil {
 			log.Printf("cannot generate metrics: %s", err)
 		}

@@ -23,7 +23,7 @@ import (
 )
 
 func TestGenerateMetricDatas(t *testing.T) {
-	mds, err := GenerateMetricDatas("testdata/generated_pict_pairs_metrics.txt")
+	mds, err := GenerateMetrics("testdata/generated_pict_pairs_metrics.txt")
 	require.NoError(t, err)
 	require.Equal(t, 25, len(mds))
 }
@@ -32,7 +32,7 @@ func TestPICTtoCfg(t *testing.T) {
 	tests := []struct {
 		name   string
 		inputs PICTMetricInputs
-		cfg    MetricCfg
+		cfg    MetricsCfg
 	}{
 		{
 			name: "none",
@@ -42,7 +42,7 @@ func TestPICTtoCfg(t *testing.T) {
 				MetricType:       MetricTypeIntGauge,
 				NumPtLabels:      LabelsNone,
 			},
-			cfg: MetricCfg{
+			cfg: MetricsCfg{
 				NumResourceAttrs:     0,
 				NumPtsPerMetric:      1,
 				MetricDescriptorType: pdata.MetricDataTypeIntGauge,
@@ -57,7 +57,7 @@ func TestPICTtoCfg(t *testing.T) {
 				MetricType:       MetricTypeDoubleGauge,
 				NumPtLabels:      LabelsOne,
 			},
-			cfg: MetricCfg{
+			cfg: MetricsCfg{
 				NumResourceAttrs:     1,
 				NumPtsPerMetric:      1,
 				MetricDescriptorType: pdata.MetricDataTypeDoubleGauge,
@@ -72,7 +72,7 @@ func TestPICTtoCfg(t *testing.T) {
 				MetricType:       MetricTypeHistogram,
 				NumPtLabels:      LabelsMany,
 			},
-			cfg: MetricCfg{
+			cfg: MetricsCfg{
 				NumResourceAttrs:     2,
 				NumPtsPerMetric:      16,
 				MetricDescriptorType: pdata.MetricDataTypeHistogram,
