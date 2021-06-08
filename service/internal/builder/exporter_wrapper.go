@@ -2,6 +2,7 @@ package builder
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,16 +24,30 @@ type exporterWrapper struct {
 	factory   component.ExporterFactory
 }
 
+var errDataTypeNotSupported error = errors.New("dataType not supported")
+
 func (wrapper *exporterWrapper) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	return wrapper.lc.ConsumeLogs(ctx, ld)
+	if wrapper.inputType != config.LogsDataType {
+		return errDataTypeNotSupported
+	} else {
+		return wrapper.lc.ConsumeLogs(ctx, ld)
+	}
 }
 
 func (wrapper *exporterWrapper) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	return wrapper.tc.ConsumeTraces(ctx, td)
+	if wrapper.inputType != config.TracesDataType {
+		return errDataTypeNotSupported
+	} else {
+		return wrapper.tc.ConsumeTraces(ctx, td)
+	}
 }
 
 func (wrapper *exporterWrapper) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	return wrapper.mc.ConsumeMetrics(ctx, md)
+	if wrapper.inputType != config.MetricsDataType {
+		return errDataTypeNotSupported
+	} else {
+		return wrapper.mc.ConsumeMetrics(ctx, md)
+	}
 }
 
 func (wrapper *exporterWrapper) Capabilities() consumer.Capabilities {
