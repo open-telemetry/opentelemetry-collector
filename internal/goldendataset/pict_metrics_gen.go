@@ -20,9 +20,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// GenerateMetricDatas takes the filename of a PICT-generated file, walks through all of the rows in the PICT
+// GenerateMetrics takes the filename of a PICT-generated file, walks through all of the rows in the PICT
 // file and for each row, generates a MetricData object, collecting them and returning them to the caller.
-func GenerateMetricDatas(metricPairsFile string) ([]pdata.Metrics, error) {
+func GenerateMetrics(metricPairsFile string) ([]pdata.Metrics, error) {
 	pictData, err := loadPictOutputFile(metricPairsFile)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func GenerateMetricDatas(metricPairsFile string) ([]pdata.Metrics, error) {
 	return out, nil
 }
 
-func pictToCfg(inputs PICTMetricInputs) MetricCfg {
+func pictToCfg(inputs PICTMetricInputs) MetricsCfg {
 	cfg := DefaultCfg()
 	switch inputs.NumResourceAttrs {
 	case AttrsNone:

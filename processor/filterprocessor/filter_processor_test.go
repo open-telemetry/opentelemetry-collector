@@ -424,7 +424,7 @@ func metricSlice(numMetrics int) []pdata.Metrics {
 }
 
 func pdm(prefix string, size int) pdata.Metrics {
-	c := goldendataset.MetricCfg{
+	c := goldendataset.MetricsCfg{
 		MetricDescriptorType: pdata.MetricDataTypeIntGauge,
 		MetricNamePrefix:     prefix,
 		NumILMPerResource:    size,
