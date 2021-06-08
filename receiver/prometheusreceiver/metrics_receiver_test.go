@@ -187,8 +187,8 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.Ex
 
 func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetricsServiceRequest, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
-		num_scrape_metrics := count_scrape_metrics(got)
-		assert.Equal(t, expectedScrapeMetricCount, num_scrape_metrics)
+		numScrapeMetrics := countScrapeMetrics(got)
+		assert.Equal(t, expectedScrapeMetricCount, numScrapeMetrics)
 		assert.EqualValues(t, want.Node, got.Node)
 		assert.EqualValues(t, want.Resource, got.Resource)
 		for _, e := range expectations {
@@ -201,7 +201,7 @@ func getValidScrapes(t *testing.T, mds []*agentmetricspb.ExportMetricsServiceReq
 	out := make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 	for _, md := range mds {
 		// mds will include scrapes that received no metrics but have internal scrape metrics, filter those out
-		if expectedScrapeMetricCount < len(md.Metrics) && count_scrape_metrics(md) == expectedScrapeMetricCount {
+		if expectedScrapeMetricCount < len(md.Metrics) && countScrapeMetrics(md) == expectedScrapeMetricCount {
 			assertUp(t, 1, md)
 			out = append(out, md)
 		} else {
@@ -221,12 +221,12 @@ func assertUp(t *testing.T, expected float64, md *agentmetricspb.ExportMetricsSe
 	t.Error("No 'up' metric found")
 }
 
-func count_scrape_metrics(in *agentmetricspb.ExportMetricsServiceRequest) int {
+func countScrapeMetrics(in *agentmetricspb.ExportMetricsServiceRequest) int {
 	n := 0
 	for _, m := range in.Metrics {
 		switch m.MetricDescriptor.Name {
 		case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
-			n += 1
+			n++
 		default:
 		}
 	}

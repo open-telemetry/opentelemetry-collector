@@ -85,7 +85,7 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) Me
 	}
 }
 
-// Define manualy the metadata of prometheus scrapper internal metrics
+// Define manually the metadata of prometheus scrapper internal metrics
 func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, logger *zap.Logger) scrape.MetricMetadata {
 	if metadata.Metric != "" && metadata.Type != "" && metadata.Help != "" {
 		logger.Debug("Internal metric seems already fully defined")
@@ -96,7 +96,7 @@ func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, log
 	switch metricName {
 	case scrapeUpMetricName:
 		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The scraping was sucessful"
+		metadata.Help = "The scraping was successful"
 	case "scrape_duration_seconds":
 		metadata.Unit = "seconds"
 		metadata.Type = textparse.MetricTypeGauge

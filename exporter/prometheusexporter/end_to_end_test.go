@@ -164,7 +164,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`. HELP test_scrape_series_added The approximate number of new series in this scrape`,
 		`. TYPE test_scrape_series_added gauge`,
 		`test_scrape_series_added 13 .*`,
-		`. HELP test_up The scraping was sucessful`,
+		`. HELP test_up The scraping was successful`,
 		`. TYPE test_up gauge`,
 		`test_up 1 .*`,
 	}
