@@ -113,8 +113,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71
 	blob, err := ioutil.ReadFile("./testdata/sample1.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
-	zi := new(ZipkinReceiver)
-	zi.config = createDefaultConfig().(*Config)
+	zi := &ZipkinReceiver{translator: translator, config: createDefaultConfig().(*Config)}
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
@@ -202,7 +201,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: consumertest.NewNop()}
+	zi := &ZipkinReceiver{translator: translator, nextConsumer: consumertest.NewNop()}
 	zi.config = &Config{}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
@@ -499,8 +498,7 @@ func compressZlib(body []byte) (*bytes.Buffer, error) {
 func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/sample2.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
-	zi := new(ZipkinReceiver)
-	zi.config = createDefaultConfig().(*Config)
+	zi := &ZipkinReceiver{translator: translator, config: createDefaultConfig().(*Config)}
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv2
 
 import (
 	"encoding/json"
@@ -25,9 +25,11 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
 const (
@@ -35,11 +37,17 @@ const (
 	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
 )
 
-var sampled = true
+var (
+	sampled                            = true
+	_       model.FromTracesTranslator = (*FromTranslator)(nil)
+)
 
-// InternalTracesToZipkinSpans translates internal trace data into Zipkin v2 spans.
+// FromTranslator converts from pdata to Zipkin data model.
+type FromTranslator struct{}
+
+// FromTraces translates internal trace data into Zipkin v2 spans.
 // Returns a slice of Zipkin SpanModel's.
-func InternalTracesToZipkinSpans(td pdata.Traces) ([]*zipkinmodel.SpanModel, error) {
+func (t FromTranslator) FromTraces(td pdata.Traces) (interface{}, error) {
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil, nil
@@ -268,15 +276,15 @@ func extractZipkinServiceName(zTags map[string]string) string {
 	} else if fn, ok := zTags[conventions.AttributeFaasName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeFaasName)
-		zTags[tagServiceNameSource] = conventions.AttributeFaasName
+		zTags[zipkin.TagServiceNameSource] = conventions.AttributeFaasName
 	} else if fn, ok := zTags[conventions.AttributeK8sDeployment]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeK8sDeployment)
-		zTags[tagServiceNameSource] = conventions.AttributeK8sDeployment
+		zTags[zipkin.TagServiceNameSource] = conventions.AttributeK8sDeployment
 	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeProcessExecutableName)
-		zTags[tagServiceNameSource] = conventions.AttributeProcessExecutableName
+		zTags[zipkin.TagServiceNameSource] = conventions.AttributeProcessExecutableName
 	} else {
 		serviceName = tracetranslator.ResourceNoServiceName
 	}
