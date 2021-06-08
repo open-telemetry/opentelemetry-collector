@@ -329,7 +329,15 @@ func TestApplication_reloadService(t *testing.T) {
 				service:        tt.service,
 			}
 
-			err := app.reloadService(ctx)
+			if app.service != nil {
+				cfg, err := app.getCfg()
+				if err != nil {
+					assert.ErrorIs(t, err, sentinelError)
+				}
+				app.service.config = cfg
+			}
+
+			err = app.reloadService(ctx)
 
 			if err != nil {
 				assert.ErrorIs(t, err, sentinelError)

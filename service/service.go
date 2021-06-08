@@ -160,6 +160,22 @@ func (srv *service) startExtensions(ctx context.Context) error {
 	return nil
 }
 
+func (srv *service) reloadExtensions(ctx context.Context) error {
+	if err := srv.config.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	if err := srv.buildExtensions(); err != nil {
+		return fmt.Errorf("cannot build extensions: %w", err)
+	}
+
+	if err := srv.startExtensions(ctx); err != nil {
+		return fmt.Errorf("cannot setup extensions: %w", err)
+	}
+
+	return nil
+}
+
 func (srv *service) shutdownExtensions(ctx context.Context) error {
 	srv.logger.Info("Stopping extensions...")
 	err := srv.builtExtensions.ShutdownAll(ctx)
@@ -210,6 +226,26 @@ func (srv *service) startPipelines(ctx context.Context) error {
 	srv.logger.Info("Starting receivers...")
 	if err := srv.builtReceivers.StartAll(ctx, srv); err != nil {
 		return fmt.Errorf("cannot start receivers: %w", err)
+	}
+
+	return nil
+}
+
+func (srv *service) reloadPipelines(ctx context.Context, config *config.Config) error {
+	if err := srv.config.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	if err := srv.builtExporters.ReloadExporters(ctx, srv.logger, srv.buildInfo, config, srv.factories.Exporters, srv); err != nil {
+		return err
+	}
+
+	if err := srv.builtPipelines.ReloadProcessors(ctx, srv, srv.buildInfo, config, srv.builtExporters, srv.factories.Processors); err != nil {
+		return err
+	}
+
+	if err := srv.builtReceivers.ReloadAll(ctx, srv.logger, srv.buildInfo, config, srv.builtPipelines, srv.factories.Receivers, srv); err != nil {
+		return err
 	}
 
 	return nil
