@@ -124,7 +124,7 @@ func TestToFromOtlp(t *testing.T) {
 	td := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
 	assert.EqualValues(t, NewTraces(), td)
 	assert.EqualValues(t, otlp, internal.TracesToOtlp(td.InternalRep()))
-	// More tests in ./tracedata/trace_test.go. Cannot have them here because of
+	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
 	// circular dependency.
 }
 
