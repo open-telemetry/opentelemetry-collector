@@ -30,7 +30,6 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -656,7 +655,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -685,7 +684,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	// TLS is resolved during Start for HTTP.
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -713,7 +712,7 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 }
 
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	var r component.Component
 	var err error
 	if tc != nil {
@@ -757,7 +756,7 @@ func TestShutdown(t *testing.T) {
 	cfg.HTTP.Endpoint = endpointHTTP
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
 		nextSink)
 	require.NoError(t, err)

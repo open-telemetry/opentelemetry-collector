@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -48,11 +49,11 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, &defaultCfg)
+	_, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &defaultCfg)
 	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
-	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, &defaultCfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &defaultCfg)
 	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
-	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, &defaultCfg)
+	_, err = factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &defaultCfg)
 	assert.Equal(t, componenterror.ErrDataTypeIsNotSupported, err)
 }
 
@@ -66,15 +67,15 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	te, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, &defaultCfg)
+	te, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopTracesExporter, te)
 
-	me, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, &defaultCfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopMetricsExporter, me)
 
-	le, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, &defaultCfg)
+	le, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopLogsExporter, le)
 }

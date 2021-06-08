@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -33,17 +32,17 @@ func TestNewNopReceiverFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopReceiverConfig{ReceiverSettings: config.NewReceiverSettings(config.NewID("nop"))}, cfg)
 
-	traces, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, cfg, consumertest.NewNop())
+	traces, err := factory.CreateTracesReceiver(context.Background(), NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, traces.Start(context.Background(), NewNopHost()))
 	assert.NoError(t, traces.Shutdown(context.Background()))
 
-	metrics, err := factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, cfg, consumertest.NewNop())
+	metrics, err := factory.CreateMetricsReceiver(context.Background(), NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, metrics.Start(context.Background(), NewNopHost()))
 	assert.NoError(t, metrics.Shutdown(context.Background()))
 
-	logs, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{}, cfg, consumertest.NewNop())
+	logs, err := factory.CreateLogsReceiver(context.Background(), NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, logs.Start(context.Background(), NewNopHost()))
 	assert.NoError(t, logs.Shutdown(context.Background()))

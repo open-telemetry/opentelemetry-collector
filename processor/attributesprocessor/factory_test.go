@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -46,7 +46,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactoryCreateTracesProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+	ap, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -59,7 +59,7 @@ func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "", Value: 123, Action: processorhelper.UPSERT},
 	}
-	ap, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+	ap, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -72,18 +72,18 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 		{Key: "a key", Action: processorhelper.DELETE},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	tp, err = factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, nil)
+	tp, err = factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Action: processorhelper.DELETE},
 	}
-	tp, err = factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+	tp, err = factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }
@@ -92,7 +92,7 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, nil)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
 	require.Nil(t, mp)
 	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
@@ -100,7 +100,7 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 func TestFactoryCreateLogsProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+	ap, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -113,7 +113,7 @@ func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "", Value: 123, Action: processorhelper.UPSERT},
 	}
-	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+	ap, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -127,12 +127,12 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogsProcessor(
-		context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+		context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
 	tp, err = factory.CreateLogsProcessor(
-		context.Background(), component.ProcessorCreateSettings{}, cfg, nil)
+		context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 
@@ -140,7 +140,7 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 		{Action: processorhelper.DELETE},
 	}
 	tp, err = factory.CreateLogsProcessor(
-		context.Background(), component.ProcessorCreateSettings{}, cfg, consumertest.NewNop())
+		context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }

@@ -17,11 +17,21 @@ package componenttest
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
+
+// NewNopReceiverCreateSettings returns a new nop settings for Create*Receiver functions.
+func NewNopReceiverCreateSettings() component.ReceiverCreateSettings {
+	return component.ReceiverCreateSettings{
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
+	}
+}
 
 type nopReceiverConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -35,11 +36,11 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), nil)
 	assert.Error(t, err)
 }
 
@@ -53,13 +54,13 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{}, factory.CreateDefaultConfig(), nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), nil)
 	assert.NoError(t, err)
 }
 
