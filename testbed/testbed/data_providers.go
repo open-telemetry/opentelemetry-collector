@@ -48,28 +48,27 @@ type DataProvider interface {
 	GenerateLogs() (pdata.Logs, bool)
 }
 
-// PerfTestDataProvider in an implementation of the DataProvider for use in performance tests.
+// perfTestDataProvider in an implementation of the DataProvider for use in performance tests.
 // Tracing IDs are based on the incremented batch and data items counters.
-type PerfTestDataProvider struct {
+type perfTestDataProvider struct {
 	options            LoadOptions
 	traceIDSequence    atomic.Uint64
 	dataItemsGenerated *atomic.Uint64
 }
 
-// NewPerfTestDataProvider creates an instance of PerfTestDataProvider which generates test data based on the sizes
+// NewPerfTestDataProvider creates an instance of perfTestDataProvider which generates test data based on the sizes
 // specified in the supplied LoadOptions.
-func NewPerfTestDataProvider(options LoadOptions) *PerfTestDataProvider {
-	return &PerfTestDataProvider{
+func NewPerfTestDataProvider(options LoadOptions) DataProvider {
+	return &perfTestDataProvider{
 		options: options,
 	}
 }
 
-func (dp *PerfTestDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
+func (dp *perfTestDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
-func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
-
+func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	traceData := pdata.NewTraces()
 	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
 	spans.Resize(dp.options.ItemsPerBatch)
@@ -102,8 +101,7 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	return traceData, false
 }
 
-func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
-
+func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	// Generate 7 data points per metric.
 	const dataPointsPerMetric = 7
 
@@ -145,7 +143,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	return md, false
 }
 
-func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
+func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	if dp.options.Attributes != nil {
@@ -183,9 +181,9 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	return logs, false
 }
 
-// GoldenDataProvider is an implementation of DataProvider for use in correctness tests.
+// goldenDataProvider is an implementation of DataProvider for use in correctness tests.
 // Provided data from the "Golden" dataset generated using pairwise combinatorial testing techniques.
-type GoldenDataProvider struct {
+type goldenDataProvider struct {
 	tracePairsFile     string
 	spanPairsFile      string
 	dataItemsGenerated *atomic.Uint64
@@ -198,21 +196,21 @@ type GoldenDataProvider struct {
 	metricsIndex     int
 }
 
-// NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
+// NewGoldenDataProvider creates a new instance of goldenDataProvider which generates test data based
 // on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
-func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string) *GoldenDataProvider {
-	return &GoldenDataProvider{
+func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string) DataProvider {
+	return &goldenDataProvider{
 		tracePairsFile:  tracePairsFile,
 		spanPairsFile:   spanPairsFile,
 		metricPairsFile: metricPairsFile,
 	}
 }
 
-func (dp *GoldenDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
+func (dp *goldenDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
-func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
+func (dp *goldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	if dp.tracesGenerated == nil {
 		var err error
 		dp.tracesGenerated, err = goldendataset.GenerateTraces(dp.tracePairsFile, dp.spanPairsFile)
@@ -230,7 +228,7 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	return td, false
 }
 
-func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
+func (dp *goldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	if dp.metricsGenerated == nil {
 		var err error
 		dp.metricsGenerated, err = goldendataset.GenerateMetrics(dp.metricPairsFile)
@@ -248,7 +246,7 @@ func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	return pdm, false
 }
 
-func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
+func (dp *goldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	return pdata.NewLogs(), true
 }
 
