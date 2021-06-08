@@ -237,7 +237,7 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	if dp.metricsGenerated == nil {
 		var err error
-		dp.metricsGenerated, err = goldendataset.GenerateMetricDatas(dp.metricPairsFile)
+		dp.metricsGenerated, err = goldendataset.GenerateMetrics(dp.metricPairsFile)
 		if err != nil {
 			log.Printf("cannot generate metrics: %s", err)
 		}

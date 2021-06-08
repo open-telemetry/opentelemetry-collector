@@ -193,7 +193,7 @@ func testDataSlice(size int, mdType pdata.MetricDataType) []pdata.Metrics {
 }
 
 func testData(prefix string, size int, mdType pdata.MetricDataType) pdata.Metrics {
-	c := goldendataset.MetricCfg{
+	c := goldendataset.MetricsCfg{
 		MetricDescriptorType: mdType,
 		MetricNamePrefix:     prefix,
 		NumILMPerResource:    size,
