@@ -154,7 +154,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_jvm_memory_pool_bytes_used.pool="Metaspace". 2.6218176e.07.*`,
 		`. HELP test_scrape_duration_seconds Duration of the scrape`,
 		`. TYPE test_scrape_duration_seconds gauge`,
-		`test_scrape_duration_seconds 0.0.*`,
+		`test_scrape_duration_seconds 0.* .*`
 		`. HELP test_scrape_samples_post_metric_relabeling The number of samples remaining after metric relabeling was applied`,
 		`. TYPE test_scrape_samples_post_metric_relabeling gauge`,
 		`test_scrape_samples_post_metric_relabeling 13 .*`,
