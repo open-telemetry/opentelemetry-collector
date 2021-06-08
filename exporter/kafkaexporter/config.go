@@ -85,7 +85,7 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("invalid compression level %d: should be %d when not using compression", cfg.Compression.Level, defaultCompressionLevel)
 		}
 	case "gzip":
-		if cfg.Compression.Level > 9 || cfg.Compression.Level < 1 {
+		if cfg.Compression.Level != defaultCompressionLevel && (cfg.Compression.Level > 9 || cfg.Compression.Level < 1) {
 			return fmt.Errorf("invalid compression level %d: valid range is [1, 9] when using gzip", cfg.Compression.Level)
 		}
 	case "snappy":
@@ -93,11 +93,11 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("invalid compression level %d: should be %d when using snappy", cfg.Compression.Level, defaultCompressionLevel)
 		}
 	case "lz4":
-		if cfg.Compression.Level > 17 || cfg.Compression.Level < 1 {
+		if cfg.Compression.Level != defaultCompressionLevel && (cfg.Compression.Level > 17 || cfg.Compression.Level < 1) {
 			return fmt.Errorf("invalid compression level %d: valid range is [1, 17] when using lz4", cfg.Compression.Level)
 		}
 	case "zstd":
-		if cfg.Compression.Level > 22 || cfg.Compression.Level < 1 {
+		if cfg.Compression.Level != defaultCompressionLevel && (cfg.Compression.Level > 22 || cfg.Compression.Level < 1) {
 			return fmt.Errorf("invalid compression level %d: valid range is [1, 22] when using zstd", cfg.Compression.Level)
 		}
 	default:
