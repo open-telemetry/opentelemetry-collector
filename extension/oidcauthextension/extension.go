@@ -38,8 +38,8 @@ import (
 
 type oidcExtension struct {
 	cfg               *Config
-	unaryInterceptor  configauth.GrpcUnaryInterceptorFunc
-	streamInterceptor configauth.GrpcStreamInterceptorFunc
+	unaryInterceptor  configauth.GRPCUnaryInterceptorFunc
+	streamInterceptor configauth.GRPCStreamInterceptorFunc
 
 	provider *oidc.Provider
 	verifier *oidc.IDTokenVerifier
@@ -75,8 +75,8 @@ func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
 	return &oidcExtension{
 		cfg:               cfg,
 		logger:            logger,
-		unaryInterceptor:  configauth.DefaultGrpcUnaryServerInterceptor,
-		streamInterceptor: configauth.DefaultGrpcStreamServerInterceptor,
+		unaryInterceptor:  configauth.DefaultGRPCUnaryServerInterceptor,
+		streamInterceptor: configauth.DefaultGRPCStreamServerInterceptor,
 	}, nil
 }
 
@@ -141,13 +141,13 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	return nil
 }
 
-// GrpcUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GrpcUnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+// GRPCUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
+func (e *oidcExtension) GRPCUnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	return e.unaryInterceptor(ctx, req, info, handler, e.Authenticate)
 }
 
-// GrpcStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GrpcStreamServerInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+// GRPCStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
+func (e *oidcExtension) GRPCStreamServerInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	return e.streamInterceptor(srv, str, info, handler, e.Authenticate)
 }
 
