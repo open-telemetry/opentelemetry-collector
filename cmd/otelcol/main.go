@@ -32,9 +32,10 @@ func main() {
 		log.Fatalf("failed to build default components: %v", err)
 	}
 	info := component.BuildInfo{
-		Command:     "otelcol",
-		Description: "OpenTelemetry Collector",
-		Version:     version.Version,
+		Command:      "otelcol",
+		Description:  "OpenTelemetry Collector",
+		Version:      version.Version,
+		ProtoVersion: version.ProtoVersion,
 	}
 
 	if err := run(service.AppSettings{BuildInfo: info, Factories: factories}); err != nil {

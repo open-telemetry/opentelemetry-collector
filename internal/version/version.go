@@ -25,6 +25,9 @@ var (
 	// Version variable will be replaced at link time after `make` has been run.
 	Version = "latest"
 
+	// ProtoVersion variable will be replaced at link time after `make` has been run.
+	ProtoVersion = "latest"
+
 	// startTime
 	startTime time.Time
 )
@@ -39,6 +42,7 @@ var InfoVar = Info{
 	{"GoVersion", runtime.Version()},
 	{"OS", runtime.GOOS},
 	{"Architecture", runtime.GOARCH},
+	{"ProtoVersion", ProtoVersion},
 	// Add other valuable build-time information here.
 }
 

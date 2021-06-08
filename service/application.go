@@ -262,6 +262,7 @@ func (app *Application) execute(ctx context.Context) error {
 	app.logger.Info("Starting "+app.info.Command+"...",
 		zap.String("Version", app.info.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
+		zap.String("OTLPVersion", app.info.ProtoVersion),
 	)
 	app.stateChannel <- Starting
 

@@ -25,6 +25,9 @@ type BuildInfo struct {
 
 	// Version string.
 	Version string
+
+	// ProtoVersion string.
+	ProtoVersion string
 }
 
 // DefaultBuildInfo returns the default BuildInfo.
