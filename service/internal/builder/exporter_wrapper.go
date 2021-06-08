@@ -102,7 +102,7 @@ func (wrapper *exporterWrapper) Relaod(host component.Host, ctx context.Context,
 		}
 
 		if exp == nil {
-			return fmt.Errorf("factory produce nil exporter for component id:%q inputtype:%v config:%v during reload", wrapper.id, wrapper.inputType, expCfg)
+			return err
 		}
 
 		if exp != nil && err == nil {
@@ -117,7 +117,7 @@ func (wrapper *exporterWrapper) Relaod(host component.Host, ctx context.Context,
 		}
 
 		if exp == nil {
-			return fmt.Errorf("factory produce nil exporter for component id:%q inputtype:%v config:%v during reload", wrapper.id, wrapper.inputType, expCfg)
+			return err
 		}
 
 		if exp != nil && err == nil {
@@ -132,7 +132,7 @@ func (wrapper *exporterWrapper) Relaod(host component.Host, ctx context.Context,
 		}
 
 		if exp == nil {
-			return fmt.Errorf("factory produce nil exporter for component id:%q inputtype:%v config:%v during reload", wrapper.id, wrapper.inputType, expCfg)
+			return err
 		}
 
 		if exp != nil && err == nil {
@@ -142,11 +142,11 @@ func (wrapper *exporterWrapper) Relaod(host component.Host, ctx context.Context,
 	}
 
 	if err != nil {
-		return fmt.Errorf("error creating or start exporter:%q during reload:%v", expCfg.ID(), err)
+		return err
 	}
 
 	if err := oldExp.Shutdown(ctx); err != nil {
-		return fmt.Errorf("error when shutdown old exporter:%q during reload:%v", expCfg.ID(), err)
+		return err
 	}
 
 	return nil

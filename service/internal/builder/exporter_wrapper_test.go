@@ -49,6 +49,13 @@ var exampleExporterFactory = exporterhelper.NewFactory(
 	exporterhelper.WithMetrics(createMetricsExporter),
 	exporterhelper.WithLogs(createLogsExporter))
 
+var exampleRldExporterFactory = exporterhelper.NewFactory(
+	expType,
+	createRldDefaultConfig,
+	exporterhelper.WithTraces(createRldTracesExporter),
+	exporterhelper.WithMetrics(createRldMetricsExporter),
+	exporterhelper.WithLogs(createRldLogsExporter))
+
 func (exp *exampleExporter) Start(ctx context.Context, host component.Host) error {
 	time.Sleep(time.Second)
 	return exp.startErr
@@ -107,6 +114,80 @@ func createLogsExporter(
 	return &exampleExporter{}, nil
 }
 
+func createRldDefaultConfig() config.Exporter {
+	setting := config.NewExporterSettings(config.NewIDWithName("example", "1"))
+	return &setting
+}
+
+func createRldTracesExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ config.Exporter,
+) (component.TracesExporter, error) {
+	exp := &exampleExporter{}
+	return &reloadableExporter{*exp, nil}, nil
+}
+
+func createRldMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ config.Exporter,
+) (component.MetricsExporter, error) {
+	exp := &exampleExporter{}
+	return &reloadableExporter{*exp, nil}, nil
+}
+
+func createRldLogsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ config.Exporter,
+) (component.LogsExporter, error) {
+	exp := &exampleExporter{}
+	return &reloadableExporter{*exp, nil}, nil
+}
+
+func TestExporterWrapperReload(t *testing.T) {
+	exp := &exampleExporter{}
+	rldExp := &reloadableExporter{*exp, nil}
+	logWrapper := &exporterWrapper{config.LogsDataType, nil, nil, rldExp, rldExp, config.NewIDWithName("example", "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory}
+	err := logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
+	assert.NoError(t, err)
+	assert.True(t, logWrapper.lc == rldExp)
+	assert.True(t, logWrapper.exporter == rldExp)
+	rldExp.reloadErr = errors.New("mock reload err")
+	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
+	assert.Equal(t, err, rldExp.reloadErr)
+	rldExp.reloadErr = nil
+	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
+	assert.NoError(t, err)
+
+	mockStartErr := errors.New("mock start err")
+	mockExporterFactory := exporterhelper.NewFactory(
+		expType,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTracesExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithLogs(func(
+			_ context.Context,
+			_ component.ExporterCreateParams,
+			_ config.Exporter,
+		) (component.LogsExporter, error) {
+			exp := &exampleExporter{}
+			exp.startErr = mockStartErr
+			return exp, nil
+		}))
+	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName("example", "1"), zap.NewNop(), component.DefaultBuildInfo(), mockExporterFactory}
+	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
+	assert.Equal(t, err, mockStartErr)
+	assert.True(t, logWrapper.lc == exp)
+
+	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName("example", "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory}
+	exp.shutdownErr = errors.New("mock shutdown err")
+	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
+	assert.False(t, logWrapper.lc == exp)
+	assert.True(t, logWrapper.lc == logWrapper.exporter.(consumer.Logs))
+	assert.Equal(t, err, exp.shutdownErr)
+}
 func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 	exp := &exampleExporter{}
 	logWrapper := &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName("example", "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory}
