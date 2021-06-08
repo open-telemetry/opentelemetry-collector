@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package configschema
 
 import "time"
 
@@ -20,12 +20,13 @@ type testPerson struct {
 	Name string
 }
 
+// testStruct comment
 type testStruct struct {
 	One   string `mapstructure:"one"`
 	Two   int    `mapstructure:"two"`
 	Three uint   `mapstructure:"three"`
 	Four  bool   `mapstructure:"four"`
-	// embedded, package qualified
+	// embedded, package qualified comment
 	time.Duration `mapstructure:"duration"`
 	Squashed      testPerson    `mapstructure:",squash"`
 	PersonPtr     *testPerson   `mapstructure:"person_ptr"`
@@ -35,9 +36,9 @@ type testStruct struct {
 	Ignored       string        `mapstructure:"-"`
 }
 
-func testEnv() env {
-	return env{
-		srcRoot:    "../../..",
-		moduleName: defaultModule,
+func testDR() DirResolver {
+	return DirResolver{
+		SrcRoot:    "../../..",
+		ModuleName: DefaultModule,
 	}
 }

@@ -15,14 +15,16 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/cmd/schemagen/schemagen"
+	"go.opentelemetry.io/collector/cmd/configschema/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema/docsgen/docsgen"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
 func main() {
-	components, err := defaultcomponents.Components()
+	cmps, err := defaultcomponents.Components()
 	if err != nil {
 		panic(err)
 	}
-	schemagen.CLI(components)
+	dr := configschema.NewDefaultDirResolver()
+	docsgen.CLI(cmps, dr)
 }

@@ -12,19 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package docsgen
 
 import (
-	"reflect"
+	"encoding/json"
+	"io/ioutil"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/cmd/configschema/configschema"
 )
 
-func TestFieldComments(t *testing.T) {
-	v := reflect.ValueOf(testStruct{})
-	comments := commentsForStruct(v, testEnv())
-	require.EqualValues(t, map[string]string{
-		"Duration": "embedded, package qualified\n",
-	}, comments)
+func TestTableTemplate(t *testing.T) {
+	field := testDataField(t)
+	tmpl, err := tableTemplate()
+	require.NoError(t, err)
+	bytes, err := renderTable(tmpl, field)
+	require.NoError(t, err)
+	require.NotNil(t, bytes)
+}
+
+func testDataField(t *testing.T) *configschema.Field {
+	jsonBytes, err := ioutil.ReadFile(path.Join("testdata", "otlp-receiver.json"))
+	require.NoError(t, err)
+	field := configschema.Field{}
+	err = json.Unmarshal(jsonBytes, &field)
+	require.NoError(t, err)
+	return &field
 }

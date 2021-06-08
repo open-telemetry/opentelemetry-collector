@@ -12,30 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemagen
+package configschema
 
 import (
-	"path"
 	"reflect"
-	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-const defaultSrcRoot = "."
-const defaultModule = "go.opentelemetry.io/collector"
-
-type env struct {
-	srcRoot      string
-	moduleName   string
-	yamlFilename func(reflect.Type, env) string
-}
-
-const schemaFilename = "cfg-schema.yaml"
-
-func yamlFilename(t reflect.Type, env env) string {
-	return path.Join(packageDir(t, env), schemaFilename)
-}
-
-func packageDir(t reflect.Type, env env) string {
-	pkg := strings.TrimPrefix(t.PkgPath(), env.moduleName+"/")
-	return path.Join(env.srcRoot, pkg)
+func TestFieldComments(t *testing.T) {
+	v := reflect.ValueOf(testStruct{})
+	comments := commentsForStruct(v, testDR())
+	assert.Equal(t, "embedded, package qualified comment\n", comments["Duration"])
+	assert.Equal(t, "testStruct comment\n", comments["_struct"])
 }
