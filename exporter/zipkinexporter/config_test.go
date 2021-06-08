@@ -22,9 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -73,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 		Format:             "proto",
 		DefaultServiceName: "test_name",
 	}, e1)
-	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopExporterCreateSettings()
 	_, err = factory.CreateTracesExporter(context.Background(), set, e1)
 	require.NoError(t, err)
 }

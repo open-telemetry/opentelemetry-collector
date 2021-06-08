@@ -22,33 +22,17 @@ import (
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/internal/model"
 )
 
-type decoder struct {
+type jsonDecoder struct {
 	delegate jsonpb.Unmarshaler
 }
 
-func newDecoder() *decoder {
-	return &decoder{delegate: jsonpb.Unmarshaler{}}
+func newJSONDecoder() *jsonDecoder {
+	return &jsonDecoder{delegate: jsonpb.Unmarshaler{}}
 }
 
-// NewJSONTracesDecoder returns a serializer.TracesDecoder to decode from OTLP json bytes.
-func NewJSONTracesDecoder() model.TracesDecoder {
-	return newDecoder()
-}
-
-// NewJSONMetricsDecoder returns a serializer.MetricsDecoder to decode from OTLP json bytes.
-func NewJSONMetricsDecoder() model.MetricsDecoder {
-	return newDecoder()
-}
-
-// NewJSONLogsDecoder returns a serializer.LogsDecoder to decode from OTLP json bytes.
-func NewJSONLogsDecoder() model.LogsDecoder {
-	return newDecoder()
-}
-
-func (d *decoder) DecodeLogs(buf []byte) (interface{}, error) {
+func (d *jsonDecoder) DecodeLogs(buf []byte) (interface{}, error) {
 	ld := &otlpcollectorlogs.ExportLogsServiceRequest{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), ld); err != nil {
 		return nil, err
@@ -56,7 +40,7 @@ func (d *decoder) DecodeLogs(buf []byte) (interface{}, error) {
 	return ld, nil
 }
 
-func (d *decoder) DecodeMetrics(buf []byte) (interface{}, error) {
+func (d *jsonDecoder) DecodeMetrics(buf []byte) (interface{}, error) {
 	md := &otlpcollectormetrics.ExportMetricsServiceRequest{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), md); err != nil {
 		return nil, err
@@ -64,7 +48,7 @@ func (d *decoder) DecodeMetrics(buf []byte) (interface{}, error) {
 	return md, nil
 }
 
-func (d *decoder) DecodeTraces(buf []byte) (interface{}, error) {
+func (d *jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 	td := &otlpcollectortrace.ExportTraceServiceRequest{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), td); err != nil {
 		return nil, err

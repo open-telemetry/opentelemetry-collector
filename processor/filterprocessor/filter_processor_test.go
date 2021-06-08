@@ -22,9 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -309,9 +308,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				component.ProcessorCreateSettings{
-					Logger: zap.NewNop(),
-				},
+				componenttest.NewNopProcessorCreateSettings(),
 				cfg,
 				next,
 			)
@@ -400,7 +397,7 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopProcessorCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -477,9 +474,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateSettings{
-			Logger: zap.NewNop(),
-		},
+		componenttest.NewNopProcessorCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)

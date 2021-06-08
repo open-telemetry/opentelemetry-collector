@@ -17,12 +17,22 @@ package componenttest
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
+
+// NewNopProcessorCreateSettings returns a new nop settings for Create*Processor functions.
+func NewNopProcessorCreateSettings() component.ProcessorCreateSettings {
+	return component.ProcessorCreateSettings{
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
+	}
+}
 
 type nopProcessorConfig struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

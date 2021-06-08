@@ -192,7 +192,6 @@ func TestInferResourceType(t *testing.T) {
 
 func TestResourceToOCAndBack(t *testing.T) {
 	tests := []goldendataset.PICTInputResource{
-		goldendataset.ResourceNil,
 		goldendataset.ResourceEmpty,
 		goldendataset.ResourceVMOnPrem,
 		goldendataset.ResourceVMCloud,
