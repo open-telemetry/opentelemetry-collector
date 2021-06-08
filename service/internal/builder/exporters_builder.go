@@ -232,7 +232,7 @@ func (eb *exportersBuilder) buildExporter(
 		return exporter, nil
 	}
 
-	creationParams := component.ExporterCreateParams{
+	set := component.ExporterCreateSettings{
 		Logger:    logger,
 		BuildInfo: buildInfo,
 	}
@@ -242,13 +242,13 @@ func (eb *exportersBuilder) buildExporter(
 	for dataType, requirement := range inputDataTypes {
 		switch dataType {
 		case config.TracesDataType:
-			createdExporter, err = factory.CreateTracesExporter(ctx, creationParams, cfg)
+			createdExporter, err = factory.CreateTracesExporter(ctx, set, cfg)
 
 		case config.MetricsDataType:
-			createdExporter, err = factory.CreateMetricsExporter(ctx, creationParams, cfg)
+			createdExporter, err = factory.CreateMetricsExporter(ctx, set, cfg)
 
 		case config.LogsDataType:
-			createdExporter, err = factory.CreateLogsExporter(ctx, creationParams, cfg)
+			createdExporter, err = factory.CreateLogsExporter(ctx, set, cfg)
 
 		default:
 			// Could not create because this exporter does not support this data type.

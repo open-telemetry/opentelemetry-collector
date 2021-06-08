@@ -15,6 +15,7 @@
 package kafkareceiver
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -86,8 +87,8 @@ func deserializeZipkinThrift(b []byte) ([]*zipkincore.Span, error) {
 	buffer := thrift.NewTMemoryBuffer()
 	buffer.Write(b)
 
-	transport := thrift.NewTBinaryProtocolTransport(buffer)
-	_, size, err := transport.ReadListBegin() // Ignore the returned element type
+	transport := thrift.NewTBinaryProtocolConf(buffer, nil)
+	_, size, err := transport.ReadListBegin(context.Background()) // Ignore the returned element type
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func deserializeZipkinThrift(b []byte) ([]*zipkincore.Span, error) {
 	var spans []*zipkincore.Span
 	for i := 0; i < size; i++ {
 		zs := &zipkincore.Span{}
-		if err = zs.Read(transport); err != nil {
+		if err = zs.Read(context.Background(), transport); err != nil {
 			return nil, err
 		}
 		spans = append(spans, zs)

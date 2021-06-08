@@ -18,12 +18,10 @@ import (
 	"context"
 
 	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -32,32 +30,6 @@ import (
 // value used to identify the type on the config.
 func BuildProcessorCustomMetricName(configType, metric string) string {
 	return buildComponentPrefix(obsmetrics.ProcessorPrefix, configType) + metric
-}
-
-// ProcessorMetricViews builds the metric views for custom metrics of processors.
-func ProcessorMetricViews(configType string, legacyViews *obsreportconfig.ObsMetrics) *obsreportconfig.ObsMetrics {
-	var allViews []*view.View
-	if obsreportconfig.Level != configtelemetry.LevelNone {
-		for _, legacyView := range legacyViews.Views {
-			// Ignore any nil entry and views without measure or aggregation.
-			// These can't be registered but some code registering legacy views may
-			// ignore the errors.
-			if legacyView == nil || legacyView.Measure == nil || legacyView.Aggregation == nil {
-				continue
-			}
-			newView := *legacyView
-			viewName := legacyView.Name
-			if viewName == "" {
-				viewName = legacyView.Measure.Name()
-			}
-			newView.Name = BuildProcessorCustomMetricName(configType, viewName)
-			allViews = append(allViews, &newView)
-		}
-	}
-
-	return &obsreportconfig.ObsMetrics{
-		Views: allViews,
-	}
 }
 
 // Processor is a helper to add observability to a component.Processor.

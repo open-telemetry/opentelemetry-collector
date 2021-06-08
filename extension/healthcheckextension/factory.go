@@ -49,8 +49,8 @@ func createDefaultConfig() config.Extension {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
 
-	return newServer(*config, params.Logger), nil
+	return newServer(*config, set.Logger), nil
 }

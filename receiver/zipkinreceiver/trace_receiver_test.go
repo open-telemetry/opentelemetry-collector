@@ -35,7 +35,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -224,8 +223,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	factory := zipkinexporter.NewFactory()
 	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	config.Endpoint = backend.URL
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	ze, err := factory.CreateTracesExporter(context.Background(), params, config)
+	set := componenttest.NewNopExporterCreateSettings()
+	ze, err := factory.CreateTracesExporter(context.Background(), set, config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
 	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))

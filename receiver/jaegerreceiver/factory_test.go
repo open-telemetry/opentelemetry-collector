@@ -22,9 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -59,12 +57,12 @@ func TestCreateReceiver(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
@@ -76,19 +74,19 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	rCfg, ok := cfg.Receivers[config.NewIDWithName(typeStr, "customname")]
 	require.True(t, ok)
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, rCfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, rCfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, rCfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, rCfg, nil)
 	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
@@ -104,8 +102,8 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, 14250, r.(*jReceiver).config.CollectorGRPCPort, "grpc port should be default")
@@ -127,9 +125,9 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 			},
 		},
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
 }
 
@@ -147,9 +145,9 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 		},
 	}
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
 }
 
@@ -160,8 +158,8 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: defaultHTTPBindEndpoint,
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, 14268, r.(*jReceiver).config.CollectorHTTPPort, "http port should be default")
@@ -174,8 +172,8 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	cfg.(*Config).Protocols.ThriftBinary = &ProtocolUDP{
 		Endpoint: defaultThriftBinaryBindEndpoint,
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, 6832, r.(*jReceiver).config.AgentBinaryThriftPort, "thrift port should be default")
@@ -188,8 +186,8 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	cfg.(*Config).Protocols.ThriftCompact = &ProtocolUDP{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, 6831, r.(*jReceiver).config.AgentCompactThriftPort, "thrift port should be default")
@@ -204,8 +202,8 @@ func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, defaultGRPCBindEndpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
@@ -226,8 +224,8 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 			Endpoint: endpoint,
 		},
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
@@ -241,8 +239,8 @@ func TestCreateNoPort(t *testing.T) {
 	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: "localhost:",
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
 
@@ -253,8 +251,8 @@ func TestCreateLargePort(t *testing.T) {
 	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: "localhost:65536",
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }
 
@@ -269,8 +267,8 @@ func TestCreateInvalidHost(t *testing.T) {
 		},
 	}
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.Error(t, err, "receiver creation with bad hostname must fail")
 }
 
@@ -279,8 +277,8 @@ func TestCreateNoProtocols(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols = Protocols{}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.Error(t, err, "receiver creation with no protocols must fail")
 }
 
@@ -291,8 +289,8 @@ func TestThriftBinaryBadPort(t *testing.T) {
 	cfg.(*Config).Protocols.ThriftBinary = &ProtocolUDP{
 		Endpoint: "localhost:65536",
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.Error(t, err, "receiver creation with a bad thrift binary port must fail")
 }
 
@@ -304,8 +302,8 @@ func TestThriftCompactBadPort(t *testing.T) {
 		Endpoint: "localhost:65536",
 	}
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.Error(t, err, "receiver creation with a bad thrift compact port must fail")
 }
 
@@ -330,8 +328,8 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 		HostEndpoint: fmt.Sprintf("localhost:%d", hostPort),
 		StrategyFile: strategyFile,
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
@@ -352,8 +350,8 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
 		StrategyFile: "strategies.json",
 	}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.Error(t, err, "create trace receiver should error")
 }

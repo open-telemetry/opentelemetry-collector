@@ -22,9 +22,9 @@ Available metric exporters (sorted alphabetically):
 
 Available log exporters (sorted alphabetically):
 
+- [Kafka](kafkaexporter/README.md)
 - [OTLP gRPC](otlpexporter/README.md)
 - [OTLP HTTP](otlphttpexporter/README.md)
-- [Kafka](kafkaexporter/README.md)
 
 Available local exporters (sorted alphabetically):
 

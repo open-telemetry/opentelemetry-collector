@@ -44,8 +44,8 @@ type Host interface {
 
 	// GetExtensions returns the map of extensions. Only enabled and created extensions will be returned.
 	// Typically is used to find an extension by type or by full config name. Both cases
-	// can be done by iterating the returned map. There are typically very few extensions
-	// so there there is no performance implications due to iteration.
+	// can be done by iterating the returned map. There are typically very few extensions,
+	// so there are no performance implications due to iteration.
 	//
 	// GetExtensions can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
@@ -53,8 +53,8 @@ type Host interface {
 
 	// GetExporters returns the map of exporters. Only enabled and created exporters will be returned.
 	// Typically is used to find exporters by type or by full config name. Both cases
-	// can be done by iterating the returned map. There are typically very few exporters
-	// so there there is no performance implications due to iteration.
+	// can be done by iterating the returned map. There are typically very few exporters,
+	// so there are no performance implications due to iteration.
 	// This returns a map by DataType of maps by exporter configs to the exporter instance.
 	// Note that an exporter with the same name may be attached to multiple pipelines and
 	// thus we may have an instance of the exporter for multiple data types.

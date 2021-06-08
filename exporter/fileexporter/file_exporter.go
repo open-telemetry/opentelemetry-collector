@@ -20,17 +20,16 @@ import (
 	"os"
 	"sync"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/otlp"
 )
 
-// Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
-var marshaler = &jsonpb.Marshaler{}
+// Marshaler configuration used for marhsaling Protobuf to JSON.
+var tracesMarshaler = otlp.NewJSONTracesMarshaler()
+var metricsMarshaler = otlp.NewJSONMetricsMarshaler()
+var logsMarshaler = otlp.NewJSONLogsMarshaler()
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 // in Protobuf-JSON format.
@@ -45,22 +44,34 @@ func (e *fileExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	return exportMessageAsLine(e, internal.TracesToOtlp(td.InternalRep()))
+	buf, err := tracesMarshaler.Marshal(td)
+	if err != nil {
+		return err
+	}
+	return exportMessageAsLine(e, buf)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
-	return exportMessageAsLine(e, internal.MetricsToOtlp(md.InternalRep()))
+	buf, err := metricsMarshaler.Marshal(md)
+	if err != nil {
+		return err
+	}
+	return exportMessageAsLine(e, buf)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	return exportMessageAsLine(e, internal.LogsToOtlp(ld.InternalRep()))
+	buf, err := logsMarshaler.Marshal(ld)
+	if err != nil {
+		return err
+	}
+	return exportMessageAsLine(e, buf)
 }
 
-func exportMessageAsLine(e *fileExporter, message proto.Message) error {
+func exportMessageAsLine(e *fileExporter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	if err := marshaler.Marshal(e.file, message); err != nil {
+	if _, err := e.file.Write(buf); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(e.file, "\n"); err != nil {

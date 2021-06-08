@@ -15,6 +15,7 @@
 package kafkareceiver
 
 import (
+	"context"
 	"testing"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -50,11 +51,11 @@ func TestUnmarshalZipkin(t *testing.T) {
 
 	tSpan := &zipkincore.Span{Name: "foo"}
 	thriftTransport := thrift.NewTMemoryBuffer()
-	protocolTransport := thrift.NewTBinaryProtocolTransport(thriftTransport)
-	require.NoError(t, protocolTransport.WriteListBegin(thrift.STRUCT, 1))
-	err = tSpan.Write(protocolTransport)
+	protocolTransport := thrift.NewTBinaryProtocolConf(thriftTransport, nil)
+	require.NoError(t, protocolTransport.WriteListBegin(context.Background(), thrift.STRUCT, 1))
+	err = tSpan.Write(context.Background(), protocolTransport)
 	require.NoError(t, err)
-	require.NoError(t, protocolTransport.WriteListEnd())
+	require.NoError(t, protocolTransport.WriteListEnd(context.Background()))
 
 	tdThrift, err := zipkintranslator.V1ThriftBatchToInternalTraces([]*zipkincore.Span{tSpan})
 	require.NoError(t, err)

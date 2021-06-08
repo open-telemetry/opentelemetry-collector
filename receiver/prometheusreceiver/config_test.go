@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -63,7 +63,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_env.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_env.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -84,7 +84,7 @@ func TestLoadConfigK8s(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_k8s.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_k8s.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -107,12 +107,9 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t,
-		path.Join(".", "testdata", "invalid-config-section.yaml"), factories)
-
-	require.Error(t, err)
-	require.Nil(t, cfg)
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-section.yaml"), factories)
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
 }
 
 // As one of the config parameters is consuming prometheus
@@ -124,10 +121,7 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t,
-		path.Join(".", "testdata", "invalid-config-prometheus-section.yaml"), factories)
-
-	require.Error(t, err)
-	require.Nil(t, cfg)
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-section.yaml"), factories)
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
 }

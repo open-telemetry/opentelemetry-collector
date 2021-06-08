@@ -65,12 +65,12 @@ func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 }
 
 // start creates the http client
-func (ze *zipkinExporter) start(_ context.Context, _ component.Host) (err error) {
-	ze.client, err = ze.clientSettings.ToClient()
+func (ze *zipkinExporter) start(_ context.Context, host component.Host) (err error) {
+	ze.client, err = ze.clientSettings.ToClient(host.GetExtensions())
 	return
 }
 
-func (ze *zipkinExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (ze *zipkinExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	tbatch, err := zipkin.InternalTracesToZipkinSpans(td)
 	if err != nil {
 		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))

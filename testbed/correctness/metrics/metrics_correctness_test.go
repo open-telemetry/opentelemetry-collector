@@ -92,7 +92,7 @@ func testWithMetricsGoldenDataset(
 
 func getTestMetrics(t *testing.T) []pdata.Metrics {
 	const file = "../../../internal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
-	mds, err := goldendataset.GenerateMetricDatas(file)
+	mds, err := goldendataset.GenerateMetrics(file)
 	require.NoError(t, err)
 	return mds
 }

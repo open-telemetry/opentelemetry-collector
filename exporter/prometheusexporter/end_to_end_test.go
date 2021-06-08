@@ -28,10 +28,9 @@ import (
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 )
@@ -74,8 +73,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := exporterFactory.CreateMetricsExporter(ctx, creationParams, exporterCfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,15 +101,13 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateParams := component.ReceiverCreateParams{
-		Logger: zap.NewNop(),
-	}
+	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
 		ReceiverSettings: config.NewReceiverSettings(config.NewID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
-	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateParams, rcvCfg, exporter)
+	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
 	}

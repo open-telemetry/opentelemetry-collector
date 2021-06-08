@@ -279,6 +279,7 @@ gendependabot:
 	@echo "" >> ${DEPENDABOT_PATH}
 	@echo "version: 2" >> ${DEPENDABOT_PATH}
 	@echo "updates:" >> ${DEPENDABOT_PATH}
+	$(MAKE) internal-gendependabot DIR="/" PACKAGE="github-actions"
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="docker"
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="gomod"
 	@set -e; for dir in $(ALL_MODULES); do \
@@ -357,6 +358,7 @@ genpdata:
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
+	make -C $(CONTRIB_PATH) gotidy
 	make -C $(CONTRIB_PATH) test
 	@echo Restoring contrib to no longer use this core checkout
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"

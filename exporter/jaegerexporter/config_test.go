@@ -22,9 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -38,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -71,8 +69,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := factory.CreateTracesExporter(context.Background(), params, e1)
+	set := componenttest.NewNopExporterCreateSettings()
+	te, err := factory.CreateTracesExporter(context.Background(), set, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }
