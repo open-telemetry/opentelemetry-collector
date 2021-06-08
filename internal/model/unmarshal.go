@@ -26,21 +26,21 @@ type TracesUnmarshaler interface {
 }
 
 type tracesUnmarshaler struct {
-	encoder    TracesDecoder
+	decoder    TracesDecoder
 	translator ToTracesTranslator
 }
 
 // NewTracesUnmarshaler returns a new TracesUnmarshaler.
-func NewTracesUnmarshaler(encoder TracesDecoder, translator ToTracesTranslator) TracesUnmarshaler {
+func NewTracesUnmarshaler(decoder TracesDecoder, translator ToTracesTranslator) TracesUnmarshaler {
 	return &tracesUnmarshaler{
-		encoder:    encoder,
+		decoder:    decoder,
 		translator: translator,
 	}
 }
 
 // Unmarshal bytes into pdata.Traces. On error pdata.Traces is invalid.
 func (t *tracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
-	model, err := t.encoder.DecodeTraces(buf)
+	model, err := t.decoder.DecodeTraces(buf)
 	if err != nil {
 		return pdata.Traces{}, fmt.Errorf("unmarshal failed: %w", err)
 	}
@@ -57,21 +57,21 @@ type MetricsUnmarshaler interface {
 }
 
 type metricsUnmarshaler struct {
-	encoder    MetricsDecoder
+	decoder    MetricsDecoder
 	translator ToMetricsTranslator
 }
 
 // NewMetricsUnmarshaler returns a new MetricsUnmarshaler.
-func NewMetricsUnmarshaler(encoder MetricsDecoder, translator ToMetricsTranslator) MetricsUnmarshaler {
+func NewMetricsUnmarshaler(decoder MetricsDecoder, translator ToMetricsTranslator) MetricsUnmarshaler {
 	return &metricsUnmarshaler{
-		encoder:    encoder,
+		decoder:    decoder,
 		translator: translator,
 	}
 }
 
 // Unmarshal bytes into pdata.Metrics. On error pdata.Metrics is invalid.
 func (t *metricsUnmarshaler) Unmarshal(buf []byte) (pdata.Metrics, error) {
-	model, err := t.encoder.DecodeMetrics(buf)
+	model, err := t.decoder.DecodeMetrics(buf)
 	if err != nil {
 		return pdata.Metrics{}, fmt.Errorf("unmarshal failed: %w", err)
 	}
@@ -88,21 +88,21 @@ type LogsUnmarshaler interface {
 }
 
 type logsUnmarshaler struct {
-	encoder    LogsDecoder
+	decoder    LogsDecoder
 	translator ToLogsTranslator
 }
 
 // NewLogsUnmarshaler returns a new LogsUnmarshaler.
-func NewLogsUnmarshaler(encoder LogsDecoder, translator ToLogsTranslator) LogsUnmarshaler {
+func NewLogsUnmarshaler(decoder LogsDecoder, translator ToLogsTranslator) LogsUnmarshaler {
 	return &logsUnmarshaler{
-		encoder:    encoder,
+		decoder:    decoder,
 		translator: translator,
 	}
 }
 
 // Unmarshal bytes into pdata.Logs. On error pdata.Logs is invalid.
 func (t *logsUnmarshaler) Unmarshal(buf []byte) (pdata.Logs, error) {
-	model, err := t.encoder.DecodeLogs(buf)
+	model, err := t.decoder.DecodeLogs(buf)
 	if err != nil {
 		return pdata.Logs{}, fmt.Errorf("unmarshal failed: %w", err)
 	}
