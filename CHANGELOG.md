@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.28.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Remove unused logstest package (#3222)
@@ -14,6 +16,19 @@
 - Replace `ExporterCreateParams` with `ExporterCreateSettings` (#3164)
 - Replace `ReceiverCreateParams` with `ReceiverCreateSettings`. (#3167)
 - Change `batchprocessor` logic to limit data points rather than metrics (#3141)
+- Rename `PrwExporter` to `PRWExporter` and `NewPrwExporter` to `NewPRWExporter` (#3246)
+- Avoid exposing OpenCensus reference in public APIs (#3253)
+- Move `config.Parser` to `configparser.Parser` (#3304)
+- Remove deprecated funcs inside the obsreceiver (#3314)
+- Remove `obsreport.GRPCServerWithObservabilityEnabled`, enable observability in config (#3315)
+- Remove `obsreport.ProcessorMetricViews`, use `BuildProcessorCustomMetricName` where needed (#3316)
+- Remove "Receive" from `obsreport.Receiver` funcs (#3326)
+- Remove "Export" from `obsreport.Exporter` funcs (#3333)
+- Hide unnecessary public struct `obsreport.StartReceiveOptions` (#3353)
+- Avoid exposing internal implementation public in OC/OTEL receivers (#3355)
+- Updated configgrpc `ToDialOptions` and confighttp `ToClient` apis to take extensions configuration map (#3340)
+- Remove `GenerateSequentialTraceID` and `GenerateSequentialSpanIDin` functions in testbed (#3390)
+- Change "grpc" to "GRPC" in configauth function/type names (#3285)
 
 ## 💡 Enhancements 💡
 
@@ -22,6 +37,23 @@
 - Enable Dependabot for Github Actions (#3312)
 - Remove the proto dependency in `goldendataset` for traces (#3322)
 - Add telemetry for dropped data due to exporter sending queue overflow (#3328)
+- Add initial implementation of `pdatagrcp` (#3231)
+- Change receiver obsreport helpers pattern to match the Processor/Exporter (#3227)
+- Add model translation and encoding interfaces (#3200)
+- Add otlpjson as a serializer implementation (#3238)
+- `prometheus` receiver:
+  - Add `createNodeAndResourcePdata` for Prometheus->OTLP pdata (#3139)
+  - Direct metricfamily Prometheus->OTLP (#3145)
+- Add `componenttest.NewNop*CreateSettings` to simplify tests (#3375)
+- Add support for markdown generation (#3100)
+- Refactor components for the Client Authentication Extensions (#3287)
+
+## 🧰 Bug fixes 🧰
+
+- Use dedicated `zapcore.Core` for Windows service (#3147)
+- Hook up start and shutdown functions in fileexporter (#3260)
+- Fix oc to pdata translation for sum non-monotonic cumulative (#3272)
+- Fix `timeseriesSignature` in prometheus receiver (#3310)
 
 ## v0.27.0 Beta
 
@@ -50,7 +82,6 @@
 - Add an internal sharedcomponent to be shared by receivers with shared resources (#3198)
 - Allow users to configure the Prometheus remote write queue (#3046)
 - Mark internaldata traces translation as deprecated for external usage (#3176)
-- Change receiver obsreport helpers pattern to match the Processor/Exporter (#3227)
 
 ## 🧰 Bug fixes 🧰
 
