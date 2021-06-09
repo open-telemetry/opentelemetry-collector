@@ -110,7 +110,7 @@ func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, c
 		}
 	case config.MetricsDataType:
 		var proc component.MetricsProcessor
-		proc, err = btProc.factory.CreateMetricsProcessor(ctx, creationParams, procCfg, btProc.nextTc)
+		proc, err = btProc.factory.CreateMetricsProcessor(ctx, creationParams, procCfg, btProc.nextMc)
 
 		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)
@@ -127,7 +127,7 @@ func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, c
 		}
 	case config.LogsDataType:
 		var proc component.LogsProcessor
-		proc, err = btProc.factory.CreateLogsProcessor(ctx, creationParams, procCfg, btProc.nextTc)
+		proc, err = btProc.factory.CreateLogsProcessor(ctx, creationParams, procCfg, btProc.nextLc)
 
 		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)

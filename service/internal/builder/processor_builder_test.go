@@ -119,6 +119,14 @@ func TestProcessorsReload(t *testing.T) {
 
 	assert.NoError(t, pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost()))
 
+	oldExpProc := pipelineProcessors["traces"].btProcs[0].tc.(*exampleProcessor)
+	err = pipelineProcessors.ReloadProcessors(context.Background(), componenttest.NewNopHost(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	assert.NoError(t, err)
+	// Ensure pipeline has its fields correctly populated.
+	btProc := pipelineProcessors["traces"].btProcs[1]
+	assert.Equal(t, btProc.tc.(*rldExampleProcessor).reloadCount, 1)
+	assert.False(t, oldExpProc == pipelineProcessors["traces"].btProcs[0].tc)
+
 	for pipelineName, pipeline := range cfg.Service.Pipelines {
 		processor := pipelineProcessors[pipelineName]
 		require.NotNil(t, processor)
@@ -183,14 +191,6 @@ func TestProcessorsReload(t *testing.T) {
 			}
 		}
 	}
-
-	oldExpProc := pipelineProcessors["traces"].btProcs[0].tc.(*exampleProcessor)
-	err = pipelineProcessors.ReloadProcessors(context.Background(), componenttest.NewNopHost(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
-	assert.NoError(t, err)
-	// Ensure pipeline has its fields correctly populated.
-	btProc := pipelineProcessors["traces"].btProcs[1]
-	assert.Equal(t, btProc.tc.(*rldExampleProcessor).reloadCount, 1)
-	assert.False(t, oldExpProc == pipelineProcessors["traces"].btProcs[0].tc)
 
 	err = pipelineProcessors.ShutdownProcessors(context.Background())
 	assert.NoError(t, err)
