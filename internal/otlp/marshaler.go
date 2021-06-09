@@ -18,17 +18,32 @@ import (
 	"go.opentelemetry.io/collector/internal/model"
 )
 
-// NewJSONTracesMarshaler returns a model.TracesMarshaler to decode from OTLP json bytes.
+// NewJSONTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP json bytes.
 func NewJSONTracesMarshaler() model.TracesMarshaler {
 	return model.NewTracesMarshaler(newJSONEncoder(), newFromTranslator())
 }
 
-// NewJSONMetricsMarshaler returns a model.MetricsMarshaler to decode from OTLP json bytes.
+// NewJSONMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP json bytes.
 func NewJSONMetricsMarshaler() model.MetricsMarshaler {
 	return model.NewMetricsMarshaler(newJSONEncoder(), newFromTranslator())
 }
 
-// NewJSONLogsMarshaler returns a model.LogsMarshaler to decode from OTLP json bytes.
+// NewJSONLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP json bytes.
 func NewJSONLogsMarshaler() model.LogsMarshaler {
 	return model.NewLogsMarshaler(newJSONEncoder(), newFromTranslator())
+}
+
+// NewProtobufTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufTracesMarshaler() model.TracesMarshaler {
+	return model.NewTracesMarshaler(newPbEncoder(), newFromTranslator())
+}
+
+// NewProtobufMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufMetricsMarshaler() model.MetricsMarshaler {
+	return model.NewMetricsMarshaler(newPbEncoder(), newFromTranslator())
+}
+
+// NewProtobufLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufLogsMarshaler() model.LogsMarshaler {
+	return model.NewLogsMarshaler(newPbEncoder(), newFromTranslator())
 }
