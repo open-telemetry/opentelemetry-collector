@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -1473,4 +1474,24 @@ func Test_heuristicalMetricAndKnownUnits(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
+func TestMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
+	mc := newMockMetadataCache(testMetadata)
+	mb := newMetricBuilder(mc, true, "", testLogger)
+
+	dupLabels := labels.Labels{
+		{Name: "__name__", Value: "test"},
+		{Name: "a", Value: "1"},
+		{Name: "a", Value: "1"},
+		{Name: "z", Value: "9"},
+		{Name: "z", Value: "1"},
+		{Name: "instance", Value: "0.0.0.0:8855"},
+		{Name: "job", Value: "test"},
+	}
+
+	err := mb.AddDataPoint(dupLabels, 1917, 1.0)
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), `invalid sample: non-unique label names: ["a" "z"]`)
 }
