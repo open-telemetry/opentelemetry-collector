@@ -39,5 +39,3 @@ jobs:
           echo ::group::Checking incompatible apis
           make apidiff-check input_dir="../${{ github.base_ref }}/internal/data/apidiff"
           echo ::endgroup::
-
-          
