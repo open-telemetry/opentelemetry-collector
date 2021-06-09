@@ -77,3 +77,29 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, c)
 }
+
+func TestValidCompression(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "valid-compression-config.yaml"), factories)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(cfg.Exporters))
+
+	c := cfg.Exporters[config.NewID(typeStr)].(*Config)
+	expected := createDefaultConfig().(*Config)
+	expected.Compression.Codec = "zstd"
+	assert.Equal(t, c, expected)
+}
+
+func TestInvalidCompression(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "invalid-compression-config.yaml"), factories)
+	require.Error(t, err)
+}

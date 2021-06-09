@@ -1,0 +1,17 @@
+exporters:
+  kafka:
+    compression:
+      codec: zstd
+
+processors:
+  nop:
+
+receivers:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [kafka]

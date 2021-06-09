@@ -1,0 +1,18 @@
+exporters:
+  kafka:
+    compression:
+      codec: snappy
+      level: 7
+
+processors:
+  nop:
+
+receivers:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [kafka]
