@@ -39,7 +39,7 @@ import (
 type DataProvider interface {
 	// SetLoadGeneratorCounters supplies pointers to LoadGenerator counters.
 	// The data provider implementation should increment these as it generates data.
-	SetLoadGeneratorCounters(batchesGenerated *atomic.Uint64, dataItemsGenerated *atomic.Uint64)
+	SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64)
 	// GenerateTraces returns an internal Traces instance with an OTLP ResourceSpans slice populated with test data.
 	GenerateTraces() (pdata.Traces, bool)
 	// GenerateMetrics returns an internal MetricData instance with an OTLP ResourceMetrics slice of test data.
@@ -52,7 +52,7 @@ type DataProvider interface {
 // Tracing IDs are based on the incremented batch and data items counters.
 type PerfTestDataProvider struct {
 	options            LoadOptions
-	batchesGenerated   *atomic.Uint64
+	traceIDSequence    atomic.Uint64
 	dataItemsGenerated *atomic.Uint64
 }
 
@@ -64,8 +64,7 @@ func NewPerfTestDataProvider(options LoadOptions) *PerfTestDataProvider {
 	}
 }
 
-func (dp *PerfTestDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.Uint64, dataItemsGenerated *atomic.Uint64) {
-	dp.batchesGenerated = batchesGenerated
+func (dp *PerfTestDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
@@ -75,7 +74,7 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
 	spans.Resize(dp.options.ItemsPerBatch)
 
-	traceID := dp.batchesGenerated.Inc()
+	traceID := dp.traceIDSequence.Inc()
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
 		startTime := time.Now()
@@ -127,7 +126,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		metric.SetUnit("1")
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
 
-		batchIndex := dp.batchesGenerated.Inc()
+		batchIndex := dp.traceIDSequence.Inc()
 
 		dps := metric.IntGauge().DataPoints()
 		// Generate data points for the metric.
@@ -161,7 +160,7 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 
 	now := pdata.TimestampFromTime(time.Now())
 
-	batchIndex := dp.batchesGenerated.Inc()
+	batchIndex := dp.traceIDSequence.Inc()
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
@@ -189,7 +188,6 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 type GoldenDataProvider struct {
 	tracePairsFile     string
 	spanPairsFile      string
-	batchesGenerated   *atomic.Uint64
 	dataItemsGenerated *atomic.Uint64
 
 	tracesGenerated []pdata.Traces
@@ -210,8 +208,7 @@ func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPa
 	}
 }
 
-func (dp *GoldenDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.Uint64, dataItemsGenerated *atomic.Uint64) {
-	dp.batchesGenerated = batchesGenerated
+func (dp *GoldenDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
@@ -224,7 +221,6 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 			dp.tracesGenerated = nil
 		}
 	}
-	dp.batchesGenerated.Inc()
 	if dp.tracesIndex >= len(dp.tracesGenerated) {
 		return pdata.NewTraces(), true
 	}
@@ -242,7 +238,6 @@ func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			log.Printf("cannot generate metrics: %s", err)
 		}
 	}
-	dp.batchesGenerated.Inc()
 	if dp.metricsIndex == len(dp.metricsGenerated) {
 		return pdata.Metrics{}, true
 	}
@@ -263,7 +258,6 @@ func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
 // exporter (note: "file" exporter writes one JSON message per line, FileDataProvider
 // expects just a single JSON message in the entire file).
 type FileDataProvider struct {
-	batchesGenerated   *atomic.Uint64
 	dataItemsGenerated *atomic.Uint64
 	message            proto.Message
 	ItemsPerBatch      int
@@ -320,8 +314,7 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	}, nil
 }
 
-func (dp *FileDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.Uint64, dataItemsGenerated *atomic.Uint64) {
-	dp.batchesGenerated = batchesGenerated
+func (dp *FileDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
@@ -335,7 +328,6 @@ func (dp *FileDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 func (dp *FileDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(dp.message.(*otlpmetricscol.ExportMetricsServiceRequest)))
-	dp.batchesGenerated.Inc()
 	_, dataPointCount := md.MetricAndDataPointCount()
 	dp.dataItemsGenerated.Add(uint64(dataPointCount))
 	return md, false

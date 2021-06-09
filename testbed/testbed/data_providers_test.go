@@ -27,7 +27,7 @@ const metricsPictPairsFile = "../../internal/goldendataset/testdata/generated_pi
 
 func TestGoldenDataProvider(t *testing.T) {
 	dp := NewGoldenDataProvider("", "", metricsPictPairsFile)
-	dp.SetLoadGeneratorCounters(atomic.NewUint64(0), atomic.NewUint64(0))
+	dp.SetLoadGeneratorCounters(atomic.NewUint64(0))
 	var ms []pdata.Metrics
 	for {
 		m, done := dp.GenerateMetrics()
