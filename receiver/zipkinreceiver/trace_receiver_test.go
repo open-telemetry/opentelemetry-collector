@@ -48,6 +48,12 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
+const (
+	zipkinV2Single      = "../../translator/trace/zipkinv2/testdata/zipkin_v2_single.json"
+	zipkinV2NoTimestamp = "../../translator/trace/zipkinv2/testdata/zipkin_v2_notimestamp.json"
+	zipkinV1SingleBatch = "../../translator/trace/zipkin/testdata/zipkin_v1_single_batch.json"
+)
+
 var zipkinReceiverID = config.NewIDWithName(typeStr, "receiver_test")
 
 func TestNew(t *testing.T) {
@@ -313,7 +319,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "gzip",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v1_single_batch.json")
+				return ioutil.ReadFile(zipkinV1SingleBatch)
 			},
 		},
 
@@ -331,7 +337,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "gzip",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+				return ioutil.ReadFile(zipkinV2Single)
 			},
 		},
 
@@ -340,7 +346,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "zlib",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+				return ioutil.ReadFile(zipkinV2Single)
 			},
 		},
 
@@ -349,7 +355,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			content:  "application/json",
 			encoding: "",
 			bodyFn: func() ([]byte, error) {
-				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+				return ioutil.ReadFile(zipkinV2Single)
 			},
 		},
 	}
@@ -421,7 +427,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 }
 
 func TestReceiverConsumerError(t *testing.T) {
-	body, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+	body, err := ioutil.ReadFile(zipkinV2Single)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
@@ -509,7 +515,7 @@ func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 }
 
 func TestReceiverConvertsStringsToTypes(t *testing.T) {
-	body, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+	body, err := ioutil.ReadFile(zipkinV2Single)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
@@ -557,7 +563,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 }
 
 func TestFromBytesWithNoTimestamp(t *testing.T) {
-	noTimestampBytes, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_notimestamp.json")
+	noTimestampBytes, err := ioutil.ReadFile(zipkinV2NoTimestamp)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
