@@ -1,0 +1,36 @@
+receivers:
+  examplereceiver:
+  examplereceiver/2:
+  examplereceiver/3:
+  examplereceiver/multi:
+
+processors:
+  example:
+  rldexmaple:
+
+exporters:
+  exampleexporter:
+  exampleexporter/2:
+  exampleexporter/3:
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver, examplereceiver/multi]
+      processors: [example,rldexmaple]
+      exporters: [exampleexporter]
+
+    traces/2:
+      receivers: [examplereceiver/2, examplereceiver/multi]
+      processors: [example,rldexmaple]
+      exporters: [exampleexporter/3, exampleexporter/2]
+
+    metrics:
+      receivers: [examplereceiver]
+      processors: [example,rldexmaple]
+      exporters: [exampleexporter]
+
+    metrics/2:
+      receivers: [examplereceiver/3]
+      processors: [example,rldexmaple]
+      exporters: [exampleexporter/2,exampleexporter/3]
