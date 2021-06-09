@@ -127,7 +127,7 @@ func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
 func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata.Traces) {
 	spansMap := make(map[string]pdata.Span)
 	// TODO: Remove this hack, and add a way to retrieve all sent data.
-	if val, ok := v.dataProvider.(*GoldenDataProvider); ok {
+	if val, ok := v.dataProvider.(*goldenDataProvider); ok {
 		populateSpansMap(spansMap, val.tracesGenerated)
 	}
 
