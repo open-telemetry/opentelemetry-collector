@@ -18,8 +18,14 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
+	"path"
+	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
@@ -95,4 +101,64 @@ func TestMetric10kDPS(t *testing.T) {
 		})
 	}
 
+}
+
+func TestMetricsFromFile(t *testing.T) {
+	// This test demonstrates usage of NewFileDataProvider to generate load using
+	// previously recorded data.
+
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	// Use metrics previously recorded using "file" exporter and "k8scluster" receiver.
+	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.json", config.MetricsDataType)
+	assert.NoError(t, err)
+
+	options := testbed.LoadOptions{
+		DataItemsPerSecond: 1_000,
+		Parallel:           1,
+		// ItemsPerBatch is based on the data from the file.
+		ItemsPerBatch: dataProvider.ItemsPerBatch,
+	}
+	agentProc := &testbed.ChildProcess{}
+
+	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{},
+		performanceResultsSummary,
+	)
+	defer tc.Stop()
+
+	tc.SetResourceLimits(testbed.ResourceSpec{
+		ExpectedMaxCPU: 120,
+		ExpectedMaxRAM: 70,
+	})
+	tc.StartBackend()
+	tc.StartAgent("--log-level=debug")
+
+	tc.StartLoad(options)
+
+	tc.Sleep(tc.Duration)
+
+	tc.StopLoad()
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		"all data items received")
+
+	tc.StopAgent()
+
+	tc.ValidateData()
 }
