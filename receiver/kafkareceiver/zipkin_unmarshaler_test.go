@@ -28,11 +28,10 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
-var fromTranslator zipkinv2.FromTranslator
+var v2FromTranslator zipkinv2.FromTranslator
 
 func TestUnmarshalZipkin(t *testing.T) {
 	td := pdata.NewTraces()
@@ -46,7 +45,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
-	ret, err := fromTranslator.FromTraces(td)
+	ret, err := v2FromTranslator.FromTraces(td)
 	require.NoError(t, err)
 	spans := ret.([]*zipkinmodel.SpanModel)
 
@@ -62,7 +61,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, protocolTransport.WriteListEnd(context.Background()))
 
-	tdThrift, err := zipkintranslator.V1ThriftBatchToInternalTraces([]*zipkincore.Span{tSpan})
+	tdThrift, err := v1ThriftUnmarshaler.Unmarshal(thriftTransport.Buffer.Bytes())
 	require.NoError(t, err)
 
 	protoBytes, err := new(zipkin_proto3.SpanSerializer).Serialize(spans)
@@ -106,7 +105,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 func TestUnmarshalZipkinThrift_error(t *testing.T) {
 	p := zipkinThriftSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	assert.Equal(t, pdata.Traces{}, got)
 	assert.Error(t, err)
 }
 
