@@ -17,6 +17,7 @@ package builder
 import (
 	"context"
 	"path"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,6 +39,8 @@ func TestBuildExporters(t *testing.T) {
 
 	oceFactory := opencensusexporter.NewFactory()
 	factories.Exporters[oceFactory.Type()] = oceFactory
+	factories.Exporters[exampleRldExporterFactory.Type()] = exampleRldExporterFactory
+	factories.Exporters[exampleExporterFactory.Type()] = exampleExporterFactory
 	cfg := &config.Config{
 		Exporters: map[config.ComponentID]config.Exporter{
 			config.NewID("opencensus"): &opencensusexporter.Config{
@@ -47,6 +50,8 @@ func TestBuildExporters(t *testing.T) {
 				},
 				NumWorkers: 2,
 			},
+			config.NewID(expType):    createDefaultConfig(),
+			config.NewID(rldExpType): createRldDefaultConfig(),
 		},
 
 		Service: config.Service{
@@ -54,7 +59,7 @@ func TestBuildExporters(t *testing.T) {
 				"trace": {
 					Name:      "trace",
 					InputType: config.TracesDataType,
-					Exporters: []config.ComponentID{config.NewID("opencensus")},
+					Exporters: []config.ComponentID{config.NewID("opencensus"), createDefaultConfig().ID(), createRldDefaultConfig().ID()},
 				},
 			},
 		},
@@ -72,6 +77,18 @@ func TestBuildExporters(t *testing.T) {
 	assert.NotNil(t, e1.getTracesExporter())
 	assert.Nil(t, e1.getMetricExporter())
 	assert.Nil(t, e1.getLogExporter())
+
+	e2 := exporters[config.NewID(expType)]
+	require.NotNil(t, e2)
+	assert.NotNil(t, e2.getTracesExporter())
+	assert.Nil(t, e2.getMetricExporter())
+	assert.Nil(t, e2.getLogExporter())
+
+	e3 := exporters[config.NewID(rldExpType)]
+	require.NotNil(t, e3)
+	assert.NotNil(t, e3.getTracesExporter())
+	assert.Nil(t, e3.getMetricExporter())
+	assert.Nil(t, e3.getLogExporter())
 
 	// Ensure it can be started.
 	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
@@ -175,9 +192,9 @@ func TestBuildExporters_StartAll(t *testing.T) {
 	exporters[expCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  traceExporter,
-			config.MetricsDataType: metricExporter,
-			config.LogsDataType:    logsExporter,
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
 		},
 	}
 	assert.False(t, traceExporter.ExporterStarted)
@@ -191,6 +208,82 @@ func TestBuildExporters_StartAll(t *testing.T) {
 	assert.True(t, logsExporter.ExporterStarted)
 }
 
+func TestBuildExporters_Reload(t *testing.T) {
+	exporters := make(Exporters)
+
+	factories, err := testcomponents.ExampleComponents()
+	assert.NoError(t, err)
+	factories.Exporters[exampleRldExporterFactory.Type()] = exampleRldExporterFactory
+	factories.Exporters[exampleExporterFactory.Type()] = exampleExporterFactory
+
+	expCfg := config.NewExporterSettings(config.NewID(expType))
+	traceExporter := &exampleExporter{}
+	metricExporter := &exampleExporter{}
+	logExporter := &exampleExporter{}
+	exporters[expCfg.ID()] = &builtExporter{
+		logger: zap.NewNop(),
+		expByDataType: map[config.DataType]component.Exporter{
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logExporter, logExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory},
+		},
+	}
+
+	assert.False(t, traceExporter.started)
+	assert.False(t, metricExporter.started)
+	assert.False(t, logExporter.started)
+
+	rldExpCfg := config.NewExporterSettings(config.NewID(rldExpType))
+	rldTraceExporter := &reloadableExporter{}
+	rldMetricExporter := &reloadableExporter{}
+	rldLogExporter := &reloadableExporter{}
+	exporters[rldExpCfg.ID()] = &builtExporter{
+		logger: zap.NewNop(),
+		expByDataType: map[config.DataType]component.Exporter{
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, rldTraceExporter, nil, rldTraceExporter, rldExpCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, rldMetricExporter, nil, nil, rldMetricExporter, rldExpCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, rldLogExporter, rldLogExporter, rldExpCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory},
+		},
+	}
+
+	assert.False(t, rldTraceExporter.started)
+	assert.False(t, rldMetricExporter.started)
+	assert.False(t, rldLogExporter.started)
+
+	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
+	assert.True(t, traceExporter.started)
+	assert.True(t, metricExporter.started)
+	assert.True(t, logExporter.started)
+	assert.True(t, rldTraceExporter.started)
+	assert.True(t, rldMetricExporter.started)
+	assert.True(t, rldLogExporter.started)
+
+	cfg := &config.Config{
+		Exporters: map[config.ComponentID]config.Exporter{
+			config.NewID(expType):    &expCfg,
+			config.NewID(rldExpType): &rldExpCfg,
+		},
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err = exporters.ReloadExporters(context.Background(), zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters, componenttest.NewNopHost())
+		assert.NoError(t, err)
+	}()
+	wg.Wait()
+	assert.False(t, exporters[expCfg.ID()].getLogExporter().(*exporterWrapper).lc == logExporter)
+	assert.False(t, exporters[expCfg.ID()].getMetricExporter().(*exporterWrapper).mc == metricExporter)
+	assert.False(t, exporters[expCfg.ID()].getTracesExporter().(*exporterWrapper).tc == traceExporter)
+	assert.True(t, exporters[rldExpCfg.ID()].getLogExporter().(*exporterWrapper).lc == rldLogExporter)
+	assert.True(t, exporters[rldExpCfg.ID()].getMetricExporter().(*exporterWrapper).mc == rldMetricExporter)
+	assert.True(t, exporters[rldExpCfg.ID()].getTracesExporter().(*exporterWrapper).tc == rldTraceExporter)
+	assert.Equal(t, exporters[rldExpCfg.ID()].getLogExporter().(*exporterWrapper).lc.(*reloadableExporter).reloadCount, 1)
+	assert.Equal(t, exporters[rldExpCfg.ID()].getMetricExporter().(*exporterWrapper).mc.(*reloadableExporter).reloadCount, 1)
+	assert.Equal(t, exporters[rldExpCfg.ID()].getTracesExporter().(*exporterWrapper).tc.(*reloadableExporter).reloadCount, 1)
+}
+
 func TestBuildExporters_StopAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &config.ExporterSettings{}
@@ -200,9 +293,9 @@ func TestBuildExporters_StopAll(t *testing.T) {
 	exporters[expCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  traceExporter,
-			config.MetricsDataType: metricExporter,
-			config.LogsDataType:    logsExporter,
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
 		},
 	}
 	assert.False(t, traceExporter.ExporterShutdown)
