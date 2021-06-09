@@ -174,19 +174,13 @@ func TestMetricCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.MetricCount())
 }
 
-func TestMetricSize(t *testing.T) {
-	md := NewMetrics()
-	assert.Equal(t, 0, md.OtlpProtoSize())
-	rms := md.ResourceMetrics()
-	metric := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(MetricDataTypeHistogram)
-	doubleHistogram := metric.Histogram()
-	pt := doubleHistogram.DataPoints().AppendEmpty()
-	pt.SetCount(123)
-	pt.SetSum(123)
-	otlp := internal.MetricsToOtlp(md.InternalRep())
-	size := otlp.Size()
-	bytes, err := otlp.Marshal()
+func TestMetricsSize(t *testing.T) {
+	assert.Equal(t, 0, NewMetrics().OtlpProtoSize())
+
+	md := generateMetricsEmptyDataPoints()
+	orig := md.orig
+	size := orig.Size()
+	bytes, err := orig.Marshal()
 	require.NoError(t, err)
 	assert.Equal(t, size, md.OtlpProtoSize())
 	assert.Equal(t, len(bytes), md.OtlpProtoSize())
@@ -296,7 +290,7 @@ func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
-	metricData := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -308,8 +302,8 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	}))
-	resourceMetrics := metricData.ResourceMetrics()
+	}}
+	resourceMetrics := md.ResourceMetrics()
 	assert.EqualValues(t, 1, resourceMetrics.Len())
 
 	resourceMetric := resourceMetrics.At(0)
@@ -384,7 +378,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
-	metricData := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -410,7 +404,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	}, internal.MetricsToOtlp(metricData.InternalRep()))
+	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
 func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
@@ -971,23 +965,23 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 }
 
 func generateMetricsEmptyResource() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
-	}))
+	}}
 }
 
 func generateMetricsEmptyInstrumentation() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{{}},
 			},
 		},
-	}))
+	}}
 }
 
 func generateMetricsEmptyMetrics() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -997,11 +991,11 @@ func generateMetricsEmptyMetrics() Metrics {
 				},
 			},
 		},
-	}))
+	}}
 }
 
 func generateMetricsEmptyDataPoints() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -1021,5 +1015,5 @@ func generateMetricsEmptyDataPoints() Metrics {
 				},
 			},
 		},
-	}))
+	}}
 }
