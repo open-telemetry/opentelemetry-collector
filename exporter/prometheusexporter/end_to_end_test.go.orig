@@ -28,9 +28,10 @@ import (
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 )
@@ -73,8 +74,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
-	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := exporterFactory.CreateMetricsExporter(ctx, creationParams, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,13 +102,15 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
+	receiverCreateParams := component.ReceiverCreateParams{
+		Logger: zap.NewNop(),
+	}
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
 		ReceiverSettings: config.NewReceiverSettings(config.NewID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
-	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
+	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateParams, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +157,11 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_jvm_memory_pool_bytes_used.pool="Metaspace". 2.6218176e.07.*`,
 		`. HELP test_scrape_duration_seconds Duration of the scrape`,
 		`. TYPE test_scrape_duration_seconds gauge`,
-		`test_scrape_duration_seconds [0-9.e-]+ [0-9]+`,
+<<<<<<< Updated upstream
+		`test_scrape_duration_seconds 0.* .*`,
+=======
+		`test_scrape_duration_seconds [0-9.e-]* [0-9]+`,
+>>>>>>> Stashed changes
 		`. HELP test_scrape_samples_post_metric_relabeling The number of samples remaining after metric relabeling was applied`,
 		`. TYPE test_scrape_samples_post_metric_relabeling gauge`,
 		`test_scrape_samples_post_metric_relabeling 13 .*`,
