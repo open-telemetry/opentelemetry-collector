@@ -16,6 +16,7 @@ package defaultcomponents
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/extension/oauth2clientcredentialsauthextension"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
-	"go.opentelemetry.io/collector/extension/clientcredentialsauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -79,7 +79,8 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "oauth2clientcredentials",
 			getConfigFn: func() config.Extension {
-				cfg := extFactories["oauth2clientcredentials"].CreateDefaultConfig().(*clientcredentialsauthextension.Config)
+				cfg := extFactories["oauth2clientcredentials"].CreateDefaultConfig().
+					(*oauth2clientcredentialsauthextension.Config)
 				cfg.ClientSecret = "someclientsecret"
 				cfg.ClientID = "someclientid"
 				cfg.Scopes = []string{"some.scope"}
