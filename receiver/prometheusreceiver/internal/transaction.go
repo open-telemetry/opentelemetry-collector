@@ -20,6 +20,7 @@ import (
 	"math"
 	"net"
 	"sync/atomic"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -76,6 +77,7 @@ type transaction struct {
 	externalLabels       labels.Labels
 	logger               *zap.Logger
 	obsrecv              *obsreport.Receiver
+	stalenessStore       *stalenessStore
 }
 
 func newTransaction(
@@ -87,7 +89,7 @@ func newTransaction(
 	ms *metadataService,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
-	logger *zap.Logger) *transaction {
+	logger *zap.Logger, stalenessStore *stalenessStore) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -101,6 +103,7 @@ func newTransaction(
 		externalLabels:       externalLabels,
 		logger:               logger,
 		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport}),
+		stalenessStore:       stalenessStore,
 	}
 }
 
@@ -158,7 +161,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node, tr.resource = createNodeAndResource(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger)
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.stalenessStore)
 	tr.isNew = false
 	return nil
 }
@@ -169,6 +172,14 @@ func (tr *transaction) Commit() error {
 		// In a situation like not able to connect to the remote server, scrapeloop will still commit even if it had
 		// never added any data points, that the transaction has not been initialized.
 		return nil
+	}
+
+	// Before building metrics, issue staleness markers for every stale metric.
+	staleLabels := tr.stalenessStore.emitStaleLabels()
+
+	nowAsUnix := time.Now().Unix()
+	for _, labels := range staleLabels {
+		tr.metricBuilder.AddDataPoint(labels, nowAsUnix, stalenessSpecialValue)
 	}
 
 	ctx := tr.obsrecv.StartMetricsOp(tr.ctx)

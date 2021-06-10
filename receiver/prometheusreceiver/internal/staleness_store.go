@@ -15,8 +15,15 @@
 package internal
 
 import (
+	"math"
+
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/value"
 )
+
+// Prometheus uses a special NaN to record staleness as per
+// https://github.com/prometheus/prometheus/blob/67dc912ac8b24f94a1fc478f352d25179c94ab9b/pkg/value/value.go#L24-L28
+var stalenessSpecialValue = math.Float64frombits(value.StaleNaN)
 
 // stalenessStore tracks metrics/labels that appear between scrapes, the current and last scrape.
 // The labels that appear only in the previous scrape are considered stale and for those, we
