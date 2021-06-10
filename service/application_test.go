@@ -41,7 +41,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 )
 
-func TestApplication_Start(t *testing.T) {
+func TestApplication_StartAndReload(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
@@ -91,13 +91,31 @@ func TestApplication_Start(t *testing.T) {
 	assertZPages(t)
 
 	// Trigger another configuration load.
+	oldService := app.service
 	require.NoError(t, app.reloadService(context.Background()))
 	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
+	assert.Equal(t, oldService, app.service)
+
+	parser, _ := config.NewParserFromFile("testdata/otelcol-config-restart.yaml")
+	app.parserProvider = parserprovider.NewSetFlag(&fakeParseProvider{parser: parser})
+
+	oldService = app.service
+	require.NoError(t, app.reloadService(context.Background()))
+	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
+	assert.NotEqual(t, oldService, app.service)
 
 	app.signalsChannel <- syscall.SIGTERM
 	<-appDone
 	assert.Equal(t, Closing, <-app.GetStateChannel())
 	assert.Equal(t, Closed, <-app.GetStateChannel())
+}
+
+type fakeParseProvider struct {
+	parser *config.Parser
+}
+
+func (fkp *fakeParseProvider) Get() (*config.Parser, error) {
+	return fkp.parser, nil
 }
 
 type mockAppTelemetry struct{}

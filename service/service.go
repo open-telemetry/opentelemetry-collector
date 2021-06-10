@@ -113,6 +113,18 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	return consumererror.Combine(errs)
 }
 
+func (srv *service) Reload(ctx context.Context, cfg *config.Config) error {
+	if err := srv.reloadExtensions(ctx, cfg); err != nil {
+		return err
+	}
+
+	if err := srv.reloadPipelines(ctx, cfg); err != nil {
+		return err
+	}
+
+	return srv.builtExtensions.NotifyPipelineReady()
+}
+
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
@@ -160,17 +172,27 @@ func (srv *service) startExtensions(ctx context.Context) error {
 	return nil
 }
 
-func (srv *service) reloadExtensions(ctx context.Context) error {
+func (srv *service) reloadExtensions(ctx context.Context, cfg *config.Config) error {
 	if err := srv.config.Validate(); err != nil {
-		return fmt.Errorf("invalid configuration: %w", err)
+		return err
 	}
 
-	if err := srv.buildExtensions(); err != nil {
-		return fmt.Errorf("cannot build extensions: %w", err)
+	if err := srv.builtExtensions.NotifyPipelineNotReady(); err != nil {
+		return err
+	}
+
+	if err := srv.shutdownExtensions(ctx); err != nil {
+		return err
+	}
+
+	var err error
+	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.buildInfo, cfg, srv.factories.Extensions)
+	if err != nil {
+		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
 
 	if err := srv.startExtensions(ctx); err != nil {
-		return fmt.Errorf("cannot setup extensions: %w", err)
+		return err
 	}
 
 	return nil

@@ -97,6 +97,65 @@ func TestService_GetExporters(t *testing.T) {
 	assert.Contains(t, expMap[config.LogsDataType], config.NewID("nop"))
 }
 
+func TestService_Reload(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	srv := createExampleService(t)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	oldExts := srv.builtExtensions
+	oldRcvs := srv.builtReceivers
+	oldExps := srv.builtExporters
+
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "otelcol-nop.yaml"), factories)
+	assert.NoError(t, err)
+	err = srv.Reload(context.Background(), cfg)
+	assert.NoError(t, err)
+
+	expMap := srv.GetExporters()
+	assert.Equal(t, oldExps, srv.builtExporters)
+	assert.Len(t, expMap, 3)
+	assert.Len(t, expMap[config.TracesDataType], 1)
+	assert.Contains(t, expMap[config.TracesDataType], config.NewID("nop"))
+	assert.Len(t, expMap[config.MetricsDataType], 1)
+	assert.Contains(t, expMap[config.MetricsDataType], config.NewID("nop"))
+	assert.Len(t, expMap[config.LogsDataType], 1)
+	assert.Contains(t, expMap[config.LogsDataType], config.NewID("nop"))
+
+	extMap := srv.GetExtensions()
+	assert.NotEqual(t, oldExts, srv.builtExtensions)
+	assert.Len(t, extMap, 1)
+	assert.Contains(t, extMap, config.NewID("nop"))
+
+	assert.Equal(t, oldRcvs, srv.builtReceivers)
+	factory := srv.GetFactory(component.KindReceiver, "nop")
+	assert.EqualValues(t, factories.Receivers["nop"], factory)
+	factory = srv.GetFactory(component.KindReceiver, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+
+	factory = srv.GetFactory(component.KindProcessor, "nop")
+	assert.EqualValues(t, factories.Processors["nop"], factory)
+	factory = srv.GetFactory(component.KindProcessor, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+
+	factory = srv.GetFactory(component.KindExporter, "nop")
+	assert.EqualValues(t, factories.Exporters["nop"], factory)
+	factory = srv.GetFactory(component.KindExporter, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+
+	factory = srv.GetFactory(component.KindExtension, "nop")
+	assert.EqualValues(t, factories.Extensions["nop"], factory)
+	factory = srv.GetFactory(component.KindExtension, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+
+	// Try retrieve non existing component.Kind.
+	factory = srv.GetFactory(42, "nop")
+	assert.EqualValues(t, nil, factory)
+}
+
 func createExampleService(t *testing.T) *service {
 	// Create some factories.
 	factories, err := componenttest.NopFactories()

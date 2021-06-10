@@ -406,8 +406,11 @@ func (app *Application) reloadService(ctx context.Context) error {
 	}
 
 	if app.service != nil && reload {
+		if err := app.service.Reload(ctx, cfg); err != nil {
+			return err
+		}
 		app.service.config = cfg
-		return app.service.reloadPipelines(ctx, cfg)
+		return nil
 	} else {
 		if app.service != nil {
 			retiringService := app.service

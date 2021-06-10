@@ -1,0 +1,28 @@
+receivers:
+  jaeger:
+    protocols:
+      grpc:
+
+exporters:
+  opencensus:
+    endpoint: "locahost:55678"
+
+processors:
+  attributes:
+    actions:
+      - key: key1
+        value: 123
+        action: insert
+
+extensions:
+  health_check: {}
+  pprof:
+  zpages:
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [attributes]
+      exporters: [opencensus]
