@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv2
 
 import (
 	"testing"
@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
 func TestZipkinSpansToInternalTraces(t *testing.T) {
@@ -59,7 +60,7 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td, err := V2SpansToInternalTraces(test.zs, false)
+			td, err := ToTranslator{}.ToTraces(test.zs)
 			assert.EqualValues(t, test.err, err)
 			if test.name != "nilSpan" {
 				assert.Equal(t, len(test.zs), td.SpanCount())
@@ -159,7 +160,7 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 		Tags:           nil,
 	}
 
-	gb, err := V2SpansToInternalTraces(spans, false)
+	gb, err := ToTranslator{}.ToTraces(spans)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -176,7 +177,7 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 	// expect end time to be zero (unix time) plus the duration
 	assert.Equal(t, duration, gs.EndTimestamp().AsTime().UnixNano())
 
-	wasAbsent, mapContainedKey := gs.Attributes().Get(startTimeAbsent)
+	wasAbsent, mapContainedKey := gs.Attributes().Get(zipkin.StartTimeAbsent)
 	assert.True(t, mapContainedKey)
 	assert.True(t, wasAbsent.BoolVal())
 }

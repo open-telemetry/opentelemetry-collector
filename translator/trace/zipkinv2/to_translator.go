@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv2
 
 import (
 	"encoding/json"
@@ -28,49 +28,29 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
-var nonSpanAttributes = func() map[string]struct{} {
-	attrs := make(map[string]struct{})
-	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
-		attrs[key] = struct{}{}
+var _ model.ToTracesTranslator = (*ToTranslator)(nil)
+
+// ToTranslator converts from Zipkin data model to pdata.
+type ToTranslator struct {
+	// ParseStringTags should be set to true if tags should be converted to numbers when possible.
+	ParseStringTags bool
+}
+
+// ToTraces translates Zipkin v2 spans into internal trace data.
+func (t ToTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
+	zipkinSpans, ok := src.([]*zipkinmodel.SpanModel)
+	if !ok {
+		return pdata.Traces{}, model.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, src)
 	}
-	attrs[tagServiceNameSource] = struct{}{}
-	attrs[conventions.InstrumentationLibraryName] = struct{}{}
-	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
-	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
-	attrs[occonventions.AttributeExporterVersion] = struct{}{}
-	attrs[conventions.AttributeProcessID] = struct{}{}
-	attrs[occonventions.AttributeResourceType] = struct{}{}
-	return attrs
-}()
 
-// Custom Sort on
-type byOTLPTypes []*zipkinmodel.SpanModel
-
-func (b byOTLPTypes) Len() int {
-	return len(b)
-}
-
-func (b byOTLPTypes) Less(i, j int) bool {
-	diff := strings.Compare(extractLocalServiceName(b[i]), extractLocalServiceName(b[j]))
-	if diff != 0 {
-		return diff <= 0
-	}
-	diff = strings.Compare(extractInstrumentationLibrary(b[i]), extractInstrumentationLibrary(b[j]))
-	return diff <= 0
-}
-
-func (b byOTLPTypes) Swap(i, j int) {
-	b[i], b[j] = b[j], b[i]
-}
-
-// V2SpansToInternalTraces translates Zipkin v2 spans into internal trace data.
-func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel, parseStringTags bool) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil
@@ -113,7 +93,7 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel, parseStringTa
 			curSpans = curILSpans.Spans()
 		}
 		curSpans.Resize(spanCount + 1)
-		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount), parseStringTags)
+		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount), t.ParseStringTags)
 		if err != nil {
 			return traceData, err
 		}
@@ -121,6 +101,41 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel, parseStringTa
 	}
 
 	return traceData, nil
+}
+
+var nonSpanAttributes = func() map[string]struct{} {
+	attrs := make(map[string]struct{})
+	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
+		attrs[key] = struct{}{}
+	}
+	attrs[zipkin.TagServiceNameSource] = struct{}{}
+	attrs[conventions.InstrumentationLibraryName] = struct{}{}
+	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
+	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
+	attrs[occonventions.AttributeExporterVersion] = struct{}{}
+	attrs[conventions.AttributeProcessID] = struct{}{}
+	attrs[occonventions.AttributeResourceType] = struct{}{}
+	return attrs
+}()
+
+// Custom Sort on
+type byOTLPTypes []*zipkinmodel.SpanModel
+
+func (b byOTLPTypes) Len() int {
+	return len(b)
+}
+
+func (b byOTLPTypes) Less(i, j int) bool {
+	diff := strings.Compare(extractLocalServiceName(b[i]), extractLocalServiceName(b[j]))
+	if diff != 0 {
+		return diff <= 0
+	}
+	diff = strings.Compare(extractInstrumentationLibrary(b[i]), extractInstrumentationLibrary(b[j]))
+	return diff <= 0
+}
+
+func (b byOTLPTypes) Swap(i, j int) {
+	b[i], b[j] = b[j], b[i]
 }
 
 func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span, parseStringTags bool) error {
@@ -348,7 +363,7 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 		}
 
 		if parseStringTags {
-			switch determineValueType(val) {
+			switch zipkin.DetermineValueType(val) {
 			case pdata.AttributeValueTypeInt:
 				iValue, _ := strconv.ParseInt(val, 10, 64)
 				dest.UpsertInt(key, iValue)
@@ -378,13 +393,13 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 		return
 	}
 
-	snSource := tags[tagServiceNameSource]
+	snSource := tags[zipkin.TagServiceNameSource]
 	if snSource == "" {
 		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
 	} else {
 		resource.Attributes().InsertString(snSource, localServiceName)
 	}
-	delete(tags, tagServiceNameSource)
+	delete(tags, zipkin.TagServiceNameSource)
 
 	for key := range nonSpanAttributes {
 		if key == conventions.InstrumentationLibraryName || key == conventions.InstrumentationLibraryVersion {
@@ -445,7 +460,7 @@ func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pd
 		dest.SetStartTimestamp(unixTimeZero)
 		dest.SetEndTimestamp(zeroPlusDuration)
 
-		destAttrs.InsertBool(startTimeAbsent, true)
+		destAttrs.InsertBool(zipkin.StartTimeAbsent, true)
 	} else {
 		dest.SetStartTimestamp(pdata.TimestampFromTime(zspan.Timestamp))
 		dest.SetEndTimestamp(pdata.TimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))

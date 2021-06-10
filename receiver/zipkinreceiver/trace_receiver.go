@@ -37,8 +37,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
 const (
@@ -63,6 +65,7 @@ type ZipkinReceiver struct {
 	shutdownWG sync.WaitGroup
 	server     *http.Server
 	config     *Config
+	translator model.ToTracesTranslator
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
@@ -77,6 +80,7 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 		nextConsumer: nextConsumer,
 		id:           config.ID(),
 		config:       config,
+		translator:   zipkinv2.ToTranslator{ParseStringTags: config.ParseStringTags},
 	}
 	return zr, nil
 }
@@ -144,7 +148,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 		return pdata.Traces{}, err
 	}
 
-	return zipkin.V2SpansToInternalTraces(zipkinSpans, zr.config.ParseStringTags)
+	return zr.translator.ToTraces(zipkinSpans)
 }
 
 func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte) (zs []*zipkinmodel.SpanModel, err error) {

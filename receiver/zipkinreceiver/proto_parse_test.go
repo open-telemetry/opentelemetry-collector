@@ -27,7 +27,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
+
+var translator = zipkinv2.ToTranslator{ParseStringTags: false}
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	// TODO: (@odeke-em) examine the entire codepath that time goes through
@@ -97,8 +100,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	// 2. Serialize it
 	protoBlob, err := proto.Marshal(payloadFromWild)
 	require.NoError(t, err, "Failed to protobuf serialize payload: %v", err)
-	zi := new(ZipkinReceiver)
-	zi.config = createDefaultConfig().(*Config)
+	zi := &ZipkinReceiver{translator: translator, config: createDefaultConfig().(*Config)}
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 

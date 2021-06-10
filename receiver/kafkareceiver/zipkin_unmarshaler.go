@@ -25,19 +25,23 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
 type zipkinProtoSpanUnmarshaler struct {
 }
 
-var _ TracesUnmarshaler = (*zipkinProtoSpanUnmarshaler)(nil)
+var (
+	_            TracesUnmarshaler = (*zipkinProtoSpanUnmarshaler)(nil)
+	toTranslator                   = zipkinv2.ToTranslator{ParseStringTags: false}
+)
 
 func (z zipkinProtoSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	parseSpans, err := zipkin_proto3.ParseSpans(bytes, false)
 	if err != nil {
 		return pdata.NewTraces(), err
 	}
-	return zipkintranslator.V2SpansToInternalTraces(parseSpans, false)
+	return toTranslator.ToTraces(parseSpans)
 }
 
 func (z zipkinProtoSpanUnmarshaler) Encoding() string {
@@ -54,7 +58,7 @@ func (z zipkinJSONSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error)
 	if err := json.Unmarshal(bytes, &spans); err != nil {
 		return pdata.NewTraces(), err
 	}
-	return zipkintranslator.V2SpansToInternalTraces(spans, false)
+	return toTranslator.ToTraces(spans)
 }
 
 func (z zipkinJSONSpanUnmarshaler) Encoding() string {

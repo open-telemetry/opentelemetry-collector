@@ -538,7 +538,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 
 	wantAttributes := &tracepb.Span_Attributes{
 		AttributeMap: map[string]*tracepb.AttributeValue{
-			startTimeAbsent: {
+			StartTimeAbsent: {
 				Value: &tracepb.AttributeValue_BoolValue{
 					BoolValue: true,
 				},

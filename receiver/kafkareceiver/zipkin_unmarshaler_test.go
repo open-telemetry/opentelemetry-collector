@@ -20,6 +20,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
+
+var fromTranslator zipkinv2.FromTranslator
 
 func TestUnmarshalZipkin(t *testing.T) {
 	td := pdata.NewTraces()
@@ -42,8 +46,9 @@ func TestUnmarshalZipkin(t *testing.T) {
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
-	spans, err := zipkintranslator.InternalTracesToZipkinSpans(td)
+	ret, err := fromTranslator.FromTraces(td)
 	require.NoError(t, err)
+	spans := ret.([]*zipkinmodel.SpanModel)
 
 	serializer := zipkinreporter.JSONSerializer{}
 	jsonBytes, err := serializer.Serialize(spans)

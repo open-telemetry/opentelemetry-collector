@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv2
 
 import (
 	"errors"
@@ -71,13 +71,14 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			zss, err := InternalTracesToZipkinSpans(test.td)
+			zss, err := FromTranslator{}.FromTraces(test.td)
 			assert.EqualValues(t, test.err, err)
 			if test.name == "empty" {
 				assert.Nil(t, zss)
 			} else {
-				assert.Equal(t, len(test.zs), len(zss))
-				assert.EqualValues(t, test.zs, zss)
+				spans := zss.([]*zipkinmodel.SpanModel)
+				assert.Equal(t, len(test.zs), len(spans))
+				assert.EqualValues(t, test.zs, spans)
 			}
 		})
 	}
@@ -89,10 +90,11 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
 	for _, td := range tds {
-		zipkinSpans, err := InternalTracesToZipkinSpans(td)
+		ret, err := FromTranslator{}.FromTraces(td)
+		zipkinSpans := ret.([]*zipkinmodel.SpanModel)
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
-		tdFromZS, zErr := V2SpansToInternalTraces(zipkinSpans, false)
+		tdFromZS, zErr := ToTranslator{}.ToTraces(zipkinSpans)
 		assert.NoError(t, zErr, zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())

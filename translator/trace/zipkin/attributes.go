@@ -23,8 +23,8 @@ import (
 // These constants are the attribute keys used when translating from zipkin
 // format to the internal collector data format.
 const (
-	startTimeAbsent      = "otel.zipkin.absentField.startTime"
-	tagServiceNameSource = "otlp.service.name.source"
+	StartTimeAbsent      = "otel.zipkin.absentField.startTime"
+	TagServiceNameSource = "otlp.service.name.source"
 )
 
 var attrValDescriptions = []*attrValDescript{
@@ -49,8 +49,8 @@ func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *
 	}
 }
 
-// determineValueType returns the native OTLP attribute type the string translates to.
-func determineValueType(value string) pdata.AttributeValueType {
+// DetermineValueType returns the native OTLP attribute type the string translates to.
+func DetermineValueType(value string) pdata.AttributeValueType {
 	for _, desc := range attrValDescriptions {
 		if desc.regex.MatchString(value) {
 			return desc.attrType
