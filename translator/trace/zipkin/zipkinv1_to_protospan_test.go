@@ -33,6 +33,7 @@ import (
 
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
 
 func Test_hexIDToOCID(t *testing.T) {
@@ -538,7 +539,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 
 	wantAttributes := &tracepb.Span_Attributes{
 		AttributeMap: map[string]*tracepb.AttributeValue{
-			StartTimeAbsent: {
+			zipkin.StartTimeAbsent: {
 				Value: &tracepb.AttributeValue_BoolValue{
 					BoolValue: true,
 				},

@@ -28,8 +28,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
 
 var (
@@ -254,7 +255,7 @@ func parseAnnotationValue(value string, parseStringTags bool) *tracepb.Attribute
 	pbAttrib := &tracepb.AttributeValue{}
 
 	if parseStringTags {
-		switch DetermineValueType(value) {
+		switch zipkin.DetermineValueType(value) {
 		case pdata.AttributeValueTypeInt:
 			iValue, _ := strconv.ParseInt(value, 10, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
@@ -509,7 +510,7 @@ func setTimestampsIfUnset(span *tracepb.Span) {
 		if span.Attributes.AttributeMap == nil {
 			span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 1)
 		}
-		span.Attributes.AttributeMap[StartTimeAbsent] = &tracepb.AttributeValue{
+		span.Attributes.AttributeMap[zipkin.StartTimeAbsent] = &tracepb.AttributeValue{
 			Value: &tracepb.AttributeValue_BoolValue{
 				BoolValue: true,
 			}}
