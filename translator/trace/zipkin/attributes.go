@@ -27,17 +27,13 @@ const (
 	tagServiceNameSource = "otlp.service.name.source"
 )
 
-var attrValDescriptions = getAttrValDescripts()
-
-func getAttrValDescripts() []*attrValDescript {
-	descriptions := make([]*attrValDescript, 0, 5)
-	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueTypeNull))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueTypeInt))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueTypeDouble))
-	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueTypeBool))
-	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueTypeMap))
-	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueTypeArray))
-	return descriptions
+var attrValDescriptions = []*attrValDescript{
+	constructAttrValDescript("^$", pdata.AttributeValueTypeNull),
+	constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueTypeInt),
+	constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueTypeDouble),
+	constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueTypeBool),
+	constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueTypeMap),
+	constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueTypeArray),
 }
 
 type attrValDescript struct {

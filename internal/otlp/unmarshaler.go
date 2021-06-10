@@ -18,32 +18,32 @@ import (
 	"go.opentelemetry.io/collector/internal/model"
 )
 
-// NewJSONTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshalls from OTLP json bytes.
+// NewJSONTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshals from OTLP json bytes.
 func NewJSONTracesUnmarshaler() model.TracesUnmarshaler {
 	return model.NewTracesUnmarshaler(newJSONDecoder(), newToTranslator())
 }
 
-// NewJSONMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshalls from OTLP json bytes.
+// NewJSONMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshals from OTLP json bytes.
 func NewJSONMetricsUnmarshaler() model.MetricsUnmarshaler {
 	return model.NewMetricsUnmarshaler(newJSONDecoder(), newToTranslator())
 }
 
-// NewJSONLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshalls from OTLP json bytes.
+// NewJSONLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshals from OTLP json bytes.
 func NewJSONLogsUnmarshaler() model.LogsUnmarshaler {
 	return model.NewLogsUnmarshaler(newJSONDecoder(), newToTranslator())
 }
 
-// NewProtobufTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshalls from OTLP binary protobuf bytes.
+// NewProtobufTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
 func NewProtobufTracesUnmarshaler() model.TracesUnmarshaler {
 	return model.NewTracesUnmarshaler(newPbDecoder(), newToTranslator())
 }
 
-// NewProtobufMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshalls from OTLP binary protobuf bytes.
+// NewProtobufMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
 func NewProtobufMetricsUnmarshaler() model.MetricsUnmarshaler {
 	return model.NewMetricsUnmarshaler(newPbDecoder(), newToTranslator())
 }
 
-// NewProtobufLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshalls from OTLP binary protobuf bytes.
+// NewProtobufLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
 func NewProtobufLogsUnmarshaler() model.LogsUnmarshaler {
 	return model.NewLogsUnmarshaler(newPbDecoder(), newToTranslator())
 }

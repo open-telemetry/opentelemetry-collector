@@ -49,14 +49,14 @@ func TestSpanCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.SpanCount())
 }
 
-func TestSize(t *testing.T) {
+func TestTracesSize(t *testing.T) {
+	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
 	td := NewTraces()
-	assert.Equal(t, 0, td.OtlpProtoSize())
 	rms := td.ResourceSpans()
 	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
-	otlp := internal.TracesToOtlp(td.InternalRep())
-	size := otlp.Size()
-	bytes, err := otlp.Marshal()
+	orig := td.orig
+	size := orig.Size()
+	bytes, err := orig.Marshal()
 	require.NoError(t, err)
 	assert.Equal(t, size, td.OtlpProtoSize())
 	assert.Equal(t, len(bytes), td.OtlpProtoSize())
