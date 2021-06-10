@@ -95,6 +95,7 @@ func (rcvs Receivers) ReloadAll(
 			if err := reloadableRcv.Relaod(host, ctx, rcvCfg); err != nil {
 				return err
 			}
+			continue
 		}
 
 		rcv.Shutdown(ctx)

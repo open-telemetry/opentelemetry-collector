@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
 )
 
 type testCase struct {
@@ -94,8 +93,6 @@ func testReceivers(
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := attributesprocessor.NewFactory()
-	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.NoError(t, err)
 

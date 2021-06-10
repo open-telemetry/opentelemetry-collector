@@ -1,6 +1,8 @@
 receivers:
   example:
-  rldexample:
+  example/2:
+  rldexample/3:
+  rldexample/multi:
 
 processors:
   exampleprocessor:
@@ -12,19 +14,27 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [example, rldexample]
+      receivers: [example, rldexample/multi]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
 
     traces/2:
-      receivers: [example, rldexample]
+      receivers: [example/2, rldexample/multi]
       processors: [exampleprocessor]
       exporters: [exampleexporter, exampleexporter/2]
 
     metrics:
-      receivers: [example, rldexample]
+      receivers: [example]
       exporters: [exampleexporter]
 
     metrics/2:
-      receivers: [example, rldexample]
+      receivers: [rldexample/3]
       exporters: [exampleexporter]
+
+    metrics/3:
+      receivers: [rldexample/3]
+      exporters: [exampleexporter/2]
+
+    logs:
+      receivers: [rldexample/3]
+      exporters: [exampleexporter/2]
