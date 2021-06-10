@@ -15,6 +15,7 @@ package loggingexporter
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,4 +62,41 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyLogRecord()))
 
 	assert.NoError(t, lle.Shutdown(context.Background()))
+}
+
+func TestLoggingExporterErrors(t *testing.T) {
+	le := newLoggingExporter("Debug", zap.NewNop())
+	require.NotNil(t, le)
+
+	errWant := errors.New("my error")
+	le.tracesMarshaler = &errTracesMarshaler{err: errWant}
+	le.metricsMarshaler = &errMetricsMarshaler{err: errWant}
+	le.logsMarshaler = &errLogsMarshaler{err: errWant}
+	assert.Equal(t, errWant, le.pushTraces(context.Background(), pdata.NewTraces()))
+	assert.Equal(t, errWant, le.pushMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, errWant, le.pushLogs(context.Background(), pdata.NewLogs()))
+}
+
+type errLogsMarshaler struct {
+	err error
+}
+
+func (e errLogsMarshaler) Marshal(pdata.Logs) ([]byte, error) {
+	return nil, e.err
+}
+
+type errMetricsMarshaler struct {
+	err error
+}
+
+func (e errMetricsMarshaler) Marshal(pdata.Metrics) ([]byte, error) {
+	return nil, e.err
+}
+
+type errTracesMarshaler struct {
+	err error
+}
+
+func (e errTracesMarshaler) Marshal(pdata.Traces) ([]byte, error) {
+	return nil, e.err
 }
