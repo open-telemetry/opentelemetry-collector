@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 )
 
@@ -57,7 +56,7 @@ func NewMetricsClient(cc *grpc.ClientConn) MetricsClient {
 }
 
 func (c *metricsClient) Export(ctx context.Context, in pdata.Metrics, opts ...grpc.CallOption) (MetricsResponse, error) {
-	rsp, err := c.rawClient.Export(ctx, internal.MetricsToOtlp(in.InternalRep()), opts...)
+	rsp, err := c.rawClient.Export(ctx, in.InternalRep().(*otlpcollectormetrics.ExportMetricsServiceRequest), opts...)
 	return MetricsResponse{orig: rsp}, err
 }
 
@@ -80,6 +79,6 @@ type rawMetricsServer struct {
 }
 
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {
-	rsp, err := s.srv.Export(ctx, pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(request)))
+	rsp, err := s.srv.Export(ctx, pdata.MetricsFromInternalRep(request))
 	return rsp.orig, err
 }

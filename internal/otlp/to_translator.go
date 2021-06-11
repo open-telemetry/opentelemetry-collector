@@ -16,7 +16,6 @@ package otlp
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
@@ -34,7 +33,7 @@ func (d *toTranslator) ToLogs(modelData interface{}) (pdata.Logs, error) {
 	if !ok {
 		return pdata.Logs{}, model.NewErrIncompatibleType(&otlpcollectorlogs.ExportLogsServiceRequest{}, modelData)
 	}
-	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld)), nil
+	return pdata.LogsFromInternalRep(ld), nil
 }
 
 func (d *toTranslator) ToMetrics(modelData interface{}) (pdata.Metrics, error) {
@@ -42,7 +41,7 @@ func (d *toTranslator) ToMetrics(modelData interface{}) (pdata.Metrics, error) {
 	if !ok {
 		return pdata.Metrics{}, model.NewErrIncompatibleType(&otlpcollectormetrics.ExportMetricsServiceRequest{}, modelData)
 	}
-	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(ld)), nil
+	return pdata.MetricsFromInternalRep(ld), nil
 }
 
 func (d *toTranslator) ToTraces(modelData interface{}) (pdata.Traces, error) {
@@ -50,5 +49,5 @@ func (d *toTranslator) ToTraces(modelData interface{}) (pdata.Traces, error) {
 	if !ok {
 		return pdata.Traces{}, model.NewErrIncompatibleType(&otlpcollectortrace.ExportTraceServiceRequest{}, modelData)
 	}
-	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(td)), nil
+	return pdata.TracesFromInternalRep(td), nil
 }

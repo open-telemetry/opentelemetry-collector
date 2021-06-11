@@ -58,7 +58,7 @@ func NewTracesClient(cc *grpc.ClientConn) TracesClient {
 
 // Export implements the TracesClient interface.
 func (c *tracesClient) Export(ctx context.Context, in pdata.Traces, opts ...grpc.CallOption) (TracesResponse, error) {
-	rsp, err := c.rawClient.Export(ctx, internal.TracesToOtlp(in.InternalRep()), opts...)
+	rsp, err := c.rawClient.Export(ctx, in.InternalRep().(*otlpcollectortraces.ExportTraceServiceRequest), opts...)
 	return TracesResponse{orig: rsp}, err
 }
 
@@ -82,6 +82,6 @@ type rawTracesServer struct {
 
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortraces.ExportTraceServiceRequest) (*otlpcollectortraces.ExportTraceServiceResponse, error) {
 	internal.TracesCompatibilityChanges(request)
-	rsp, err := s.srv.Export(ctx, pdata.TracesFromInternalRep(internal.TracesFromOtlp(request)))
+	rsp, err := s.srv.Export(ctx, pdata.TracesFromInternalRep(request))
 	return rsp.orig, err
 }

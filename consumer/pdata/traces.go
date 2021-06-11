@@ -34,8 +34,8 @@ func NewTraces() Traces {
 
 // TracesFromInternalRep creates Traces from the internal representation.
 // Should not be used outside this module.
-func TracesFromInternalRep(wrapper internal.TracesWrapper) Traces {
-	return Traces{orig: internal.TracesToOtlp(wrapper)}
+func TracesFromInternalRep(internalRep interface{}) Traces {
+	return Traces{orig: internalRep.(*otlpcollectortrace.ExportTraceServiceRequest)}
 }
 
 // TracesFromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
@@ -53,8 +53,8 @@ func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
 
 // InternalRep returns internal representation of the Traces.
 // Should not be used outside this module.
-func (td Traces) InternalRep() internal.TracesWrapper {
-	return internal.TracesFromOtlp(td.orig)
+func (td Traces) InternalRep() interface{} {
+	return td.orig
 }
 
 // ToOtlpProtoBytes converts this Traces to the OTLP Collector ExportTraceServiceRequest

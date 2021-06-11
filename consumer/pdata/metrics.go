@@ -15,7 +15,6 @@
 package pdata
 
 import (
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
@@ -54,8 +53,8 @@ func NewMetrics() Metrics {
 
 // MetricsFromInternalRep creates Metrics from the internal representation.
 // Should not be used outside this module.
-func MetricsFromInternalRep(wrapper internal.MetricsWrapper) Metrics {
-	return Metrics{orig: internal.MetricsToOtlp(wrapper)}
+func MetricsFromInternalRep(internalRep interface{}) Metrics {
+	return Metrics{orig: internalRep.(*otlpcollectormetrics.ExportMetricsServiceRequest)}
 }
 
 // MetricsFromOtlpProtoBytes converts the OTLP Collector ExportMetricsServiceRequest
@@ -72,8 +71,8 @@ func MetricsFromOtlpProtoBytes(data []byte) (Metrics, error) {
 
 // InternalRep returns internal representation of the Metrics.
 // Should not be used outside this module.
-func (md Metrics) InternalRep() internal.MetricsWrapper {
-	return internal.MetricsFromOtlp(md.orig)
+func (md Metrics) InternalRep() interface{} {
+	return md.orig
 }
 
 // ToOtlpProtoBytes converts this Metrics to the OTLP Collector ExportMetricsServiceRequest

@@ -15,45 +15,9 @@
 package internal
 
 import (
-	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
-
-// MetricsWrapper is an intermediary struct that is declared in an internal package
-// as a way to prevent certain functions of pdata.Metrics data type to be callable by
-// any code outside of this module.
-type MetricsWrapper struct {
-	req *otlpcollectormetrics.ExportMetricsServiceRequest
-}
-
-// MetricsToOtlp internal helper to convert MetricsWrapper to protobuf representation.
-func MetricsToOtlp(mw MetricsWrapper) *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return mw.req
-}
-
-// MetricsFromOtlp internal helper to convert protobuf representation to MetricsWrapper.
-func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) MetricsWrapper {
-	return MetricsWrapper{req: req}
-}
-
-// TracesWrapper is an intermediary struct that is declared in an internal package
-// as a way to prevent certain functions of pdata.Traces data type to be callable by
-// any code outside of this module.
-type TracesWrapper struct {
-	req *otlpcollectortrace.ExportTraceServiceRequest
-}
-
-// TracesToOtlp internal helper to convert TracesWrapper to protobuf representation.
-func TracesToOtlp(mw TracesWrapper) *otlpcollectortrace.ExportTraceServiceRequest {
-	return mw.req
-}
-
-// TracesFromOtlp internal helper to convert protobuf representation to TracesWrapper.
-func TracesFromOtlp(req *otlpcollectortrace.ExportTraceServiceRequest) TracesWrapper {
-	return TracesWrapper{req: req}
-}
 
 // TracesCompatibilityChanges performs backward compatibility conversion of Span Status code according to
 // OTLP specification as we are a new receiver and sender (we are pushing data to the pipelines):
@@ -77,21 +41,4 @@ func TracesCompatibilityChanges(req *otlpcollectortrace.ExportTraceServiceReques
 			}
 		}
 	}
-}
-
-// LogsWrapper is an intermediary struct that is declared in an internal package
-// as a way to prevent certain functions of pdata.Logs data type to be callable by
-// any code outside of this module.
-type LogsWrapper struct {
-	req *otlpcollectorlog.ExportLogsServiceRequest
-}
-
-// LogsToOtlp internal helper to convert LogsWrapper to protobuf representation.
-func LogsToOtlp(l LogsWrapper) *otlpcollectorlog.ExportLogsServiceRequest {
-	return l.req
-}
-
-// LogsFromOtlp internal helper to convert protobuf representation to LogsWrapper.
-func LogsFromOtlp(req *otlpcollectorlog.ExportLogsServiceRequest) LogsWrapper {
-	return LogsWrapper{req: req}
 }

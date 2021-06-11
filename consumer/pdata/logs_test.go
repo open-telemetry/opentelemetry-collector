@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
@@ -71,11 +70,11 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 	}}.LogRecordCount())
 }
 
-func TestToFromLogProto(t *testing.T) {
-	wrapper := internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{})
-	ld := LogsFromInternalRep(wrapper)
+func TestLogsToFromInternalRep(t *testing.T) {
+	rep := &otlpcollectorlog.ExportLogsServiceRequest{}
+	ld := LogsFromInternalRep(rep)
 	assert.EqualValues(t, NewLogs(), ld)
-	assert.EqualValues(t, &otlpcollectorlog.ExportLogsServiceRequest{}, ld.orig)
+	assert.Same(t, rep, ld.orig)
 }
 
 func TestLogsToFromOtlpProtoBytes(t *testing.T) {

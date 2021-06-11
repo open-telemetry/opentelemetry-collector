@@ -23,7 +23,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
@@ -119,13 +118,11 @@ func TestSpanStatusCode(t *testing.T) {
 	assert.EqualValues(t, otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR, status.orig.DeprecatedCode)
 }
 
-func TestToFromOtlp(t *testing.T) {
-	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
-	td := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
-	assert.EqualValues(t, NewTraces(), td)
-	assert.EqualValues(t, otlp, internal.TracesToOtlp(td.InternalRep()))
-	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
-	// circular dependency.
+func TestTracesToFromInternalRep(t *testing.T) {
+	rep := &otlpcollectortrace.ExportTraceServiceRequest{}
+	td := TracesFromInternalRep(rep)
+	assert.Same(t, rep, td.orig)
+	assert.Same(t, rep, td.InternalRep())
 }
 
 func TestResourceSpansWireCompatibility(t *testing.T) {

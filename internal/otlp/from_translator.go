@@ -16,7 +16,6 @@ package otlp
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 )
 
 type fromTranslator struct{}
@@ -26,13 +25,13 @@ func newFromTranslator() *fromTranslator {
 }
 
 func (d *fromTranslator) FromLogs(ld pdata.Logs) (interface{}, error) {
-	return internal.LogsToOtlp(ld.InternalRep()), nil
+	return ld.InternalRep(), nil
 }
 
 func (d *fromTranslator) FromMetrics(md pdata.Metrics) (interface{}, error) {
-	return internal.MetricsToOtlp(md.InternalRep()), nil
+	return md.InternalRep(), nil
 }
 
 func (d *fromTranslator) FromTraces(td pdata.Traces) (interface{}, error) {
-	return internal.TracesToOtlp(td.InternalRep()), nil
+	return td.InternalRep(), nil
 }
