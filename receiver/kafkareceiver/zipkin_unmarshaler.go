@@ -16,12 +16,9 @@ package kafkareceiver
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
@@ -32,16 +29,13 @@ type zipkinProtoSpanUnmarshaler struct {
 }
 
 var (
-	_            TracesUnmarshaler = (*zipkinProtoSpanUnmarshaler)(nil)
-	toTranslator                   = zipkinv2.ToTranslator{ParseStringTags: false}
+	_                         TracesUnmarshaler = (*zipkinProtoSpanUnmarshaler)(nil)
+	zipkinProtobufUnmarshaler                   = zipkinv2.NewProtobufTracesUnmarshaler(false, false)
+	zipkinJSONUnmarshaler                       = zipkinv2.NewJSONTracesUnmarshaler(false)
 )
 
 func (z zipkinProtoSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
-	parseSpans, err := zipkin_proto3.ParseSpans(bytes, false)
-	if err != nil {
-		return pdata.NewTraces(), err
-	}
-	return toTranslator.ToTraces(parseSpans)
+	return zipkinProtobufUnmarshaler.Unmarshal(bytes)
 }
 
 func (z zipkinProtoSpanUnmarshaler) Encoding() string {
@@ -54,11 +48,7 @@ type zipkinJSONSpanUnmarshaler struct {
 var _ TracesUnmarshaler = (*zipkinJSONSpanUnmarshaler)(nil)
 
 func (z zipkinJSONSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
-	var spans []*zipkinmodel.SpanModel
-	if err := json.Unmarshal(bytes, &spans); err != nil {
-		return pdata.NewTraces(), err
-	}
-	return toTranslator.ToTraces(spans)
+	return zipkinJSONUnmarshaler.Unmarshal(bytes)
 }
 
 func (z zipkinJSONSpanUnmarshaler) Encoding() string {

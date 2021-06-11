@@ -113,13 +113,13 @@ func TestUnmarshalZipkinThrift_error(t *testing.T) {
 func TestUnmarshalZipkinJSON_error(t *testing.T) {
 	p := zipkinJSONSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	assert.Equal(t, pdata.Traces{}, got)
 	assert.Error(t, err)
 }
 
 func TestUnmarshalZipkinProto_error(t *testing.T) {
 	p := zipkinProtoSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	assert.Equal(t, pdata.Traces{}, got)
 	assert.Error(t, err)
 }

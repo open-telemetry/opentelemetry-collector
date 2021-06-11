@@ -18,7 +18,6 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -28,8 +27,6 @@ import (
 	"sync"
 
 	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -62,10 +59,12 @@ type ZipkinReceiver struct {
 	nextConsumer consumer.Traces
 	id           config.ComponentID
 
-	shutdownWG sync.WaitGroup
-	server     *http.Server
-	config     *Config
-	translator model.ToTracesTranslator
+	shutdownWG               sync.WaitGroup
+	server                   *http.Server
+	config                   *Config
+	jsonUnmarshaler          model.TracesUnmarshaler
+	protobufUnmarshaler      model.TracesUnmarshaler
+	protobufDebugUnmarshaler model.TracesUnmarshaler
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
@@ -77,10 +76,12 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 	}
 
 	zr := &ZipkinReceiver{
-		nextConsumer: nextConsumer,
-		id:           config.ID(),
-		config:       config,
-		translator:   zipkinv2.ToTranslator{ParseStringTags: config.ParseStringTags},
+		nextConsumer:             nextConsumer,
+		id:                       config.ID(),
+		config:                   config,
+		jsonUnmarshaler:          zipkinv2.NewJSONTracesUnmarshaler(config.ParseStringTags),
+		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, config.ParseStringTags),
+		protobufDebugUnmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(true, config.ParseStringTags),
 	}
 	return zr, nil
 }
@@ -132,30 +133,20 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 	//      https://github.com/openzipkin/zipkin-go/blob/3793c981d4f621c0e3eb1457acffa2c1cc591384/proto/v2/zipkin.proto#L154
 	debugWasSet := hdr.Get("X-B3-Flags") == "1"
 
-	var zipkinSpans []*zipkinmodel.SpanModel
+	// By default, we'll assume using JSON
+	unmarshaler := zr.jsonUnmarshaler
 
 	// Zipkin can send protobuf via http
-	switch hdr.Get("Content-Type") {
-	// TODO: (@odeke-em) record the unique types of Content-Type uploads
-	case "application/x-protobuf":
-		zipkinSpans, err = zipkin_proto3.ParseSpans(blob, debugWasSet)
-
-	default: // By default, we'll assume using JSON
-		zipkinSpans, err = zr.deserializeFromJSON(blob)
+	if hdr.Get("Content-Type") == "application/x-protobuf" {
+		// TODO: (@odeke-em) record the unique types of Content-Type uploads
+		if debugWasSet {
+			unmarshaler = zr.protobufDebugUnmarshaler
+		} else {
+			unmarshaler = zr.protobufUnmarshaler
+		}
 	}
 
-	if err != nil {
-		return pdata.Traces{}, err
-	}
-
-	return zr.translator.ToTraces(zipkinSpans)
-}
-
-func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte) (zs []*zipkinmodel.SpanModel, err error) {
-	if err = json.Unmarshal(jsonBlob, &zs); err != nil {
-		return nil, err
-	}
-	return zs, nil
+	return unmarshaler.Unmarshal(blob)
 }
 
 // Shutdown tells the receiver that should stop reception,
