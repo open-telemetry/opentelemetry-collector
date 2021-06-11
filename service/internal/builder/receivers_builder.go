@@ -34,7 +34,8 @@ var errUnusedReceiver = errors.New("receiver defined but not used by any pipelin
 // builtReceiver is a receiver that is built based on a config. It can have
 // a trace and/or a metrics component.
 type builtReceiver struct {
-	logger   *zap.Logger
+	logger *zap.Logger
+
 	receiver component.Receiver
 }
 
@@ -49,7 +50,7 @@ func (rcv *builtReceiver) Shutdown(ctx context.Context) error {
 }
 
 // Receivers is a map of receivers created from receiver configs.
-type Receivers map[config.Receiver]*builtReceiver
+type Receivers map[config.ComponentID]*builtReceiver
 
 // ShutdownAll stops all receivers.
 func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
@@ -77,6 +78,43 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+func (rcvs Receivers) ReloadAll(
+	ctx context.Context,
+	logger *zap.Logger,
+	buildInfo component.BuildInfo,
+	config *config.Config,
+	builtPipelines BuiltPipelines,
+	factories map[config.Type]component.ReceiverFactory,
+	host component.Host,
+) error {
+	rb := &receiversBuilder{logger.With(zap.String(zapKindKey, zapKindReceiver)), buildInfo, config, builtPipelines, factories}
+
+	for id, rcv := range rcvs {
+		rcvCfg := config.Receivers[id]
+		if reloadableRcv, ok := rcv.receiver.(component.Reloadable); ok {
+			if err := reloadableRcv.Relaod(host, ctx, rcvCfg); err != nil {
+				return err
+			}
+			continue
+		}
+
+		rcv.Shutdown(ctx)
+
+		recvLogger := rb.logger.With(zap.Stringer(zapNameKey, id))
+		rcv, err := rb.buildReceiver(context.Background(), recvLogger, rb.buildInfo, rcvCfg)
+		if err != nil {
+			if err == errUnusedReceiver {
+				recvLogger.Info("Ignoring receiver as it is not used by any pipeline")
+				continue
+			}
+			return err
+		}
+		rcv.Start(ctx, host)
+		rcvs[id] = rcv
+	}
+	return nil
+}
+
 // receiversBuilder builds receivers from config.
 type receiversBuilder struct {
 	logger         *zap.Logger
@@ -97,7 +135,7 @@ func BuildReceivers(
 	rb := &receiversBuilder{logger.With(zap.String(zapKindKey, zapKindReceiver)), buildInfo, config, builtPipelines, factories}
 
 	receivers := make(Receivers)
-	for _, cfg := range rb.config.Receivers {
+	for id, cfg := range rb.config.Receivers {
 		recvLogger := rb.logger.With(zap.Stringer(zapNameKey, cfg.ID()))
 		rcv, err := rb.buildReceiver(context.Background(), recvLogger, rb.buildInfo, cfg)
 		if err != nil {
@@ -107,7 +145,7 @@ func BuildReceivers(
 			}
 			return nil, err
 		}
-		receivers[cfg] = rcv
+		receivers[id] = rcv
 	}
 
 	return receivers, nil
@@ -135,9 +173,9 @@ func (rb *receiversBuilder) findPipelinesToAttach(cfg config.Receiver) (attached
 	pipelinesToAttach[config.MetricsDataType] = make([]*builtPipeline, 0)
 
 	// Iterate over all pipelines.
-	for _, pipelineCfg := range rb.config.Service.Pipelines {
+	for name, pipelineCfg := range rb.config.Service.Pipelines {
 		// Get the first processor of the pipeline.
-		pipelineProcessor := rb.builtPipelines[pipelineCfg]
+		pipelineProcessor := rb.builtPipelines[name]
 		if pipelineProcessor == nil {
 			return nil, fmt.Errorf("cannot find pipeline processor for pipeline %s",
 				pipelineCfg.Name)

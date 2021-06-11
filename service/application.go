@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -204,19 +205,7 @@ func (app *Application) runAndWaitForShutdownEvent() {
 func (app *Application) setupConfigurationComponents(ctx context.Context) error {
 	app.logger.Info("Loading configuration...")
 
-	cp, err := app.parserProvider.Get()
-	if err != nil {
-		return fmt.Errorf("cannot load configuration's parser: %w", err)
-	}
-
-	cfg, err := configloader.Load(cp, app.factories)
-	if err != nil {
-		return fmt.Errorf("cannot load configuration: %w", err)
-	}
-
-	if err = cfg.Validate(); err != nil {
-		return fmt.Errorf("invalid configuration: %w", err)
-	}
+	cfg, err := app.getCfg()
 
 	app.logger.Info("Applying configuration...")
 
@@ -258,6 +247,22 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 	return nil
 }
 
+func (app *Application) getCfg() (cfg *config.Config, err error) {
+	cp, err := app.parserProvider.Get()
+	if err != nil {
+		return nil, fmt.Errorf("cannot load configuration's parser: %w", err)
+	}
+
+	config, err := configloader.Load(cp, app.factories)
+	if err != nil {
+		return nil, fmt.Errorf("cannot load configuration: %w", err)
+	}
+
+	if err = config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+	return config, nil
+}
 func (app *Application) execute(ctx context.Context) error {
 	app.logger.Info("Starting "+app.info.Command+"...",
 		zap.String("Version", app.info.Version),
@@ -335,17 +340,99 @@ func (app *Application) reloadService(ctx context.Context) error {
 		}
 	}
 
-	if app.service != nil {
-		retiringService := app.service
-		app.service = nil
-		if err := retiringService.Shutdown(ctx); err != nil {
-			return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+	cfg, err := app.getCfg()
+	if err != nil {
+		return err
+	}
+
+	reload := true
+	for name, pipeline := range cfg.Pipelines {
+		oldPipeline := app.service.config.Pipelines[name]
+		if oldPipeline == nil {
+			reload = false
+			break
+		}
+
+		if pipeline.InputType != oldPipeline.InputType {
+			reload = false
+			break
+		}
+
+		if pipeline.Name != oldPipeline.Name {
+			reload = false
+			break
+		}
+
+		if len(oldPipeline.Processors) != len(pipeline.Processors) {
+			reload = false
+			break
+		}
+
+		for i, procId := range pipeline.Processors {
+			if procId != oldPipeline.Processors[i] {
+				reload = false
+				break
+			}
+		}
+
+		if !reload {
+			break
+		}
+
+		if !componentSetEqual(pipeline.Receivers, oldPipeline.Receivers) {
+			reload = false
+			break
+		}
+
+		if !componentSetEqual(pipeline.Exporters, oldPipeline.Exporters) {
+			reload = false
+			break
 		}
 	}
 
-	if err := app.setupConfigurationComponents(ctx); err != nil {
-		return fmt.Errorf("failed to setup configuration components: %w", err)
+	if app.service != nil && reload {
+		if err := app.service.Reload(ctx, cfg); err != nil {
+			return err
+		}
+		app.service.config = cfg
+		return nil
+	} else {
+		if app.service != nil {
+			retiringService := app.service
+			app.service = nil
+			if err := retiringService.Shutdown(ctx); err != nil {
+				return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+			}
+		}
+
+		if err := app.setupConfigurationComponents(ctx); err != nil {
+			return fmt.Errorf("failed to setup configuration components: %w", err)
+		}
 	}
 
 	return nil
+}
+
+func componentSetEqual(a []config.ComponentID, b []config.ComponentID) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	aMap := make(map[config.ComponentID]bool)
+	for _, id := range a {
+		aMap[id] = true
+	}
+
+	bMap := make(map[config.ComponentID]bool)
+	for _, id := range b {
+		bMap[id] = true
+	}
+
+	for aKey, _ := range aMap {
+		if _, ok := bMap[aKey]; !ok {
+			return false
+		}
+	}
+
+	return true
 }

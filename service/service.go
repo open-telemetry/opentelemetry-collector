@@ -95,6 +95,18 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	return consumererror.Combine(errs)
 }
 
+func (srv *service) Reload(ctx context.Context, cfg *config.Config) error {
+	if err := srv.reloadExtensions(ctx, cfg); err != nil {
+		return err
+	}
+
+	if err := srv.reloadPipelines(ctx, cfg); err != nil {
+		return err
+	}
+
+	return srv.builtExtensions.NotifyPipelineReady()
+}
+
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
@@ -139,6 +151,32 @@ func (srv *service) startExtensions(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
+	return nil
+}
+
+func (srv *service) reloadExtensions(ctx context.Context, cfg *config.Config) error {
+	if err := srv.config.Validate(); err != nil {
+		return err
+	}
+
+	if err := srv.builtExtensions.NotifyPipelineNotReady(); err != nil {
+		return err
+	}
+
+	if err := srv.shutdownExtensions(ctx); err != nil {
+		return err
+	}
+
+	var err error
+	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.buildInfo, cfg, srv.factories.Extensions)
+	if err != nil {
+		return fmt.Errorf("cannot build builtExtensions: %w", err)
+	}
+
+	if err := srv.startExtensions(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -192,6 +230,26 @@ func (srv *service) startPipelines(ctx context.Context) error {
 	srv.logger.Info("Starting receivers...")
 	if err := srv.builtReceivers.StartAll(ctx, srv); err != nil {
 		return fmt.Errorf("cannot start receivers: %w", err)
+	}
+
+	return nil
+}
+
+func (srv *service) reloadPipelines(ctx context.Context, config *config.Config) error {
+	if err := srv.config.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	if err := srv.builtExporters.ReloadExporters(ctx, srv.logger, srv.buildInfo, config, srv.factories.Exporters, srv); err != nil {
+		return err
+	}
+
+	if err := srv.builtPipelines.ReloadProcessors(ctx, srv, srv.buildInfo, config, srv.builtExporters, srv.factories.Processors); err != nil {
+		return err
+	}
+
+	if err := srv.builtReceivers.ReloadAll(ctx, srv.logger, srv.buildInfo, config, srv.builtPipelines, srv.factories.Receivers, srv); err != nil {
+		return err
 	}
 
 	return nil

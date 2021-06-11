@@ -130,7 +130,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			assert.NoError(t, err)
 
 			pipelineName := dataType
-			processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
+			processor := pipelineProcessors[pipelineName]
 
 			// Ensure pipeline has its fields correctly populated.
 			require.NotNil(t, processor)
@@ -143,7 +143,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			var exporters []*builtExporter
 			for _, name := range exporterNames {
 				// Ensure exporter is created.
-				exp := allExporters[cfg.Exporters[name]]
+				exp := allExporters[name]
 				require.NotNil(t, exp)
 				exporters = append(exporters, exp)
 			}
@@ -153,7 +153,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			// First check that there are no logs in the exporters yet.
 			var exporterConsumers []*testcomponents.ExampleExporterConsumer
 			for _, exporter := range exporters {
-				expConsumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
+				expConsumer := exporter.getLogExporter().(*exporterWrapper).lc.(*testcomponents.ExampleExporterConsumer)
 				exporterConsumers = append(exporterConsumers, expConsumer)
 				require.Equal(t, len(expConsumer.Logs), 0)
 			}
@@ -194,7 +194,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 
 	assert.NoError(t, pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost()))
 
-	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
+	processor := pipelineProcessors[pipelineName]
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)
@@ -205,7 +205,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 	var exporters []*builtExporter
 	for _, name := range exporterIDs {
 		// Ensure exporter is created.
-		exp := allExporters[cfg.Exporters[name]]
+		exp := allExporters[name]
 		require.NotNil(t, exp)
 		exporters = append(exporters, exp)
 	}
@@ -215,7 +215,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 	// First check that there are no traces in the exporters yet.
 	var exporterConsumers []*testcomponents.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		expConsumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
+		expConsumer := exporter.getTracesExporter().(*exporterWrapper).tc.(*testcomponents.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, expConsumer)
 		require.Equal(t, len(expConsumer.Traces), 0)
 	}

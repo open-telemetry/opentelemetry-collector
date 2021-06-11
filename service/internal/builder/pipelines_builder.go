@@ -18,13 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
+	"go.uber.org/zap"
 )
 
 // builtPipeline is a pipeline that is built based on a config.
@@ -39,12 +38,22 @@ type builtPipeline struct {
 	// MutatesData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
 	MutatesData bool
+	btProcs     builtProcessors
+	processors  []component.Processor
+}
 
-	processors []component.Processor
+func (btPl *builtPipeline) Shutdown(ctx context.Context) error {
+	for i := len(btPl.processors) - 1; i >= 0; i-- {
+		btProc := btPl.btProcs[i]
+		if err := btProc.Shutdown(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
-type BuiltPipelines map[*config.Pipeline]*builtPipeline
+type BuiltPipelines map[string]*builtPipeline
 
 func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Host) error {
 	for _, bp := range bps {
@@ -61,6 +70,32 @@ func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Ho
 		}
 		bp.logger.Info("Pipeline is started.")
 	}
+	return nil
+}
+
+func (bps BuiltPipelines) ReloadProcessors(ctx context.Context,
+	host component.Host,
+	buildInfo component.BuildInfo,
+	config *config.Config,
+	exporters Exporters,
+	factories map[config.Type]component.ProcessorFactory) error {
+	for name, btPl := range bps {
+		// TODO support add and delete processors
+		if config.Pipelines[name] == nil {
+			continue
+		}
+
+		hostWrapper := newHostWrapper(host, btPl.logger)
+		for i := len(btPl.processors) - 1; i >= 0; i-- {
+			btProc := btPl.btProcs[i]
+			procCfg := config.Processors[btProc.id]
+
+			if err := btProc.Relaod(hostWrapper, ctx, procCfg); err != nil {
+				return fmt.Errorf("error when reload processor for pipeline:%v, during reload:%v", name, err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -100,12 +135,12 @@ func BuildPipelines(
 	pb := &pipelinesBuilder{logger, buildInfo, config, exporters, factories}
 
 	pipelineProcessors := make(BuiltPipelines)
-	for _, pipeline := range pb.config.Service.Pipelines {
+	for name, pipeline := range pb.config.Service.Pipelines {
 		firstProcessor, err := pb.buildPipeline(context.Background(), pipeline)
 		if err != nil {
 			return nil, err
 		}
-		pipelineProcessors[pipeline] = firstProcessor
+		pipelineProcessors[name] = firstProcessor
 	}
 
 	return pipelineProcessors, nil
@@ -133,9 +168,13 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	}
 
 	mutatesConsumedData := false
+	btProcs, err := BuildProcessors(pb.logger, pb.buildInfo, pb.config, pb.factories, pipelineCfg.InputType, pipelineCfg.Processors)
 
+	if err != nil {
+		return nil, fmt.Errorf("error creating processor in pipeline %q: %v",
+			pipelineCfg.Name, err)
+	}
 	processors := make([]component.Processor, len(pipelineCfg.Processors))
-
 	// Now build the processors backwards, starting from the last one.
 	// The last processor points to consumer which fans out to exporters, then
 	// the processor itself becomes a consumer for the one that precedes it in
@@ -143,43 +182,35 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	for i := len(pipelineCfg.Processors) - 1; i >= 0; i-- {
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
-
-		factory := pb.factories[procCfg.ID().Type()]
+		proc := btProcs[i]
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
-		componentLogger := pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID()))
-		creationSet := component.ProcessorCreateSettings{
-			Logger:    componentLogger,
-			BuildInfo: pb.buildInfo,
-		}
 
 		switch pipelineCfg.InputType {
 		case config.TracesDataType:
-			var proc component.TracesProcessor
-			proc, err = factory.CreateTracesProcessor(ctx, creationSet, procCfg, tc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
+			proc.nextTc.tc = tc
 			processors[i] = proc
 			tc = proc
+
 		case config.MetricsDataType:
-			var proc component.MetricsProcessor
-			proc, err = factory.CreateMetricsProcessor(ctx, creationSet, procCfg, mc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
+			proc.nextMc.mc = mc
 			processors[i] = proc
 			mc = proc
 
 		case config.LogsDataType:
-			var proc component.LogsProcessor
-			proc, err = factory.CreateLogsProcessor(ctx, creationSet, procCfg, lc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			}
+			proc.nextLc.lc = lc
 			processors[i] = proc
 			lc = proc
 
@@ -209,6 +240,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		mc,
 		lc,
 		mutatesConsumedData,
+		btProcs,
 		processors,
 	}
 
@@ -219,7 +251,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterIDs []config.ComponentID) []*builtExporter {
 	var result []*builtExporter
 	for _, name := range exporterIDs {
-		exporter := pb.exporters[pb.config.Exporters[name]]
+		exporter := pb.exporters[name]
 		result = append(result, exporter)
 	}
 
