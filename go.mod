@@ -23,7 +23,10 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/jaegertracing/jaeger v1.23.0
+	github.com/knadh/koanf v1.0.0
 	github.com/leoluk/perflib_exporter v0.1.0
+	github.com/magiconair/properties v1.8.1
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.10.0
