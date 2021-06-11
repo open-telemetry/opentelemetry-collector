@@ -60,8 +60,8 @@ func (j jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 	return v1JSONBatchToOCProto(buf, j.ParseStringTags)
 }
 
-// NewJSONUnmarshaler returns an unmarshaler for Zipkin JSON.
-func NewJSONUnmarshaler(parseStringTags bool) model.TracesUnmarshaler {
+// NewJSONTracesUnmarshaler returns an unmarshaler for Zipkin JSON.
+func NewJSONTracesUnmarshaler(parseStringTags bool) model.TracesUnmarshaler {
 	return model.NewTracesUnmarshaler(jsonDecoder{ParseStringTags: parseStringTags}, toTranslator{})
 }
 

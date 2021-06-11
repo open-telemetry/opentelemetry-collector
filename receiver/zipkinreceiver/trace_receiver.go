@@ -83,8 +83,8 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 		id:                  config.ID(),
 		config:              config,
 		translator:          zipkinv2.ToTranslator{ParseStringTags: config.ParseStringTags},
-		v1ThriftUnmarshaler: zipkinv1.NewThriftUnmarshaler(),
-		v1JSONUnmarshaler:   zipkinv1.NewJSONUnmarshaler(config.ParseStringTags),
+		v1ThriftUnmarshaler: zipkinv1.NewThriftTracesUnmarshaler(),
+		v1JSONUnmarshaler:   zipkinv1.NewJSONTracesUnmarshaler(config.ParseStringTags),
 	}
 	return zr, nil
 }

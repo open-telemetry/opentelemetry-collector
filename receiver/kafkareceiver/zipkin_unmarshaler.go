@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
-var v1ThriftUnmarshaler = zipkinv1.NewThriftUnmarshaler()
+var v1ThriftUnmarshaler = zipkinv1.NewThriftTracesUnmarshaler()
 
 type zipkinProtoSpanUnmarshaler struct {
 }

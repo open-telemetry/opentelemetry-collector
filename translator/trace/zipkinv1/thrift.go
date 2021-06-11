@@ -45,8 +45,8 @@ func (t thriftDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 	return v1ThriftBatchToOCProto(spans)
 }
 
-// NewThriftUnmarshaler returns an unmarshaler for Zipkin Thrift.
-func NewThriftUnmarshaler() model.TracesUnmarshaler {
+// NewThriftTracesUnmarshaler returns an unmarshaler for Zipkin Thrift.
+func NewThriftTracesUnmarshaler() model.TracesUnmarshaler {
 	return model.NewTracesUnmarshaler(thriftDecoder{}, toTranslator{})
 }
 
