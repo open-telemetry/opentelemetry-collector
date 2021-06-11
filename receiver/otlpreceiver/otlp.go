@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"sync"
 
-	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -32,17 +32,22 @@ import (
 	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal"
+	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
+)
+
+const (
+	pbContentType   = "application/x-protobuf"
+	jsonContentType = "application/json"
 )
 
 // otlpReceiver is the type that exposes Trace and Metrics reception.
 type otlpReceiver struct {
 	cfg        *Config
 	serverGRPC *grpc.Server
-	gatewayMux *gatewayruntime.ServeMux
+	httpMux    *mux.Router
 	serverHTTP *http.Server
 
 	traceReceiver   *trace.Receiver
@@ -62,19 +67,7 @@ func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
 		logger: logger,
 	}
 	if cfg.HTTP != nil {
-		// Use our custom JSON marshaler instead of default Protobuf JSON marshaler.
-		// This is needed because OTLP spec defines encoding for trace and span id
-		// and it is only possible to do using Gogoproto-compatible JSONPb marshaler.
-		jsonpb := &internal.JSONPb{
-			EmitDefaults: true,
-			Indent:       "  ",
-			OrigName:     true,
-		}
-		r.gatewayMux = gatewayruntime.NewServeMux(
-			gatewayruntime.WithProtoErrorHandler(gatewayruntime.DefaultHTTPProtoErrorHandler),
-			gatewayruntime.WithMarshalerOption("application/x-protobuf", &xProtobufMarshaler{}),
-			gatewayruntime.WithMarshalerOption(gatewayruntime.MIMEWildcard, jsonpb),
-		)
+		r.httpMux = mux.NewRouter()
 	}
 
 	return r
@@ -157,7 +150,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 	}
 	if r.cfg.HTTP != nil {
 		r.serverHTTP = r.cfg.HTTP.ToServer(
-			r.gatewayMux,
+			r.httpMux,
 			confighttp.WithErrorHandler(errorHandler),
 		)
 		err = r.startHTTPServer(r.cfg.HTTP, host)
@@ -191,40 +184,67 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Traces) error {
+var tracesPbUnmarshaler = otlp.NewProtobufTracesUnmarshaler()
+var tracesJSONUnmarshaler = otlp.NewJSONTracesUnmarshaler()
+
+func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.traceReceiver = trace.New(r.cfg.ID(), tc)
-	if r.gatewayMux != nil {
-		err := collectortrace.RegisterTraceServiceHandlerServer(ctx, r.gatewayMux, r.traceReceiver)
-		if err != nil {
-			return err
-		}
-		// Also register an alias handler. This fixes bug https://github.com/open-telemetry/opentelemetry-collector/issues/1968
-		return collectortrace.RegisterTraceServiceHandlerServerAlias(ctx, r.gatewayMux, r.traceReceiver)
+	if r.httpMux != nil {
+		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
+			handleTraces(resp, req, pbContentType, r.traceReceiver, tracesPbUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
+		// For backwards compatibility see https://github.com/open-telemetry/opentelemetry-collector/issues/1968
+		r.httpMux.HandleFunc("/v1/trace", func(resp http.ResponseWriter, req *http.Request) {
+			handleTraces(resp, req, pbContentType, r.traceReceiver, tracesPbUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
+		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
+			handleTraces(resp, req, jsonContentType, r.traceReceiver, tracesJSONUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
+		// For backwards compatibility see https://github.com/open-telemetry/opentelemetry-collector/issues/1968
+		r.httpMux.HandleFunc("/v1/trace", func(resp http.ResponseWriter, req *http.Request) {
+			handleTraces(resp, req, jsonContentType, r.traceReceiver, tracesJSONUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
 	}
 	return nil
 }
 
-func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.Metrics) error {
+var metricsPbUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
+var metricsJSONUnmarshaler = otlp.NewJSONMetricsUnmarshaler()
+
+func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.metricsReceiver = metrics.New(r.cfg.ID(), mc)
-	if r.gatewayMux != nil {
-		return collectormetrics.RegisterMetricsServiceHandlerServer(ctx, r.gatewayMux, r.metricsReceiver)
+	if r.httpMux != nil {
+		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
+			handleMetrics(resp, req, pbContentType, r.metricsReceiver, metricsPbUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
+		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
+			handleMetrics(resp, req, jsonContentType, r.metricsReceiver, metricsJSONUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
 	}
 	return nil
 }
 
-func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.Logs) error {
-	if tc == nil {
+var logsPbUnmarshaler = otlp.NewProtobufLogsUnmarshaler()
+var logsJSONUnmarshaler = otlp.NewJSONLogsUnmarshaler()
+
+func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
+	if lc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.logReceiver = logs.New(r.cfg.ID(), tc)
-	if r.gatewayMux != nil {
-		return collectorlog.RegisterLogsServiceHandlerServer(ctx, r.gatewayMux, r.logReceiver)
+	r.logReceiver = logs.New(r.cfg.ID(), lc)
+	if r.httpMux != nil {
+		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
+			handleLogs(w, req, pbContentType, r.logReceiver, logsPbUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
+		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
+			handleLogs(w, req, jsonContentType, r.logReceiver, logsJSONUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
 	}
 	return nil
 }
