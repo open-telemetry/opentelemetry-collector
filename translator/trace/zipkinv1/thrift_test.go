@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv1
 
 import (
 	"encoding/binary"
@@ -23,13 +23,46 @@ import (
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/google/go-cmp/cmp"
+	"github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
+
+// compareTraceData compares got to want while ignoring order. Both are modified in place.
+func compareTraceData(t *testing.T, got []traceData, want []traceData) {
+	sortTraceByNodeName(want)
+	sortTraceByNodeName(got)
+	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
+}
+
+func TestV1ThriftToTraces(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	require.NoError(t, err, "Failed to load test data")
+
+	var zSpans []*zipkincore.Span
+	require.NoError(t, json.Unmarshal(blob, &zSpans), "failed to unmarshal json test file")
+	thriftBytes := zipkin.SerializeThrift(zSpans)
+
+	got, err := thriftDecoder{}.DecodeTraces(thriftBytes)
+	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
+
+	td := got.([]traceData)
+	spanCount := 0
+
+	for _, data := range td {
+		spanCount += len(data.Spans)
+	}
+
+	assert.Equal(t, 5, spanCount)
+}
 
 func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_local_component.json")
@@ -68,11 +101,7 @@ func TestV1ThriftToOCProto(t *testing.T) {
 	got, err := v1ThriftBatchToOCProto(ztSpans)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
 
-	want := ocBatchesFromZipkinV1
-	sortTraceByNodeName(want)
-	sortTraceByNodeName(got)
-
-	assert.EqualValues(t, want, got)
+	compareTraceData(t, got, ocBatchesFromZipkinV1)
 }
 
 func BenchmarkV1ThriftToOCProto(b *testing.B) {

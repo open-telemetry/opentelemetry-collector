@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv1
 
 import (
 	"encoding/json"
@@ -24,16 +24,41 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/google/go-cmp/cmp"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
+
+func TestSingleJSONV1BatchToTraces(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
+	require.NoError(t, err, "Failed to load test data")
+
+	got, err := jsonDecoder{ParseStringTags: false}.DecodeTraces(blob)
+	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
+
+	td := got.([]traceData)
+	spanCount := 0
+
+	for _, data := range td {
+		spanCount += len(data.Spans)
+	}
+
+	assert.Equal(t, 5, spanCount)
+}
+
+func TestErrorSpanToTraces(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_error_batch.json")
+	require.NoError(t, err, "Failed to load test data")
+
+	got, err := jsonDecoder{ParseStringTags: false}.DecodeTraces(blob)
+	assert.Error(t, err, "Should have generated error")
+	assert.Nil(t, got)
+}
 
 func Test_hexIDToOCID(t *testing.T) {
 	tests := []struct {
@@ -159,11 +184,7 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	got, err := v1JSONBatchToOCProto(blob, parseStringTags)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
-	want := ocBatchesFromZipkinV1
-	sortTraceByNodeName(want)
-	sortTraceByNodeName(got)
-
-	assert.EqualValues(t, got, want)
+	compareTraceData(t, got, ocBatchesFromZipkinV1)
 }
 
 func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
@@ -200,13 +221,7 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 		got = append(got, *tsr)
 	}
 
-	want := ocBatchesFromZipkinV1
-	sortTraceByNodeName(want)
-	sortTraceByNodeName(got)
-
-	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
-		t.Errorf("Unexpected difference:\n%v", diff)
-	}
+	compareTraceData(t, got, ocBatchesFromZipkinV1)
 }
 
 func sortTraceByNodeName(trace []traceData) {
@@ -538,7 +553,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 
 	wantAttributes := &tracepb.Span_Attributes{
 		AttributeMap: map[string]*tracepb.AttributeValue{
-			StartTimeAbsent: {
+			zipkin.StartTimeAbsent: {
 				Value: &tracepb.AttributeValue_BoolValue{
 					BoolValue: true,
 				},

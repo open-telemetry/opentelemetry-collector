@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv1
 
 import (
 	"encoding/json"
@@ -28,8 +28,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/model"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
 var (
@@ -39,13 +41,29 @@ var (
 	msgZipkinV1SpanIDError        = "zipkinV1 span id"
 	msgZipkinV1ParentIDError      = "zipkinV1 span parentId"
 	// Generic hex to ID conversion errors
-	errHexTraceIDWrongLen = errors.New("hex traceId span has wrong length (expected 16 or 32)")
-	errHexTraceIDParsing  = errors.New("failed to parse hex traceId")
-	errHexTraceIDZero     = errors.New("traceId is zero")
-	errHexIDWrongLen      = errors.New("hex Id has wrong length (expected 16)")
-	errHexIDParsing       = errors.New("failed to parse hex Id")
-	errHexIDZero          = errors.New("ID is zero")
+	errHexTraceIDWrongLen                     = errors.New("hex traceId span has wrong length (expected 16 or 32)")
+	errHexTraceIDParsing                      = errors.New("failed to parse hex traceId")
+	errHexTraceIDZero                         = errors.New("traceId is zero")
+	errHexIDWrongLen                          = errors.New("hex Id has wrong length (expected 16)")
+	errHexIDParsing                           = errors.New("failed to parse hex Id")
+	errHexIDZero                              = errors.New("ID is zero")
+	_                     model.TracesDecoder = (*jsonDecoder)(nil)
 )
+
+type jsonDecoder struct {
+	// ParseStringTags should be set to true if tags should be converted to numbers when possible.
+	ParseStringTags bool
+}
+
+// DecodeTraces from JSON bytes.
+func (j jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
+	return v1JSONBatchToOCProto(buf, j.ParseStringTags)
+}
+
+// NewJSONTracesUnmarshaler returns an unmarshaler for Zipkin JSON.
+func NewJSONTracesUnmarshaler(parseStringTags bool) model.TracesUnmarshaler {
+	return model.NewTracesUnmarshaler(jsonDecoder{ParseStringTags: parseStringTags}, toTranslator{})
+}
 
 // Trace translation from Zipkin V1 is a bit of special case since there is no model
 // defined in golang for Zipkin V1 spans and there is no need to define one here, given
@@ -254,7 +272,7 @@ func parseAnnotationValue(value string, parseStringTags bool) *tracepb.Attribute
 	pbAttrib := &tracepb.AttributeValue{}
 
 	if parseStringTags {
-		switch DetermineValueType(value) {
+		switch zipkin.DetermineValueType(value) {
 		case pdata.AttributeValueTypeInt:
 			iValue, _ := strconv.ParseInt(value, 10, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
@@ -509,7 +527,7 @@ func setTimestampsIfUnset(span *tracepb.Span) {
 		if span.Attributes.AttributeMap == nil {
 			span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 1)
 		}
-		span.Attributes.AttributeMap[StartTimeAbsent] = &tracepb.AttributeValue{
+		span.Attributes.AttributeMap[zipkin.StartTimeAbsent] = &tracepb.AttributeValue{
 			Value: &tracepb.AttributeValue_BoolValue{
 				BoolValue: true,
 			}}
