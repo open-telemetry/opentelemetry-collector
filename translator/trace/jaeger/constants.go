@@ -19,6 +19,6 @@ import (
 )
 
 var (
-	errZeroTraceID = errors.New("OC span has an all zeros trace ID")
-	errZeroSpanID  = errors.New("OC span has an all zeros span ID")
+	errZeroTraceID = errors.New("span has an all zeros trace ID")
+	errZeroSpanID  = errors.New("span has an all zeros span ID")
 )

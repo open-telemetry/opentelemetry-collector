@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -35,11 +36,11 @@ func TestNewTrace(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &defaultCfg, nil)
 	assert.Error(t, err)
 }
 
@@ -53,13 +54,13 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 

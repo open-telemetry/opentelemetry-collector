@@ -20,9 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
 
@@ -38,7 +38,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	oCfg.Endpoint = ""
 	exp, err := createMetricsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg)
 	require.Equal(t, errBlankPrometheusAddress, err)
 	require.Nil(t, exp)

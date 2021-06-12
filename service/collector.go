@@ -99,7 +99,7 @@ func New(set CollectorSettings) (*Collector, error) {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
-			return col.execute(context.Background())
+			return col.execute(cmd.Context())
 		},
 	}
 

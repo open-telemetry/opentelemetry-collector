@@ -21,9 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -39,7 +37,7 @@ func TestSendTraces(t *testing.T) {
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.GRPCServerSettings.NetAddr.Endpoint = endpoint
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	recv, err := rFactory.CreateTracesReceiver(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -56,7 +54,7 @@ func TestSendTraces(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -96,7 +94,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -120,7 +118,7 @@ func TestSendTraces_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -137,7 +135,7 @@ func TestSendMetrics(t *testing.T) {
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.GRPCServerSettings.NetAddr.Endpoint = endpoint
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	recv, err := rFactory.CreateMetricsReceiver(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -154,7 +152,7 @@ func TestSendMetrics(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -193,7 +191,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -217,7 +215,7 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()

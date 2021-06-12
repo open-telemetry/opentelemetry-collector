@@ -25,64 +25,65 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	texp, err := newTracesExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, tracesMarshalers())
+	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
 	assert.Error(t, err)
 	assert.Nil(t, texp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	texp, err := newTracesExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, tracesMarshalers())
+	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, texp)
 }
 
 func TestNewMetricsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, componenttest.NewNopExporterCreateSettings(), metricsMarshalers())
 	assert.Error(t, err)
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, componenttest.NewNopExporterCreateSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, componenttest.NewNopExporterCreateSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
+	mexp, err := newLogsExporter(c, componenttest.NewNopExporterCreateSettings(), logsMarshalers())
 	assert.Error(t, err)
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
+	mexp, err := newLogsExporter(c, componenttest.NewNopExporterCreateSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
+	mexp, err := newLogsExporter(c, componenttest.NewNopExporterCreateSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
@@ -102,15 +103,15 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	texp, err := newTracesExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, tracesMarshalers())
+	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, texp)
-	mexp, err := newMetricsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, metricsMarshalers())
+	mexp, err := newMetricsExporter(c, componenttest.NewNopExporterCreateSettings(), metricsMarshalers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, mexp)
-	lexp, err := newLogsExporter(c, component.ExporterCreateSettings{Logger: zap.NewNop()}, logsMarshalers())
+	lexp, err := newLogsExporter(c, componenttest.NewNopExporterCreateSettings(), logsMarshalers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, lexp)
@@ -124,7 +125,7 @@ func TestTracesPusher(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: &otlpTracesPbMarshaler{},
+		marshaler: newPdataTracesMarshaler(otlp.NewProtobufTracesMarshaler(), defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -141,7 +142,7 @@ func TestTracesPusher_err(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: &otlpTracesPbMarshaler{},
+		marshaler: newPdataTracesMarshaler(otlp.NewProtobufTracesMarshaler(), defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -171,7 +172,7 @@ func TestMetricsDataPusher(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: &otlpMetricsPbMarshaler{},
+		marshaler: newPdataMetricsMarshaler(otlp.NewProtobufMetricsMarshaler(), defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -188,7 +189,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: &otlpMetricsPbMarshaler{},
+		marshaler: newPdataMetricsMarshaler(otlp.NewProtobufMetricsMarshaler(), defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -218,7 +219,7 @@ func TestLogsDataPusher(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: &otlpLogsPbMarshaler{},
+		marshaler: newPdataLogsMarshaler(otlp.NewProtobufLogsMarshaler(), defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -235,7 +236,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: &otlpLogsPbMarshaler{},
+		marshaler: newPdataLogsMarshaler(otlp.NewProtobufLogsMarshaler(), defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {

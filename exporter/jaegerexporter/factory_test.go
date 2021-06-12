@@ -19,10 +19,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
 
@@ -37,7 +36,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopExporterCreateSettings()
 	_, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.Error(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
@@ -49,7 +48,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	set := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopExporterCreateSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "\"jaeger\" config requires a non-empty \"endpoint\"", err.Error())
