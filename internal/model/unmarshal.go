@@ -26,27 +26,89 @@ type TracesUnmarshaler interface {
 }
 
 type tracesUnmarshaler struct {
-	encoder    TracesDecoder
+	decoder    TracesDecoder
 	translator ToTracesTranslator
 }
 
 // NewTracesUnmarshaler returns a new TracesUnmarshaler.
-func NewTracesUnmarshaler(encoder TracesDecoder, translator ToTracesTranslator) TracesUnmarshaler {
+func NewTracesUnmarshaler(decoder TracesDecoder, translator ToTracesTranslator) TracesUnmarshaler {
 	return &tracesUnmarshaler{
-		encoder:    encoder,
+		decoder:    decoder,
 		translator: translator,
 	}
 }
 
 // Unmarshal bytes into pdata.Traces. On error pdata.Traces is invalid.
 func (t *tracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
-	model, err := t.encoder.DecodeTraces(buf)
+	model, err := t.decoder.DecodeTraces(buf)
 	if err != nil {
 		return pdata.Traces{}, fmt.Errorf("unmarshal failed: %w", err)
 	}
 	td, err := t.translator.ToTraces(model)
 	if err != nil {
 		return pdata.Traces{}, fmt.Errorf("converting model to pdata failed: %w", err)
+	}
+	return td, nil
+}
+
+// MetricsUnmarshaler unmarshalls bytes into pdata.Metrics.
+type MetricsUnmarshaler interface {
+	Unmarshal(buf []byte) (pdata.Metrics, error)
+}
+
+type metricsUnmarshaler struct {
+	decoder    MetricsDecoder
+	translator ToMetricsTranslator
+}
+
+// NewMetricsUnmarshaler returns a new MetricsUnmarshaler.
+func NewMetricsUnmarshaler(decoder MetricsDecoder, translator ToMetricsTranslator) MetricsUnmarshaler {
+	return &metricsUnmarshaler{
+		decoder:    decoder,
+		translator: translator,
+	}
+}
+
+// Unmarshal bytes into pdata.Metrics. On error pdata.Metrics is invalid.
+func (t *metricsUnmarshaler) Unmarshal(buf []byte) (pdata.Metrics, error) {
+	model, err := t.decoder.DecodeMetrics(buf)
+	if err != nil {
+		return pdata.Metrics{}, fmt.Errorf("unmarshal failed: %w", err)
+	}
+	td, err := t.translator.ToMetrics(model)
+	if err != nil {
+		return pdata.Metrics{}, fmt.Errorf("converting model to pdata failed: %w", err)
+	}
+	return td, nil
+}
+
+// LogsUnmarshaler unmarshalls bytes into pdata.Logs.
+type LogsUnmarshaler interface {
+	Unmarshal(buf []byte) (pdata.Logs, error)
+}
+
+type logsUnmarshaler struct {
+	decoder    LogsDecoder
+	translator ToLogsTranslator
+}
+
+// NewLogsUnmarshaler returns a new LogsUnmarshaler.
+func NewLogsUnmarshaler(decoder LogsDecoder, translator ToLogsTranslator) LogsUnmarshaler {
+	return &logsUnmarshaler{
+		decoder:    decoder,
+		translator: translator,
+	}
+}
+
+// Unmarshal bytes into pdata.Logs. On error pdata.Logs is invalid.
+func (t *logsUnmarshaler) Unmarshal(buf []byte) (pdata.Logs, error) {
+	model, err := t.decoder.DecodeLogs(buf)
+	if err != nil {
+		return pdata.Logs{}, fmt.Errorf("unmarshal failed: %w", err)
+	}
+	td, err := t.translator.ToLogs(model)
+	if err != nil {
+		return pdata.Logs{}, fmt.Errorf("converting model to pdata failed: %w", err)
 	}
 	return td, nil
 }

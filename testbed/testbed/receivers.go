@@ -23,9 +23,9 @@ import (
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -101,7 +101,7 @@ func (or *OCDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consu
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	var err error
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	if or.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (jr *JaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", jr.Port), Transport: "tcp"},
 	}
 	var err error
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		cfg.GRPC = nil
 	}
 	var err error
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func (zr *ZipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
 
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	var err error
 	zr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 
@@ -359,7 +359,7 @@ func (dr *PrometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 		}},
 	}
 	var err error
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err

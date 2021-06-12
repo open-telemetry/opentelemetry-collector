@@ -16,17 +16,16 @@ package exporterhelper
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 type tracesRequest struct {
@@ -88,17 +87,18 @@ func NewTracesExporter(
 	be := newBaseExporter(cfg, logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
-			obsrep: obsreport.NewExporter(
-				obsreport.ExporterSettings{
-					Level:      configtelemetry.GetMetricsLevelFlagValue(),
-					ExporterID: cfg.ID(),
-				}),
+			obsrep:     be.obsrep,
 			nextSender: nextSender,
 		}
 	})
 
 	tc, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
-		return be.sender.send(newTracesRequest(ctx, td, pusher))
+		req := newTracesRequest(ctx, td, pusher)
+		err := be.sender.send(req)
+		if errors.Is(err, errSendingQueueIsFull) {
+			be.obsrep.recordTracesEnqueueFailure(req.context(), req.count())
+		}
+		return err
 	}, bs.consumerOptions...)
 
 	return &traceExporter{
@@ -108,7 +108,7 @@ func NewTracesExporter(
 }
 
 type tracesExporterWithObservability struct {
-	obsrep     *obsreport.Exporter
+	obsrep     *obsExporter
 	nextSender requestSender
 }
 

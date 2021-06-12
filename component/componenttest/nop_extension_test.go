@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -32,7 +31,7 @@ func TestNewNopExtensionFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopExtensionConfig{ExtensionSettings: config.NewExtensionSettings(config.NewID("nop"))}, cfg)
 
-	traces, err := factory.CreateExtension(context.Background(), component.ExtensionCreateSettings{}, cfg)
+	traces, err := factory.CreateExtension(context.Background(), NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, traces.Start(context.Background(), NewNopHost()))
 	assert.NoError(t, traces.Shutdown(context.Background()))

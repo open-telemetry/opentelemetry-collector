@@ -156,9 +156,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	core, logs := observer.New(zapcore.WarnLevel)
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateSettings{
-			Logger: zap.New(core),
-		},
+		component.ProcessorCreateSettings{Logger: zap.New(core)},
 		cfg,
 		next,
 	)
@@ -195,7 +193,7 @@ func testDataSlice(size int, mdType pdata.MetricDataType) []pdata.Metrics {
 }
 
 func testData(prefix string, size int, mdType pdata.MetricDataType) pdata.Metrics {
-	c := goldendataset.MetricCfg{
+	c := goldendataset.MetricsCfg{
 		MetricDescriptorType: mdType,
 		MetricNamePrefix:     prefix,
 		NumILMPerResource:    size,

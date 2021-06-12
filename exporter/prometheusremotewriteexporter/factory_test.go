@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -60,25 +59,25 @@ func Test_createMetricsExporter(t *testing.T) {
 	}{
 		{"success_case",
 			createDefaultConfig(),
-			component.ExporterCreateSettings{Logger: zap.NewNop()},
+			componenttest.NewNopExporterCreateSettings(),
 			false,
 			false,
 		},
 		{"fail_case",
 			nil,
-			component.ExporterCreateSettings{Logger: zap.NewNop()},
+			componenttest.NewNopExporterCreateSettings(),
 			true,
 			false,
 		},
 		{"invalid_config_case",
 			invalidConfig,
-			component.ExporterCreateSettings{Logger: zap.NewNop()},
+			componenttest.NewNopExporterCreateSettings(),
 			true,
 			false,
 		},
 		{"invalid_tls_config_case",
 			invalidTLSConfig,
-			component.ExporterCreateSettings{Logger: zap.NewNop()},
+			componenttest.NewNopExporterCreateSettings(),
 			false,
 			true,
 		},

@@ -14,22 +14,17 @@
 package fileexporter
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal"
-	collectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
@@ -42,12 +37,12 @@ func TestFileTracesExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	var unmarshaler = &jsonpb.Unmarshaler{}
-	got := &collectortrace.ExportTraceServiceRequest{}
+	unmarshaler := otlp.NewJSONTracesUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
-	assert.NoError(t, unmarshaler.Unmarshal(bytes.NewReader(buf), got))
-	assert.EqualValues(t, internal.TracesToOtlp(td.InternalRep()), got)
+	got, err := unmarshaler.Unmarshal(buf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, td, got)
 }
 
 func TestFileTracesExporterError(t *testing.T) {
@@ -70,12 +65,12 @@ func TestFileMetricsExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	var unmarshaler = &jsonpb.Unmarshaler{}
-	got := &collectormetrics.ExportMetricsServiceRequest{}
+	unmarshaler := otlp.NewJSONMetricsUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
-	assert.NoError(t, unmarshaler.Unmarshal(bytes.NewReader(buf), got))
-	assert.EqualValues(t, internal.MetricsToOtlp(md.InternalRep()), got)
+	got, err := unmarshaler.Unmarshal(buf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, md, got)
 }
 
 func TestFileMetricsExporterError(t *testing.T) {
@@ -93,17 +88,17 @@ func TestFileLogsExporter(t *testing.T) {
 	fe := &fileExporter{path: tempFileName(t)}
 	require.NotNil(t, fe)
 
-	otlp := testdata.GenerateLogsTwoLogRecordsSameResource()
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, fe.ConsumeLogs(context.Background(), otlp))
+	assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	var unmarshaler = &jsonpb.Unmarshaler{}
-	got := &collectorlogs.ExportLogsServiceRequest{}
+	unmarshaler := otlp.NewJSONLogsUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
-	assert.NoError(t, unmarshaler.Unmarshal(bytes.NewReader(buf), got))
-	assert.EqualValues(t, internal.LogsToOtlp(otlp.InternalRep()), got)
+	got, err := unmarshaler.Unmarshal(buf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, ld, got)
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
@@ -111,9 +106,9 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	fe := &fileExporter{file: mf}
 	require.NotNil(t, fe)
 
-	otlp := testdata.GenerateLogsTwoLogRecordsSameResource()
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.ConsumeLogs(context.Background(), otlp))
+	assert.Error(t, fe.ConsumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
@@ -131,7 +126,7 @@ func tempFileName(t *testing.T) string {
 type errorWriter struct {
 }
 
-func (e errorWriter) Write(p []byte) (n int, err error) {
+func (e errorWriter) Write([]byte) (n int, err error) {
 	return 0, errors.New("all ways return error")
 }
 

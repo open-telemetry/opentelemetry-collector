@@ -20,11 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -66,6 +66,14 @@ func TestDefaultExtensions(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			extension: "bearertokenauth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
+				cfg.BearerToken = "sometoken"
+				return cfg
+			},
+		},
 	}
 
 	// we have one more extension that we can't test here: the OIDC Auth extension requires
@@ -95,10 +103,7 @@ type getExtensionConfigFn func() config.Extension
 func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	extCreateSet := component.ExtensionCreateSettings{
-		Logger:    zap.NewNop(),
-		BuildInfo: component.DefaultBuildInfo(),
-	}
+	extCreateSet := componenttest.NewNopExtensionCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig

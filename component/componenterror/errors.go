@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package componenterror provides helper functions to create and process
-// OpenTelemetry specific errors
 package componenterror
 
 import (

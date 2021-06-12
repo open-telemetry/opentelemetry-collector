@@ -23,21 +23,17 @@ import (
 // These constants are the attribute keys used when translating from zipkin
 // format to the internal collector data format.
 const (
-	startTimeAbsent      = "otel.zipkin.absentField.startTime"
-	tagServiceNameSource = "otlp.service.name.source"
+	StartTimeAbsent      = "otel.zipkin.absentField.startTime"
+	TagServiceNameSource = "otlp.service.name.source"
 )
 
-var attrValDescriptions = getAttrValDescripts()
-
-func getAttrValDescripts() []*attrValDescript {
-	descriptions := make([]*attrValDescript, 0, 5)
-	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueTypeNull))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueTypeInt))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueTypeDouble))
-	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueTypeBool))
-	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueTypeMap))
-	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueTypeArray))
-	return descriptions
+var attrValDescriptions = []*attrValDescript{
+	constructAttrValDescript("^$", pdata.AttributeValueTypeNull),
+	constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueTypeInt),
+	constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueTypeDouble),
+	constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueTypeBool),
+	constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueTypeMap),
+	constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueTypeArray),
 }
 
 type attrValDescript struct {
@@ -53,8 +49,8 @@ func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *
 	}
 }
 
-// determineValueType returns the native OTLP attribute type the string translates to.
-func determineValueType(value string) pdata.AttributeValueType {
+// DetermineValueType returns the native OTLP attribute type the string translates to.
+func DetermineValueType(value string) pdata.AttributeValueType {
 	for _, desc := range attrValDescriptions {
 		if desc.regex.MatchString(value) {
 			return desc.attrType

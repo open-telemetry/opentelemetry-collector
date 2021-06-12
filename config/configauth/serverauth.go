@@ -42,38 +42,38 @@ type ServerAuthenticator interface {
 	// The deadline and cancellation given to this function must be respected, but note that authentication data has to be part of the map, not context.
 	Authenticate(ctx context.Context, headers map[string][]string) error
 
-	// GrpcUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryServerInterceptor, typically calling the authenticator's Authenticate method.
+	// GRPCUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryServerInterceptor, typically calling the authenticator's Authenticate method.
 	// While the context is the typical source of authentication data, the interceptor is free to determine where the auth data should come from. For instance, some
 	// receivers might implement an interceptor that looks into the payload instead.
 	// Once the authentication succeeds, the interceptor is expected to call the handler.
 	// See https://pkg.go.dev/google.golang.org/grpc#UnaryServerInterceptor.
-	GrpcUnaryServerInterceptor(ctx context.Context, req interface{}, srvInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
+	GRPCUnaryServerInterceptor(ctx context.Context, req interface{}, srvInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
 
-	// GrpcStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamServerInterceptor, typically calling the authenticator's Authenticate method.
+	// GRPCStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamServerInterceptor, typically calling the authenticator's Authenticate method.
 	// While the context is the typical source of authentication data, the interceptor is free to determine where the auth data should come from. For instance, some
 	// receivers might implement an interceptor that looks into the payload instead.
 	// Once the authentication succeeds, the interceptor is expected to call the handler.
 	// See https://pkg.go.dev/google.golang.org/grpc#StreamServerInterceptor.
-	GrpcStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, srvInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error
+	GRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, srvInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error
 }
 
 // AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the given headers map.
 // See ServerAuthenticator.Authenticate.
 type AuthenticateFunc func(ctx context.Context, headers map[string][]string) error
 
-// GrpcUnaryInterceptorFunc defines the signature for the function intercepting unary gRPC calls, useful for authenticators to use as
+// GRPCUnaryInterceptorFunc defines the signature for the function intercepting unary gRPC calls, useful for authenticators to use as
 // types for internal structs, making it easier to mock them in tests.
-// See ServerAuthenticator.GrpcUnaryServerInterceptor.
-type GrpcUnaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error)
+// See ServerAuthenticator.GRPCUnaryServerInterceptor.
+type GRPCUnaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error)
 
-// GrpcStreamInterceptorFunc defines the signature for the function intercepting streaming gRPC calls, useful for authenticators to use as
+// GRPCStreamInterceptorFunc defines the signature for the function intercepting streaming gRPC calls, useful for authenticators to use as
 // types for internal structs, making it easier to mock them in tests.
-// See ServerAuthenticator.GrpcStreamServerInterceptor.
-type GrpcStreamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error
+// See ServerAuthenticator.GRPCStreamServerInterceptor.
+type GRPCStreamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error
 
-// DefaultGrpcUnaryServerInterceptor provides a default implementation of GrpcUnaryInterceptorFunc, useful for most authenticators.
+// DefaultGRPCUnaryServerInterceptor provides a default implementation of GRPCUnaryInterceptorFunc, useful for most authenticators.
 // It extracts the headers from the incoming request, under the assumption that the credentials will be part of the resulting map.
-func DefaultGrpcUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error) {
+func DefaultGRPCUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error) {
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, errMetadataNotFound
@@ -86,9 +86,9 @@ func DefaultGrpcUnaryServerInterceptor(ctx context.Context, req interface{}, _ *
 	return handler(ctx, req)
 }
 
-// DefaultGrpcStreamServerInterceptor provides a default implementation of GrpcStreamInterceptorFunc, useful for most authenticators.
+// DefaultGRPCStreamServerInterceptor provides a default implementation of GRPCStreamInterceptorFunc, useful for most authenticators.
 // It extracts the headers from the incoming request, under the assumption that the credentials will be part of the resulting map.
-func DefaultGrpcStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error {
+func DefaultGRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error {
 	ctx := stream.Context()
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
