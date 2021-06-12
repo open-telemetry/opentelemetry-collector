@@ -2,7 +2,6 @@
 
 ## Unreleased
 
-
 ## 🛑 Breaking changes 🛑
 
 - Rename `service.Application` to `service.Collector` (#3268)
