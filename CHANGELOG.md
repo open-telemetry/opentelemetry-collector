@@ -2,13 +2,17 @@
 
 ## Unreleased
 
+
+## 🛑 Breaking changes 🛑
+
+- Rename `service.Application` to `service.Collector` (#3268)
+
 ## v0.28.0 Beta
 
 ## 🛑 Breaking changes 🛑
 
 - Remove unused logstest package (#3222)
 - Introduce `AppSettings` instead of `Parameters` (#3163)
-- Rename `service.Application` to `service.Collector` (#3268)
 - Remove unused testutil.TempSocketName (#3291)
 - Move BigEndian helper functions in `tracetranslator` to an internal package.(#3298)
 - Rename `configtest.LoadConfigFile` to `configtest.LoadConfigAndValidate` (#3306)
