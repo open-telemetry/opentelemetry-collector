@@ -97,7 +97,7 @@ func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&td.orig.ResourceSpans)
 }
 
-// TraceState is a message representing the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
+// TraceState is a string representing the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState string
 
 const (
