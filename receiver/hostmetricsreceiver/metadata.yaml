@@ -295,7 +295,7 @@ metrics:
 
   system.network.conntrack.count:
     description: Number of currently allocated flow entries.
-    unit: 1
+    unit: "{flow entries}"
     data:
       type: int sum
       aggregation: cumulative
@@ -303,7 +303,7 @@ metrics:
 
   system.network.conntrack.max:
     description: Size of connection tracking table.
-    unit: 1
+    unit: "{flow entries}"
     data:
       type: int sum
       aggregation: cumulative

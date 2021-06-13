@@ -36,7 +36,7 @@ type Factory struct {
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
-	return &Config{ScrapeConntrack: false}
+	return &Config{}
 }
 
 // CreateMetricsScraper creates a scraper based on provided config.

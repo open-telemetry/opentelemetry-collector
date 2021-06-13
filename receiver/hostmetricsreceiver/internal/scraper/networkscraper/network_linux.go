@@ -17,6 +17,7 @@
 package networkscraper
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -43,7 +44,7 @@ func scrapeAndAppendConntrackMetrics(s *scraper, metrics pdata.MetricSlice) erro
 
 	conntrack, err := s.conntrack()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to scrape conntrack metrics: %w", err)
 	}
 
 	if len(conntrack) > 0 {
