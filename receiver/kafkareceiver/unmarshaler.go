@@ -16,6 +16,7 @@ package kafkareceiver
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/otlp"
 )
 
 // TracesUnmarshaler deserializes the message body.
@@ -38,14 +39,14 @@ type LogsUnmarshaler interface {
 
 // defaultTracesUnmarshalers returns map of supported encodings with TracesUnmarshaler.
 func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
-	otlp := &otlpTracesPbUnmarshaler{}
+	otlpPb := newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), defaultEncoding)
 	jaegerProto := jaegerProtoSpanUnmarshaler{}
 	jaegerJSON := jaegerJSONSpanUnmarshaler{}
 	zipkinProto := zipkinProtoSpanUnmarshaler{}
 	zipkinJSON := zipkinJSONSpanUnmarshaler{}
 	zipkinThrift := zipkinThriftSpanUnmarshaler{}
 	return map[string]TracesUnmarshaler{
-		otlp.Encoding():         otlp,
+		otlpPb.Encoding():       otlpPb,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,
 		zipkinProto.Encoding():  zipkinProto,
@@ -55,8 +56,8 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 }
 
 func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
-	otlp := &otlpLogsPbUnmarshaler{}
+	otlpPb := newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), defaultEncoding)
 	return map[string]LogsUnmarshaler{
-		otlp.Encoding(): otlp,
+		otlpPb.Encoding(): otlpPb,
 	}
 }
