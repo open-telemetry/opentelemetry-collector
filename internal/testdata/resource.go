@@ -15,8 +15,6 @@
 package testdata
 
 import (
-	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -24,18 +22,6 @@ func initResource1(r pdata.Resource) {
 	initResourceAttributes1(r.Attributes())
 }
 
-func generateOtlpResource1() otlpresource.Resource {
-	return otlpresource.Resource{
-		Attributes: generateOtlpResourceAttributes1(),
-	}
-}
-
 func initResource2(r pdata.Resource) {
 	initResourceAttributes2(r.Attributes())
-}
-
-func generateOtlpResource2() otlpresource.Resource {
-	return otlpresource.Resource{
-		Attributes: generateOtlpResourceAttributes2(),
-	}
 }
