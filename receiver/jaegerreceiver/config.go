@@ -17,8 +17,6 @@ package jaegerreceiver
 import (
 	"fmt"
 
-	"github.com/spf13/cast"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -109,33 +107,23 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 		return err
 	}
 
-	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
-	knownProtocols := 0
-	if _, ok := protocols[protoGRPC]; !ok {
+	protocols, err := componentParser.Sub(protocolsFieldName)
+	if err != nil {
+		return err
+	}
+
+	if !protocols.IsSet(protoGRPC) {
 		cfg.GRPC = nil
-	} else {
-		knownProtocols++
 	}
-	if _, ok := protocols[protoThriftHTTP]; !ok {
+	if !protocols.IsSet(protoThriftHTTP) {
 		cfg.ThriftHTTP = nil
-	} else {
-		knownProtocols++
 	}
-	if _, ok := protocols[protoThriftBinary]; !ok {
+	if !protocols.IsSet(protoThriftBinary) {
 		cfg.ThriftBinary = nil
-	} else {
-		knownProtocols++
 	}
-	if _, ok := protocols[protoThriftCompact]; !ok {
+	if !protocols.IsSet(protoThriftCompact) {
 		cfg.ThriftCompact = nil
-	} else {
-		knownProtocols++
 	}
-	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
-	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
-	// include only known protocols.
-	if len(protocols) != knownProtocols {
-		return fmt.Errorf("unknown protocols in the Jaeger receiver")
-	}
+
 	return nil
 }

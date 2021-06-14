@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Provide case sensitivity in config yaml mappings by using Koanf instead of Viper (#3337)
+
 ## v0.28.0 Beta
 
 ## 🛑 Breaking changes 🛑

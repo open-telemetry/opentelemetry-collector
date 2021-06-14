@@ -438,7 +438,7 @@ func parseIDNames(pipelineID config.ComponentID, componentType string, names []s
 	return ret, nil
 }
 
-// expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
+// expandEnvConfig updates a configparser.Parser with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
 func expandEnvConfig(v *configparser.Parser) {
 	for _, k := range v.AllKeys() {
@@ -458,6 +458,12 @@ func expandStringValues(value interface{}) interface{} {
 			nslice = append(nslice, expandStringValues(vint))
 		}
 		return nslice
+	case map[string]interface{}:
+		nmap := make(map[interface{}]interface{}, len(v))
+		for k, vint := range v {
+			nmap[k] = expandStringValues(vint)
+		}
+		return nmap
 	case map[interface{}]interface{}:
 		nmap := make(map[interface{}]interface{}, len(v))
 		for k, vint := range v {
