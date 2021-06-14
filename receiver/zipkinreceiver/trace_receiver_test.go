@@ -51,7 +51,7 @@ import (
 const (
 	zipkinV2Single      = "../../translator/trace/zipkinv2/testdata/zipkin_v2_single.json"
 	zipkinV2NoTimestamp = "../../translator/trace/zipkinv2/testdata/zipkin_v2_notimestamp.json"
-	zipkinV1SingleBatch = "../../translator/trace/zipkin/testdata/zipkin_v1_single_batch.json"
+	zipkinV1SingleBatch = "../../translator/trace/zipkinv1/testdata/zipkin_v1_single_batch.json"
 )
 
 var zipkinReceiverID = config.NewIDWithName(typeStr, "receiver_test")

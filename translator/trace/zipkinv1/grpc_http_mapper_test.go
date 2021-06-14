@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv1
 
 import (
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// traceData helper struct for zipkin conversion.
-// TODO: Remove this when zipkin translates directly to pdata.
-type traceData struct {
-	Node     *commonpb.Node
-	Resource *resourcepb.Resource
-	Spans    []*tracepb.Span
+func TestOTStatusFromHTTPStatus(t *testing.T) {
+	for httpStatus := int32(100); httpStatus <= 604; httpStatus++ {
+		otelStatus := ocStatusCodeFromHTTP(httpStatus)
+		assert.True(t, otelStatus >= ocOK && otelStatus <= ocUnauthenticated)
+	}
 }

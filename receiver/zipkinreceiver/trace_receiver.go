@@ -26,8 +26,6 @@ import (
 	"strings"
 	"sync"
 
-	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
-
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -36,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
@@ -59,9 +57,12 @@ type ZipkinReceiver struct {
 	nextConsumer consumer.Traces
 	id           config.ComponentID
 
-	shutdownWG               sync.WaitGroup
-	server                   *http.Server
-	config                   *Config
+	shutdownWG sync.WaitGroup
+	server     *http.Server
+	config     *Config
+
+	v1ThriftUnmarshaler      model.TracesUnmarshaler
+	v1JSONUnmarshaler        model.TracesUnmarshaler
 	jsonUnmarshaler          model.TracesUnmarshaler
 	protobufUnmarshaler      model.TracesUnmarshaler
 	protobufDebugUnmarshaler model.TracesUnmarshaler
@@ -79,6 +80,8 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 		nextConsumer:             nextConsumer,
 		id:                       config.ID(),
 		config:                   config,
+		v1ThriftUnmarshaler:      zipkinv1.NewThriftTracesUnmarshaler(),
+		v1JSONUnmarshaler:        zipkinv1.NewJSONTracesUnmarshaler(config.ParseStringTags),
 		jsonUnmarshaler:          zipkinv2.NewJSONTracesUnmarshaler(config.ParseStringTags),
 		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, config.ParseStringTags),
 		protobufDebugUnmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(true, config.ParseStringTags),
@@ -117,14 +120,9 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
 func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
-		zSpans, err := jaegerzipkin.DeserializeThrift(blob)
-		if err != nil {
-			return pdata.NewTraces(), err
-		}
-
-		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
+		return zr.v1ThriftUnmarshaler.Unmarshal(blob)
 	}
-	return zipkin.V1JSONBatchToInternalTraces(blob, zr.config.ParseStringTags)
+	return zr.v1JSONUnmarshaler.Unmarshal(blob)
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Provide case sensitivity in config yaml mappings by using Koanf instead of Viper (#3337)
+
 ## v0.28.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -33,6 +37,7 @@
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
+- Improve documentation of consumer package and subpackages (#3269, #3361)
 - Automate triggering of doc-update on release (#3234)
 - Enable Dependabot for Github Actions (#3312)
 - Remove the proto dependency in `goldendataset` for traces (#3322)

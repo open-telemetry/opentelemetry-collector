@@ -34,24 +34,18 @@ func newJSONDecoder() *jsonDecoder {
 
 func (d *jsonDecoder) DecodeLogs(buf []byte) (interface{}, error) {
 	ld := &otlpcollectorlogs.ExportLogsServiceRequest{}
-	if err := d.delegate.Unmarshal(bytes.NewReader(buf), ld); err != nil {
-		return nil, err
-	}
-	return ld, nil
+	err := d.delegate.Unmarshal(bytes.NewReader(buf), ld)
+	return ld, err
 }
 
 func (d *jsonDecoder) DecodeMetrics(buf []byte) (interface{}, error) {
 	md := &otlpcollectormetrics.ExportMetricsServiceRequest{}
-	if err := d.delegate.Unmarshal(bytes.NewReader(buf), md); err != nil {
-		return nil, err
-	}
-	return md, nil
+	err := d.delegate.Unmarshal(bytes.NewReader(buf), md)
+	return md, err
 }
 
 func (d *jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 	td := &otlpcollectortrace.ExportTraceServiceRequest{}
-	if err := d.delegate.Unmarshal(bytes.NewReader(buf), td); err != nil {
-		return nil, err
-	}
-	return td, nil
+	err := d.delegate.Unmarshal(bytes.NewReader(buf), td)
+	return td, err
 }

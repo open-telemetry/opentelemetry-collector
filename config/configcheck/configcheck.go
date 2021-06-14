@@ -96,7 +96,7 @@ func validateConfigDataType(t reflect.Type) error {
 		}
 	default:
 		// The config object can carry other types but they are not used when
-		// reading the configuration via viper so ignore them. Basically ignore:
+		// reading the configuration via koanf so ignore them. Basically ignore:
 		// reflect.Uintptr, reflect.Chan, reflect.Func, reflect.Interface, and
 		// reflect.UnsafePointer.
 	}
