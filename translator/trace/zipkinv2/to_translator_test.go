@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
 
 func TestZipkinSpansToInternalTraces(t *testing.T) {
