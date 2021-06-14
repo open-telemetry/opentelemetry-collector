@@ -21,10 +21,10 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
@@ -50,13 +50,14 @@ func handleTraces(
 		return
 	}
 
-	rsp, err := tracesReceiver.Export(req.Context(), internal.TracesToOtlp(td.InternalRep()))
+	_, err = tracesReceiver.Export(req.Context(), td)
 	if err != nil {
 		writeError(resp, contentType, err, http.StatusInternalServerError)
 		return
 	}
 
-	writeResponse(resp, contentType, http.StatusOK, rsp)
+	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
 func handleMetrics(
@@ -76,13 +77,14 @@ func handleMetrics(
 		return
 	}
 
-	rsp, err := metricsReceiver.Export(req.Context(), internal.MetricsToOtlp(md.InternalRep()))
+	_, err = metricsReceiver.Export(req.Context(), md)
 	if err != nil {
 		writeError(resp, contentType, err, http.StatusInternalServerError)
 		return
 	}
 
-	writeResponse(resp, contentType, http.StatusOK, rsp)
+	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
 func handleLogs(
@@ -102,13 +104,14 @@ func handleLogs(
 		return
 	}
 
-	rsp, err := logsReceiver.Export(req.Context(), internal.LogsToOtlp(ld.InternalRep()))
+	_, err = logsReceiver.Export(req.Context(), ld)
 	if err != nil {
 		writeError(resp, contentType, err, http.StatusInternalServerError)
 		return
 	}
 
-	writeResponse(resp, contentType, http.StatusOK, rsp)
+	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
 func readAndCloseBody(resp http.ResponseWriter, req *http.Request, contentType string) ([]byte, bool) {

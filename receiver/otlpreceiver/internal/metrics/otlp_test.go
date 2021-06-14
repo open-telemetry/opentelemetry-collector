@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -123,7 +122,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func
 	r := New(receiverID, mc)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	collectormetrics.RegisterMetricsServiceServer(srv, r)
+	pdatagrpc.RegisterMetricsServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()
