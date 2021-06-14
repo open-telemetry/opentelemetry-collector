@@ -44,7 +44,7 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/xdg-go/scram v1.0.2
 	go.opencensus.io v0.23.0
-	go.uber.org/atomic v1.7.0
+	go.uber.org/atomic v1.8.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/sys v0.0.0-20210423082822-04245dca01da
 	golang.org/x/text v0.3.6
