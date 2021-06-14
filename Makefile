@@ -26,7 +26,7 @@ GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
 
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-VERSION=$(shell git describe --match "v[0-9]*" HEAD)
+VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
@@ -48,6 +48,10 @@ $(1)
 endef
 
 .DEFAULT_GOAL := all
+
+.PHONY: version
+version:
+	@echo ${VERSION}
 
 .PHONY: all
 all: checklicense checkdoc misspell goimpi golint gotest otelcol
@@ -250,7 +254,6 @@ binaries-windows_amd64:
 .PHONY: build-binary-internal
 build-binary-internal:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
-
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
