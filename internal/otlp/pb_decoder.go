@@ -15,6 +15,7 @@
 package otlp
 
 import (
+	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
@@ -41,5 +42,8 @@ func (d *pbDecoder) DecodeMetrics(buf []byte) (interface{}, error) {
 func (d *pbDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 	td := &otlpcollectortrace.ExportTraceServiceRequest{}
 	err := td.Unmarshal(buf)
+	if err == nil {
+		internal.TracesCompatibilityChanges(td)
+	}
 	return td, err
 }
