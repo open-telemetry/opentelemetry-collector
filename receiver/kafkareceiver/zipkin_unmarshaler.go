@@ -15,18 +15,17 @@
 package kafkareceiver
 
 import (
-	"context"
 	"encoding/json"
 
-	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
+
+var v1ThriftUnmarshaler = zipkinv1.NewThriftTracesUnmarshaler()
 
 type zipkinProtoSpanUnmarshaler struct {
 }
@@ -71,41 +70,9 @@ type zipkinThriftSpanUnmarshaler struct {
 var _ TracesUnmarshaler = (*zipkinThriftSpanUnmarshaler)(nil)
 
 func (z zipkinThriftSpanUnmarshaler) Unmarshal(bytes []byte) (pdata.Traces, error) {
-	spans, err := deserializeZipkinThrift(bytes)
-	if err != nil {
-		return pdata.NewTraces(), err
-	}
-	return zipkintranslator.V1ThriftBatchToInternalTraces(spans)
-
+	return v1ThriftUnmarshaler.Unmarshal(bytes)
 }
 
 func (z zipkinThriftSpanUnmarshaler) Encoding() string {
 	return "zipkin_thrift"
-}
-
-// deserializeThrift decodes Thrift bytes to a list of spans.
-// This code comes from jaegertracing/jaeger, ideally we should have imported
-// it but this was creating many conflicts so brought the code to here.
-// https://github.com/jaegertracing/jaeger/blob/6bc0c122bfca8e737a747826ae60a22a306d7019/model/converter/thrift/zipkin/deserialize.go#L36
-func deserializeZipkinThrift(b []byte) ([]*zipkincore.Span, error) {
-	buffer := thrift.NewTMemoryBuffer()
-	buffer.Write(b)
-
-	transport := thrift.NewTBinaryProtocolConf(buffer, nil)
-	_, size, err := transport.ReadListBegin(context.Background()) // Ignore the returned element type
-	if err != nil {
-		return nil, err
-	}
-
-	// We don't depend on the size returned by ReadListBegin to preallocate the array because it
-	// sometimes returns a nil error on bad input and provides an unreasonably large int for size
-	var spans []*zipkincore.Span
-	for i := 0; i < size; i++ {
-		zs := &zipkincore.Span{}
-		if err = zs.Read(context.Background(), transport); err != nil {
-			return nil, err
-		}
-		spans = append(spans, zs)
-	}
-	return spans, nil
 }

@@ -27,7 +27,6 @@ import (
 	"strings"
 	"sync"
 
-	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
@@ -39,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
@@ -66,6 +65,9 @@ type ZipkinReceiver struct {
 	server     *http.Server
 	config     *Config
 	translator model.ToTracesTranslator
+
+	v1ThriftUnmarshaler model.TracesUnmarshaler
+	v1JSONUnmarshaler   model.TracesUnmarshaler
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
@@ -77,10 +79,12 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 	}
 
 	zr := &ZipkinReceiver{
-		nextConsumer: nextConsumer,
-		id:           config.ID(),
-		config:       config,
-		translator:   zipkinv2.ToTranslator{ParseStringTags: config.ParseStringTags},
+		nextConsumer:        nextConsumer,
+		id:                  config.ID(),
+		config:              config,
+		translator:          zipkinv2.ToTranslator{ParseStringTags: config.ParseStringTags},
+		v1ThriftUnmarshaler: zipkinv1.NewThriftTracesUnmarshaler(),
+		v1JSONUnmarshaler:   zipkinv1.NewJSONTracesUnmarshaler(config.ParseStringTags),
 	}
 	return zr, nil
 }
@@ -116,14 +120,9 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
 func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
-		zSpans, err := jaegerzipkin.DeserializeThrift(blob)
-		if err != nil {
-			return pdata.NewTraces(), err
-		}
-
-		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
+		return zr.v1ThriftUnmarshaler.Unmarshal(blob)
 	}
-	return zipkin.V1JSONBatchToInternalTraces(blob, zr.config.ParseStringTags)
+	return zr.v1JSONUnmarshaler.Unmarshal(blob)
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.

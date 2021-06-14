@@ -352,7 +352,7 @@ func (mb *SafeMetrics) AddHistogramRawDataPoint(name string, hist pdata.IntHisto
 	return mb
 }
 
-// AddDHistogramRawDataPoint wraps AddDHistogramRawDataPoint.
+// AddDHistogramRawDataPoint wraps Metrics.AddDHistogramRawDataPoint.
 func (mb *SafeMetrics) AddDHistogramRawDataPoint(name string, hist pdata.HistogramDataPoint) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddDHistogramRawDataPoint(name, hist)

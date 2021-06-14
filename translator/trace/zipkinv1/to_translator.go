@@ -12,23 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv1
 
 import (
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-// V1ThriftBatchToInternalTraces transforms Zipkin v1 spans into pdata.Traces.
-func V1ThriftBatchToInternalTraces(zSpans []*zipkincore.Span) (pdata.Traces, error) {
-	traces := pdata.NewTraces()
-	ocTraces, _ := v1ThriftBatchToOCProto(zSpans)
+var _ model.ToTracesTranslator = (*toTranslator)(nil)
 
-	for _, td := range ocTraces {
-		tmp := internaldata.OCToTraces(td.Node, td.Resource, td.Spans)
-		tmp.ResourceSpans().MoveAndAppendTo(traces.ResourceSpans())
+type toTranslator struct{}
+
+// ToTraces converts converts traceData to pdata.Traces.
+func (t toTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
+	ocTraces, ok := src.([]traceData)
+	if !ok {
+		return pdata.Traces{}, model.NewErrIncompatibleType([]traceData{}, src)
 	}
-	return traces, nil
+
+	td := pdata.NewTraces()
+
+	for _, trace := range ocTraces {
+		tmp := internaldata.OCToTraces(trace.Node, trace.Resource, trace.Spans)
+		tmp.ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
+	}
+
+	return td, nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package zipkinv1
 
 import (
 	"bytes"
@@ -24,11 +24,31 @@ import (
 	"net"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/model"
 )
+
+var _ model.TracesDecoder = (*thriftDecoder)(nil)
+
+type thriftDecoder struct{}
+
+// DecodeTraces from Thrift bytes.
+func (t thriftDecoder) DecodeTraces(buf []byte) (interface{}, error) {
+	spans, err := jaegerzipkin.DeserializeThrift(buf)
+	if err != nil {
+		return nil, err
+	}
+	return v1ThriftBatchToOCProto(spans)
+}
+
+// NewThriftTracesUnmarshaler returns an unmarshaler for Zipkin Thrift.
+func NewThriftTracesUnmarshaler() model.TracesUnmarshaler {
+	return model.NewTracesUnmarshaler(thriftDecoder{}, toTranslator{})
+}
 
 // v1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
 func v1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]traceData, error) {

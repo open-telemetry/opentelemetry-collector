@@ -12,28 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkin
+package kafkareceiver
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/internal/otlp"
 )
 
-func TestV1ThriftToTraces(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
-	require.NoError(t, err, "Failed to load test data")
+func TestNewPdataTracesUnmarshaler(t *testing.T) {
+	um := newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), "test")
+	assert.Equal(t, "test", um.Encoding())
+}
 
-	var ztSpans []*zipkincore.Span
-	err = json.Unmarshal(blob, &ztSpans)
-	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
-
-	got, err := V1ThriftBatchToInternalTraces(ztSpans)
-	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
-
-	assert.Equal(t, 5, got.SpanCount())
+func TestNewPdataLogsUnmarshaler(t *testing.T) {
+	um := newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), "test")
+	assert.Equal(t, "test", um.Encoding())
 }
