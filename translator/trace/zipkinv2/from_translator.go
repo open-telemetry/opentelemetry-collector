@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
 
 const (

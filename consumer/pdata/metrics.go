@@ -38,10 +38,10 @@ func (at AggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
-// Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitate the
-// transition to the new components especially for traces.
+// Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitates the
+// transition to the new components, especially for traces.
 //
-// Outside of the core repository the metrics pipeline cannot be converted to the new model since data.MetricData is
+// Outside of the core repository, the metrics pipeline cannot be converted to the new model since data.MetricData is
 // part of the internal package.
 type Metrics struct {
 	orig *otlpcollectormetrics.ExportMetricsServiceRequest
@@ -166,6 +166,7 @@ const (
 	MetricDataTypeSummary
 )
 
+// String returns the string representation of the MetricDataType.
 func (mdt MetricDataType) String() string {
 	switch mdt {
 	case MetricDataTypeNone:

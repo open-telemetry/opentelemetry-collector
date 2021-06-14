@@ -55,14 +55,14 @@ type mockTracesReceiver struct {
 	lastRequest pdata.Traces
 }
 
-func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (interface{}, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (pdatagrpc.TracesResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return nil, nil
+	return pdatagrpc.NewTracesResponse(), nil
 }
 
 func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
@@ -92,14 +92,14 @@ type mockLogsReceiver struct {
 	lastRequest pdata.Logs
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (interface{}, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (pdatagrpc.LogsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(ld.LogRecordCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = ld
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return nil, nil
+	return pdatagrpc.NewLogsResponse(), nil
 }
 
 func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
@@ -129,7 +129,7 @@ type mockMetricsReceiver struct {
 	lastRequest pdata.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (interface{}, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (pdatagrpc.MetricsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	_, recordCount := md.MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
@@ -137,7 +137,7 @@ func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (int
 	defer r.mux.Unlock()
 	r.lastRequest = md
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return nil, nil
+	return pdatagrpc.NewMetricsResponse(), nil
 }
 
 func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {

@@ -108,24 +108,24 @@ func (dsb *DataSenderBase) Flush() {
 	// Exporter interface does not support Flush, so nothing to do.
 }
 
-// JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http exporter.
-type JaegerGRPCDataSender struct {
+// jaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http exporter.
+type jaegerGRPCDataSender struct {
 	DataSenderBase
 	consumer.Traces
 }
 
-// Ensure JaegerGRPCDataSender implements TraceDataSender.
-var _ TraceDataSender = (*JaegerGRPCDataSender)(nil)
+// Ensure jaegerGRPCDataSender implements TraceDataSender.
+var _ TraceDataSender = (*jaegerGRPCDataSender)(nil)
 
 // NewJaegerGRPCDataSender creates a new Jaeger exporter sender that will send
 // to the specified port after Start is called.
-func NewJaegerGRPCDataSender(host string, port int) *JaegerGRPCDataSender {
-	return &JaegerGRPCDataSender{
+func NewJaegerGRPCDataSender(host string, port int) TraceDataSender {
+	return &jaegerGRPCDataSender{
 		DataSenderBase: DataSenderBase{Port: port, Host: host},
 	}
 }
 
-func (je *JaegerGRPCDataSender) Start() error {
+func (je *jaegerGRPCDataSender) Start() error {
 	factory := jaegerexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerexporter.Config)
 	// Disable retries, we should push data and if error just log it.
@@ -146,7 +146,7 @@ func (je *JaegerGRPCDataSender) Start() error {
 	return exp.Start(context.Background(), je)
 }
 
-func (je *JaegerGRPCDataSender) GenConfigYAMLStr() string {
+func (je *jaegerGRPCDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   jaeger:
     protocols:
@@ -154,7 +154,7 @@ func (je *JaegerGRPCDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, je.GetEndpoint())
 }
 
-func (je *JaegerGRPCDataSender) ProtocolName() string {
+func (je *jaegerGRPCDataSender) ProtocolName() string {
 	return "jaeger"
 }
 
@@ -181,19 +181,16 @@ func (ods *ocDataSender) ProtocolName() string {
 	return "opencensus"
 }
 
-// OCTraceDataSender implements TraceDataSender for OpenCensus trace exporter.
-type OCTraceDataSender struct {
+// ocTracesDataSender implements TraceDataSender for OpenCensus trace exporter.
+type ocTracesDataSender struct {
 	ocDataSender
 	consumer.Traces
 }
 
-// Ensure OCTraceDataSender implements TraceDataSender.
-var _ TraceDataSender = (*OCTraceDataSender)(nil)
-
-// NewOCTraceDataSender creates a new OCTraceDataSender that will send
+// NewOCTraceDataSender creates a new ocTracesDataSender that will send
 // to the specified port after Start is called.
-func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
-	return &OCTraceDataSender{
+func NewOCTraceDataSender(host string, port int) TraceDataSender {
+	return &ocTracesDataSender{
 		ocDataSender: ocDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -203,7 +200,7 @@ func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
 	}
 }
 
-func (ote *OCTraceDataSender) Start() error {
+func (ote *ocTracesDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
 	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
@@ -215,19 +212,16 @@ func (ote *OCTraceDataSender) Start() error {
 	return exp.Start(context.Background(), ote)
 }
 
-// OCMetricsDataSender implements MetricDataSender for OpenCensus metrics exporter.
-type OCMetricsDataSender struct {
+// ocMetricsDataSender implements MetricDataSender for OpenCensus metrics exporter.
+type ocMetricsDataSender struct {
 	ocDataSender
 	consumer.Metrics
 }
 
-// Ensure OCMetricsDataSender implements MetricDataSender.
-var _ MetricDataSender = (*OCMetricsDataSender)(nil)
-
 // NewOCMetricDataSender creates a new OpenCensus metric exporter sender that will send
 // to the specified port after Start is called.
-func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
-	return &OCMetricsDataSender{
+func NewOCMetricDataSender(host string, port int) MetricDataSender {
+	return &ocMetricsDataSender{
 		ocDataSender: ocDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -237,7 +231,7 @@ func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
 	}
 }
 
-func (ome *OCMetricsDataSender) Start() error {
+func (ome *ocMetricsDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
 	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
@@ -278,18 +272,15 @@ func (ods *otlpHTTPDataSender) ProtocolName() string {
 	return "otlp"
 }
 
-// OTLPHTTPTraceDataSender implements TraceDataSender for OTLP/HTTP trace exporter.
-type OTLPHTTPTraceDataSender struct {
+// otlpHTTPTraceDataSender implements TraceDataSender for OTLP/HTTP trace exporter.
+type otlpHTTPTraceDataSender struct {
 	otlpHTTPDataSender
 	consumer.Traces
 }
 
-// Ensure OTLPHTTPTraceDataSender implements TraceDataSender.
-var _ TraceDataSender = (*OTLPHTTPTraceDataSender)(nil)
-
 // NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporter.
-func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender {
-	return &OTLPHTTPTraceDataSender{
+func NewOTLPHTTPTraceDataSender(host string, port int) TraceDataSender {
+	return &otlpHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -299,7 +290,7 @@ func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender 
 	}
 }
 
-func (ote *OTLPHTTPTraceDataSender) Start() error {
+func (ote *otlpHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
 	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
@@ -311,19 +302,16 @@ func (ote *OTLPHTTPTraceDataSender) Start() error {
 	return exp.Start(context.Background(), ote)
 }
 
-// OTLPHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics exporter.
-type OTLPHTTPMetricsDataSender struct {
+// otlpHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics exporter.
+type otlpHTTPMetricsDataSender struct {
 	otlpHTTPDataSender
 	consumer.Metrics
 }
 
-// Ensure OTLPHTTPMetricsDataSender implements MetricDataSender.
-var _ MetricDataSender = (*OTLPHTTPMetricsDataSender)(nil)
-
 // NewOTLPHTTPMetricDataSender creates a new OTLP/HTTP metrics exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSender {
-	return &OTLPHTTPMetricsDataSender{
+func NewOTLPHTTPMetricDataSender(host string, port int) MetricDataSender {
+	return &otlpHTTPMetricsDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -333,7 +321,7 @@ func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSend
 	}
 }
 
-func (ome *OTLPHTTPMetricsDataSender) Start() error {
+func (ome *otlpHTTPMetricsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
 	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
@@ -345,19 +333,16 @@ func (ome *OTLPHTTPMetricsDataSender) Start() error {
 	return exp.Start(context.Background(), ome)
 }
 
-// OTLPHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs exporter.
-type OTLPHTTPLogsDataSender struct {
+// otlpHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs exporter.
+type otlpHTTPLogsDataSender struct {
 	otlpHTTPDataSender
 	consumer.Logs
 }
 
-// Ensure OTLPHTTPLogsDataSender implements MetricDataSender.
-var _ LogDataSender = (*OTLPHTTPLogsDataSender)(nil)
-
 // NewOTLPHTTPLogsDataSender creates a new OTLP/HTTP logs exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
-	return &OTLPHTTPLogsDataSender{
+func NewOTLPHTTPLogsDataSender(host string, port int) LogDataSender {
+	return &otlpHTTPLogsDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -367,7 +352,7 @@ func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
 	}
 }
 
-func (olds *OTLPHTTPLogsDataSender) Start() error {
+func (olds *otlpHTTPLogsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
 	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
@@ -408,18 +393,15 @@ func (ods *otlpDataSender) ProtocolName() string {
 	return "otlp"
 }
 
-// OTLPTraceDataSender implements TraceDataSender for OTLP traces exporter.
-type OTLPTraceDataSender struct {
+// otlpTraceDataSender implements TraceDataSender for OTLP traces exporter.
+type otlpTraceDataSender struct {
 	otlpDataSender
 	consumer.Traces
 }
 
-// Ensure OTLPTraceDataSender implements TraceDataSender.
-var _ TraceDataSender = (*OTLPTraceDataSender)(nil)
-
 // NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces exporter.
-func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
-	return &OTLPTraceDataSender{
+func NewOTLPTraceDataSender(host string, port int) TraceDataSender {
+	return &otlpTraceDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -429,7 +411,7 @@ func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 	}
 }
 
-func (ote *OTLPTraceDataSender) Start() error {
+func (ote *otlpTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
 	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
@@ -441,19 +423,16 @@ func (ote *OTLPTraceDataSender) Start() error {
 	return exp.Start(context.Background(), ote)
 }
 
-// OTLPMetricsDataSender implements MetricDataSender for OTLP metrics exporter.
-type OTLPMetricsDataSender struct {
+// otlpMetricsDataSender implements MetricDataSender for OTLP metrics exporter.
+type otlpMetricsDataSender struct {
 	otlpDataSender
 	consumer.Metrics
 }
 
-// Ensure OTLPMetricsDataSender implements MetricDataSender.
-var _ MetricDataSender = (*OTLPMetricsDataSender)(nil)
-
 // NewOTLPMetricDataSender creates a new OTLP metric exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
-	return &OTLPMetricsDataSender{
+func NewOTLPMetricDataSender(host string, port int) MetricDataSender {
+	return &otlpMetricsDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -463,7 +442,7 @@ func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
 	}
 }
 
-func (ome *OTLPMetricsDataSender) Start() error {
+func (ome *otlpMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
 	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
@@ -475,19 +454,16 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	return exp.Start(context.Background(), ome)
 }
 
-// OTLPLogsDataSender implements LogsDataSender for OTLP logs exporter.
-type OTLPLogsDataSender struct {
+// otlpLogsDataSender implements LogsDataSender for OTLP logs exporter.
+type otlpLogsDataSender struct {
 	otlpDataSender
 	consumer.Logs
 }
 
-// Ensure OTLPLogsDataSender implements LogDataSender.
-var _ LogDataSender = (*OTLPLogsDataSender)(nil)
-
 // NewOTLPLogsDataSender creates a new OTLP logs exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPLogsDataSender(host string, port int) *OTLPLogsDataSender {
-	return &OTLPLogsDataSender{
+func NewOTLPLogsDataSender(host string, port int) LogDataSender {
+	return &otlpLogsDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -497,7 +473,7 @@ func NewOTLPLogsDataSender(host string, port int) *OTLPLogsDataSender {
 	}
 }
 
-func (olds *OTLPLogsDataSender) Start() error {
+func (olds *otlpLogsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
 	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
@@ -509,19 +485,16 @@ func (olds *OTLPLogsDataSender) Start() error {
 	return exp.Start(context.Background(), olds)
 }
 
-// ZipkinDataSender implements TraceDataSender for Zipkin http exporter.
-type ZipkinDataSender struct {
+// zipkinDataSender implements TraceDataSender for Zipkin http exporter.
+type zipkinDataSender struct {
 	DataSenderBase
 	consumer.Traces
 }
 
-// Ensure ZipkinDataSender implements TraceDataSender.
-var _ TraceDataSender = (*ZipkinDataSender)(nil)
-
 // NewZipkinDataSender creates a new Zipkin exporter sender that will send
 // to the specified port after Start is called.
-func NewZipkinDataSender(host string, port int) *ZipkinDataSender {
-	return &ZipkinDataSender{
+func NewZipkinDataSender(host string, port int) TraceDataSender {
+	return &zipkinDataSender{
 		DataSenderBase: DataSenderBase{
 			Port: port,
 			Host: host,
@@ -529,7 +502,7 @@ func NewZipkinDataSender(host string, port int) *ZipkinDataSender {
 	}
 }
 
-func (zs *ZipkinDataSender) Start() error {
+func (zs *zipkinDataSender) Start() error {
 	factory := zipkinexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("http://%s/api/v2/spans", zs.GetEndpoint())
@@ -547,28 +520,28 @@ func (zs *ZipkinDataSender) Start() error {
 	return exp.Start(context.Background(), zs)
 }
 
-func (zs *ZipkinDataSender) GenConfigYAMLStr() string {
+func (zs *zipkinDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   zipkin:
     endpoint: %s`, zs.GetEndpoint())
 }
 
-func (zs *ZipkinDataSender) ProtocolName() string {
+func (zs *zipkinDataSender) ProtocolName() string {
 	return "zipkin"
 }
 
 // prometheus
 
-type PrometheusDataSender struct {
+type prometheusDataSender struct {
 	DataSenderBase
 	consumer.Metrics
 	namespace string
 }
 
-var _ MetricDataSender = (*PrometheusDataSender)(nil)
-
-func NewPrometheusDataSender(host string, port int) *PrometheusDataSender {
-	return &PrometheusDataSender{
+// NewPrometheusDataSender creates a new Prometheus sender that will expose data
+// on the specified port after Start is called.
+func NewPrometheusDataSender(host string, port int) MetricDataSender {
+	return &prometheusDataSender{
 		DataSenderBase: DataSenderBase{
 			Port: port,
 			Host: host,
@@ -576,7 +549,7 @@ func NewPrometheusDataSender(host string, port int) *PrometheusDataSender {
 	}
 }
 
-func (pds *PrometheusDataSender) Start() error {
+func (pds *prometheusDataSender) Start() error {
 	factory := prometheusexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
 	cfg.Endpoint = pds.GetEndpoint().String()
@@ -591,7 +564,7 @@ func (pds *PrometheusDataSender) Start() error {
 	return exp.Start(context.Background(), pds)
 }
 
-func (pds *PrometheusDataSender) GenConfigYAMLStr() string {
+func (pds *prometheusDataSender) GenConfigYAMLStr() string {
 	format := `
   prometheus:
     config:
@@ -604,7 +577,7 @@ func (pds *PrometheusDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(format, pds.GetEndpoint())
 }
 
-func (pds *PrometheusDataSender) ProtocolName() string {
+func (pds *prometheusDataSender) ProtocolName() string {
 	return "prometheus"
 }
 

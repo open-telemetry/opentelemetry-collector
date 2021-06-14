@@ -97,7 +97,7 @@ func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&td.orig.ResourceSpans)
 }
 
-// TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
+// TraceState is a string representing the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState string
 
 const (
@@ -145,6 +145,7 @@ const (
 	StatusCodeError = StatusCode(otlptrace.Status_STATUS_CODE_ERROR)
 )
 
+// String returns the string representation of the StatusCode.
 func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
 
 // SetCode replaces the code associated with this SpanStatus.
