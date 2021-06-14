@@ -88,7 +88,6 @@ func New(set CollectorSettings) (*Collector, error) {
 	col := &Collector{
 		info:         set.BuildInfo,
 		factories:    set.Factories,
-
 		stateChannel: make(chan State, Closed+1),
 	}
 
