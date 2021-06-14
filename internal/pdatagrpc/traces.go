@@ -24,9 +24,17 @@ import (
 	otlpcollectortraces "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
-// TODO: Consider to add `TracesRequest` and `TracesResponse`. Right now the funcs return interface{},
-//  it would be better and future proof to create a TracesResponse empty struct and return that.
-//  So if we ever add things in the OTLP response I can deal with that. Similar for request if we add non pdata properties.
+// TODO: Consider to add `TracesRequest`. If we add non pdata properties we can add them to the request.
+
+// TracesResponse represents the response for gRPC client/server.
+type TracesResponse struct {
+	orig *otlpcollectortraces.ExportTraceServiceResponse
+}
+
+// NewTracesResponse returns an empty TracesResponse.
+func NewTracesResponse() TracesResponse {
+	return TracesResponse{orig: &otlpcollectortraces.ExportTraceServiceResponse{}}
+}
 
 // TracesClient is the client API for OTLP-GRPC Traces service.
 //
@@ -36,7 +44,7 @@ type TracesClient interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(ctx context.Context, in pdata.Traces, opts ...grpc.CallOption) (interface{}, error)
+	Export(ctx context.Context, in pdata.Traces, opts ...grpc.CallOption) (TracesResponse, error)
 }
 
 type tracesClient struct {
@@ -49,8 +57,9 @@ func NewTracesClient(cc *grpc.ClientConn) TracesClient {
 }
 
 // Export implements the TracesClient interface.
-func (c *tracesClient) Export(ctx context.Context, in pdata.Traces, opts ...grpc.CallOption) (interface{}, error) {
-	return c.rawClient.Export(ctx, internal.TracesToOtlp(in.InternalRep()), opts...)
+func (c *tracesClient) Export(ctx context.Context, in pdata.Traces, opts ...grpc.CallOption) (TracesResponse, error) {
+	rsp, err := c.rawClient.Export(ctx, internal.TracesToOtlp(in.InternalRep()), opts...)
+	return TracesResponse{orig: rsp}, err
 }
 
 // TracesServer is the server API for OTLP gRPC TracesService service.
@@ -59,7 +68,7 @@ type TracesServer interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(context.Context, pdata.Traces) (interface{}, error)
+	Export(context.Context, pdata.Traces) (TracesResponse, error)
 }
 
 // RegisterTracesServer registers the TracesServer to the grpc.Server.
@@ -73,6 +82,6 @@ type rawTracesServer struct {
 
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortraces.ExportTraceServiceRequest) (*otlpcollectortraces.ExportTraceServiceResponse, error) {
 	internal.TracesCompatibilityChanges(request)
-	_, err := s.srv.Export(ctx, pdata.TracesFromInternalRep(internal.TracesFromOtlp(request)))
-	return &otlpcollectortraces.ExportTraceServiceResponse{}, err
+	rsp, err := s.srv.Export(ctx, pdata.TracesFromInternalRep(internal.TracesFromOtlp(request)))
+	return rsp.orig, err
 }

@@ -84,7 +84,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Nil(t, resp)
+	assert.Equal(t, pdatagrpc.LogsResponse{}, resp)
 }
 
 func makeLogsServiceClient(addr net.Addr) (pdatagrpc.LogsClient, func(), error) {
