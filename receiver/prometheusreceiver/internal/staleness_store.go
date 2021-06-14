@@ -18,6 +18,10 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 )
 
+// stalenessStore tracks metrics/labels that appear between scrapes, the current and last scrape.
+// The labels that appear only in the previous scrape are considered stale and for those, we
+// issue a staleness marker aka a special NaN value.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/3413
 type stalenessStore struct {
 	currentHashes  map[uint64]bool
 	previousHashes map[uint64]bool
@@ -37,6 +41,9 @@ func newStalenessStore() *stalenessStore {
 func (ss *stalenessStore) refresh() {
 	// 1. Clear ss.previousHashes firstly. Please don't edit
 	// this map clearing idiom as it ensures speed.
+	// See:
+	// * https://github.com/golang/go/issues/20138
+	// * https://github.com/golang/go/commit/aee71dd70b3779c66950ce6a952deca13d48e55e
 	for hash := range ss.previousHashes {
 		delete(ss.previousHashes, hash)
 	}
@@ -45,6 +52,9 @@ func (ss *stalenessStore) refresh() {
 		ss.previousHashes[hash] = ss.currentHashes[hash]
 	}
 	// 3. Clear ss.currentHashes, with the map clearing idiom for speed.
+	// See:
+	// * https://github.com/golang/go/issues/20138
+	// * https://github.com/golang/go/commit/aee71dd70b3779c66950ce6a952deca13d48e55e
 	for hash := range ss.currentHashes {
 		delete(ss.currentHashes, hash)
 	}
