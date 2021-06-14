@@ -12,16 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testdata
+package kafkareceiver
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/internal/otlp"
 )
 
-func initResource1(r pdata.Resource) {
-	initResourceAttributes1(r.Attributes())
+func TestNewPdataTracesUnmarshaler(t *testing.T) {
+	um := newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), "test")
+	assert.Equal(t, "test", um.Encoding())
 }
 
-func initResource2(r pdata.Resource) {
-	initResourceAttributes2(r.Attributes())
+func TestNewPdataLogsUnmarshaler(t *testing.T) {
+	um := newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), "test")
+	assert.Equal(t, "test", um.Encoding())
 }
