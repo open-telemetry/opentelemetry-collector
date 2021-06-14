@@ -319,7 +319,7 @@ func testHTTPProtobufRequest(
 	require.NoError(t, err, "Error reading response from trace grpc-gateway")
 	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
-	require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	assert.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
 	allTraces := tSink.AllTraces()
 

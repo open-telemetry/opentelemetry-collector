@@ -16,61 +16,166 @@ package otlpreceiver
 
 import (
 	"bytes"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/gogo/protobuf/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
+
+	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 )
 
-// xProtobufMarshaler is a Marshaler which wraps runtime.ProtoMarshaller
-// and sets ContentType to application/x-protobuf
-type xProtobufMarshaler struct {
-	*runtime.ProtoMarshaller
-}
-
-// ContentType always returns "application/x-protobuf".
-func (*xProtobufMarshaler) ContentType() string {
-	return "application/x-protobuf"
-}
-
 var jsonMarshaler = &jsonpb.Marshaler{}
+
+func handleTraces(
+	resp http.ResponseWriter,
+	req *http.Request,
+	contentType string,
+	tracesReceiver *trace.Receiver,
+	tracesUnmarshaler model.TracesUnmarshaler) {
+	body, ok := readAndCloseBody(resp, req, contentType)
+	if !ok {
+		return
+	}
+
+	td, err := tracesUnmarshaler.Unmarshal(body)
+	if err != nil {
+		writeError(resp, contentType, err, http.StatusBadRequest)
+		return
+	}
+
+	rsp, err := tracesReceiver.Export(req.Context(), internal.TracesToOtlp(td.InternalRep()))
+	if err != nil {
+		writeError(resp, contentType, err, http.StatusInternalServerError)
+		return
+	}
+
+	writeResponse(resp, contentType, http.StatusOK, rsp)
+}
+
+func handleMetrics(
+	resp http.ResponseWriter,
+	req *http.Request,
+	contentType string,
+	metricsReceiver *metrics.Receiver,
+	metricsUnmarshaler model.MetricsUnmarshaler) {
+	body, ok := readAndCloseBody(resp, req, contentType)
+	if !ok {
+		return
+	}
+
+	md, err := metricsUnmarshaler.Unmarshal(body)
+	if err != nil {
+		writeError(resp, contentType, err, http.StatusBadRequest)
+		return
+	}
+
+	rsp, err := metricsReceiver.Export(req.Context(), internal.MetricsToOtlp(md.InternalRep()))
+	if err != nil {
+		writeError(resp, contentType, err, http.StatusInternalServerError)
+		return
+	}
+
+	writeResponse(resp, contentType, http.StatusOK, rsp)
+}
+
+func handleLogs(
+	resp http.ResponseWriter,
+	req *http.Request,
+	contentType string,
+	logsReceiver *logs.Receiver,
+	logsUnmarshaler model.LogsUnmarshaler) {
+	body, ok := readAndCloseBody(resp, req, contentType)
+	if !ok {
+		return
+	}
+
+	ld, err := logsUnmarshaler.Unmarshal(body)
+	if err != nil {
+		writeError(resp, contentType, err, http.StatusBadRequest)
+		return
+	}
+
+	rsp, err := logsReceiver.Export(req.Context(), internal.LogsToOtlp(ld.InternalRep()))
+	if err != nil {
+		writeError(resp, contentType, err, http.StatusInternalServerError)
+		return
+	}
+
+	writeResponse(resp, contentType, http.StatusOK, rsp)
+}
+
+func readAndCloseBody(resp http.ResponseWriter, req *http.Request, contentType string) ([]byte, bool) {
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		writeError(resp, contentType, err, http.StatusBadRequest)
+		return nil, false
+	}
+	if err = req.Body.Close(); err != nil {
+		writeError(resp, contentType, err, http.StatusBadRequest)
+		return nil, false
+	}
+	return body, true
+}
+
+// writeError encodes the HTTP error inside a rpc.Status message as required by the OTLP protocol.
+func writeError(w http.ResponseWriter, contentType string, err error, statusCode int) {
+	s, ok := status.FromError(err)
+	if ok {
+		writeResponse(w, contentType, statusCode, s.Proto())
+	} else {
+		writeErrorMsg(w, contentType, err.Error(), statusCode)
+	}
+}
+
+// writeErrorMsg encodes the HTTP error message inside a rpc.Status message as required
+// by the OTLP protocol.
+func writeErrorMsg(w http.ResponseWriter, contentType string, errMsg string, statusCode int) {
+	var s *status.Status
+	if statusCode == http.StatusBadRequest {
+		s = status.New(codes.InvalidArgument, errMsg)
+	} else {
+		s = status.New(codes.Unknown, errMsg)
+	}
+
+	writeResponse(w, contentType, statusCode, s.Proto())
+}
 
 // errorHandler encodes the HTTP error message inside a rpc.Status message as required
 // by the OTLP protocol.
 func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
-	var (
-		msg []byte
-		s   *status.Status
-		err error
-	)
-	// Pre-computed status with code=Internal to be used in case of a marshaling error.
-	fallbackMsg := []byte(`{"code": 13, "message": "failed to marshal error message"}`)
-	fallbackContentType := "application/json"
+	writeErrorMsg(w, r.Header.Get("Content-Type"), errMsg, statusCode)
+}
 
-	if statusCode == http.StatusBadRequest {
-		s = status.New(codes.InvalidArgument, errMsg)
-	} else {
-		s = status.New(codes.Internal, errMsg)
-	}
+// Pre-computed status with code=Internal to be used in case of a marshaling error.
+var fallbackMsg = []byte(`{"code": 13, "message": "failed to marshal error message"}`)
 
-	contentType := r.Header.Get("Content-Type")
+const fallbackContentType = "application/json"
+
+func writeResponse(w http.ResponseWriter, contentType string, statusCode int, rsp proto.Message) {
+	var err error
+	var msg []byte
 	if contentType == "application/json" {
 		buf := new(bytes.Buffer)
-		err = jsonMarshaler.Marshal(buf, s.Proto())
+		err = jsonMarshaler.Marshal(buf, rsp)
 		msg = buf.Bytes()
 	} else {
-		msg, err = proto.Marshal(s.Proto())
+		msg, err = proto.Marshal(rsp)
 	}
+
 	if err != nil {
 		msg = fallbackMsg
 		contentType = fallbackContentType
 		statusCode = http.StatusInternalServerError
 	}
-
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(statusCode)
-	w.Write(msg) // nolint:errcheck
+	// Nothing we can do with the error if we cannot write to the response.
+	_, _ = w.Write(msg)
 }

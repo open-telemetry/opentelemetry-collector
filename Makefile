@@ -336,11 +336,6 @@ genproto_sub:
 	@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,$(PROTOC) $(PROTO_INCLUDES) --gogofaster_out=plugins=grpc:./ $(file)))
 
-	@echo Generate gRPC gateway code.
-	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
-	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ opentelemetry/proto/collector/metrics/v1/metrics_service.proto
-	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/logs/v1/logs_service_http.yaml:./ opentelemetry/proto/collector/logs/v1/logs_service.proto
-
 	@echo Move generated code to target directory.
 	mkdir -p $(PROTO_TARGET_GEN_DIR)
 	cp -R $(PROTO_INTERMEDIATE_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
