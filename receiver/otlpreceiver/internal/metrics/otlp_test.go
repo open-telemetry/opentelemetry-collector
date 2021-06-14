@@ -93,7 +93,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Nil(t, resp)
+	assert.Equal(t, pdatagrpc.MetricsResponse{}, resp)
 }
 
 func makeMetricsServiceClient(addr net.Addr) (pdatagrpc.MetricsClient, func(), error) {

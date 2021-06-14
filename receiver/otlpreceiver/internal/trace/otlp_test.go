@@ -86,7 +86,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	req := testdata.GenerateTracesOneSpan()
 	resp, err := traceClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Nil(t, resp)
+	assert.Equal(t, pdatagrpc.TracesResponse{}, resp)
 }
 
 func makeTraceServiceClient(addr net.Addr) (pdatagrpc.TracesClient, func(), error) {
