@@ -17,6 +17,9 @@
 package conntrackscraper
 
 import (
+	"fmt"
+	"time"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
@@ -33,9 +36,9 @@ func scrapeAndAppendConntrackMetrics(s *scraper, metrics pdata.MetricSlice) erro
 
 	if len(conntrack) > 0 {
 		startIdx := metrics.Len()
-		metrics.Resize(startIdx + conntrackMetricsLen)
-		initializeNetworkConntrackMetric(metrics.At(startIdx+0), metadata.Metrics.SystemNetworkConntrackCount, now, conntrack[0].ConnTrackCount)
-		initializeNetworkConntrackMetric(metrics.At(startIdx+1), metadata.Metrics.SystemNetworkConntrackMax, now, conntrack[0].ConnTrackMax)
+		metrics.Resize(startIdx + metricsLen)
+		initializeNetworkConntrackMetric(metrics.At(startIdx+0), metadata.Metrics.SystemConntrackCount, now, conntrack[0].ConnTrackCount)
+		initializeNetworkConntrackMetric(metrics.At(startIdx+1), metadata.Metrics.SystemConntrackMax, now, conntrack[0].ConnTrackMax)
 	}
 	return nil
 }
