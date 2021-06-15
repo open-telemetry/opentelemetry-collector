@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -87,6 +88,23 @@ func (b *metricBuilder) matchStartTimeMetric(metricName string) bool {
 
 // AddDataPoint is for feeding prometheus data complexValue in its processing order
 func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error {
+	// Any datapoint with duplicate labels MUST be rejected per:
+	// * https://github.com/open-telemetry/wg-prometheus/issues/44
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
+	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
+	seen := make(map[string]bool)
+	dupLabels := make([]string, 0, len(ls))
+	for _, label := range ls {
+		if _, ok := seen[label.Name]; ok {
+			dupLabels = append(dupLabels, label.Name)
+		}
+		seen[label.Name] = true
+	}
+	if len(dupLabels) != 0 {
+		sort.Strings(dupLabels)
+		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabels)
+	}
+
 	metricName := ls.Get(model.MetricNameLabel)
 	switch {
 	case metricName == "":

@@ -13,20 +13,20 @@
 // limitations under the License.
 
 // Package pdata (pipeline data) implements data structures that represent telemetry data in-memory.
-// All data received is converted into this format and travels through the pipeline
-// in this format and that is converted from this format by exporters when sending.
+// All data received is converted into this format, travels through the pipeline
+// in this format, and is converted from this format by exporters when sending.
 //
 // Current implementation primarily uses OTLP ProtoBuf structs as the underlying data
 // structures for many of of the declared structs. We keep a pointer to OTLP protobuf
 // in the "orig" member field. This allows efficient translation to/from OTLP wire
-// protocol. Note that the underlying data structure is kept private so that in the
-// future we are free to make changes to it to make more optimal.
+// protocol. Note that the underlying data structure is kept private so that we are
+// free to make changes to it in the future.
 //
 // Most of the internal data structures must be created via New* functions. Zero-initialized
-// structures in most cases are not valid (read comments for each struct to know if it
+// structures, in most cases, are not valid (read comments for each struct to know if that
 // is the case). This is a slight deviation from idiomatic Go to avoid unnecessary
 // pointer checks in dozens of functions which assume the invariant that "orig" member
-// is non-nil. Several structures also provide New*Slice functions that allows to create
+// is non-nil. Several structures also provide New*Slice functions that allow creating
 // more than one instance of the struct more efficiently instead of calling New*
 // repeatedly. Use it where appropriate.
 package pdata

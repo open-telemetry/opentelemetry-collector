@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -85,7 +84,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Nil(t, resp)
+	assert.Equal(t, pdatagrpc.LogsResponse{}, resp)
 }
 
 func makeLogsServiceClient(addr net.Addr) (pdatagrpc.LogsClient, func(), error) {
@@ -116,7 +115,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Logs) (net.Addr, func())
 
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	collectorlog.RegisterLogsServiceServer(srv, r)
+	pdatagrpc.RegisterLogsServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()

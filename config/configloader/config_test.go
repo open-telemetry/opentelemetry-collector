@@ -459,7 +459,7 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 	v, err := configparser.NewParserFromFile(fileName)
 	require.NoError(t, err)
 
-	// Load the config from viper using the given factories.
+	// Load the config from the configparser.Parser using the given factories.
 	return Load(v, factories)
 }
 

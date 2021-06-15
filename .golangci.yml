@@ -119,18 +119,14 @@ issues:
       linters:
         # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
         - structcheck
-    - path: receiver/otlpreceiver/internal/marshal_jsonpb\.go
-      linters:
-        - gocritic
-        - gosimple
     - text: "G404:"
       linters:
         - gosec
     - text: "G402:"
       linters:
         - gosec
-    # Exclude internal and testbed packages for now.
-    - path: ".*internal.*|.*testbed.*"
+    # Exclude internal package for now.
+    - path: ".*internal.*"
       text: "should have comment|should be of the form"
       linters:
         - revive

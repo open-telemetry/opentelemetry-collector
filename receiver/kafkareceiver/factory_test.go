@@ -73,7 +73,7 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = new(otlpTracesPbUnmarshaler).Encoding()
+		cfg.Encoding = defaultEncoding
 		receiver, err := f.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, receiver)
@@ -117,7 +117,7 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = new(otlpLogsPbUnmarshaler).Encoding()
+		cfg.Encoding = defaultEncoding
 		exporter, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)

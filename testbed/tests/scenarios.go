@@ -173,10 +173,10 @@ func Scenario10kItemsPerSecond(
 		agentProc,
 		&testbed.PerfTestValidator{},
 		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(resourceSpec)
 	tc.StartBackend()
 	tc.StartAgent("--log-level=debug")
 
@@ -236,6 +236,11 @@ func Scenario10kScrapeItemsPerSecond(
 	require.NoError(t, err)
 	defer configCleanup()
 
+	// Use specified resource limits if not a custom test
+	if os.Getenv(itemsPerIntervalEnvVar) != "" {
+		resourceSpec = testbed.ResourceSpec{}
+	}
+
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
@@ -245,16 +250,13 @@ func Scenario10kScrapeItemsPerSecond(
 		agentProc,
 		&testbed.PerfTestValidator{IsScraping: true, ScrapeInterval: scrapeInterval},
 		performanceResultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
 	)
 	defer tc.Stop()
 
 	// EnableMetricTimestampRecording enables recording of the metric timestamps.
 	tc.MockBackend.EnableMetricTimestampRecording()
 
-	// Not a custom test, so use specified resource limits.
-	if os.Getenv(scrapeIntervalEnvVar) == "" && os.Getenv(itemsPerIntervalEnvVar) == "" {
-		tc.SetResourceLimits(resourceSpec)
-	}
 	tc.StartBackend()
 	tc.StartAgent("--log-level=error")
 
@@ -327,13 +329,9 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 				agentProc,
 				&testbed.PerfTestValidator{},
 				test.resultsSummary,
+				testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: test.expectedMaxCPU, ExpectedMaxRAM: test.expectedMaxRAM}),
 			)
 			defer tc.Stop()
-
-			tc.SetResourceLimits(testbed.ResourceSpec{
-				ExpectedMaxCPU: test.expectedMaxCPU,
-				ExpectedMaxRAM: test.expectedMaxRAM,
-			})
 
 			tc.StartBackend()
 			tc.StartAgent(args...)
@@ -391,11 +389,10 @@ func ScenarioTestTraceNoBackend10kSPS(
 		agentProc,
 		&testbed.PerfTestValidator{},
 		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
 	)
 
 	defer tc.Stop()
-
-	tc.SetResourceLimits(resourceSpec)
 
 	tc.StartAgent()
 	tc.StartLoad(options)

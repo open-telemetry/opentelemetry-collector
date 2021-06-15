@@ -26,10 +26,10 @@ type baseConsumer struct {
 	capabilities consumer.Capabilities
 }
 
-// Option apply changes to internalOptions.
+// Option applies changes to internalOptions.
 type Option func(*baseConsumer)
 
-// WithCapabilities overrides the default GetCapabilities function for an processor.
+// WithCapabilities overrides the default GetCapabilities function for a processor.
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseConsumer) {
