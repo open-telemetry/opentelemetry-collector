@@ -50,9 +50,7 @@ For instance, if using the existing end-to-end test, the general dataflow can be
 ## Environment Variables
 * `TESTCASE_DURATION` - Duration to run each test
 * For Prometheus scraping performance tests:
-  * `SCRAPE_INTERVAL` - Duration between each scrape.
   * `ITEMS_PER_INTERVAL` - Number of timeseries to scrape per scrape interval.
-
 
 ## Adding New Receiver and/or Exporters to the testbed
 

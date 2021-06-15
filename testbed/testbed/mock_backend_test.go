@@ -51,7 +51,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 			defer mb.Stop()
 
-			options := LoadOptions{DataItemsPerInterval: 10_000, ItemsPerBatch: 10}
+			options := LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 			dataProvider := NewPerfTestDataProvider(options)
 			lg, err := NewLoadGenerator(dataProvider, test.sender)
 			require.NoError(t, err, "Cannot start load generator")
@@ -59,7 +59,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 			assert.EqualValues(t, 0, lg.dataItemsSent.Load())
 
 			// Generate at 1000 SPS
-			lg.Start(LoadOptions{DataItemsPerInterval: 1000})
+			lg.Start(LoadOptions{DataItemsPerSecond: 1000})
 
 			// Wait until at least 50 spans are sent
 			WaitFor(t, func() bool { return lg.DataItemsSent() > 50 }, "DataItemsSent > 50")

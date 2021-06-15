@@ -28,7 +28,7 @@ import (
 )
 
 func TestIdleMode(t *testing.T) {
-	options := testbed.LoadOptions{DataItemsPerInterval: 10_000, ItemsPerBatch: 10}
+	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
@@ -57,7 +57,7 @@ func TestBallastMemory(t *testing.T) {
 		{1000, 100},
 	}
 
-	options := testbed.LoadOptions{DataItemsPerInterval: 10_000, ItemsPerBatch: 10}
+	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
 		tc := testbed.NewTestCase(

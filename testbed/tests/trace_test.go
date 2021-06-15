@@ -418,7 +418,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			require.NoError(t, err)
 			defer configCleanup()
 
-			options := testbed.LoadOptions{DataItemsPerInterval: 10000, ItemsPerBatch: 10}
+			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 			dataProvider := testbed.NewPerfTestDataProvider(options)
 			tc := testbed.NewTestCase(
 				t,
@@ -485,8 +485,8 @@ func TestMetricsFromFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	options := testbed.LoadOptions{
-		DataItemsPerInterval: 1_000,
-		Parallel:             1,
+		DataItemsPerSecond: 1_000,
+		Parallel:           1,
 		// ItemsPerBatch is based on the data from the file.
 		ItemsPerBatch: dataProvider.ItemsPerBatch,
 	}

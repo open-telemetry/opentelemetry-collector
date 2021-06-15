@@ -87,7 +87,7 @@ func testWithTracingGoldenDataset(
 	tc.StartAgent("--metrics-level=NONE")
 
 	tc.StartLoad(testbed.LoadOptions{
-		DataItemsPerInterval: 1024,
+		DataItemsPerSecond: 1024,
 		ItemsPerBatch:      1,
 	})
 
