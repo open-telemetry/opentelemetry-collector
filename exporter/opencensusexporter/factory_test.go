@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -40,9 +41,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
-		name     string
-		config   Config
-		mustFail bool
+		name             string
+		config           Config
+		mustFailOnCreate bool
+		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
@@ -53,7 +55,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 3,
 			},
-			mustFail: true,
+			mustFailOnCreate: true,
 		},
 		{
 			name: "ZeroNumWorkers",
@@ -67,7 +69,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 0,
 			},
-			mustFail: true,
+			mustFailOnCreate: true,
 		},
 		{
 			name: "UseSecure",
@@ -132,7 +134,8 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 3,
 			},
-			mustFail: true,
+			mustFailOnCreate: false,
+			mustFailOnStart:  true,
 		},
 		{
 			name: "CaCert",
@@ -163,28 +166,35 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 				NumWorkers: 3,
 			},
-			mustFail: true,
+			mustFailOnCreate: false,
+			mustFailOnStart:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			params := component.ExporterCreateParams{Logger: zap.NewNop()}
-			tReceiver, tErr := createTracesExporter(context.Background(), params, &tt.config)
-			checkErrorsAndShutdown(t, tReceiver, tErr, tt.mustFail)
-			mReceiver, mErr := createMetricsExporter(context.Background(), params, &tt.config)
-			checkErrorsAndShutdown(t, mReceiver, mErr, tt.mustFail)
+			tExporter, tErr := createTracesExporter(context.Background(), params, &tt.config)
+			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
+			mExporter, mErr := createMetricsExporter(context.Background(), params, &tt.config)
+			checkErrorsAndStartAndShutdown(t, mExporter, mErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 		})
 	}
 }
 
-func checkErrorsAndShutdown(t *testing.T, receiver component.Receiver, err error, mustFail bool) {
-	if mustFail {
+func checkErrorsAndStartAndShutdown(t *testing.T, exporter component.Exporter, err error, mustFailOnCreate, mustFailOnStart bool) {
+	if mustFailOnCreate {
 		assert.NotNil(t, err)
-	} else {
-		assert.NoError(t, err)
-		assert.NotNil(t, receiver)
-
-		require.NoError(t, receiver.Shutdown(context.Background()))
+		return
 	}
+	assert.NoError(t, err)
+	assert.NotNil(t, exporter)
+
+	sErr := exporter.Start(context.Background(), componenttest.NewNopHost())
+	if mustFailOnStart {
+		require.Error(t, sErr)
+		return
+	}
+	require.NoError(t, sErr)
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }
