@@ -49,7 +49,7 @@ type TestCase struct {
 	agentProc OtelcolRunner
 
 	Sender   DataSender
-	Receiver DataReceiver
+	receiver DataReceiver
 
 	LoadGenerator *LoadGenerator
 	MockBackend   *MockBackend
@@ -57,19 +57,15 @@ type TestCase struct {
 
 	startTime time.Time
 
-	// ErrorSignal indicates an error in the test case execution, e.g. process execution
+	// errorSignal indicates an error in the test case execution, e.g. process execution
 	// failure or exceeding resource consumption, etc. The actual error message is already
 	// logged, this is only an indicator on which you can wait to be informed.
-	ErrorSignal chan struct{}
-
+	errorSignal chan struct{}
 	// Duration is the requested duration of the tests. Configured via TESTBED_DURATION
 	// env variable and defaults to 15 seconds if env variable is unspecified.
-	Duration time.Duration
-
-	doneSignal chan struct{}
-
-	errorCause string
-
+	Duration       time.Duration
+	doneSignal     chan struct{}
+	errorCause     string
 	resultsSummary TestResultsSummary
 }
 
@@ -87,17 +83,17 @@ func NewTestCase(
 	resultsSummary TestResultsSummary,
 	opts ...TestCaseOption,
 ) *TestCase {
-	tc := TestCase{}
-
-	tc.t = t
-	tc.ErrorSignal = make(chan struct{})
-	tc.doneSignal = make(chan struct{})
-	tc.startTime = time.Now()
-	tc.Sender = sender
-	tc.Receiver = receiver
-	tc.agentProc = agentProc
-	tc.validator = validator
-	tc.resultsSummary = resultsSummary
+	tc := TestCase{
+		t:              t,
+		errorSignal:    make(chan struct{}),
+		doneSignal:     make(chan struct{}),
+		startTime:      time.Now(),
+		Sender:         sender,
+		receiver:       receiver,
+		agentProc:      agentProc,
+		validator:      validator,
+		resultsSummary: resultsSummary,
+	}
 
 	// Get requested test case duration from env variable.
 	duration := os.Getenv(testcaseDurationVar)
@@ -112,7 +108,7 @@ func NewTestCase(
 
 	// Apply all provided options.
 	for _, opt := range opts {
-		opt.Apply(&tc)
+		opt(&tc)
 	}
 
 	// Prepare directory for results.
@@ -141,22 +137,6 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 	fileName, err := filepath.Abs(path.Join(tc.resultDir, fileName))
 	require.NoError(tc.t, err, "Cannot resolve %s", fileName)
 	return fileName
-}
-
-// SetResourceLimits sets expected limits for resource consmption.
-// Error is signaled if consumption during ResourceCheckPeriod exceeds the limits.
-// Limits are modified only for non-zero fields of resourceSpec, all zero-value fields
-// fo resourceSpec are ignored and their previous values remain in effect.
-func (tc *TestCase) SetResourceLimits(resourceSpec ResourceSpec) {
-	if resourceSpec.ExpectedMaxCPU > 0 {
-		tc.resourceSpec.ExpectedMaxCPU = resourceSpec.ExpectedMaxCPU
-	}
-	if resourceSpec.ExpectedMaxRAM > 0 {
-		tc.resourceSpec.ExpectedMaxRAM = resourceSpec.ExpectedMaxRAM
-	}
-	if resourceSpec.ResourceCheckPeriod > 0 {
-		tc.resourceSpec.ResourceCheckPeriod = resourceSpec.ResourceCheckPeriod
-	}
 }
 
 // StartAgent starts the agent and redirects its standard output and standard error
@@ -270,7 +250,7 @@ func (tc *TestCase) Stop() {
 // instance(s) under test by the LoadGenerator.
 func (tc *TestCase) ValidateData() {
 	select {
-	case <-tc.ErrorSignal:
+	case <-tc.errorSignal:
 		// Error is already signaled and recorded. Validating data is pointless.
 		return
 	default:
@@ -283,7 +263,7 @@ func (tc *TestCase) ValidateData() {
 func (tc *TestCase) Sleep(d time.Duration) {
 	select {
 	case <-time.After(d):
-	case <-tc.ErrorSignal:
+	case <-tc.errorSignal:
 	}
 }
 
@@ -304,7 +284,7 @@ func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg ..
 
 		select {
 		case <-time.After(waitInterval):
-		case <-tc.ErrorSignal:
+		case <-tc.errorSignal:
 			return false
 		}
 
@@ -336,7 +316,7 @@ func (tc *TestCase) indicateError(err error) {
 	tc.errorCause = err.Error()
 
 	// Signal the error via channel
-	close(tc.ErrorSignal)
+	close(tc.errorSignal)
 }
 
 func (tc *TestCase) logStats() {
