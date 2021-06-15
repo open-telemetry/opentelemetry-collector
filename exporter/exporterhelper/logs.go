@@ -23,8 +23,12 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
+
+var logsMarshaler = otlp.NewProtobufLogsMarshaler()
+var logsUnmarshaler = otlp.NewProtobufLogsUnmarshaler()
 
 type logsRequest struct {
 	baseRequest
@@ -40,6 +44,16 @@ func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.Co
 	}
 }
 
+func newLogsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeLogsFunc) requestUnmarshaler {
+	return func(bytes []byte) (request, error) {
+		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
+		if err != nil {
+			return nil, err
+		}
+		return newLogsRequest(context.Background(), logs, pusher), nil
+	}
+}
+
 func (req *logsRequest) onError(err error) request {
 	var logError consumererror.Logs
 	if consumererror.AsLogs(err, &logError) {
@@ -50,6 +64,10 @@ func (req *logsRequest) onError(err error) request {
 
 func (req *logsRequest) export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
+}
+
+func (req *logsRequest) marshal() ([]byte, error) {
+	return logsMarshaler.MarshalLogs(req.ld)
 }
 
 func (req *logsRequest) count() int {
@@ -81,7 +99,7 @@ func NewLogsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set.Logger, bs)
+	be := newBaseExporter(cfg, set.Logger, bs, "logs", newLogsRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
 			obsrep:     be.obsrep,

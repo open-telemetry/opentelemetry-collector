@@ -54,7 +54,12 @@ type request interface {
 	onError(error) request
 	// Returns the count of spans/metric points or log records.
 	count() int
+	// marshal serializes the current request into a byte stream
+	marshal() ([]byte, error)
 }
+
+// requestUnmarshaler defines a function which can take a byte stream and unmarshal it into a relevant request
+type requestUnmarshaler func([]byte) (request, error)
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
@@ -171,7 +176,7 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings) *baseExporter {
+func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings, signalName string, reqUnnmarshaler requestUnmarshaler) *baseExporter {
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}
@@ -180,7 +185,7 @@ func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings) 
 		Level:      configtelemetry.GetMetricsLevelFlagValue(),
 		ExporterID: cfg.ID(),
 	})
-	be.qrSender = newQueuedRetrySender(cfg.ID().String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
+	be.qrSender = newQueuedRetrySender(cfg.ID(), signalName, bs.QueueSettings, bs.RetrySettings, reqUnnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
 	return be
@@ -200,7 +205,7 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// If no error then start the queuedRetrySender.
-	return be.qrSender.start()
+	return be.qrSender.start(ctx, host)
 }
 
 // Shutdown all senders and exporter and is invoked during service shutdown.

@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 var (
@@ -38,7 +40,7 @@ var (
 )
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions())
+	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions(), "", nopRequestUnmarshaler())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -53,6 +55,8 @@ func TestBaseExporterWithOptions(t *testing.T) {
 			WithShutdown(func(ctx context.Context) error { return want }),
 			WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()),
 			WithTimeout(DefaultTimeoutSettings())),
+		"",
+		nopRequestUnmarshaler(),
 	)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Equal(t, want, be.Shutdown(context.Background()))
@@ -65,4 +69,14 @@ func checkStatus(t *testing.T, sd *oteltest.Span, err error) {
 	} else {
 		require.Equal(t, codes.Unset, sd.StatusCode(), "SpanData %v", sd)
 	}
+}
+
+func nopTracePusher() consumerhelper.ConsumeTracesFunc {
+	return func(ctx context.Context, ld pdata.Traces) error {
+		return nil
+	}
+}
+
+func nopRequestUnmarshaler() requestUnmarshaler {
+	return newTraceRequestUnmarshalerFunc(nopTracePusher())
 }

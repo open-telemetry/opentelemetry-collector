@@ -23,8 +23,12 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
+
+var tracesMarshaler = otlp.NewProtobufTracesMarshaler()
+var tracesUnmarshaler = otlp.NewProtobufTracesUnmarshaler()
 
 type tracesRequest struct {
 	baseRequest
@@ -38,6 +42,20 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumerhelpe
 		td:          td,
 		pusher:      pusher,
 	}
+}
+
+func newTraceRequestUnmarshalerFunc(pusher consumerhelper.ConsumeTracesFunc) requestUnmarshaler {
+	return func(bytes []byte) (request, error) {
+		traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
+		if err != nil {
+			return nil, err
+		}
+		return newTracesRequest(context.Background(), traces, pusher), nil
+	}
+}
+
+func (req *tracesRequest) marshal() ([]byte, error) {
+	return tracesMarshaler.MarshalTraces(req.td)
 }
 
 func (req *tracesRequest) onError(err error) request {
@@ -82,7 +100,7 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set.Logger, bs)
+	be := newBaseExporter(cfg, set.Logger, bs, "traces", newTraceRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep:     be.obsrep,
