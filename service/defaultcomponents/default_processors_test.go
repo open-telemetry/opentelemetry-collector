@@ -22,10 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
@@ -117,10 +117,7 @@ type getProcessorConfigFn func() config.Processor
 func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, getConfigFn getProcessorConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	processorCreationSet := component.ProcessorCreateSettings{
-		Logger:    zap.NewNop(),
-		BuildInfo: component.DefaultBuildInfo(),
-	}
+	processorCreationSet := componenttest.NewNopProcessorCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig

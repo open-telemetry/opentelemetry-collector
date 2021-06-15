@@ -33,9 +33,6 @@ type LoadGenerator struct {
 
 	dataProvider DataProvider
 
-	// Number of batches of data items sent.
-	batchesSent atomic.Uint64
-
 	// Number of data items (spans or metric data points) sent.
 	dataItemsSent atomic.Uint64
 
@@ -141,7 +138,7 @@ func (lg *LoadGenerator) generate() {
 		return
 	}
 
-	lg.dataProvider.SetLoadGeneratorCounters(&lg.batchesSent, &lg.dataItemsSent)
+	lg.dataProvider.SetLoadGeneratorCounters(&lg.dataItemsSent)
 
 	err := lg.sender.Start()
 	if err != nil {

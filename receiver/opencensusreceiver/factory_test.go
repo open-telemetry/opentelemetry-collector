@@ -21,9 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -43,7 +41,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -99,7 +97,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTracesReceiver(ctx, set, tt.cfg, consumertest.NewNop())
@@ -168,7 +166,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 			},
 		},
 	}
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	set := componenttest.NewNopReceiverCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tc, err := createMetricsReceiver(context.Background(), set, tt.cfg, consumertest.NewNop())

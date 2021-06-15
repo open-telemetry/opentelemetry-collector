@@ -23,10 +23,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
@@ -163,10 +163,7 @@ type getExporterConfigFn func() config.Exporter
 func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateSettings := component.ExporterCreateSettings{
-		Logger:    zap.NewNop(),
-		BuildInfo: component.DefaultBuildInfo(),
-	}
+	expCreateSettings := componenttest.NewNopExporterCreateSettings()
 
 	cfg := factory.CreateDefaultConfig()
 	if getConfigFn != nil {

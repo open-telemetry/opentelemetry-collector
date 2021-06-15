@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -87,7 +86,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	req := testdata.GenerateTracesOneSpan()
 	resp, err := traceClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Nil(t, resp)
+	assert.Equal(t, pdatagrpc.TracesResponse{}, resp)
 }
 
 func makeTraceServiceClient(addr net.Addr) (pdatagrpc.TracesClient, func(), error) {
@@ -118,7 +117,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (net.Addr, func(
 
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	collectortrace.RegisterTraceServiceServer(srv, r)
+	pdatagrpc.RegisterTracesServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()

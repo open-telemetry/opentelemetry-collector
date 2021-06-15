@@ -25,18 +25,7 @@ import (
 
 type toTranslator struct{}
 
-// NewToTracesTranslator returns a model.ToTracesTranslator to convert from OTLP data model to pdata.
-func NewToTracesTranslator() model.ToTracesTranslator {
-	return &toTranslator{}
-}
-
-// NewToMetricsTranslator returns a model.ToMetricsTranslator to convert from OTLP data model to pdata.
-func NewToMetricsTranslator() model.ToMetricsTranslator {
-	return &toTranslator{}
-}
-
-// NewToLogsTranslator returns a model.ToLogsTranslator to convert from OTLP data model to pdata.
-func NewToLogsTranslator() model.ToLogsTranslator {
+func newToTranslator() *toTranslator {
 	return &toTranslator{}
 }
 

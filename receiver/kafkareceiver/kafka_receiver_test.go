@@ -29,12 +29,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
+	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -44,7 +44,7 @@ func TestNewTracesReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newTracesReceiver(c, component.ReceiverCreateSettings{}, defaultTracesUnmarshalers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, componenttest.NewNopReceiverCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -53,7 +53,7 @@ func TestNewTracesReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newTracesReceiver(c, component.ReceiverCreateSettings{}, defaultTracesUnmarshalers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, componenttest.NewNopReceiverCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -74,7 +74,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newTracesReceiver(c, component.ReceiverCreateSettings{}, defaultTracesUnmarshalers(), consumertest.NewNop())
+	r, err := newTracesReceiver(c, componenttest.NewNopReceiverCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -130,7 +130,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  &otlpTracesPbUnmarshaler{},
+		unmarshaler:  newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -172,7 +172,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  &otlpTracesPbUnmarshaler{},
+		unmarshaler:  newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -197,7 +197,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consumer")
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  &otlpTracesPbUnmarshaler{},
+		unmarshaler:  newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
@@ -229,7 +229,7 @@ func TestNewLogsReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newLogsReceiver(c, component.ReceiverCreateSettings{}, defaultLogsUnmarshalers(), consumertest.NewNop())
+	r, err := newLogsReceiver(c, componenttest.NewNopReceiverCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -238,7 +238,7 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newLogsReceiver(c, component.ReceiverCreateSettings{}, defaultLogsUnmarshalers(), consumertest.NewNop())
+	r, err := newLogsReceiver(c, componenttest.NewNopReceiverCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -259,7 +259,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newLogsReceiver(c, component.ReceiverCreateSettings{}, defaultLogsUnmarshalers(), consumertest.NewNop())
+	r, err := newLogsReceiver(c, componenttest.NewNopReceiverCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -315,7 +315,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := logsConsumerGroupHandler{
-		unmarshaler:  &otlpLogsPbUnmarshaler{},
+		unmarshaler:  newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -357,7 +357,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := logsConsumerGroupHandler{
-		unmarshaler:  &otlpLogsPbUnmarshaler{},
+		unmarshaler:  newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -382,7 +382,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consumer")
 	c := logsConsumerGroupHandler{
-		unmarshaler:  &otlpLogsPbUnmarshaler{},
+		unmarshaler:  newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),

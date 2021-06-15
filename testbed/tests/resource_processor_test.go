@@ -23,113 +23,42 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
 var (
-	mockedConsumedResourceWithType = &otlpmetrics.ResourceMetrics{
-		Resource: otlpresource.Resource{
-			Attributes: []otlpcommon.KeyValue{
-				{
-					Key: "opencensus.resourcetype",
-					Value: otlpcommon.AnyValue{
-						Value: &otlpcommon.AnyValue_StringValue{
-							StringValue: "host",
-						},
-					},
-				},
-				{
-					Key: "label-key",
-					Value: otlpcommon.AnyValue{
-						Value: &otlpcommon.AnyValue_StringValue{
-							StringValue: "label-value",
-						},
-					},
-				},
-			},
-		},
-		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-			{
-				Metrics: []*otlpmetrics.Metric{
-					{
-						Name:        "metric-name",
-						Description: "metric-description",
-						Unit:        "metric-unit",
-						Data: &otlpmetrics.Metric_IntGauge{
-							IntGauge: &otlpmetrics.IntGauge{
-								DataPoints: []*otlpmetrics.IntDataPoint{
-									{
-										Value: 0,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	mockedConsumedResourceWithType = func() pdata.Metrics {
+		md := pdata.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().UpsertString("opencensus.resourcetype", "host")
+		rm.Resource().Attributes().UpsertString("label-key", "label-value")
+		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("metric-name")
+		m.SetDescription("metric-description")
+		m.SetUnit("metric-unit")
+		m.SetDataType(pdata.MetricDataTypeIntGauge)
+		m.IntGauge().DataPoints().AppendEmpty().SetValue(0)
+		return md
+	}()
 
-	mockedConsumedResourceNil = &otlpmetrics.ResourceMetrics{
-		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-			{
-				Metrics: []*otlpmetrics.Metric{
-					{
-						Name:        "metric-name",
-						Description: "metric-description",
-						Unit:        "metric-unit",
-						Data: &otlpmetrics.Metric_IntGauge{
-							IntGauge: &otlpmetrics.IntGauge{
-								DataPoints: []*otlpmetrics.IntDataPoint{
-									{
-										Value: 0,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	mockedConsumedResourceWithoutAttributes = &otlpmetrics.ResourceMetrics{
-		Resource: otlpresource.Resource{
-			Attributes: []otlpcommon.KeyValue{},
-		},
-		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-			{
-				Metrics: []*otlpmetrics.Metric{
-					{
-						Name:        "metric-name",
-						Description: "metric-description",
-						Unit:        "metric-unit",
-						Data: &otlpmetrics.Metric_IntGauge{
-							IntGauge: &otlpmetrics.IntGauge{
-								DataPoints: []*otlpmetrics.IntDataPoint{
-									{
-										Value: 0,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	mockedConsumedResourceEmpty = func() pdata.Metrics {
+		md := pdata.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("metric-name")
+		m.SetDescription("metric-description")
+		m.SetUnit("metric-unit")
+		m.SetDataType(pdata.MetricDataTypeIntGauge)
+		m.IntGauge().DataPoints().AppendEmpty().SetValue(0)
+		return md
+	}()
 )
 
 type resourceProcessorTestCase struct {
-	name                     string
-	resourceProcessorConfig  string
-	mockedConsumedMetricData pdata.Metrics
-	expectedMetricData       pdata.Metrics
+	name                    string
+	resourceProcessorConfig string
+	mockedConsumedMetrics   pdata.Metrics
+	expectedMetrics         pdata.Metrics
 }
 
 func getResourceProcessorTestCases() []resourceProcessorTestCase {
@@ -149,43 +78,14 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
     - key: opencensus.resourcetype
       action: delete
 `,
-			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceWithType),
-			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-				Resource: otlpresource.Resource{
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "resource-type",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "host"}},
-						},
-						{
-							Key:   "label-key",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "new-label-value"}},
-						},
-					},
-				},
-			}),
-		},
-		{
-			name: "set_attribute_on_nil_resource",
-			resourceProcessorConfig: `
-  resource:
-    attributes:
-    - key: additional-label-key
-      value: additional-label-value
-      action: insert
-
-`,
-			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceNil),
-			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-				Resource: otlpresource.Resource{
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "additional-label-key",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
-						},
-					},
-				},
-			}),
+			mockedConsumedMetrics: mockedConsumedResourceWithType,
+			expectedMetrics: func() pdata.Metrics {
+				md := pdata.NewMetrics()
+				rm := md.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().UpsertString("resource-type", "host")
+				rm.Resource().Attributes().UpsertString("label-key", "new-label-value")
+				return md
+			}(),
 		},
 		{
 			name: "set_attribute_on_empty_resource",
@@ -195,28 +95,19 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
     - key: additional-label-key
       value: additional-label-value
       action: insert
+
 `,
-			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceWithoutAttributes),
-			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-				Resource: otlpresource.Resource{
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "additional-label-key",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
-						},
-					},
-				},
-			}),
+			mockedConsumedMetrics: mockedConsumedResourceEmpty,
+			expectedMetrics: func() pdata.Metrics {
+				md := pdata.NewMetrics()
+				rm := md.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().UpsertString("additional-label-key", "additional-label-value")
+				return md
+			}(),
 		},
 	}
 
 	return tests
-}
-
-func metricsFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlpmetrics.ResourceMetrics{rm},
-	}))
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
@@ -267,7 +158,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			sender, ok := tc.Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
-			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetricData))
+			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetrics))
 
 			// We bypass the load generator in this test, but make sure to increment the
 			// counter since it is used in final reports.
@@ -281,20 +172,11 @@ func TestMetricResourceProcessor(t *testing.T) {
 			rm := m.ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
 
-			expectidMD := test.expectedMetricData
+			expectidMD := test.expectedMetrics
 			require.Equal(t,
-				attributesToMap(expectidMD.ResourceMetrics().At(0).Resource().Attributes()),
-				attributesToMap(rm.At(0).Resource().Attributes()),
+				expectidMD.ResourceMetrics().At(0).Resource().Attributes().Sort(),
+				rm.At(0).Resource().Attributes().Sort(),
 			)
 		})
 	}
-}
-
-func attributesToMap(attributes pdata.AttributeMap) map[string]pdata.AttributeValue {
-	out := map[string]pdata.AttributeValue{}
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
-		out[k] = v
-		return true
-	})
-	return out
 }

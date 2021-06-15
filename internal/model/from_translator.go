@@ -16,20 +16,23 @@ package model
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
-// FromMetricsTranslator interface to translate pdata.Metrics to protocol-specific data model.
+// FromMetricsTranslator is an interface to translate pdata.Metrics into protocol-specific data model.
 type FromMetricsTranslator interface {
-	// FromMetrics translates pdata.Metrics to protocol-specific data model.
+	// FromMetrics translates pdata.Metrics into protocol-specific data model.
+	// If the error is not nil, the returned pdata.Metrics cannot be used.
 	FromMetrics(md pdata.Metrics) (interface{}, error)
 }
 
-// FromTracesTranslator interface to translate pdata.Traces to protocol-specific data model.
+// FromTracesTranslator is an interface to translate pdata.Traces into protocol-specific data model.
 type FromTracesTranslator interface {
-	// FromTraces translates pdata.Traces to protocol-specific data model.
+	// FromTraces translates pdata.Traces into protocol-specific data model.
+	// If the error is not nil, the returned pdata.Traces cannot be used.
 	FromTraces(td pdata.Traces) (interface{}, error)
 }
 
-// FromLogsTranslator interface to translate pdata.Logs to protocol-specific data model.
+// FromLogsTranslator is an interface to translate pdata.Logs into protocol-specific data model.
 type FromLogsTranslator interface {
-	// FromLogs translates pdata.Logs to protocol-specific data model.
+	// FromLogs translates pdata.Logs into protocol-specific data model.
+	// If the error is not nil, the returned pdata.Logs cannot be used.
 	FromLogs(ld pdata.Logs) (interface{}, error)
 }

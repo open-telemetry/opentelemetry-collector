@@ -44,7 +44,7 @@ const (
 
 var (
 	// Map of opentelemetry compression types to grpc registered compression types.
-	grpcCompressionKeyMap = map[string]string{
+	gRPCCompressionKeyMap = map[string]string{
 		CompressionGzip: gzip.Name,
 	}
 )
@@ -311,8 +311,8 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 		}
 
 		opts = append(opts,
-			grpc.UnaryInterceptor(authenticator.GrpcUnaryServerInterceptor),
-			grpc.StreamInterceptor(authenticator.GrpcStreamServerInterceptor),
+			grpc.UnaryInterceptor(authenticator.GRPCUnaryServerInterceptor),
+			grpc.StreamInterceptor(authenticator.GRPCStreamServerInterceptor),
 		)
 	}
 
@@ -327,7 +327,7 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 // passed in compression key is supported, and CompressionUnsupported otherwise.
 func GetGRPCCompressionKey(compressionType string) string {
 	compressionKey := strings.ToLower(compressionType)
-	if encodingKey, ok := grpcCompressionKeyMap[compressionKey]; ok {
+	if encodingKey, ok := gRPCCompressionKeyMap[compressionKey]; ok {
 		return encodingKey
 	}
 	return CompressionUnsupported

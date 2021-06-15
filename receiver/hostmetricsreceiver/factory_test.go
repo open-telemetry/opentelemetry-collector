@@ -20,16 +20,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-var creationSet = component.ReceiverCreateSettings{Logger: zap.NewNop()}
+var creationSet = componenttest.NewNopReceiverCreateSettings()
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
