@@ -119,7 +119,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71
 	blob, err := ioutil.ReadFile("./testdata/sample1.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
-	zi := &ZipkinReceiver{translator: translator, config: createDefaultConfig().(*Config)}
+	zi := newTestZipkinReceiver()
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
@@ -207,7 +207,8 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{translator: translator, nextConsumer: consumertest.NewNop()}
+	zi := newTestZipkinReceiver()
+	zi.nextConsumer = consumertest.NewNop()
 	zi.config = &Config{}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
@@ -423,7 +424,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	zr.ServeHTTP(req, r)
 
 	require.Equal(t, 400, req.Code)
-	require.Equal(t, "invalid character 'i' looking for beginning of object key string\n", req.Body.String())
+	require.Equal(t, "unmarshal failed: invalid character 'i' looking for beginning of object key string\n", req.Body.String())
 }
 
 func TestReceiverConsumerError(t *testing.T) {
@@ -504,7 +505,7 @@ func compressZlib(body []byte) (*bytes.Buffer, error) {
 func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/sample2.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
-	zi := &ZipkinReceiver{translator: translator, config: createDefaultConfig().(*Config)}
+	zi := newTestZipkinReceiver()
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
