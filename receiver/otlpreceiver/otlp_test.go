@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
+	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -253,8 +254,8 @@ func TestProtoHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	traceData := testdata.GenerateTracesOneSpan()
-	traceBytes, err := traceData.ToOtlpProtoBytes()
+	td := testdata.GenerateTracesOneSpan()
+	traceBytes, err := otlp.NewProtobufTracesMarshaler().Marshal(td)
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -270,7 +271,7 @@ func TestProtoHttp(t *testing.T) {
 			t.Run(test.name+targetURLPath, func(t *testing.T) {
 				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
 				tSink.Reset()
-				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, traceData)
+				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
 			})
 		}
 	}
@@ -682,7 +683,7 @@ func TestShutdown(t *testing.T) {
 	}
 	senderHTTP := func(td pdata.Traces) {
 		// Send request via OTLP/HTTP.
-		traceBytes, err2 := td.ToOtlpProtoBytes()
+		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().Marshal(td)
 		if err2 != nil {
 			t.Errorf("Error marshaling protobuf: %v", err2)
 		}

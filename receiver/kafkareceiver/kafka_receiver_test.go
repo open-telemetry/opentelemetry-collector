@@ -217,7 +217,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 	td := pdata.NewTraces()
 	td.ResourceSpans().AppendEmpty()
-	bts, err := td.ToOtlpProtoBytes()
+	bts, err := otlp.NewProtobufTracesMarshaler().Marshal(td)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -401,7 +401,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateLogsOneLogRecord()
-	bts, err := ld.ToOtlpProtoBytes()
+	bts, err := otlp.NewProtobufLogsMarshaler().Marshal(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
