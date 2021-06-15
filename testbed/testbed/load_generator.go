@@ -90,6 +90,8 @@ func (lg *LoadGenerator) Start(options LoadOptions) {
 		lg.options.ItemsPerBatch = 10
 	}
 
+	log.Printf("Starting load generator at %d items/sec.", lg.options.DataItemsPerSecond)
+
 	// Indicate that generation is in progress.
 	lg.stopWait.Add(1)
 
