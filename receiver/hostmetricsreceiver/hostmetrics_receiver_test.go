@@ -125,14 +125,11 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		cfg.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
 	}
 
-
 	if runtime.GOOS == "linux" {
 		cfg.Scrapers[conntrackscraper.TypeStr] = &conntrackscraper.Config{}
 	}
 
-
 	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
-
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 

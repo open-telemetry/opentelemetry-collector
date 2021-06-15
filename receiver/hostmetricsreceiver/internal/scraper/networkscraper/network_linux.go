@@ -16,14 +16,6 @@
 
 package networkscraper
 
-import (
-	"fmt"
-	"time"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
-)
-
 var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSE",
@@ -37,34 +29,4 @@ var allTCPStates = []string{
 	"SYN_SENT",
 	"SYN_RECV",
 	"TIME_WAIT",
-}
-
-func scrapeAndAppendConntrackMetrics(s *scraper, metrics pdata.MetricSlice) error {
-	now := pdata.TimestampFromTime(time.Now())
-
-	conntrack, err := s.conntrack()
-	if err != nil {
-		return fmt.Errorf("failed to scrape conntrack metrics: %w", err)
-	}
-
-	if len(conntrack) > 0 {
-		startIdx := metrics.Len()
-		metrics.Resize(startIdx + conntrackMetricsLen)
-		initializeNetworkConntrackMetric(metrics.At(startIdx+0), metadata.Metrics.SystemNetworkConntrackCount, now, conntrack[0].ConnTrackCount)
-		initializeNetworkConntrackMetric(metrics.At(startIdx+1), metadata.Metrics.SystemNetworkConntrackMax, now, conntrack[0].ConnTrackMax)
-	}
-	return nil
-}
-
-func initializeNetworkConntrackMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, value int64) {
-	metricIntf.Init(metric)
-
-	idps := metric.IntSum().DataPoints()
-	idps.Resize(1)
-	initializeNetworkConntrackDataPoint(idps.At(0), now, value)
-}
-
-func initializeNetworkConntrackDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, value int64) {
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
 }
