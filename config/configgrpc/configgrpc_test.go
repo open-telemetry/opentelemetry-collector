@@ -525,8 +525,8 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 type grpcTraceServer struct{}
 
-func (gts *grpcTraceServer) Export(context.Context, pdata.Traces) (interface{}, error) {
-	return nil, nil
+func (gts *grpcTraceServer) Export(context.Context, pdata.Traces) (pdatagrpc.TracesResponse, error) {
+	return pdatagrpc.NewTracesResponse(), nil
 }
 
 // tempSocketName provides a temporary Unix socket name for testing.
