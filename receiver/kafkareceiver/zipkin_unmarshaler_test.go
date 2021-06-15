@@ -61,7 +61,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, protocolTransport.WriteListEnd(context.Background()))
 
-	tdThrift, err := v1ThriftUnmarshaler.Unmarshal(thriftTransport.Buffer.Bytes())
+	tdThrift, err := newZipkinThriftUnmarshaler().Unmarshal(thriftTransport.Buffer.Bytes())
 	require.NoError(t, err)
 
 	protoBytes, err := new(zipkin_proto3.SpanSerializer).Serialize(spans)
@@ -74,19 +74,19 @@ func TestUnmarshalZipkin(t *testing.T) {
 		expected    pdata.Traces
 	}{
 		{
-			unmarshaler: zipkinProtoSpanUnmarshaler{},
+			unmarshaler: newZipkinProtobufUnmarshaler(),
 			encoding:    "zipkin_proto",
 			bytes:       protoBytes,
 			expected:    td,
 		},
 		{
-			unmarshaler: zipkinJSONSpanUnmarshaler{},
+			unmarshaler: newZipkinJSONUnmarshaler(),
 			encoding:    "zipkin_json",
 			bytes:       jsonBytes,
 			expected:    td,
 		},
 		{
-			unmarshaler: zipkinThriftSpanUnmarshaler{},
+			unmarshaler: newZipkinThriftUnmarshaler(),
 			encoding:    "zipkin_thrift",
 			bytes:       thriftTransport.Buffer.Bytes(),
 			expected:    tdThrift,
@@ -103,22 +103,19 @@ func TestUnmarshalZipkin(t *testing.T) {
 }
 
 func TestUnmarshalZipkinThrift_error(t *testing.T) {
-	p := zipkinThriftSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.Traces{}, got)
+	p := newZipkinThriftUnmarshaler()
+	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestUnmarshalZipkinJSON_error(t *testing.T) {
-	p := zipkinJSONSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	p := newZipkinJSONUnmarshaler()
+	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestUnmarshalZipkinProto_error(t *testing.T) {
-	p := zipkinProtoSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	p := newZipkinProtobufUnmarshaler()
+	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }

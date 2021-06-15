@@ -22,6 +22,8 @@ import (
 
 // TracesUnmarshaler unmarshalls bytes into pdata.Traces.
 type TracesUnmarshaler interface {
+	// Unmarshal the given bytes into pdata.Traces.
+	// If the error is not nil, the returned pdata.Traces cannot be used.
 	Unmarshal(buf []byte) (pdata.Traces, error)
 }
 
@@ -53,6 +55,8 @@ func (t *tracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
 
 // MetricsUnmarshaler unmarshalls bytes into pdata.Metrics.
 type MetricsUnmarshaler interface {
+	// Unmarshal the given bytes into pdata.Metrics.
+	// If the error is not nil, the returned pdata.Metrics cannot be used.
 	Unmarshal(buf []byte) (pdata.Metrics, error)
 }
 
@@ -84,6 +88,8 @@ func (t *metricsUnmarshaler) Unmarshal(buf []byte) (pdata.Metrics, error) {
 
 // LogsUnmarshaler unmarshalls bytes into pdata.Logs.
 type LogsUnmarshaler interface {
+	// Unmarshal the given bytes into pdata.Logs.
+	// If the error is not nil, the returned pdata.Logs cannot be used.
 	Unmarshal(buf []byte) (pdata.Logs, error)
 }
 
