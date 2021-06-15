@@ -26,7 +26,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
@@ -36,7 +36,7 @@ const (
 	// either environment variables or config sources.
 	expandPrefixChar = '$'
 	// configSourceNameDelimChar is the char used to terminate the name of config source
-	// when it is used to retrieve values to inject in the configuration
+	// when it is used to retrieve values to inject in the configuration.
 	configSourceNameDelimChar = ':'
 )
 
@@ -47,7 +47,7 @@ type (
 
 // Manager is used to inject data from config sources into a configuration and also
 // to monitor for updates on the items injected into the configuration.  All methods
-// of a Manager must be called only once and have a expected sequence:
+// of a Manager must be called only once and have an expected sequence:
 //
 // 1. NewManager to create a new instance;
 // 2. Resolve to inject the data from config sources into a configuration;
@@ -176,7 +176,7 @@ type Manager struct {
 // NewManager creates a new instance of a Manager to be used to inject data from
 // ConfigSource objects into a configuration and watch for updates on the injected
 // data.
-func NewManager(_ *config.Parser) (*Manager, error) {
+func NewManager(_ *configparser.Parser) (*Manager, error) {
 	// TODO: Config sources should be extracted for the config itself, need Factories for that.
 
 	return &Manager{
@@ -190,8 +190,8 @@ func NewManager(_ *config.Parser) (*Manager, error) {
 // Resolve inspects the given config.Parser and resolves all config sources referenced
 // in the configuration, returning a config.Parser fully resolved. This must be called only
 // once per lifetime of a Manager object.
-func (m *Manager) Resolve(ctx context.Context, parser *config.Parser) (*config.Parser, error) {
-	res := config.NewParser()
+func (m *Manager) Resolve(ctx context.Context, parser *configparser.Parser) (*configparser.Parser, error) {
+	res := configparser.NewParser()
 	allKeys := parser.AllKeys()
 	for _, k := range allKeys {
 		value, err := m.expandStringValues(ctx, parser.Get(k))
@@ -309,6 +309,16 @@ func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (in
 			nslice = append(nslice, value)
 		}
 		return nslice, nil
+	case map[string]interface{}:
+		nmap := make(map[interface{}]interface{}, len(v))
+		for k, vint := range v {
+			value, err := m.expandStringValues(ctx, vint)
+			if err != nil {
+				return nil, err
+			}
+			nmap[k] = value
+		}
+		return nmap, nil
 	case map[interface{}]interface{}:
 		nmap := make(map[interface{}]interface{}, len(v))
 		for k, vint := range v {
@@ -385,7 +395,8 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 			case s[j+1] == '{':
 				// Bracketed usage, consume everything until first '}' exactly as os.Expand.
 				expandableContent, w = getShellName(s[j+1:])
-				expandableContent = strings.Trim(expandableContent, " ") // Allow for some spaces.
+				// Allow for some spaces.
+				expandableContent = strings.Trim(expandableContent, " ")
 				if len(expandableContent) > 1 && strings.Contains(expandableContent, string(configSourceNameDelimChar)) {
 					// Bracket expandableContent contains ':' treating it as a config source.
 					cfgSrcName, _ = getShellName(expandableContent)
@@ -489,8 +500,8 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 		selector = strings.Trim(parts[0], " ")
 
 		if len(parts) > 1 && len(parts[1]) > 0 {
-			var cp *config.Parser
-			cp, err = config.NewParserFromBuffer(bytes.NewReader([]byte(parts[1])))
+			var cp *configparser.Parser
+			cp, err = configparser.NewParserFromBuffer(bytes.NewReader([]byte(parts[1])))
 			if err != nil {
 				return
 			}
@@ -613,12 +624,14 @@ func getShellName(s string) (string, int) {
 		for i := 1; i < len(s); i++ {
 			if s[i] == '}' {
 				if i == 1 {
-					return "", 2 // Bad syntax; eat "${}"
+					// Bad syntax; eat "${}"
+					return "", 2
 				}
 				return s[1:i], i + 1
 			}
 		}
-		return "", 1 // Bad syntax; eat "${"
+		// Bad syntax; eat "${"
+		return "", 1
 	case isShellSpecialVar(s[0]):
 		return s[0:1], 1
 	}

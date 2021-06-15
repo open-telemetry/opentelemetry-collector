@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -119,6 +119,30 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	require.NotNil(t, le)
 
 	checkRecordedMetricsForLogsExporter(t, le, want)
+}
+
+func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	rCfg := DefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	qCfg.QueueSize = 2
+	wantErr := errors.New("some-error")
+	te, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	md := testdata.GenerateLogsTwoLogRecordsSameResourceOneDifferent()
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		te.ConsumeLogs(context.Background(), md)
+	}
+
+	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
+	checkExporterEnqueueFailedLogsStats(t, fakeLogsExporterName, int64(15))
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
@@ -222,7 +246,7 @@ func checkWrapSpanForLogsExporter(t *testing.T, le component.LogsExporter, wantE
 			sentLogRecords = 0
 			failedToSendLogRecords = numLogRecords
 		}
-		require.Equalf(t, sentLogRecords, sd.Attributes[obsreport.SentLogRecordsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendLogRecords, sd.Attributes[obsreport.FailedToSendLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, sentLogRecords, sd.Attributes[obsmetrics.SentLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendLogRecords, sd.Attributes[obsmetrics.FailedToSendLogRecordsKey], "SpanData %v", sd)
 	}
 }

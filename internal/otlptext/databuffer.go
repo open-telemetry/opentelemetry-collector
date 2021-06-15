@@ -15,6 +15,7 @@
 package otlptext
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,12 +25,12 @@ import (
 )
 
 type dataBuffer struct {
-	str strings.Builder
+	buf bytes.Buffer
 }
 
 func (b *dataBuffer) logEntry(format string, a ...interface{}) {
-	b.str.WriteString(fmt.Sprintf(format, a...))
-	b.str.WriteString("\n")
+	b.buf.WriteString(fmt.Sprintf(format, a...))
+	b.buf.WriteString("\n")
 }
 
 func (b *dataBuffer) logAttr(label string, value string) {

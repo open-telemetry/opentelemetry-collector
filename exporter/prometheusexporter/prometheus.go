@@ -93,13 +93,13 @@ func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 }
 
 func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	pe.obsrep.StartMetricsExportOp(ctx)
+	pe.obsrep.StartMetricsOp(ctx)
 	n := 0
 	rmetrics := md.ResourceMetrics()
 	for i := 0; i < rmetrics.Len(); i++ {
 		n += pe.collector.processMetrics(rmetrics.At(i))
 	}
-	pe.obsrep.EndMetricsExportOp(ctx, n, nil)
+	pe.obsrep.EndMetricsOp(ctx, n, nil)
 
 	return nil
 }

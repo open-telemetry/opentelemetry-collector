@@ -67,16 +67,16 @@ func createDefaultConfig() config.Receiver {
 
 // CreateTracesReceiver creates a  trace receiver based on provided config.
 func createTracesReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+	_ context.Context,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		return newOtlpReceiver(cfg.(*Config), params.Logger)
+		return newOtlpReceiver(cfg.(*Config), set.Logger)
 	})
 
-	if err := r.Unwrap().(*otlpReceiver).registerTraceConsumer(ctx, nextConsumer); err != nil {
+	if err := r.Unwrap().(*otlpReceiver).registerTraceConsumer(nextConsumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -84,16 +84,16 @@ func createTracesReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+	_ context.Context,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		return newOtlpReceiver(cfg.(*Config), params.Logger)
+		return newOtlpReceiver(cfg.(*Config), set.Logger)
 	})
 
-	if err := r.Unwrap().(*otlpReceiver).registerMetricsConsumer(ctx, consumer); err != nil {
+	if err := r.Unwrap().(*otlpReceiver).registerMetricsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -101,16 +101,16 @@ func createMetricsReceiver(
 
 // CreateLogReceiver creates a log receiver based on provided config.
 func createLogReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+	_ context.Context,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		return newOtlpReceiver(cfg.(*Config), params.Logger)
+		return newOtlpReceiver(cfg.(*Config), set.Logger)
 	})
 
-	if err := r.Unwrap().(*otlpReceiver).registerLogsConsumer(ctx, consumer); err != nil {
+	if err := r.Unwrap().(*otlpReceiver).registerLogsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil

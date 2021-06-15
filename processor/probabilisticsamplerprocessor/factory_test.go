@@ -19,9 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -34,8 +33,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateProcessor(t *testing.T) {
 	cfg := createDefaultConfig()
-	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	tp, err := createTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	set := componenttest.NewNopProcessorCreateSettings()
+	tp, err := createTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 }

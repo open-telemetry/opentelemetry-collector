@@ -33,6 +33,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -49,15 +50,11 @@ type PRWExporter struct {
 	closeChan       chan struct{}
 	concurrency     int
 	userAgentHeader string
+	clientSettings  *confighttp.HTTPClientSettings
 }
 
 // NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
 func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, error) {
-	client, err := cfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
@@ -74,12 +71,18 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 		namespace:       cfg.Namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
-		client:          client,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
 		userAgentHeader: userAgentHeader,
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:  &cfg.HTTPClientSettings,
 	}, nil
+}
+
+// Start creates the prometheus client
+func (prwe *PRWExporter) Start(_ context.Context, host component.Host) (err error) {
+	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions())
+	return err
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
@@ -127,20 +130,56 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 
 					// handle individual metric based on type
 					switch metric.DataType() {
-					case pdata.MetricDataTypeDoubleSum, pdata.MetricDataTypeIntSum, pdata.MetricDataTypeDoubleGauge, pdata.MetricDataTypeIntGauge:
-						if err := prwe.handleScalarMetric(tsMap, resource, metric); err != nil {
+					case pdata.MetricDataTypeDoubleGauge:
+						dataPoints := metric.DoubleGauge().DataPoints()
+						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, consumererror.Permanent(err))
+							errs = append(errs, err)
 						}
-					case pdata.MetricDataTypeHistogram, pdata.MetricDataTypeIntHistogram:
-						if err := prwe.handleHistogramMetric(tsMap, resource, metric); err != nil {
+					case pdata.MetricDataTypeIntGauge:
+						dataPoints := metric.IntGauge().DataPoints()
+						if err := prwe.addIntDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, consumererror.Permanent(err))
+							errs = append(errs, err)
+						}
+					case pdata.MetricDataTypeDoubleSum:
+						dataPoints := metric.DoubleSum().DataPoints()
+						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
+							dropped++
+							errs = append(errs, err)
+						}
+					case pdata.MetricDataTypeIntSum:
+						dataPoints := metric.IntSum().DataPoints()
+						if err := prwe.addIntDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
+							dropped++
+							errs = append(errs, err)
+						}
+					case pdata.MetricDataTypeIntHistogram:
+						dataPoints := metric.IntHistogram().DataPoints()
+						if dataPoints.Len() == 0 {
+							dropped++
+							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+						}
+						for x := 0; x < dataPoints.Len(); x++ {
+							addSingleIntHistogramDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+						}
+					case pdata.MetricDataTypeHistogram:
+						dataPoints := metric.Histogram().DataPoints()
+						if dataPoints.Len() == 0 {
+							dropped++
+							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+						}
+						for x := 0; x < dataPoints.Len(); x++ {
+							addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 						}
 					case pdata.MetricDataTypeSummary:
-						if err := prwe.handleSummaryMetric(tsMap, resource, metric); err != nil {
+						dataPoints := metric.Summary().DataPoints()
+						if dataPoints.Len() == 0 {
 							dropped++
-							errs = append(errs, consumererror.Permanent(err))
+							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+						}
+						for x := 0; x < dataPoints.Len(); x++ {
+							addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 						}
 					default:
 						dropped++
@@ -182,85 +221,22 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 	return sanitizedLabels, nil
 }
 
-// handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
-// its corresponding TimeSeries in tsMap.
-// tsMap and metric cannot be nil, and metric must have a non-nil descriptor
-func (prwe *PRWExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
-	switch metric.DataType() {
-	// int points
-	case pdata.MetricDataTypeDoubleGauge:
-		dataPoints := metric.DoubleGauge().DataPoints()
-		if dataPoints.Len() == 0 {
-			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
-		}
-
-		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleDoubleDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-		}
-	case pdata.MetricDataTypeIntGauge:
-		dataPoints := metric.IntGauge().DataPoints()
-		if dataPoints.Len() == 0 {
-			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
-		}
-		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleIntDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-		}
-	case pdata.MetricDataTypeDoubleSum:
-		dataPoints := metric.DoubleSum().DataPoints()
-		if dataPoints.Len() == 0 {
-			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
-		}
-		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleDoubleDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-
-		}
-	case pdata.MetricDataTypeIntSum:
-		dataPoints := metric.IntSum().DataPoints()
-		if dataPoints.Len() == 0 {
-			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
-		}
-		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleIntDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-		}
-	}
-	return nil
-}
-
-// handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
-// bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
-// tsMap and metric cannot be nil.
-func (prwe *PRWExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
-	switch metric.DataType() {
-	case pdata.MetricDataTypeIntHistogram:
-		dataPoints := metric.IntHistogram().DataPoints()
-		if dataPoints.Len() == 0 {
-			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
-		}
-		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleIntHistogramDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-		}
-	case pdata.MetricDataTypeHistogram:
-		dataPoints := metric.Histogram().DataPoints()
-		if dataPoints.Len() == 0 {
-			return fmt.Errorf("empty data points. %s is dropped", metric.Name())
-		}
-		for i := 0; i < dataPoints.Len(); i++ {
-			addSingleDoubleHistogramDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-		}
-	}
-	return nil
-}
-
-// handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
-// quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
-// tsMap and metric cannot be nil.
-func (prwe *PRWExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
-	dataPoints := metric.Summary().DataPoints()
+func (prwe *PRWExporter) addIntDataPointSlice(dataPoints pdata.IntDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	if dataPoints.Len() == 0 {
-		return fmt.Errorf("empty data points. %s is dropped", metric.Name())
+		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 	}
-	for i := 0; i < dataPoints.Len(); i++ {
-		addSingleDoubleSummaryDataPoint(dataPoints.At(i), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+	for x := 0; x < dataPoints.Len(); x++ {
+		addSingleIntDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+	}
+	return nil
+}
+
+func (prwe *PRWExporter) addDoubleDataPointSlice(dataPoints pdata.DoubleDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+	if dataPoints.Len() == 0 {
+		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+	}
+	for x := 0; x < dataPoints.Len(); x++ {
+		addSingleDoubleDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }

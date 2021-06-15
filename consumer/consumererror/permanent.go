@@ -22,7 +22,7 @@ type permanent struct {
 	err error
 }
 
-// Permanent wraps an error to indicate that it is a permanent error, i.e.: an
+// Permanent wraps an error to indicate that it is a permanent error, i.e. an
 // error that will be always returned if its source receives the same inputs.
 func Permanent(err error) error {
 	return permanent{err: err}
@@ -37,7 +37,7 @@ func (p permanent) Unwrap() error {
 	return p.err
 }
 
-// IsPermanent checks if an error was wrapped with the Permanent function, that
+// IsPermanent checks if an error was wrapped with the Permanent function, which
 // is used to indicate that a given error will always be returned in the case
 // that its sources receives the same input.
 func IsPermanent(err error) bool {

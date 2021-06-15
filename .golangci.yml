@@ -119,7 +119,7 @@ issues:
       linters:
         # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
         - structcheck
-    - path: receiver/otlpreceiver/marshal_jsonpb\.go
+    - path: receiver/otlpreceiver/internal/marshal_jsonpb\.go
       linters:
         - gocritic
         - gosimple

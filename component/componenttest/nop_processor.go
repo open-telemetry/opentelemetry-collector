@@ -17,12 +17,22 @@ package componenttest
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
+
+// NewNopProcessorCreateSettings returns a new nop settings for Create*Processor functions.
+func NewNopProcessorCreateSettings() component.ProcessorCreateSettings {
+	return component.ProcessorCreateSettings{
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
+	}
+}
 
 type nopProcessorConfig struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -55,7 +65,7 @@ func (f *nopProcessorFactory) CreateDefaultConfig() config.Processor {
 // CreateTracesProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateTracesProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateParams,
+	_ component.ProcessorCreateSettings,
 	_ config.Processor,
 	_ consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -65,7 +75,7 @@ func (f *nopProcessorFactory) CreateTracesProcessor(
 // CreateMetricsProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateMetricsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateParams,
+	_ component.ProcessorCreateSettings,
 	_ config.Processor,
 	_ consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -75,7 +85,7 @@ func (f *nopProcessorFactory) CreateMetricsProcessor(
 // CreateLogsProcessor implements component.ProcessorFactory interface.
 func (f *nopProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateParams,
+	_ component.ProcessorCreateSettings,
 	_ config.Processor,
 	_ consumer.Logs,
 ) (component.LogsProcessor, error) {

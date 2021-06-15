@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -118,6 +118,30 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NotNil(t, me)
 
 	checkRecordedMetricsForMetricsExporter(t, me, want)
+}
+
+func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	rCfg := DefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	qCfg.QueueSize = 2
+	wantErr := errors.New("some-error")
+	te, err := NewMetricsExporter(&fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	md := testdata.GenerateMetricsOneMetricOneDataPoint()
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		te.ConsumeMetrics(context.Background(), md)
+	}
+
+	// 2 batched must be in queue, and 5 metric points rejected due to queue overflow
+	checkExporterEnqueueFailedMetricsStats(t, fakeMetricsExporterName, int64(5))
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
@@ -246,7 +270,7 @@ func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporter,
 			sentMetricPoints = 0
 			failedToSendMetricPoints = numMetricPoints
 		}
-		require.Equalf(t, sentMetricPoints, sd.Attributes[obsreport.SentMetricPointsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsreport.FailedToSendMetricPointsKey], "SpanData %v", sd)
+		require.Equalf(t, sentMetricPoints, sd.Attributes[obsmetrics.SentMetricPointsKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsmetrics.FailedToSendMetricPointsKey], "SpanData %v", sd)
 	}
 }

@@ -64,7 +64,7 @@ type kafkaLogsConsumer struct {
 var _ component.Receiver = (*kafkaTracesConsumer)(nil)
 var _ component.Receiver = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -95,7 +95,7 @@ func newTracesReceiver(config Config, params component.ReceiverCreateParams, unm
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
 		unmarshaler:   unmarshaler,
-		logger:        params.Logger,
+		logger:        set.Logger,
 	}, nil
 }
 
@@ -136,7 +136,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -167,7 +167,7 @@ func newLogsReceiver(config Config, params component.ReceiverCreateParams, unmar
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
 		unmarshaler:   unmarshaler,
-		logger:        params.Logger,
+		logger:        set.Logger,
 	}, nil
 }
 
@@ -260,7 +260,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 		session.MarkMessage(message, "")
 
 		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		ctx = c.obsrecv.StartTraceDataReceiveOp(ctx)
+		ctx = c.obsrecv.StartTracesOp(ctx)
 		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.String())}
 		_ = stats.RecordWithTags(ctx, statsTags,
 			statMessageCount.M(1),
@@ -275,7 +275,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 
 		spanCount := traces.SpanCount()
 		err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
-		c.obsrecv.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
+		c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
 		if err != nil {
 			return err
 		}
@@ -312,7 +312,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 		session.MarkMessage(message, "")
 
 		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		ctx = c.obsrecv.StartTraceDataReceiveOp(ctx)
+		ctx = c.obsrecv.StartTracesOp(ctx)
 		_ = stats.RecordWithTags(
 			ctx,
 			[]tag.Mutator{tag.Insert(tagInstanceName, c.id.String())},
@@ -328,7 +328,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 
 		err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
 		// TODO
-		c.obsrecv.EndTraceDataReceiveOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
+		c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
 		if err != nil {
 			return err
 		}

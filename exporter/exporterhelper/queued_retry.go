@@ -30,17 +30,19 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 var (
 	r = metric.NewRegistry()
 
 	queueSizeGauge, _ = r.AddInt64DerivedGauge(
-		obsreport.ExporterKey+"/queue_size",
+		obsmetrics.ExporterKey+"/queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches)"),
-		metric.WithLabelKeys(obsreport.ExporterKey),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
+
+	errSendingQueueIsFull = errors.New("sending_queue is full")
 )
 
 func init() {
@@ -127,7 +129,7 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
-	traceAttr := trace.StringAttribute(obsreport.ExporterKey, fullName)
+	traceAttr := trace.StringAttribute(obsmetrics.ExporterKey, fullName)
 	return &queuedRetrySender{
 		fullName: fullName,
 		cfg:      qCfg,
@@ -189,7 +191,7 @@ func (qrs *queuedRetrySender) send(req request) error {
 			zap.Int("dropped_items", req.count()),
 		)
 		span.Annotate(qrs.traceAttributes, "Dropped item, sending_queue is full.")
-		return errors.New("sending_queue is full")
+		return errSendingQueueIsFull
 	}
 
 	span.Annotate(qrs.traceAttributes, "Enqueued item.")

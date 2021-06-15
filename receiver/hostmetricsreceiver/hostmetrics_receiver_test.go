@@ -125,11 +125,14 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		cfg.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
 	}
 
+
 	if runtime.GOOS == "linux" {
 		cfg.Scrapers[conntrackscraper.TypeStr] = &conntrackscraper.Config{}
 	}
 
-	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
+
+	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
@@ -253,7 +256,7 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
 
@@ -265,7 +268,7 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
 
@@ -277,7 +280,7 @@ func TestGatherMetrics_CreateMetricsResourceScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{mockResourceTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
 

@@ -24,9 +24,17 @@ import (
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 )
 
-// TODO: Consider to add `LogsRequest` and `LogsResponse`. Right now the funcs return interface{},
-//  it would be better and future proof to create a LogsResponse empty struct and return that.
-//  So if we ever add things in the OTLP response I can deal with that. Similar for request if we add non pdata properties.
+// TODO: Consider to add `LogsRequest`. If we add non pdata properties we can add them to the request.
+
+// LogsResponse represents the response for gRPC client/server.
+type LogsResponse struct {
+	orig *otlpcollectorlogs.ExportLogsServiceResponse
+}
+
+// NewLogsResponse returns an empty LogsResponse.
+func NewLogsResponse() LogsResponse {
+	return LogsResponse{orig: &otlpcollectorlogs.ExportLogsServiceResponse{}}
+}
 
 // LogsClient is the client API for OTLP-GRPC Logs service.
 //
@@ -36,7 +44,7 @@ type LogsClient interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(ctx context.Context, in pdata.Logs, opts ...grpc.CallOption) (interface{}, error)
+	Export(ctx context.Context, in pdata.Logs, opts ...grpc.CallOption) (LogsResponse, error)
 }
 
 type logsClient struct {
@@ -48,8 +56,9 @@ func NewLogsClient(cc *grpc.ClientConn) LogsClient {
 	return &logsClient{rawClient: otlpcollectorlogs.NewLogsServiceClient(cc)}
 }
 
-func (c *logsClient) Export(ctx context.Context, in pdata.Logs, opts ...grpc.CallOption) (interface{}, error) {
-	return c.rawClient.Export(ctx, internal.LogsToOtlp(in.InternalRep()), opts...)
+func (c *logsClient) Export(ctx context.Context, in pdata.Logs, opts ...grpc.CallOption) (LogsResponse, error) {
+	rsp, err := c.rawClient.Export(ctx, internal.LogsToOtlp(in.InternalRep()), opts...)
+	return LogsResponse{orig: rsp}, err
 }
 
 // LogsServer is the server API for OTLP gRPC LogsService service.
@@ -58,7 +67,7 @@ type LogsServer interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(context.Context, pdata.Logs) (interface{}, error)
+	Export(context.Context, pdata.Logs) (LogsResponse, error)
 }
 
 // RegisterLogsServer registers the LogsServer to the grpc.Server.
@@ -71,6 +80,6 @@ type rawLogsServer struct {
 }
 
 func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlogs.ExportLogsServiceRequest) (*otlpcollectorlogs.ExportLogsServiceResponse, error) {
-	_, err := s.srv.Export(ctx, pdata.LogsFromInternalRep(internal.LogsFromOtlp(request)))
-	return &otlpcollectorlogs.ExportLogsServiceResponse{}, err
+	rsp, err := s.srv.Export(ctx, pdata.LogsFromInternalRep(internal.LogsFromOtlp(request)))
+	return rsp.orig, err
 }

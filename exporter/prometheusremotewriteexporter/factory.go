@@ -17,6 +17,7 @@ package prometheusremotewriteexporter
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -37,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateParams,
+func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 
 	prwCfg, ok := cfg.(*Config)
@@ -45,7 +46,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := NewPRWExporter(prwCfg, params.BuildInfo)
+	prwe, err := NewPRWExporter(prwCfg, set.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	// "out of order samples" errors.
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
@@ -68,6 +69,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithResourceToTelemetryConversion(prwCfg.ResourceToTelemetrySettings),
+		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
 }
@@ -78,7 +80,12 @@ func createDefaultConfig() config.Exporter {
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 50 * time.Millisecond,
+			MaxInterval:     200 * time.Millisecond,
+			MaxElapsedTime:  1 * time.Minute,
+		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

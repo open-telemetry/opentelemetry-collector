@@ -164,7 +164,7 @@ jobs:
           sudo make gotest | tee test-results/junit/unittests.out
       - name: Upload Unit Test Results
         if: always()
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: unittests-results
           path: test-results/junit/unittests.xml
@@ -192,20 +192,12 @@ jobs:
             /home/runner/go/pkg/mod
             /home/runner/.cache/go-build
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Build Collector for All Architectures
-        run: make -j4 binaries-all-sys
+        run: make binaries-all-sys
       - name: Create Collector Binaries Archive
         run: tar -cvf bin.tar ./bin
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: collector-binaries
           path: ./bin.tar
@@ -256,7 +248,7 @@ jobs:
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: test-results
           path: test_results.tar
@@ -396,7 +388,7 @@ jobs:
               ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*x86_64.rpm
           fi
       - name: Upload Packages
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: build-packages
           path: ./dist
@@ -432,7 +424,7 @@ jobs:
       - name: Validate MSI
         run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - name: Upload MSI
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: msi-binaries
           path: ./dist

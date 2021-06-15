@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -129,6 +129,30 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NotNil(t, te)
 
 	checkRecordedMetricsForTracesExporter(t, te, want)
+}
+
+func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	rCfg := DefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	qCfg.QueueSize = 2
+	wantErr := errors.New("some-error")
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, zap.NewNop(), newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		te.ConsumeTraces(context.Background(), td)
+	}
+
+	// 2 batched must be in queue, and 5 batches (10 spans) rejected due to queue overflow
+	checkExporterEnqueueFailedTracesStats(t, fakeTracesExporterName, int64(10))
 }
 
 func TestTracesExporter_WithSpan(t *testing.T) {
@@ -239,7 +263,7 @@ func checkWrapSpanForTracesExporter(t *testing.T, te component.TracesExporter, w
 			failedToSendSpans = numSpans
 		}
 
-		require.Equalf(t, sentSpans, sd.Attributes[obsreport.SentSpansKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendSpans, sd.Attributes[obsreport.FailedToSendSpansKey], "SpanData %v", sd)
+		require.Equalf(t, sentSpans, sd.Attributes[obsmetrics.SentSpansKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendSpans, sd.Attributes[obsmetrics.FailedToSendSpansKey], "SpanData %v", sd)
 	}
 }

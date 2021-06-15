@@ -21,9 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -50,8 +48,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }
@@ -177,8 +175,8 @@ func TestCreateTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
+			set := componenttest.NewNopExporterCreateSettings()
+			consumer, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
 			if tt.mustFailOnCreate {
 				assert.NotNil(t, err)
 				return
@@ -206,8 +204,8 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }

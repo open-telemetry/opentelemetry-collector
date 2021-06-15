@@ -21,18 +21,98 @@ import (
 )
 
 // TracesMarshaler marshals pdata.Traces into bytes.
-type TracesMarshaler struct {
+type TracesMarshaler interface {
+	// Marshal the given pdata.Traces into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	Marshal(td pdata.Traces) ([]byte, error)
+}
+
+type tracesMarshaler struct {
 	encoder    TracesEncoder
 	translator FromTracesTranslator
 }
 
-// Marshal pdata.Traces into bytes. On error []byte is nil.
-func (t *TracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
+// NewTracesMarshaler returns a new TracesMarshaler.
+func NewTracesMarshaler(encoder TracesEncoder, translator FromTracesTranslator) TracesMarshaler {
+	return &tracesMarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
+}
+
+// Marshal pdata.Traces into bytes.
+func (t *tracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
 	model, err := t.translator.FromTraces(td)
 	if err != nil {
 		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
 	}
 	buf, err := t.encoder.EncodeTraces(model)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed: %w", err)
+	}
+	return buf, nil
+}
+
+// MetricsMarshaler marshals pdata.Metrics into bytes.
+type MetricsMarshaler interface {
+	// Marshal the given pdata.Metrics into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	Marshal(td pdata.Metrics) ([]byte, error)
+}
+
+type metricsMarshaler struct {
+	encoder    MetricsEncoder
+	translator FromMetricsTranslator
+}
+
+// NewMetricsMarshaler returns a new MetricsMarshaler.
+func NewMetricsMarshaler(encoder MetricsEncoder, translator FromMetricsTranslator) MetricsMarshaler {
+	return &metricsMarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
+}
+
+// Marshal pdata.Metrics into bytes.
+func (t *metricsMarshaler) Marshal(td pdata.Metrics) ([]byte, error) {
+	model, err := t.translator.FromMetrics(td)
+	if err != nil {
+		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
+	}
+	buf, err := t.encoder.EncodeMetrics(model)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed: %w", err)
+	}
+	return buf, nil
+}
+
+// LogsMarshaler marshals pdata.Logs into bytes.
+type LogsMarshaler interface {
+	// Marshal the given pdata.Logs into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	Marshal(td pdata.Logs) ([]byte, error)
+}
+
+type logsMarshaler struct {
+	encoder    LogsEncoder
+	translator FromLogsTranslator
+}
+
+// NewLogsMarshaler returns a new LogsMarshaler.
+func NewLogsMarshaler(encoder LogsEncoder, translator FromLogsTranslator) LogsMarshaler {
+	return &logsMarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
+}
+
+// Marshal pdata.Logs into bytes.
+func (t *logsMarshaler) Marshal(td pdata.Logs) ([]byte, error) {
+	model, err := t.translator.FromLogs(td)
+	if err != nil {
+		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
+	}
+	buf, err := t.encoder.EncodeLogs(model)
 	if err != nil {
 		return nil, fmt.Errorf("marshal failed: %w", err)
 	}

@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -35,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 type mockReceiver struct {
@@ -57,14 +55,14 @@ type mockTracesReceiver struct {
 	lastRequest pdata.Traces
 }
 
-func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (interface{}, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (pdatagrpc.TracesResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return nil, nil
+	return pdatagrpc.NewTracesResponse(), nil
 }
 
 func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
@@ -76,7 +74,7 @@ func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
 func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
 	rcv := &mockTracesReceiver{
 		mockReceiver: mockReceiver{
-			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+			srv: grpc.NewServer(),
 		},
 	}
 
@@ -94,14 +92,14 @@ type mockLogsReceiver struct {
 	lastRequest pdata.Logs
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (interface{}, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (pdatagrpc.LogsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(ld.LogRecordCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = ld
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return nil, nil
+	return pdatagrpc.NewLogsResponse(), nil
 }
 
 func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
@@ -113,7 +111,7 @@ func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
 func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	rcv := &mockLogsReceiver{
 		mockReceiver: mockReceiver{
-			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+			srv: grpc.NewServer(),
 		},
 	}
 
@@ -131,7 +129,7 @@ type mockMetricsReceiver struct {
 	lastRequest pdata.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (interface{}, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (pdatagrpc.MetricsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	_, recordCount := md.MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
@@ -139,7 +137,7 @@ func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (int
 	defer r.mux.Unlock()
 	r.lastRequest = md
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return nil, nil
+	return pdatagrpc.NewMetricsResponse(), nil
 }
 
 func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {
@@ -151,7 +149,7 @@ func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {
 func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	rcv := &mockMetricsReceiver{
 		mockReceiver: mockReceiver{
-			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+			srv: grpc.NewServer(),
 		},
 	}
 
@@ -184,8 +182,8 @@ func TestSendTraces(t *testing.T) {
 			"header": "header-value",
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -252,8 +250,8 @@ func TestSendMetrics(t *testing.T) {
 			"header": "header-value",
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -320,8 +318,8 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		// Do not rely on external retry logic here, if that is intended set InitialInterval to 100ms.
 		WaitForReady: true,
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -377,8 +375,8 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -453,8 +451,8 @@ func TestSendLogData(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	set := componenttest.NewNopExporterCreateSettings()
+	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
