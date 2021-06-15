@@ -22,6 +22,8 @@ import (
 
 // TracesMarshaler marshals pdata.Traces into bytes.
 type TracesMarshaler interface {
+	// Marshal the given pdata.Traces into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
 	Marshal(td pdata.Traces) ([]byte, error)
 }
 
@@ -38,7 +40,7 @@ func NewTracesMarshaler(encoder TracesEncoder, translator FromTracesTranslator) 
 	}
 }
 
-// Marshal pdata.Traces into bytes. On error []byte is nil.
+// Marshal pdata.Traces into bytes.
 func (t *tracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
 	model, err := t.translator.FromTraces(td)
 	if err != nil {
@@ -53,6 +55,8 @@ func (t *tracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
 
 // MetricsMarshaler marshals pdata.Metrics into bytes.
 type MetricsMarshaler interface {
+	// Marshal the given pdata.Metrics into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
 	Marshal(td pdata.Metrics) ([]byte, error)
 }
 
@@ -69,7 +73,7 @@ func NewMetricsMarshaler(encoder MetricsEncoder, translator FromMetricsTranslato
 	}
 }
 
-// Marshal pdata.Metrics into bytes. On error []byte is nil.
+// Marshal pdata.Metrics into bytes.
 func (t *metricsMarshaler) Marshal(td pdata.Metrics) ([]byte, error) {
 	model, err := t.translator.FromMetrics(td)
 	if err != nil {
@@ -84,6 +88,8 @@ func (t *metricsMarshaler) Marshal(td pdata.Metrics) ([]byte, error) {
 
 // LogsMarshaler marshals pdata.Logs into bytes.
 type LogsMarshaler interface {
+	// Marshal the given pdata.Logs into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
 	Marshal(td pdata.Logs) ([]byte, error)
 }
 
@@ -100,7 +106,7 @@ func NewLogsMarshaler(encoder LogsEncoder, translator FromLogsTranslator) LogsMa
 	}
 }
 
-// Marshal pdata.Logs into bytes. On error []byte is nil.
+// Marshal pdata.Logs into bytes.
 func (t *logsMarshaler) Marshal(td pdata.Logs) ([]byte, error) {
 	model, err := t.translator.FromLogs(td)
 	if err != nil {
