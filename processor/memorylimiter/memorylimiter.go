@@ -26,8 +26,8 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/processor/memorylimiter/internal/iruntime"
 )
 
 const (
