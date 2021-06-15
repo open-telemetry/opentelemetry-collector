@@ -33,6 +33,7 @@
 - Updated configgrpc `ToDialOptions` and confighttp `ToClient` apis to take extensions configuration map (#3340)
 - Remove `GenerateSequentialTraceID` and `GenerateSequentialSpanIDin` functions in testbed (#3390)
 - Change "grpc" to "GRPC" in configauth function/type names (#3285)
+- Disallow renaming metrics using metric relabel configs (#3410)
 
 ## 💡 Enhancements 💡
 

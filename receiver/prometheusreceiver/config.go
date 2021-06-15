@@ -51,8 +51,18 @@ var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.PrometheusConfig != nil && len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
-		return errNilScrapeConfig
+	if cfg.PrometheusConfig != nil {
+		if len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
+			return errNilScrapeConfig
+		}
+		for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
+			for _, rc := range sc.MetricRelabelConfigs {
+				if rc.TargetLabel == "__name__" {
+					// TODO(#2297): Remove validation after renaming is fixed
+					return fmt.Errorf("error validating scrapeconfig for job %v: %w", sc.JobName, errRenamingDisallowed)
+				}
+			}
+		}
 	}
 	return nil
 }

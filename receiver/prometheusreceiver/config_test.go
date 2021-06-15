@@ -125,3 +125,15 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
+
+// Renaming is not allowed
+func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid-config-prometheus-relabel.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+}
