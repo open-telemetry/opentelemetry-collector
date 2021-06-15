@@ -14,20 +14,23 @@
 
 package model
 
-// MetricsDecoder interface to decode bytes into protocol-specific data model.
+// MetricsDecoder is an interface to decode bytes into protocol-specific data model.
 type MetricsDecoder interface {
 	// DecodeMetrics decodes bytes into protocol-specific data model.
+	// If the error is not nil, the returned interface cannot be used.
 	DecodeMetrics(buf []byte) (interface{}, error)
 }
 
-// TracesDecoder interface to decode bytes into protocol-specific data model.
+// TracesDecoder is an interface to decode bytes into protocol-specific data model.
 type TracesDecoder interface {
 	// DecodeTraces decodes bytes into protocol-specific data model.
+	// If the error is not nil, the returned interface cannot be used.
 	DecodeTraces(buf []byte) (interface{}, error)
 }
 
-// LogsDecoder interface to decode bytes into protocol-specific data model.
+// LogsDecoder is an interface to decode bytes into protocol-specific data model.
 type LogsDecoder interface {
 	// DecodeLogs decodes bytes into protocol-specific data model.
+	// If the error is not nil, the returned interface cannot be used.
 	DecodeLogs(buf []byte) (interface{}, error)
 }
