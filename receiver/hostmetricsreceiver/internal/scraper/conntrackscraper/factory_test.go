@@ -12,21 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
+package conntrackscraper
 
-package networkscraper
+import (
+	"context"
+	"testing"
 
-var allTCPStates = []string{
-	"CLOSE_WAIT",
-	"CLOSED",
-	"CLOSING",
-	"DELETE",
-	"ESTABLISHED",
-	"FIN_WAIT_1",
-	"FIN_WAIT_2",
-	"LAST_ACK",
-	"LISTEN",
-	"SYN_SENT",
-	"SYN_RECEIVED",
-	"TIME_WAIT",
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+)
+
+func TestCreateDefaultConfig(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig()
+	assert.IsType(t, &Config{}, cfg)
+}
+
+func TestCreateMetricsScraper(t *testing.T) {
+	factory := &Factory{}
+	cfg := &Config{}
+
+	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, scraper)
 }

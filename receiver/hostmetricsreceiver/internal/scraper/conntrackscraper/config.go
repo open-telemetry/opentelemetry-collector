@@ -12,21 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
+package conntrackscraper
 
-package networkscraper
+import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 
-var allTCPStates = []string{
-	"CLOSE_WAIT",
-	"CLOSED",
-	"CLOSING",
-	"DELETE",
-	"ESTABLISHED",
-	"FIN_WAIT_1",
-	"FIN_WAIT_2",
-	"LAST_ACK",
-	"LISTEN",
-	"SYN_SENT",
-	"SYN_RECEIVED",
-	"TIME_WAIT",
+// Config relating to Conntrack Metric Scraper.
+type Config struct {
+	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }

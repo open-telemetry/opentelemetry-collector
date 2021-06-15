@@ -14,19 +14,10 @@
 
 // +build !linux
 
-package networkscraper
+package conntrackscraper
 
-var allTCPStates = []string{
-	"CLOSE_WAIT",
-	"CLOSED",
-	"CLOSING",
-	"DELETE",
-	"ESTABLISHED",
-	"FIN_WAIT_1",
-	"FIN_WAIT_2",
-	"LAST_ACK",
-	"LISTEN",
-	"SYN_SENT",
-	"SYN_RECEIVED",
-	"TIME_WAIT",
+import "go.opentelemetry.io/collector/consumer/pdata"
+
+func scrapeAndAppendConntrackMetrics(s *scraper, metrics pdata.MetricSlice) error {
+	return nil
 }

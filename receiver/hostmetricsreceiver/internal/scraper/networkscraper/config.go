@@ -27,8 +27,6 @@ type Config struct {
 	Include MatchConfig `mapstructure:"include"`
 	// Exclude specifies a filter on the network interfaces that should be excluded from the generated metrics.
 	Exclude MatchConfig `mapstructure:"exclude"`
-	// ScrapeConntrack should scrape conntrack metrics, disabled by default.
-	ScrapeConntrack bool `mapstructure:"scrape_conntrack"`
 }
 
 type MatchConfig struct {

@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/conntrackscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
@@ -74,7 +75,7 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count", "system.conntrack.count", "system.conntrack.max"},
 	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
 	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
 	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
@@ -90,6 +91,7 @@ var factories = map[string]internal.ScraperFactory{
 	networkscraper.TypeStr:    &networkscraper.Factory{},
 	pagingscraper.TypeStr:     &pagingscraper.Factory{},
 	processesscraper.TypeStr:  &processesscraper.Factory{},
+	conntrackscraper.TypeStr:  &conntrackscraper.Factory{},
 }
 
 var resourceFactories = map[string]internal.ResourceScraperFactory{
@@ -121,6 +123,10 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
 		cfg.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
+	}
+
+	if runtime.GOOS == "linux" {
+		cfg.Scrapers[conntrackscraper.TypeStr] = &conntrackscraper.Config{}
 	}
 
 	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, cfg, sink)

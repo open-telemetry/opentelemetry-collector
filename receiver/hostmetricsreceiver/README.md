@@ -33,6 +33,7 @@ The available scrapers are:
 | paging     | All                          | Paging/Swap space utilization and I/O metrics
 | processes  | Linux                        | Process count metrics                                  |
 | process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+| conntrack  | Linux                        | Conntrack count and max connections metrics            |
 
 ### Notes
 
@@ -71,11 +72,7 @@ network:
   <include|exclude>:
     interfaces: [ <interface name>, ... ]
     match_type: <strict|regexp>
-  scrape_conntrack: <true|false> # default = false
 ```
-
-`scrape_conntrack` (Connection tracking) is supported only for Linux OS and requires installing conntrack.
-
 
 ### Process
 

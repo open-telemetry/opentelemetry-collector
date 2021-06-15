@@ -293,7 +293,7 @@ metrics:
       monotonic: false
     labels: [network.protocol, network.state]
 
-  system.network.conntrack.count:
+  system.conntrack.count:
     description: Number of currently allocated flow entries.
     unit: "{flow entries}"
     data:
@@ -301,7 +301,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
 
-  system.network.conntrack.max:
+  system.conntrack.max:
     description: Size of connection tracking table.
     unit: "{flow entries}"
     data:

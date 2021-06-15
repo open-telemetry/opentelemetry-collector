@@ -17,7 +17,6 @@ package networkscraper
 import (
 	"context"
 	"errors"
-	"runtime"
 	"testing"
 
 	"github.com/shirou/gopsutil/net"
@@ -34,18 +33,17 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name                   string
-		config                 Config
-		bootTimeFunc           func() (uint64, error)
-		ioCountersFunc         func(bool) ([]net.IOCountersStat, error)
-		connectionsFunc        func(string) ([]net.ConnectionStat, error)
-		expectNetworkMetrics   bool
-		expectConntrackMetrics bool
-		expectedStartTime      pdata.Timestamp
-		newErrRegex            string
-		initializationErr      string
-		expectedErr            string
-		expectedErrCount       int
+		name                 string
+		config               Config
+		bootTimeFunc         func() (uint64, error)
+		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
+		connectionsFunc      func(string) ([]net.ConnectionStat, error)
+		expectNetworkMetrics bool
+		expectedStartTime    pdata.Timestamp
+		newErrRegex          string
+		initializationErr    string
+		expectedErr          string
+		expectedErrCount     int
 	}
 
 	testCases := []testCase{
@@ -90,12 +88,6 @@ func TestScrape(t *testing.T) {
 			connectionsFunc:  func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
 			expectedErr:      "err3",
 			expectedErrCount: connectionsMetricsLen,
-		},
-		{
-			name:                   "Conntrack",
-			config:                 Config{ScrapeConntrack: true},
-			expectConntrackMetrics: true,
-			expectNetworkMetrics:   true,
 		},
 	}
 
@@ -144,6 +136,7 @@ func TestScrape(t *testing.T) {
 			if test.expectNetworkMetrics {
 				expectedMetricCount += 4
 			}
+			assert.Equal(t, expectedMetricCount, metrics.Len())
 
 			idx := 0
 			if test.expectNetworkMetrics {
@@ -157,14 +150,6 @@ func TestScrape(t *testing.T) {
 
 			assertNetworkConnectionsMetricValid(t, metrics.At(idx+0))
 			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
-			idx++
-			if runtime.GOOS == "linux" && test.expectConntrackMetrics {
-				expectedMetricCount += 2
-				assertNetworkConntrackMetricValid(t, metrics.At(idx+0), metadata.Metrics.SystemNetworkConntrackCount.New())
-				assertNetworkConntrackMetricValid(t, metrics.At(idx+1), metadata.Metrics.SystemNetworkConntrackMax.New())
-			}
-
-			assert.Equal(t, expectedMetricCount, metrics.Len())
 		})
 	}
 }
@@ -185,9 +170,4 @@ func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
 	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "protocol", "tcp")
 	internal.AssertIntSumMetricLabelExists(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.IntSum().DataPoints().Len())
-}
-
-func assertNetworkConntrackMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
-	assert.Equal(t, 1, metric.IntSum().DataPoints().Len())
 }
