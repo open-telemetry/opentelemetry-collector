@@ -36,34 +36,9 @@ import (
 	"go.uber.org/atomic"
 )
 
-// ResourceSpec is a resource consumption specification.
-type ResourceSpec struct {
-	// Percentage of one core the process is expected to consume at most.
-	// Test is aborted and failed if consumption during
-	// ResourceCheckPeriod exceeds this number. If 0 the CPU
-	// consumption is not monitored and does not affect the test result.
-	ExpectedMaxCPU uint32
-
-	// Maximum RAM in MiB the process is expected to consume.
-	// Test is aborted and failed if consumption exceeds this number.
-	// If 0 memory consumption is not monitored and does not affect
-	// the test result.
-	ExpectedMaxRAM uint32
-
-	// Period during which CPU and RAM of the process are measured.
-	// Bigger numbers will result in more averaging of short spikes.
-	ResourceCheckPeriod time.Duration
-}
-
-// isSpecified returns true if any part of ResourceSpec is specified,
-// i.e. has non-zero value.
-func (rs *ResourceSpec) isSpecified() bool {
-	return rs != nil && (rs.ExpectedMaxCPU != 0 || rs.ExpectedMaxRAM != 0)
-}
-
-// ChildProcess implements the OtelcolRunner interface as a child process on the same machine executing
+// childProcessCollector implements the OtelcolRunner interface as a child process on the same machine executing
 // the test. The process can be monitored and the output of which will be written to a log file.
-type ChildProcess struct {
+type childProcessCollector struct {
 	// Path to agent executable. If unset the default executable in
 	// bin/otelcol_{{.GOOS}}_{{.GOARCH}} will be used.
 	// Can be set for example to use the unstable executable for a specific test.
@@ -121,21 +96,12 @@ type ChildProcess struct {
 	ramMiBMax uint32
 }
 
-type StartParams struct {
-	Name         string
-	LogFilePath  string
-	CmdArgs      []string
-	resourceSpec *ResourceSpec
+// NewChildProcessCollector crewtes a new OtelcolRunner as a child process on the same machine executing the test.
+func NewChildProcessCollector() OtelcolRunner {
+	return &childProcessCollector{}
 }
 
-type ResourceConsumption struct {
-	CPUPercentAvg float64
-	CPUPercentMax float64
-	RAMMiBAvg     uint32
-	RAMMiBMax     uint32
-}
-
-func (cp *ChildProcess) PrepareConfig(configStr string) (configCleanup func(), err error) {
+func (cp *childProcessCollector) PrepareConfig(configStr string) (configCleanup func(), err error) {
 	configCleanup = func() {
 		// NoOp
 	}
@@ -198,7 +164,7 @@ func expandExeFileName(exeName string) string {
 // logFilePath is the file path to write the standard output and standard error of
 // the process to.
 // cmdArgs is the command line arguments to pass to the process.
-func (cp *ChildProcess) Start(params StartParams) error {
+func (cp *childProcessCollector) Start(params StartParams) error {
 
 	cp.name = params.Name
 	cp.doneSignal = make(chan struct{})
@@ -275,7 +241,7 @@ func (cp *ChildProcess) Start(params StartParams) error {
 	return err
 }
 
-func (cp *ChildProcess) Stop() (stopped bool, err error) {
+func (cp *childProcessCollector) Stop() (stopped bool, err error) {
 	if !cp.isStarted || cp.isStopped {
 		return false, nil
 	}
@@ -341,7 +307,7 @@ func (cp *ChildProcess) Stop() (stopped bool, err error) {
 	return stopped, err
 }
 
-func (cp *ChildProcess) WatchResourceConsumption() error {
+func (cp *childProcessCollector) WatchResourceConsumption() error {
 	if !cp.resourceSpec.isSpecified() {
 		// Resource monitoring is not enabled.
 		return nil
@@ -388,11 +354,11 @@ func (cp *ChildProcess) WatchResourceConsumption() error {
 	}
 }
 
-func (cp *ChildProcess) GetProcessMon() *process.Process {
+func (cp *childProcessCollector) GetProcessMon() *process.Process {
 	return cp.processMon
 }
 
-func (cp *ChildProcess) fetchRAMUsage() {
+func (cp *childProcessCollector) fetchRAMUsage() {
 	// Get process memory and CPU times
 	mi, err := cp.processMon.MemoryInfo()
 	if err != nil {
@@ -415,7 +381,7 @@ func (cp *ChildProcess) fetchRAMUsage() {
 	cp.ramMiBCur.Store(ramMiBCur)
 }
 
-func (cp *ChildProcess) fetchCPUUsage() {
+func (cp *childProcessCollector) fetchCPUUsage() {
 	times, err := cp.processMon.Times()
 	if err != nil {
 		log.Printf("cannot get process times for %d: %s",
@@ -448,7 +414,7 @@ func (cp *ChildProcess) fetchCPUUsage() {
 	cp.cpuPercentX1000Cur.Store(curCPUPercentageX1000)
 }
 
-func (cp *ChildProcess) checkAllowedResourceUsage() error {
+func (cp *childProcessCollector) checkAllowedResourceUsage() error {
 	// Check if current CPU usage exceeds expected.
 	var errMsg string
 	if cp.resourceSpec.ExpectedMaxCPU != 0 && cp.cpuPercentX1000Cur.Load()/1000 > cp.resourceSpec.ExpectedMaxCPU {
@@ -472,7 +438,7 @@ func (cp *ChildProcess) checkAllowedResourceUsage() error {
 }
 
 // GetResourceConsumption returns resource consumption as a string
-func (cp *ChildProcess) GetResourceConsumption() string {
+func (cp *childProcessCollector) GetResourceConsumption() string {
 	if !cp.resourceSpec.isSpecified() {
 		// Monitoring is not enabled.
 		return ""
@@ -486,7 +452,7 @@ func (cp *ChildProcess) GetResourceConsumption() string {
 }
 
 // GetTotalConsumption returns total resource consumption since start of process
-func (cp *ChildProcess) GetTotalConsumption() *ResourceConsumption {
+func (cp *childProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	rc := &ResourceConsumption{}
 
 	if cp.processMon != nil {
