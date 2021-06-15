@@ -46,8 +46,9 @@ func SaveResults(resultsSummary TestResultsSummary) {
 
 const testBedEnableEnvVarName = "RUN_TESTBED"
 
+// GlobalConfig global config for testbed.
 var GlobalConfig = struct {
-	// Relative path to default agent executable to test.
+	// DefaultAgentExeRelativeFile relative path to default agent executable to test.
 	// Can be set in the contrib repo to use a different executable name.
 	// Set this before calling DoTestMain().
 	//
@@ -58,7 +59,7 @@ var GlobalConfig = struct {
 	// that is passed to the TestCase.
 	DefaultAgentExeRelativeFile string
 }{
-	// The default exe that is produced by Makefile "otelcol" target relative
+	// DefaultAgentExeRelativeFile the default exe that is produced by Makefile "otelcol" target relative
 	// to testbed/tests directory.
 	DefaultAgentExeRelativeFile: "../../bin/otelcol_{{.GOOS}}_{{.GOARCH}}",
 }
