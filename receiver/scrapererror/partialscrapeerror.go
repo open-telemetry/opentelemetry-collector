@@ -16,8 +16,8 @@ package scrapererror
 
 import "errors"
 
-// PartialScrapeError can be used to signalize that a subset of metrics were failed
-// to be scraped
+// PartialScrapeError is an error to represent
+// that a subset of metrics were failed to be scraped.
 type PartialScrapeError struct {
 	error
 	Failed int
@@ -25,7 +25,7 @@ type PartialScrapeError struct {
 
 // NewPartialScrapeError creates PartialScrapeError for failed metrics.
 // Use this error type only when a subset of data was failed to be scraped.
-func NewPartialScrapeError(err error, failed int) error {
+func NewPartialScrapeError(err error, failed int) PartialScrapeError {
 	return PartialScrapeError{
 		error:  err,
 		Failed: failed,
