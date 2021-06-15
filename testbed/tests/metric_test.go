@@ -30,8 +30,7 @@ import (
 )
 
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
-	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
-	dataProvider := testbed.NewPerfTestDataProvider(options)
+	dataProvider := testbed.NewPerfTestDataProvider(testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10})
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
@@ -40,10 +39,10 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 		&testbed.ChildProcess{},
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
+		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 200, ExpectedMaxRAM: 200}),
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 200, ExpectedMaxRAM: 200})
 	tc.StartAgent()
 
 	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10_000})
@@ -138,13 +137,10 @@ func TestMetricsFromFile(t *testing.T) {
 		agentProc,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
+		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 70}),
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(testbed.ResourceSpec{
-		ExpectedMaxCPU: 120,
-		ExpectedMaxRAM: 70,
-	})
 	tc.StartBackend()
 	tc.StartAgent("--log-level=debug")
 
