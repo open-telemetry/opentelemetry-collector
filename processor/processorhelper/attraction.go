@@ -71,7 +71,7 @@ type ActionKeyValue struct {
 	//           Either Value or FromAttribute must be set.
 	// DELETE  - Deletes the attribute. If the key doesn't exist,
 	//           no action is performed.
-	// RENAME  - Performs the INSERT and DELETE action.
+	// RENAME  - Performs insert and delete action.
 	//			 FromAttribute must be set.
 	// HASH    - Calculates the SHA-1 hash of an existing value and overwrites the
 	//           value with it's SHA-1 hash result.
