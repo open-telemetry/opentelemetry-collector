@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/jaegertracing/jaeger/pkg/queue"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/extension/storage"
@@ -84,7 +83,8 @@ type persistentContiguousStorage struct {
 	retryDelay    time.Duration
 	unmarshaler   requestUnmarshaler
 	reqChan       chan request
-	stopped       *atomic.Uint32
+	stopChan      chan struct{}
+	stopOnce      sync.Once
 }
 
 const (
@@ -168,7 +168,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, logge
 		queueName:   queueName,
 		unmarshaler: unmarshaler,
 		reqChan:     make(chan request),
-		stopped:     atomic.NewUint32(0),
+		stopChan:    make(chan struct{}),
 		retryDelay:  defaultRetryDelay,
 	}
 	initPersistentContiguousStorage(ctx, wcs)
@@ -266,15 +266,21 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 
 func (pcs *persistentContiguousStorage) loop() {
 	for {
-		if pcs.stopped.Load() != 0 {
-			return
-		}
-
-		req, found := pcs.getNextItem(context.Background())
-		if found {
-			pcs.reqChan <- req
-		} else {
-			time.Sleep(pcs.retryDelay)
+		for {
+			req, found := pcs.getNextItem(context.Background())
+			if found {
+				select {
+				case <-pcs.stopChan:
+					return
+				case pcs.reqChan <- req:
+				}
+			} else {
+				select {
+				case <-pcs.stopChan:
+					return
+				case <-time.After(pcs.retryDelay):
+				}
+			}
 		}
 	}
 }
@@ -292,7 +298,9 @@ func (pcs *persistentContiguousStorage) size() int {
 
 func (pcs *persistentContiguousStorage) stop() {
 	pcs.logger.Debug("stopping persistentContiguousStorage", zap.String(queueNameKey, pcs.queueName))
-	pcs.stopped.Store(1)
+	pcs.stopOnce.Do(func() {
+		close(pcs.stopChan)
+	})
 }
 
 func (pcs *persistentContiguousStorage) updateItemRead(ctx context.Context, itemKey string) {
