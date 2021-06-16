@@ -441,7 +441,7 @@ func (rs *retrySender) send(req request) error {
 		)
 		retryNum++
 
-		// back-off, but Get interrupted when shutting down or request is cancelled or timed out.
+		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-req.context().Done():
 			return fmt.Errorf("request is cancelled or timed out %w", err)

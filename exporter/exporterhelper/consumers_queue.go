@@ -21,7 +21,8 @@ type consumersQueue interface {
 	// StartConsumers starts a given number of goroutines consuming items from the queue
 	// and passing them into the consumer callback.
 	StartConsumers(num int, callback func(item interface{}))
-	// Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
+	// Produce is used by the producer to submit new item to the queue. Returns false if the item wasn't added
+	// to the queue due to queue overflow.
 	Produce(item interface{}) bool
 	// Stop stops all consumers, as well as the length reporter if started,
 	// and releases the items channel. It blocks until all consumers have stopped.
