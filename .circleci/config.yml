@@ -298,7 +298,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Install packages.
-          command: sudo apt update && sudo apt-get install bzr time conntrack
+          command: sudo apt update && sudo apt-get install bzr time
       - run:
           name: Coverage tests
           command: make gotest-with-cover
