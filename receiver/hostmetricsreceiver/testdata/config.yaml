@@ -20,6 +20,7 @@ receivers:
         include:
           names: ["test2", "test3"]
           match_type: "regexp"
+      conntrack:
 
 processors:
   nop:

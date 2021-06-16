@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/net"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -98,9 +99,16 @@ var resourceFactories = map[string]internal.ResourceScraperFactory{
 	processscraper.TypeStr: &processscraper.Factory{},
 }
 
+func TestConntrack(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		return
+	}
+	counters, err := net.FilterCounters()
+	require.NoError(t, err, "Failed to scrape conntrack metrics: %v", err)
+	t.Logf("%+v", counters)
+}
+
 func TestGatherMetrics_EndToEnd(t *testing.T) {
-	os := runtime.GOOS
-	require.Equal(t, "linux", os)
 	scraperFactories = factories
 	resourceScraperFactories = resourceFactories
 

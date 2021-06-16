@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// scraper for Processes Metrics
+// scraper for Conntrack Metrics
 type scraper struct {
 	config    *Config
 	startTime pdata.Timestamp
