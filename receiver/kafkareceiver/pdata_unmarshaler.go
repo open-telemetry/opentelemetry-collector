@@ -49,3 +49,19 @@ func newPdataTracesUnmarshaler(unmarshaler model.TracesUnmarshaler, encoding str
 		encoding:          encoding,
 	}
 }
+
+type pdataMetricsUnmarshaler struct {
+	model.MetricsUnmarshaler
+	encoding string
+}
+
+func (p pdataMetricsUnmarshaler) Encoding() string {
+	return p.encoding
+}
+
+func newPdataMetricsUnmarshaler(unmarshaler model.MetricsUnmarshaler, encoding string) MetricsUnmarshaler {
+	return pdataMetricsUnmarshaler{
+		MetricsUnmarshaler: unmarshaler,
+		encoding:           encoding,
+	}
+}
