@@ -1371,11 +1371,11 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 		UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	shutdownCalled := false
 	t.Cleanup(func() {
-		if !shutdownCalled {
-			require.NoError(t, rcvr.Shutdown(context.Background()))
-		}
+		// verify state after shutdown is called
+		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected 3 targets to be running")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
 	})
 
 	// wait for all provided data to be scraped
@@ -1406,13 +1406,6 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 			target.validateFunc(t, target, results[target.name])
 		})
 	}
-
-	// verify state after shutdown is called
-	assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 3, "expected 3 targets to be running")
-	shutdownCalled = true
-	require.NoError(t, rcvr.Shutdown(context.Background()))
-
-	assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
 }
 
 // flattenTargets takes a map of jobs to target and flattens to a list of targets
