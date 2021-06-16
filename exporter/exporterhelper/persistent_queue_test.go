@@ -128,6 +128,26 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 	require.Equal(t, 5, wq.Size())
 }
 
+func TestPersistentQueue_Close(t *testing.T) {
+	path := createTemporaryDirectory()
+	defer os.RemoveAll(path)
+
+	ext := createStorageExtension(path)
+	defer ext.Shutdown(context.Background())
+
+	wq := createTestQueue(ext, 1001)
+	traces := newTraces(1, 10)
+	req := newTracesRequest(context.Background(), traces, nopTracePusher())
+
+	wq.StartConsumers(100, func(item interface{}) {})
+
+	for i := 0; i < 1000; i++ {
+		wq.Produce(req)
+	}
+	// This will close the queue very quickly, consumers should not be able to consume anything and finish gracefully
+	wq.Stop()
+}
+
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 	cases := []struct {
 		numMessagesProduced int
