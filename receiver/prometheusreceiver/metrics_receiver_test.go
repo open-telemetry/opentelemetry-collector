@@ -34,6 +34,7 @@ import (
 	gokitlog "github.com/go-kit/kit/log"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	promcfg "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -1370,7 +1371,12 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 		UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
+	shutdownCalled := false
+	t.Cleanup(func() {
+		if !shutdownCalled {
+			require.NoError(t, rcvr.Shutdown(context.Background()))
+		}
+	})
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()
@@ -1400,6 +1406,22 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 			target.validateFunc(t, target, results[target.name])
 		})
 	}
+
+	// verify state after shutdown is called
+	assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 3, "expected 3 targets to be running")
+	shutdownCalled = true
+	require.NoError(t, rcvr.Shutdown(context.Background()))
+
+	assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+}
+
+// flattenTargets takes a map of jobs to target and flattens to a list of targets
+func flattenTargets(targets map[string][]*scrape.Target) []*scrape.Target {
+	var flatTargets []*scrape.Target
+	for _, target := range targets {
+		flatTargets = append(flatTargets, target...)
+	}
+	return flatTargets
 }
 
 var startTimeMetricRegexPage = `
