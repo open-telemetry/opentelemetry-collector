@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"errors"
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
@@ -34,6 +35,101 @@ const (
 	startTime = uint64(12578940000000012345)
 	endTime   = uint64(12578940000000054321)
 )
+
+func TestMetricsMarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mm := NewMetricsMarshaler(encoder, translator)
+	md := NewMetrics()
+
+	translator.On("FromMetrics", md).Return(nil, errors.New("translation failed"))
+
+	_, err := mm.Marshal(md)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
+}
+
+func TestMetricsMarshal_SerializeError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mm := NewMetricsMarshaler(encoder, translator)
+	md := NewMetrics()
+	expectedModel := struct{}{}
+
+	translator.On("FromMetrics", md).Return(expectedModel, nil)
+	encoder.On("EncodeMetrics", expectedModel).Return(nil, errors.New("serialization failed"))
+
+	_, err := mm.Marshal(md)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "marshal failed: serialization failed")
+}
+
+func TestMetricsMarshal_Encode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mm := NewMetricsMarshaler(encoder, translator)
+	expectedMetrics := NewMetrics()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	translator.On("FromMetrics", expectedMetrics).Return(expectedModel, nil)
+	encoder.On("EncodeMetrics", expectedModel).Return(expectedBytes, nil)
+
+	actualBytes, err := mm.Marshal(expectedMetrics)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestMetricsUnmarshal_EncodingError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, errors.New("decode failed"))
+
+	_, err := mu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unmarshal failed: decode failed")
+}
+
+func TestMetricsUnmarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToMetrics", expectedModel).Return(NewMetrics(), errors.New("translation failed"))
+
+	_, err := mu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
+}
+
+func TestMetricsUnmarshal_Decode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedMetrics := NewMetrics()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToMetrics", expectedModel).Return(expectedMetrics, nil)
+
+	actualMetrics, err := mu.Unmarshal(expectedBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMetrics, actualMetrics)
+}
 
 func TestCopyData(t *testing.T) {
 	tests := []struct {

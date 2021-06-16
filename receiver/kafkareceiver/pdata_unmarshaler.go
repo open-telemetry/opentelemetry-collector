@@ -15,11 +15,11 @@
 package kafkareceiver
 
 import (
-	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type pdataLogsUnmarshaler struct {
-	model.LogsUnmarshaler
+	pdata.LogsUnmarshaler
 	encoding string
 }
 
@@ -27,7 +27,7 @@ func (p pdataLogsUnmarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataLogsUnmarshaler(unmarshaler model.LogsUnmarshaler, encoding string) LogsUnmarshaler {
+func newPdataLogsUnmarshaler(unmarshaler pdata.LogsUnmarshaler, encoding string) LogsUnmarshaler {
 	return pdataLogsUnmarshaler{
 		LogsUnmarshaler: unmarshaler,
 		encoding:        encoding,
@@ -35,7 +35,7 @@ func newPdataLogsUnmarshaler(unmarshaler model.LogsUnmarshaler, encoding string)
 }
 
 type pdataTracesUnmarshaler struct {
-	model.TracesUnmarshaler
+	pdata.TracesUnmarshaler
 	encoding string
 }
 
@@ -43,7 +43,7 @@ func (p pdataTracesUnmarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataTracesUnmarshaler(unmarshaler model.TracesUnmarshaler, encoding string) TracesUnmarshaler {
+func newPdataTracesUnmarshaler(unmarshaler pdata.TracesUnmarshaler, encoding string) TracesUnmarshaler {
 	return pdataTracesUnmarshaler{
 		TracesUnmarshaler: unmarshaler,
 		encoding:          encoding,
@@ -51,7 +51,7 @@ func newPdataTracesUnmarshaler(unmarshaler model.TracesUnmarshaler, encoding str
 }
 
 type pdataMetricsUnmarshaler struct {
-	model.MetricsUnmarshaler
+	pdata.MetricsUnmarshaler
 	encoding string
 }
 
@@ -59,7 +59,7 @@ func (p pdataMetricsUnmarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataMetricsUnmarshaler(unmarshaler model.MetricsUnmarshaler, encoding string) MetricsUnmarshaler {
+func newPdataMetricsUnmarshaler(unmarshaler pdata.MetricsUnmarshaler, encoding string) MetricsUnmarshaler {
 	return pdataMetricsUnmarshaler{
 		MetricsUnmarshaler: unmarshaler,
 		encoding:           encoding,

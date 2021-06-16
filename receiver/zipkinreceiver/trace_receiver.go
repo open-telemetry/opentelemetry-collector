@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
@@ -58,11 +57,11 @@ type ZipkinReceiver struct {
 	server     *http.Server
 	config     *Config
 
-	v1ThriftUnmarshaler      model.TracesUnmarshaler
-	v1JSONUnmarshaler        model.TracesUnmarshaler
-	jsonUnmarshaler          model.TracesUnmarshaler
-	protobufUnmarshaler      model.TracesUnmarshaler
-	protobufDebugUnmarshaler model.TracesUnmarshaler
+	v1ThriftUnmarshaler      pdata.TracesUnmarshaler
+	v1JSONUnmarshaler        pdata.TracesUnmarshaler
+	jsonUnmarshaler          pdata.TracesUnmarshaler
+	protobufUnmarshaler      pdata.TracesUnmarshaler
+	protobufDebugUnmarshaler pdata.TracesUnmarshaler
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)

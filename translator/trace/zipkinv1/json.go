@@ -29,7 +29,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/model"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
@@ -47,7 +46,7 @@ var (
 	errHexIDWrongLen                          = errors.New("hex Id has wrong length (expected 16)")
 	errHexIDParsing                           = errors.New("failed to parse hex Id")
 	errHexIDZero                              = errors.New("ID is zero")
-	_                     model.TracesDecoder = (*jsonDecoder)(nil)
+	_                     pdata.TracesDecoder = (*jsonDecoder)(nil)
 )
 
 type jsonDecoder struct {
@@ -61,8 +60,8 @@ func (j jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 }
 
 // NewJSONTracesUnmarshaler returns an unmarshaler for Zipkin JSON.
-func NewJSONTracesUnmarshaler(parseStringTags bool) model.TracesUnmarshaler {
-	return model.NewTracesUnmarshaler(jsonDecoder{ParseStringTags: parseStringTags}, toTranslator{})
+func NewJSONTracesUnmarshaler(parseStringTags bool) pdata.TracesUnmarshaler {
+	return pdata.NewTracesUnmarshaler(jsonDecoder{ParseStringTags: parseStringTags}, toTranslator{})
 }
 
 // Trace translation from Zipkin V1 is a bit of special case since there is no model

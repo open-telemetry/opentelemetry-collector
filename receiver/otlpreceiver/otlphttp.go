@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -38,7 +38,7 @@ func handleTraces(
 	req *http.Request,
 	contentType string,
 	tracesReceiver *trace.Receiver,
-	tracesUnmarshaler model.TracesUnmarshaler) {
+	tracesUnmarshaler pdata.TracesUnmarshaler) {
 	body, ok := readAndCloseBody(resp, req, contentType)
 	if !ok {
 		return
@@ -65,7 +65,7 @@ func handleMetrics(
 	req *http.Request,
 	contentType string,
 	metricsReceiver *metrics.Receiver,
-	metricsUnmarshaler model.MetricsUnmarshaler) {
+	metricsUnmarshaler pdata.MetricsUnmarshaler) {
 	body, ok := readAndCloseBody(resp, req, contentType)
 	if !ok {
 		return
@@ -92,7 +92,7 @@ func handleLogs(
 	req *http.Request,
 	contentType string,
 	logsReceiver *logs.Receiver,
-	logsUnmarshaler model.LogsUnmarshaler) {
+	logsUnmarshaler pdata.LogsUnmarshaler) {
 	body, ok := readAndCloseBody(resp, req, contentType)
 	if !ok {
 		return

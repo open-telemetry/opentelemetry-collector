@@ -29,14 +29,13 @@ import (
 	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
 
-var _ model.ToTracesTranslator = (*ToTranslator)(nil)
+var _ pdata.ToTracesTranslator = (*ToTranslator)(nil)
 
 // ToTranslator converts from Zipkin data model to pdata.
 type ToTranslator struct {
@@ -48,7 +47,7 @@ type ToTranslator struct {
 func (t ToTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
 	zipkinSpans, ok := src.([]*zipkinmodel.SpanModel)
 	if !ok {
-		return pdata.Traces{}, model.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, src)
+		return pdata.Traces{}, pdata.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, src)
 	}
 
 	traceData := pdata.NewTraces()
