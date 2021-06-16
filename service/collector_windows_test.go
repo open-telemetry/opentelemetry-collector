@@ -34,13 +34,13 @@ func TestWindowsService_Execute(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	s := NewWindowsService(AppSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
+	s := NewWindowsService(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
 
-	appDone := make(chan struct{})
+	colDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)
 	changes := make(chan svc.Status)
 	go func() {
-		defer close(appDone)
+		defer close(colDone)
 		ssec, errno := s.Execute([]string{"svc name"}, requests, changes)
 		assert.Equal(t, uint32(0), errno)
 		assert.False(t, ssec)
@@ -53,5 +53,5 @@ func TestWindowsService_Execute(t *testing.T) {
 	requests <- svc.ChangeRequest{Cmd: svc.Stop}
 	assert.Equal(t, svc.StopPending, (<-changes).State)
 	assert.Equal(t, svc.Stopped, (<-changes).State)
-	<-appDone
+	<-colDone
 }
