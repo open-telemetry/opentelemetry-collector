@@ -99,6 +99,8 @@ var resourceFactories = map[string]internal.ResourceScraperFactory{
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
+	os := runtime.GOOS
+	require.Equal(t, "linux", os)
 	scraperFactories = factories
 	resourceScraperFactories = resourceFactories
 
