@@ -47,9 +47,6 @@ func createTestQueue(extension storage.Extension, capacity int) *persistentQueue
 	}
 
 	wq := newPersistentQueue(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
-	wq.storage.(*persistentContiguousStorage).mu.Lock()
-	wq.storage.(*persistentContiguousStorage).retryDelay = 10 * time.Millisecond
-	wq.storage.(*persistentContiguousStorage).mu.Unlock()
 	return wq
 }
 

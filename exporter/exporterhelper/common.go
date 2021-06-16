@@ -58,7 +58,7 @@ type request interface {
 	marshal() ([]byte, error)
 }
 
-// requestUnmarshaler defines a function which can take a byte stream and unmarshal it into a relevant request
+// requestUnmarshaler defines a function which takes a byte slice and unmarshal it into a relevant request
 type requestUnmarshaler func([]byte) (request, error)
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).

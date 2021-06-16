@@ -34,7 +34,7 @@ type persistentQueue struct {
 	logger     *zap.Logger
 	stopWG     sync.WaitGroup
 	produceMu  sync.Mutex
-	exitChan   chan int
+	exitChan   chan struct{}
 	capacity   int
 	numWorkers int
 
@@ -93,14 +93,14 @@ const (
 	itemKeyTemplate   = "it-%d"
 	readIndexKey      = "ri"
 	writeIndexKey     = "wi"
-	defaultRetryDelay = 500 * time.Millisecond
+	defaultRetryDelay = 100 * time.Millisecond
 )
 
 // newPersistentQueue creates a new queue backed by file storage
 func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentQueue {
 	return &persistentQueue{
 		logger:   logger,
-		exitChan: make(chan int),
+		exitChan: make(chan struct{}),
 		capacity: capacity,
 		storage:  newPersistentContiguousStorage(ctx, name, logger, client, unmarshaler),
 	}
@@ -172,7 +172,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, logge
 		retryDelay:  defaultRetryDelay,
 	}
 	initPersistentContiguousStorage(ctx, wcs)
-	go wcs.loop(ctx)
+	go wcs.loop()
 	return wcs
 }
 
@@ -264,13 +264,13 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 	return nil, false
 }
 
-func (pcs *persistentContiguousStorage) loop(ctx context.Context) {
+func (pcs *persistentContiguousStorage) loop() {
 	for {
 		if pcs.stopped.Load() != 0 {
 			return
 		}
 
-		req, found := pcs.getNextItem(ctx)
+		req, found := pcs.getNextItem(context.Background())
 		if found {
 			pcs.reqChan <- req
 		} else {
@@ -279,7 +279,7 @@ func (pcs *persistentContiguousStorage) loop(ctx context.Context) {
 	}
 }
 
-// get returns the next request from the queue as available via the channel
+// get returns the request channel that all the requests will be send on
 func (pcs *persistentContiguousStorage) get() <-chan request {
 	return pcs.reqChan
 }
