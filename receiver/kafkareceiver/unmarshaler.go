@@ -30,6 +30,15 @@ type TracesUnmarshaler interface {
 	Encoding() string
 }
 
+// MetricsUnmarshaler deserializes the message body
+type MetricsUnmarshaler interface {
+	// Unmarshal deserializes the message body into traces
+	Unmarshal([]byte) (pdata.Metrics, error)
+
+	// Encoding of the serialized messages
+	Encoding() string
+}
+
 // LogsUnmarshaler deserializes the message body.
 type LogsUnmarshaler interface {
 	// Unmarshal deserializes the message body into traces.
@@ -54,6 +63,13 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 		zipkinProto.Encoding():  zipkinProto,
 		zipkinJSON.Encoding():   zipkinJSON,
 		zipkinThrift.Encoding(): zipkinThrift,
+	}
+}
+
+func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
+	otlpPb := newPdataMetricsUnmarshaler(otlp.NewProtobufMetricsUnmarshaler(), defaultEncoding)
+	return map[string]MetricsUnmarshaler{
+		otlpPb.Encoding(): otlpPb,
 	}
 }
 
