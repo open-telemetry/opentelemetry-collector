@@ -861,7 +861,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "up",
-					Description: "The scraping was sucessful",
+					Description: "The scraping was successful",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					Unit:        "bool",
 				},
