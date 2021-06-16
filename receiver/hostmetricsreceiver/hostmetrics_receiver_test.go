@@ -118,15 +118,12 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			networkscraper.TypeStr:    &networkscraper.Config{},
 			pagingscraper.TypeStr:     &pagingscraper.Config{},
 			processesscraper.TypeStr:  &processesscraper.Config{},
+			conntrackscraper.TypeStr:  &conntrackscraper.Config{},
 		},
 	}
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
 		cfg.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
-	}
-
-	if runtime.GOOS == "linux" {
-		cfg.Scrapers[conntrackscraper.TypeStr] = &conntrackscraper.Config{}
 	}
 
 	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
