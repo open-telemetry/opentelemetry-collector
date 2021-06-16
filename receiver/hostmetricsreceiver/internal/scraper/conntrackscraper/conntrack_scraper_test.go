@@ -48,7 +48,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:        "Error",
 			scraperFunc: func() ([]net.FilterStat, error) { return nil, errors.New("err1") },
-			expectedErr: "err1",
+			expectedErr: "failed to scrape conntrack metrics: err1",
 		},
 	}
 
