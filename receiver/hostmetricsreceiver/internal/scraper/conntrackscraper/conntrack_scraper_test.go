@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 			assert.Equal(t, expectedMetricCount, metrics.Len())
 
 			if expectConntrackMetrics {
-				assertNetworkConntrackMetricValid(t, metrics.At(0), metadata.Metrics.SystemConntrackMax.New())
+				assertNetworkConntrackMetricValid(t, metrics.At(0), metadata.Metrics.SystemConntrackCount.New())
 				assertNetworkConntrackMetricValid(t, metrics.At(1), metadata.Metrics.SystemConntrackMax.New())
 			}
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
