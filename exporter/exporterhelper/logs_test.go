@@ -121,6 +121,30 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	checkRecordedMetricsForLogsExporter(t, le, want)
 }
 
+func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	rCfg := DefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	qCfg.QueueSize = 2
+	wantErr := errors.New("some-error")
+	te, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	md := testdata.GenerateLogsTwoLogRecordsSameResourceOneDifferent()
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		te.ConsumeLogs(context.Background(), md)
+	}
+
+	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
+	checkExporterEnqueueFailedLogsStats(t, fakeLogsExporterName, int64(15))
+}
+
 func TestLogsExporter_WithSpan(t *testing.T) {
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
 	require.Nil(t, err)

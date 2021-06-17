@@ -22,10 +22,10 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
@@ -105,10 +105,7 @@ type getReceiverConfigFn func() config.Receiver
 func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	receiverCreateParams := component.ReceiverCreateParams{
-		Logger:    zap.NewNop(),
-		BuildInfo: component.DefaultBuildInfo(),
-	}
+	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -121,7 +118,7 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 	}
 
 	for _, createFn := range createFns {
-		firstRcvr, err := createFn(ctx, receiverCreateParams, getConfigFn())
+		firstRcvr, err := createFn(ctx, receiverCreateSet, getConfigFn())
 		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			continue
 		}
@@ -129,7 +126,7 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 		require.NoError(t, firstRcvr.Start(ctx, host))
 		require.NoError(t, firstRcvr.Shutdown(ctx))
 
-		secondRcvr, err := createFn(ctx, receiverCreateParams, getConfigFn())
+		secondRcvr, err := createFn(ctx, receiverCreateSet, getConfigFn())
 		require.NoError(t, err)
 		require.NoError(t, secondRcvr.Start(ctx, host))
 		require.NoError(t, secondRcvr.Shutdown(ctx))
@@ -139,24 +136,24 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
 type createReceiverFn func(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 ) (component.Receiver, error)
 
 func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateLogsReceiver(ctx, params, cfg, consumertest.NewNop())
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (component.Receiver, error) {
+		return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateMetricsReceiver(ctx, params, cfg, consumertest.NewNop())
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (component.Receiver, error) {
+		return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, params component.ReceiverCreateParams, cfg config.Receiver) (component.Receiver, error) {
-		return factory.CreateTracesReceiver(ctx, params, cfg, consumertest.NewNop())
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (component.Receiver, error) {
+		return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }

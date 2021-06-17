@@ -15,10 +15,12 @@
 package kafkareceiver
 
 import (
+	"context"
 	"testing"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
@@ -26,8 +28,10 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
+
+var v2FromTranslator zipkinv2.FromTranslator
 
 func TestUnmarshalZipkin(t *testing.T) {
 	td := pdata.NewTraces()
@@ -41,8 +45,9 @@ func TestUnmarshalZipkin(t *testing.T) {
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
-	spans, err := zipkintranslator.InternalTracesToZipkinSpans(td)
+	ret, err := v2FromTranslator.FromTraces(td)
 	require.NoError(t, err)
+	spans := ret.([]*zipkinmodel.SpanModel)
 
 	serializer := zipkinreporter.JSONSerializer{}
 	jsonBytes, err := serializer.Serialize(spans)
@@ -50,13 +55,13 @@ func TestUnmarshalZipkin(t *testing.T) {
 
 	tSpan := &zipkincore.Span{Name: "foo"}
 	thriftTransport := thrift.NewTMemoryBuffer()
-	protocolTransport := thrift.NewTBinaryProtocolTransport(thriftTransport)
-	require.NoError(t, protocolTransport.WriteListBegin(thrift.STRUCT, 1))
-	err = tSpan.Write(protocolTransport)
+	protocolTransport := thrift.NewTBinaryProtocolConf(thriftTransport, nil)
+	require.NoError(t, protocolTransport.WriteListBegin(context.Background(), thrift.STRUCT, 1))
+	err = tSpan.Write(context.Background(), protocolTransport)
 	require.NoError(t, err)
-	require.NoError(t, protocolTransport.WriteListEnd())
+	require.NoError(t, protocolTransport.WriteListEnd(context.Background()))
 
-	tdThrift, err := zipkintranslator.V1ThriftBatchToInternalTraces([]*zipkincore.Span{tSpan})
+	tdThrift, err := newZipkinThriftUnmarshaler().Unmarshal(thriftTransport.Buffer.Bytes())
 	require.NoError(t, err)
 
 	protoBytes, err := new(zipkin_proto3.SpanSerializer).Serialize(spans)
@@ -69,19 +74,19 @@ func TestUnmarshalZipkin(t *testing.T) {
 		expected    pdata.Traces
 	}{
 		{
-			unmarshaler: zipkinProtoSpanUnmarshaler{},
+			unmarshaler: newZipkinProtobufUnmarshaler(),
 			encoding:    "zipkin_proto",
 			bytes:       protoBytes,
 			expected:    td,
 		},
 		{
-			unmarshaler: zipkinJSONSpanUnmarshaler{},
+			unmarshaler: newZipkinJSONUnmarshaler(),
 			encoding:    "zipkin_json",
 			bytes:       jsonBytes,
 			expected:    td,
 		},
 		{
-			unmarshaler: zipkinThriftSpanUnmarshaler{},
+			unmarshaler: newZipkinThriftUnmarshaler(),
 			encoding:    "zipkin_thrift",
 			bytes:       thriftTransport.Buffer.Bytes(),
 			expected:    tdThrift,
@@ -98,22 +103,19 @@ func TestUnmarshalZipkin(t *testing.T) {
 }
 
 func TestUnmarshalZipkinThrift_error(t *testing.T) {
-	p := zipkinThriftSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	p := newZipkinThriftUnmarshaler()
+	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestUnmarshalZipkinJSON_error(t *testing.T) {
-	p := zipkinJSONSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	p := newZipkinJSONUnmarshaler()
+	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestUnmarshalZipkinProto_error(t *testing.T) {
-	p := zipkinProtoSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	p := newZipkinProtobufUnmarshaler()
+	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }

@@ -72,10 +72,10 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartTraceDataReceiveOp(receiverCtx)
+		ctx := rec.StartTracesOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndTraceDataReceiveOp(
+		rec.EndTracesOp(
 			ctx,
 			format,
 			rcvdSpans[i],
@@ -133,10 +133,10 @@ func TestReceiveLogsOp(t *testing.T) {
 	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartLogsReceiveOp(receiverCtx)
+		ctx := rec.StartLogsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndLogsReceiveOp(
+		rec.EndLogsOp(
 			ctx,
 			format,
 			rcvdLogRecords[i],
@@ -194,10 +194,10 @@ func TestReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartMetricsReceiveOp(receiverCtx)
+		ctx := rec.StartMetricsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		rec.EndMetricsReceiveOp(
+		rec.EndMetricsOp(
 			ctx,
 			format,
 			rcvdMetricPts[i],
@@ -310,9 +310,9 @@ func TestExportTraceDataOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx := obsrep.StartTracesExportOp(parentCtx)
+		ctx := obsrep.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
-		obsrep.EndTracesExportOp(ctx, numExportedSpans[i], err)
+		obsrep.EndTracesOp(ctx, numExportedSpans[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -358,10 +358,10 @@ func TestExportMetricsOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartMetricsExportOp(parentCtx)
+		ctx := obsrep.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndMetricsExportOp(ctx, toSendMetricPoints[i], err)
+		obsrep.EndMetricsOp(ctx, toSendMetricPoints[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -406,10 +406,10 @@ func TestExportLogsOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartLogsExportOp(parentCtx)
+		ctx := obsrep.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndLogsExportOp(ctx, toSendLogRecords[i], err)
+		obsrep.EndLogsOp(ctx, toSendLogRecords[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -466,12 +466,12 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
-		ctx := rec.StartTraceDataReceiveOp(
+		ctx := rec.StartTracesOp(
 			longLivedCtx,
 			WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 
-		rec.EndTraceDataReceiveOp(
+		rec.EndTracesOp(
 			ctx,
 			format,
 			op.numSpans,

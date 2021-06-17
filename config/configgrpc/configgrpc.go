@@ -44,7 +44,7 @@ const (
 
 var (
 	// Map of opentelemetry compression types to grpc registered compression types.
-	grpcCompressionKeyMap = map[string]string{
+	gRPCCompressionKeyMap = map[string]string{
 		CompressionGzip: gzip.Name,
 	}
 )
@@ -94,27 +94,18 @@ type GRPCClientSettings struct {
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
 
-	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis.
-	PerRPCAuth *PerRPCAuthConfig `mapstructure:"per_rpc_auth"`
-
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
+
+	// Auth configuration for outgoing RPCs.
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
-}
-
-// PerRPCAuthConfig specifies how the Per-RPC authentication data should be obtained.
-type PerRPCAuthConfig struct {
-	// AuthType represents the authentication type to use. Currently, only 'bearer' is supported.
-	AuthType string `mapstructure:"type,omitempty"`
-
-	// BearerToken specifies the bearer token to use for every RPC.
-	BearerToken string `mapstructure:"bearer_token,omitempty"`
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -168,7 +159,7 @@ type GRPCServerSettings struct {
 }
 
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
-func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
+func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
@@ -205,14 +196,26 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		opts = append(opts, keepAliveOption)
 	}
 
-	if gcs.PerRPCAuth != nil {
-		if strings.EqualFold(gcs.PerRPCAuth.AuthType, PerRPCAuthTypeBearer) {
-			sToken := gcs.PerRPCAuth.BearerToken
-			token := BearerToken(sToken)
-			opts = append(opts, grpc.WithPerRPCCredentials(token))
-		} else {
-			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.PerRPCAuth.AuthType)
+	if gcs.Auth != nil {
+		if ext == nil {
+			return nil, fmt.Errorf("no extensions configuration available")
 		}
+
+		componentID, cperr := config.NewIDFromString(gcs.Auth.AuthenticatorName)
+		if cperr != nil {
+			return nil, cperr
+		}
+
+		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, componentID)
+		if cerr != nil {
+			return nil, cerr
+		}
+
+		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
+		if perr != nil {
+			return nil, err
+		}
+		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
 
 	if gcs.BalancerName != "" {
@@ -297,14 +300,19 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	}
 
 	if gss.Auth != nil {
-		authenticator, err := configauth.GetAuthenticator(ext, gss.Auth.AuthenticatorName)
+		componentID, cperr := config.NewIDFromString(gss.Auth.AuthenticatorName)
+		if cperr != nil {
+			return nil, cperr
+		}
+
+		authenticator, err := configauth.GetServerAuthenticator(ext, componentID)
 		if err != nil {
 			return nil, err
 		}
 
 		opts = append(opts,
-			grpc.UnaryInterceptor(authenticator.GrpcUnaryServerInterceptor),
-			grpc.StreamInterceptor(authenticator.GrpcStreamServerInterceptor),
+			grpc.UnaryInterceptor(authenticator.GRPCUnaryServerInterceptor),
+			grpc.StreamInterceptor(authenticator.GRPCStreamServerInterceptor),
 		)
 	}
 
@@ -319,7 +327,7 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 // passed in compression key is supported, and CompressionUnsupported otherwise.
 func GetGRPCCompressionKey(compressionType string) string {
 	compressionKey := strings.ToLower(compressionType)
-	if encodingKey, ok := grpcCompressionKeyMap[compressionKey]; ok {
+	if encodingKey, ok := gRPCCompressionKeyMap[compressionKey]; ok {
 		return encodingKey
 	}
 	return CompressionUnsupported

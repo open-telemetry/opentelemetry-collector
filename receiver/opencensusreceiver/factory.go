@@ -53,7 +53,7 @@ func createDefaultConfig() config.Receiver {
 
 func createTracesReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateParams,
+	_ component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -74,7 +74,7 @@ func createTracesReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateParams,
+	_ component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {

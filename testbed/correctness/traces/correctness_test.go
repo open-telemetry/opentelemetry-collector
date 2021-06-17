@@ -78,10 +78,10 @@ func testWithTracingGoldenDataset(
 		runner,
 		validator,
 		correctnessResults,
+		testbed.WithResourceLimits(resourceSpec),
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(resourceSpec)
 	tc.EnableRecording()
 	tc.StartBackend()
 	tc.StartAgent("--metrics-level=NONE")

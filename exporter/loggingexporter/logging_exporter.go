@@ -26,57 +26,81 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/internal/otlptext"
 )
 
 type loggingExporter struct {
-	logger *zap.Logger
-	debug  bool
+	logger           *zap.Logger
+	debug            bool
+	logsMarshaler    model.LogsMarshaler
+	metricsMarshaler model.MetricsMarshaler
+	tracesMarshaler  model.TracesMarshaler
 }
 
-func (s *loggingExporter) pushTraceData(
-	_ context.Context,
-	td pdata.Traces,
-) error {
-
+func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 
 	if !s.debug {
 		return nil
 	}
 
-	s.logger.Debug(otlptext.Traces(td))
-
+	buf, err := s.tracesMarshaler.Marshal(td)
+	if err != nil {
+		return err
+	}
+	s.logger.Debug(string(buf))
 	return nil
 }
 
-func (s *loggingExporter) pushMetricsData(
-	_ context.Context,
-	md pdata.Metrics,
-) error {
+func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !s.debug {
 		return nil
 	}
 
-	s.logger.Debug(otlptext.Metrics(md))
-
+	buf, err := s.metricsMarshaler.Marshal(md)
+	if err != nil {
+		return err
+	}
+	s.logger.Debug(string(buf))
 	return nil
+}
+
+func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
+	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
+
+	if !s.debug {
+		return nil
+	}
+
+	buf, err := s.logsMarshaler.Marshal(ld)
+	if err != nil {
+		return err
+	}
+	s.logger.Debug(string(buf))
+	return nil
+}
+
+func newLoggingExporter(level string, logger *zap.Logger) *loggingExporter {
+	return &loggingExporter{
+		debug:            strings.ToLower(level) == "debug",
+		logger:           logger,
+		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
+		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
+		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+	}
 }
 
 // newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
 func newTracesExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
-	s := &loggingExporter{
-		debug:  strings.ToLower(level) == "debug",
-		logger: logger,
-	}
-
+	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewTracesExporter(
 		config,
 		logger,
-		s.pushTraceData,
+		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -89,15 +113,11 @@ func newTracesExporter(config config.Exporter, level string, logger *zap.Logger)
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
 func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
-	s := &loggingExporter{
-		debug:  strings.ToLower(level) == "debug",
-		logger: logger,
-	}
-
+	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewMetricsExporter(
 		config,
 		logger,
-		s.pushMetricsData,
+		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -110,15 +130,11 @@ func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
 func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
-	s := &loggingExporter{
-		debug:  strings.ToLower(level) == "debug",
-		logger: logger,
-	}
-
+	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewLogsExporter(
 		config,
 		logger,
-		s.pushLogData,
+		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -126,21 +142,6 @@ func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
-}
-
-func (s *loggingExporter) pushLogData(
-	_ context.Context,
-	ld pdata.Logs,
-) error {
-	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
-
-	if !s.debug {
-		return nil
-	}
-
-	s.logger.Debug(otlptext.Logs(ld))
-
-	return nil
 }
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {

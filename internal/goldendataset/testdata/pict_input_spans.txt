@@ -1,10 +1,10 @@
 Parent: Root, Child
 Tracestate: Empty, One, Four
 Kind: Unspecified, Internal, Server, Client, Producer, Consumer
-Attributes: Nil, Empty, DatabaseSQL, DatabaseNoSQL, FaaSDatasource, FaaSHTTP, FaaSPubSub, FaaSTimer, FaaSOther, HTTPClient, HTTPServer, MessagingProducer, MessagingConsumer, gRPCClient, gRPCServer, Internal, MaxCount
-Events: Nil, Empty, One, Two, Eight
-Links: Nil, Empty, One, Two, Eight
-Status: Nil, Ok, Cancelled, UnknownError, InvalidArgument, DeadlineExceeded, NotFound, AlreadyExists, PermissionDenied, ResourceExhausted, FailedPrecondition, Aborted, OutOfRange, Unimplemented, InternalError, Unavailable, DataLoss, Unauthenticated
+Attributes: Empty, DatabaseSQL, DatabaseNoSQL, FaaSDatasource, FaaSHTTP, FaaSPubSub, FaaSTimer, FaaSOther, HTTPClient, HTTPServer, MessagingProducer, MessagingConsumer, gRPCClient, gRPCServer, Internal, MaxCount
+Events: Empty, One, Two, Eight
+Links: Empty, One, Two, Eight
+Status: Unset, Ok, Error
 
 IF [Parent] = "Root" THEN [Kind] in {"Server", "Producer"};
 IF [Kind] = "Internal" THEN [Attributes] in {"Nil", "Internal"};

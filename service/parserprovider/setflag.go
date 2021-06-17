@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/providers/confmap"
+	"github.com/magiconair/properties"
 
 	"go.opentelemetry.io/collector/config/configparser"
 )
-
-const setFlagFileType = "properties"
 
 type setFlagProvider struct {
 	base ParserProvider
@@ -54,51 +54,32 @@ func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
 			return nil, err
 		}
 	}
-	viperFlags := viper.NewWithOptions(viper.KeyDelimiter(configparser.KeyDelimiter))
-	viperFlags.SetConfigType(setFlagFileType)
-	if err := viperFlags.ReadConfig(b); err != nil {
-		return nil, fmt.Errorf("failed to read set flag config: %v", err)
-	}
 
-	cp, err := sfl.base.Get()
-	if err != nil {
+	var props *properties.Properties
+	var err error
+	if props, err = properties.Load(b.Bytes(), properties.UTF8); err != nil {
 		return nil, err
 	}
 
-	// Viper implementation of v.MergeConfig(io.Reader) or v.MergeConfigMap(map[string]interface)
-	// does not work properly.  This is b/c if it attempts to merge into a nil object it will fail here
-	// https://github.com/spf13/viper/blob/3826be313591f83193f048520482a7b3cf17d506/viper.go#L1709
-
-	// The workaround is to call v.Set(string, interface) on all root properties from the config file
-	// this will correctly preserve the original config and set them up for viper to overlay them with
-	// the --set params.  It should also be noted that setting the root keys is important.  This is
-	// b/c the viper .AllKeys() method does not return empty objects.
-	// For instance with the following yaml structure:
-	// a:
-	//   b:
-	//   c: {}
-	//
-	// viper.AllKeys() would only return a.b, but not a.c.  However otel expects {} to behave
-	// the same as nil object in its config file.  Therefore we extract and set the root keys only
-	// to catch both a.b and a.c.
-
-	rootKeys := map[string]struct{}{}
-	for _, k := range viperFlags.AllKeys() {
-		keys := strings.Split(k, configparser.KeyDelimiter)
-		if len(keys) > 0 {
-			rootKeys[keys[0]] = struct{}{}
-		}
+	// Create a map manually instead of using props.Map() to allow env var expansion
+	// as used by original Viper-based configparser.Parser.
+	parsed := map[string]interface{}{}
+	for _, key := range props.Keys() {
+		value, _ := props.Get(key)
+		parsed[key] = value
 	}
 
-	for k := range rootKeys {
-		cp.Set(k, cp.Get(k))
+	propertyKoanf := koanf.New(".")
+	if err = propertyKoanf.Load(confmap.Provider(parsed, "."), nil); err != nil {
+		return nil, fmt.Errorf("failed to read set flag config: %v", err)
 	}
 
-	// now that we've copied the config into the viper "overrides" copy the --set flags
-	// as well
-	for _, k := range viperFlags.AllKeys() {
-		cp.Set(k, viperFlags.Get(k))
+	var cp *configparser.Parser
+	if cp, err = sfl.base.Get(); err != nil {
+		return nil, err
 	}
+
+	cp.MergeStringMap(propertyKoanf.Raw())
 
 	return cp, nil
 }

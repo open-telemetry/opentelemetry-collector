@@ -39,7 +39,7 @@ func (er *errConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
 	return er.err
 }
 
-// NewErr returns a Consumer that just drops all received data and returns no error.
+// NewErr returns a Consumer that just drops all received data and returns the specified error to Consume* callers.
 func NewErr(err error) Consumer {
 	return &errConsumer{err: err}
 }

@@ -17,11 +17,21 @@ package componenttest
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
+
+// NewNopExporterCreateSettings returns a new nop settings for Create*Exporter functions.
+func NewNopExporterCreateSettings() component.ExporterCreateSettings {
+	return component.ExporterCreateSettings{
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
+	}
+}
 
 type nopExporterConfig struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -52,7 +62,7 @@ func (f *nopExporterFactory) CreateDefaultConfig() config.Exporter {
 // CreateTracesExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateTracesExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.TracesExporter, error) {
 	return nopExporterInstance, nil
@@ -61,7 +71,7 @@ func (f *nopExporterFactory) CreateTracesExporter(
 // CreateMetricsExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.MetricsExporter, error) {
 	return nopExporterInstance, nil
@@ -70,7 +80,7 @@ func (f *nopExporterFactory) CreateMetricsExporter(
 // CreateLogsExporter implements component.ExporterFactory interface.
 func (f *nopExporterFactory) CreateLogsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	_ config.Exporter,
 ) (component.LogsExporter, error) {
 	return nopExporterInstance, nil

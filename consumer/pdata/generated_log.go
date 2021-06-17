@@ -23,7 +23,7 @@ import (
 
 // ResourceLogsSlice logically represents a slice of ResourceLogs.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewResourceLogsSlice function to create new instances.
@@ -55,10 +55,10 @@ func (es ResourceLogsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es ResourceLogsSlice) At(ix int) ResourceLogs {
 	return newResourceLogs((*es.orig)[ix])
 }
@@ -88,12 +88,12 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ResourceLogsSlice can be initialized:
-// es := NewResourceLogsSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewResourceLogsSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es ResourceLogsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -203,7 +203,7 @@ func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 
 // InstrumentationLibraryLogsSlice logically represents a slice of InstrumentationLibraryLogs.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibraryLogsSlice function to create new instances.
@@ -235,10 +235,10 @@ func (es InstrumentationLibraryLogsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es InstrumentationLibraryLogsSlice) At(ix int) InstrumentationLibraryLogs {
 	return newInstrumentationLibraryLogs((*es.orig)[ix])
 }
@@ -268,12 +268,12 @@ func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogs
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new InstrumentationLibraryLogsSlice can be initialized:
-// es := NewInstrumentationLibraryLogsSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewInstrumentationLibraryLogsSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -383,7 +383,7 @@ func (ms InstrumentationLibraryLogs) CopyTo(dest InstrumentationLibraryLogs) {
 
 // LogSlice logically represents a slice of LogRecord.
 //
-// This is a reference type, if passed by value and callee modifies it the
+// This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
 // Must use NewLogSlice function to create new instances.
@@ -415,10 +415,10 @@ func (es LogSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     ... // Do something with the element
-// }
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
 func (es LogSlice) At(ix int) LogRecord {
 	return newLogRecord((*es.orig)[ix])
 }
@@ -448,12 +448,12 @@ func (es LogSlice) CopyTo(dest LogSlice) {
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new LogSlice can be initialized:
-// es := NewLogSlice()
-// es.Resize(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.At(i)
-//     // Here should set all the values for e.
-// }
+//   es := NewLogSlice()
+//   es.Resize(4)
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       // Here should set all the values for e.
+//   }
 func (es LogSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)

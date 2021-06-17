@@ -33,7 +33,8 @@ const (
 )
 
 var (
-	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
+	errNilScrapeConfig    = errors.New("expecting a non-nil ScrapeConfig")
+	errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 )
 
 // NewFactory creates a new Prometheus receiver factory.
@@ -52,9 +53,9 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return newPrometheusReceiver(params.Logger, cfg.(*Config), nextConsumer), nil
+	return newPrometheusReceiver(set.Logger, cfg.(*Config), nextConsumer), nil
 }

@@ -17,11 +17,21 @@ package componenttest
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
+
+// NewNopReceiverCreateSettings returns a new nop settings for Create*Receiver functions.
+func NewNopReceiverCreateSettings() component.ReceiverCreateSettings {
+	return component.ReceiverCreateSettings{
+		Logger:    zap.NewNop(),
+		BuildInfo: component.DefaultBuildInfo(),
+	}
+}
 
 type nopReceiverConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -52,7 +62,7 @@ func (f *nopReceiverFactory) CreateDefaultConfig() config.Receiver {
 // CreateTracesReceiver implements component.ReceiverFactory interface.
 func (f *nopReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateParams,
+	_ component.ReceiverCreateSettings,
 	_ config.Receiver,
 	_ consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -62,7 +72,7 @@ func (f *nopReceiverFactory) CreateTracesReceiver(
 // CreateMetricsReceiver implements component.ReceiverFactory interface.
 func (f *nopReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateParams,
+	_ component.ReceiverCreateSettings,
 	_ config.Receiver,
 	_ consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -72,7 +82,7 @@ func (f *nopReceiverFactory) CreateMetricsReceiver(
 // CreateLogsReceiver implements component.ReceiverFactory interface.
 func (f *nopReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateParams,
+	_ component.ReceiverCreateSettings,
 	_ config.Receiver,
 	_ consumer.Logs,
 ) (component.LogsReceiver, error) {

@@ -40,8 +40,8 @@ type svcSettings struct {
 	AsyncErrorChannel chan error
 }
 
-// AppSettings holds configuration for creating a new Application.
-type AppSettings struct {
+// CollectorSettings holds configuration for creating a new Collector.
+type CollectorSettings struct {
 	// Factories component factories.
 	Factories component.Factories
 

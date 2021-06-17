@@ -173,7 +173,7 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 	// sure its output is fanned out to all attached pipelines.
 	var err error
 	var createdReceiver component.Receiver
-	creationParams := component.ReceiverCreateParams{
+	creationSet := component.ReceiverCreateSettings{
 		Logger:    logger,
 		BuildInfo: buildInfo,
 	}
@@ -181,15 +181,15 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 	switch dataType {
 	case config.TracesDataType:
 		junction := buildFanoutTraceConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateTracesReceiver(ctx, creationParams, cfg, junction)
+		createdReceiver, err = factory.CreateTracesReceiver(ctx, creationSet, cfg, junction)
 
 	case config.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateMetricsReceiver(ctx, creationParams, cfg, junction)
+		createdReceiver, err = factory.CreateMetricsReceiver(ctx, creationSet, cfg, junction)
 
 	case config.LogsDataType:
 		junction := buildFanoutLogConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateLogsReceiver(ctx, creationParams, cfg, junction)
+		createdReceiver, err = factory.CreateLogsReceiver(ctx, creationSet, cfg, junction)
 
 	default:
 		err = componenterror.ErrDataTypeIsNotSupported
