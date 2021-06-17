@@ -252,10 +252,11 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	errParams := []error{partialErrFake, errFake, nil}
 	scrapedMetricPts := []int{23, 29, 15}
 	for i, err := range errParams {
-		ctx := StartMetricsScrapeOp(receiverCtx, receiver, scraper)
+		scrp := NewScraper(ScraperSettings{ReceiverID: receiver, Scraper: scraper})
+		ctx := scrp.StartMetricsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		EndMetricsScrapeOp(
+		scrp.EndMetricsOp(
 			ctx,
 			scrapedMetricPts[i],
 			err)

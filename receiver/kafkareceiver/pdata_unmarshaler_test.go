@@ -27,6 +27,11 @@ func TestNewPdataTracesUnmarshaler(t *testing.T) {
 	assert.Equal(t, "test", um.Encoding())
 }
 
+func TestNewPdataMetricsUnmarshaler(t *testing.T) {
+	um := newPdataMetricsUnmarshaler(otlp.NewProtobufMetricsUnmarshaler(), "test")
+	assert.Equal(t, "test", um.Encoding())
+}
+
 func TestNewPdataLogsUnmarshaler(t *testing.T) {
 	um := newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), "test")
 	assert.Equal(t, "test", um.Encoding())

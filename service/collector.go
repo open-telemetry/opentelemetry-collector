@@ -46,7 +46,7 @@ const (
 	extensionzPath = "extensionz"
 )
 
-// State defines Application's state.
+// State defines Collector's state.
 type State int
 
 const (
@@ -56,8 +56,8 @@ const (
 	Closed
 )
 
-// Application represents a collector application
-type Application struct {
+// Collector represents a server providing the OpenTelemetry Collector service.
+type Collector struct {
 	info    component.BuildInfo
 	rootCmd *cobra.Command
 	logger  *zap.Logger
@@ -69,7 +69,7 @@ type Application struct {
 
 	parserProvider parserprovider.ParserProvider
 
-	// stopTestChan is used to terminate the application in end to end tests.
+	// stopTestChan is used to terminate the collector server in end to end tests.
 	stopTestChan chan struct{}
 
 	// signalsChannel is used to receive termination signals from the OS.
@@ -79,13 +79,13 @@ type Application struct {
 	asyncErrorChannel chan error
 }
 
-// New creates and returns a new instance of Application.
-func New(set AppSettings) (*Application, error) {
+// New creates and returns a new instance of Collector.
+func New(set CollectorSettings) (*Collector, error) {
 	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
 		return nil, err
 	}
 
-	app := &Application{
+	col := &Collector{
 		info:         set.BuildInfo,
 		factories:    set.Factories,
 		stateChannel: make(chan State, Closed+1),
@@ -96,11 +96,11 @@ func New(set AppSettings) (*Application, error) {
 		Version: set.BuildInfo.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-			if app.logger, err = newLogger(set.LoggingOptions); err != nil {
+			if col.logger, err = newLogger(set.LoggingOptions); err != nil {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
-			return app.execute(cmd.Context())
+			return col.execute(cmd.Context())
 		},
 	}
 
@@ -117,59 +117,59 @@ func New(set AppSettings) (*Application, error) {
 		addFlags(flagSet)
 	}
 	rootCmd.Flags().AddGoFlagSet(flagSet)
-	app.rootCmd = rootCmd
+	col.rootCmd = rootCmd
 
 	parserProvider := set.ParserProvider
 	if parserProvider == nil {
 		// use default provider.
 		parserProvider = parserprovider.Default()
 	}
-	app.parserProvider = parserProvider
+	col.parserProvider = parserProvider
 
-	return app, nil
+	return col, nil
 }
 
 // Run starts the collector according to the command and configuration
 // given by the user, and waits for it to complete.
-func (app *Application) Run() error {
+func (col *Collector) Run() error {
 	// From this point on do not show usage in case of error.
-	app.rootCmd.SilenceUsage = true
+	col.rootCmd.SilenceUsage = true
 
-	return app.rootCmd.Execute()
+	return col.rootCmd.Execute()
 }
 
-// GetStateChannel returns state channel of the application.
-func (app *Application) GetStateChannel() chan State {
-	return app.stateChannel
+// GetStateChannel returns state channel of the collector server.
+func (col *Collector) GetStateChannel() chan State {
+	return col.stateChannel
 }
 
-// Command returns Application's root command.
-func (app *Application) Command() *cobra.Command {
-	return app.rootCmd
+// Command returns Collector's root command.
+func (col *Collector) Command() *cobra.Command {
+	return col.rootCmd
 }
 
-// GetLogger returns logger used by the Application.
-// The logger is initialized after application start.
-func (app *Application) GetLogger() *zap.Logger {
-	return app.logger
+// GetLogger returns logger used by the Collector.
+// The logger is initialized after collector server start.
+func (col *Collector) GetLogger() *zap.Logger {
+	return col.logger
 }
 
-// Shutdown shuts down the application.
-func (app *Application) Shutdown() {
+// Shutdown shuts down the collector server.
+func (col *Collector) Shutdown() {
 	// TODO: Implement a proper shutdown with graceful draining of the pipeline.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/483.
 	defer func() {
 		if r := recover(); r != nil {
-			app.logger.Info("stopTestChan already closed")
+			col.logger.Info("stopTestChan already closed")
 		}
 	}()
-	close(app.stopTestChan)
+	close(col.stopTestChan)
 }
 
-func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
-	app.logger.Info("Setting up own telemetry...")
+func (col *Collector) setupTelemetry(ballastSizeBytes uint64) error {
+	col.logger.Info("Setting up own telemetry...")
 
-	err := applicationTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
+	err := applicationTelemetry.init(col.asyncErrorChannel, ballastSizeBytes, col.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
@@ -178,38 +178,38 @@ func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 }
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
-func (app *Application) runAndWaitForShutdownEvent() {
-	app.logger.Info("Everything is ready. Begin running and processing data.")
+func (col *Collector) runAndWaitForShutdownEvent() {
+	col.logger.Info("Everything is ready. Begin running and processing data.")
 
 	// plug SIGTERM signal into a channel.
-	app.signalsChannel = make(chan os.Signal, 1)
-	signal.Notify(app.signalsChannel, os.Interrupt, syscall.SIGTERM)
+	col.signalsChannel = make(chan os.Signal, 1)
+	signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 
 	// set the channel to stop testing.
-	app.stopTestChan = make(chan struct{})
-	app.stateChannel <- Running
+	col.stopTestChan = make(chan struct{})
+	col.stateChannel <- Running
 	select {
-	case err := <-app.asyncErrorChannel:
-		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
-	case s := <-app.signalsChannel:
-		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
-	case <-app.stopTestChan:
-		app.logger.Info("Received stop test request")
+	case err := <-col.asyncErrorChannel:
+		col.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
+	case s := <-col.signalsChannel:
+		col.logger.Info("Received signal from OS", zap.String("signal", s.String()))
+	case <-col.stopTestChan:
+		col.logger.Info("Received stop test request")
 	}
-	app.stateChannel <- Closing
+	col.stateChannel <- Closing
 }
 
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
-// sets the app.service with the service currently running.
-func (app *Application) setupConfigurationComponents(ctx context.Context) error {
-	app.logger.Info("Loading configuration...")
+// sets the col.service with the service currently running.
+func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
+	col.logger.Info("Loading configuration...")
 
-	cp, err := app.parserProvider.Get()
+	cp, err := col.parserProvider.Get()
 	if err != nil {
 		return fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
 
-	cfg, err := configloader.Load(cp, app.factories)
+	cfg, err := configloader.Load(cp, col.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
@@ -218,14 +218,14 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	app.logger.Info("Applying configuration...")
+	col.logger.Info("Applying configuration...")
 
 	service, err := newService(&svcSettings{
-		BuildInfo:         app.info,
-		Factories:         app.factories,
+		BuildInfo:         col.info,
+		Factories:         col.factories,
 		Config:            cfg,
-		Logger:            app.logger,
-		AsyncErrorChannel: app.asyncErrorChannel,
+		Logger:            col.logger,
+		AsyncErrorChannel: col.asyncErrorChannel,
 	})
 	if err != nil {
 		return err
@@ -236,21 +236,21 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 		return err
 	}
 
-	app.service = service
+	col.service = service
 
 	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := app.parserProvider.(parserprovider.Watchable); ok {
+	if watchable, ok := col.parserProvider.(parserprovider.Watchable); ok {
 		go func() {
 			err := watchable.WatchForUpdate()
 			switch {
 			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
 			case errors.Is(err, configsource.ErrSessionClosed):
-				// This is the case of shutdown of the whole application, nothing to do.
-				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
+				// This is the case of shutdown of the whole collector server, nothing to do.
+				col.logger.Info("Config WatchForUpdate closed", zap.Error(err))
 				return
 			default:
-				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
-				app.reloadService(context.Background())
+				col.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
+				col.reloadService(context.Background())
 			}
 		}()
 	}
@@ -258,47 +258,47 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 	return nil
 }
 
-func (app *Application) execute(ctx context.Context) error {
-	app.logger.Info("Starting "+app.info.Command+"...",
-		zap.String("Version", app.info.Version),
+func (col *Collector) execute(ctx context.Context) error {
+	col.logger.Info("Starting "+col.info.Command+"...",
+		zap.String("Version", col.info.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
-	app.stateChannel <- Starting
+	col.stateChannel <- Starting
 
 	// Set memory ballast
-	ballast, ballastSizeBytes := app.createMemoryBallast()
+	ballast, ballastSizeBytes := col.createMemoryBallast()
 
-	app.asyncErrorChannel = make(chan error)
+	col.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	err := app.setupTelemetry(ballastSizeBytes)
+	err := col.setupTelemetry(ballastSizeBytes)
 	if err != nil {
 		return err
 	}
 
-	err = app.setupConfigurationComponents(ctx)
+	err = col.setupConfigurationComponents(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Everything is ready, now run until an event requiring shutdown happens.
-	app.runAndWaitForShutdownEvent()
+	col.runAndWaitForShutdownEvent()
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs []error
 
 	// Begin shutdown sequence.
 	runtime.KeepAlive(ballast)
-	app.logger.Info("Starting shutdown...")
+	col.logger.Info("Starting shutdown...")
 
-	if closable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+	if closable, ok := col.parserProvider.(parserprovider.Closeable); ok {
 		if err := closable.Close(ctx); err != nil {
 			errs = append(errs, fmt.Errorf("failed to close config: %w", err))
 		}
 	}
 
-	if app.service != nil {
-		if err := app.service.Shutdown(ctx); err != nil {
+	if col.service != nil {
+		if err := col.service.Shutdown(ctx); err != nil {
 			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 		}
 	}
@@ -307,43 +307,43 @@ func (app *Application) execute(ctx context.Context) error {
 		errs = append(errs, fmt.Errorf("failed to shutdown application telemetry: %w", err))
 	}
 
-	app.logger.Info("Shutdown complete.")
-	app.stateChannel <- Closed
-	close(app.stateChannel)
+	col.logger.Info("Shutdown complete.")
+	col.stateChannel <- Closed
+	close(col.stateChannel)
 
 	return consumererror.Combine(errs)
 }
 
-func (app *Application) createMemoryBallast() ([]byte, uint64) {
+func (col *Collector) createMemoryBallast() ([]byte, uint64) {
 	ballastSizeMiB := builder.MemBallastSize()
 	if ballastSizeMiB > 0 {
 		ballastSizeBytes := uint64(ballastSizeMiB) * 1024 * 1024
 		ballast := make([]byte, ballastSizeBytes)
-		app.logger.Info("Using memory ballast", zap.Int("MiBs", ballastSizeMiB))
+		col.logger.Info("Using memory ballast", zap.Int("MiBs", ballastSizeMiB))
 		return ballast, ballastSizeBytes
 	}
 	return nil, 0
 }
 
-// reloadService shutdowns the current app.service and setups a new one according
-// to the latest configuration. It requires that app.parserProvider and app.factories
+// reloadService shutdowns the current col.service and setups a new one according
+// to the latest configuration. It requires that col.parserProvider and col.factories
 // are properly populated to finish successfully.
-func (app *Application) reloadService(ctx context.Context) error {
-	if closeable, ok := app.parserProvider.(parserprovider.Closeable); ok {
+func (col *Collector) reloadService(ctx context.Context) error {
+	if closeable, ok := col.parserProvider.(parserprovider.Closeable); ok {
 		if err := closeable.Close(ctx); err != nil {
 			return fmt.Errorf("failed close current config provider: %w", err)
 		}
 	}
 
-	if app.service != nil {
-		retiringService := app.service
-		app.service = nil
+	if col.service != nil {
+		retiringService := col.service
+		col.service = nil
 		if err := retiringService.Shutdown(ctx); err != nil {
 			return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 		}
 	}
 
-	if err := app.setupConfigurationComponents(ctx); err != nil {
+	if err := col.setupConfigurationComponents(ctx); err != nil {
 		return fmt.Errorf("failed to setup configuration components: %w", err)
 	}
 
