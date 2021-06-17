@@ -7,6 +7,10 @@
 - Rename `service.Application` to `service.Collector` (#3268)
 - Provide case sensitivity in config yaml mappings by using Koanf instead of Viper (#3337)
 
+## 💡 Enhancements 💡
+
+- Change obsreport helpers for scraper to use the same pattern as Processor/Exporter (#3327)
+
 ## v0.28.0 Beta
 
 ## 🛑 Breaking changes 🛑
