@@ -1373,7 +1373,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
 	t.Cleanup(func() {
 		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected 3 targets to be running")
+		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 		assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
 	})

@@ -38,6 +38,7 @@ type pReceiver struct {
 
 	logger        *zap.Logger
 	scrapeManager *scrape.Manager
+	ocaStore      *internal.OcaStore
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -80,7 +81,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	// Per component.Component Start instructions, for async operations we should not use the
 	// incoming context, it may get cancelled.
 	receiverCtx := obsreport.ReceiverContext(context.Background(), r.cfg.ID(), transport)
-	ocaStore := internal.NewOcaStore(
+	r.ocaStore = internal.NewOcaStore(
 		receiverCtx,
 		r.consumer,
 		r.logger,
@@ -90,8 +91,8 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 	)
-	r.scrapeManager = scrape.NewManager(logger, ocaStore)
-	ocaStore.SetScrapeManager(r.scrapeManager)
+	r.scrapeManager = scrape.NewManager(logger, r.ocaStore)
+	r.ocaStore.SetScrapeManager(r.scrapeManager)
 	if err := r.scrapeManager.ApplyConfig(r.cfg.PrometheusConfig); err != nil {
 		return err
 	}
@@ -107,6 +108,11 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown stops and cancels the underlying Prometheus scrapers.
 func (r *pReceiver) Shutdown(context.Context) error {
 	r.cancelFunc()
+	// ocaStore (and internally metadataService) needs to stop first to prevent deadlocks.
+	// When stopping scrapeManager it waits for all scrapes to terminate. However during
+	// scraping metadataService calls scrapeManager.AllTargets() which acquires
+	// the same lock that's acquired when scrapeManager is stopped.
+	r.ocaStore.Close()
 	r.scrapeManager.Stop()
 	return nil
 }
