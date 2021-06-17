@@ -35,7 +35,8 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithMetrics(createMetricsProcessor))
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogsProcessor))
 }
 
 func createDefaultConfig() config.Processor {
@@ -55,6 +56,23 @@ func createMetricsProcessor(
 		return nil, err
 	}
 	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		fp,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createLogsProcessor(
+	_ context.Context,
+	set component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
+) (component.LogsProcessor, error) {
+	fp, err := newFilterLogsProcessor(set.Logger, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
 		fp,
