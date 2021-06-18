@@ -20,22 +20,26 @@ jobs:
         uses: actions/checkout@v2 
         with: 
           path: ${{ github.head_ref }}
+      
+      - name: Install-Tools
+        run: |
+          cd ${{ github.base_ref }}
+          make install-tools 
 
       - name: Generate-Compare-Check-apidiff
         run: |
           echo ::group::Generating apidiff states
-          cd ${{ github.base_ref }}
-          make install-tools
+          cd ${{ github.head_ref }}
           export GOPATH=$HOME/go
           export PATH=$GOPATH/bin:$PATH
           make apidiff-build
+          cd ../${{ github.base_ref }}
           echo ::endgroup::
           
           echo ::group::Comparing apidiff states
-          cd ../${{ github.head_ref }}
-          make apidiff-compare-GA input_dir="../${{ github.base_ref }}/internal/data/apidiff"
+          make apidiff-compare-GA input_dir="../${{ github.head_ref }}/internal/data/apidiff"
           echo ::endgroup::
 
           echo ::group::Checking incompatible apis
-          make apidiff-check input_dir="../${{ github.base_ref }}/internal/data/apidiff"
+          make apidiff-check input_dir="../${{ github.head_ref }}/internal/data/apidiff"
           echo ::endgroup::
