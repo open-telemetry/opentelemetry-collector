@@ -45,8 +45,8 @@ func (s *scraper) start(context.Context, component.Host) error {
 	if err != nil {
 		return err
 	}
-
-	s.startTime = pdata.Timestamp(bootTime)
+	// bootTime is seconds since 1970, timestamps are in nanoseconds.
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 	return nil
 }
 
