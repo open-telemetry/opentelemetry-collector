@@ -5,9 +5,9 @@
 usage() {
   echo "Usage: $0"
   echo
+  echo "-c  Check-incompatibility mode. Script will fail if an incompatible change is found. Default: 'false'"
   echo "-p  Package to generate API state snapshot of. Default: ''"
   echo "-d  directory where prior states will be read from. Default: './internal/data/apidiff'"
-  echo "-c  Check-incompatibility mode. Script will fail if an incompatible change is found. Default: 'false'"
   exit 1
 }
 
@@ -16,16 +16,16 @@ input_dir="./internal/data/apidiff"
 check_only=false
 
 
-while getopts "p:d:" o; do
+while getopts "cp:d:" o; do
     case "${o}" in
+        c) 
+            check_only=true
+            ;;
         p)
             package=$OPTARG
             ;;
         d)
             input_dir=$OPTARG
-            ;;
-        c) 
-            check_only=true
             ;;
         *)
             usage
@@ -50,7 +50,7 @@ if [ -d $input_dir/$package ]; then
   changes=$(apidiff $input_dir/$package/apidiff.state $package)
   if [ ! -z "$changes" -a "$changes"!=" " ]; then
     SUB='Incompatible changes:'
-    if [$check_only = true -a [ "$changes" =~ .*"$SUB".* ]]; then
+    if [ $check_only = true ] && [[ "$changes" =~ .*"$SUB".* ]]; then
       changes_found
     else
       echo "Changes found in $package:"
