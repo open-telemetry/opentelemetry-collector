@@ -66,7 +66,7 @@ func AssertDoubleSumMetricLabelExists(t *testing.T, metric pdata.Metric, index i
 func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
 	idps := metric.IntSum().DataPoints()
 	for i := 0; i < idps.Len(); i++ {
-		require.Equal(t, startTime, idps.At(i).StartTimestamp())
+		require.Equal(t, startTime, idps.At(i).StartTimestamp(), "Start time %d not found in metric point: %q", startTime, idps.At(i))
 	}
 }
 

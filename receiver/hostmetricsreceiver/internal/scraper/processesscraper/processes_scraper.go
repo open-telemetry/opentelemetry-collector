@@ -52,6 +52,6 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
-	err := appendSystemSpecificProcessesMetrics(metrics, 0, s.misc)
+	err := appendSystemSpecificProcessesMetrics(metrics, s.startTime, 0, s.misc)
 	return metrics, err
 }
