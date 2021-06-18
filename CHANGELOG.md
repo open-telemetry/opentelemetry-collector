@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Rename `service.Application` to `service.Collector` (#3268)
+- Provide case sensitivity in config yaml mappings by using Koanf instead of Viper (#3337)
+
+## 💡 Enhancements 💡
+
+- Change obsreport helpers for scraper to use the same pattern as Processor/Exporter (#3327)
+
 ## v0.28.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -29,10 +38,12 @@
 - Updated configgrpc `ToDialOptions` and confighttp `ToClient` apis to take extensions configuration map (#3340)
 - Remove `GenerateSequentialTraceID` and `GenerateSequentialSpanIDin` functions in testbed (#3390)
 - Change "grpc" to "GRPC" in configauth function/type names (#3285)
+- Disallow renaming metrics using metric relabel configs (#3410)
 
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
+- Improve documentation of consumer package and subpackages (#3269, #3361)
 - Automate triggering of doc-update on release (#3234)
 - Enable Dependabot for Github Actions (#3312)
 - Remove the proto dependency in `goldendataset` for traces (#3322)

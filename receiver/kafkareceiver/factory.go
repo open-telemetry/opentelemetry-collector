@@ -54,6 +54,15 @@ func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOpti
 	}
 }
 
+// WithMetricsUnmarshalers adds MetricsUnmarshalers.
+func WithMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
+	return func(factory *kafkaReceiverFactory) {
+		for _, unmarshaler := range metricsUnmarshalers {
+			factory.metricsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
+		}
+	}
+}
+
 // WithLogsUnmarshalers adds LogsUnmarshalers.
 func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
@@ -66,8 +75,9 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	f := &kafkaReceiverFactory{
-		tracesUnmarshalers: defaultTracesUnmarshalers(),
-		logsUnmarshalers:   defaultLogsUnmarshalers(),
+		tracesUnmarshalers:  defaultTracesUnmarshalers(),
+		metricsUnmarshalers: defaultMetricsUnmarshalers(),
+		logsUnmarshalers:    defaultLogsUnmarshalers(),
 	}
 	for _, o := range options {
 		o(f)
@@ -76,6 +86,7 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithTraces(f.createTracesReceiver),
+		receiverhelper.WithMetrics(f.createMetricsReceiver),
 		receiverhelper.WithLogs(f.createLogsReceiver),
 	)
 }
@@ -99,8 +110,9 @@ func createDefaultConfig() config.Receiver {
 }
 
 type kafkaReceiverFactory struct {
-	tracesUnmarshalers map[string]TracesUnmarshaler
-	logsUnmarshalers   map[string]LogsUnmarshaler
+	tracesUnmarshalers  map[string]TracesUnmarshaler
+	metricsUnmarshalers map[string]MetricsUnmarshaler
+	logsUnmarshalers    map[string]LogsUnmarshaler
 }
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
@@ -111,6 +123,20 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)
 	r, err := newTracesReceiver(*c, set, f.tracesUnmarshalers, nextConsumer)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func (f *kafkaReceiverFactory) createMetricsReceiver(
+	_ context.Context,
+	set component.ReceiverCreateSettings,
+	cfg config.Receiver,
+	nextConsumer consumer.Metrics,
+) (component.MetricsReceiver, error) {
+	c := cfg.(*Config)
+	r, err := newMetricsReceiver(*c, set, f.metricsUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

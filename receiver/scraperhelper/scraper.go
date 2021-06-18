@@ -115,13 +115,14 @@ func NewMetricsScraper(
 
 func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.MetricSlice, error) {
 	ctx = obsreport.ScraperContext(ctx, receiverID, ms.ID())
-	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverID, ms.ID())
+	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: ms.ID()})
+	ctx = scrp.StartMetricsOp(ctx)
 	metrics, err := ms.ScrapeMetrics(ctx)
 	count := 0
 	if err == nil {
 		count = metrics.Len()
 	}
-	obsreport.EndMetricsScrapeOp(ctx, count, err)
+	scrp.EndMetricsOp(ctx, count, err)
 	return metrics, err
 }
 
@@ -158,13 +159,14 @@ func NewResourceMetricsScraper(
 
 func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.ResourceMetricsSlice, error) {
 	ctx = obsreport.ScraperContext(ctx, receiverID, rms.ID())
-	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverID, rms.ID())
+	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: rms.ID()})
+	ctx = scrp.StartMetricsOp(ctx)
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
 	count := 0
 	if err == nil {
 		count = metricCount(resourceMetrics)
 	}
-	obsreport.EndMetricsScrapeOp(ctx, count, err)
+	scrp.EndMetricsOp(ctx, count, err)
 	return resourceMetrics, err
 }
 

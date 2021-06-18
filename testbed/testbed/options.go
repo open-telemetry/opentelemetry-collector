@@ -18,25 +18,29 @@
 package testbed
 
 // TestCaseOption defines a TestCase option.
-type TestCaseOption struct {
-	option func(t *TestCase)
-}
+type TestCaseOption func(t *TestCase)
 
-// Apply takes a TestCase and runs the option function on it.
-func (o TestCaseOption) Apply(t *TestCase) {
-	o.option(t)
-}
-
-// WithSkipResults option disables writing out results file for a TestCase.
+// WithSkipResults disables writing out results file for a TestCase.
 func WithSkipResults() TestCaseOption {
-	return TestCaseOption{func(t *TestCase) {
-		t.skipResults = true
-	}}
+	return func(tc *TestCase) {
+		tc.skipResults = true
+	}
 }
 
-// WithConfigFile allows a custom configuration file for TestCase.
-func WithConfigFile(file string) TestCaseOption {
-	return TestCaseOption{func(t *TestCase) {
-		t.agentConfigFile = file
-	}}
+// WithResourceLimits sets expected limits for resource consmption.
+// Error is signaled if consumption during ResourceCheckPeriod exceeds the limits.
+// Limits are modified only for non-zero fields of resourceSpec, all zero-value fields
+// fo resourceSpec are ignored and their previous values remain in effect.
+func WithResourceLimits(resourceSpec ResourceSpec) TestCaseOption {
+	return func(tc *TestCase) {
+		if resourceSpec.ExpectedMaxCPU > 0 {
+			tc.resourceSpec.ExpectedMaxCPU = resourceSpec.ExpectedMaxCPU
+		}
+		if resourceSpec.ExpectedMaxRAM > 0 {
+			tc.resourceSpec.ExpectedMaxRAM = resourceSpec.ExpectedMaxRAM
+		}
+		if resourceSpec.ResourceCheckPeriod > 0 {
+			tc.resourceSpec.ResourceCheckPeriod = resourceSpec.ResourceCheckPeriod
+		}
+	}
 }

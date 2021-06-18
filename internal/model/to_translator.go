@@ -16,17 +16,23 @@ package model
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
+// ToMetricsTranslator is an interface to translate a protocol-specific data model into pdata.Traces.
 type ToMetricsTranslator interface {
-	// ToMetrics converts a protocol-specific data model into pdata.
+	// ToMetrics translates a protocol-specific data model into pdata.Metrics.
+	// If the error is not nil, the returned pdata.Metrics cannot be used.
 	ToMetrics(src interface{}) (pdata.Metrics, error)
 }
 
+// ToTracesTranslator is an interface to translate a protocol-specific data model into pdata.Traces.
 type ToTracesTranslator interface {
-	// ToTraces converts a protocol-specific data model into pdata.
+	// ToTraces translates a protocol-specific data model into pdata.Traces.
+	// If the error is not nil, the returned pdata.Traces cannot be used.
 	ToTraces(src interface{}) (pdata.Traces, error)
 }
 
+// ToLogsTranslator is an interface to translate a protocol-specific data model into pdata.Traces.
 type ToLogsTranslator interface {
-	// ToLogs converts a protocol-specific data model into pdata.
+	// ToLogs translates a protocol-specific data model into pdata.Logs.
+	// If the error is not nil, the returned pdata.Logs cannot be used.
 	ToLogs(src interface{}) (pdata.Logs, error)
 }

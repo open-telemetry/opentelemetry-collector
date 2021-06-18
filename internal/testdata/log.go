@@ -18,10 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
-	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
 var (
@@ -35,28 +31,10 @@ func GenerateLogsOneEmptyResourceLogs() pdata.Logs {
 	return ld
 }
 
-func generateLogsOtlpOneEmptyResourceLogs() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{},
-		},
-	}
-}
-
 func GenerateLogsNoLogRecords() pdata.Logs {
 	ld := GenerateLogsOneEmptyResourceLogs()
 	initResource1(ld.ResourceLogs().At(0).Resource())
 	return ld
-}
-
-func generateLogOtlpNoLogRecords() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				Resource: generateOtlpResource1(),
-			},
-		},
-	}
 }
 
 func GenerateLogsOneEmptyLogRecord() pdata.Logs {
@@ -66,44 +44,11 @@ func GenerateLogsOneEmptyLogRecord() pdata.Logs {
 	return ld
 }
 
-func generateLogsOtlpOneEmptyLogRecord() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				Resource: generateOtlpResource1(),
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplogs.LogRecord{
-							{},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func GenerateLogsOneLogRecordNoResource() pdata.Logs {
 	ld := GenerateLogsOneEmptyResourceLogs()
 	rs0 := ld.ResourceLogs().At(0)
 	fillLogOne(rs0.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty())
 	return ld
-}
-
-func generateLogsOtlpOneLogRecordNoResource() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplogs.LogRecord{
-							generateOtlpLogOne(),
-						},
-					},
-				},
-			},
-		},
-	}
 }
 
 func GenerateLogsOneLogRecord() pdata.Logs {
@@ -112,47 +57,12 @@ func GenerateLogsOneLogRecord() pdata.Logs {
 	return ld
 }
 
-func generateLogsOtlpOneLogRecord() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				Resource: generateOtlpResource1(),
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplogs.LogRecord{
-							generateOtlpLogOne(),
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func GenerateLogsTwoLogRecordsSameResource() pdata.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
 	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	fillLogOne(logs.At(0))
 	fillLogTwo(logs.AppendEmpty())
 	return ld
-}
-
-func generateLogsOtlpTwoLogRecordsSameResource() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				Resource: generateOtlpResource1(),
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplogs.LogRecord{
-							generateOtlpLogOne(),
-							generateOtlpLogTwo(),
-						},
-					},
-				},
-			},
-		},
-	}
 }
 
 func GenerateLogsTwoLogRecordsSameResourceOneDifferent() pdata.Logs {
@@ -167,35 +77,6 @@ func GenerateLogsTwoLogRecordsSameResourceOneDifferent() pdata.Logs {
 	fillLogThree(rl1.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty())
 	return ld
 }
-
-func generateLogsOtlpTwoLogRecordsSameResourceOneDifferent() *otlpcollectorlog.ExportLogsServiceRequest {
-	return &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				Resource: generateOtlpResource1(),
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplogs.LogRecord{
-							generateOtlpLogOne(),
-							generateOtlpLogTwo(),
-						},
-					},
-				},
-			},
-			{
-				Resource: generateOtlpResource2(),
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-					{
-						Logs: []*otlplogs.LogRecord{
-							generateOtlpLogThree(),
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func fillLogOne(log pdata.LogRecord) {
 	log.SetName("logA")
 	log.SetTimestamp(TestLogTimestamp)
@@ -212,29 +93,6 @@ func fillLogOne(log pdata.LogRecord) {
 	log.Body().SetStringVal("This is a log message")
 }
 
-func generateOtlpLogOne() *otlplogs.LogRecord {
-	return &otlplogs.LogRecord{
-		Name:                   "logA",
-		TimeUnixNano:           uint64(TestLogTimestamp),
-		DroppedAttributesCount: 1,
-		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
-		SeverityText:           "Info",
-		Body:                   otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
-		SpanId:                 data.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}),
-		TraceId:                data.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}),
-		Attributes: []otlpcommon.KeyValue{
-			{
-				Key:   "app",
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "server"}},
-			},
-			{
-				Key:   "instance_num",
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 1}},
-			},
-		},
-	}
-}
-
 func fillLogTwo(log pdata.LogRecord) {
 	log.SetName("logB")
 	log.SetTimestamp(TestLogTimestamp)
@@ -249,27 +107,6 @@ func fillLogTwo(log pdata.LogRecord) {
 	log.Body().SetStringVal("something happened")
 }
 
-func generateOtlpLogTwo() *otlplogs.LogRecord {
-	return &otlplogs.LogRecord{
-		Name:                   "logB",
-		TimeUnixNano:           uint64(TestLogTimestamp),
-		DroppedAttributesCount: 1,
-		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
-		SeverityText:           "Info",
-		Body:                   otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something happened"}},
-		Attributes: []otlpcommon.KeyValue{
-			{
-				Key:   "customer",
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "acme"}},
-			},
-			{
-				Key:   "env",
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "dev"}},
-			},
-		},
-	}
-}
-
 func fillLogThree(log pdata.LogRecord) {
 	log.SetName("logC")
 	log.SetTimestamp(TestLogTimestamp)
@@ -278,17 +115,6 @@ func fillLogThree(log pdata.LogRecord) {
 	log.SetSeverityText("Warning")
 
 	log.Body().SetStringVal("something else happened")
-}
-
-func generateOtlpLogThree() *otlplogs.LogRecord {
-	return &otlplogs.LogRecord{
-		Name:                   "logC",
-		TimeUnixNano:           uint64(TestLogTimestamp),
-		DroppedAttributesCount: 1,
-		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN,
-		SeverityText:           "Warning",
-		Body:                   otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something else happened"}},
-	}
 }
 
 func GenerateLogsManyLogRecordsSameResource(count int) pdata.Logs {

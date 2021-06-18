@@ -39,10 +39,8 @@ func (e *jsonEncoder) EncodeLogs(modelData interface{}) ([]byte, error) {
 		return nil, model.NewErrIncompatibleType(&otlpcollectorlogs.ExportLogsServiceRequest{}, modelData)
 	}
 	buf := bytes.Buffer{}
-	if err := e.delegate.Marshal(&buf, ld); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	err := e.delegate.Marshal(&buf, ld)
+	return buf.Bytes(), err
 }
 
 func (e *jsonEncoder) EncodeMetrics(modelData interface{}) ([]byte, error) {
@@ -51,10 +49,8 @@ func (e *jsonEncoder) EncodeMetrics(modelData interface{}) ([]byte, error) {
 		return nil, model.NewErrIncompatibleType(&otlpcollectormetrics.ExportMetricsServiceRequest{}, modelData)
 	}
 	buf := bytes.Buffer{}
-	if err := e.delegate.Marshal(&buf, md); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	err := e.delegate.Marshal(&buf, md)
+	return buf.Bytes(), err
 }
 
 func (e *jsonEncoder) EncodeTraces(modelData interface{}) ([]byte, error) {
@@ -63,8 +59,6 @@ func (e *jsonEncoder) EncodeTraces(modelData interface{}) ([]byte, error) {
 		return nil, model.NewErrIncompatibleType(&otlpcollectortrace.ExportTraceServiceRequest{}, modelData)
 	}
 	buf := bytes.Buffer{}
-	if err := e.delegate.Marshal(&buf, td); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	err := e.delegate.Marshal(&buf, td)
+	return buf.Bytes(), err
 }

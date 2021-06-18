@@ -18,6 +18,7 @@ import (
 	"github.com/Shopify/sarama"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/otlp"
 )
 
 // TracesMarshaler marshals traces into Message array.
@@ -49,11 +50,11 @@ type LogsMarshaler interface {
 
 // tracesMarshalers returns map of supported encodings with TracesMarshaler.
 func tracesMarshalers() map[string]TracesMarshaler {
-	otlppb := &otlpTracesPbMarshaler{}
+	otlpPb := newPdataTracesMarshaler(otlp.NewProtobufTracesMarshaler(), defaultEncoding)
 	jaegerProto := jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
 	jaegerJSON := jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
 	return map[string]TracesMarshaler{
-		otlppb.Encoding():      otlppb,
+		otlpPb.Encoding():      otlpPb,
 		jaegerProto.Encoding(): jaegerProto,
 		jaegerJSON.Encoding():  jaegerJSON,
 	}
@@ -61,16 +62,16 @@ func tracesMarshalers() map[string]TracesMarshaler {
 
 // metricsMarshalers returns map of supported encodings and MetricsMarshaler
 func metricsMarshalers() map[string]MetricsMarshaler {
-	otlppb := &otlpMetricsPbMarshaler{}
+	otlpPb := newPdataMetricsMarshaler(otlp.NewProtobufMetricsMarshaler(), defaultEncoding)
 	return map[string]MetricsMarshaler{
-		otlppb.Encoding(): otlppb,
+		otlpPb.Encoding(): otlpPb,
 	}
 }
 
 // logsMarshalers returns map of supported encodings and LogsMarshaler
 func logsMarshalers() map[string]LogsMarshaler {
-	otlppb := &otlpLogsPbMarshaler{}
+	otlpPb := newPdataLogsMarshaler(otlp.NewProtobufLogsMarshaler(), defaultEncoding)
 	return map[string]LogsMarshaler{
-		otlppb.Encoding(): otlppb,
+		otlpPb.Encoding(): otlpPb,
 	}
 }

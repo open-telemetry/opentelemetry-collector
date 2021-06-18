@@ -14,20 +14,23 @@
 
 package model
 
-// MetricsEncoder encodes protocol-specific data model into bytes.
+// MetricsEncoder is an interface to encode protocol-specific data model into bytes.
 type MetricsEncoder interface {
-	// EncodeMetrics converts protocol-specific data model into bytes.
+	// EncodeMetrics encodes protocol-specific data model into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
 	EncodeMetrics(model interface{}) ([]byte, error)
 }
 
-// TracesEncoder encodes protocol-specific data model into bytes.
+// TracesEncoder is an interface to encode protocol-specific data model into bytes.
 type TracesEncoder interface {
-	// EncodeTraces converts protocol-specific data model into bytes.
+	// EncodeTraces encodes protocol-specific data model into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
 	EncodeTraces(model interface{}) ([]byte, error)
 }
 
-// LogsEncoder encodes protocol-specific data model into bytes.
+// LogsEncoder is an interface to encode protocol-specific data model into bytes.
 type LogsEncoder interface {
-	// EncodeLogs converts protocol-specific data model into bytes.
+	// EncodeLogs encodes protocol-specific data model into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
 	EncodeLogs(model interface{}) ([]byte, error)
 }

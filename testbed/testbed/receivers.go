@@ -78,25 +78,22 @@ func (mb *DataReceiverBase) GetExporters() map[config.DataType]map[config.Compon
 	return nil
 }
 
-// OCDataReceiver implements OpenCensus format receiver.
-type OCDataReceiver struct {
+// ocDataReceiver implements OpenCensus format receiver.
+type ocDataReceiver struct {
 	DataReceiverBase
 	traceReceiver   component.TracesReceiver
 	metricsReceiver component.MetricsReceiver
 }
 
-// Ensure OCDataReceiver implements DataReceiver.
-var _ DataReceiver = (*OCDataReceiver)(nil)
-
 const DefaultOCPort = 56565
 
-// NewOCDataReceiver creates a new OCDataReceiver that will listen on the specified port after Start
+// NewOCDataReceiver creates a new ocDataReceiver that will listen on the specified port after Start
 // is called.
-func NewOCDataReceiver(port int) *OCDataReceiver {
-	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+func NewOCDataReceiver(port int) DataReceiver {
+	return &ocDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OCDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
+func (or *ocDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := opencensusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
@@ -114,14 +111,14 @@ func (or *OCDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consu
 	return or.metricsReceiver.Start(context.Background(), or)
 }
 
-func (or *OCDataReceiver) Stop() error {
+func (or *ocDataReceiver) Stop() error {
 	if err := or.traceReceiver.Shutdown(context.Background()); err != nil {
 		return err
 	}
 	return or.metricsReceiver.Shutdown(context.Background())
 }
 
-func (or *OCDataReceiver) GenConfigYAMLStr() string {
+func (or *ocDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   opencensus:
@@ -129,25 +126,25 @@ func (or *OCDataReceiver) GenConfigYAMLStr() string {
     insecure: true`, or.Port)
 }
 
-func (or *OCDataReceiver) ProtocolName() string {
+func (or *ocDataReceiver) ProtocolName() string {
 	return "opencensus"
 }
 
-// JaegerDataReceiver implements Jaeger format receiver.
-type JaegerDataReceiver struct {
+// jaegerDataReceiver implements Jaeger format receiver.
+type jaegerDataReceiver struct {
 	DataReceiverBase
 	receiver component.TracesReceiver
 }
 
-var _ DataReceiver = (*JaegerDataReceiver)(nil)
-
 const DefaultJaegerPort = 14250
 
-func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
-	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+// NewJaegerDataReceiver creates a new Jaeger DataReceiver that will listen on the specified port after Start
+// is called.
+func NewJaegerDataReceiver(port int) DataReceiver {
+	return &jaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (jr *JaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
+func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
@@ -163,11 +160,11 @@ func (jr *JaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	return jr.receiver.Start(context.Background(), jr)
 }
 
-func (jr *JaegerDataReceiver) Stop() error {
+func (jr *jaegerDataReceiver) Stop() error {
 	return jr.receiver.Shutdown(context.Background())
 }
 
-func (jr *JaegerDataReceiver) GenConfigYAMLStr() string {
+func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   jaeger:
@@ -175,7 +172,7 @@ func (jr *JaegerDataReceiver) GenConfigYAMLStr() string {
     insecure: true`, jr.Port)
 }
 
-func (jr *JaegerDataReceiver) ProtocolName() string {
+func (jr *jaegerDataReceiver) ProtocolName() string {
 	return "jaeger"
 }
 
@@ -261,6 +258,8 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 
 const DefaultOTLPPort = 4317
 
+var _ DataReceiver = (*BaseOTLPDataReceiver)(nil)
+
 // NewOTLPDataReceiver creates a new OTLP DataReceiver that will listen on the specified port after Start
 // is called.
 func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
@@ -279,19 +278,19 @@ func NewOTLPHTTPDataReceiver(port int) *BaseOTLPDataReceiver {
 	}
 }
 
-// ZipkinDataReceiver implements Zipkin format receiver.
-type ZipkinDataReceiver struct {
+// zipkinDataReceiver implements Zipkin format receiver.
+type zipkinDataReceiver struct {
 	DataReceiverBase
 	receiver component.TracesReceiver
 }
 
-var _ DataReceiver = (*ZipkinDataReceiver)(nil)
-
-func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
-	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+// NewZipkinDataReceiver creates a new Zipkin DataReceiver that will listen on the specified port after Start
+// is called.
+func NewZipkinDataReceiver(port int) DataReceiver {
+	return &zipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (zr *ZipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
+func (zr *zipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
@@ -307,11 +306,11 @@ func (zr *ZipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	return zr.receiver.Start(context.Background(), zr)
 }
 
-func (zr *ZipkinDataReceiver) Stop() error {
+func (zr *zipkinDataReceiver) Stop() error {
 	return zr.receiver.Shutdown(context.Background())
 }
 
-func (zr *ZipkinDataReceiver) GenConfigYAMLStr() string {
+func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   zipkin:
@@ -319,24 +318,22 @@ func (zr *ZipkinDataReceiver) GenConfigYAMLStr() string {
     format: json`, zr.Port)
 }
 
-func (zr *ZipkinDataReceiver) ProtocolName() string {
+func (zr *zipkinDataReceiver) ProtocolName() string {
 	return "zipkin"
 }
 
 // prometheus
 
-type PrometheusDataReceiver struct {
+type prometheusDataReceiver struct {
 	DataReceiverBase
 	receiver component.MetricsReceiver
 }
 
-var _ DataReceiver = (*PrometheusDataReceiver)(nil)
-
-func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
-	return &PrometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+func NewPrometheusDataReceiver(port int) DataReceiver {
+	return &prometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (dr *PrometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
+func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
@@ -367,11 +364,11 @@ func (dr *PrometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	return dr.receiver.Start(context.Background(), dr)
 }
 
-func (dr *PrometheusDataReceiver) Stop() error {
+func (dr *prometheusDataReceiver) Stop() error {
 	return dr.receiver.Shutdown(context.Background())
 }
 
-func (dr *PrometheusDataReceiver) GenConfigYAMLStr() string {
+func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 	format := `
   prometheus:
     endpoint: "localhost:%d"
@@ -379,6 +376,6 @@ func (dr *PrometheusDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(format, dr.Port)
 }
 
-func (dr *PrometheusDataReceiver) ProtocolName() string {
+func (dr *prometheusDataReceiver) ProtocolName() string {
 	return "prometheus"
 }

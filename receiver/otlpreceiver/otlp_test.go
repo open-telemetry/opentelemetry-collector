@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -46,13 +45,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/internal/data"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
+	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -97,39 +92,19 @@ var traceJSON = []byte(`
 	  ]
 	}`)
 
-var resourceSpansOtlp = otlptrace.ResourceSpans{
-	Resource: otlpresource.Resource{
-		Attributes: []otlpcommon.KeyValue{
-			{
-				Key:   conventions.AttributeHostName,
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
-			},
-		},
-	},
-	InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-		{
-			Spans: []*otlptrace.Span{
-				{
-					TraceId:           data.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
-					SpanId:            data.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}),
-					Name:              "testSpan",
-					StartTimeUnixNano: 1544712660000000000,
-					EndTimeUnixNano:   1544712661000000000,
-					Attributes: []otlpcommon.KeyValue{
-						{
-							Key:   "attr1",
-							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
-						},
-					},
-				},
-			},
-		},
-	},
-}
-
-var traceOtlp = pdata.TracesFromInternalRep(internal.TracesFromOtlp(&collectortrace.ExportTraceServiceRequest{
-	ResourceSpans: []*otlptrace.ResourceSpans{&resourceSpansOtlp},
-}))
+var traceOtlp = func() pdata.Traces {
+	td := pdata.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
+	span.SetName("testSpan")
+	span.SetStartTimestamp(1544712660000000000)
+	span.SetEndTimestamp(1544712661000000000)
+	span.Attributes().UpsertInt("attr1", 55)
+	return td
+}()
 
 func TestJsonHttp(t *testing.T) {
 	tests := []struct {
@@ -239,74 +214,6 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.Er
 		}
 		require.Len(t, allTraces, 0)
 	}
-
-}
-
-func TestJsonMarshaling(t *testing.T) {
-	m := jsonpb.Marshaler{}
-	json, err := m.MarshalToString(&resourceSpansOtlp)
-	assert.NoError(t, err)
-
-	var resourceSpansOtlp2 otlptrace.ResourceSpans
-	err = jsonpb.UnmarshalString(json, &resourceSpansOtlp2)
-	assert.NoError(t, err)
-
-	assert.EqualValues(t, resourceSpansOtlp, resourceSpansOtlp2)
-}
-
-func TestJsonUnmarshaling(t *testing.T) {
-	var resourceSpansOtlp2 otlptrace.ResourceSpans
-	err := jsonpb.UnmarshalString(`
-		{
-		  "instrumentation_library_spans": [
-			{
-			  "spans": [
-				{
-				}
-			  ]
-			}
-		  ]
-		}`, &resourceSpansOtlp2)
-	assert.NoError(t, err)
-	assert.EqualValues(t, data.TraceID{}, resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
-
-	tests := []struct {
-		name  string
-		json  string
-		bytes [16]byte
-	}{
-		{
-			name:  "empty string trace id",
-			json:  `""`,
-			bytes: [16]byte{},
-		},
-		{
-			name:  "zero bytes trace id",
-			json:  `"00000000000000000000000000000000"`,
-			bytes: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var resourceSpansOtlp2 otlptrace.ResourceSpans
-			jsonStr := fmt.Sprintf(`
-			{
-			  "instrumentation_library_spans": [
-				{
-				  "spans": [
-					{
-					  "trace_id": %v
-					}
-				  ]
-				}
-			  ]
-			}`, test.json)
-			err := jsonpb.UnmarshalString(jsonStr, &resourceSpansOtlp2)
-			assert.NoError(t, err)
-			assert.EqualValues(t, data.NewTraceID(test.bytes), resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
-		})
-	}
 }
 
 func TestProtoHttp(t *testing.T) {
@@ -347,8 +254,8 @@ func TestProtoHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	traceData := testdata.GenerateTracesOneSpan()
-	traceBytes, err := traceData.ToOtlpProtoBytes()
+	td := testdata.GenerateTracesOneSpan()
+	traceBytes, err := otlp.NewProtobufTracesMarshaler().Marshal(td)
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -364,7 +271,7 @@ func TestProtoHttp(t *testing.T) {
 			t.Run(test.name+targetURLPath, func(t *testing.T) {
 				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
 				tSink.Reset()
-				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, traceData)
+				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
 			})
 		}
 	}
@@ -413,7 +320,7 @@ func testHTTPProtobufRequest(
 	require.NoError(t, err, "Error reading response from trace grpc-gateway")
 	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
-	require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	assert.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
 	allTraces := tSink.AllTraces()
 
@@ -776,7 +683,7 @@ func TestShutdown(t *testing.T) {
 	}
 	senderHTTP := func(td pdata.Traces) {
 		// Send request via OTLP/HTTP.
-		traceBytes, err2 := td.ToOtlpProtoBytes()
+		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().Marshal(td)
 		if err2 != nil {
 			t.Errorf("Error marshaling protobuf: %v", err2)
 		}

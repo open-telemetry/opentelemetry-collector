@@ -199,7 +199,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "typo_default_proto_config.yaml"), factories)
-	assert.EqualError(t, err, `error reading receivers configuration for otlp: unknown protocols in the OTLP receiver`)
+	assert.EqualError(t, err, "error reading receivers configuration for otlp: 1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
 
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for otlp: 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")

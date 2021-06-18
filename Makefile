@@ -26,7 +26,7 @@ GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
 
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-VERSION=$(shell git describe --match "v[0-9]*" HEAD)
+VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
@@ -48,6 +48,10 @@ $(1)
 endef
 
 .DEFAULT_GOAL := all
+
+.PHONY: version
+version:
+	@echo ${VERSION}
 
 .PHONY: all
 all: checklicense checkdoc misspell goimpi golint gotest otelcol
@@ -251,7 +255,6 @@ binaries-windows_amd64:
 build-binary-internal:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
 
-
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
 %-package:
@@ -332,11 +335,6 @@ genproto_sub:
 
 	@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,$(PROTOC) $(PROTO_INCLUDES) --gogofaster_out=plugins=grpc:./ $(file)))
-
-	@echo Generate gRPC gateway code.
-	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
-	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ opentelemetry/proto/collector/metrics/v1/metrics_service.proto
-	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/logs/v1/logs_service_http.yaml:./ opentelemetry/proto/collector/logs/v1/logs_service.proto
 
 	@echo Move generated code to target directory.
 	mkdir -p $(PROTO_TARGET_GEN_DIR)

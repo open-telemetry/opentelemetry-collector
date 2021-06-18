@@ -49,6 +49,18 @@ type kafkaTracesConsumer struct {
 	logger *zap.Logger
 }
 
+// kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
+type kafkaMetricsConsumer struct {
+	id                config.ComponentID
+	consumerGroup     sarama.ConsumerGroup
+	nextConsumer      consumer.Metrics
+	topics            []string
+	cancelConsumeLoop context.CancelFunc
+	unmarshaler       MetricsUnmarshaler
+
+	logger *zap.Logger
+}
+
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaLogsConsumer struct {
 	id                config.ComponentID
@@ -62,6 +74,7 @@ type kafkaLogsConsumer struct {
 }
 
 var _ component.Receiver = (*kafkaTracesConsumer)(nil)
+var _ component.Receiver = (*kafkaMetricsConsumer)(nil)
 var _ component.Receiver = (*kafkaLogsConsumer)(nil)
 
 func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
@@ -132,6 +145,77 @@ func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.Co
 }
 
 func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
+	c.cancelConsumeLoop()
+	return c.consumerGroup.Close()
+}
+
+func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
+	unmarshaler := unmarshalers[config.Encoding]
+	if unmarshaler == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
+	c := sarama.NewConfig()
+	c.ClientID = config.ClientID
+	c.Metadata.Full = config.Metadata.Full
+	c.Metadata.Retry.Max = config.Metadata.Retry.Max
+	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
+	if config.ProtocolVersion != "" {
+		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
+		if err != nil {
+			return nil, err
+		}
+		c.Version = version
+	}
+	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+		return nil, err
+	}
+	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
+	if err != nil {
+		return nil, err
+	}
+	return &kafkaMetricsConsumer{
+		id:            config.ID(),
+		consumerGroup: client,
+		topics:        []string{config.Topic},
+		nextConsumer:  nextConsumer,
+		unmarshaler:   unmarshaler,
+		logger:        set.Logger,
+	}, nil
+}
+
+func (c *kafkaMetricsConsumer) Start(context.Context, component.Host) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	c.cancelConsumeLoop = cancel
+	metricsConsumerGroup := &metricsConsumerGroupHandler{
+		id:           c.id,
+		logger:       c.logger,
+		unmarshaler:  c.unmarshaler,
+		nextConsumer: c.nextConsumer,
+		ready:        make(chan bool),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport}),
+	}
+	go c.consumeLoop(ctx, metricsConsumerGroup)
+	<-metricsConsumerGroup.ready
+	return nil
+}
+
+func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+	for {
+		// `Consume` should be called inside an infinite loop, when a
+		// server-side rebalance happens, the consumer session will need to be
+		// recreated to get the new claims
+		if err := c.consumerGroup.Consume(ctx, c.topics, handler); err != nil {
+			c.logger.Error("Error from consumer", zap.Error(err))
+		}
+		// check if context was cancelled, signaling that the consumer should stop
+		if ctx.Err() != nil {
+			c.logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+			return ctx.Err()
+		}
+	}
+}
+func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	c.cancelConsumeLoop()
 	return c.consumerGroup.Close()
 }
@@ -220,6 +304,18 @@ type tracesConsumerGroupHandler struct {
 	obsrecv *obsreport.Receiver
 }
 
+type metricsConsumerGroupHandler struct {
+	id           config.ComponentID
+	unmarshaler  MetricsUnmarshaler
+	nextConsumer consumer.Metrics
+	ready        chan bool
+	readyCloser  sync.Once
+
+	logger *zap.Logger
+
+	obsrecv *obsreport.Receiver
+}
+
 type logsConsumerGroupHandler struct {
 	id           config.ComponentID
 	unmarshaler  LogsUnmarshaler
@@ -233,6 +329,7 @@ type logsConsumerGroupHandler struct {
 }
 
 var _ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
+var _ sarama.ConsumerGroupHandler = (*metricsConsumerGroupHandler)(nil)
 var _ sarama.ConsumerGroupHandler = (*logsConsumerGroupHandler)(nil)
 
 func (c *tracesConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
@@ -276,6 +373,54 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 		spanCount := traces.SpanCount()
 		err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
 		c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *metricsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
+	c.readyCloser.Do(func() {
+		close(c.ready)
+	})
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.Name())}
+	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionStart.M(1))
+	return nil
+}
+
+func (c *metricsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.Name())}
+	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionClose.M(1))
+	return nil
+}
+
+func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	c.logger.Info("Starting consumer group", zap.Int32("partition", claim.Partition()))
+	for message := range claim.Messages() {
+		c.logger.Debug("Kafka message claimed",
+			zap.String("value", string(message.Value)),
+			zap.Time("timestamp", message.Timestamp),
+			zap.String("topic", message.Topic))
+		session.MarkMessage(message, "")
+
+		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
+		ctx = c.obsrecv.StartMetricsOp(ctx)
+		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.String())}
+		_ = stats.RecordWithTags(ctx, statsTags,
+			statMessageCount.M(1),
+			statMessageOffset.M(message.Offset),
+			statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
+
+		metrics, err := c.unmarshaler.Unmarshal(message.Value)
+		if err != nil {
+			c.logger.Error("failed to unmarshal message", zap.Error(err))
+			return err
+		}
+
+		metricCount := metrics.MetricCount()
+		err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
+		c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), metricCount, err)
 		if err != nil {
 			return err
 		}

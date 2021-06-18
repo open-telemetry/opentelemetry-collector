@@ -37,20 +37,20 @@ func main() {
 		Version:     version.Version,
 	}
 
-	if err := run(service.AppSettings{BuildInfo: info, Factories: factories}); err != nil {
+	if err := run(service.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(settings service.AppSettings) error {
+func runInteractive(settings service.CollectorSettings) error {
 	app, err := service.New(settings)
 	if err != nil {
-		return fmt.Errorf("failed to construct the application: %w", err)
+		return fmt.Errorf("failed to construct the collector server: %w", err)
 	}
 
 	err = app.Run()
 	if err != nil {
-		return fmt.Errorf("application run finished with error: %w", err)
+		return fmt.Errorf("collector server run finished with error: %w", err)
 	}
 
 	return nil
