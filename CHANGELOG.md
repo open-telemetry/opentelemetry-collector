@@ -4,7 +4,12 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Rename `service.Application` to `service.Collector` (#3268)
 - Provide case sensitivity in config yaml mappings by using Koanf instead of Viper (#3337)
+
+## 💡 Enhancements 💡
+
+- Change obsreport helpers for scraper to use the same pattern as Processor/Exporter (#3327)
 
 ## v0.28.0 Beta
 
@@ -33,6 +38,7 @@
 - Updated configgrpc `ToDialOptions` and confighttp `ToClient` apis to take extensions configuration map (#3340)
 - Remove `GenerateSequentialTraceID` and `GenerateSequentialSpanIDin` functions in testbed (#3390)
 - Change "grpc" to "GRPC" in configauth function/type names (#3285)
+- Disallow renaming metrics using metric relabel configs (#3410)
 
 ## 💡 Enhancements 💡
 

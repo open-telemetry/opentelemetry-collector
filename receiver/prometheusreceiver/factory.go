@@ -33,7 +33,8 @@ const (
 )
 
 var (
-	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
+	errNilScrapeConfig    = errors.New("expecting a non-nil ScrapeConfig")
+	errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 )
 
 // NewFactory creates a new Prometheus receiver factory.

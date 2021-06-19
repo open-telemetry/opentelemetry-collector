@@ -57,7 +57,7 @@ type InProcessCollector struct {
 	logger    *zap.Logger
 	factories component.Factories
 	configStr string
-	svc       *service.Application
+	svc       *service.Collector
 	appDone   chan struct{}
 	stopped   bool
 }
@@ -84,7 +84,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 }
 
 func (ipp *InProcessCollector) Start(args StartParams) error {
-	settings := service.AppSettings{
+	settings := service.CollectorSettings{
 		BuildInfo: component.BuildInfo{
 			Command: "otelcol",
 			Version: version.Version,
