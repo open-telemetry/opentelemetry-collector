@@ -40,7 +40,7 @@ fi
 
 changes_found() {
   echo "Incompatible Changes Found."
-  echo "Check the logs in the Github Action log-group: 'Comparing apidiff states'."
+  echo "Check the logs in the GitHub Action log-group: 'Comparing apidiff states'."
   exit 1
 }
 

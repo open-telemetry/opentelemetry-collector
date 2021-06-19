@@ -392,12 +392,12 @@ apidiff-build:
 apidiff-compare:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
 
-# Compare API state snapshots in Github Actions
+# Compare API state snapshots in GitHub Actions
 .PHONY: apidiff-compare-GA
 apidiff-compare-GA:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg) -d $(input_dir)))
 
-# Check no incompatible APIs for Github Actions
+# Check for incompatible API changes in GitHub Actions
 .PHONY: apidiff-check
 apidiff-check:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg) -d $(input_dir) -c))
