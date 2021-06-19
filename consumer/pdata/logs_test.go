@@ -48,17 +48,17 @@ func TestLogRecordCount(t *testing.T) {
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
-	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{{}},
-	})).LogRecordCount())
-	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+	}}.LogRecordCount())
+	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
 			},
 		},
-	})).LogRecordCount())
-	assert.Equal(t, 1, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+	}}.LogRecordCount())
+	assert.Equal(t, 1, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
@@ -68,7 +68,7 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	})).LogRecordCount())
+	}}.LogRecordCount())
 }
 
 func TestToFromLogProto(t *testing.T) {

@@ -15,24 +15,20 @@
 package testbed
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
 	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
-	otlplogscol "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpmetricscol "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlptracecol "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/otlp"
 )
 
 // DataProvider defines the interface for generators of test data used to drive various end-to-end tests.
@@ -257,7 +253,9 @@ func (dp *goldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
 // expects just a single JSON message in the entire file).
 type FileDataProvider struct {
 	dataItemsGenerated *atomic.Uint64
-	message            proto.Message
+	logs               pdata.Logs
+	metrics            pdata.Metrics
+	traces             pdata.Traces
 	ItemsPerBatch      int
 }
 
@@ -268,70 +266,50 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	if err != nil {
 		return nil, err
 	}
-
-	var message proto.Message
-	var dataPointCount int
-
-	// Load the message from the file and count the data points.
-
-	switch dataType {
-	case config.TracesDataType:
-		var msg otlptracecol.ExportTraceServiceRequest
-		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
-			return nil, err
-		}
-		message = &msg
-
-		md := pdata.TracesFromInternalRep(internal.TracesFromOtlp(&msg))
-		dataPointCount = md.SpanCount()
-
-	case config.MetricsDataType:
-		var msg otlpmetricscol.ExportMetricsServiceRequest
-		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
-			return nil, err
-		}
-		message = &msg
-
-		md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&msg))
-		_, dataPointCount = md.MetricAndDataPointCount()
-
-	case config.LogsDataType:
-		var msg otlplogscol.ExportLogsServiceRequest
-		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
-			return nil, err
-		}
-		message = &msg
-
-		md := pdata.LogsFromInternalRep(internal.LogsFromOtlp(&msg))
-		dataPointCount = md.LogRecordCount()
+	var buf []byte
+	buf, err = ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
 	}
 
-	return &FileDataProvider{
-		message:       message,
-		ItemsPerBatch: dataPointCount,
-	}, nil
+	dp := &FileDataProvider{}
+	// Load the message from the file and count the data points.
+	switch dataType {
+	case config.TracesDataType:
+		if dp.traces, err = otlp.NewJSONTracesUnmarshaler().Unmarshal(buf); err != nil {
+			return nil, err
+		}
+		dp.ItemsPerBatch = dp.traces.SpanCount()
+	case config.MetricsDataType:
+		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().Unmarshal(buf); err != nil {
+			return nil, err
+		}
+		_, dp.ItemsPerBatch = dp.metrics.MetricAndDataPointCount()
+	case config.LogsDataType:
+		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().Unmarshal(buf); err != nil {
+			return nil, err
+		}
+		dp.ItemsPerBatch = dp.logs.LogRecordCount()
+	}
+
+	return dp, nil
 }
 
 func (dp *FileDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *atomic.Uint64) {
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
-// Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
-var protobufJSONUnmarshaler = &jsonpb.Unmarshaler{}
-
 func (dp *FileDataProvider) GenerateTraces() (pdata.Traces, bool) {
-	// TODO: implement similar to GenerateMetrics.
-	return pdata.NewTraces(), true
+	dp.dataItemsGenerated.Add(uint64(dp.ItemsPerBatch))
+	return dp.traces, false
 }
 
 func (dp *FileDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
-	md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(dp.message.(*otlpmetricscol.ExportMetricsServiceRequest)))
-	_, dataPointCount := md.MetricAndDataPointCount()
-	dp.dataItemsGenerated.Add(uint64(dataPointCount))
-	return md, false
+	dp.dataItemsGenerated.Add(uint64(dp.ItemsPerBatch))
+	return dp.metrics, false
 }
 
 func (dp *FileDataProvider) GenerateLogs() (pdata.Logs, bool) {
-	// TODO: implement similar to GenerateMetrics.
-	return pdata.NewLogs(), true
+	dp.dataItemsGenerated.Add(uint64(dp.ItemsPerBatch))
+	return dp.logs, false
 }

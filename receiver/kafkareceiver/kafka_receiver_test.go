@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
+	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -129,7 +130,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  &otlpTracesPbUnmarshaler{},
+		unmarshaler:  newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -171,7 +172,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  &otlpTracesPbUnmarshaler{},
+		unmarshaler:  newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -196,7 +197,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consumer")
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  &otlpTracesPbUnmarshaler{},
+		unmarshaler:  newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
@@ -216,7 +217,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 	td := pdata.NewTraces()
 	td.ResourceSpans().AppendEmpty()
-	bts, err := td.ToOtlpProtoBytes()
+	bts, err := otlp.NewProtobufTracesMarshaler().Marshal(td)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -314,7 +315,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := logsConsumerGroupHandler{
-		unmarshaler:  &otlpLogsPbUnmarshaler{},
+		unmarshaler:  newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -356,7 +357,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	c := logsConsumerGroupHandler{
-		unmarshaler:  &otlpLogsPbUnmarshaler{},
+		unmarshaler:  newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
@@ -381,7 +382,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consumer")
 	c := logsConsumerGroupHandler{
-		unmarshaler:  &otlpLogsPbUnmarshaler{},
+		unmarshaler:  newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
@@ -400,7 +401,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateLogsOneLogRecord()
-	bts, err := ld.ToOtlpProtoBytes()
+	bts, err := otlp.NewProtobufLogsMarshaler().Marshal(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)

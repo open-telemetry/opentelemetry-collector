@@ -37,7 +37,8 @@ func TestTraces(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			traces := Traces(tt.args.td)
+			traces, err := NewTextTracesMarshaler().Marshal(tt.args.td)
+			assert.NoError(t, err)
 			if !tt.empty {
 				assert.NotEmpty(t, traces)
 			}

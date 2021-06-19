@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
@@ -27,8 +28,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
+
+var translator zipkinv2.FromTranslator
 
 // zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
 // exporter per unique node encountered. This is because serviceNames per node define
@@ -71,12 +74,13 @@ func (ze *zipkinExporter) start(_ context.Context, host component.Host) (err err
 }
 
 func (ze *zipkinExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	tbatch, err := zipkin.InternalTracesToZipkinSpans(td)
+	tbatch, err := translator.FromTraces(td)
 	if err != nil {
 		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}
+	spans := tbatch.([]*zipkinmodel.SpanModel)
 
-	body, err := ze.serializer.Serialize(tbatch)
+	body, err := ze.serializer.Serialize(spans)
 	if err != nil {
 		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}

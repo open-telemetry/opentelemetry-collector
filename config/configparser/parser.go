@@ -17,31 +17,33 @@ package configparser
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"reflect"
-	"strings"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/rawbytes"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 )
 
 const (
-	// KeyDelimiter is used as the default key delimiter in the default viper instance.
+	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
 	KeyDelimiter = "::"
 )
 
 // NewParser creates a new empty Parser instance.
 func NewParser() *Parser {
-	return &Parser{
-		v: viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter)),
-	}
+	return &Parser{k: koanf.New(KeyDelimiter)}
 }
 
 // NewParserFromFile creates a new Parser by reading the given file.
 func NewParserFromFile(fileName string) (*Parser, error) {
 	// Read yaml config from file.
 	p := NewParser()
-	p.v.SetConfigFile(fileName)
-	if err := p.v.ReadInConfig(); err != nil {
+	if err := p.k.Load(file.Provider(fileName), yaml.Parser()); err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
 	}
 	return p, nil
@@ -49,71 +51,90 @@ func NewParserFromFile(fileName string) (*Parser, error) {
 
 // NewParserFromBuffer creates a new Parser by reading the given yaml buffer.
 func NewParserFromBuffer(buf io.Reader) (*Parser, error) {
-	p := NewParser()
-	p.v.SetConfigType("yaml")
-	if err := p.v.ReadConfig(buf); err != nil {
+	content, err := ioutil.ReadAll(buf)
+	if err != nil {
 		return nil, err
 	}
+
+	p := NewParser()
+	if err := p.k.Load(rawbytes.Provider(content), yaml.Parser()); err != nil {
+		return nil, err
+	}
+
 	return p, nil
 }
 
 // NewParserFromStringMap creates a parser from a map[string]interface{}.
 func NewParserFromStringMap(data map[string]interface{}) *Parser {
 	p := NewParser()
-	// Cannot return error because the viper instance is empty.
-	_ = p.v.MergeConfigMap(data)
+	// Cannot return error because the koanf instance is empty.
+	_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
 	return p
 }
 
 // Parser loads configuration.
 type Parser struct {
-	v *viper.Viper
+	k *koanf.Koanf
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
 // Nested keys are returned with a KeyDelimiter separator.
 func (l *Parser) AllKeys() []string {
-	return l.v.AllKeys()
+	return l.k.Keys()
 }
 
 // Unmarshal unmarshals the config into a struct.
 // Tags on the fields of the structure must be properly set.
 func (l *Parser) Unmarshal(rawVal interface{}) error {
-	return l.v.Unmarshal(rawVal)
+	decoder, err := mapstructure.NewDecoder(decoderConfig(rawVal))
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(l.ToStringMap())
 }
 
 // UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent.
 func (l *Parser) UnmarshalExact(intoCfg interface{}) error {
-	return l.v.UnmarshalExact(intoCfg)
+	dc := decoderConfig(intoCfg)
+	dc.ErrorUnused = true
+	decoder, err := mapstructure.NewDecoder(dc)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(l.ToStringMap())
 }
 
 // Get can retrieve any value given the key to use.
 func (l *Parser) Get(key string) interface{} {
-	return l.v.Get(key)
+	return l.k.Get(key)
 }
 
 // Set sets the value for the key.
 func (l *Parser) Set(key string, value interface{}) {
-	l.v.Set(key, value)
+	// koanf doesn't offer a direct setting mechanism so merging is required.
+	merged := koanf.New(KeyDelimiter)
+	merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
+	l.k.Merge(merged)
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
 // IsSet is case-insensitive for a key.
 func (l *Parser) IsSet(key string) bool {
-	return l.v.IsSet(key)
+	return l.k.Exists(key)
 }
 
 // MergeStringMap merges the configuration from the given map with the existing config.
 // Note that the given map may be modified.
 func (l *Parser) MergeStringMap(cfg map[string]interface{}) error {
-	return l.v.MergeConfigMap(cfg)
+	toMerge := koanf.New(KeyDelimiter)
+	toMerge.Load(confmap.Provider(cfg, KeyDelimiter), nil)
+	return l.k.Merge(toMerge)
 }
 
-// Sub returns new Parser instance representing a sub tree of this instance.
+// Sub returns new Parser instance representing a sub-config of this instance.
+// It returns an error is the sub-config is not a map (use Get()) and an empty Parser if
+// none exists.
 func (l *Parser) Sub(key string) (*Parser, error) {
-	// Copied from the Viper but changed to use the same delimiter
-	// and return error if the sub is not a map.
-	// See https://github.com/spf13/viper/issues/871
 	data := l.Get(key)
 	if data == nil {
 		return NewParser(), nil
@@ -122,60 +143,71 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 	if reflect.TypeOf(data).Kind() == reflect.Map {
 		subParser := NewParser()
 		// Cannot return error because the subv is empty.
-		_ = subParser.v.MergeConfigMap(cast.ToStringMap(data))
+		_ = subParser.MergeStringMap(cast.ToStringMap(data))
 		return subParser, nil
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
 }
 
-// deepSearch scans deep maps, following the key indexes listed in the
-// sequence "path".
-// The last value is expected to be another map, and is returned.
-//
-// In case intermediate keys do not exist, or map to a non-map value,
-// a new map is created and inserted, and the search continues from there:
-// the initial map "m" may be modified!
-// This function comes from Viper code https://github.com/spf13/viper/blob/5253694/util.go#L201-L230
-// It is used here because of https://github.com/spf13/viper/issues/819
-func deepSearch(m map[string]interface{}, path []string) map[string]interface{} {
-	for _, k := range path {
-		m2, ok := m[k]
-		if !ok {
-			// Intermediate key does not exist:
-			// create it and continue from there.
-			m3 := make(map[string]interface{})
-			m[k] = m3
-			m = m3
-			continue
-		}
-		m3, ok := m2.(map[string]interface{})
-		if !ok {
-			// Intermediate key is a value:
-			// replace with a new map.
-			m3 = make(map[string]interface{})
-			m[k] = m3
-		}
-		// continue search from here
-		m = m3
-	}
-	return m
-}
-
 // ToStringMap creates a map[string]interface{} from a Parser.
 func (l *Parser) ToStringMap() map[string]interface{} {
-	// This is equivalent to l.v.AllSettings() but it maps nil values.
-	// We can't use AllSettings here because of https://github.com/spf13/viper/issues/819
+	return l.k.Raw()
+}
 
-	m := map[string]interface{}{}
-	// Start from the list of keys, and construct the map one value at a time.
-	for _, k := range l.v.AllKeys() {
-		value := l.v.Get(k)
-		path := strings.Split(k, KeyDelimiter)
-		lastKey := strings.ToLower(path[len(path)-1])
-		deepestMap := deepSearch(m, path[0:len(path)-1])
-		// Set innermost value.
-		deepestMap[lastKey] = value
+// decoderConfig returns a default mapstructure.DecoderConfig capable of parsing time.Duration
+// and weakly converting config field values to primitive types.  It also ensures that maps
+// whose values are nil pointer structs resolved to the zero value of the target struct (see
+// expandNilStructPointers). A decoder created from this mapstructure.DecoderConfig will decode
+// its contents to the result argument.
+func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
+	return &mapstructure.DecoderConfig{
+		Result:           result,
+		Metadata:         nil,
+		TagName:          "mapstructure",
+		WeaklyTypedInput: true,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			expandNilStructPointers(),
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+		),
 	}
-	return m
+}
+
+// In cases where a config has a mapping of something to a struct pointers
+// we want nil values to resolve to a pointer to the zero value of the
+// underlying struct just as we want nil values of a mapping of something
+// to a struct to resolve to the zero value of that struct.
+//
+// e.g. given a config type:
+// type Config struct { Thing *SomeStruct `mapstructure:"thing"` }
+//
+// and yaml of:
+// config:
+//   thing:
+//
+// we want an unmarshalled Config to be equivalent to
+// Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
+func expandNilStructPointers() mapstructure.DecodeHookFunc {
+	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+		// ensure we are dealing with map to map comparison
+		if from.Kind() == reflect.Map && to.Kind() == reflect.Map {
+			toElem := to.Type().Elem()
+			// ensure that map values are pointers to a struct
+			// (that may be nil and require manual setting w/ zero value)
+			if toElem.Kind() == reflect.Ptr && toElem.Elem().Kind() == reflect.Struct {
+				fromRange := from.MapRange()
+				for fromRange.Next() {
+					fromKey := fromRange.Key()
+					fromValue := fromRange.Value()
+					// ensure that we've run into a nil pointer instance
+					if fromValue.IsNil() {
+						newFromValue := reflect.New(toElem.Elem())
+						from.SetMapIndex(fromKey, newFromValue)
+					}
+				}
+			}
+		}
+		return from.Interface(), nil
+	}
 }
