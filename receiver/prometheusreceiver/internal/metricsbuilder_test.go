@@ -1198,34 +1198,6 @@ func Test_metricBuilder_summary(t *testing.T) {
 	runBuilderTests(t, tests)
 }
 
-func Test_metricBuilder_skipped(t *testing.T) {
-	tests := []buildTestData{
-		{
-			name: "skip-internal-metrics",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("scrape_foo", 1),
-						createDataPoint("up", 1.0),
-					},
-				},
-				{
-					pts: []*testDataPoint{
-						createDataPoint("scrape_foo", 2),
-						createDataPoint("up", 2.0),
-					},
-				},
-			},
-			wants: [][]*metricspb.Metric{
-				{},
-				{},
-			},
-		},
-	}
-
-	runBuilderTests(t, tests)
-}
-
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
