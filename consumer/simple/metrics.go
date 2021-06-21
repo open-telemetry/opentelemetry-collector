@@ -16,7 +16,6 @@ package simple
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -120,17 +119,6 @@ func (mb *Metrics) WithLabels(l map[string]string) *Metrics {
 	}
 
 	return out
-}
-
-// AsSafe returns an instance of this builder wrapped in
-// SafeMetrics that ensures all of the public methods on this instance
-// will be thread-safe between goroutines.  You must explicitly type these
-// instances as SafeMetrics.
-func (mb Metrics) AsSafe() *SafeMetrics {
-	return &SafeMetrics{
-		Metrics: &mb,
-		Mutex:   &sync.Mutex{},
-	}
 }
 
 // AddGaugeDataPoint adds an integer gauge data point.
@@ -291,71 +279,4 @@ func cloneStringMap(m map[string]string) map[string]string {
 		out[k] = v
 	}
 	return out
-}
-
-// SafeMetrics is a wrapper for Metrics that ensures the wrapped
-// instance can be used safely across goroutines. It is meant to be created
-// from the AsSafe on Metrics.
-type SafeMetrics struct {
-	*sync.Mutex
-	*Metrics
-}
-
-// WithLabels wraps Metrics.WithLabels.
-func (mb *SafeMetrics) WithLabels(l map[string]string) *SafeMetrics {
-	mb.Lock()
-	defer mb.Unlock()
-
-	return &SafeMetrics{
-		Metrics: mb.Metrics.WithLabels(l),
-		Mutex:   mb.Mutex,
-	}
-}
-
-// AddGaugeDataPoint wraps Metrics.AddGaugeDataPoint.
-func (mb *SafeMetrics) AddGaugeDataPoint(name string, metricValue int64) *SafeMetrics {
-	mb.Lock()
-	mb.Metrics.AddGaugeDataPoint(name, metricValue)
-	mb.Unlock()
-	return mb
-}
-
-// AddDGaugeDataPoint wraps Metrics.AddDGaugeDataPoint.
-func (mb *SafeMetrics) AddDGaugeDataPoint(name string, metricValue float64) *SafeMetrics {
-	mb.Lock()
-	mb.Metrics.AddDGaugeDataPoint(name, metricValue)
-	mb.Unlock()
-	return mb
-}
-
-// AddSumDataPoint wraps Metrics.AddSumDataPoint.
-func (mb *SafeMetrics) AddSumDataPoint(name string, metricValue int64) *SafeMetrics {
-	mb.Lock()
-	mb.Metrics.AddSumDataPoint(name, metricValue)
-	mb.Unlock()
-	return mb
-}
-
-// AddDSumDataPoint wraps Metrics.AddDSumDataPoint.
-func (mb *SafeMetrics) AddDSumDataPoint(name string, metricValue float64) *SafeMetrics {
-	mb.Lock()
-	mb.Metrics.AddDSumDataPoint(name, metricValue)
-	mb.Unlock()
-	return mb
-}
-
-// AddHistogramRawDataPoint wraps Metrics.AddHistogramRawDataPoint.
-func (mb *SafeMetrics) AddHistogramRawDataPoint(name string, hist pdata.IntHistogramDataPoint) *SafeMetrics {
-	mb.Lock()
-	mb.Metrics.AddHistogramRawDataPoint(name, hist)
-	mb.Unlock()
-	return mb
-}
-
-// AddDHistogramRawDataPoint wraps Metrics.AddDHistogramRawDataPoint.
-func (mb *SafeMetrics) AddDHistogramRawDataPoint(name string, hist pdata.HistogramDataPoint) *SafeMetrics {
-	mb.Lock()
-	mb.Metrics.AddDHistogramRawDataPoint(name, hist)
-	mb.Unlock()
-	return mb
 }

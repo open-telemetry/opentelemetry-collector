@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 
@@ -341,102 +340,6 @@ func TestMetricFactories(t *testing.T) {
 	require.Equal(t, "", m.Description())
 	require.Equal(t, pdata.MetricDataTypeIntGauge, m.DataType())
 	require.Equal(t, 1, m.IntGauge().DataPoints().Len())
-}
-
-func ExampleSafeMetrics() {
-	metrics := pdata.NewMetrics()
-
-	mb := Metrics{
-		Metrics:                       metrics,
-		InstrumentationLibraryName:    "example",
-		InstrumentationLibraryVersion: "0.1",
-		ResourceAttributes: map[string]string{
-			"host": "my-host",
-		},
-		Timestamp: time.Now(),
-	}.AsSafe()
-
-	var wg sync.WaitGroup
-	for _, disk := range []string{"sda", "sdb", "sdc"} {
-		wg.Add(1)
-		go func(disk string) {
-			// All metrics added after this will have these labels
-			diskBuilder := mb.WithLabels(map[string]string{
-				"disk": disk,
-			}).AddGaugeDataPoint("disk.usage", 9000000)
-
-			// Add metrics in a chained manner
-			diskBuilder.
-				AddGaugeDataPoint("disk.capacity", 9000000).
-				AddSumDataPoint("disk.reads", 50)
-
-			// Or add them on their own
-			diskBuilder.AddDGaugeDataPoint("disk.temp", 30.5)
-
-			wg.Done()
-		}(disk)
-	}
-	wg.Wait()
-
-	metricCount, dpCount := metrics.MetricAndDataPointCount()
-	fmt.Printf("Metrics: %d\nDataPoints: %d", metricCount, dpCount)
-
-	// Output:
-	// Metrics: 4
-	// DataPoints: 12
-}
-
-func TestSafeMetrics(t *testing.T) {
-	metrics := pdata.NewMetrics()
-
-	mb := Metrics{
-		Metrics:                       metrics,
-		InstrumentationLibraryName:    "example",
-		InstrumentationLibraryVersion: "0.1",
-		ResourceAttributes: map[string]string{
-			"host": "my-host",
-		},
-		Timestamp: time.Unix(0, 1597266546570840817),
-		Labels: map[string]string{
-			"disk": "sda",
-		},
-	}.AsSafe()
-
-	ready := make(chan struct{})
-	var wg sync.WaitGroup
-
-	for i := 0; i < 1000; i++ {
-		wg.Add(1)
-		go func(idx string) {
-			<-ready
-			mb.
-				AddGaugeDataPoint("disk.capacity"+idx, 9000000).
-				AddSumDataPoint("disk.reads"+idx, 50).
-				AddDGaugeDataPoint("disk.temp"+idx, 30.5).
-				AddDSumDataPoint("disk.time_awake"+idx, 100.6)
-
-			intHisto := pdata.NewIntHistogramDataPoint()
-			doubleHisto := pdata.NewHistogramDataPoint()
-
-			for j := 0; j < 5; j++ {
-				mb.WithLabels(map[string]string{
-					"partition": strconv.Itoa(j),
-				}).
-					AddGaugeDataPoint("partition.capacity", 40000).
-					AddSumDataPoint("disk.reads", 5).
-					AddHistogramRawDataPoint("disk.times", intHisto).
-					AddDHistogramRawDataPoint("disk.double_times", doubleHisto)
-			}
-			wg.Done()
-		}(strconv.Itoa(i))
-	}
-
-	close(ready)
-	wg.Wait()
-
-	mCount, dpCount := metrics.MetricAndDataPointCount()
-	require.Equal(t, 4004, mCount)
-	require.Equal(t, 24000, dpCount)
 }
 
 func BenchmarkSimpleMetrics(b *testing.B) {
