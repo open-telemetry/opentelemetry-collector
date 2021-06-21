@@ -112,7 +112,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) (rerr
 		// Only mark this data point as in the current scrape
 		// iff it isn't a stale metric.
 		if rerr == nil && !value.IsStaleNaN(v) {
-			b.stalenessStore.markAsCurrentlySeen(ls)
+			b.stalenessStore.markAsCurrentlySeen(ls, t)
 		}
 	}()
 

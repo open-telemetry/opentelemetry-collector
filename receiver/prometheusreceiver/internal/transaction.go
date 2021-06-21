@@ -20,7 +20,6 @@ import (
 	"math"
 	"net"
 	"sync/atomic"
-	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -78,6 +77,7 @@ type transaction struct {
 	logger               *zap.Logger
 	obsrecv              *obsreport.Receiver
 	stalenessStore       *stalenessStore
+	startTime            int64
 }
 
 func newTransaction(
@@ -104,6 +104,7 @@ func newTransaction(
 		logger:               logger,
 		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport}),
 		stalenessStore:       stalenessStore,
+		startTime:            -1,
 	}
 }
 
@@ -112,6 +113,9 @@ var _ storage.Appender = (*transaction)(nil)
 
 // Append always returns 0 to disable label caching.
 func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) (uint64, error) {
+	if tr.startTime < 0 {
+		tr.startTime = t
+	}
 	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
 	// scrape the remote target,  if the previous scrape was success and some data were cached internally
 	// in our case, we don't need these data, simply drop them shall be good enough. more details:
@@ -134,6 +138,7 @@ func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) 
 			return 0, err
 		}
 	}
+
 	return 0, tr.metricBuilder.AddDataPoint(ls, t, v)
 }
 
@@ -177,10 +182,11 @@ func (tr *transaction) Commit() error {
 	// Before building metrics, issue staleness markers for every stale metric.
 	staleLabels := tr.stalenessStore.emitStaleLabels()
 
-	nowAsUnix := time.Now().Unix()
-	for _, labels := range staleLabels {
-		tr.metricBuilder.AddDataPoint(labels, nowAsUnix, stalenessSpecialValue)
+	for _, sEntry := range staleLabels {
+		tr.metricBuilder.AddDataPoint(sEntry.labels, sEntry.at, stalenessSpecialValue)
 	}
+
+	tr.startTime = -1
 
 	ctx := tr.obsrecv.StartMetricsOp(tr.ctx)
 	metrics, _, _, err := tr.metricBuilder.Build()
@@ -219,6 +225,7 @@ func (tr *transaction) Commit() error {
 }
 
 func (tr *transaction) Rollback() error {
+	tr.startTime = -1
 	return nil
 }
 
