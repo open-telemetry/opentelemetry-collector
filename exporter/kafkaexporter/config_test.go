@@ -84,7 +84,7 @@ func TestValidCompression(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "valid-compression-config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "valid-compression-config.yaml"), factories)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Exporters))
 
@@ -100,6 +100,6 @@ func TestInvalidCompression(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "invalid-compression-config.yaml"), factories)
+	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid-compression-config.yaml"), factories)
 	require.Error(t, err)
 }
