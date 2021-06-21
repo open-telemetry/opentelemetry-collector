@@ -155,7 +155,7 @@ candidates are made:
 * `collector/config`: `v1.0.0-rc.1`
 * `collector/consumer`: `v1.0.0-rc.1`
 
-The `collector/exporter` and `collector/receiver` modules remain at `v0.14.0`.
+The `collector/exporter` and `collector/receiver` modules remain at `v0.28.0`.
 
 A few minor issues are discovered in the `collector/component` package. These issues are
 resolved with some minor, but backwards incompatible, changes and are released
@@ -190,7 +190,7 @@ following release is made:
 
 * `collector`: `v1.0.1`
 * `collector/component`: `v1.0.1`
-* `collector/exporter`: `v0.15.0`
+* `collector/exporter`: `v0.29.0`
 * `collector/config`: `v1.0.1`
 * `collector/consumer`: `v1.0.1`
 
