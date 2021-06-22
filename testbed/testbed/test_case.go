@@ -170,8 +170,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 
 	endpoint := tc.LoadGenerator.sender.GetEndpoint()
 
-	// Prometheus endpoints use /metrics path instead of only tcp host and port
-	if endpoint != nil && tc.LoadGenerator.sender.ProtocolName() != "prometheus" {
+	if endpoint != nil {
 		// Wait for agent to start. We consider the agent started when we can
 		// connect to the port to which we intend to send load. We only do this
 		// if the endpoint is not-empty, i.e. the sender does use network (some senders
