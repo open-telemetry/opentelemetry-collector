@@ -47,7 +47,7 @@ func (f *Factory) CreateResourceMetricsScraper(
 	_ context.Context,
 	_ *zap.Logger,
 	cfg internal.Config,
-) (scraperhelper.ResourceMetricsScraper, error) {
+) (scraperhelper.Scraper, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		return nil, errors.New("process scraper only available on Linux or Windows")
 	}
