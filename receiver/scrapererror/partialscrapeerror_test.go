@@ -28,7 +28,7 @@ func TestPartialScrapeError(t *testing.T) {
 	err := fmt.Errorf("some error")
 	partialErr := NewPartialScrapeError(err, failed)
 	assert.Equal(t, err.Error(), partialErr.Error())
-	assert.Equal(t, failed, partialErr.(PartialScrapeError).Failed)
+	assert.Equal(t, failed, partialErr.Failed)
 }
 
 func TestIsPartialScrapeError(t *testing.T) {

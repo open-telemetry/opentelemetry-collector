@@ -15,27 +15,105 @@
 package pdata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
 
-// AggregationTemporality defines how a metric aggregator reports aggregated values.
-// It describes how those values relate to the time interval over which they are aggregated.
-type AggregationTemporality int32
+// MetricsDecoder is an interface to decode bytes into protocol-specific data model.
+type MetricsDecoder interface {
+	// DecodeMetrics decodes bytes into protocol-specific data model.
+	// If the error is not nil, the returned interface cannot be used.
+	DecodeMetrics(buf []byte) (interface{}, error)
+}
 
-const (
-	// AggregationTemporalityUnspecified is the default AggregationTemporality, it MUST NOT be used.
-	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
-	// AggregationTemporalityDelta is an AggregationTemporality for a metric aggregator which reports changes since last report time.
-	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
-	// AggregationTemporalityCumulative is an AggregationTemporality for a metric aggregator which reports changes since a fixed start time.
-	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
-)
+// MetricsEncoder is an interface to encode protocol-specific data model into bytes.
+type MetricsEncoder interface {
+	// EncodeMetrics encodes protocol-specific data model into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	EncodeMetrics(model interface{}) ([]byte, error)
+}
 
-// String returns the string representation of the AggregationTemporality.
-func (at AggregationTemporality) String() string {
-	return otlpmetrics.AggregationTemporality(at).String()
+// FromMetricsTranslator is an interface to translate pdata.Metrics into protocol-specific data model.
+type FromMetricsTranslator interface {
+	// FromMetrics translates pdata.Metrics into protocol-specific data model.
+	// If the error is not nil, the returned pdata.Metrics cannot be used.
+	FromMetrics(md Metrics) (interface{}, error)
+}
+
+// ToMetricsTranslator is an interface to translate a protocol-specific data model into pdata.Traces.
+type ToMetricsTranslator interface {
+	// ToMetrics translates a protocol-specific data model into pdata.Metrics.
+	// If the error is not nil, the returned pdata.Metrics cannot be used.
+	ToMetrics(src interface{}) (Metrics, error)
+}
+
+// MetricsMarshaler marshals pdata.Metrics into bytes.
+type MetricsMarshaler interface {
+	// Marshal the given pdata.Metrics into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	Marshal(td Metrics) ([]byte, error)
+}
+
+type metricsMarshaler struct {
+	encoder    MetricsEncoder
+	translator FromMetricsTranslator
+}
+
+// NewMetricsMarshaler returns a new MetricsMarshaler.
+func NewMetricsMarshaler(encoder MetricsEncoder, translator FromMetricsTranslator) MetricsMarshaler {
+	return &metricsMarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
+}
+
+// Marshal pdata.Metrics into bytes.
+func (t *metricsMarshaler) Marshal(td Metrics) ([]byte, error) {
+	model, err := t.translator.FromMetrics(td)
+	if err != nil {
+		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
+	}
+	buf, err := t.encoder.EncodeMetrics(model)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed: %w", err)
+	}
+	return buf, nil
+}
+
+// MetricsUnmarshaler unmarshalls bytes into pdata.Metrics.
+type MetricsUnmarshaler interface {
+	// Unmarshal the given bytes into pdata.Metrics.
+	// If the error is not nil, the returned pdata.Metrics cannot be used.
+	Unmarshal(buf []byte) (Metrics, error)
+}
+
+type metricsUnmarshaler struct {
+	decoder    MetricsDecoder
+	translator ToMetricsTranslator
+}
+
+// NewMetricsUnmarshaler returns a new MetricsUnmarshaler.
+func NewMetricsUnmarshaler(decoder MetricsDecoder, translator ToMetricsTranslator) MetricsUnmarshaler {
+	return &metricsUnmarshaler{
+		decoder:    decoder,
+		translator: translator,
+	}
+}
+
+// Unmarshal bytes into pdata.Metrics. On error pdata.Metrics is invalid.
+func (t *metricsUnmarshaler) Unmarshal(buf []byte) (Metrics, error) {
+	model, err := t.decoder.DecodeMetrics(buf)
+	if err != nil {
+		return Metrics{}, fmt.Errorf("unmarshal failed: %w", err)
+	}
+	td, err := t.translator.ToMetrics(model)
+	if err != nil {
+		return Metrics{}, fmt.Errorf("converting model to pdata failed: %w", err)
+	}
+	return td, nil
 }
 
 // Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitates the
@@ -312,4 +390,22 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		newSummary(srcData.DoubleSummary).CopyTo(newSummary(data.DoubleSummary))
 		dest.Data = data
 	}
+}
+
+// AggregationTemporality defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
+type AggregationTemporality int32
+
+const (
+	// AggregationTemporalityUnspecified is the default AggregationTemporality, it MUST NOT be used.
+	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
+	// AggregationTemporalityDelta is an AggregationTemporality for a metric aggregator which reports changes since last report time.
+	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
+	// AggregationTemporalityCumulative is an AggregationTemporality for a metric aggregator which reports changes since a fixed start time.
+	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
+)
+
+// String returns the string representation of the AggregationTemporality.
+func (at AggregationTemporality) String() string {
+	return otlpmetrics.AggregationTemporality(at).String()
 }

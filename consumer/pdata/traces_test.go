@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"errors"
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
@@ -27,6 +28,101 @@ import (
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
+
+func TestTracesMarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	tm := NewTracesMarshaler(encoder, translator)
+	td := NewTraces()
+
+	translator.On("FromTraces", td).Return(nil, errors.New("translation failed"))
+
+	_, err := tm.Marshal(td)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
+}
+
+func TestTracesMarshal_SerializeError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	tm := NewTracesMarshaler(encoder, translator)
+	td := NewTraces()
+	expectedModel := struct{}{}
+
+	translator.On("FromTraces", td).Return(expectedModel, nil)
+	encoder.On("EncodeTraces", expectedModel).Return(nil, errors.New("serialization failed"))
+
+	_, err := tm.Marshal(td)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "marshal failed: serialization failed")
+}
+
+func TestTracesMarshal_Encode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	tm := NewTracesMarshaler(encoder, translator)
+	expectedTraces := NewTraces()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	translator.On("FromTraces", expectedTraces).Return(expectedModel, nil)
+	encoder.On("EncodeTraces", expectedModel).Return(expectedBytes, nil)
+
+	actualBytes, err := tm.Marshal(expectedTraces)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestTracesUnmarshal_EncodingError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	tu := NewTracesUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, errors.New("decode failed"))
+
+	_, err := tu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unmarshal failed: decode failed")
+}
+
+func TestTracesUnmarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	tu := NewTracesUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToTraces", expectedModel).Return(NewTraces(), errors.New("translation failed"))
+
+	_, err := tu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
+}
+
+func TestTracesUnmarshal_Decode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	tu := NewTracesUnmarshaler(encoder, translator)
+	expectedTraces := NewTraces()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToTraces", expectedModel).Return(expectedTraces, nil)
+
+	actualTraces, err := tu.Unmarshal(expectedBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedTraces, actualTraces)
+}
 
 func TestSpanCount(t *testing.T) {
 	md := NewTraces()

@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package pdata
 
 import (
 	"github.com/stretchr/testify/mock"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 var (
@@ -80,32 +78,32 @@ type mockTranslator struct {
 	mock.Mock
 }
 
-func (m *mockTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
+func (m *mockTranslator) ToTraces(src interface{}) (Traces, error) {
 	args := m.Called(src)
-	return args.Get(0).(pdata.Traces), args.Error(1)
+	return args.Get(0).(Traces), args.Error(1)
 }
 
-func (m *mockTranslator) FromTraces(md pdata.Traces) (interface{}, error) {
+func (m *mockTranslator) FromTraces(md Traces) (interface{}, error) {
 	args := m.Called(md)
 	return args.Get(0), args.Error(1)
 }
 
-func (m *mockTranslator) ToMetrics(src interface{}) (pdata.Metrics, error) {
+func (m *mockTranslator) ToMetrics(src interface{}) (Metrics, error) {
 	args := m.Called(src)
-	return args.Get(0).(pdata.Metrics), args.Error(1)
+	return args.Get(0).(Metrics), args.Error(1)
 }
 
-func (m *mockTranslator) FromMetrics(md pdata.Metrics) (interface{}, error) {
+func (m *mockTranslator) FromMetrics(md Metrics) (interface{}, error) {
 	args := m.Called(md)
 	return args.Get(0), args.Error(1)
 }
 
-func (m *mockTranslator) ToLogs(src interface{}) (pdata.Logs, error) {
+func (m *mockTranslator) ToLogs(src interface{}) (Logs, error) {
 	args := m.Called(src)
-	return args.Get(0).(pdata.Logs), args.Error(1)
+	return args.Get(0).(Logs), args.Error(1)
 }
 
-func (m *mockTranslator) FromLogs(md pdata.Logs) (interface{}, error) {
+func (m *mockTranslator) FromLogs(md Logs) (interface{}, error) {
 	args := m.Called(md)
 	return args.Get(0), args.Error(1)
 }

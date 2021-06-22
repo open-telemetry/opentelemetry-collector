@@ -18,11 +18,10 @@ import (
 	"github.com/Shopify/sarama"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/model"
 )
 
 type pdataLogsMarshaler struct {
-	marshaler model.LogsMarshaler
+	marshaler pdata.LogsMarshaler
 	encoding  string
 }
 
@@ -43,7 +42,7 @@ func (p pdataLogsMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataLogsMarshaler(marshaler model.LogsMarshaler, encoding string) LogsMarshaler {
+func newPdataLogsMarshaler(marshaler pdata.LogsMarshaler, encoding string) LogsMarshaler {
 	return pdataLogsMarshaler{
 		marshaler: marshaler,
 		encoding:  encoding,
@@ -51,7 +50,7 @@ func newPdataLogsMarshaler(marshaler model.LogsMarshaler, encoding string) LogsM
 }
 
 type pdataMetricsMarshaler struct {
-	marshaler model.MetricsMarshaler
+	marshaler pdata.MetricsMarshaler
 	encoding  string
 }
 
@@ -72,7 +71,7 @@ func (p pdataMetricsMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataMetricsMarshaler(marshaler model.MetricsMarshaler, encoding string) MetricsMarshaler {
+func newPdataMetricsMarshaler(marshaler pdata.MetricsMarshaler, encoding string) MetricsMarshaler {
 	return pdataMetricsMarshaler{
 		marshaler: marshaler,
 		encoding:  encoding,
@@ -80,7 +79,7 @@ func newPdataMetricsMarshaler(marshaler model.MetricsMarshaler, encoding string)
 }
 
 type pdataTracesMarshaler struct {
-	marshaler model.TracesMarshaler
+	marshaler pdata.TracesMarshaler
 	encoding  string
 }
 
@@ -101,7 +100,7 @@ func (p pdataTracesMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataTracesMarshaler(marshaler model.TracesMarshaler, encoding string) TracesMarshaler {
+func newPdataTracesMarshaler(marshaler pdata.TracesMarshaler, encoding string) TracesMarshaler {
 	return pdataTracesMarshaler{
 		marshaler: marshaler,
 		encoding:  encoding,

@@ -10,7 +10,7 @@ require (
 	github.com/mjibson/esc v0.2.0
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
-	github.com/tcnksm/ghr v0.13.0
+	github.com/tcnksm/ghr v0.14.0
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
 	golang.org/x/tools v0.1.2-0.20210512205948-8287d5da45e4
 )

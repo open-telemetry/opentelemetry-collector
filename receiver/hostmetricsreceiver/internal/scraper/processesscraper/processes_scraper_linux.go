@@ -25,14 +25,15 @@ import (
 
 const unixSystemSpecificMetricsLen = 1
 
-func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.Timestamp, misc *load.MiscStat) error {
-	initializeProcessesCreatedMetric(metrics.At(startIndex), now, misc)
+func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, startIndex int, now pdata.Timestamp, misc *load.MiscStat) error {
+	initializeProcessesCreatedMetric(metrics.At(startIndex), startTime, now, misc)
 	return nil
 }
 
-func initializeProcessesCreatedMetric(metric pdata.Metric, now pdata.Timestamp, misc *load.MiscStat) {
+func initializeProcessesCreatedMetric(metric pdata.Metric, startTime, now pdata.Timestamp, misc *load.MiscStat) {
 	metadata.Metrics.SystemProcessesCreated.Init(metric)
 	ddp := metric.IntSum().DataPoints().AppendEmpty()
+	ddp.SetStartTimestamp(startTime)
 	ddp.SetTimestamp(now)
 	ddp.SetValue(int64(misc.ProcsCreated))
 }
