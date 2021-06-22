@@ -2,14 +2,43 @@
 
 ## Unreleased
 
+## v0.29.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Rename `service.Application` to `service.Collector` (#3268)
 - Provide case sensitivity in config yaml mappings by using Koanf instead of Viper (#3337)
+- Move zipkin constants to an internal package (#3431)
+- Disallow renaming metrics using metric relabel configs (#3410)
+- Move cgroup and iruntime utils from memory_limiter to internal folder (#3448)
+- Move model pdata interfaces to pdata, expose them publicly (#3455)
 
 ## 💡 Enhancements 💡
 
 - Change obsreport helpers for scraper to use the same pattern as Processor/Exporter (#3327)
+- Convert `otlptext` to implement Marshaler interfaces (#3366)
+- Add encoder/decoder and marshaler/unmarshaler for OTLP protobuf (#3401)
+- Use the new marshaler/unmarshaler in `kafka` exporter (#3403)
+- Convert `zipkinv2` to to/from translator interfaces (#3409)
+- `zipkinv1`: Move to translator and encoders interfaces (#3419)
+- Use the new marshaler/unmarshaler in `kafka` receiver #3402
+- Change `oltp` receiver to use the new unmarshaler, avoid grpc-gateway dependency (#3406)
+- Use the new Marshaler in the `otlphttp` exporter (#3433)
+- Add grpc response struct for all signals instead of returning interface in `otlp` receiver/exporter (#3437)
+- `zipkinv2`: Add encoders, decoders, marshalers (#3426)
+- `scrapererror` receiver: Return concrete error type (#3360)
+- `kafka` receiver: Add metrics support (#3452)
+- `prometheus` receiver:
+  - Add store to track stale metrics (#3414)
+  - Add `up` and `scrape_xxxx` internal metrics (#3116)
+
+## 🧰 Bug fixes 🧰
+
+- `prometheus` receiver:
+  - Reject datapoints with duplicate label keys (#3408)
+  - Scrapers are not stopped when receiver is shutdown (#3450)
+- `prometheusremotewrite` exporter: Adjust default retry settings (#3416)
+- `hostmetrics` receiver: Fix missing startTimestamp for `processes` scraper (#3461)
 
 ## v0.28.0 Beta
 
@@ -38,7 +67,6 @@
 - Updated configgrpc `ToDialOptions` and confighttp `ToClient` apis to take extensions configuration map (#3340)
 - Remove `GenerateSequentialTraceID` and `GenerateSequentialSpanIDin` functions in testbed (#3390)
 - Change "grpc" to "GRPC" in configauth function/type names (#3285)
-- Disallow renaming metrics using metric relabel configs (#3410)
 
 ## 💡 Enhancements 💡
 
