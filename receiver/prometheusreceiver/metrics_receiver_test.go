@@ -33,6 +33,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	gokitlog "github.com/go-kit/kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -1403,7 +1404,12 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 		UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
+	t.Cleanup(func() {
+		// verify state after shutdown is called
+		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+	})
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()
@@ -1434,6 +1440,15 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 			target.validateFunc(t, target, mds)
 		})
 	}
+}
+
+// flattenTargets takes a map of jobs to target and flattens to a list of targets
+func flattenTargets(targets map[string][]*scrape.Target) []*scrape.Target {
+	var flatTargets []*scrape.Target
+	for _, target := range targets {
+		flatTargets = append(flatTargets, target...)
+	}
+	return flatTargets
 }
 
 var startTimeMetricRegexPage = `

@@ -16,11 +16,10 @@ package zipkinv1
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-var _ model.ToTracesTranslator = (*toTranslator)(nil)
+var _ pdata.ToTracesTranslator = (*toTranslator)(nil)
 
 type toTranslator struct{}
 
@@ -28,7 +27,7 @@ type toTranslator struct{}
 func (t toTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
 	ocTraces, ok := src.([]traceData)
 	if !ok {
-		return pdata.Traces{}, model.NewErrIncompatibleType([]traceData{}, src)
+		return pdata.Traces{}, pdata.NewErrIncompatibleType([]traceData{}, src)
 	}
 
 	td := pdata.NewTraces()
