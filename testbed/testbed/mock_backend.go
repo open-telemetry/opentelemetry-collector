@@ -117,7 +117,7 @@ func (mb *MockBackend) EnableRecording() {
 	mb.isRecording = true
 }
 
-// EnableTimestampRecording enables recording of metric timestamps by MockBackend.
+// EnableMetricTimestampRecording enables recording of metric timestamps by MockBackend.
 func (mb *MockBackend) EnableMetricTimestampRecording() {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
@@ -159,8 +159,11 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 	if mb.isRecording {
 		mb.ReceivedMetrics = append(mb.ReceivedMetrics, md)
 	}
+
+	// Record the timestamp of a metric from each scrape.
+	// Then the validator can check the difference between timestamps are the same as the scrape interval.
 	if mb.isScraping {
-		currentTimestamp := getMetricTimestamp(md)
+		currentTimestamp := getFirstMetricTimestamp(md)
 		receivedTimestampsCount := len(mb.ReceivedTimestamps)
 		if receivedTimestampsCount == 0 || !mb.ReceivedTimestamps[receivedTimestampsCount-1].Equal(currentTimestamp) {
 			mb.ReceivedTimestamps = append(mb.ReceivedTimestamps, currentTimestamp)
@@ -168,7 +171,9 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 	}
 }
 
-func getMetricTimestamp(md pdata.Metrics) time.Time {
+// Get the timestamp of the first metric data point.
+// This can be used for load testing with scraping to ensure the scraper can keep up with the scrape interval.
+func getFirstMetricTimestamp(md pdata.Metrics) time.Time {
 	currentTimestamp := time.Time{}
 	rms := md.ResourceMetrics()
 	if rms.Len() > 0 {

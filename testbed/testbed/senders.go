@@ -537,24 +537,23 @@ type prometheusDataSender struct {
 	consumer.Metrics
 	namespace      string
 	scrapeInterval string
+	endpointString string
 }
 
 // NewPrometheusDataSender creates a new Prometheus sender that will expose data
 // on the specified port after Start is called.
 func NewPrometheusDataSender(host string, port int, interval string) MetricDataSender {
 	return &prometheusDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
-		},
+		DataSenderBase: DataSenderBase{},
 		scrapeInterval: interval,
+		endpointString: fmt.Sprintf("%s:%d", host, port),
 	}
 }
 
 func (pds *prometheusDataSender) Start() error {
 	factory := prometheusexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
-	cfg.Endpoint = pds.GetEndpoint().String()
+	cfg.Endpoint = pds.endpointString
 	cfg.Namespace = pds.namespace
 
 	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
@@ -576,7 +575,7 @@ func (pds *prometheusDataSender) GenConfigYAMLStr() string {
           static_configs:
             - targets: ['%s']
 `
-	return fmt.Sprintf(format, pds.scrapeInterval, pds.GetEndpoint())
+	return fmt.Sprintf(format, pds.scrapeInterval, pds.endpointString)
 }
 
 func (pds *prometheusDataSender) ProtocolName() string {
