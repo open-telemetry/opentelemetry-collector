@@ -16,9 +16,7 @@ package exporterhelper
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sync/atomic"
 	"testing"
@@ -33,11 +31,6 @@ import (
 	"go.opentelemetry.io/collector/extension/storage"
 )
 
-func createStorageExtension(_ string) storage.Extension {
-	// After having storage moved to core, we could leverage storagetest.NewTestExtension(nil, path)
-	return newMockStorageExtension()
-}
-
 func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
 	logger, _ := zap.NewDevelopment()
 
@@ -48,60 +41,6 @@ func createTestQueue(extension storage.Extension, capacity int) *persistentQueue
 
 	wq := newPersistentQueue(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
 	return wq
-}
-
-func createTestPersistentStorage(extension storage.Extension) persistentStorage {
-	logger, _ := zap.NewDevelopment()
-
-	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
-	if err != nil {
-		panic(err)
-	}
-
-	return newPersistentContiguousStorage(context.Background(), "foo", logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
-}
-
-func createTemporaryDirectory() string {
-	directory, err := ioutil.TempDir("", "persistent-test")
-	if err != nil {
-		panic(err)
-	}
-	return directory
-}
-
-func TestPersistentQueue_RepeatPutCloseReadClose(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
-
-	traces := newTraces(5, 10)
-	req := newTracesRequest(context.Background(), traces, nopTracePusher())
-
-	for i := 0; i < 10; i++ {
-		ext := createStorageExtension(path)
-		ps := createTestPersistentStorage(ext)
-		require.Equal(t, 0, ps.size())
-		err := ps.put(req)
-		require.NoError(t, err)
-		err = ext.Shutdown(context.Background())
-		require.NoError(t, err)
-
-		// TODO: when replacing mock with real storage, this could actually be uncommented
-		// ext = createStorageExtension(path)
-		// ps = createTestPersistentStorage(ext)
-
-		require.Equal(t, 1, ps.size())
-		readReq := <-ps.get()
-		require.Equal(t, 0, ps.size())
-		require.Equal(t, req.(*tracesRequest).td, readReq.(*tracesRequest).td)
-		err = ext.Shutdown(context.Background())
-		require.NoError(t, err)
-	}
-
-	// No more items
-	ext := createStorageExtension(path)
-	wq := createTestQueue(ext, 5000)
-	require.Equal(t, 0, wq.Size())
-	ext.Shutdown(context.Background())
 }
 
 func TestPersistentQueue_Capacity(t *testing.T) {
@@ -121,7 +60,11 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 		result := wq.Produce(req)
 		if i < 5 {
 			require.True(t, result)
-		} else {
+		}
+		// Depending if loop already picked the first element into the channel,
+		// the 6th item can be either accepted or not, so let's skip it and make
+		// sure the items above 6th are not accepted.
+		if i > 5 {
 			require.False(t, result)
 		}
 	}
@@ -144,8 +87,16 @@ func TestPersistentQueue_Close(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		wq.Produce(req)
 	}
-	// This will close the queue very quickly, consumers should not be able to consume anything and finish gracefully
-	wq.Stop()
+	// This will close the queue very quickly, consumers might not be able to consume anything and should finish gracefully
+	require.Eventually(t, func() bool {
+		wq.Stop()
+		return true
+	}, 500*time.Millisecond, 10*time.Millisecond)
+	// The additional stop should not panic
+	require.Eventually(t, func() bool {
+		wq.Stop()
+		return true
+	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {
@@ -207,51 +158,6 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 	}
 }
 
-func BenchmarkPersistentQueue_1Trace10Spans(b *testing.B) {
-	cases := []struct {
-		numTraces        int
-		numSpansPerTrace int
-	}{
-		{
-			numTraces:        1,
-			numSpansPerTrace: 1,
-		},
-		{
-			numTraces:        1,
-			numSpansPerTrace: 10,
-		},
-		{
-			numTraces:        10,
-			numSpansPerTrace: 10,
-		},
-	}
-
-	for _, c := range cases {
-		b.Run(fmt.Sprintf("#traces: %d #spansPerTrace: %d", c.numTraces, c.numSpansPerTrace), func(bb *testing.B) {
-			path := createTemporaryDirectory()
-			defer os.RemoveAll(path)
-			ext := createStorageExtension(path)
-			ps := createTestPersistentStorage(ext)
-
-			traces := newTraces(c.numTraces, c.numSpansPerTrace)
-			req := newTracesRequest(context.Background(), traces, nopTracePusher())
-
-			bb.ResetTimer()
-
-			for i := 0; i < bb.N; i++ {
-				err := ps.put(req)
-				require.NoError(bb, err)
-			}
-
-			for i := 0; i < bb.N; i++ {
-				req := ps.get()
-				require.NotNil(bb, req)
-			}
-			ext.Shutdown(context.Background())
-		})
-	}
-}
-
 func newTraces(numTraces int, numSpans int) pdata.Traces {
 	traces := pdata.NewTraces()
 	batch := traces.ResourceSpans().AppendEmpty()
@@ -277,55 +183,4 @@ func newTraces(numTraces int, numSpans int) pdata.Traces {
 	}
 
 	return traces
-}
-
-type mockStorageExtension struct{}
-
-func (m mockStorageExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (m mockStorageExtension) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id config.ComponentID, s string) (storage.Client, error) {
-	return newMockStorageClient(), nil
-}
-
-func newMockStorageExtension() storage.Extension {
-	return &mockStorageExtension{}
-}
-
-func newMockStorageClient() storage.Client {
-	return &mockStorageClient{
-		st: map[string][]byte{},
-	}
-}
-
-type mockStorageClient struct {
-	st map[string][]byte
-}
-
-func (m mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
-	val, found := m.st[s]
-	if !found {
-		return []byte{}, errors.New("key not found")
-	}
-
-	return val, nil
-}
-
-func (m mockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
-	m.st[s] = bytes
-	return nil
-}
-
-func (m mockStorageClient) Delete(_ context.Context, s string) error {
-	delete(m.st, s)
-	return nil
-}
-
-func (m mockStorageClient) Close(_ context.Context) error {
-	return nil
 }
