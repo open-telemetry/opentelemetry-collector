@@ -41,14 +41,17 @@ type PerfTestValidator struct {
 	ScrapeInterval time.Duration
 }
 
+const prometheusInternalMetricsCount = 5
+
 func (v *PerfTestValidator) Validate(tc *TestCase) {
-	if assert.EqualValues(tc.t,
-		int64(tc.LoadGenerator.DataItemsSent()),
-		int64(tc.MockBackend.DataItemsReceived()),
-		"Received and sent counters do not match.") {
-		log.Printf("Sent and received data matches.")
-	}
+	expectedDataItemsReceived := tc.MockBackend.DataItemsReceived()
+
 	if v.IsScraping {
+		
+		// Prometheus adds 5 internal metrics every scrape
+		expectedDataItemsReceived = tc.MockBackend.DataItemsReceived() - (uint64(len(tc.MockBackend.ReceivedTimestamps) * prometheusInternalMetricsCount))
+
+		// Check that each scrape is the same as the expected scrape interval
 		for i, timestamp := range tc.MockBackend.ReceivedTimestamps {
 			if i != 0 && !assert.WithinDuration(tc.t, timestamp, tc.MockBackend.ReceivedTimestamps[i-1], v.ScrapeInterval,
 				"Scrape timestamps difference larger than scrape interval") {
@@ -58,6 +61,13 @@ func (v *PerfTestValidator) Validate(tc *TestCase) {
 			}
 		}
 		log.Printf("All timestamp diffs equal to scrape interval")
+	}
+
+	if assert.EqualValues(tc.t,
+		int64(tc.LoadGenerator.DataItemsSent()),
+		int64(expectedDataItemsReceived),
+		"Received and sent counters do not match.") {
+		log.Printf("Sent and received data matches.")
 	}
 }
 
