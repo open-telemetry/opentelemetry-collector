@@ -66,7 +66,7 @@ func (btProc *builtProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: btProc.mutatesData}
 }
 
-func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+func (btProc *builtProcessor) Reload(host component.Host, ctx context.Context, cfg interface{}) error {
 	procCfg, ok := cfg.(config.Processor)
 	if !ok {
 		return fmt.Errorf("error when reaload processor:%q for invalid config:%v", btProc.id, cfg)
@@ -79,7 +79,7 @@ func (btProc *builtProcessor) Relaod(host component.Host, ctx context.Context, c
 	// TODO compare config to decide if reload is needed
 
 	if reloadableProc, ok := btProc.processor.(component.Reloadable); ok {
-		return reloadableProc.Relaod(host, ctx, cfg)
+		return reloadableProc.Reload(host, ctx, cfg)
 	}
 
 	oldProcessor := btProc.processor

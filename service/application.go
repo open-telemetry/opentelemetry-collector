@@ -227,22 +227,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context) error 
 
 	app.service = service
 
-	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := app.parserProvider.(parserprovider.Watchable); ok {
-		go func() {
-			err := watchable.WatchForUpdate()
-			switch {
-			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
-			case errors.Is(err, configsource.ErrSessionClosed):
-				// This is the case of shutdown of the whole application, nothing to do.
-				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
-				return
-			default:
-				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
-				app.reloadService(context.Background())
-			}
-		}()
-	}
+	app.watchForUpdate()
 
 	return nil
 }
@@ -395,6 +380,7 @@ func (app *Application) reloadService(ctx context.Context) error {
 			return err
 		}
 		app.service.config = cfg
+		app.watchForUpdate()
 		return nil
 	} else {
 		if app.service != nil {
@@ -411,6 +397,24 @@ func (app *Application) reloadService(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (app *Application) watchForUpdate() {
+	if watchable, ok := app.parserProvider.(parserprovider.Watchable); ok {
+		go func() {
+			err := watchable.WatchForUpdate()
+			switch {
+			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
+			case errors.Is(err, configsource.ErrSessionClosed):
+				// This is the case of shutdown of the whole application, nothing to do.
+				app.logger.Info("Config WatchForUpdate closed", zap.Error(err))
+				return
+			default:
+				app.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
+				app.reloadService(context.Background())
+			}
+		}()
+	}
 }
 
 func componentSetEqual(a []config.ComponentID, b []config.ComponentID) bool {

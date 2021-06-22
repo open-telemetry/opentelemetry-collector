@@ -90,7 +90,7 @@ func (bps BuiltPipelines) ReloadProcessors(ctx context.Context,
 			btProc := btPl.btProcs[i]
 			procCfg := config.Processors[btProc.id]
 
-			if err := btProc.Relaod(hostWrapper, ctx, procCfg); err != nil {
+			if err := btProc.Reload(hostWrapper, ctx, procCfg); err != nil {
 				return fmt.Errorf("error when reload processor for pipeline:%v, during reload:%v", name, err)
 			}
 		}

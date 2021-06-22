@@ -94,7 +94,7 @@ type rldExampleProcessor struct {
 	reloadCount int
 }
 
-func (exp *rldExampleProcessor) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+func (exp *rldExampleProcessor) Reload(host component.Host, ctx context.Context, cfg interface{}) error {
 	time.Sleep(time.Second)
 	exp.reloadCount += 1
 	return exp.reloadErr

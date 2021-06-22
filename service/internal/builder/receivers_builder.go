@@ -92,7 +92,7 @@ func (rcvs Receivers) ReloadAll(
 	for id, rcv := range rcvs {
 		rcvCfg := config.Receivers[id]
 		if reloadableRcv, ok := rcv.receiver.(component.Reloadable); ok {
-			if err := reloadableRcv.Relaod(host, ctx, rcvCfg); err != nil {
+			if err := reloadableRcv.Reload(host, ctx, rcvCfg); err != nil {
 				return err
 			}
 			continue

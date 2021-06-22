@@ -139,7 +139,7 @@ func (rcv *exampleRcv) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (rcv *rldExampleRcv) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+func (rcv *rldExampleRcv) Reload(host component.Host, ctx context.Context, cfg interface{}) error {
 	time.Sleep(time.Second)
 	rcv.reloadCount += 1
 	return nil
