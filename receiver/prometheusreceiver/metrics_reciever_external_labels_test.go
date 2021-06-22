@@ -87,27 +87,23 @@ func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.Expo
 	want := &agentmetricspb.ExportMetricsServiceRequest{
 		Node:     td.node,
 		Resource: td.resource,
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "go_threads",
-					Description: "Number of OS threads created",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "key"}},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Value: &metricspb.Point_DoubleValue{DoubleValue: 19.0}},
-						},
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "value", HasValue: true},
-						},
+	}
+	doCompare("scrape-externalLabels", t, want, mds[0], []testExpectation{
+		assertMetricPresent("go_threads",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+				compareMetricLabelKeys([]string{"key"}),
+			},
+			[]seriesExpectation{
+				{
+					series: []seriesComparator{
+						compareSeriesLabelValues([]string{"value"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(mds[0].Metrics[0].Timeseries[0].Points[0].Timestamp),
+						compareDoubleVal(19),
 					},
 				},
-			},
-		},
-	}
-	want.Metrics[0].Timeseries[0].Points[0].Timestamp = mds[0].Metrics[0].Timeseries[0].Points[0].Timestamp
-	doCompare("scrape-externalLabels", t, want, mds[0])
+			}),
+	})
 }

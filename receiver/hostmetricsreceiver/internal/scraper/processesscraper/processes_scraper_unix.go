@@ -31,7 +31,7 @@ const (
 	unixMetricsLen         = standardUnixMetricsLen + unixSystemSpecificMetricsLen
 )
 
-func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, miscFunc getMiscStats) error {
+func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, startIndex int, miscFunc getMiscStats) error {
 	now := pdata.TimestampFromTime(time.Now())
 	misc, err := miscFunc()
 	if err != nil {
@@ -39,22 +39,23 @@ func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex 
 	}
 
 	metrics.Resize(startIndex + unixMetricsLen)
-	initializeProcessesCountMetric(metrics.At(startIndex+0), now, misc)
-	return appendUnixSystemSpecificProcessesMetrics(metrics, startIndex+1, now, misc)
+	initializeProcessesCountMetric(metrics.At(startIndex+0), startTime, now, misc)
+	return appendUnixSystemSpecificProcessesMetrics(metrics, startTime, startIndex+1, now, misc)
 }
 
-func initializeProcessesCountMetric(metric pdata.Metric, now pdata.Timestamp, misc *load.MiscStat) {
+func initializeProcessesCountMetric(metric pdata.Metric, startTime pdata.Timestamp, now pdata.Timestamp, misc *load.MiscStat) {
 	metadata.Metrics.SystemProcessesCount.Init(metric)
 
 	ddps := metric.IntSum().DataPoints()
 	ddps.Resize(2)
-	initializeProcessesCountDataPoint(ddps.At(0), now, metadata.LabelProcessesStatus.Running, int64(misc.ProcsRunning))
-	initializeProcessesCountDataPoint(ddps.At(1), now, metadata.LabelProcessesStatus.Blocked, int64(misc.ProcsBlocked))
+	initializeProcessesCountDataPoint(ddps.At(0), startTime, now, metadata.LabelProcessesStatus.Running, int64(misc.ProcsRunning))
+	initializeProcessesCountDataPoint(ddps.At(1), startTime, now, metadata.LabelProcessesStatus.Blocked, int64(misc.ProcsBlocked))
 }
 
-func initializeProcessesCountDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, statusLabel string, value int64) {
+func initializeProcessesCountDataPoint(dataPoint pdata.IntDataPoint, startTime pdata.Timestamp, now pdata.Timestamp, statusLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessesStatus, statusLabel)
+	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

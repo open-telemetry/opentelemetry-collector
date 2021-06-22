@@ -109,12 +109,12 @@ func NewCGroupsForCurrentProcess() (CGroups, error) {
 // It is a result of `memory.limit_in_bytes`. If the value of
 // `memory.limit_in_bytes` was not set (-1), the method returns `(-1, false, nil)`.
 func (cg CGroups) MemoryQuota() (int64, bool, error) {
-	cpuCGroup, exists := cg[_cgroupSubsysMemory]
+	memCGroup, exists := cg[_cgroupSubsysMemory]
 	if !exists {
 		return -1, false, nil
 	}
 
-	memLimitBytes, err := cpuCGroup.readInt(_cgroupMemoryLimitBytes)
+	memLimitBytes, err := memCGroup.readInt(_cgroupMemoryLimitBytes)
 	if defined := memLimitBytes > 0; err != nil || !defined {
 		return -1, defined, err
 	}

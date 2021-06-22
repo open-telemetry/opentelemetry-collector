@@ -29,4 +29,13 @@
 // is non-nil. Several structures also provide New*Slice functions that allow creating
 // more than one instance of the struct more efficiently instead of calling New*
 // repeatedly. Use it where appropriate.
+//
+// This package also provides common ways for decoding serialized bytes into protocol-specific
+// in-memory data models (e.g. Zipkin Span). These data models can then be translated to pdata
+// representations. Similarly, pdata types can be translated from a data model which can then
+// be serialized into bytes.
+//
+// * Encoding: Common interfaces for serializing/deserializing bytes from/to protocol-specific data models.
+// * Translation: Common interfaces for translating protocol-specific data models from/to pdata types.
+// * Marshaling: Common higher level APIs that do both encoding and translation of bytes and data model if going directly pdata types to bytes.
 package pdata

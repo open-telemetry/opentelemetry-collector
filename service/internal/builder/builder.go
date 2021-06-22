@@ -35,7 +35,7 @@ var (
 	memBallastSize *uint
 )
 
-// Flags adds flags related to basic building of the collector application to the given flagset.
+// Flags adds flags related to basic building of the collector server to the given flagset.
 func Flags(flags *flag.FlagSet) {
 	memBallastSize = flags.Uint(memBallastFlag, 0,
 		fmt.Sprintf("Flag to specify size of memory (MiB) ballast to set. Ballast is not used when this is not specified. "+

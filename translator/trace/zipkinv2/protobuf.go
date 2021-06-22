@@ -18,10 +18,10 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
-	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-var _ model.TracesDecoder = (*protobufDecoder)(nil)
+var _ pdata.TracesDecoder = (*protobufDecoder)(nil)
 
 type protobufDecoder struct {
 	// DebugWasSet toggles the Debug field of each Span. It is usually set to true if
@@ -38,7 +38,7 @@ func (p protobufDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 	return spans, nil
 }
 
-var _ model.TracesEncoder = (*protobufEncoder)(nil)
+var _ pdata.TracesEncoder = (*protobufEncoder)(nil)
 
 type protobufEncoder struct {
 	serializer zipkin_proto3.SpanSerializer
@@ -48,20 +48,20 @@ type protobufEncoder struct {
 func (p protobufEncoder) EncodeTraces(mod interface{}) ([]byte, error) {
 	spans, ok := mod.([]*zipkinmodel.SpanModel)
 	if !ok {
-		return nil, model.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, mod)
+		return nil, pdata.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, mod)
 	}
 	return p.serializer.Serialize(spans)
 }
 
 // NewProtobufTracesUnmarshaler returns an unmarshaler of protobuf bytes.
-func NewProtobufTracesUnmarshaler(debugWasSet, parseStringTags bool) model.TracesUnmarshaler {
-	return model.NewTracesUnmarshaler(
+func NewProtobufTracesUnmarshaler(debugWasSet, parseStringTags bool) pdata.TracesUnmarshaler {
+	return pdata.NewTracesUnmarshaler(
 		protobufDecoder{DebugWasSet: debugWasSet},
 		ToTranslator{ParseStringTags: parseStringTags},
 	)
 }
 
 // NewProtobufTracesMarshaler returns a new marshaler to protobuf bytes.
-func NewProtobufTracesMarshaler() model.TracesMarshaler {
-	return model.NewTracesMarshaler(protobufEncoder{}, FromTranslator{})
+func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
+	return pdata.NewTracesMarshaler(protobufEncoder{}, FromTranslator{})
 }

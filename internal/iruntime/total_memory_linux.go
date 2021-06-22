@@ -16,7 +16,7 @@
 
 package iruntime
 
-import "go.opentelemetry.io/collector/processor/memorylimiter/internal/cgroups"
+import "go.opentelemetry.io/collector/internal/cgroups"
 
 // TotalMemory returns total available memory.
 // This implementation is meant for linux and uses cgroups to determine available memory.

@@ -12,22 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package pdata
 
 import (
 	"testing"
 
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewErrUnavailableEncoding(t *testing.T) {
-	err := NewErrUnavailableEncoding("unknown")
-	assert.IsType(t, &ErrUnavailableEncoding{}, err)
-	assert.EqualError(t, err, `unsupported encoding "unknown"`)
-}
-
-func TestEncoding_String(t *testing.T) {
-	assert.Equal(t, "protobuf", Protobuf.String())
-	assert.Equal(t, "json", JSON.String())
-	assert.Equal(t, "thrift", Thrift.String())
+func TestNewErrIncompatibleType(t *testing.T) {
+	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
+	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
 }
