@@ -20,10 +20,10 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-var _ model.TracesDecoder = (*jsonDecoder)(nil)
+var _ pdata.TracesDecoder = (*jsonDecoder)(nil)
 
 type jsonDecoder struct{}
 
@@ -36,7 +36,7 @@ func (j jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 	return spans, nil
 }
 
-var _ model.TracesEncoder = (*jsonEncoder)(nil)
+var _ pdata.TracesEncoder = (*jsonEncoder)(nil)
 
 type jsonEncoder struct {
 	serializer zipkinreporter.JSONSerializer
@@ -46,17 +46,17 @@ type jsonEncoder struct {
 func (j jsonEncoder) EncodeTraces(mod interface{}) ([]byte, error) {
 	spans, ok := mod.([]*zipkinmodel.SpanModel)
 	if !ok {
-		return nil, model.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, mod)
+		return nil, pdata.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, mod)
 	}
 	return j.serializer.Serialize(spans)
 }
 
 // NewJSONTracesUnmarshaler returns an unmarshaler for JSON bytes.
-func NewJSONTracesUnmarshaler(parseStringTags bool) model.TracesUnmarshaler {
-	return model.NewTracesUnmarshaler(jsonDecoder{}, ToTranslator{ParseStringTags: parseStringTags})
+func NewJSONTracesUnmarshaler(parseStringTags bool) pdata.TracesUnmarshaler {
+	return pdata.NewTracesUnmarshaler(jsonDecoder{}, ToTranslator{ParseStringTags: parseStringTags})
 }
 
 // NewJSONTracesMarshaler returns a marshaler to JSON bytes.
-func NewJSONTracesMarshaler() model.TracesMarshaler {
-	return model.NewTracesMarshaler(jsonEncoder{}, FromTranslator{})
+func NewJSONTracesMarshaler() pdata.TracesMarshaler {
+	return pdata.NewTracesMarshaler(jsonEncoder{}, FromTranslator{})
 }

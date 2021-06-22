@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestJSONDecoder_DecodeTraces(t *testing.T) {
@@ -59,11 +59,11 @@ func TestJSONEncoder_EncodeTracesError(t *testing.T) {
 func TestNewJSONTracesUnmarshaler(t *testing.T) {
 	m := NewJSONTracesUnmarshaler(false)
 	assert.NotNil(t, m)
-	assert.Implements(t, (*model.TracesUnmarshaler)(nil), m)
+	assert.Implements(t, (*pdata.TracesUnmarshaler)(nil), m)
 }
 
 func TestNewJSONTracesMarshaler(t *testing.T) {
 	m := NewJSONTracesMarshaler()
 	assert.NotNil(t, m)
-	assert.Implements(t, (*model.TracesMarshaler)(nil), m)
+	assert.Implements(t, (*pdata.TracesMarshaler)(nil), m)
 }
