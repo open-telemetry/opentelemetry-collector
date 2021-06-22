@@ -100,6 +100,41 @@ features such as automatic upgrade handling, `Service` configuration based on
 the OpenTelemetry configuration, automatic sidecar injection into deployments,
 among others.
 
+### Nomad
+
+Deploys the full demo with a load generator, agent and gateway as well as
+Jaeger, Zipkin and Prometheus back-end.
+
+```bash
+$ nomad run https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/examples/nomad/otel-demo.nomad
+```
+
+Deploys an agent as a system job.
+
+```bash
+$ nomad run https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/examples/nomad/otel-agent.nomad
+```
+
+Deploys a single gateway instance as a service job.
+
+```bash
+$ nomad run https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/examples/nomad/otel-collector.nomad
+```
+
+The examples above are meant to serve as a starting point, to be extended and
+customized before actual production usage.
+
+The examples also use Consul for health checking and service discovery. You can
+start a local cluster with the following commands.
+
+```bash
+$ sudo nomad agent -dev -network-interface='{{ GetPrivateInterfaces | attr "name" }}'
+```
+
+```bash
+$ consul agent -dev
+```
+
 ### Linux Packaging
 
 Every Collector release includes DEB and RPM packaging for Linux amd64/arm64
