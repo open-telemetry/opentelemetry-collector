@@ -61,7 +61,7 @@ type Component interface {
 }
 
 type Reloadable interface {
-	Relaod(host Host, ctx context.Context, config interface{}) error
+	Reload(host Host, ctx context.Context, config interface{}) error
 }
 
 // Kind represents component kinds.

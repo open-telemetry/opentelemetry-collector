@@ -84,11 +84,11 @@ func (bexp *builtExporter) getLogExporter() component.LogsExporter {
 	return exp.(component.LogsExporter)
 }
 
-func (bexp *builtExporter) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+func (bexp *builtExporter) Reload(host component.Host, ctx context.Context, cfg interface{}) error {
 	for _, exp := range bexp.expByDataType {
 		wrapper := exp.(*exporterWrapper)
 
-		if err := wrapper.Relaod(host, ctx, cfg); err != nil {
+		if err := wrapper.Reload(host, ctx, cfg); err != nil {
 			return fmt.Errorf("error when reload exporter:%q dataType:%v error:%v", wrapper.id, wrapper.inputType, err)
 		}
 	}
@@ -107,7 +107,7 @@ func (exps Exporters) ReloadExporters(
 	factories map[config.Type]component.ExporterFactory,
 	host component.Host) error {
 	for id, btExp := range exps {
-		if err := btExp.Relaod(host, ctx, config.Exporters[id]); err != nil {
+		if err := btExp.Reload(host, ctx, config.Exporters[id]); err != nil {
 			return err
 		}
 	}

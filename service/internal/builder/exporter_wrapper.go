@@ -70,7 +70,7 @@ func (wrapper *exporterWrapper) Shutdown(ctx context.Context) error {
 	return wrapper.exporter.Shutdown(ctx)
 }
 
-func (wrapper *exporterWrapper) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+func (wrapper *exporterWrapper) Reload(host component.Host, ctx context.Context, cfg interface{}) error {
 	expCfg, ok := cfg.(config.Exporter)
 
 	if !ok {
@@ -82,7 +82,7 @@ func (wrapper *exporterWrapper) Relaod(host component.Host, ctx context.Context,
 	}
 
 	if reloadableExp, ok := wrapper.exporter.(component.Reloadable); ok {
-		return reloadableExp.Relaod(host, ctx, cfg)
+		return reloadableExp.Reload(host, ctx, cfg)
 	}
 
 	oldExp := wrapper.exporter

@@ -37,7 +37,7 @@ type reloadableExporter struct {
 	reloadCount int
 }
 
-func (exp *reloadableExporter) Relaod(host component.Host, ctx context.Context, cfg interface{}) error {
+func (exp *reloadableExporter) Reload(host component.Host, ctx context.Context, cfg interface{}) error {
 	time.Sleep(time.Second)
 	exp.reloadCount += 1
 	return exp.reloadErr
@@ -160,15 +160,15 @@ func TestExporterWrapperReload(t *testing.T) {
 	exp := &exampleExporter{}
 	rldExp := &reloadableExporter{*exp, nil, 0}
 	logWrapper := &exporterWrapper{config.LogsDataType, nil, nil, rldExp, rldExp, config.NewIDWithName(rldExpType, "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory}
-	err := logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
+	err := logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
 	assert.NoError(t, err)
 	assert.True(t, logWrapper.lc == rldExp)
 	assert.True(t, logWrapper.exporter == rldExp)
 	rldExp.reloadErr = errors.New("mock reload err")
-	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
+	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
 	assert.Equal(t, err, rldExp.reloadErr)
 	rldExp.reloadErr = nil
-	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
+	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
 	assert.NoError(t, err)
 
 	mockStartErr := errors.New("mock start err")
@@ -187,13 +187,13 @@ func TestExporterWrapperReload(t *testing.T) {
 			return exp, nil
 		}))
 	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), zap.NewNop(), component.DefaultBuildInfo(), mockExporterFactory}
-	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
+	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
 	assert.Equal(t, err, mockStartErr)
 	assert.True(t, logWrapper.lc == exp)
 
 	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory}
 	exp.shutdownErr = errors.New("mock shutdown err")
-	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
+	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
 	assert.False(t, logWrapper.lc == exp)
 	assert.True(t, logWrapper.lc == logWrapper.exporter.(consumer.Logs))
 	assert.Equal(t, err, exp.shutdownErr)
@@ -232,7 +232,7 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 		}
 	}()
 	go func() {
-		err := logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
+		err := logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
 		assert.NoError(t, err)
 	}()
 
@@ -246,10 +246,10 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, exp.receivedLogs, ld)
 	invalidIdConfig := config.NewExporterSettings(config.NewIDWithName(expType, "2"))
-	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), &invalidIdConfig)
+	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), &invalidIdConfig)
 	assert.Error(t, err)
 	invalidTypeConfig := config.NewIDWithName(expType, "1")
-	err = logWrapper.Relaod(componenttest.NewNopHost(), context.Background(), &invalidTypeConfig)
+	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), &invalidTypeConfig)
 	assert.Error(t, err)
 
 	// Test Metrics
@@ -283,7 +283,7 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 		}
 	}()
 	go func() {
-		err := metricWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
+		err := metricWrapper.Reload(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
 		assert.NoError(t, err)
 	}()
 
@@ -297,10 +297,10 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, exp.receivedMetrics, md)
 	invalidIdConfig = config.NewExporterSettings(config.NewIDWithName(expType, "2"))
-	err = metricWrapper.Relaod(componenttest.NewNopHost(), context.Background(), &invalidIdConfig)
+	err = metricWrapper.Reload(componenttest.NewNopHost(), context.Background(), &invalidIdConfig)
 	assert.Error(t, err)
 	invalidTypeConfig = config.NewIDWithName(expType, "1")
-	err = metricWrapper.Relaod(componenttest.NewNopHost(), context.Background(), &invalidTypeConfig)
+	err = metricWrapper.Reload(componenttest.NewNopHost(), context.Background(), &invalidTypeConfig)
 	assert.Error(t, err)
 
 	// Test Traces
@@ -334,7 +334,7 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 		}
 	}()
 	go func() {
-		err := traceWrapper.Relaod(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
+		err := traceWrapper.Reload(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
 		assert.NoError(t, err)
 	}()
 
@@ -348,9 +348,9 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, exp.receivedTraces, td)
 	invalidIdConfig = config.NewExporterSettings(config.NewIDWithName(expType, "2"))
-	err = traceWrapper.Relaod(componenttest.NewNopHost(), context.Background(), &invalidIdConfig)
+	err = traceWrapper.Reload(componenttest.NewNopHost(), context.Background(), &invalidIdConfig)
 	assert.Error(t, err)
 	invalidTypeConfig = config.NewIDWithName(expType, "1")
-	err = traceWrapper.Relaod(componenttest.NewNopHost(), context.Background(), &invalidTypeConfig)
+	err = traceWrapper.Reload(componenttest.NewNopHost(), context.Background(), &invalidTypeConfig)
 	assert.Error(t, err)
 }
