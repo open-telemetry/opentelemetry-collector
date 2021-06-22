@@ -48,6 +48,9 @@ func newStalenessStore() *stalenessStore {
 // refresh copies over all the current values to previous, and prepares.
 // refresh must be called before every new scrape.
 func (ss *stalenessStore) refresh() {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
 	// 1. Clear ss.previousHashes firstly. Please don't edit
 	// this map clearing idiom as it ensures speed.
 	// See:
@@ -75,6 +78,9 @@ func (ss *stalenessStore) refresh() {
 
 // isStale returns whether lbl was seen only in the previous scrape and not the current.
 func (ss *stalenessStore) isStale(lbl labels.Labels) bool {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
 	hash := lbl.Hash()
 	_, inPrev := ss.previousHashes[hash]
 	_, inCurrent := ss.currentHashes[hash]
