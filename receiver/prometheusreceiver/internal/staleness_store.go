@@ -16,6 +16,7 @@ package internal
 
 import (
 	"math"
+	"sync"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/value"
@@ -30,6 +31,7 @@ var stalenessSpecialValue = math.Float64frombits(value.StaleNaN)
 // issue a staleness marker aka a special NaN value.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/3413
 type stalenessStore struct {
+	mu             sync.Mutex // mu protects all the fields below.
 	currentHashes  map[uint64]int64
 	previousHashes map[uint64]int64
 	previous       []labels.Labels
@@ -82,6 +84,9 @@ func (ss *stalenessStore) isStale(lbl labels.Labels) bool {
 // markAsCurrentlySeen adds lbl to the manifest of labels seen in the current scrape.
 // This method should be called before refresh, but during a scrape whenever labels are encountered.
 func (ss *stalenessStore) markAsCurrentlySeen(lbl labels.Labels, at int64) {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
 	ss.currentHashes[lbl.Hash()] = at
 	ss.current = append(ss.current, lbl)
 }
@@ -94,6 +99,9 @@ type staleEntry struct {
 // emitStaleLabels returns the labels that were previously seen in
 // the prior scrape, but are not currently present in this scrape cycle.
 func (ss *stalenessStore) emitStaleLabels() (stale []*staleEntry) {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
 	for _, labels := range ss.previous {
 		hash := labels.Hash()
 		if _, ok := ss.currentHashes[hash]; !ok {
