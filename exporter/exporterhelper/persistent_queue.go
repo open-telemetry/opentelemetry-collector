@@ -15,12 +15,8 @@
 package exporterhelper
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
-	"fmt"
 	"sync"
-	"time"
 
 	"github.com/jaegertracing/jaeger/pkg/queue"
 	"go.uber.org/zap"
@@ -32,75 +28,20 @@ import (
 type persistentQueue struct {
 	logger     *zap.Logger
 	stopWG     sync.WaitGroup
-	produceMu  sync.Mutex
-	exitChan   chan struct{}
+	stopOnce   sync.Once
+	stopChan   chan struct{}
 	capacity   int
 	numWorkers int
 
-	storage persistentStorage
+	produceMu sync.Mutex
+	storage   persistentStorage
 }
-
-// persistentStorage provides an interface for request storage operations
-type persistentStorage interface {
-	// put appends the request to the storage
-	put(req request) error
-	// get returns the next available request; not the channel is unbuffered
-	get() <-chan request
-	// size returns the current size of the storage in number of requets
-	size() int
-	// stop gracefully stops the storage
-	stop()
-}
-
-// persistentContiguousStorage provides a persistent queue implementation backed by file storage extension
-//
-// Write index describes the position at which next item is going to be stored
-// Read index describes which item needs to be read next
-// When Write index = Read index, no elements are in the queue
-//
-//   ┌─file extension-backed queue─┐
-//   │                             │
-//   │     ┌───┐     ┌───┐ ┌───┐   │
-//   │ n+1 │ n │ ... │ 4 │ │ 3 │   │
-//   │     └───┘     └───┘ └─x─┘   │
-//   │                       x     │
-//   └───────────────────────x─────┘
-//      ▲              ▲     x
-//      │              │     xxx deleted
-//      │              │
-//    write          read
-//    index          index
-//
-type persistentContiguousStorage struct {
-	logger        *zap.Logger
-	client        storage.Client
-	mu            sync.Mutex
-	queueName     string
-	readIndex     uint64
-	writeIndex    uint64
-	readIndexKey  string
-	writeIndexKey string
-	retryDelay    time.Duration
-	unmarshaler   requestUnmarshaler
-	reqChan       chan request
-	stopChan      chan struct{}
-	stopOnce      sync.Once
-}
-
-const (
-	queueNameKey      = "queueName"
-	zapItemKey        = "itemKey"
-	itemKeyTemplate   = "it-%d"
-	readIndexKey      = "ri"
-	writeIndexKey     = "wi"
-	defaultRetryDelay = 100 * time.Millisecond
-)
 
 // newPersistentQueue creates a new queue backed by file storage
 func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentQueue {
 	return &persistentQueue{
 		logger:   logger,
-		exitChan: make(chan struct{}),
+		stopChan: make(chan struct{}),
 		capacity: capacity,
 		storage:  newPersistentContiguousStorage(ctx, name, logger, client, unmarshaler),
 	}
@@ -127,7 +68,7 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 				select {
 				case req := <-pq.storage.get():
 					consumer.Consume(req)
-				case <-pq.exitChan:
+				case <-pq.stopChan:
 					return
 				}
 			}
@@ -150,202 +91,14 @@ func (pq *persistentQueue) Produce(item interface{}) bool {
 
 // Stop stops accepting items, shuts down the queue and closes the persistent queue
 func (pq *persistentQueue) Stop() {
-	pq.storage.stop()
-	close(pq.exitChan)
-	pq.stopWG.Wait()
-}
-
-// Size returns the current depth of the queue
-func (pq *persistentQueue) Size() int {
-	return pq.storage.size()
-}
-
-// newPersistentContiguousStorage creates a new file-storage extension backed queue. It needs to be initialized separately
-func newPersistentContiguousStorage(ctx context.Context, queueName string, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
-	wcs := &persistentContiguousStorage{
-		logger:      logger,
-		client:      client,
-		queueName:   queueName,
-		unmarshaler: unmarshaler,
-		reqChan:     make(chan request),
-		stopChan:    make(chan struct{}),
-		retryDelay:  defaultRetryDelay,
-	}
-	initPersistentContiguousStorage(ctx, wcs)
-	go wcs.loop()
-	return wcs
-}
-
-func initPersistentContiguousStorage(ctx context.Context, wcs *persistentContiguousStorage) {
-	wcs.readIndexKey = wcs.buildReadIndexKey()
-	wcs.writeIndexKey = wcs.buildWriteIndexKey()
-
-	readIndexBytes, err := wcs.client.Get(ctx, wcs.readIndexKey)
-	if err != nil || readIndexBytes == nil {
-		wcs.logger.Debug("failed getting read index, starting with a new one", zap.String(queueNameKey, wcs.queueName))
-		wcs.readIndex = 0
-	} else {
-		val, conversionErr := bytesToUint64(readIndexBytes)
-		if conversionErr != nil {
-			wcs.logger.Warn("read index corrupted, starting with a new one", zap.String(queueNameKey, wcs.queueName))
-			wcs.readIndex = 0
-		} else {
-			wcs.readIndex = val
-		}
-	}
-
-	writeIndexBytes, err := wcs.client.Get(ctx, wcs.writeIndexKey)
-	if err != nil || writeIndexBytes == nil {
-		wcs.logger.Debug("failed getting write index, starting with a new one", zap.String(queueNameKey, wcs.queueName))
-		wcs.writeIndex = 0
-	} else {
-		val, conversionErr := bytesToUint64(writeIndexBytes)
-		if conversionErr != nil {
-			wcs.logger.Warn("write index corrupted, starting with a new one", zap.String(queueNameKey, wcs.queueName))
-			wcs.writeIndex = 0
-		} else {
-			wcs.writeIndex = val
-		}
-	}
-}
-
-// Put marshals the request and puts it into the persistent queue
-func (pcs *persistentContiguousStorage) put(req request) error {
-	buf, err := req.marshal()
-	if err != nil {
-		return err
-	}
-
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-
-	itemKey := pcs.buildItemKey(pcs.writeIndex)
-	err = pcs.client.Set(context.Background(), itemKey, buf)
-	if err != nil {
-		return err
-	}
-
-	pcs.writeIndex++
-	writeIndexBytes, err := uint64ToBytes(pcs.writeIndex)
-	if err != nil {
-		pcs.logger.Warn("failed converting write index uint64 to bytes", zap.Error(err))
-	}
-
-	return pcs.client.Set(context.Background(), pcs.writeIndexKey, writeIndexBytes)
-}
-
-// getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
-func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (request, bool) {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-
-	if pcs.readIndex < pcs.writeIndex {
-		itemKey := pcs.buildItemKey(pcs.readIndex)
-		// Increase here, so despite errors it would still progress
-		pcs.readIndex++
-
-		buf, err := pcs.client.Get(ctx, itemKey)
-		if err != nil {
-			pcs.logger.Error("error when getting item from persistent storage",
-				zap.String(queueNameKey, pcs.queueName), zap.String(zapItemKey, itemKey), zap.Error(err))
-			return nil, false
-		}
-		req, unmarshalErr := pcs.unmarshaler(buf)
-		pcs.updateItemRead(ctx, itemKey)
-		if unmarshalErr != nil {
-			pcs.logger.Error("error when unmarshalling item from persistent storage",
-				zap.String(queueNameKey, pcs.queueName), zap.String(zapItemKey, itemKey), zap.Error(unmarshalErr))
-			return nil, false
-		}
-
-		return req, true
-	}
-
-	return nil, false
-}
-
-func (pcs *persistentContiguousStorage) loop() {
-	for {
-		for {
-			req, found := pcs.getNextItem(context.Background())
-			if found {
-				select {
-				case <-pcs.stopChan:
-					return
-				case pcs.reqChan <- req:
-				}
-			} else {
-				select {
-				case <-pcs.stopChan:
-					return
-				case <-time.After(pcs.retryDelay):
-				}
-			}
-		}
-	}
-}
-
-// get returns the request channel that all the requests will be send on
-func (pcs *persistentContiguousStorage) get() <-chan request {
-	return pcs.reqChan
-}
-
-func (pcs *persistentContiguousStorage) size() int {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	return int(pcs.writeIndex - pcs.readIndex)
-}
-
-func (pcs *persistentContiguousStorage) stop() {
-	pcs.logger.Debug("stopping persistentContiguousStorage", zap.String(queueNameKey, pcs.queueName))
-	pcs.stopOnce.Do(func() {
-		close(pcs.stopChan)
+	pq.stopOnce.Do(func() {
+		pq.storage.stop()
+		close(pq.stopChan)
+		pq.stopWG.Wait()
 	})
 }
 
-func (pcs *persistentContiguousStorage) updateItemRead(ctx context.Context, itemKey string) {
-	err := pcs.client.Delete(ctx, itemKey)
-	if err != nil {
-		pcs.logger.Debug("failed deleting item", zap.String(zapItemKey, itemKey))
-	}
-
-	readIndexBytes, err := uint64ToBytes(pcs.readIndex)
-	if err != nil {
-		pcs.logger.Warn("failed converting read index uint64 to bytes", zap.Error(err))
-	} else {
-		err = pcs.client.Set(ctx, pcs.readIndexKey, readIndexBytes)
-		if err != nil {
-			pcs.logger.Warn("failed storing read index", zap.Error(err))
-		}
-	}
-}
-
-func (pcs *persistentContiguousStorage) buildItemKey(index uint64) string {
-	return fmt.Sprintf(itemKeyTemplate, index)
-}
-
-func (pcs *persistentContiguousStorage) buildReadIndexKey() string {
-	return readIndexKey
-}
-
-func (pcs *persistentContiguousStorage) buildWriteIndexKey() string {
-	return writeIndexKey
-}
-
-func uint64ToBytes(val uint64) ([]byte, error) {
-	var buf bytes.Buffer
-	err := binary.Write(&buf, binary.LittleEndian, val)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), err
-}
-
-func bytesToUint64(b []byte) (uint64, error) {
-	var val uint64
-	err := binary.Read(bytes.NewReader(b), binary.LittleEndian, &val)
-	if err != nil {
-		return val, err
-	}
-	return val, nil
+// Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
+func (pq *persistentQueue) Size() int {
+	return pq.storage.size()
 }

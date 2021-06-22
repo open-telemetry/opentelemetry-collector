@@ -56,9 +56,12 @@ type request interface {
 	count() int
 	// marshal serializes the current request into a byte stream
 	marshal() ([]byte, error)
+	// onProcessingFinished provides capability to do the cleanup (e.g. remove item from persistent queue)
+	onProcessingFinished()
+	setOnProcessingFinished(callback func())
 }
 
-// requestUnmarshaler defines a function which takes a byte slice and unmarshal it into a relevant request
+// requestUnmarshaler defines a function which takes a byte slice and unmarshals it into a relevant request
 type requestUnmarshaler func([]byte) (request, error)
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
@@ -68,7 +71,8 @@ type requestSender interface {
 
 // baseRequest is a base implementation for the request.
 type baseRequest struct {
-	ctx context.Context
+	ctx                        context.Context
+	processingFinishedCallback func()
 }
 
 func (req *baseRequest) context() context.Context {
@@ -77,6 +81,16 @@ func (req *baseRequest) context() context.Context {
 
 func (req *baseRequest) setContext(ctx context.Context) {
 	req.ctx = ctx
+}
+
+func (req *baseRequest) setOnProcessingFinished(callback func()) {
+	req.processingFinishedCallback = callback
+}
+
+func (req *baseRequest) onProcessingFinished() {
+	if req.processingFinishedCallback != nil {
+		req.processingFinishedCallback()
+	}
 }
 
 // baseSettings represents all the options that users can configure.
@@ -176,7 +190,15 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings, signalName string, reqUnnmarshaler requestUnmarshaler) *baseExporter {
+type signalType string
+
+const (
+	signalLogs    = signalType("logs")
+	signalMetrics = signalType("metrics")
+	signalTraces  = signalType("traces")
+)
+
+func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings, signal signalType, reqUnnmarshaler requestUnmarshaler) *baseExporter {
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}
@@ -185,7 +207,7 @@ func newBaseExporter(cfg config.Exporter, logger *zap.Logger, bs *baseSettings, 
 		Level:      configtelemetry.GetMetricsLevelFlagValue(),
 		ExporterID: cfg.ID(),
 	})
-	be.qrSender = newQueuedRetrySender(cfg.ID(), signalName, bs.QueueSettings, bs.RetrySettings, reqUnnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
+	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
 	return be

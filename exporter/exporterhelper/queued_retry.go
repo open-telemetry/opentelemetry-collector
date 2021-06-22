@@ -46,6 +46,12 @@ var (
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
+	currentlyProcessedBatchesGauge, _ = r.AddInt64DerivedGauge(
+		obsmetrics.ExporterKey+"/processed_batches_size",
+		metric.WithDescription("Number of currently processed batches"),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+
 	errNoStorageClient        = errors.New("no storage client extension found")
 	errMultipleStorageClients = errors.New("multiple storage extensions found")
 	errSendingQueueIsFull     = errors.New("sending_queue is full")
@@ -63,8 +69,8 @@ type QueueSettings struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`
-	// PersistentEnabled describes whether persistency via storage file extension should be enabled
-	PersistentEnabled bool `mapstructure:"persistent_enabled"`
+	// PersistentStorageEnabled describes whether persistence via a file storage extension is enabled
+	PersistentStorageEnabled bool `mapstructure:"persistent_storage_enabled"`
 }
 
 // DefaultQueueSettings returns the default settings for QueueSettings.
@@ -76,8 +82,8 @@ func DefaultQueueSettings() QueueSettings {
 		// This is a pretty decent value for production.
 		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
 		// multiply that by the number of requests per seconds.
-		QueueSize:         5000,
-		PersistentEnabled: false,
+		QueueSize:                5000,
+		PersistentStorageEnabled: false,
 	}
 }
 
@@ -108,7 +114,7 @@ func DefaultRetrySettings() RetrySettings {
 
 type queuedRetrySender struct {
 	id                 config.ComponentID
-	signalName         string
+	signal             signalType
 	cfg                QueueSettings
 	consumerSender     requestSender
 	queue              consumersQueue
@@ -138,14 +144,14 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 	return logger.WithOptions(opts)
 }
 
-func newQueuedRetrySender(id config.ComponentID, signalName string, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, signal signalType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
 		id:                 id,
-		signalName:         signalName,
+		signal:             signal,
 		cfg:                qCfg,
 		retryStopCh:        retryStopCh,
 		traceAttributes:    []attribute.KeyValue{traceAttr},
@@ -165,7 +171,7 @@ func newQueuedRetrySender(id config.ComponentID, signalName string, qCfg QueueSe
 		onPermanentFailure: qrs.onPermanentFailure,
 	}
 
-	if !qCfg.PersistentEnabled {
+	if !qCfg.PersistentStorageEnabled {
 		qrs.queue = jaegerqueue.NewBoundedQueue(qrs.cfg.QueueSize, func(item interface{}) {})
 	}
 	// The Persistent Queue is initialized separately as it needs extra information about the component
@@ -173,40 +179,40 @@ func newQueuedRetrySender(id config.ComponentID, signalName string, qCfg QueueSe
 	return qrs
 }
 
-func (qrs *queuedRetrySender) onSuccess(req request, err error) error {
+func (qrs *queuedRetrySender) onSuccess(_ request, _ error) error {
 	return nil
 }
 
-func (qrs *queuedRetrySender) onPermanentFailure(req request, err error) error {
+func (qrs *queuedRetrySender) onPermanentFailure(_ request, err error) error {
 	return err
 }
 
 func (qrs *queuedRetrySender) onTemporaryFailure(req request, err error) error {
-	if qrs.requeuingEnabled && qrs.queue != nil {
-		if qrs.queue.Produce(req) {
-			qrs.logger.Error(
-				"Exporting failed. Putting back to the end of the queue.",
-				zap.Error(err),
-			)
-		} else {
-			qrs.logger.Error(
-				"Exporting failed. Queue did not accept requeuing request. Dropping data.",
-				zap.Error(err),
-				zap.Int("dropped_items", req.count()),
-			)
-		}
+	if !qrs.requeuingEnabled || qrs.queue == nil {
+		qrs.logger.Error(
+			"Exporting failed. No more retries left. Dropping data.",
+			zap.Error(err),
+			zap.Int("dropped_items", req.count()),
+		)
 		return err
 	}
 
-	qrs.logger.Error(
-		"Exporting failed. No more retries left. Dropping data.",
-		zap.Error(err),
-		zap.Int("dropped_items", req.count()),
-	)
+	if qrs.queue.Produce(req) {
+		qrs.logger.Error(
+			"Exporting failed. Putting back to the end of the queue.",
+			zap.Error(err),
+		)
+	} else {
+		qrs.logger.Error(
+			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
+			zap.Error(err),
+			zap.Int("dropped_items", req.count()),
+		)
+	}
 	return err
 }
 
-func getStorageClient(ctx context.Context, host component.Host, id config.ComponentID, signalName string) (*storage.Client, error) {
+func getStorageClient(ctx context.Context, host component.Host, id config.ComponentID, signal signalType) (*storage.Client, error) {
 	var storageExtension storage.Extension
 	for _, ext := range host.GetExtensions() {
 		if se, ok := ext.(storage.Extension); ok {
@@ -221,7 +227,7 @@ func getStorageClient(ctx context.Context, host component.Host, id config.Compon
 		return nil, errNoStorageClient
 	}
 
-	client, err := storageExtension.GetClient(ctx, component.KindExporter, id, signalName)
+	client, err := storageExtension.GetClient(ctx, component.KindExporter, id, string(signal))
 	if err != nil {
 		return nil, err
 	}
@@ -231,8 +237,8 @@ func getStorageClient(ctx context.Context, host component.Host, id config.Compon
 
 // initializePersistentQueue uses extra information for initialization available from component.Host
 func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, host component.Host) error {
-	if qrs.cfg.PersistentEnabled {
-		storageClient, err := getStorageClient(ctx, host, qrs.id, qrs.signalName)
+	if qrs.cfg.PersistentStorageEnabled {
+		storageClient, err := getStorageClient(ctx, host, qrs.id, qrs.signal)
 		if err != nil {
 			return err
 		}
@@ -247,10 +253,10 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 }
 
 func (qrs *queuedRetrySender) fullName() string {
-	if qrs.signalName == "" {
+	if qrs.signal == "" {
 		return qrs.id.String()
 	}
-	return fmt.Sprintf("%s-%s", qrs.id.String(), qrs.signalName)
+	return fmt.Sprintf("%s-%s", qrs.id.String(), qrs.signal)
 }
 
 // start is invoked during service startup.
@@ -263,6 +269,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
+		req.onProcessingFinished()
 	})
 
 	// Start reporting queue length metric

@@ -100,7 +100,7 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set.Logger, bs, "traces", newTraceRequestUnmarshalerFunc(pusher))
+	be := newBaseExporter(cfg, set.Logger, bs, signalTraces, newTraceRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep:     be.obsrep,
