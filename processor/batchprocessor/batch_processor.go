@@ -48,7 +48,7 @@ type batchProcessor struct {
 	sendBatchSize    int
 	sendBatchMaxSize int
 
-	newItem chan interface{}
+	newItem chan item
 	batch   batch
 
 	shutdownC  chan struct{}
@@ -71,6 +71,11 @@ type batch interface {
 	add(item interface{})
 }
 
+type item struct {
+	ctx  context.Context
+	data interface{}
+}
+
 var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
@@ -84,7 +89,7 @@ func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
 		timeout:          cfg.Timeout,
-		newItem:          make(chan interface{}, runtime.NumCPU()),
+		newItem:          make(chan item, runtime.NumCPU()),
 		batch:            batch,
 		shutdownC:        make(chan struct{}, 1),
 	}, nil
@@ -119,8 +124,8 @@ func (bp *batchProcessor) startProcessingCycle() {
 		DONE:
 			for {
 				select {
-				case item := <-bp.newItem:
-					bp.processItem(item)
+				case i := <-bp.newItem:
+					bp.processItem(i)
 				default:
 					break DONE
 				}
@@ -132,11 +137,11 @@ func (bp *batchProcessor) startProcessingCycle() {
 				bp.sendItems(statTimeoutTriggerSend)
 			}
 			return
-		case item := <-bp.newItem:
-			if item == nil {
+		case i := <-bp.newItem:
+			if i.data == nil {
 				continue
 			}
-			bp.processItem(item)
+			bp.processItem(i)
 		case <-bp.timer.C:
 			if bp.batch.itemCount() > 0 {
 				bp.sendItems(statTimeoutTriggerSend)
@@ -146,8 +151,9 @@ func (bp *batchProcessor) startProcessingCycle() {
 	}
 }
 
-func (bp *batchProcessor) processItem(item interface{}) {
-	bp.batch.add(item)
+func (bp *batchProcessor) processItem(i item) {
+	bp.exportCtx = obsreport.MergeContexts(i.ctx, bp.exportCtx)
+	bp.batch.add(i.data)
 	sent := false
 	for bp.batch.itemCount() >= bp.sendBatchSize {
 		sent = true
@@ -189,23 +195,20 @@ func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
 
 // ConsumeTraces implements TracesProcessor
 func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	bp.exportCtx = obsreport.MergeContexts(ctx, bp.exportCtx)
-	bp.newItem <- td
+	bp.newItem <- item{ctx: ctx, data: td}
 	return nil
 }
 
 // ConsumeMetrics implements MetricsProcessor
 func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	bp.exportCtx = obsreport.MergeContexts(ctx, bp.exportCtx)
 	// First thing is convert into a different internal format
-	bp.newItem <- md
+	bp.newItem <- item{ctx: ctx, data: md}
 	return nil
 }
 
 // ConsumeLogs implements LogsProcessor
 func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	bp.exportCtx = obsreport.MergeContexts(ctx, bp.exportCtx)
-	bp.newItem <- ld
+	bp.newItem <- item{ctx: ctx, data: ld}
 	return nil
 }
 
