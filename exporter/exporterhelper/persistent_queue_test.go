@@ -47,28 +47,34 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 	path := createTemporaryDirectory()
 	defer os.RemoveAll(path)
 
-	ext := createStorageExtension(path)
-	defer ext.Shutdown(context.Background())
+	for i := 0; i < 100; i++ {
+		ext := createStorageExtension(path)
+		defer ext.Shutdown(context.Background())
 
-	wq := createTestQueue(ext, 5)
-	require.Equal(t, 0, wq.Size())
+		wq := createTestQueue(ext, 5)
+		require.Equal(t, 0, wq.Size())
 
-	traces := newTraces(1, 10)
-	req := newTracesRequest(context.Background(), traces, nopTracePusher())
+		traces := newTraces(1, 10)
+		req := newTracesRequest(context.Background(), traces, nopTracePusher())
 
-	for i := 0; i < 10; i++ {
-		result := wq.Produce(req)
-		if i < 5 {
-			require.True(t, result)
+		for i := 0; i < 10; i++ {
+			result := wq.Produce(req)
+			if i < 6 {
+				require.True(t, result)
+			} else {
+				require.False(t, result)
+			}
+
+			// Lets make sure the loop picks the first element into the channel,
+			// so the capacity could be used in full
+			if i == 0 {
+				require.Eventually(t, func() bool {
+					return wq.Size() == 0
+				}, 1000*time.Millisecond, 10*time.Millisecond)
+			}
 		}
-		// Depending if loop already picked the first element into the channel,
-		// the 6th item can be either accepted or not, so let's skip it and make
-		// sure the items above 6th are not accepted.
-		if i > 5 {
-			require.False(t, result)
-		}
+		require.Equal(t, 5, wq.Size())
 	}
-	require.Equal(t, 5, wq.Size())
 }
 
 func TestPersistentQueue_Close(t *testing.T) {
