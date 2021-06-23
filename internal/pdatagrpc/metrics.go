@@ -19,9 +19,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // TODO: Consider to add `MetricsRequest`. If we add non pdata properties we can add them to the request.

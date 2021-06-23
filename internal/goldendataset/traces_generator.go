@@ -19,7 +19,7 @@ import (
 	"io"
 	"math/rand"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // GenerateTraces generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise

@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type spanProcessor struct {

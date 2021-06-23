@@ -24,7 +24,7 @@ import (
 	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // MockBackend is a backend that allows receiving the data locally.

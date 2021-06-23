@@ -15,8 +15,8 @@
 package kafkareceiver
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )

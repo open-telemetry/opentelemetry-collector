@@ -23,8 +23,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {

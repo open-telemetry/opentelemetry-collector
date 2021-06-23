@@ -22,8 +22,8 @@ import (
 	"github.com/shirou/gopsutil/host"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
 	"go.opentelemetry.io/collector/receiver/scrapererror"

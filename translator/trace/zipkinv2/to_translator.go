@@ -25,11 +25,11 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"

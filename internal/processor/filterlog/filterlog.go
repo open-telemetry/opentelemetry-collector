@@ -17,10 +17,10 @@ package filterlog
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Matcher is an interface that allows matching a log record against a

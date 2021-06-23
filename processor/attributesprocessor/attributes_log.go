@@ -17,8 +17,8 @@ package attributesprocessor
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterlog"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
