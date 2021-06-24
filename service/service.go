@@ -248,7 +248,7 @@ func (srv *service) reloadPipelines(ctx context.Context, config *config.Config) 
 		return err
 	}
 
-	if err := srv.builtReceivers.ReloadAll(ctx, srv.logger, srv.buildInfo, config, srv.builtPipelines, srv.factories.Receivers, srv); err != nil {
+	if err := srv.builtReceivers.ReloadReceivers(ctx, srv.logger, srv.buildInfo, config, srv.builtPipelines, srv.factories.Receivers, srv); err != nil {
 		return err
 	}
 
