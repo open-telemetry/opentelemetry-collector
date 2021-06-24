@@ -12,6 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package simple facilitates building pdata.Metrics in receivers in an
-// easier and more fluent way than using pdata.Metrics directly.
-package simple
+package pdata
+
+import (
+	"testing"
+
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewErrIncompatibleType(t *testing.T) {
+	err := NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, "given")
+	assert.EqualError(t, err, "expected model type []*model.SpanModel but given string")
+}

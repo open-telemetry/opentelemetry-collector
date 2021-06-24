@@ -15,12 +15,106 @@
 package pdata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
-// This file defines in-memory data structures to represent logs.
+// LogsDecoder is an interface to decode bytes into protocol-specific data model.
+type LogsDecoder interface {
+	// DecodeLogs decodes bytes into protocol-specific data model.
+	// If the error is not nil, the returned interface cannot be used.
+	DecodeLogs(buf []byte) (interface{}, error)
+}
+
+// LogsEncoder is an interface to encode protocol-specific data model into bytes.
+type LogsEncoder interface {
+	// EncodeLogs encodes protocol-specific data model into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	EncodeLogs(model interface{}) ([]byte, error)
+}
+
+// FromLogsTranslator is an interface to translate pdata.Logs into protocol-specific data model.
+type FromLogsTranslator interface {
+	// FromLogs translates pdata.Logs into protocol-specific data model.
+	// If the error is not nil, the returned pdata.Logs cannot be used.
+	FromLogs(ld Logs) (interface{}, error)
+}
+
+// ToLogsTranslator is an interface to translate a protocol-specific data model into pdata.Traces.
+type ToLogsTranslator interface {
+	// ToLogs translates a protocol-specific data model into pdata.Logs.
+	// If the error is not nil, the returned pdata.Logs cannot be used.
+	ToLogs(src interface{}) (Logs, error)
+}
+
+// LogsMarshaler marshals pdata.Logs into bytes.
+type LogsMarshaler interface {
+	// Marshal the given pdata.Logs into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	Marshal(td Logs) ([]byte, error)
+}
+
+type logsMarshaler struct {
+	encoder    LogsEncoder
+	translator FromLogsTranslator
+}
+
+// NewLogsMarshaler returns a new LogsMarshaler.
+func NewLogsMarshaler(encoder LogsEncoder, translator FromLogsTranslator) LogsMarshaler {
+	return &logsMarshaler{
+		encoder:    encoder,
+		translator: translator,
+	}
+}
+
+// Marshal pdata.Logs into bytes.
+func (t *logsMarshaler) Marshal(td Logs) ([]byte, error) {
+	model, err := t.translator.FromLogs(td)
+	if err != nil {
+		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
+	}
+	buf, err := t.encoder.EncodeLogs(model)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed: %w", err)
+	}
+	return buf, nil
+}
+
+// LogsUnmarshaler unmarshalls bytes into pdata.Logs.
+type LogsUnmarshaler interface {
+	// Unmarshal the given bytes into pdata.Logs.
+	// If the error is not nil, the returned pdata.Logs cannot be used.
+	Unmarshal(buf []byte) (Logs, error)
+}
+
+type logsUnmarshaler struct {
+	decoder    LogsDecoder
+	translator ToLogsTranslator
+}
+
+// NewLogsUnmarshaler returns a new LogsUnmarshaler.
+func NewLogsUnmarshaler(decoder LogsDecoder, translator ToLogsTranslator) LogsUnmarshaler {
+	return &logsUnmarshaler{
+		decoder:    decoder,
+		translator: translator,
+	}
+}
+
+// Unmarshal bytes into pdata.Logs. On error pdata.Logs is invalid.
+func (t *logsUnmarshaler) Unmarshal(buf []byte) (Logs, error) {
+	model, err := t.decoder.DecodeLogs(buf)
+	if err != nil {
+		return Logs{}, fmt.Errorf("unmarshal failed: %w", err)
+	}
+	td, err := t.translator.ToLogs(model)
+	if err != nil {
+		return Logs{}, fmt.Errorf("converting model to pdata failed: %w", err)
+	}
+	return td, nil
+}
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
 //

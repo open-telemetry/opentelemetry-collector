@@ -152,6 +152,21 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_jvm_memory_pool_bytes_used.pool="G1 Old Gen". 4.385408e.06.*`,
 		`test_jvm_memory_pool_bytes_used.pool="G1 Survivor Space". 8.388608e.06.*`,
 		`test_jvm_memory_pool_bytes_used.pool="Metaspace". 2.6218176e.07.*`,
+		`. HELP test_scrape_duration_seconds Duration of the scrape`,
+		`. TYPE test_scrape_duration_seconds gauge`,
+		`test_scrape_duration_seconds [0-9.e-]+ [0-9]+`,
+		`. HELP test_scrape_samples_post_metric_relabeling The number of samples remaining after metric relabeling was applied`,
+		`. TYPE test_scrape_samples_post_metric_relabeling gauge`,
+		`test_scrape_samples_post_metric_relabeling 13 .*`,
+		`. HELP test_scrape_samples_scraped The number of samples the target exposed`,
+		`. TYPE test_scrape_samples_scraped gauge`,
+		`test_scrape_samples_scraped 13 .*`,
+		`. HELP test_scrape_series_added The approximate number of new series in this scrape`,
+		`. TYPE test_scrape_series_added gauge`,
+		`test_scrape_series_added 13 .*`,
+		`. HELP test_up The scraping was successful`,
+		`. TYPE test_up gauge`,
+		`test_up 1 .*`,
 	}
 
 	// 5.5: Perform a complete line by line prefix verification to ensure we extract back the inputs

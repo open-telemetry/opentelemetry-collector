@@ -106,9 +106,11 @@ func (o *OcaStore) Appender(context.Context) storage.Appender {
 	return noop
 }
 
-func (o *OcaStore) Close() error {
-	atomic.CompareAndSwapInt32(&o.running, runningStateReady, runningStateStop)
-	return nil
+// Close OcaStore as well as the internal metadataService.
+func (o *OcaStore) Close() {
+	if atomic.CompareAndSwapInt32(&o.running, runningStateReady, runningStateStop) {
+		o.mc.Close()
+	}
 }
 
 // noopAppender, always return error on any operations
