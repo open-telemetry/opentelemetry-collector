@@ -43,7 +43,7 @@ jobs:
           cd ${{ github.base_ref }}
           make apidiff-build
           
-      # Generate apidiff states of PR
+      # Compare apidiff states of Main with PR
       - name: Compare-States
         run: |
           cd ${{ github.head_ref }}
