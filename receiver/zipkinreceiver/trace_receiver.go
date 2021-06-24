@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
@@ -49,9 +48,6 @@ var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
 type ZipkinReceiver struct {
-	// mu protects the fields of this struct
-	mu sync.Mutex
-
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
 	nextConsumer consumer.Traces
@@ -61,11 +57,11 @@ type ZipkinReceiver struct {
 	server     *http.Server
 	config     *Config
 
-	v1ThriftUnmarshaler      model.TracesUnmarshaler
-	v1JSONUnmarshaler        model.TracesUnmarshaler
-	jsonUnmarshaler          model.TracesUnmarshaler
-	protobufUnmarshaler      model.TracesUnmarshaler
-	protobufDebugUnmarshaler model.TracesUnmarshaler
+	v1ThriftUnmarshaler      pdata.TracesUnmarshaler
+	v1JSONUnmarshaler        pdata.TracesUnmarshaler
+	jsonUnmarshaler          pdata.TracesUnmarshaler
+	protobufUnmarshaler      pdata.TracesUnmarshaler
+	protobufDebugUnmarshaler pdata.TracesUnmarshaler
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
@@ -94,9 +90,6 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
-
-	zr.mu.Lock()
-	defer zr.mu.Unlock()
 
 	zr.host = host
 	zr.server = zr.config.HTTPServerSettings.ToServer(zr)

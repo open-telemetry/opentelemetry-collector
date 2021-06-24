@@ -26,16 +26,15 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/internal/otlptext"
 )
 
 type loggingExporter struct {
 	logger           *zap.Logger
 	debug            bool
-	logsMarshaler    model.LogsMarshaler
-	metricsMarshaler model.MetricsMarshaler
-	tracesMarshaler  model.TracesMarshaler
+	logsMarshaler    pdata.LogsMarshaler
+	metricsMarshaler pdata.MetricsMarshaler
+	tracesMarshaler  pdata.TracesMarshaler
 }
 
 func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {

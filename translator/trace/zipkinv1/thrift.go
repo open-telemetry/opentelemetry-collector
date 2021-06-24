@@ -28,11 +28,11 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/model"
 )
 
-var _ model.TracesDecoder = (*thriftDecoder)(nil)
+var _ pdata.TracesDecoder = (*thriftDecoder)(nil)
 
 type thriftDecoder struct{}
 
@@ -46,8 +46,8 @@ func (t thriftDecoder) DecodeTraces(buf []byte) (interface{}, error) {
 }
 
 // NewThriftTracesUnmarshaler returns an unmarshaler for Zipkin Thrift.
-func NewThriftTracesUnmarshaler() model.TracesUnmarshaler {
-	return model.NewTracesUnmarshaler(thriftDecoder{}, toTranslator{})
+func NewThriftTracesUnmarshaler() pdata.TracesUnmarshaler {
+	return pdata.NewTracesUnmarshaler(thriftDecoder{}, toTranslator{})
 }
 
 // v1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.

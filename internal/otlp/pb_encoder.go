@@ -15,10 +15,10 @@
 package otlp
 
 import (
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/internal/model"
 )
 
 type pbEncoder struct{}
@@ -30,7 +30,7 @@ func newPbEncoder() *pbEncoder {
 func (e *pbEncoder) EncodeLogs(modelData interface{}) ([]byte, error) {
 	ld, ok := modelData.(*otlpcollectorlogs.ExportLogsServiceRequest)
 	if !ok {
-		return nil, model.NewErrIncompatibleType(&otlpcollectorlogs.ExportLogsServiceRequest{}, modelData)
+		return nil, pdata.NewErrIncompatibleType(&otlpcollectorlogs.ExportLogsServiceRequest{}, modelData)
 	}
 	return ld.Marshal()
 }
@@ -38,7 +38,7 @@ func (e *pbEncoder) EncodeLogs(modelData interface{}) ([]byte, error) {
 func (e *pbEncoder) EncodeMetrics(modelData interface{}) ([]byte, error) {
 	md, ok := modelData.(*otlpcollectormetrics.ExportMetricsServiceRequest)
 	if !ok {
-		return nil, model.NewErrIncompatibleType(&otlpcollectormetrics.ExportMetricsServiceRequest{}, modelData)
+		return nil, pdata.NewErrIncompatibleType(&otlpcollectormetrics.ExportMetricsServiceRequest{}, modelData)
 	}
 	return md.Marshal()
 }
@@ -46,7 +46,7 @@ func (e *pbEncoder) EncodeMetrics(modelData interface{}) ([]byte, error) {
 func (e *pbEncoder) EncodeTraces(modelData interface{}) ([]byte, error) {
 	td, ok := modelData.(*otlpcollectortrace.ExportTraceServiceRequest)
 	if !ok {
-		return nil, model.NewErrIncompatibleType(&otlpcollectortrace.ExportTraceServiceRequest{}, modelData)
+		return nil, pdata.NewErrIncompatibleType(&otlpcollectortrace.ExportTraceServiceRequest{}, modelData)
 	}
 	return td.Marshal()
 }

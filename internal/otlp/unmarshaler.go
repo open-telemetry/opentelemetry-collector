@@ -15,35 +15,35 @@
 package otlp
 
 import (
-	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // NewJSONTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshals from OTLP json bytes.
-func NewJSONTracesUnmarshaler() model.TracesUnmarshaler {
-	return model.NewTracesUnmarshaler(newJSONDecoder(), newToTranslator())
+func NewJSONTracesUnmarshaler() pdata.TracesUnmarshaler {
+	return pdata.NewTracesUnmarshaler(newJSONDecoder(), newToTranslator())
 }
 
 // NewJSONMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshals from OTLP json bytes.
-func NewJSONMetricsUnmarshaler() model.MetricsUnmarshaler {
-	return model.NewMetricsUnmarshaler(newJSONDecoder(), newToTranslator())
+func NewJSONMetricsUnmarshaler() pdata.MetricsUnmarshaler {
+	return pdata.NewMetricsUnmarshaler(newJSONDecoder(), newToTranslator())
 }
 
 // NewJSONLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshals from OTLP json bytes.
-func NewJSONLogsUnmarshaler() model.LogsUnmarshaler {
-	return model.NewLogsUnmarshaler(newJSONDecoder(), newToTranslator())
+func NewJSONLogsUnmarshaler() pdata.LogsUnmarshaler {
+	return pdata.NewLogsUnmarshaler(newJSONDecoder(), newToTranslator())
 }
 
 // NewProtobufTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
-func NewProtobufTracesUnmarshaler() model.TracesUnmarshaler {
-	return model.NewTracesUnmarshaler(newPbDecoder(), newToTranslator())
+func NewProtobufTracesUnmarshaler() pdata.TracesUnmarshaler {
+	return pdata.NewTracesUnmarshaler(newPbDecoder(), newToTranslator())
 }
 
 // NewProtobufMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
-func NewProtobufMetricsUnmarshaler() model.MetricsUnmarshaler {
-	return model.NewMetricsUnmarshaler(newPbDecoder(), newToTranslator())
+func NewProtobufMetricsUnmarshaler() pdata.MetricsUnmarshaler {
+	return pdata.NewMetricsUnmarshaler(newPbDecoder(), newToTranslator())
 }
 
 // NewProtobufLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
-func NewProtobufLogsUnmarshaler() model.LogsUnmarshaler {
-	return model.NewLogsUnmarshaler(newPbDecoder(), newToTranslator())
+func NewProtobufLogsUnmarshaler() pdata.LogsUnmarshaler {
+	return pdata.NewLogsUnmarshaler(newPbDecoder(), newToTranslator())
 }

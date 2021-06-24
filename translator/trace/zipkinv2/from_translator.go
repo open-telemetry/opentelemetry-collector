@@ -26,7 +26,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/model"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
@@ -39,7 +38,7 @@ const (
 
 var (
 	sampled                            = true
-	_       model.FromTracesTranslator = (*FromTranslator)(nil)
+	_       pdata.FromTracesTranslator = (*FromTranslator)(nil)
 )
 
 // FromTranslator converts from pdata to Zipkin data model.
