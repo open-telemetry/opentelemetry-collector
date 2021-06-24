@@ -130,7 +130,7 @@ func GetModules(cfg Config) error {
 	retries := 3
 	failReason := "unknown"
 	for i := 1; i <= retries; i++ {
-		cmd := exec.Command(goBinary, "mod", "tidy")
+		cmd := exec.Command(goBinary, "mod", "download", "all")
 		cmd.Dir = cfg.Distribution.OutputPath
 		if out, err := cmd.CombinedOutput(); err != nil {
 			failReason = fmt.Sprintf("%s. Output: %q", err, out)
