@@ -71,7 +71,6 @@ func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
 			}
 		}
 	}
-
 	return nil, errors.New("unable to find a target with job=" + job + ", and instance=" + instance)
 }
 
