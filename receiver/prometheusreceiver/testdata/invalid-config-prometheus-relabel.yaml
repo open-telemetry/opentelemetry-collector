@@ -1,0 +1,22 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: rename
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: "foo_(.*)"
+            target_label: __name__
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [prometheus]
+      processors: [nop]
+      exporters: [nop]

@@ -16,6 +16,7 @@ package internal
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
@@ -33,10 +34,27 @@ type ScrapeManager interface {
 }
 
 type metadataService struct {
-	sm ScrapeManager
+	sync.Mutex
+	stopped bool
+	sm      ScrapeManager
+}
+
+func (s *metadataService) Close() {
+	s.Lock()
+	s.stopped = true
+	s.Unlock()
 }
 
 func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	// If we're already stopped return early so that we don't call scrapeManager.TargetsAll()
+	// which will result in deadlock if scrapeManager is being stopped.
+	if s.stopped {
+		return nil, errAlreadyStopped
+	}
+
 	targetGroup, ok := s.sm.TargetsAll()[job]
 	if !ok {
 		return nil, errors.New("unable to find a target group with job=" + job)

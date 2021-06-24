@@ -41,6 +41,8 @@ var (
 		metric.WithDescription("Current size of the retry queue (in batches)"),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
+
+	errSendingQueueIsFull = errors.New("sending_queue is full")
 )
 
 func init() {
@@ -189,7 +191,7 @@ func (qrs *queuedRetrySender) send(req request) error {
 			zap.Int("dropped_items", req.count()),
 		)
 		span.Annotate(qrs.traceAttributes, "Dropped item, sending_queue is full.")
-		return errors.New("sending_queue is full")
+		return errSendingQueueIsFull
 	}
 
 	span.Annotate(qrs.traceAttributes, "Enqueued item.")

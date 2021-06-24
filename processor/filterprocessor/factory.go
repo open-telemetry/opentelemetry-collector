@@ -46,11 +46,11 @@ func createDefaultConfig() config.Processor {
 
 func createMetricsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	fp, err := newFilterMetricProcessor(params.Logger, cfg.(*Config))
+	fp, err := newFilterMetricProcessor(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

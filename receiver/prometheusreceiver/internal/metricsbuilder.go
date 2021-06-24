@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -87,6 +88,23 @@ func (b *metricBuilder) matchStartTimeMetric(metricName string) bool {
 
 // AddDataPoint is for feeding prometheus data complexValue in its processing order
 func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error {
+	// Any datapoint with duplicate labels MUST be rejected per:
+	// * https://github.com/open-telemetry/wg-prometheus/issues/44
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
+	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
+	seen := make(map[string]bool)
+	dupLabels := make([]string, 0, len(ls))
+	for _, label := range ls {
+		if _, ok := seen[label.Name]; ok {
+			dupLabels = append(dupLabels, label.Name)
+		}
+		seen[label.Name] = true
+	}
+	if len(dupLabels) != 0 {
+		sort.Strings(dupLabels)
+		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabels)
+	}
+
 	metricName := ls.Get(model.MetricNameLabel)
 	switch {
 	case metricName == "":
@@ -96,7 +114,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
 		lm := ls.Map()
-		delete(lm, model.MetricNameLabel)
 		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 		if metricName == scrapeUpMetricName && v != 1.0 {
@@ -111,7 +128,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 					zap.String("target_labels", fmt.Sprintf("%v", lm)))
 			}
 		}
-		return nil
 	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
 		b.startTime = v
 	}
@@ -125,9 +141,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.logger)
 	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.logger)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)

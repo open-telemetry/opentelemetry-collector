@@ -53,30 +53,30 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	return newBatchTracesProcessor(params, nextConsumer, cfg.(*Config), level)
+	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), level)
 }
 
 func createMetricsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	return newBatchMetricsProcessor(params, nextConsumer, cfg.(*Config), level)
+	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), level)
 }
 
 func createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	return newBatchLogsProcessor(params, nextConsumer, cfg.(*Config), level)
+	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), level)
 }

@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/middleware"
+	"go.opentelemetry.io/collector/internal/otlp"
 )
 
 type exporter struct {
@@ -49,6 +50,12 @@ type exporter struct {
 	logsURL    string
 	logger     *zap.Logger
 }
+
+var (
+	tracesMarshaler  = otlp.NewProtobufTracesMarshaler()
+	metricsMarshaler = otlp.NewProtobufMetricsMarshaler()
+	logsMarshaler    = otlp.NewProtobufLogsMarshaler()
+)
 
 const (
 	headerRetryAfter         = "Retry-After"
@@ -75,8 +82,8 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporter, error) {
 
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporter) start(_ context.Context, _ component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient()
+func (e *exporter) start(_ context.Context, host component.Host) error {
+	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
 	}
@@ -92,8 +99,8 @@ func (e *exporter) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *exporter) pushTraces(ctx context.Context, traces pdata.Traces) error {
-	request, err := traces.ToOtlpProtoBytes()
+func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+	request, err := tracesMarshaler.Marshal(td)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -101,16 +108,16 @@ func (e *exporter) pushTraces(ctx context.Context, traces pdata.Traces) error {
 	return e.export(ctx, e.tracesURL, request)
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, metrics pdata.Metrics) error {
-	request, err := metrics.ToOtlpProtoBytes()
+func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+	request, err := metricsMarshaler.Marshal(md)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
 	return e.export(ctx, e.metricsURL, request)
 }
 
-func (e *exporter) pushLogs(ctx context.Context, logs pdata.Logs) error {
-	request, err := logs.ToOtlpProtoBytes()
+func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+	request, err := logsMarshaler.Marshal(ld)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}

@@ -17,23 +17,11 @@ package otlp
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/internal/model"
 )
 
 type fromTranslator struct{}
 
-// NewFromTracesTranslator returns a model.FromTracesTranslator to convert from pdata to OTLP data model.
-func NewFromTracesTranslator() model.FromTracesTranslator {
-	return &fromTranslator{}
-}
-
-// NewFromMetricsTranslator returns a model.FromMetricsTranslator to convert from pdata to OTLP data model.
-func NewFromMetricsTranslator() model.FromMetricsTranslator {
-	return &fromTranslator{}
-}
-
-// NewFromLogsTranslator returns a model.FromLogsTranslator to convert from pdata to OTLP data model.
-func NewFromLogsTranslator() model.FromLogsTranslator {
+func newFromTranslator() *fromTranslator {
 	return &fromTranslator{}
 }
 

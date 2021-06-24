@@ -39,7 +39,8 @@ func TestMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metrics := Metrics(tt.args.md)
+			metrics, err := NewTextMetricsMarshaler().Marshal(tt.args.md)
+			assert.NoError(t, err)
 			if !tt.empty {
 				assert.NotEmpty(t, metrics)
 			}

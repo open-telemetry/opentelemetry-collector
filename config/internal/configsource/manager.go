@@ -309,6 +309,16 @@ func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (in
 			nslice = append(nslice, value)
 		}
 		return nslice, nil
+	case map[string]interface{}:
+		nmap := make(map[interface{}]interface{}, len(v))
+		for k, vint := range v {
+			value, err := m.expandStringValues(ctx, vint)
+			if err != nil {
+				return nil, err
+			}
+			nmap[k] = value
+		}
+		return nmap, nil
 	case map[interface{}]interface{}:
 		nmap := make(map[interface{}]interface{}, len(v))
 		for k, vint := range v {

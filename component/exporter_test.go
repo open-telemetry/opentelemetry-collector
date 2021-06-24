@@ -39,17 +39,17 @@ func (f *TestExporterFactory) CreateDefaultConfig() config.Exporter {
 }
 
 // CreateTracesExporter creates a trace exporter based on this config.
-func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, config.Exporter) (TracesExporter, error) {
+func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateSettings, config.Exporter) (TracesExporter, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateParams, config.Exporter) (MetricsExporter, error) {
+func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateSettings, config.Exporter) (MetricsExporter, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 // CreateLogsExporter creates a logs exporter based on this config.
-func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, config.Exporter) (LogsExporter, error) {
+func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateSettings, config.Exporter) (LogsExporter, error) {
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 

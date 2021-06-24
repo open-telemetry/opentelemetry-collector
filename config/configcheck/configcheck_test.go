@@ -198,6 +198,6 @@ func (b badConfigExtensionFactory) CreateDefaultConfig() config.Extension {
 	}{}
 }
 
-func (b badConfigExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ config.Extension) (component.Extension, error) {
+func (b badConfigExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateSettings, _ config.Extension) (component.Extension, error) {
 	return nil, nil
 }

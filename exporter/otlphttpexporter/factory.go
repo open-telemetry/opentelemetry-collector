@@ -74,10 +74,10 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	oce, err := newExporter(cfg, params.Logger)
+	oce, err := newExporter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func createTracesExporter(
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -102,10 +102,10 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	oce, err := newExporter(cfg, params.Logger)
+	oce, err := newExporter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -130,10 +130,10 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	oce, err := newExporter(cfg, params.Logger)
+	oce, err := newExporter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		params.Logger,
+		set.Logger,
 		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

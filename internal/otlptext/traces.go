@@ -14,10 +14,19 @@
 
 package otlptext
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import (
+	"go.opentelemetry.io/collector/consumer/pdata"
+)
 
-// Traces data to text
-func Traces(td pdata.Traces) string {
+// NewTextTracesMarshaler returns a serializer.TracesMarshaler to encode to OTLP json bytes.
+func NewTextTracesMarshaler() pdata.TracesMarshaler {
+	return tracesMarshaler{}
+}
+
+type tracesMarshaler struct{}
+
+// Marshal data to text.
+func (tracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
 	buf := dataBuffer{}
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
@@ -52,5 +61,5 @@ func Traces(td pdata.Traces) string {
 		}
 	}
 
-	return buf.str.String()
+	return buf.buf.Bytes(), nil
 }

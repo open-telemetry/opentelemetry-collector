@@ -23,7 +23,7 @@ import (
 // StartFunc specifies the function invoked when the component.Component is being started.
 type StartFunc func(context.Context, component.Host) error
 
-// Start calls f(ctx, host).
+// Start starts the component.
 func (f StartFunc) Start(ctx context.Context, host component.Host) error {
 	return f(ctx, host)
 }
@@ -31,7 +31,7 @@ func (f StartFunc) Start(ctx context.Context, host component.Host) error {
 // ShutdownFunc specifies the function invoked when the component.Component is being shutdown.
 type ShutdownFunc func(context.Context) error
 
-// Shutdown calls f(ctx, host).
+// Shutdown shuts down the component.
 func (f ShutdownFunc) Shutdown(ctx context.Context) error {
 	return f(ctx)
 }

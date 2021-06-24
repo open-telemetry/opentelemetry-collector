@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -160,7 +159,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 
 			// Send one custom data.
 			log := pdata.Logs{}
-			require.NoError(t, processor.firstLC.(consumer.Logs).ConsumeLogs(context.Background(), log))
+			require.NoError(t, processor.firstLC.ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
 			for _, expConsumer := range exporterConsumers {
@@ -221,7 +220,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 	}
 
 	td := testdata.GenerateTracesOneSpan()
-	require.NoError(t, processor.firstTC.(consumer.Traces).ConsumeTraces(context.Background(), td))
+	require.NoError(t, processor.firstTC.ConsumeTraces(context.Background(), td))
 
 	// Now verify received data.
 	for _, expConsumer := range exporterConsumers {

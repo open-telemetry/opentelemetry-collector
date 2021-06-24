@@ -39,7 +39,8 @@ func TestLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logs := Logs(tt.args.ld)
+			logs, err := NewTextLogsMarshaler().Marshal(tt.args.ld)
+			assert.NoError(t, err)
 			if !tt.empty {
 				assert.NotEmpty(t, logs)
 			}

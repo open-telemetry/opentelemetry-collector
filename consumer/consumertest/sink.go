@@ -54,7 +54,7 @@ func (ste *TracesSink) AllTraces() []pdata.Traces {
 	return copyTraces
 }
 
-// SpansCount return the number of spans sent to this sink.
+// SpansCount returns the number of spans sent to this sink.
 func (ste *TracesSink) SpansCount() int {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
@@ -102,7 +102,7 @@ func (sme *MetricsSink) AllMetrics() []pdata.Metrics {
 	return copyMetrics
 }
 
-// MetricsCount return the number of metrics stored by this sink since last Reset.
+// MetricsCount returns the number of metrics stored by this sink since last Reset.
 func (sme *MetricsSink) MetricsCount() int {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
@@ -150,7 +150,7 @@ func (sle *LogsSink) AllLogs() []pdata.Logs {
 	return copyLogs
 }
 
-// LogRecordsCount return the number of log records stored by this sink since last Reset.
+// LogRecordsCount returns the number of log records stored by this sink since last Reset.
 func (sle *LogsSink) LogRecordsCount() int {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
