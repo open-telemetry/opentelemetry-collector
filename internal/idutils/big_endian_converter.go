@@ -17,7 +17,7 @@ package idutils
 import (
 	"encoding/binary"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // UInt64ToTraceID converts the pair of uint64 representation of a TraceID to pdata.TraceID.

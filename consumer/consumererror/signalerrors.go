@@ -17,7 +17,7 @@ package consumererror
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Traces is an error that may carry associated Trace data for a subset of received data

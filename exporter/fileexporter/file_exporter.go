@@ -22,8 +22,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON.

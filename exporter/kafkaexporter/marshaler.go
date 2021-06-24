@@ -17,8 +17,8 @@ package kafkaexporter
 import (
 	"github.com/Shopify/sarama"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // TracesMarshaler marshals traces into Message array.
