@@ -38,12 +38,6 @@ if [ -z $package ]; then
   usage
 fi
 
-changes_found() {
-  echo "Incompatible Changes Found."
-  echo "Check the logs in the GitHub Action log group: 'Compare-States'."
-  exit 1
-}
-
 set -e
 
 if [ -e $input_dir/$package/apidiff.state ]; then
@@ -51,7 +45,9 @@ if [ -e $input_dir/$package/apidiff.state ]; then
   if [ ! -z "$changes" -a "$changes"!=" " ]; then
     SUB='Incompatible changes:'
     if [ $check_only = true ] && [[ "$changes" =~ .*"$SUB".* ]]; then
-      changes_found
+      echo "Incompatible Changes Found."
+      echo "Check the logs in the GitHub Action log group: 'Compare-States'."
+      exit 1
     else
       echo "Changes found in $package:"
       echo "$changes"
