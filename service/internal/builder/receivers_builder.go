@@ -78,7 +78,7 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (rcvs Receivers) ReloadAll(
+func (rcvs Receivers) ReloadReceivers(
 	ctx context.Context,
 	logger *zap.Logger,
 	buildInfo component.BuildInfo,

@@ -225,7 +225,7 @@ func testReloadReceivers(t *testing.T, test testCase) {
 	assert.NoError(t, err)
 	err = pipelineProcessors.ReloadProcessors(context.Background(), componenttest.NewNopHost(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
-	err = receivers.ReloadAll(context.Background(), zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers, componenttest.NewNopHost())
+	err = receivers.ReloadReceivers(context.Background(), zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers, componenttest.NewNopHost())
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
 
