@@ -85,7 +85,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
 		opts.ConstLabels = map[string]string{
-			sanitizePrometheusKey(conventions.AttributeServiceInstance): instanceID,
+			sanitizePrometheusKey(conventions.AttributeServiceInstanceID): instanceID,
 		}
 	}
 
@@ -100,7 +100,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		"Serving Prometheus metrics",
 		zap.String("address", metricsAddr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
-		zap.String(conventions.AttributeServiceInstance, instanceID),
+		zap.String(conventions.AttributeServiceInstanceID, instanceID),
 	)
 
 	mux := http.NewServeMux()

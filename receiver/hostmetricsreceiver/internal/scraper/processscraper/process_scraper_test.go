@@ -81,7 +81,7 @@ func TestScrape(t *testing.T) {
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attr := resourceMetrics.At(0).Resource().Attributes()
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessID)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutableName)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)

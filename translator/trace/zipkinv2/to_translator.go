@@ -112,7 +112,7 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
 	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
 	attrs[occonventions.AttributeExporterVersion] = struct{}{}
-	attrs[conventions.AttributeProcessID] = struct{}{}
+	attrs[conventions.AttributeProcessPID] = struct{}{}
 	attrs[occonventions.AttributeResourceType] = struct{}{}
 	return attrs
 }()

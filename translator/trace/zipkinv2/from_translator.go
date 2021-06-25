@@ -272,14 +272,14 @@ func extractZipkinServiceName(zTags map[string]string) string {
 	if sn, ok := zTags[conventions.AttributeServiceName]; ok {
 		serviceName = sn
 		delete(zTags, conventions.AttributeServiceName)
-	} else if fn, ok := zTags[conventions.AttributeFaasName]; ok {
+	} else if fn, ok := zTags[conventions.AttributeFaaSName]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeFaasName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeFaasName
-	} else if fn, ok := zTags[conventions.AttributeK8sDeployment]; ok {
+		delete(zTags, conventions.AttributeFaaSName)
+		zTags[zipkin.TagServiceNameSource] = conventions.AttributeFaaSName
+	} else if fn, ok := zTags[conventions.AttributeK8SDeploymentName]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeK8sDeployment)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeK8sDeployment
+		delete(zTags, conventions.AttributeK8SDeploymentName)
+		zTags[zipkin.TagServiceNameSource] = conventions.AttributeK8SDeploymentName
 	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeProcessExecutableName)
