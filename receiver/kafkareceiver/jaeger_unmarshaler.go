@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 

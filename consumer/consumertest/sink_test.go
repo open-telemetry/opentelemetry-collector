@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestTracesSink(t *testing.T) {

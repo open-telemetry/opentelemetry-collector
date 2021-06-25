@@ -28,8 +28,8 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var _ pdata.TracesDecoder = (*thriftDecoder)(nil)

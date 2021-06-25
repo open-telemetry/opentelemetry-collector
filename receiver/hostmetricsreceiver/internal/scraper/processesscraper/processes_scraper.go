@@ -21,7 +21,7 @@ import (
 	"github.com/shirou/gopsutil/load"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // scraper for Processes Metrics

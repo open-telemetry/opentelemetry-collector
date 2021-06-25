@@ -17,7 +17,7 @@ package goldendataset
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Simple utilities for generating metrics for testing

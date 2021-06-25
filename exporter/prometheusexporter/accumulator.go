@@ -22,7 +22,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type accumulatedValue struct {

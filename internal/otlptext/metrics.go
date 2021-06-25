@@ -15,7 +15,7 @@
 package otlptext
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // NewTextMetricsMarshaler returns a serializer.MetricsMarshaler to encode to OTLP json bytes.

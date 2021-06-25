@@ -17,7 +17,7 @@ package internaldata
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // timestampAsTimestampPb converts a pdata.Timestamp to a protobuf known type Timestamp.

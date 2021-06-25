@@ -15,8 +15,8 @@
 package filtermetric
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterexpr"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type exprMatcher struct {

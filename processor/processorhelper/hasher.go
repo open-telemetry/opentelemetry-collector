@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"math"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const (
