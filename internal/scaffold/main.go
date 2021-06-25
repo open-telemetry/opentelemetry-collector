@@ -53,7 +53,7 @@ func main() {
 		Version:  "{{ .Distribution.Version }}",
 	}
 
-	app, err := service.New(service.AppSettings{BuildInfo: info, Factories: factories})
+	app, err := service.New(service.CollectorSettings{BuildInfo: info, Factories: factories})
 	if err != nil {
 		log.Fatalf("failed to construct the application: %v", err)
 	}
