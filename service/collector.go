@@ -166,8 +166,12 @@ func (col *Collector) Shutdown() {
 	close(col.stopTestChan)
 }
 
-func (col *Collector) setupTelemetry(ballastSizeBytes uint64) error {
+func (col *Collector) setupTelemetry() error {
 	col.logger.Info("Setting up own telemetry...")
+
+	// Set memory ballast
+	ballast, ballastSizeBytes := col.createMemoryBallast()
+	runtime.KeepAlive(ballast)
 
 	err := applicationTelemetry.init(col.asyncErrorChannel, ballastSizeBytes, col.logger)
 	if err != nil {
@@ -265,13 +269,10 @@ func (col *Collector) execute(ctx context.Context) error {
 	)
 	col.stateChannel <- Starting
 
-	// Set memory ballast
-	ballast, ballastSizeBytes := col.createMemoryBallast()
-
 	col.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	err := col.setupTelemetry(ballastSizeBytes)
+	err := col.setupTelemetry()
 	if err != nil {
 		return err
 	}
@@ -288,7 +289,6 @@ func (col *Collector) execute(ctx context.Context) error {
 	var errs []error
 
 	// Begin shutdown sequence.
-	runtime.KeepAlive(ballast)
 	col.logger.Info("Starting shutdown...")
 
 	if closable, ok := col.parserProvider.(parserprovider.Closeable); ok {
