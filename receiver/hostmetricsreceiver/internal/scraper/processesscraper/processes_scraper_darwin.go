@@ -19,7 +19,7 @@ package processesscraper
 import (
 	"github.com/shirou/gopsutil/load"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const unixSystemSpecificMetricsLen = 0

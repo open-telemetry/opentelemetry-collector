@@ -17,7 +17,7 @@ package consumertest
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (

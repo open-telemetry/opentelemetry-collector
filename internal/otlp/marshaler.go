@@ -15,7 +15,7 @@
 package otlp
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // NewJSONTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP json bytes.

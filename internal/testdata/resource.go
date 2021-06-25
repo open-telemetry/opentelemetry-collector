@@ -15,7 +15,7 @@
 package testdata
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func initResource1(r pdata.Resource) {

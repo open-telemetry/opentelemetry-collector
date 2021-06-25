@@ -20,7 +20,7 @@ import (
 
 	"github.com/prometheus/prometheus/prompb"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (

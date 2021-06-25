@@ -15,7 +15,7 @@
 package batchprocessor
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // splitTraces removes spans from the input trace and returns a new trace of the specified size.

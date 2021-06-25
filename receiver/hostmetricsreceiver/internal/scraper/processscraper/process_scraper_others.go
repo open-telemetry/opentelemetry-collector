@@ -19,7 +19,7 @@ package processscraper
 import (
 	"github.com/shirou/gopsutil/cpu"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const cpuStatesLen = 0
