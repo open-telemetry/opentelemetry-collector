@@ -8,7 +8,7 @@ is designed so that the following goal can be achieved:
 ## Policy
 
 * Versioning of this project will be idiomatic of a Go project using [Go
-  modules](https://github.com/golang/go/wiki/Modules).
+  modules](https://golang.org/ref/mod#versions).
     * [Semantic import
       versioning](https://github.com/golang/go/wiki/Modules#semantic-import-versioning)
       will be used.
@@ -30,6 +30,13 @@ is designed so that the following goal can be achieved:
     * Additional modules may be created in this repository to provide for
       isolation of build-time tools or other commands. Such modules should be
       versioned in sync with the `go.opentelemetry.io/collector` module.
+    * Experimental modules still under active development will be versioned with a major
+      version of `v0` to imply the stability guarantee defined by
+      [semver](https://semver.org/spec/v2.0.0.html#spec-item-4).
+
+      > Major version zero (0.y.z) is for initial development. Anything MAY
+      > change at any time. The public API SHOULD NOT be considered stable.
+
     * Configuration structures should be considered part of the public API and backward
       compatibility maintained through any changes made to configuration structures.
          * Because configuration structures are typically instantiated through unmarshalling
@@ -39,7 +46,7 @@ is designed so that the following goal can be achieved:
 * Versioning of the associated [contrib
   repository](https://github.com/open-telemetry/opentelemetry-collector-contrib) of
   this project will be idiomatic of a Go project using [Go
-  modules](https://github.com/golang/go/wiki/Modules).
+  modules](https://golang.org/ref/mod#versions).
     * [Semantic import
       versioning](https://github.com/golang/go/wiki/Modules#semantic-import-versioning)
       will be used.
@@ -66,8 +73,8 @@ is designed so that the following goal can be achieved:
           not considered to break backward compatibility.
     * Modules will be used to encapsulate receivers, processor, exporters,
       extensions, and any other independent sets of related components.
-        * Experimental modules still under active development will be versioned at
-          `v0` to imply the stability guarantee defined by
+        * Experimental modules still under active development will be versioned with a major
+          version of `v0` to imply the stability guarantee defined by
           [semver](https://semver.org/spec/v2.0.0.html#spec-item-4).
 
           > Major version zero (0.y.z) is for initial development. Anything MAY
@@ -78,7 +85,7 @@ is designed so that the following goal can be achieved:
           released and increment their patch version when backwards compatible
           changes are released.
         * Mature modules for which we guarantee a stable public API will
-          be versioned with a major version greater than `v0`.
+          be versioned with a major version of `v1` or greater.
         * All stable contrib modules of the same major version with this project
           will use the same entire version.
             * Stable modules may be released with an incremented minor or patch
