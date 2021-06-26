@@ -58,4 +58,4 @@ jobs:
           COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff" -c
         run: |
           cd ${{ github.head_ref }}
-          make apidiff
+          make apidiff-compare
