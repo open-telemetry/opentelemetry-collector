@@ -15,10 +15,10 @@
 package otlp
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type pbEncoder struct{}

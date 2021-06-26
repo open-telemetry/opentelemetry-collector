@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 )
@@ -53,9 +52,6 @@ func TestBearerAuthenticator(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, credential)
-
-	_, ok := credential.(credentials.PerRPCCredentials)
-	assert.True(t, ok)
 
 	md, err := credential.GetRequestMetadata(context.Background())
 	expectedMd := map[string]string{

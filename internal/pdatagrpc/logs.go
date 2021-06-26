@@ -19,9 +19,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // TODO: Consider to add `LogsRequest`. If we add non pdata properties we can add them to the request.

@@ -15,7 +15,7 @@
 package batchprocessor
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // splitMetrics removes metrics from the input data and returns a new data of the specified size.

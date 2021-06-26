@@ -18,7 +18,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Type is the component type name.

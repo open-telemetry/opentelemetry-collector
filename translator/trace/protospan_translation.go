@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Some of the keys used to represent OTLP constructs as tags or annotations in other formats.
