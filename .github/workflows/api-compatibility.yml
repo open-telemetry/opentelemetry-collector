@@ -44,12 +44,18 @@ jobs:
           
       # Compare apidiff states of Main with PR
       - name: Compare-States
+        env: 
+          CI: true
+          COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff"
         run: |
           cd ${{ github.head_ref }}
-          make apidiff-compare-GA input_dir="../${{ github.base_ref }}/internal/data/apidiff"
+          make apidiff-compare
       
       # Fail GitHub Action if there are incompatible changes
       - name: Check-States
+        env: 
+          CI: true
+          COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff" -c
         run: |
           cd ${{ github.head_ref }}
-          make apidiff-check input_dir="../${{ github.base_ref }}/internal/data/apidiff"
+          make apidiff
