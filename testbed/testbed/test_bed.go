@@ -55,7 +55,7 @@ var GlobalConfig = struct {
 	// If used in the path, {{.GOOS}} and {{.GOARCH}} will be expanded to the current
 	// OS and ARCH correspondingly.
 	//
-	// Individual tests can override this by setting the AgentExePath of ChildProcess
+	// Individual tests can override this by setting the AgentExePath of childProcessCollector
 	// that is passed to the TestCase.
 	DefaultAgentExeRelativeFile string
 }{
