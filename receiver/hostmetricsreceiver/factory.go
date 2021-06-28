@@ -124,7 +124,7 @@ func createAddScraperOptions(
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddMetricsScraper(hostMetricsScraper))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(hostMetricsScraper))
 			continue
 		}
 
@@ -134,7 +134,7 @@ func createAddScraperOptions(
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddResourceMetricsScraper(resourceMetricsScraper))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(resourceMetricsScraper))
 			continue
 		}
 
@@ -144,7 +144,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.MetricsScraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -156,7 +156,7 @@ func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key strin
 	return
 }
 
-func createResourceMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ResourceScraperFactory) (scraper scraperhelper.ResourceMetricsScraper, ok bool, err error) {
+func createResourceMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ResourceScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
