@@ -56,7 +56,7 @@ func handleTraces(
 		return
 	}
 
-	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
 	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
@@ -83,7 +83,7 @@ func handleMetrics(
 		return
 	}
 
-	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
 	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
@@ -110,7 +110,7 @@ func handleLogs(
 		return
 	}
 
-	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
 	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
