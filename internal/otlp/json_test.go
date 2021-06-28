@@ -19,182 +19,105 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-var tracesOTLP = &otlpcollectortrace.ExportTraceServiceRequest{
-	ResourceSpans: []*otlptrace.ResourceSpans{
-		{
-			Resource: otlpresource.Resource{
-				Attributes: []otlpcommon.KeyValue{
-					{
-						Key:   conventions.AttributeHostName,
-						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
-					},
-				},
-			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					InstrumentationLibrary: otlpcommon.InstrumentationLibrary{
-						Name:    "name",
-						Version: "version",
-					},
-					Spans: []*otlptrace.Span{
-						{
-							Name: "testSpan",
-						},
-					},
-				},
-			},
-		},
-	},
-}
+var tracesOTLP = func() pdata.Traces {
+	td := pdata.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	il := rs.InstrumentationLibrarySpans().AppendEmpty()
+	il.InstrumentationLibrary().SetName("name")
+	il.InstrumentationLibrary().SetVersion("version")
+	il.Spans().AppendEmpty().SetName("testSpan")
+	return td
+}()
 
 var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibrarySpans":[{"instrumentationLibrary":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
 
-var metricsOTLP = &otlpcollectormetrics.ExportMetricsServiceRequest{
-	ResourceMetrics: []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: otlpresource.Resource{
-				Attributes: []otlpcommon.KeyValue{
-					{
-						Key:   conventions.AttributeHostName,
-						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
-					},
-				},
-			},
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: otlpcommon.InstrumentationLibrary{
-						Name:    "name",
-						Version: "version",
-					},
-					Metrics: []*otlpmetrics.Metric{
-						{
-							Name: "testMetric",
-						},
-					},
-				},
-			},
-		},
-	},
-}
+var metricsOTLP = func() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	il := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	il.InstrumentationLibrary().SetName("name")
+	il.InstrumentationLibrary().SetVersion("version")
+	il.Metrics().AppendEmpty().SetName("testMetric")
+	return md
+}()
 
 var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryMetrics":[{"instrumentationLibrary":{"name":"name","version":"version"},"metrics":[{"name":"testMetric"}]}]}]}`
 
-var logsOTLP = &otlpcollectorlogs.ExportLogsServiceRequest{
-	ResourceLogs: []*otlplogs.ResourceLogs{
-		{
-			Resource: otlpresource.Resource{
-				Attributes: []otlpcommon.KeyValue{
-					{
-						Key:   conventions.AttributeHostName,
-						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
-					},
-				},
-			},
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					InstrumentationLibrary: otlpcommon.InstrumentationLibrary{
-						Name:    "name",
-						Version: "version",
-					},
-					Logs: []*otlplogs.LogRecord{
-						{
-							Name: "testMetric",
-						},
-					},
-				},
-			},
-		},
-	},
-}
+var logsOTLP = func() pdata.Logs {
+	ld := pdata.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	il := rl.InstrumentationLibraryLogs().AppendEmpty()
+	il.InstrumentationLibrary().SetName("name")
+	il.InstrumentationLibrary().SetVersion("version")
+	il.Logs().AppendEmpty().SetName("testMetric")
+	return ld
+}()
 
 var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryLogs":[{"instrumentationLibrary":{"name":"name","version":"version"},"logs":[{"name":"testMetric","body":{},"traceId":"","spanId":""}]}]}]}`
 
 func TestTracesJSON(t *testing.T) {
-	encoder := newJSONEncoder()
-	jsonBuf, err := encoder.EncodeTraces(tracesOTLP)
+	encoder := NewJSONTracesMarshaler()
+	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
 	assert.NoError(t, err)
 
-	decoder := newJSONDecoder()
+	decoder := NewJSONTracesUnmarshaler()
 	var got interface{}
-	got, err = decoder.DecodeTraces(jsonBuf)
+	got, err = decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, tracesOTLP, got)
 }
 
 func TestMetricsJSON(t *testing.T) {
-	encoder := newJSONEncoder()
-	jsonBuf, err := encoder.EncodeMetrics(metricsOTLP)
+	encoder := NewJSONMetricsMarshaler()
+	jsonBuf, err := encoder.MarshalMetrics(metricsOTLP)
 	assert.NoError(t, err)
 
-	decoder := newJSONDecoder()
+	decoder := NewJSONMetricsUnmarshaler()
 	var got interface{}
-	got, err = decoder.DecodeMetrics(jsonBuf)
+	got, err = decoder.UnmarshalMetrics(jsonBuf)
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, metricsOTLP, got)
 }
 
 func TestLogsJSON(t *testing.T) {
-	encoder := newJSONEncoder()
-	jsonBuf, err := encoder.EncodeLogs(logsOTLP)
+	encoder := newJSONMarshaler()
+	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
 	assert.NoError(t, err)
 
-	decoder := newJSONDecoder()
+	decoder := NewJSONLogsUnmarshaler()
 	var got interface{}
-	got, err = decoder.DecodeLogs(jsonBuf)
+	got, err = decoder.UnmarshalLogs(jsonBuf)
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, logsOTLP, got)
 }
 
-func TestTracesJSON_InvalidInterface(t *testing.T) {
-	encoder := newJSONEncoder()
-	_, err := encoder.EncodeTraces(pdata.NewTraces())
-	assert.Error(t, err)
-}
-
-func TestMetricsJSON_InvalidInterface(t *testing.T) {
-	encoder := newJSONEncoder()
-	_, err := encoder.EncodeMetrics(pdata.NewMetrics())
-	assert.Error(t, err)
-}
-
-func TestLogsJSON_InvalidInterface(t *testing.T) {
-	encoder := newJSONEncoder()
-	_, err := encoder.EncodeLogs(pdata.NewLogs())
-	assert.Error(t, err)
-}
-
-func TestTracesJSON_Encode(t *testing.T) {
-	encoder := newJSONEncoder()
-	jsonBuf, err := encoder.EncodeTraces(tracesOTLP)
+func TestTracesJSON_Marshal(t *testing.T) {
+	encoder := NewJSONTracesMarshaler()
+	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
 	assert.NoError(t, err)
 	assert.Equal(t, tracesJSON, string(jsonBuf))
 }
 
-func TestMetricsJSON_Encode(t *testing.T) {
-	encoder := newJSONEncoder()
-	jsonBuf, err := encoder.EncodeMetrics(metricsOTLP)
+func TestMetricsJSON_Marshal(t *testing.T) {
+	encoder := NewJSONMetricsMarshaler()
+	jsonBuf, err := encoder.MarshalMetrics(metricsOTLP)
 	assert.NoError(t, err)
 	assert.Equal(t, metricsJSON, string(jsonBuf))
 }
 
-func TestLogsJSON_Encode(t *testing.T) {
-	encoder := newJSONEncoder()
-	jsonBuf, err := encoder.EncodeLogs(logsOTLP)
+func TestLogsJSON_Marshal(t *testing.T) {
+	encoder := newJSONMarshaler()
+	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
 	assert.NoError(t, err)
 	assert.Equal(t, logsJSON, string(jsonBuf))
 }
