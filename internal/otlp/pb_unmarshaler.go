@@ -19,31 +19,47 @@ import (
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-type pbDecoder struct{}
+type pbUnmarshaler struct{}
 
-func newPbDecoder() *pbDecoder {
-	return &pbDecoder{}
+// NewProtobufTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
+func NewProtobufTracesUnmarshaler() pdata.TracesUnmarshaler {
+	return newPbUnmarshaler()
 }
 
-func (d *pbDecoder) DecodeLogs(buf []byte) (interface{}, error) {
+// NewProtobufMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
+func NewProtobufMetricsUnmarshaler() pdata.MetricsUnmarshaler {
+	return newPbUnmarshaler()
+}
+
+// NewProtobufLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
+func NewProtobufLogsUnmarshaler() pdata.LogsUnmarshaler {
+	return newPbUnmarshaler()
+}
+
+func newPbUnmarshaler() *pbUnmarshaler {
+	return &pbUnmarshaler{}
+}
+
+func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
 	ld := &otlpcollectorlogs.ExportLogsServiceRequest{}
 	err := ld.Unmarshal(buf)
-	return ld, err
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld)), err
 }
 
-func (d *pbDecoder) DecodeMetrics(buf []byte) (interface{}, error) {
+func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 	md := &otlpcollectormetrics.ExportMetricsServiceRequest{}
 	err := md.Unmarshal(buf)
-	return md, err
+	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(md)), err
 }
 
-func (d *pbDecoder) DecodeTraces(buf []byte) (interface{}, error) {
+func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	td := &otlpcollectortrace.ExportTraceServiceRequest{}
 	err := td.Unmarshal(buf)
 	if err == nil {
 		internal.TracesCompatibilityChanges(td)
 	}
-	return td, err
+	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(td)), err
 }

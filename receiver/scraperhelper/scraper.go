@@ -37,27 +37,14 @@ type baseSettings struct {
 // ScraperOption apply changes to internal options.
 type ScraperOption func(*baseSettings)
 
-// BaseScraper is the base interface for scrapers.
-type BaseScraper interface {
+// Scraper is the base interface for scrapers.
+type Scraper interface {
 	component.Component
 
 	// ID returns the scraper id.
 	ID() config.ComponentID
+	Scrape(context.Context, config.ComponentID) (pdata.Metrics, error)
 }
-
-// MetricsScraper is an interface for scrapers that scrape metrics.
-type MetricsScraper interface {
-	BaseScraper
-	Scrape(context.Context, config.ComponentID) (pdata.MetricSlice, error)
-}
-
-// ResourceMetricsScraper is an interface for scrapers that scrape resource metrics.
-type ResourceMetricsScraper interface {
-	BaseScraper
-	Scrape(context.Context, config.ComponentID) (pdata.ResourceMetricsSlice, error)
-}
-
-var _ BaseScraper = (*baseScraper)(nil)
 
 type baseScraper struct {
 	component.Component
@@ -87,7 +74,7 @@ type metricsScraper struct {
 	ScrapeMetrics
 }
 
-var _ MetricsScraper = (*metricsScraper)(nil)
+var _ Scraper = (*metricsScraper)(nil)
 
 // NewMetricsScraper creates a Scraper that calls Scrape at the specified
 // collection interval, reports observability information, and passes the
@@ -96,7 +83,7 @@ func NewMetricsScraper(
 	name string,
 	scrape ScrapeMetrics,
 	options ...ScraperOption,
-) MetricsScraper {
+) Scraper {
 	set := &baseSettings{}
 	for _, op := range options {
 		op(set)
@@ -113,7 +100,7 @@ func NewMetricsScraper(
 	return ms
 }
 
-func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.MetricSlice, error) {
+func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
 	ctx = obsreport.ScraperContext(ctx, receiverID, ms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: ms.ID()})
 	ctx = scrp.StartMetricsOp(ctx)
@@ -122,8 +109,12 @@ func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.Component
 	if err == nil {
 		count = metrics.Len()
 	}
+	md := pdata.NewMetrics()
+	if metrics.Len() > 0 {
+		metrics.MoveAndAppendTo(md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	}
 	scrp.EndMetricsOp(ctx, count, err)
-	return metrics, err
+	return md, err
 }
 
 type resourceMetricsScraper struct {
@@ -131,7 +122,7 @@ type resourceMetricsScraper struct {
 	ScrapeResourceMetrics
 }
 
-var _ ResourceMetricsScraper = (*resourceMetricsScraper)(nil)
+var _ Scraper = (*resourceMetricsScraper)(nil)
 
 // NewResourceMetricsScraper creates a Scraper that calls Scrape at the
 // specified collection interval, reports observability information, and
@@ -140,7 +131,7 @@ func NewResourceMetricsScraper(
 	id config.ComponentID,
 	scrape ScrapeResourceMetrics,
 	options ...ScraperOption,
-) ResourceMetricsScraper {
+) Scraper {
 	set := &baseSettings{}
 	for _, op := range options {
 		op(set)
@@ -157,7 +148,7 @@ func NewResourceMetricsScraper(
 	return rms
 }
 
-func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.ResourceMetricsSlice, error) {
+func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
 	ctx = obsreport.ScraperContext(ctx, receiverID, rms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: rms.ID()})
 	ctx = scrp.StartMetricsOp(ctx)
@@ -166,8 +157,14 @@ func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.
 	if err == nil {
 		count = metricCount(resourceMetrics)
 	}
+
+	md := pdata.NewMetrics()
+	if resourceMetrics.Len() > 0 {
+		resourceMetrics.MoveAndAppendTo(md.ResourceMetrics())
+	}
+
 	scrp.EndMetricsOp(ctx, count, err)
-	return resourceMetrics, err
+	return md, err
 }
 
 func metricCount(resourceMetrics pdata.ResourceMetricsSlice) int {

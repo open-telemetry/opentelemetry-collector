@@ -38,26 +38,17 @@ func TestSingleJSONV1BatchToTraces(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	got, err := jsonDecoder{ParseStringTags: false}.DecodeTraces(blob)
+	td, err := NewJSONTracesUnmarshaler(false).UnmarshalTraces(blob)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
-
-	td := got.([]traceData)
-	spanCount := 0
-
-	for _, data := range td {
-		spanCount += len(data.Spans)
-	}
-
-	assert.Equal(t, 5, spanCount)
+	assert.Equal(t, 5, td.SpanCount())
 }
 
 func TestErrorSpanToTraces(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_error_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	got, err := jsonDecoder{ParseStringTags: false}.DecodeTraces(blob)
+	_, err = NewJSONTracesUnmarshaler(false).UnmarshalTraces(blob)
 	assert.Error(t, err, "Should have generated error")
-	assert.Nil(t, got)
 }
 
 func Test_hexIDToOCID(t *testing.T) {

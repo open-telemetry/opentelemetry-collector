@@ -19,33 +19,50 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 
+	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-type jsonDecoder struct {
+type jsonUnmarshaler struct {
 	delegate jsonpb.Unmarshaler
 }
 
-func newJSONDecoder() *jsonDecoder {
-	return &jsonDecoder{delegate: jsonpb.Unmarshaler{}}
+// NewJSONTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshals from OTLP json bytes.
+func NewJSONTracesUnmarshaler() pdata.TracesUnmarshaler {
+	return newJSONUnmarshaler()
 }
 
-func (d *jsonDecoder) DecodeLogs(buf []byte) (interface{}, error) {
+// NewJSONMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshals from OTLP json bytes.
+func NewJSONMetricsUnmarshaler() pdata.MetricsUnmarshaler {
+	return newJSONUnmarshaler()
+}
+
+// NewJSONLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshals from OTLP json bytes.
+func NewJSONLogsUnmarshaler() pdata.LogsUnmarshaler {
+	return newJSONUnmarshaler()
+}
+
+func newJSONUnmarshaler() *jsonUnmarshaler {
+	return &jsonUnmarshaler{delegate: jsonpb.Unmarshaler{}}
+}
+
+func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
 	ld := &otlpcollectorlogs.ExportLogsServiceRequest{}
 	err := d.delegate.Unmarshal(bytes.NewReader(buf), ld)
-	return ld, err
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld)), err
 }
 
-func (d *jsonDecoder) DecodeMetrics(buf []byte) (interface{}, error) {
+func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 	md := &otlpcollectormetrics.ExportMetricsServiceRequest{}
 	err := d.delegate.Unmarshal(bytes.NewReader(buf), md)
-	return md, err
+	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(md)), err
 }
 
-func (d *jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
+func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	td := &otlpcollectortrace.ExportTraceServiceRequest{}
 	err := d.delegate.Unmarshal(bytes.NewReader(buf), td)
-	return td, err
+	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(td)), err
 }

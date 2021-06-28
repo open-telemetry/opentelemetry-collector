@@ -44,7 +44,7 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	logger *zap.Logger,
 	config internal.Config,
-) (scraperhelper.MetricsScraper, error) {
+) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
 	s := newLoadScraper(ctx, logger, cfg)
 

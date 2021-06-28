@@ -40,28 +40,31 @@ var (
 	msgZipkinV1SpanIDError        = "zipkinV1 span id"
 	msgZipkinV1ParentIDError      = "zipkinV1 span parentId"
 	// Generic hex to ID conversion errors
-	errHexTraceIDWrongLen                     = errors.New("hex traceId span has wrong length (expected 16 or 32)")
-	errHexTraceIDParsing                      = errors.New("failed to parse hex traceId")
-	errHexTraceIDZero                         = errors.New("traceId is zero")
-	errHexIDWrongLen                          = errors.New("hex Id has wrong length (expected 16)")
-	errHexIDParsing                           = errors.New("failed to parse hex Id")
-	errHexIDZero                              = errors.New("ID is zero")
-	_                     pdata.TracesDecoder = (*jsonDecoder)(nil)
+	errHexTraceIDWrongLen = errors.New("hex traceId span has wrong length (expected 16 or 32)")
+	errHexTraceIDParsing  = errors.New("failed to parse hex traceId")
+	errHexTraceIDZero     = errors.New("traceId is zero")
+	errHexIDWrongLen      = errors.New("hex Id has wrong length (expected 16)")
+	errHexIDParsing       = errors.New("failed to parse hex Id")
+	errHexIDZero          = errors.New("ID is zero")
 )
 
-type jsonDecoder struct {
+type jsonUnmarshaler struct {
 	// ParseStringTags should be set to true if tags should be converted to numbers when possible.
 	ParseStringTags bool
 }
 
-// DecodeTraces from JSON bytes.
-func (j jsonDecoder) DecodeTraces(buf []byte) (interface{}, error) {
-	return v1JSONBatchToOCProto(buf, j.ParseStringTags)
+// UnmarshalTraces from JSON bytes.
+func (j jsonUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
+	tds, err := v1JSONBatchToOCProto(buf, j.ParseStringTags)
+	if err != nil {
+		return pdata.Traces{}, err
+	}
+	return toTraces(tds)
 }
 
 // NewJSONTracesUnmarshaler returns an unmarshaler for Zipkin JSON.
 func NewJSONTracesUnmarshaler(parseStringTags bool) pdata.TracesUnmarshaler {
-	return pdata.NewTracesUnmarshaler(jsonDecoder{ParseStringTags: parseStringTags}, toTranslator{})
+	return jsonUnmarshaler{ParseStringTags: parseStringTags}
 }
 
 // Trace translation from Zipkin V1 is a bit of special case since there is no model

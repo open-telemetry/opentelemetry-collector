@@ -22,18 +22,18 @@ import (
 
 func TestProtobufLogsUnmarshaler_error(t *testing.T) {
 	p := NewProtobufLogsUnmarshaler()
-	_, err := p.Unmarshal([]byte("+$%"))
+	_, err := p.UnmarshalLogs([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestProtobufMetricsUnmarshaler_error(t *testing.T) {
 	p := NewProtobufMetricsUnmarshaler()
-	_, err := p.Unmarshal([]byte("+$%"))
+	_, err := p.UnmarshalMetrics([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestProtobufTracesUnmarshaler_error(t *testing.T) {
 	p := NewProtobufTracesUnmarshaler()
-	_, err := p.Unmarshal([]byte("+$%"))
+	_, err := p.UnmarshalTraces([]byte("+$%"))
 	assert.Error(t, err)
 }

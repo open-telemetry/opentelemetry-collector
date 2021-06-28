@@ -290,7 +290,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		scrapeMetricsChs[i] = make(chan int)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddMetricsScraper(NewMetricsScraper("scraper", tsm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddScraper(NewMetricsScraper("scraper", tsm.scrape, scraperOptions...)))
 	}
 
 	for i := 0; i < test.resourceScrapers; i++ {
@@ -308,7 +308,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		testScrapeResourceMetricsChs[i] = make(chan int)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
@@ -430,8 +430,8 @@ func TestSingleScrapePerTick(t *testing.T) {
 		cfg,
 		zap.NewNop(),
 		new(consumertest.MetricsSink),
-		AddMetricsScraper(NewMetricsScraper("", tsm.scrape)),
-		AddResourceMetricsScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
+		AddScraper(NewMetricsScraper("", tsm.scrape)),
+		AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)

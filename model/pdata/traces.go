@@ -52,9 +52,9 @@ type ToTracesTranslator interface {
 
 // TracesMarshaler marshals pdata.Traces into bytes.
 type TracesMarshaler interface {
-	// Marshal the given pdata.Traces into bytes.
+	// MarshalTraces the given pdata.Traces into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
-	Marshal(td Traces) ([]byte, error)
+	MarshalTraces(td Traces) ([]byte, error)
 }
 
 type tracesMarshaler struct {
@@ -70,8 +70,8 @@ func NewTracesMarshaler(encoder TracesEncoder, translator FromTracesTranslator) 
 	}
 }
 
-// Marshal pdata.Traces into bytes.
-func (t *tracesMarshaler) Marshal(td Traces) ([]byte, error) {
+// MarshalTraces pdata.Traces into bytes.
+func (t *tracesMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	model, err := t.translator.FromTraces(td)
 	if err != nil {
 		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
@@ -85,9 +85,9 @@ func (t *tracesMarshaler) Marshal(td Traces) ([]byte, error) {
 
 // TracesUnmarshaler unmarshalls bytes into pdata.Traces.
 type TracesUnmarshaler interface {
-	// Unmarshal the given bytes into pdata.Traces.
+	// UnmarshalTraces the given bytes into pdata.Traces.
 	// If the error is not nil, the returned pdata.Traces cannot be used.
-	Unmarshal(buf []byte) (Traces, error)
+	UnmarshalTraces(buf []byte) (Traces, error)
 }
 
 type tracesUnmarshaler struct {
@@ -103,8 +103,8 @@ func NewTracesUnmarshaler(decoder TracesDecoder, translator ToTracesTranslator) 
 	}
 }
 
-// Unmarshal bytes into pdata.Traces. On error pdata.Traces is invalid.
-func (t *tracesUnmarshaler) Unmarshal(buf []byte) (Traces, error) {
+// UnmarshalTraces bytes into pdata.Traces. On error pdata.Traces is invalid.
+func (t *tracesUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	model, err := t.decoder.DecodeTraces(buf)
 	if err != nil {
 		return Traces{}, fmt.Errorf("unmarshal failed: %w", err)

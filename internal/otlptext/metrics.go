@@ -25,8 +25,8 @@ func NewTextMetricsMarshaler() pdata.MetricsMarshaler {
 
 type metricsMarshaler struct{}
 
-// Marshal data to text.
-func (metricsMarshaler) Marshal(md pdata.Metrics) ([]byte, error) {
+// MarshalMetrics pdata.Metrics to OTLP text.
+func (metricsMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
 	buf := dataBuffer{}
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {

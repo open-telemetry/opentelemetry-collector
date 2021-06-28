@@ -40,7 +40,7 @@ func TestFileTracesExporter(t *testing.T) {
 	unmarshaler := otlp.NewJSONTracesUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
-	got, err := unmarshaler.Unmarshal(buf)
+	got, err := unmarshaler.UnmarshalTraces(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, td, got)
 }
@@ -68,7 +68,7 @@ func TestFileMetricsExporter(t *testing.T) {
 	unmarshaler := otlp.NewJSONMetricsUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
-	got, err := unmarshaler.Unmarshal(buf)
+	got, err := unmarshaler.UnmarshalMetrics(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, md, got)
 }
@@ -96,7 +96,7 @@ func TestFileLogsExporter(t *testing.T) {
 	unmarshaler := otlp.NewJSONLogsUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
-	got, err := unmarshaler.Unmarshal(buf)
+	got, err := unmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, ld, got)
 }

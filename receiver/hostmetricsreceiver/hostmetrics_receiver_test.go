@@ -213,32 +213,32 @@ type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 
 func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, internal.Config) (scraperhelper.MetricsScraper, error) {
+func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, internal.Config) (scraperhelper.Scraper, error) {
 	args := m.MethodCalled("CreateMetricsScraper")
-	return args.Get(0).(scraperhelper.MetricsScraper), args.Error(1)
+	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
 
 func (m *mockScraper) ID() config.ComponentID                      { return config.NewID("") }
 func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockScraper) Scrape(context.Context, config.ComponentID) (pdata.MetricSlice, error) {
-	return pdata.NewMetricSlice(), errors.New("err1")
+func (m *mockScraper) Scrape(context.Context, config.ComponentID) (pdata.Metrics, error) {
+	return pdata.NewMetrics(), errors.New("err1")
 }
 
 type mockResourceFactory struct{ mock.Mock }
 type mockResourceScraper struct{ mock.Mock }
 
 func (m *mockResourceFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockResourceFactory) CreateResourceMetricsScraper(context.Context, *zap.Logger, internal.Config) (scraperhelper.ResourceMetricsScraper, error) {
+func (m *mockResourceFactory) CreateResourceMetricsScraper(context.Context, *zap.Logger, internal.Config) (scraperhelper.Scraper, error) {
 	args := m.MethodCalled("CreateResourceMetricsScraper")
-	return args.Get(0).(scraperhelper.ResourceMetricsScraper), args.Error(1)
+	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
 
 func (m *mockResourceScraper) ID() config.ComponentID                      { return config.NewID("") }
 func (m *mockResourceScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockResourceScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockResourceScraper) Scrape(context.Context, config.ComponentID) (pdata.ResourceMetricsSlice, error) {
-	return pdata.NewResourceMetricsSlice(), errors.New("err2")
+func (m *mockResourceScraper) Scrape(context.Context, config.ComponentID) (pdata.Metrics, error) {
+	return pdata.NewMetrics(), errors.New("err2")
 }
 
 func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {

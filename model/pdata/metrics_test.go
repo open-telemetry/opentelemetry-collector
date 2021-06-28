@@ -45,7 +45,7 @@ func TestMetricsMarshal_TranslationError(t *testing.T) {
 
 	translator.On("FromMetrics", md).Return(nil, errors.New("translation failed"))
 
-	_, err := mm.Marshal(md)
+	_, err := mm.MarshalMetrics(md)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
 }
@@ -61,7 +61,7 @@ func TestMetricsMarshal_SerializeError(t *testing.T) {
 	translator.On("FromMetrics", md).Return(expectedModel, nil)
 	encoder.On("EncodeMetrics", expectedModel).Return(nil, errors.New("serialization failed"))
 
-	_, err := mm.Marshal(md)
+	_, err := mm.MarshalMetrics(md)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "marshal failed: serialization failed")
 }
@@ -78,7 +78,7 @@ func TestMetricsMarshal_Encode(t *testing.T) {
 	translator.On("FromMetrics", expectedMetrics).Return(expectedModel, nil)
 	encoder.On("EncodeMetrics", expectedModel).Return(expectedBytes, nil)
 
-	actualBytes, err := mm.Marshal(expectedMetrics)
+	actualBytes, err := mm.MarshalMetrics(expectedMetrics)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedBytes, actualBytes)
 }
@@ -93,7 +93,7 @@ func TestMetricsUnmarshal_EncodingError(t *testing.T) {
 
 	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, errors.New("decode failed"))
 
-	_, err := mu.Unmarshal(expectedBytes)
+	_, err := mu.UnmarshalMetrics(expectedBytes)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "unmarshal failed: decode failed")
 }
@@ -109,7 +109,7 @@ func TestMetricsUnmarshal_TranslationError(t *testing.T) {
 	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
 	translator.On("ToMetrics", expectedModel).Return(NewMetrics(), errors.New("translation failed"))
 
-	_, err := mu.Unmarshal(expectedBytes)
+	_, err := mu.UnmarshalMetrics(expectedBytes)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
 }
@@ -126,7 +126,7 @@ func TestMetricsUnmarshal_Decode(t *testing.T) {
 	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
 	translator.On("ToMetrics", expectedModel).Return(expectedMetrics, nil)
 
-	actualMetrics, err := mu.Unmarshal(expectedBytes)
+	actualMetrics, err := mu.UnmarshalMetrics(expectedBytes)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedMetrics, actualMetrics)
 }
