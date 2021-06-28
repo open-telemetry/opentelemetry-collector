@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -54,15 +54,15 @@ const (
 var receiverID = config.NewIDWithName("otlp", "log")
 
 // Export implements the service Export logs func.
-func (r *Receiver) Export(ctx context.Context, ld pdata.Logs) (pdatagrpc.LogsResponse, error) {
+func (r *Receiver) Export(ctx context.Context, ld pdata.Logs) (otlpgrpc.LogsResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.id, receiverTransport)
 	err := r.sendToNextConsumer(ctxWithReceiverName, ld)
 	if err != nil {
-		return pdatagrpc.LogsResponse{}, err
+		return otlpgrpc.LogsResponse{}, err
 	}
 
-	return pdatagrpc.NewLogsResponse(), nil
+	return otlpgrpc.NewLogsResponse(), nil
 }
 
 func (r *Receiver) sendToNextConsumer(ctx context.Context, ld pdata.Logs) error {
