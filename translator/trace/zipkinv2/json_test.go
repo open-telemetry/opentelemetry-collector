@@ -18,52 +18,40 @@ import (
 	"io/ioutil"
 	"testing"
 
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestJSONDecoder_DecodeTraces(t *testing.T) {
+func TestJSONUnmarshaler_UnmarshalTraces(t *testing.T) {
 	data, err := ioutil.ReadFile("testdata/zipkin_v2_single.json")
 	require.NoError(t, err)
-	decoder := jsonDecoder{}
-	spans, err := decoder.DecodeTraces(data)
+	decoder := NewJSONTracesUnmarshaler(false)
+	td, err := decoder.UnmarshalTraces(data)
 	assert.NoError(t, err)
-	assert.NotNil(t, spans)
-	assert.IsType(t, []*zipkinmodel.SpanModel{}, spans)
+	assert.Equal(t, 1, td.SpanCount())
 }
 
-func TestJSONDecoder_DecodeTracesError(t *testing.T) {
-	decoder := jsonDecoder{}
-	spans, err := decoder.DecodeTraces([]byte("{"))
+func TestJSONUnmarshaler_DecodeTracesError(t *testing.T) {
+	decoder := NewJSONTracesUnmarshaler(false)
+	_, err := decoder.UnmarshalTraces([]byte("{"))
 	assert.Error(t, err)
-	assert.Nil(t, spans)
 }
 
 func TestJSONEncoder_EncodeTraces(t *testing.T) {
-	encoder := jsonEncoder{}
-	buf, err := encoder.EncodeTraces(generateSpanErrorTags())
+	marshaler := NewJSONTracesMarshaler()
+	buf, err := marshaler.MarshalTraces(generateTraceSingleSpanErrorStatus())
 	assert.NoError(t, err)
 	assert.Greater(t, len(buf), 1)
 }
 
 func TestJSONEncoder_EncodeTracesError(t *testing.T) {
-	encoder := jsonEncoder{}
-	buf, err := encoder.EncodeTraces(nil)
+	invalidTD := pdata.NewTraces()
+	// Add one span with empty trace ID.
+	invalidTD.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	marshaler := NewJSONTracesMarshaler()
+	buf, err := marshaler.MarshalTraces(invalidTD)
 	assert.Error(t, err)
 	assert.Nil(t, buf)
-}
-
-func TestNewJSONTracesUnmarshaler(t *testing.T) {
-	m := NewJSONTracesUnmarshaler(false)
-	assert.NotNil(t, m)
-	assert.Implements(t, (*pdata.TracesUnmarshaler)(nil), m)
-}
-
-func TestNewJSONTracesMarshaler(t *testing.T) {
-	m := NewJSONTracesMarshaler()
-	assert.NotNil(t, m)
-	assert.Implements(t, (*pdata.TracesMarshaler)(nil), m)
 }

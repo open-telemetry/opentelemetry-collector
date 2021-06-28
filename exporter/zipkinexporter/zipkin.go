@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
@@ -74,11 +73,10 @@ func (ze *zipkinExporter) start(_ context.Context, host component.Host) (err err
 }
 
 func (ze *zipkinExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	tbatch, err := translator.FromTraces(td)
+	spans, err := translator.FromTraces(td)
 	if err != nil {
 		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}
-	spans := tbatch.([]*zipkinmodel.SpanModel)
 
 	body, err := ze.serializer.Serialize(spans)
 	if err != nil {

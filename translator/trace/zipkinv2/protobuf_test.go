@@ -15,63 +15,36 @@
 package zipkinv2
 
 import (
-	"io/ioutil"
 	"testing"
 
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestProtobufDecoder_DecodeTraces(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/zipkin_v2_single.json")
-	require.NoError(t, err)
-	decoder := jsonDecoder{}
-	spans, err := decoder.DecodeTraces(data)
+func TestProtobufMarshalUnmarshal(t *testing.T) {
+	pb, err := NewProtobufTracesMarshaler().MarshalTraces(generateTraceSingleSpanErrorStatus())
 	require.NoError(t, err)
 
-	pb, err := zipkin_proto3.SpanSerializer{}.Serialize(spans.([]*zipkinmodel.SpanModel))
-	require.NoError(t, err)
-
-	pbDecoder := protobufDecoder{DebugWasSet: false}
-	pbSpans, err := pbDecoder.DecodeTraces(pb)
+	pbUnmarshaler := protobufUnmarshaler{debugWasSet: false}
+	td, err := pbUnmarshaler.UnmarshalTraces(pb)
 	assert.NoError(t, err)
-	assert.IsType(t, []*zipkinmodel.SpanModel{}, pbSpans)
-	assert.Len(t, pbSpans, 1)
+	assert.Equal(t, generateTraceSingleSpanErrorStatus(), td)
 }
 
-func TestProtobufDecoder_DecodeTracesError(t *testing.T) {
-	decoder := protobufDecoder{DebugWasSet: false}
-	spans, err := decoder.DecodeTraces([]byte("{"))
+func TestProtobuf_UnmarshalTracesError(t *testing.T) {
+	decoder := protobufUnmarshaler{debugWasSet: false}
+	_, err := decoder.UnmarshalTraces([]byte("{"))
 	assert.Error(t, err)
-	assert.Nil(t, spans)
 }
 
-func TestProtobufEncoder_EncodeTraces(t *testing.T) {
-	encoder := protobufEncoder{}
-	buf, err := encoder.EncodeTraces(generateSpanErrorTags())
-	assert.NoError(t, err)
-	assert.Greater(t, len(buf), 1)
-}
-
-func TestProtobufEncoder_EncodeTracesError(t *testing.T) {
-	encoder := protobufEncoder{}
-	buf, err := encoder.EncodeTraces(nil)
+func TestProtobuf_MarshalTracesError(t *testing.T) {
+	invalidTD := pdata.NewTraces()
+	// Add one span with empty trace ID.
+	invalidTD.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	marshaler := NewProtobufTracesMarshaler()
+	buf, err := marshaler.MarshalTraces(invalidTD)
 	assert.Nil(t, buf)
 	assert.Error(t, err)
-}
-
-func TestNewProtobufTracesUnmarshaler(t *testing.T) {
-	m := NewProtobufTracesUnmarshaler(false, false)
-	assert.NotNil(t, m)
-	assert.Implements(t, (*pdata.TracesUnmarshaler)(nil), m)
-}
-
-func TestNewProtobufTracesMarshaler(t *testing.T) {
-	m := NewProtobufTracesMarshaler()
-	assert.NotNil(t, m)
-	assert.Implements(t, (*pdata.TracesMarshaler)(nil), m)
 }
