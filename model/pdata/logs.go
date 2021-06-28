@@ -52,9 +52,9 @@ type ToLogsTranslator interface {
 
 // LogsMarshaler marshals pdata.Logs into bytes.
 type LogsMarshaler interface {
-	// Marshal the given pdata.Logs into bytes.
+	// MarshalLogs the given pdata.Logs into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
-	Marshal(td Logs) ([]byte, error)
+	MarshalLogs(td Logs) ([]byte, error)
 }
 
 type logsMarshaler struct {
@@ -70,8 +70,8 @@ func NewLogsMarshaler(encoder LogsEncoder, translator FromLogsTranslator) LogsMa
 	}
 }
 
-// Marshal pdata.Logs into bytes.
-func (t *logsMarshaler) Marshal(td Logs) ([]byte, error) {
+// MarshalLogs pdata.Logs into bytes.
+func (t *logsMarshaler) MarshalLogs(td Logs) ([]byte, error) {
 	model, err := t.translator.FromLogs(td)
 	if err != nil {
 		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
@@ -85,9 +85,9 @@ func (t *logsMarshaler) Marshal(td Logs) ([]byte, error) {
 
 // LogsUnmarshaler unmarshalls bytes into pdata.Logs.
 type LogsUnmarshaler interface {
-	// Unmarshal the given bytes into pdata.Logs.
+	// UnmarshalLogs the given bytes into pdata.Logs.
 	// If the error is not nil, the returned pdata.Logs cannot be used.
-	Unmarshal(buf []byte) (Logs, error)
+	UnmarshalLogs(buf []byte) (Logs, error)
 }
 
 type logsUnmarshaler struct {
@@ -103,8 +103,8 @@ func NewLogsUnmarshaler(decoder LogsDecoder, translator ToLogsTranslator) LogsUn
 	}
 }
 
-// Unmarshal bytes into pdata.Logs. On error pdata.Logs is invalid.
-func (t *logsUnmarshaler) Unmarshal(buf []byte) (Logs, error) {
+// UnmarshalLogs bytes into pdata.Logs. On error pdata.Logs is invalid.
+func (t *logsUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	model, err := t.decoder.DecodeLogs(buf)
 	if err != nil {
 		return Logs{}, fmt.Errorf("unmarshal failed: %w", err)

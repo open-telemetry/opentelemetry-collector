@@ -25,8 +25,8 @@ func NewTextTracesMarshaler() pdata.TracesMarshaler {
 
 type tracesMarshaler struct{}
 
-// Marshal data to text.
-func (tracesMarshaler) Marshal(td pdata.Traces) ([]byte, error) {
+// MarshalTraces pdata.Traces to OTLP text.
+func (tracesMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 	buf := dataBuffer{}
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {

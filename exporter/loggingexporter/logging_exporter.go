@@ -44,7 +44,7 @@ func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 		return nil
 	}
 
-	buf, err := s.tracesMarshaler.Marshal(td)
+	buf, err := s.tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error
 		return nil
 	}
 
-	buf, err := s.metricsMarshaler.Marshal(md)
+	buf, err := s.metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
 		return nil
 	}
 
-	buf, err := s.logsMarshaler.Marshal(ld)
+	buf, err := s.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
 	}

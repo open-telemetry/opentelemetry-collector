@@ -276,17 +276,17 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	// Load the message from the file and count the data points.
 	switch dataType {
 	case config.TracesDataType:
-		if dp.traces, err = otlp.NewJSONTracesUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.traces, err = otlp.NewJSONTracesUnmarshaler().UnmarshalTraces(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
 	case config.MetricsDataType:
-		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().UnmarshalMetrics(buf); err != nil {
 			return nil, err
 		}
 		_, dp.ItemsPerBatch = dp.metrics.MetricAndDataPointCount()
 	case config.LogsDataType:
-		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().UnmarshalLogs(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.logs.LogRecordCount()

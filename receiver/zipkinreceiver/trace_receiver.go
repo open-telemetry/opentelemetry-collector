@@ -113,9 +113,9 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
 func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
-		return zr.v1ThriftUnmarshaler.Unmarshal(blob)
+		return zr.v1ThriftUnmarshaler.UnmarshalTraces(blob)
 	}
-	return zr.v1JSONUnmarshaler.Unmarshal(blob)
+	return zr.v1JSONUnmarshaler.UnmarshalTraces(blob)
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
@@ -137,7 +137,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 		}
 	}
 
-	return unmarshaler.Unmarshal(blob)
+	return unmarshaler.UnmarshalTraces(blob)
 }
 
 // Shutdown tells the receiver that should stop reception,

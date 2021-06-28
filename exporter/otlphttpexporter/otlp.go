@@ -100,7 +100,7 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	request, err := tracesMarshaler.Marshal(td)
+	request, err := tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -109,7 +109,7 @@ func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
-	request, err := metricsMarshaler.Marshal(md)
+	request, err := metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -117,7 +117,7 @@ func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 }
 
 func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
-	request, err := logsMarshaler.Marshal(ld)
+	request, err := logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}

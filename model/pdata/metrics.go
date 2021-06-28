@@ -52,9 +52,9 @@ type ToMetricsTranslator interface {
 
 // MetricsMarshaler marshals pdata.Metrics into bytes.
 type MetricsMarshaler interface {
-	// Marshal the given pdata.Metrics into bytes.
+	// MarshalMetrics the given pdata.Metrics into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
-	Marshal(td Metrics) ([]byte, error)
+	MarshalMetrics(td Metrics) ([]byte, error)
 }
 
 type metricsMarshaler struct {
@@ -70,8 +70,8 @@ func NewMetricsMarshaler(encoder MetricsEncoder, translator FromMetricsTranslato
 	}
 }
 
-// Marshal pdata.Metrics into bytes.
-func (t *metricsMarshaler) Marshal(td Metrics) ([]byte, error) {
+// MarshalMetrics pdata.Metrics into bytes.
+func (t *metricsMarshaler) MarshalMetrics(td Metrics) ([]byte, error) {
 	model, err := t.translator.FromMetrics(td)
 	if err != nil {
 		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
@@ -85,9 +85,9 @@ func (t *metricsMarshaler) Marshal(td Metrics) ([]byte, error) {
 
 // MetricsUnmarshaler unmarshalls bytes into pdata.Metrics.
 type MetricsUnmarshaler interface {
-	// Unmarshal the given bytes into pdata.Metrics.
+	// UnmarshalMetrics the given bytes into pdata.Metrics.
 	// If the error is not nil, the returned pdata.Metrics cannot be used.
-	Unmarshal(buf []byte) (Metrics, error)
+	UnmarshalMetrics(buf []byte) (Metrics, error)
 }
 
 type metricsUnmarshaler struct {
@@ -103,8 +103,8 @@ func NewMetricsUnmarshaler(decoder MetricsDecoder, translator ToMetricsTranslato
 	}
 }
 
-// Unmarshal bytes into pdata.Metrics. On error pdata.Metrics is invalid.
-func (t *metricsUnmarshaler) Unmarshal(buf []byte) (Metrics, error) {
+// UnmarshalMetrics bytes into pdata.Metrics. On error pdata.Metrics is invalid.
+func (t *metricsUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	model, err := t.decoder.DecodeMetrics(buf)
 	if err != nil {
 		return Metrics{}, fmt.Errorf("unmarshal failed: %w", err)

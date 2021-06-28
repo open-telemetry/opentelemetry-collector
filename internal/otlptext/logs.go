@@ -25,8 +25,8 @@ func NewTextLogsMarshaler() pdata.LogsMarshaler {
 
 type logsMarshaler struct{}
 
-// Marshal data to text.
-func (logsMarshaler) Marshal(ld pdata.Logs) ([]byte, error) {
+// MarshalLogs pdata.Logs to OTLP text.
+func (logsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 	buf := dataBuffer{}
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {

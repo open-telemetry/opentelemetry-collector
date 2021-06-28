@@ -255,7 +255,7 @@ func TestProtoHttp(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 
 	td := testdata.GenerateTracesOneSpan()
-	traceBytes, err := otlp.NewProtobufTracesMarshaler().Marshal(td)
+	traceBytes, err := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -683,7 +683,7 @@ func TestShutdown(t *testing.T) {
 	}
 	senderHTTP := func(td pdata.Traces) {
 		// Send request via OTLP/HTTP.
-		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().Marshal(td)
+		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
 		if err2 != nil {
 			t.Errorf("Error marshaling protobuf: %v", err2)
 		}
