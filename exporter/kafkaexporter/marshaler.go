@@ -17,7 +17,7 @@ package kafkaexporter
 import (
 	"github.com/Shopify/sarama"
 
-	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
