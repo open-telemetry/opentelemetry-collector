@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🧰 Bug fixes 🧰
+
+- `scraperhelper`: Include the scraper name in log messages (#3487)
+
 ## v0.29.0 Beta
 
 ## 🛑 Breaking changes 🛑
