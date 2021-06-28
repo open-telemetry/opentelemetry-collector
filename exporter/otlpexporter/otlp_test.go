@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -55,14 +55,14 @@ type mockTracesReceiver struct {
 	lastRequest pdata.Traces
 }
 
-func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (pdatagrpc.TracesResponse, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (otlpgrpc.TracesResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return pdatagrpc.NewTracesResponse(), nil
+	return otlpgrpc.NewTracesResponse(), nil
 }
 
 func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
@@ -79,7 +79,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
 	}
 
 	// Now run it as a gRPC server
-	pdatagrpc.RegisterTracesServer(rcv.srv, rcv)
+	otlpgrpc.RegisterTracesServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -92,14 +92,14 @@ type mockLogsReceiver struct {
 	lastRequest pdata.Logs
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (pdatagrpc.LogsResponse, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (otlpgrpc.LogsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(ld.LogRecordCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = ld
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return pdatagrpc.NewLogsResponse(), nil
+	return otlpgrpc.NewLogsResponse(), nil
 }
 
 func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
@@ -116,7 +116,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	pdatagrpc.RegisterLogsServer(rcv.srv, rcv)
+	otlpgrpc.RegisterLogsServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -129,7 +129,7 @@ type mockMetricsReceiver struct {
 	lastRequest pdata.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (pdatagrpc.MetricsResponse, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (otlpgrpc.MetricsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	_, recordCount := md.MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
@@ -137,7 +137,7 @@ func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (pda
 	defer r.mux.Unlock()
 	r.lastRequest = md
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return pdatagrpc.NewMetricsResponse(), nil
+	return otlpgrpc.NewMetricsResponse(), nil
 }
 
 func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {
@@ -154,7 +154,7 @@ func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	pdatagrpc.RegisterMetricsServer(rcv.srv, rcv)
+	otlpgrpc.RegisterMetricsServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()

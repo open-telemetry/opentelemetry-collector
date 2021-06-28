@@ -47,8 +47,8 @@ import (
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/internal/otlp"
-	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
@@ -752,7 +752,7 @@ loop:
 }
 
 func exportTraces(cc *grpc.ClientConn, td pdata.Traces) error {
-	acc := pdatagrpc.NewTracesClient(cc)
+	acc := otlpgrpc.NewTracesClient(cc)
 	_, err := acc.Export(context.Background(), td)
 
 	return err
