@@ -26,7 +26,7 @@ type pdataLogsMarshaler struct {
 }
 
 func (p pdataLogsMarshaler) Marshal(ld pdata.Logs, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.Marshal(ld)
+	bts, err := p.marshaler.MarshalLogs(ld)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ type pdataMetricsMarshaler struct {
 }
 
 func (p pdataMetricsMarshaler) Marshal(ld pdata.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.Marshal(ld)
+	bts, err := p.marshaler.MarshalMetrics(ld)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ type pdataTracesMarshaler struct {
 }
 
 func (p pdataTracesMarshaler) Marshal(td pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.Marshal(td)
+	bts, err := p.marshaler.MarshalTraces(td)
 	if err != nil {
 		return nil, err
 	}

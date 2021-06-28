@@ -69,34 +69,26 @@ func TestLoggingExporterErrors(t *testing.T) {
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")
-	le.tracesMarshaler = &errTracesMarshaler{err: errWant}
-	le.metricsMarshaler = &errMetricsMarshaler{err: errWant}
-	le.logsMarshaler = &errLogsMarshaler{err: errWant}
+	le.tracesMarshaler = &errMarshaler{err: errWant}
+	le.metricsMarshaler = &errMarshaler{err: errWant}
+	le.logsMarshaler = &errMarshaler{err: errWant}
 	assert.Equal(t, errWant, le.pushTraces(context.Background(), pdata.NewTraces()))
 	assert.Equal(t, errWant, le.pushMetrics(context.Background(), pdata.NewMetrics()))
 	assert.Equal(t, errWant, le.pushLogs(context.Background(), pdata.NewLogs()))
 }
 
-type errLogsMarshaler struct {
+type errMarshaler struct {
 	err error
 }
 
-func (e errLogsMarshaler) Marshal(pdata.Logs) ([]byte, error) {
+func (e errMarshaler) MarshalLogs(pdata.Logs) ([]byte, error) {
 	return nil, e.err
 }
 
-type errMetricsMarshaler struct {
-	err error
-}
-
-func (e errMetricsMarshaler) Marshal(pdata.Metrics) ([]byte, error) {
+func (e errMarshaler) MarshalMetrics(pdata.Metrics) ([]byte, error) {
 	return nil, e.err
 }
 
-type errTracesMarshaler struct {
-	err error
-}
-
-func (e errTracesMarshaler) Marshal(pdata.Traces) ([]byte, error) {
+func (e errMarshaler) MarshalTraces(pdata.Traces) ([]byte, error) {
 	return nil, e.err
 }
