@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestMetrics(t *testing.T) {
+func TestMetricsText(t *testing.T) {
 	type args struct {
 		md pdata.Metrics
 	}

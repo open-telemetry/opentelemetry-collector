@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestLogs(t *testing.T) {
+func TestLogsText(t *testing.T) {
 	type args struct {
 		ld pdata.Logs
 	}
