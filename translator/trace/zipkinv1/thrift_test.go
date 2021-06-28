@@ -51,17 +51,9 @@ func TestV1ThriftToTraces(t *testing.T) {
 	require.NoError(t, json.Unmarshal(blob, &zSpans), "failed to unmarshal json test file")
 	thriftBytes := zipkin.SerializeThrift(zSpans)
 
-	got, err := thriftDecoder{}.DecodeTraces(thriftBytes)
+	td, err := thriftUnmarshaler{}.UnmarshalTraces(thriftBytes)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
-
-	td := got.([]traceData)
-	spanCount := 0
-
-	for _, data := range td {
-		spanCount += len(data.Spans)
-	}
-
-	assert.Equal(t, 5, spanCount)
+	assert.Equal(t, 5, td.SpanCount())
 }
 
 func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
