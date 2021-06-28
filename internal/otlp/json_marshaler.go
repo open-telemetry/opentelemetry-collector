@@ -15,35 +15,51 @@
 package otlp
 
 import (
+	"bytes"
+
+	"github.com/gogo/protobuf/jsonpb"
+
+	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // NewJSONTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP json bytes.
 func NewJSONTracesMarshaler() pdata.TracesMarshaler {
-	return pdata.NewTracesMarshaler(newJSONEncoder(), newFromTranslator())
+	return newJSONMarshaler()
 }
 
 // NewJSONMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP json bytes.
 func NewJSONMetricsMarshaler() pdata.MetricsMarshaler {
-	return pdata.NewMetricsMarshaler(newJSONEncoder(), newFromTranslator())
+	return newJSONMarshaler()
 }
 
 // NewJSONLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP json bytes.
 func NewJSONLogsMarshaler() pdata.LogsMarshaler {
-	return pdata.NewLogsMarshaler(newJSONEncoder(), newFromTranslator())
+	return newJSONMarshaler()
 }
 
-// NewProtobufTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
-	return pdata.NewTracesMarshaler(newPbEncoder(), newFromTranslator())
+type jsonMarshaler struct {
+	delegate jsonpb.Marshaler
 }
 
-// NewProtobufMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtobufMetricsMarshaler() pdata.MetricsMarshaler {
-	return pdata.NewMetricsMarshaler(newPbEncoder(), newFromTranslator())
+func newJSONMarshaler() *jsonMarshaler {
+	return &jsonMarshaler{delegate: jsonpb.Marshaler{}}
 }
 
-// NewProtobufLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
-	return pdata.NewLogsMarshaler(newPbEncoder(), newFromTranslator())
+func (e *jsonMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
+	buf := bytes.Buffer{}
+	err := e.delegate.Marshal(&buf, internal.LogsToOtlp(ld.InternalRep()))
+	return buf.Bytes(), err
+}
+
+func (e *jsonMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
+	buf := bytes.Buffer{}
+	err := e.delegate.Marshal(&buf, internal.MetricsToOtlp(md.InternalRep()))
+	return buf.Bytes(), err
+}
+
+func (e *jsonMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
+	buf := bytes.Buffer{}
+	err := e.delegate.Marshal(&buf, internal.TracesToOtlp(td.InternalRep()))
+	return buf.Bytes(), err
 }
