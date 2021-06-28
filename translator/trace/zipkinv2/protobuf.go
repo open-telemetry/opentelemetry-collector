@@ -15,53 +15,51 @@
 package zipkinv2
 
 import (
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-var _ pdata.TracesDecoder = (*protobufDecoder)(nil)
-
-type protobufDecoder struct {
-	// DebugWasSet toggles the Debug field of each Span. It is usually set to true if
+type protobufUnmarshaler struct {
+	// debugWasSet toggles the Debug field of each Span. It is usually set to true if
 	// the "X-B3-Flags" header is set to 1 on the request.
-	DebugWasSet bool
+	debugWasSet bool
+
+	toTranslator ToTranslator
 }
 
-// DecodeTraces from protobuf bytes to zipkin model.
-func (p protobufDecoder) DecodeTraces(buf []byte) (interface{}, error) {
-	spans, err := zipkin_proto3.ParseSpans(buf, p.DebugWasSet)
+// UnmarshalTraces from protobuf bytes.
+func (p protobufUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
+	spans, err := zipkin_proto3.ParseSpans(buf, p.debugWasSet)
+	if err != nil {
+		return pdata.Traces{}, err
+	}
+	return p.toTranslator.ToTraces(spans)
+}
+
+type protobufMarshaler struct {
+	serializer     zipkin_proto3.SpanSerializer
+	fromTranslator FromTranslator
+}
+
+// MarshalTraces to protobuf bytes.
+func (p protobufMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
+	spans, err := p.fromTranslator.FromTraces(td)
 	if err != nil {
 		return nil, err
-	}
-	return spans, nil
-}
-
-var _ pdata.TracesEncoder = (*protobufEncoder)(nil)
-
-type protobufEncoder struct {
-	serializer zipkin_proto3.SpanSerializer
-}
-
-// EncodeTraces to protobuf bytes.
-func (p protobufEncoder) EncodeTraces(mod interface{}) ([]byte, error) {
-	spans, ok := mod.([]*zipkinmodel.SpanModel)
-	if !ok {
-		return nil, pdata.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, mod)
 	}
 	return p.serializer.Serialize(spans)
 }
 
-// NewProtobufTracesUnmarshaler returns an unmarshaler of protobuf bytes.
+// NewProtobufTracesUnmarshaler returns an pdata.TracesUnmarshaler of protobuf bytes.
 func NewProtobufTracesUnmarshaler(debugWasSet, parseStringTags bool) pdata.TracesUnmarshaler {
-	return pdata.NewTracesUnmarshaler(
-		protobufDecoder{DebugWasSet: debugWasSet},
-		ToTranslator{ParseStringTags: parseStringTags},
-	)
+	return protobufUnmarshaler{
+		debugWasSet:  debugWasSet,
+		toTranslator: ToTranslator{ParseStringTags: parseStringTags},
+	}
 }
 
-// NewProtobufTracesMarshaler returns a new marshaler to protobuf bytes.
+// NewProtobufTracesMarshaler returns a new pdata.TracesMarshaler to protobuf bytes.
 func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
-	return pdata.NewTracesMarshaler(protobufEncoder{}, FromTranslator{})
+	return protobufMarshaler{}
 }
