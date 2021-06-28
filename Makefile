@@ -292,7 +292,7 @@ gendependabot:
 # Definitions for ProtoBuf generation.
 
 # The source directory for OTLP ProtoBufs.
-OPENTELEMETRY_PROTO_SRC_DIR=internal/data/opentelemetry-proto
+OPENTELEMETRY_PROTO_SRC_DIR=model/internal/opentelemetry-proto
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
@@ -304,7 +304,7 @@ PROTO_TARGET_GEN_DIR=internal/data/protogen
 PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 
 # Intermediate directory used during generation.
-PROTO_INTERMEDIATE_DIR=internal/data/.patched-otlp-proto
+PROTO_INTERMEDIATE_DIR=model/internal/.patched-otlp-proto
 
 DOCKER_PROTOBUF ?= otel/build-protobuf:0.2.1
 PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
