@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.3.0
-	github.com/Shopify/sarama v1.29.0
+	github.com/Shopify/sarama v1.29.1
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.14.2
@@ -23,7 +23,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/jaegertracing/jaeger v1.23.0
-	github.com/knadh/koanf v1.1.0
+	github.com/knadh/koanf v1.1.1
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.1
@@ -39,7 +39,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
-	github.com/spf13/viper v1.8.0
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible
@@ -47,10 +47,10 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.8.0
 	go.uber.org/zap v1.17.0
-	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273
+	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08
 	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/protobuf v1.27.0
 	gopkg.in/yaml.v2 v2.4.0
 )
