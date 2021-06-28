@@ -15,7 +15,6 @@
 package pdata
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,101 +24,6 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
-
-func TestLogsMarshal_TranslationError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	lm := NewLogsMarshaler(encoder, translator)
-	ld := NewLogs()
-
-	translator.On("FromLogs", ld).Return(nil, errors.New("translation failed"))
-
-	_, err := lm.MarshalLogs(ld)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
-}
-
-func TestLogsMarshal_SerializeError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	lm := NewLogsMarshaler(encoder, translator)
-	ld := NewLogs()
-	expectedModel := struct{}{}
-
-	translator.On("FromLogs", ld).Return(expectedModel, nil)
-	encoder.On("EncodeLogs", expectedModel).Return(nil, errors.New("serialization failed"))
-
-	_, err := lm.MarshalLogs(ld)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "marshal failed: serialization failed")
-}
-
-func TestLogsMarshal_Encode(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	lm := NewLogsMarshaler(encoder, translator)
-	expectedLogs := NewLogs()
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	translator.On("FromLogs", expectedLogs).Return(expectedModel, nil)
-	encoder.On("EncodeLogs", expectedModel).Return(expectedBytes, nil)
-
-	actualBytes, err := lm.MarshalLogs(expectedLogs)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedBytes, actualBytes)
-}
-
-func TestLogsUnmarshal_EncodingError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	lu := NewLogsUnmarshaler(encoder, translator)
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, errors.New("decode failed"))
-
-	_, err := lu.UnmarshalLogs(expectedBytes)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "unmarshal failed: decode failed")
-}
-
-func TestLogsUnmarshal_TranslationError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	lu := NewLogsUnmarshaler(encoder, translator)
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, nil)
-	translator.On("ToLogs", expectedModel).Return(NewLogs(), errors.New("translation failed"))
-
-	_, err := lu.UnmarshalLogs(expectedBytes)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
-}
-
-func TestLogsUnmarshal_Decode(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	lu := NewLogsUnmarshaler(encoder, translator)
-	expectedLogs := NewLogs()
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, nil)
-	translator.On("ToLogs", expectedModel).Return(expectedLogs, nil)
-
-	actualLogs, err := lu.UnmarshalLogs(expectedBytes)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedLogs, actualLogs)
-}
 
 func TestLogRecordCount(t *testing.T) {
 	md := NewLogs()
