@@ -161,22 +161,6 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	assert.EqualValues(t, pdataRS.orig, &gogoprotoRS2)
 }
 
-func TestTracesToFromOtlpProtoBytes(t *testing.T) {
-	send := NewTraces()
-	fillTestResourceSpansSlice(send.ResourceSpans())
-	bytes, err := send.ToOtlpProtoBytes()
-	assert.NoError(t, err)
-
-	recv, err := TracesFromOtlpProtoBytes(bytes)
-	assert.NoError(t, err)
-	assert.EqualValues(t, send, recv)
-}
-
-func TestTracesFromInvalidOtlpProtoBytes(t *testing.T) {
-	_, err := TracesFromOtlpProtoBytes([]byte{0xFF})
-	assert.EqualError(t, err, "unexpected EOF")
-}
-
 func TestTracesClone(t *testing.T) {
 	traces := NewTraces()
 	fillTestResourceSpansSlice(traces.ResourceSpans())
@@ -192,31 +176,5 @@ func BenchmarkTracesClone(b *testing.B) {
 		if clone.ResourceSpans().Len() != traces.ResourceSpans().Len() {
 			b.Fail()
 		}
-	}
-}
-
-func BenchmarkTracesToOtlp(b *testing.B) {
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		buf, err := traces.ToOtlpProtoBytes()
-		require.NoError(b, err)
-		assert.NotEqual(b, 0, len(buf))
-	}
-}
-
-func BenchmarkTracesFromOtlp(b *testing.B) {
-	baseTraces := NewTraces()
-	fillTestResourceSpansSlice(baseTraces.ResourceSpans())
-	buf, err := baseTraces.ToOtlpProtoBytes()
-	require.NoError(b, err)
-	assert.NotEqual(b, 0, len(buf))
-	b.ResetTimer()
-	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		traces, err := TracesFromOtlpProtoBytes(buf)
-		require.NoError(b, err)
-		assert.Equal(b, baseTraces.ResourceSpans().Len(), traces.ResourceSpans().Len())
 	}
 }
