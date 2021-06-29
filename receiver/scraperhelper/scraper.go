@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // ScrapeMetrics scrapes metrics.
@@ -106,12 +107,11 @@ func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.Component
 	ctx = scrp.StartMetricsOp(ctx)
 	metrics, err := ms.ScrapeMetrics(ctx)
 	count := 0
-	if err == nil {
-		count = metrics.Len()
-	}
-	md := pdata.NewMetrics()
-	if metrics.Len() > 0 {
+	md := pdata.Metrics{}
+	if err == nil || scrapererror.IsPartialScrapeError(err) {
+		md = pdata.NewMetrics()
 		metrics.MoveAndAppendTo(md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+		count = md.MetricCount()
 	}
 	scrp.EndMetricsOp(ctx, count, err)
 	return md, err
@@ -153,29 +153,15 @@ func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: rms.ID()})
 	ctx = scrp.StartMetricsOp(ctx)
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
-	count := 0
-	if err == nil {
-		count = metricCount(resourceMetrics)
-	}
 
-	md := pdata.NewMetrics()
-	if resourceMetrics.Len() > 0 {
+	count := 0
+	md := pdata.Metrics{}
+	if err == nil || scrapererror.IsPartialScrapeError(err) {
+		md = pdata.NewMetrics()
 		resourceMetrics.MoveAndAppendTo(md.ResourceMetrics())
+		count = md.MetricCount()
 	}
 
 	scrp.EndMetricsOp(ctx, count, err)
 	return md, err
-}
-
-func metricCount(resourceMetrics pdata.ResourceMetricsSlice) int {
-	count := 0
-
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		ilm := resourceMetrics.At(i).InstrumentationLibraryMetrics()
-		for j := 0; j < ilm.Len(); j++ {
-			count += ilm.At(j).Metrics().Len()
-		}
-	}
-
-	return count
 }

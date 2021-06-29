@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
-
 package iruntime
 
-// TotalMemory returns total available memory for non-linux platforms.
-func TotalMemory() (uint64, error) {
-	return readMemInfo()
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestReadMemInfo(t *testing.T) {
+	vmStat, err := readMemInfo()
+	assert.NoError(t, err)
+	assert.True(t, vmStat > 0)
 }

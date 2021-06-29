@@ -330,7 +330,7 @@ func TestGetDecision(t *testing.T) {
 	t.Cleanup(func() {
 		getMemoryFn = iruntime.TotalMemory
 	})
-	getMemoryFn = func() (int64, error) {
+	getMemoryFn = func() (uint64, error) {
 		return 100 * mibBytes, nil
 	}
 	t.Run("percentage_limit", func(t *testing.T) {
