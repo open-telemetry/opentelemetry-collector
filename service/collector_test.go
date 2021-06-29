@@ -106,7 +106,7 @@ func TestCollector_Start(t *testing.T) {
 
 type mockAppTelemetry struct{}
 
-func (tel *mockAppTelemetry) init(chan<- error, uint64, *zap.Logger) error {
+func (tel *mockAppTelemetry) init(chan<- error, *zap.Logger) error {
 	return nil
 }
 
