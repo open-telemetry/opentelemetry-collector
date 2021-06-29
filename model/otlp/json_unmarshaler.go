@@ -19,10 +19,10 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/model/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

@@ -19,8 +19,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	"go.opentelemetry.io/collector/model/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
