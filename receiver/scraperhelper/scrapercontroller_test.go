@@ -68,7 +68,7 @@ func (ts *testScrapeMetrics) scrape(_ context.Context) (pdata.MetricSlice, error
 	ts.ch <- ts.timesScrapeCalled
 
 	if ts.err != nil {
-		return pdata.NewMetricSlice(), ts.err
+		return pdata.MetricSlice{}, ts.err
 	}
 
 	return singleMetric(), nil
@@ -85,7 +85,7 @@ func (ts *testScrapeResourceMetrics) scrape(_ context.Context) (pdata.ResourceMe
 	ts.ch <- ts.timesScrapeCalled
 
 	if ts.err != nil {
-		return pdata.NewResourceMetricsSlice(), ts.err
+		return pdata.ResourceMetricsSlice{}, ts.err
 	}
 
 	return singleResourceMetric(), nil
