@@ -1,3 +1,3 @@
-[submodule "internal/data/opentelemetry-proto"]
-	path = internal/data/opentelemetry-proto
-	url = git@github.com:open-telemetry/opentelemetry-proto.git
+[submodule "model/internal/opentelemetry-proto"]
+	path = model/internal/opentelemetry-proto
+	url = https://github.com/open-telemetry/opentelemetry-proto
