@@ -455,7 +455,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
-		jr.collectorServer = &http.Server{Handler: nr}
+		jr.collectorServer = jr.config.CollectorHTTPSettings.ToServer(nr)
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
