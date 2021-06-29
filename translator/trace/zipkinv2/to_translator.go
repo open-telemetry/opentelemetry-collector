@@ -15,7 +15,9 @@
 package zipkinv2
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -25,8 +27,6 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
-	"go.opentelemetry.io/collector/internal/data"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -165,7 +165,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 
 func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 	if value, ok := tags[tracetranslator.TagStatusCode]; ok {
-		status.SetCode(pdata.StatusCode(otlptrace.Status_StatusCode_value[value]))
+		status.SetCode(pdata.StatusCode(statusCodeValue[value]))
 		delete(tags, tracetranslator.TagStatusCode)
 		if value, ok := tags[tracetranslator.TagStatusMsg]; ok {
 			status.SetMessage(value)
@@ -222,20 +222,20 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		index++
 
 		// Convert trace id.
-		rawTrace := data.TraceID{}
-		errTrace := rawTrace.UnmarshalJSON([]byte(parts[0]))
+		rawTrace := [16]byte{}
+		errTrace := unmarshalJSON(rawTrace[:], []byte(parts[0]))
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.NewTraceID(rawTrace.Bytes()))
+		link.SetTraceID(pdata.NewTraceID(rawTrace))
 
 		// Convert span id.
-		rawSpan := data.SpanID{}
-		errSpan := rawSpan.UnmarshalJSON([]byte(parts[1]))
+		rawSpan := [8]byte{}
+		errSpan := unmarshalJSON(rawSpan[:], []byte(parts[1]))
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.NewSpanID(rawSpan.Bytes()))
+		link.SetSpanID(pdata.NewSpanID(rawSpan))
 
 		link.SetTraceState(pdata.TraceState(parts[2]))
 
@@ -457,4 +457,33 @@ func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pd
 		dest.SetStartTimestamp(pdata.TimestampFromTime(zspan.Timestamp))
 		dest.SetEndTimestamp(pdata.TimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
 	}
+}
+
+// unmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
+// TODO: Find a way to avoid this duplicate code. Consider to expose this in model/pdata.
+func unmarshalJSON(dst []byte, src []byte) error {
+	if l := len(src); l >= 2 && src[0] == '"' && src[l-1] == '"' {
+		src = src[1 : l-1]
+	}
+	nLen := len(src)
+	if nLen == 0 {
+		return nil
+	}
+
+	if len(dst) != hex.DecodedLen(nLen) {
+		return errors.New("invalid length for ID")
+	}
+
+	_, err := hex.Decode(dst, src)
+	if err != nil {
+		return fmt.Errorf("cannot unmarshal ID from string '%s': %w", string(src), err)
+	}
+	return nil
+}
+
+// TODO: Find a way to avoid this duplicate code. Consider to expose this in model/pdata.
+var statusCodeValue = map[string]int32{
+	"STATUS_CODE_UNSET": 0,
+	"STATUS_CODE_OK":    1,
+	"STATUS_CODE_ERROR": 2,
 }
