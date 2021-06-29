@@ -24,7 +24,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -148,13 +148,7 @@ func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.Span
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
 			continue
 		}
-		pSpan, library := jSpanToInternal(span)
-		ss, found := spansByLibrary[library]
-		if !found {
-			ss = pdata.NewSpanSlice()
-			spansByLibrary[library] = ss
-		}
-		ss.Append(pSpan)
+		jSpanToInternal(span, spansByLibrary)
 	}
 	return spansByLibrary
 }
@@ -163,8 +157,15 @@ type instrumentationLibrary struct {
 	name, version string
 }
 
-func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
-	dest := pdata.NewSpan()
+func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary]pdata.SpanSlice) {
+	il := getInstrumentationLibrary(span)
+	ss, found := spansByLibrary[il]
+	if !found {
+		ss = pdata.NewSpanSlice()
+		spansByLibrary[il] = ss
+	}
+
+	dest := ss.AppendEmpty()
 	dest.SetTraceID(idutils.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
@@ -186,16 +187,6 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 		attrs.Delete(tracetranslator.TagSpanKind)
 	}
 
-	il := instrumentationLibrary{}
-	if libraryName, ok := attrs.Get(conventions.InstrumentationLibraryName); ok {
-		il.name = libraryName.StringVal()
-		attrs.Delete(conventions.InstrumentationLibraryName)
-		if libraryVersion, ok := attrs.Get(conventions.InstrumentationLibraryVersion); ok {
-			il.version = libraryVersion.StringVal()
-			attrs.Delete(conventions.InstrumentationLibraryVersion)
-		}
-	}
-
 	dest.SetTraceState(getTraceStateFromAttrs(attrs))
 
 	// drop the attributes slice if all of them were replaced during translation
@@ -205,8 +196,6 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 
 	jLogsToSpanEvents(span.Logs, dest.Events())
 	jReferencesToSpanLinks(span.References, parentSpanID, dest.Links())
-
-	return dest, il
 }
 
 func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
@@ -377,4 +366,26 @@ func getTraceStateFromAttrs(attrs pdata.AttributeMap) pdata.TraceState {
 		attrs.Delete(tracetranslator.TagW3CTraceState)
 	}
 	return traceState
+}
+
+func getInstrumentationLibrary(span *model.Span) instrumentationLibrary {
+	il := instrumentationLibrary{}
+	if libraryName, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryName); ok {
+		il.name = libraryName
+		if libraryVersion, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryVersion); ok {
+			il.version = libraryVersion
+		}
+	}
+	return il
+}
+
+func getAndDeleteTag(span *model.Span, key string) (string, bool) {
+	for i := range span.Tags {
+		if span.Tags[i].Key == key {
+			value := span.Tags[i].GetVStr()
+			span.Tags = append(span.Tags[:i], span.Tags[i+1:]...)
+			return value, true
+		}
+	}
+	return "", false
 }
