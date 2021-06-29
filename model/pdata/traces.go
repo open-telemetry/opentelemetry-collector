@@ -105,7 +105,7 @@ func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String()
 
 const (
 	// SpanKindUnspecified represents that the SpanKind is unspecified, it MUST NOT be used.
-	SpanKindUnspecified = SpanKind(0)
+	SpanKindUnspecified = SpanKind(otlptrace.Span_SPAN_KIND_UNSPECIFIED)
 	// SpanKindInternal indicates that the span represents an internal operation within an application,
 	// as opposed to an operation happening at the boundaries. Default value.
 	SpanKindInternal = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)

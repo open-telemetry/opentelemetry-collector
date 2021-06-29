@@ -26,7 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -126,19 +125,19 @@ func TestOcSpanKindToInternal(t *testing.T) {
 	tests := []struct {
 		ocAttrs  *octrace.Span_Attributes
 		ocKind   octrace.Span_SpanKind
-		otlpKind otlptrace.Span_SpanKind
+		otlpKind pdata.SpanKind
 	}{
 		{
 			ocKind:   octrace.Span_CLIENT,
-			otlpKind: otlptrace.Span_SPAN_KIND_CLIENT,
+			otlpKind: pdata.SpanKindClient,
 		},
 		{
 			ocKind:   octrace.Span_SERVER,
-			otlpKind: otlptrace.Span_SPAN_KIND_SERVER,
+			otlpKind: pdata.SpanKindServer,
 		},
 		{
 			ocKind:   octrace.Span_SPAN_KIND_UNSPECIFIED,
-			otlpKind: otlptrace.Span_SPAN_KIND_UNSPECIFIED,
+			otlpKind: pdata.SpanKindUnspecified,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -148,7 +147,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_SPAN_KIND_CONSUMER,
+			otlpKind: pdata.SpanKindConsumer,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -158,7 +157,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "producer"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_SPAN_KIND_PRODUCER,
+			otlpKind: pdata.SpanKindProducer,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -168,7 +167,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						IntValue: 123}},
 				},
 			},
-			otlpKind: otlptrace.Span_SPAN_KIND_UNSPECIFIED,
+			otlpKind: pdata.SpanKindUnspecified,
 		},
 		{
 			ocKind: octrace.Span_CLIENT,
@@ -178,7 +177,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_SPAN_KIND_CLIENT,
+			otlpKind: pdata.SpanKindClient,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -188,7 +187,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "internal"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_SPAN_KIND_INTERNAL,
+			otlpKind: pdata.SpanKindInternal,
 		},
 	}
 
