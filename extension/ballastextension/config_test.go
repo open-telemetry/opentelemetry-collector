@@ -45,9 +45,23 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
 			SizeMiB:           123,
+			SizeInPercentage:  20,
 		},
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
 	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+}
+
+func TestLoadInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Extensions[typeStr] = factory
+	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_invalid.yaml"), factories)
+
+	require.NotNil(t, err)
+	assert.Equal(t, err.Error(), "extension \"memory_ballast\" has invalid configuration: size_in_percentage is not in range 0 to 100")
+
 }

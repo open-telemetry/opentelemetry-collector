@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
-
 package iruntime
 
-// TotalMemory returns total available memory for non-linux platforms.
-func TotalMemory() (uint64, error) {
-	return readMemInfo()
+import (
+	"github.com/shirou/gopsutil/mem"
+)
+
+// readMemInfo returns the total memory
+// supports in linux, darwin and windows
+func readMemInfo() (uint64, error) {
+	vmStat, err := mem.VirtualMemory()
+	return vmStat.Total, err
 }
