@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -44,7 +45,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlp"
@@ -326,7 +326,8 @@ func testHTTPProtobufRequest(
 
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-		tmp := &collectortrace.ExportTraceServiceResponse{}
+		// TODO: Parse otlp response here instead of empty proto when pdata allows that.
+		tmp := &types.Empty{}
 		err := tmp.Unmarshal(respBytes)
 		require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
