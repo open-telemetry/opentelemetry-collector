@@ -54,30 +54,10 @@ func MetricsFromInternalRep(wrapper internal.MetricsWrapper) Metrics {
 	return Metrics{orig: internal.MetricsToOtlp(wrapper)}
 }
 
-// MetricsFromOtlpProtoBytes converts the OTLP Collector ExportMetricsServiceRequest
-// ProtoBuf bytes to Metrics.
-//
-// Returns an invalid Metrics instance if error is not nil.
-func MetricsFromOtlpProtoBytes(data []byte) (Metrics, error) {
-	req := otlpcollectormetrics.ExportMetricsServiceRequest{}
-	if err := req.Unmarshal(data); err != nil {
-		return Metrics{}, err
-	}
-	return Metrics{orig: &req}, nil
-}
-
 // InternalRep returns internal representation of the Metrics.
 // Should not be used outside this module.
 func (md Metrics) InternalRep() internal.MetricsWrapper {
 	return internal.MetricsFromOtlp(md.orig)
-}
-
-// ToOtlpProtoBytes converts this Metrics to the OTLP Collector ExportMetricsServiceRequest
-// ProtoBuf bytes.
-//
-// Returns an nil byte-array if error is not nil.
-func (md Metrics) ToOtlpProtoBytes() ([]byte, error) {
-	return md.orig.Marshal()
 }
 
 // Clone returns a copy of MetricData.

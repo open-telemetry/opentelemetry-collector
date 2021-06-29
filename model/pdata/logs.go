@@ -56,31 +56,11 @@ func LogsFromInternalRep(logs internal.LogsWrapper) Logs {
 	return Logs{orig: internal.LogsToOtlp(logs)}
 }
 
-// LogsFromOtlpProtoBytes converts OTLP Collector ExportLogsServiceRequest
-// ProtoBuf bytes to the internal Logs.
-//
-// Returns an invalid Logs instance if error is not nil.
-func LogsFromOtlpProtoBytes(data []byte) (Logs, error) {
-	req := otlpcollectorlog.ExportLogsServiceRequest{}
-	if err := req.Unmarshal(data); err != nil {
-		return Logs{}, err
-	}
-	return Logs{orig: &req}, nil
-}
-
 // InternalRep returns internal representation of the logs. Should not be used outside
 // this module. This is intended to be used only by OTLP exporter and File exporter,
 // which legitimately need to work with OTLP Protobuf structs.
 func (ld Logs) InternalRep() internal.LogsWrapper {
 	return internal.LogsFromOtlp(ld.orig)
-}
-
-// ToOtlpProtoBytes converts this Logs to the OTLP Collector ExportLogsServiceRequest
-// ProtoBuf bytes.
-//
-// Returns an nil byte-array if error is not nil.
-func (ld Logs) ToOtlpProtoBytes() ([]byte, error) {
-	return ld.orig.Marshal()
 }
 
 // Clone returns a copy of Logs.

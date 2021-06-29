@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
@@ -78,22 +77,6 @@ func TestToFromLogProto(t *testing.T) {
 	assert.EqualValues(t, &otlpcollectorlog.ExportLogsServiceRequest{}, ld.orig)
 }
 
-func TestLogsToFromOtlpProtoBytes(t *testing.T) {
-	send := NewLogs()
-	fillTestResourceLogsSlice(send.ResourceLogs())
-	bytes, err := send.ToOtlpProtoBytes()
-	assert.NoError(t, err)
-
-	recv, err := LogsFromOtlpProtoBytes(bytes)
-	assert.NoError(t, err)
-	assert.EqualValues(t, send, recv)
-}
-
-func TestLogsFromInvalidOtlpProtoBytes(t *testing.T) {
-	_, err := LogsFromOtlpProtoBytes([]byte{0xFF})
-	assert.EqualError(t, err, "unexpected EOF")
-}
-
 func TestLogsClone(t *testing.T) {
 	logs := NewLogs()
 	fillTestResourceLogsSlice(logs.ResourceLogs())
@@ -109,31 +92,5 @@ func BenchmarkLogsClone(b *testing.B) {
 		if clone.ResourceLogs().Len() != logs.ResourceLogs().Len() {
 			b.Fail()
 		}
-	}
-}
-
-func BenchmarkLogsToOtlp(b *testing.B) {
-	traces := NewLogs()
-	fillTestResourceLogsSlice(traces.ResourceLogs())
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		buf, err := traces.ToOtlpProtoBytes()
-		require.NoError(b, err)
-		assert.NotEqual(b, 0, len(buf))
-	}
-}
-
-func BenchmarkLogsFromOtlp(b *testing.B) {
-	baseLogs := NewLogs()
-	fillTestResourceLogsSlice(baseLogs.ResourceLogs())
-	buf, err := baseLogs.ToOtlpProtoBytes()
-	require.NoError(b, err)
-	assert.NotEqual(b, 0, len(buf))
-	b.ResetTimer()
-	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		logs, err := LogsFromOtlpProtoBytes(buf)
-		require.NoError(b, err)
-		assert.Equal(b, baseLogs.ResourceLogs().Len(), logs.ResourceLogs().Len())
 	}
 }

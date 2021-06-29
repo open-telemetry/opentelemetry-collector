@@ -50,31 +50,10 @@ func TracesFromInternalRep(wrapper internal.TracesWrapper) Traces {
 	return Traces{orig: internal.TracesToOtlp(wrapper)}
 }
 
-// TracesFromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes to the internal Traces.
-//
-// Returns an invalid Traces instance if error is not nil.
-func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
-	req := otlpcollectortrace.ExportTraceServiceRequest{}
-	if err := req.Unmarshal(data); err != nil {
-		return Traces{}, err
-	}
-	internal.TracesCompatibilityChanges(&req)
-	return Traces{orig: &req}, nil
-}
-
 // InternalRep returns internal representation of the Traces.
 // Should not be used outside this module.
 func (td Traces) InternalRep() internal.TracesWrapper {
 	return internal.TracesFromOtlp(td.orig)
-}
-
-// ToOtlpProtoBytes converts this Traces to the OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes.
-//
-// Returns an nil byte-array if error is not nil.
-func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
-	return td.orig.Marshal()
 }
 
 // Clone returns a copy of Traces.
