@@ -15,7 +15,6 @@
 package pdata
 
 import (
-	"encoding/json"
 	"strconv"
 	"testing"
 
@@ -72,120 +71,67 @@ func TestAttributeValueType(t *testing.T) {
 	assert.EqualValues(t, "ARRAY", AttributeValueTypeArray.String())
 }
 
-func fromVal(v interface{}) AttributeValue {
-	switch val := v.(type) {
-	case string:
-		return NewAttributeValueString(val)
-	case int:
-		return NewAttributeValueInt(int64(val))
-	case float64:
-		return NewAttributeValueDouble(val)
-	case map[string]interface{}:
-		return fromMap(val)
-	case []interface{}:
-		return fromArray(val)
-	}
-	panic("data type is not supported in fromVal()")
-}
-
-func fromMap(v map[string]interface{}) AttributeValue {
-	av := NewAttributeValueMap()
-	m := av.MapVal()
-	for k, v := range v {
-		m.Insert(k, fromVal(v))
-	}
-	m.Sort()
-	return av
-}
-
-func fromJSONMap(jsonStr string) AttributeValue {
-	var src map[string]interface{}
-	err := json.Unmarshal([]byte(jsonStr), &src)
-	if err != nil {
-		panic("Invalid input jsonStr:" + jsonStr)
-	}
-	return fromMap(src)
-}
-
-func assertMapJSON(t *testing.T, expectedJSON string, actualMap AttributeValue) {
-	assert.EqualValues(t, fromJSONMap(expectedJSON).MapVal(), actualMap.MapVal().Sort())
-}
-
 func TestAttributeValueMap(t *testing.T) {
 	m1 := NewAttributeValueMap()
-	assert.EqualValues(t, fromJSONMap(`{}`), m1)
-	assert.EqualValues(t, AttributeValueTypeMap, m1.Type())
-	assert.EqualValues(t, NewAttributeMap(), m1.MapVal())
-	assert.EqualValues(t, 0, m1.MapVal().Len())
+	assert.Equal(t, AttributeValueTypeMap, m1.Type())
+	assert.Equal(t, NewAttributeMap(), m1.MapVal())
+	assert.Equal(t, 0, m1.MapVal().Len())
 
 	m1.MapVal().InsertDouble("double_key", 123)
-	assertMapJSON(t, `{"double_key":123}`, m1)
-	assert.EqualValues(t, 1, m1.MapVal().Len())
-
-	v, exists := m1.MapVal().Get("double_key")
-	require.True(t, exists)
-	assert.EqualValues(t, AttributeValueTypeDouble, v.Type())
-	assert.EqualValues(t, 123, v.DoubleVal())
+	assert.Equal(t, 1, m1.MapVal().Len())
+	got, exists := m1.MapVal().Get("double_key")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueDouble(123), got)
 
 	// Create a second map.
 	m2 := NewAttributeValueMap()
-	assertMapJSON(t, `{}`, m2)
-	assert.EqualValues(t, 0, m2.MapVal().Len())
+	assert.Equal(t, 0, m2.MapVal().Len())
 
 	// Modify the source map that was inserted.
 	m2.MapVal().UpsertString("key_in_child", "somestr")
-	assertMapJSON(t, `{"key_in_child": "somestr"}`, m2)
-	assert.EqualValues(t, 1, m2.MapVal().Len())
+	assert.Equal(t, 1, m2.MapVal().Len())
+	got, exists = m2.MapVal().Get("key_in_child")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueString("somestr"), got)
 
 	// Insert the second map as a child. This should perform a deep copy.
 	m1.MapVal().Insert("child_map", m2)
-	assertMapJSON(t, `{"double_key":123, "child_map": {"key_in_child": "somestr"}}`, m1)
 	assert.EqualValues(t, 2, m1.MapVal().Len())
-
-	// Check that the map was correctly copied.
-	childMap, exists := m1.MapVal().Get("child_map")
-	require.True(t, exists)
-	assert.EqualValues(t, AttributeValueTypeMap, childMap.Type())
-	assert.EqualValues(t, 1, childMap.MapVal().Len())
-
-	v, exists = childMap.MapVal().Get("key_in_child")
-	require.True(t, exists)
-	assert.EqualValues(t, AttributeValueTypeString, v.Type())
-	assert.EqualValues(t, "somestr", v.StringVal())
+	got, exists = m1.MapVal().Get("double_key")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueDouble(123), got)
+	got, exists = m1.MapVal().Get("child_map")
+	assert.True(t, exists)
+	assert.Equal(t, m2, got)
 
 	// Modify the source map m2 that was inserted into m1.
 	m2.MapVal().UpdateString("key_in_child", "somestr2")
-	assertMapJSON(t, `{"key_in_child": "somestr2"}`, m2)
 	assert.EqualValues(t, 1, m2.MapVal().Len())
+	got, exists = m2.MapVal().Get("key_in_child")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueString("somestr2"), got)
 
 	// The child map inside m1 should not be modified.
-	assertMapJSON(t, `{"double_key":123, "child_map": {"key_in_child": "somestr"}}`, m1)
-	childMap, exists = m1.MapVal().Get("child_map")
+	childMap, childMapExists := m1.MapVal().Get("child_map")
+	require.True(t, childMapExists)
+	got, exists = childMap.MapVal().Get("key_in_child")
 	require.True(t, exists)
-	v, exists = childMap.MapVal().Get("key_in_child")
-	require.True(t, exists)
-	assert.EqualValues(t, AttributeValueTypeString, v.Type())
-	assert.EqualValues(t, "somestr", v.StringVal())
+	assert.Equal(t, NewAttributeValueString("somestr"), got)
 
 	// Now modify the inserted map (not the source)
 	childMap.MapVal().UpdateString("key_in_child", "somestr3")
-	assertMapJSON(t, `{"double_key":123, "child_map": {"key_in_child": "somestr3"}}`, m1)
 	assert.EqualValues(t, 1, childMap.MapVal().Len())
-
-	v, exists = childMap.MapVal().Get("key_in_child")
+	got, exists = childMap.MapVal().Get("key_in_child")
 	require.True(t, exists)
-	assert.EqualValues(t, AttributeValueTypeString, v.Type())
-	assert.EqualValues(t, "somestr3", v.StringVal())
+	assert.Equal(t, NewAttributeValueString("somestr3"), got)
 
 	// The source child map should not be modified.
-	v, exists = m2.MapVal().Get("key_in_child")
+	got, exists = m2.MapVal().Get("key_in_child")
 	require.True(t, exists)
-	assert.EqualValues(t, AttributeValueTypeString, v.Type())
-	assert.EqualValues(t, "somestr2", v.StringVal())
+	assert.Equal(t, NewAttributeValueString("somestr2"), got)
 
 	deleted := m1.MapVal().Delete("double_key")
 	assert.True(t, deleted)
-	assertMapJSON(t, `{"child_map": {"key_in_child": "somestr3"}}`, m1)
 	assert.EqualValues(t, 1, m1.MapVal().Len())
 	_, exists = m1.MapVal().Get("double_key")
 	assert.False(t, exists)
@@ -277,10 +223,8 @@ func TestAttributeValueEqual(t *testing.T) {
 	NewAttributeValueInt(123).CopyTo(av2.ArrayVal().At(0))
 	assert.True(t, av1.Equal(av2))
 
-	av1.ArrayVal().Append(av1)
-	av2.ArrayVal().Append(av1)
+	av1.CopyTo(av2.ArrayVal().AppendEmpty())
 	assert.False(t, av1.Equal(av2))
-
 	assert.True(t, av1.Equal(av1))
 }
 
@@ -1127,55 +1071,29 @@ func generateTestBoolAttributeMap() AttributeMap {
 	return am
 }
 
-func fromArray(v []interface{}) AttributeValue {
-	av := NewAttributeValueArray()
-	arr := av.ArrayVal()
-	for _, v := range v {
-		arr.Append(fromVal(v))
-	}
-	return av
-}
-
-func fromJSONArray(jsonStr string) AttributeValue {
-	var src []interface{}
-	err := json.Unmarshal([]byte(jsonStr), &src)
-	if err != nil {
-		panic("Invalid input jsonStr:" + jsonStr)
-	}
-	return fromArray(src)
-}
-
-func assertArrayJSON(t *testing.T, expectedJSON string, actualArray AttributeValue) {
-	assert.EqualValues(t, fromJSONArray(expectedJSON).ArrayVal(), actualArray.ArrayVal())
-}
-
 func TestAttributeValueArray(t *testing.T) {
 	a1 := NewAttributeValueArray()
-	assert.EqualValues(t, fromJSONArray(`[]`), a1)
 	assert.EqualValues(t, AttributeValueTypeArray, a1.Type())
 	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
 	assert.EqualValues(t, 0, a1.ArrayVal().Len())
 
 	v := a1.ArrayVal().AppendEmpty()
 	v.SetDoubleVal(123)
-	assertArrayJSON(t, `[123]`, a1)
 	assert.EqualValues(t, 1, a1.ArrayVal().Len())
-	assert.EqualValues(t, AttributeValueTypeDouble, v.Type())
-	assert.EqualValues(t, 123, v.DoubleVal())
-
+	assert.EqualValues(t, NewAttributeValueDouble(123), a1.ArrayVal().At(0))
 	// Create a second array.
 	a2 := NewAttributeValueArray()
-	assertArrayJSON(t, `[]`, a2)
 	assert.EqualValues(t, 0, a2.ArrayVal().Len())
 
 	a2.ArrayVal().AppendEmpty().SetStringVal("somestr")
-	assertArrayJSON(t, `["somestr"]`, a2)
 	assert.EqualValues(t, 1, a2.ArrayVal().Len())
+	assert.EqualValues(t, NewAttributeValueString("somestr"), a2.ArrayVal().At(0))
 
 	// Insert the second array as a child.
-	a1.ArrayVal().Append(a2)
-	assertArrayJSON(t, `[123, ["somestr"]]`, a1)
+	a2.CopyTo(a1.ArrayVal().AppendEmpty())
 	assert.EqualValues(t, 2, a1.ArrayVal().Len())
+	assert.EqualValues(t, NewAttributeValueDouble(123), a1.ArrayVal().At(0))
+	assert.EqualValues(t, a2, a1.ArrayVal().At(1))
 
 	// Check that the array was correctly inserted.
 	childArray := a1.ArrayVal().At(1)
