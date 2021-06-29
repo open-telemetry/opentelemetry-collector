@@ -204,15 +204,6 @@ func (es ${structName}) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the ${structName} by one and set the
-// given ${elementName} at that new position.  The original ${elementName}
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es ${structName}) Append(e ${elementName}) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
 // It returns the newly added ${elementName}.
 func (es ${structName}) AppendEmpty() ${elementName} {
@@ -292,19 +283,6 @@ func Test${structName}_Resize(t *testing.T) {
 	// Test Resize 0 elements.
 	es.Resize(0)
 	assert.Equal(t, 0, es.Len())
-}
-
-func Test${structName}_Append(t *testing.T) {
-	es := generateTest${structName}()
-
-	es.AppendEmpty()
-	assert.EqualValues(t, &${originName}{}, es.At(7).orig)
-
-	value := generateTest${elementName}()
-	es.Append(value)
-	assert.EqualValues(t, value.orig, es.At(8).orig)
-
-	assert.Equal(t, 9, es.Len())
 }`
 
 const sliceValueTemplate = `// ${structName} logically represents a slice of ${elementName}.
@@ -396,15 +374,6 @@ func (es ${structName}) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the ${structName} by one and set the
-// given ${elementName} at that new position.  The original ${elementName}
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es ${structName}) Append(e ${elementName}) {
-	*es.orig = append(*es.orig, *e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
 // It returns the newly added ${elementName}.
 func (es ${structName}) AppendEmpty() ${elementName} {
@@ -484,19 +453,6 @@ func Test${structName}_Resize(t *testing.T) {
 	// Test Resize 0 elements.
 	es.Resize(0)
 	assert.Equal(t, 0, es.Len())
-}
-
-func Test${structName}_Append(t *testing.T) {
-	es := generateTest${structName}()
-
-	es.AppendEmpty()
-	assert.EqualValues(t, new${elementName}(&${originName}{}), es.At(7))
-
-	value := generateTest${elementName}()
-	es.Append(value)
-	assert.EqualValues(t, value, es.At(8))
-
-	assert.Equal(t, 9, es.Len())
 }`
 
 type baseSlice interface {

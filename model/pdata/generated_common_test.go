@@ -121,19 +121,6 @@ func TestAnyValueArray_Resize(t *testing.T) {
 	assert.Equal(t, 0, es.Len())
 }
 
-func TestAnyValueArray_Append(t *testing.T) {
-	es := generateTestAnyValueArray()
-
-	es.AppendEmpty()
-	assert.EqualValues(t, newAttributeValue(&otlpcommon.AnyValue{}), es.At(7))
-
-	value := generateTestAttributeValue()
-	es.Append(value)
-	assert.EqualValues(t, value, es.At(8))
-
-	assert.Equal(t, 9, es.Len())
-}
-
 func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestAnyValueArray()

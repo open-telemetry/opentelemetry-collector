@@ -115,15 +115,6 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the ResourceSpansSlice by one and set the
-// given ResourceSpans at that new position.  The original ResourceSpans
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es ResourceSpansSlice) Append(e ResourceSpans) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty ResourceSpans.
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
@@ -295,15 +286,6 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the InstrumentationLibrarySpansSlice by one and set the
-// given InstrumentationLibrarySpans at that new position.  The original InstrumentationLibrarySpans
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es InstrumentationLibrarySpansSlice) Append(e InstrumentationLibrarySpans) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibrarySpans.
 // It returns the newly added InstrumentationLibrarySpans.
 func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibrarySpans {
@@ -473,15 +455,6 @@ func (es SpanSlice) Resize(newLen int) {
 	for i := range extraOrigs {
 		*es.orig = append(*es.orig, &extraOrigs[i])
 	}
-}
-
-// Append will increase the length of the SpanSlice by one and set the
-// given Span at that new position.  The original Span
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es SpanSlice) Append(e Span) {
-	*es.orig = append(*es.orig, e.orig)
 }
 
 // AppendEmpty will append to the end of the slice an empty Span.
@@ -789,15 +762,6 @@ func (es SpanEventSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the SpanEventSlice by one and set the
-// given SpanEvent at that new position.  The original SpanEvent
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es SpanEventSlice) Append(e SpanEvent) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty SpanEvent.
 // It returns the newly added SpanEvent.
 func (es SpanEventSlice) AppendEmpty() SpanEvent {
@@ -995,15 +959,6 @@ func (es SpanLinkSlice) Resize(newLen int) {
 	for i := range extraOrigs {
 		*es.orig = append(*es.orig, &extraOrigs[i])
 	}
-}
-
-// Append will increase the length of the SpanLinkSlice by one and set the
-// given SpanLink at that new position.  The original SpanLink
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es SpanLinkSlice) Append(e SpanLink) {
-	*es.orig = append(*es.orig, e.orig)
 }
 
 // AppendEmpty will append to the end of the slice an empty SpanLink.
