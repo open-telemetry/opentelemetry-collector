@@ -27,6 +27,7 @@ import (
 
 const (
 	dataFormatProtobuf = "protobuf"
+	receiverTransport  = "grpc"
 )
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
@@ -38,46 +39,27 @@ type Receiver struct {
 
 // New creates a new Receiver reference.
 func New(id config.ComponentID, nextConsumer consumer.Logs) *Receiver {
-	r := &Receiver{
+	return &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
 		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
-
-	return r
 }
-
-const (
-	receiverTransport = "grpc"
-)
-
-var receiverID = config.NewIDWithName("otlp", "log")
 
 // Export implements the service Export logs func.
 func (r *Receiver) Export(ctx context.Context, ld pdata.Logs) (otlpgrpc.LogsResponse, error) {
-	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.id, receiverTransport)
-	err := r.sendToNextConsumer(ctxWithReceiverName, ld)
-	if err != nil {
-		return otlpgrpc.LogsResponse{}, err
-	}
-
-	return otlpgrpc.NewLogsResponse(), nil
-}
-
-func (r *Receiver) sendToNextConsumer(ctx context.Context, ld pdata.Logs) error {
 	numSpans := ld.LogRecordCount()
 	if numSpans == 0 {
-		return nil
+		return otlpgrpc.NewLogsResponse(), nil
 	}
 
 	if c, ok := client.FromGRPC(ctx); ok {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = r.obsrecv.StartLogsOp(ctx)
+	ctx = r.obsrecv.StartLogsOp(obsreport.ReceiverContext(ctx, r.id, receiverTransport))
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return err
+	return otlpgrpc.NewLogsResponse(), err
 }

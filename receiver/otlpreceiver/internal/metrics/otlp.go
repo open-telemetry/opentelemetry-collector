@@ -27,6 +27,7 @@ import (
 
 const (
 	dataFormatProtobuf = "protobuf"
+	receiverTransport  = "grpc"
 )
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
@@ -38,44 +39,27 @@ type Receiver struct {
 
 // New creates a new Receiver reference.
 func New(id config.ComponentID, nextConsumer consumer.Metrics) *Receiver {
-	r := &Receiver{
+	return &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
 		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
-	return r
 }
-
-const (
-	receiverTransport = "grpc"
-)
-
-var receiverID = config.NewIDWithName("otlp", "metrics")
 
 // Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, md pdata.Metrics) (otlpgrpc.MetricsResponse, error) {
-	receiverCtx := obsreport.ReceiverContext(ctx, r.id, receiverTransport)
-	err := r.sendToNextConsumer(receiverCtx, md)
-	if err != nil {
-		return otlpgrpc.MetricsResponse{}, err
-	}
-
-	return otlpgrpc.NewMetricsResponse(), nil
-}
-
-func (r *Receiver) sendToNextConsumer(ctx context.Context, md pdata.Metrics) error {
 	metricCount, dataPointCount := md.MetricAndDataPointCount()
 	if metricCount == 0 {
-		return nil
+		return otlpgrpc.NewMetricsResponse(), nil
 	}
 
 	if c, ok := client.FromGRPC(ctx); ok {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = r.obsrecv.StartMetricsOp(ctx)
+	ctx = r.obsrecv.StartMetricsOp(obsreport.ReceiverContext(ctx, r.id, receiverTransport))
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
 
-	return err
+	return otlpgrpc.NewMetricsResponse(), err
 }
