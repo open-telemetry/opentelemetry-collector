@@ -115,15 +115,6 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the ResourceMetricsSlice by one and set the
-// given ResourceMetrics at that new position.  The original ResourceMetrics
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es ResourceMetricsSlice) Append(e ResourceMetrics) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty ResourceMetrics.
 // It returns the newly added ResourceMetrics.
 func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
@@ -295,15 +286,6 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the InstrumentationLibraryMetricsSlice by one and set the
-// given InstrumentationLibraryMetrics at that new position.  The original InstrumentationLibraryMetrics
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es InstrumentationLibraryMetricsSlice) Append(e InstrumentationLibraryMetrics) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibraryMetrics.
 // It returns the newly added InstrumentationLibraryMetrics.
 func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibraryMetrics {
@@ -473,15 +455,6 @@ func (es MetricSlice) Resize(newLen int) {
 	for i := range extraOrigs {
 		*es.orig = append(*es.orig, &extraOrigs[i])
 	}
-}
-
-// Append will increase the length of the MetricSlice by one and set the
-// given Metric at that new position.  The original Metric
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es MetricSlice) Append(e Metric) {
-	*es.orig = append(*es.orig, e.orig)
 }
 
 // AppendEmpty will append to the end of the slice an empty Metric.
@@ -968,15 +941,6 @@ func (es IntDataPointSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the IntDataPointSlice by one and set the
-// given IntDataPoint at that new position.  The original IntDataPoint
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es IntDataPointSlice) Append(e IntDataPoint) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty IntDataPoint.
 // It returns the newly added IntDataPoint.
 func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
@@ -1181,15 +1145,6 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the DoubleDataPointSlice by one and set the
-// given DoubleDataPoint at that new position.  The original DoubleDataPoint
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es DoubleDataPointSlice) Append(e DoubleDataPoint) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty DoubleDataPoint.
 // It returns the newly added DoubleDataPoint.
 func (es DoubleDataPointSlice) AppendEmpty() DoubleDataPoint {
@@ -1392,15 +1347,6 @@ func (es IntHistogramDataPointSlice) Resize(newLen int) {
 	for i := range extraOrigs {
 		*es.orig = append(*es.orig, &extraOrigs[i])
 	}
-}
-
-// Append will increase the length of the IntHistogramDataPointSlice by one and set the
-// given IntHistogramDataPoint at that new position.  The original IntHistogramDataPoint
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es IntHistogramDataPointSlice) Append(e IntHistogramDataPoint) {
-	*es.orig = append(*es.orig, e.orig)
 }
 
 // AppendEmpty will append to the end of the slice an empty IntHistogramDataPoint.
@@ -1640,15 +1586,6 @@ func (es HistogramDataPointSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the HistogramDataPointSlice by one and set the
-// given HistogramDataPoint at that new position.  The original HistogramDataPoint
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es HistogramDataPointSlice) Append(e HistogramDataPoint) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty HistogramDataPoint.
 // It returns the newly added HistogramDataPoint.
 func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
@@ -1886,15 +1823,6 @@ func (es SummaryDataPointSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the SummaryDataPointSlice by one and set the
-// given SummaryDataPoint at that new position.  The original SummaryDataPoint
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es SummaryDataPointSlice) Append(e SummaryDataPoint) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty SummaryDataPoint.
 // It returns the newly added SummaryDataPoint.
 func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
@@ -2110,15 +2038,6 @@ func (es ValueAtQuantileSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the ValueAtQuantileSlice by one and set the
-// given ValueAtQuantile at that new position.  The original ValueAtQuantile
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es ValueAtQuantileSlice) Append(e ValueAtQuantile) {
-	*es.orig = append(*es.orig, e.orig)
-}
-
 // AppendEmpty will append to the end of the slice an empty ValueAtQuantile.
 // It returns the newly added ValueAtQuantile.
 func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
@@ -2293,15 +2212,6 @@ func (es IntExemplarSlice) Resize(newLen int) {
 	for i := oldLen; i < newLen; i++ {
 		*es.orig = append(*es.orig, empty)
 	}
-}
-
-// Append will increase the length of the IntExemplarSlice by one and set the
-// given IntExemplar at that new position.  The original IntExemplar
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es IntExemplarSlice) Append(e IntExemplar) {
-	*es.orig = append(*es.orig, *e.orig)
 }
 
 // AppendEmpty will append to the end of the slice an empty IntExemplar.
@@ -2487,15 +2397,6 @@ func (es ExemplarSlice) Resize(newLen int) {
 	for i := oldLen; i < newLen; i++ {
 		*es.orig = append(*es.orig, empty)
 	}
-}
-
-// Append will increase the length of the ExemplarSlice by one and set the
-// given Exemplar at that new position.  The original Exemplar
-// could still be referenced so do not reuse it after passing it to this
-// method.
-// Deprecated: Use AppendEmpty.
-func (es ExemplarSlice) Append(e Exemplar) {
-	*es.orig = append(*es.orig, *e.orig)
 }
 
 // AppendEmpty will append to the end of the slice an empty Exemplar.
