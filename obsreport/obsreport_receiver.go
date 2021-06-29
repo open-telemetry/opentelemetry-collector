@@ -257,12 +257,9 @@ func (rec *Receiver) endOp(
 		}
 
 		span.AddAttributes(
-			trace.StringAttribute(
-				obsmetrics.FormatKey, format),
-			trace.Int64Attribute(
-				acceptedItemsKey, int64(numAccepted)),
-			trace.Int64Attribute(
-				refusedItemsKey, int64(numRefused)),
+			trace.StringAttribute(obsmetrics.FormatKey, format),
+			trace.Int64Attribute(acceptedItemsKey, int64(numAccepted)),
+			trace.Int64Attribute(refusedItemsKey, int64(numRefused)),
 		)
 		span.SetStatus(errToStatus(err))
 	}

@@ -64,7 +64,6 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
 		{transport, errFake},
 		{"", nil},
@@ -72,7 +71,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartTracesOp(receiverCtx)
+		ctx := rec.StartTracesOp(ReceiverContext(parentCtx, receiver, transport))
 		assert.NotNil(t, ctx)
 
 		rec.EndTracesOp(
@@ -125,7 +124,6 @@ func TestReceiveLogsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
 		{transport, errFake},
 		{"", nil},
@@ -133,7 +131,7 @@ func TestReceiveLogsOp(t *testing.T) {
 	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartLogsOp(receiverCtx)
+		ctx := rec.StartLogsOp(ReceiverContext(parentCtx, receiver, transport))
 		assert.NotNil(t, ctx)
 
 		rec.EndLogsOp(
@@ -186,7 +184,6 @@ func TestReceiveMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
 		{transport, errFake},
 		{"", nil},
@@ -194,7 +191,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
 		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartMetricsOp(receiverCtx)
+		ctx := rec.StartMetricsOp(ReceiverContext(parentCtx, receiver, transport))
 		assert.NotNil(t, ctx)
 
 		rec.EndMetricsOp(
