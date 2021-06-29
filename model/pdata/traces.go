@@ -15,9 +15,9 @@
 package pdata
 
 import (
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/model/internal"
 )
 
 // TracesMarshaler marshals pdata.Traces into bytes.
@@ -50,31 +50,10 @@ func TracesFromInternalRep(wrapper internal.TracesWrapper) Traces {
 	return Traces{orig: internal.TracesToOtlp(wrapper)}
 }
 
-// TracesFromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes to the internal Traces.
-//
-// Returns an invalid Traces instance if error is not nil.
-func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
-	req := otlpcollectortrace.ExportTraceServiceRequest{}
-	if err := req.Unmarshal(data); err != nil {
-		return Traces{}, err
-	}
-	internal.TracesCompatibilityChanges(&req)
-	return Traces{orig: &req}, nil
-}
-
 // InternalRep returns internal representation of the Traces.
 // Should not be used outside this module.
 func (td Traces) InternalRep() internal.TracesWrapper {
 	return internal.TracesFromOtlp(td.orig)
-}
-
-// ToOtlpProtoBytes converts this Traces to the OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes.
-//
-// Returns an nil byte-array if error is not nil.
-func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
-	return td.orig.Marshal()
 }
 
 // Clone returns a copy of Traces.
@@ -126,7 +105,7 @@ func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String()
 
 const (
 	// SpanKindUnspecified represents that the SpanKind is unspecified, it MUST NOT be used.
-	SpanKindUnspecified = SpanKind(0)
+	SpanKindUnspecified = SpanKind(otlptrace.Span_SPAN_KIND_UNSPECIFIED)
 	// SpanKindInternal indicates that the span represents an internal operation within an application,
 	// as opposed to an operation happening at the boundaries. Default value.
 	SpanKindInternal = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)

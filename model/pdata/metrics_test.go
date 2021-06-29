@@ -23,11 +23,11 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/model/internal"
 )
 
 const (
@@ -650,22 +650,6 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
-func TestMetricsToFromOtlpProtoBytes(t *testing.T) {
-	send := NewMetrics()
-	fillTestResourceMetricsSlice(send.ResourceMetrics())
-	bytes, err := send.ToOtlpProtoBytes()
-	assert.NoError(t, err)
-
-	recv, err := MetricsFromOtlpProtoBytes(bytes)
-	assert.NoError(t, err)
-	assert.EqualValues(t, send, recv)
-}
-
-func TestMetricsFromInvalidOtlpProtoBytes(t *testing.T) {
-	_, err := MetricsFromOtlpProtoBytes([]byte{0xFF})
-	assert.EqualError(t, err, "unexpected EOF")
-}
-
 func TestMetricsClone(t *testing.T) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
@@ -784,54 +768,6 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
 		}
-	}
-}
-
-func BenchmarkMetrics_ToOtlpProtoBytes_PassThrough(b *testing.B) {
-	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
-			{
-				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
-					},
-				},
-			},
-		},
-	}
-	md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		_, _ = md.ToOtlpProtoBytes()
-	}
-}
-
-func BenchmarkMetricsToOtlp(b *testing.B) {
-	traces := NewMetrics()
-	fillTestResourceMetricsSlice(traces.ResourceMetrics())
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		buf, err := traces.ToOtlpProtoBytes()
-		require.NoError(b, err)
-		assert.NotEqual(b, 0, len(buf))
-	}
-}
-
-func BenchmarkMetricsFromOtlp(b *testing.B) {
-	baseMetrics := NewMetrics()
-	fillTestResourceMetricsSlice(baseMetrics.ResourceMetrics())
-	buf, err := baseMetrics.ToOtlpProtoBytes()
-	require.NoError(b, err)
-	assert.NotEqual(b, 0, len(buf))
-	b.ResetTimer()
-	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		md, err := MetricsFromOtlpProtoBytes(buf)
-		require.NoError(b, err)
-		assert.Equal(b, baseMetrics.ResourceMetrics().Len(), md.ResourceMetrics().Len())
 	}
 }
 
