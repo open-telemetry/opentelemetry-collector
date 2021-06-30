@@ -164,20 +164,18 @@ func (pcs *persistentContiguousStorage) loop() {
 	}
 
 	for {
-		for {
-			req, found := pcs.getNextItem(context.Background())
-			if found {
-				select {
-				case <-pcs.stopChan:
-					return
-				case pcs.reqChan <- req:
-				}
-			} else {
-				select {
-				case <-pcs.stopChan:
-					return
-				case <-time.After(pcs.retryDelay):
-				}
+		req, found := pcs.getNextItem(context.Background())
+		if found {
+			select {
+			case <-pcs.stopChan:
+				return
+			case pcs.reqChan <- req:
+			}
+		} else {
+			select {
+			case <-pcs.stopChan:
+				return
+			case <-time.After(pcs.retryDelay):
 			}
 		}
 	}
