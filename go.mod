@@ -45,12 +45,15 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/xdg-go/scram v1.0.2
 	go.opencensus.io v0.23.0
+	go.opentelemetry.io/collector/model v0.0.0-00010101000000-000000000000
 	go.uber.org/atomic v1.8.0
 	go.uber.org/zap v1.18.1
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08
-	google.golang.org/grpc v1.38.0
+	google.golang.org/grpc v1.39.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace go.opentelemetry.io/collector/model => ./model
