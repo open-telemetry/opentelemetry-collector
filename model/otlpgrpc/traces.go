@@ -19,8 +19,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	otlpcollectortraces "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/model/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -28,12 +28,12 @@ import (
 
 // TracesResponse represents the response for gRPC client/server.
 type TracesResponse struct {
-	orig *otlpcollectortraces.ExportTraceServiceResponse
+	orig *otlpcollectortrace.ExportTraceServiceResponse
 }
 
 // NewTracesResponse returns an empty TracesResponse.
 func NewTracesResponse() TracesResponse {
-	return TracesResponse{orig: &otlpcollectortraces.ExportTraceServiceResponse{}}
+	return TracesResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
 }
 
 // TracesClient is the client API for OTLP-GRPC Traces service.
@@ -48,12 +48,12 @@ type TracesClient interface {
 }
 
 type tracesClient struct {
-	rawClient otlpcollectortraces.TraceServiceClient
+	rawClient otlpcollectortrace.TraceServiceClient
 }
 
 // NewTracesClient returns a new TracesClient connected using the given connection.
 func NewTracesClient(cc *grpc.ClientConn) TracesClient {
-	return &tracesClient{rawClient: otlpcollectortraces.NewTraceServiceClient(cc)}
+	return &tracesClient{rawClient: otlpcollectortrace.NewTraceServiceClient(cc)}
 }
 
 // Export implements the TracesClient interface.
@@ -73,14 +73,14 @@ type TracesServer interface {
 
 // RegisterTracesServer registers the TracesServer to the grpc.Server.
 func RegisterTracesServer(s *grpc.Server, srv TracesServer) {
-	otlpcollectortraces.RegisterTraceServiceServer(s, &rawTracesServer{srv: srv})
+	otlpcollectortrace.RegisterTraceServiceServer(s, &rawTracesServer{srv: srv})
 }
 
 type rawTracesServer struct {
 	srv TracesServer
 }
 
-func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortraces.ExportTraceServiceRequest) (*otlpcollectortraces.ExportTraceServiceResponse, error) {
+func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortrace.ExportTraceServiceRequest) (*otlpcollectortrace.ExportTraceServiceResponse, error) {
 	internal.TracesCompatibilityChanges(request)
 	rsp, err := s.srv.Export(ctx, pdata.TracesFromInternalRep(internal.TracesFromOtlp(request)))
 	return rsp.orig, err

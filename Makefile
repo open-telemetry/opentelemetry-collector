@@ -8,7 +8,7 @@ ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/checkdoc/*' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
-							-not -path './internal/data/protogen/*' \
+							-not -path './model/internal/data/protogen/*' \
 							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
 
@@ -298,7 +298,7 @@ OPENTELEMETRY_PROTO_SRC_DIR=model/internal/opentelemetry-proto
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
 
 # Target directory to write generated files to.
-PROTO_TARGET_GEN_DIR=internal/data/protogen
+PROTO_TARGET_GEN_DIR=model/internal/data/protogen
 
 # Go package name to use for generated files.
 PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
