@@ -19,8 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
 func TestDeprecatedStatusCode(t *testing.T) {
@@ -87,7 +87,7 @@ func TestDeprecatedStatusCode(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.sendCode.String()+"/"+test.sendDeprecatedCode.String(), func(t *testing.T) {
-			req := &collectortrace.ExportTraceServiceRequest{
+			req := &otlpcollectortrace.ExportTraceServiceRequest{
 				ResourceSpans: []*otlptrace.ResourceSpans{
 					{
 						InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{

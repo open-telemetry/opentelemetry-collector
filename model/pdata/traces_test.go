@@ -23,9 +23,9 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/model/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
 func TestSpanCount(t *testing.T) {

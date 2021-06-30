@@ -15,10 +15,10 @@
 package internal
 
 import (
-	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
+	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
+	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
 // MetricsWrapper is an intermediary struct that is declared in an internal package

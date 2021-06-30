@@ -19,8 +19,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/model/internal"
+	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -28,12 +28,12 @@ import (
 
 // LogsResponse represents the response for gRPC client/server.
 type LogsResponse struct {
-	orig *otlpcollectorlogs.ExportLogsServiceResponse
+	orig *otlpcollectorlog.ExportLogsServiceResponse
 }
 
 // NewLogsResponse returns an empty LogsResponse.
 func NewLogsResponse() LogsResponse {
-	return LogsResponse{orig: &otlpcollectorlogs.ExportLogsServiceResponse{}}
+	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
 }
 
 // LogsClient is the client API for OTLP-GRPC Logs service.
@@ -48,12 +48,12 @@ type LogsClient interface {
 }
 
 type logsClient struct {
-	rawClient otlpcollectorlogs.LogsServiceClient
+	rawClient otlpcollectorlog.LogsServiceClient
 }
 
 // NewLogsClient returns a new LogsClient connected using the given connection.
 func NewLogsClient(cc *grpc.ClientConn) LogsClient {
-	return &logsClient{rawClient: otlpcollectorlogs.NewLogsServiceClient(cc)}
+	return &logsClient{rawClient: otlpcollectorlog.NewLogsServiceClient(cc)}
 }
 
 func (c *logsClient) Export(ctx context.Context, in pdata.Logs, opts ...grpc.CallOption) (LogsResponse, error) {
@@ -72,14 +72,14 @@ type LogsServer interface {
 
 // RegisterLogsServer registers the LogsServer to the grpc.Server.
 func RegisterLogsServer(s *grpc.Server, srv LogsServer) {
-	otlpcollectorlogs.RegisterLogsServiceServer(s, &rawLogsServer{srv: srv})
+	otlpcollectorlog.RegisterLogsServiceServer(s, &rawLogsServer{srv: srv})
 }
 
 type rawLogsServer struct {
 	srv LogsServer
 }
 
-func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlogs.ExportLogsServiceRequest) (*otlpcollectorlogs.ExportLogsServiceResponse, error) {
+func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {
 	rsp, err := s.srv.Export(ctx, pdata.LogsFromInternalRep(internal.LogsFromOtlp(request)))
 	return rsp.orig, err
 }

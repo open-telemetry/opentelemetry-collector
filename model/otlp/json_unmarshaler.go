@@ -19,10 +19,10 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 
-	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/model/internal"
+	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
+	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
+	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -50,7 +50,7 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 }
 
 func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
-	ld := &otlpcollectorlogs.ExportLogsServiceRequest{}
+	ld := &otlpcollectorlog.ExportLogsServiceRequest{}
 	err := d.delegate.Unmarshal(bytes.NewReader(buf), ld)
 	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld)), err
 }

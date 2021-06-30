@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
 func TestResourceSpansSlice(t *testing.T) {

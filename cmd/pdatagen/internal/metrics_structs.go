@@ -17,14 +17,14 @@ package internal
 var metricsFile = &File{
 	Name: "metrics",
 	imports: []string{
-		`otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"`,
+		`otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
-		`otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"`,
+		`otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"`,
 	},
 	structs: []baseStruct{
 		resourceMetricsSlice,

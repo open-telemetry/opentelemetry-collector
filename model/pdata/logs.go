@@ -15,9 +15,9 @@
 package pdata
 
 import (
-	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
-	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/model/internal"
+	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
 // LogsMarshaler marshals pdata.Logs into bytes.
