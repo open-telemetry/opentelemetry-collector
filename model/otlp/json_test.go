@@ -20,13 +20,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 var tracesOTLP = func() pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	rs.Resource().Attributes().UpsertString("host.name", "testHost")
 	il := rs.InstrumentationLibrarySpans().AppendEmpty()
 	il.InstrumentationLibrary().SetName("name")
 	il.InstrumentationLibrary().SetVersion("version")
@@ -39,7 +38,7 @@ var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name
 var metricsOTLP = func() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	rm.Resource().Attributes().UpsertString("host.name", "testHost")
 	il := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	il.InstrumentationLibrary().SetName("name")
 	il.InstrumentationLibrary().SetVersion("version")
@@ -52,7 +51,7 @@ var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.n
 var logsOTLP = func() pdata.Logs {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	rl.Resource().Attributes().UpsertString("host.name", "testHost")
 	il := rl.InstrumentationLibraryLogs().AppendEmpty()
 	il.InstrumentationLibrary().SetName("name")
 	il.InstrumentationLibrary().SetVersion("version")
