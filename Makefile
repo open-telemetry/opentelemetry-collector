@@ -387,6 +387,13 @@ checkdoc:
 apidiff-build:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
 
+# If we are running in CI, change input directory
+ifeq ($(CI), true)
+APICOMPARE_OPTS=$(COMPARE_OPTS)
+else
+APICOMPARE_OPTS=-d "./internal/data/apidiff"
+endif
+
 # Compare API state snapshots
 .PHONY: apidiff-compare
 apidiff-compare:
