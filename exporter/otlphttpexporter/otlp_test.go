@@ -120,7 +120,7 @@ func TestTraceRoundTrip(t *testing.T) {
 			td := testdata.GenerateTracesOneSpan()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 			require.Eventually(t, func() bool {
-				return sink.SpansCount() > 0
+				return sink.SpanCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allTraces := sink.AllTraces()
 			require.Len(t, allTraces, 1)
@@ -177,7 +177,7 @@ func TestCompressionOptions(t *testing.T) {
 			td := testdata.GenerateTracesOneSpan()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 			require.Eventually(t, func() bool {
-				return sink.SpansCount() > 0
+				return sink.SpanCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allTraces := sink.AllTraces()
 			require.Len(t, allTraces, 1)

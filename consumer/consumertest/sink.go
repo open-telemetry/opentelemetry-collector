@@ -26,9 +26,9 @@ import (
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
 	nonMutatingConsumer
-	mu         sync.Mutex
-	traces     []pdata.Traces
-	spansCount int
+	mu        sync.Mutex
+	traces    []pdata.Traces
+	spanCount int
 }
 
 var _ consumer.Traces = (*TracesSink)(nil)
@@ -39,7 +39,7 @@ func (ste *TracesSink) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	defer ste.mu.Unlock()
 
 	ste.traces = append(ste.traces, td)
-	ste.spansCount += td.SpanCount()
+	ste.spanCount += td.SpanCount()
 
 	return nil
 }
@@ -54,11 +54,11 @@ func (ste *TracesSink) AllTraces() []pdata.Traces {
 	return copyTraces
 }
 
-// SpansCount returns the number of spans sent to this sink.
-func (ste *TracesSink) SpansCount() int {
+// SpanCount returns the number of spans sent to this sink.
+func (ste *TracesSink) SpanCount() int {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
-	return ste.spansCount
+	return ste.spanCount
 }
 
 // Reset deletes any stored data.
@@ -67,7 +67,7 @@ func (ste *TracesSink) Reset() {
 	defer ste.mu.Unlock()
 
 	ste.traces = nil
-	ste.spansCount = 0
+	ste.spanCount = 0
 }
 
 // MetricsSink is a consumer.Metrics that acts like a sink that

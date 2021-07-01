@@ -211,7 +211,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, tt.resourceSpanPerTrace) {
 				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
-				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpansCount())
+				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpanCount())
 				sink.Reset()
 			}
 
@@ -329,10 +329,10 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			sampledData := sink.AllTraces()
 			if tt.sampled {
 				require.Equal(t, 1, len(sampledData))
-				assert.Equal(t, 1, sink.SpansCount())
+				assert.Equal(t, 1, sink.SpanCount())
 			} else {
 				require.Equal(t, 0, len(sampledData))
-				assert.Equal(t, 0, sink.SpansCount())
+				assert.Equal(t, 0, sink.SpanCount())
 			}
 		})
 	}
