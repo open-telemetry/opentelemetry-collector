@@ -34,10 +34,10 @@ func TestTracesSink(t *testing.T) {
 		want = append(want, td)
 	}
 	assert.Equal(t, want, sink.AllTraces())
-	assert.Equal(t, len(want), sink.SpansCount())
+	assert.Equal(t, len(want), sink.SpanCount())
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllTraces()))
-	assert.Equal(t, 0, sink.SpansCount())
+	assert.Equal(t, 0, sink.SpanCount())
 }
 
 func TestMetricsSink(t *testing.T) {

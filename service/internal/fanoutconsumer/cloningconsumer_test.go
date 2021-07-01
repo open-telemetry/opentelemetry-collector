@@ -40,9 +40,9 @@ func TestTracesProcessorCloningMultiplexing(t *testing.T) {
 	tfc := NewTracesCloning(processors)
 	td := testdata.GenerateTracesTwoSpansSameResource()
 
-	var wantSpansCount = 0
+	var wantSpanCount = 0
 	for i := 0; i < 2; i++ {
-		wantSpansCount += td.SpanCount()
+		wantSpanCount += td.SpanCount()
 		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -52,7 +52,7 @@ func TestTracesProcessorCloningMultiplexing(t *testing.T) {
 
 	for i, p := range processors {
 		m := p.(*consumertest.TracesSink)
-		assert.Equal(t, wantSpansCount, m.SpansCount())
+		assert.Equal(t, wantSpanCount, m.SpanCount())
 		spanOrig := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 		allTraces := m.AllTraces()
 		spanClone := allTraces[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
