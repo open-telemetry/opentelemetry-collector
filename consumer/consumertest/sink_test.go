@@ -64,8 +64,8 @@ func TestLogsSink(t *testing.T) {
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllLogs())
-	assert.Equal(t, len(want), sink.LogRecordsCount())
+	assert.Equal(t, len(want), sink.LogRecordCount())
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllLogs()))
-	assert.Equal(t, 0, sink.LogRecordsCount())
+	assert.Equal(t, 0, sink.LogRecordCount())
 }

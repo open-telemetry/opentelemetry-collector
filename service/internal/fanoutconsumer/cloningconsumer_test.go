@@ -138,7 +138,7 @@ func TestLogsProcessorCloningMultiplexing(t *testing.T) {
 
 	for i, p := range processors {
 		m := p.(*consumertest.LogsSink)
-		assert.Equal(t, wantMetricsCount, m.LogRecordsCount())
+		assert.Equal(t, wantMetricsCount, m.LogRecordCount())
 		metricOrig := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
 		allLogs := m.AllLogs()
 		metricClone := allLogs[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)

@@ -122,9 +122,9 @@ func (sme *MetricsSink) Reset() {
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
 	nonMutatingConsumer
-	mu              sync.Mutex
-	logs            []pdata.Logs
-	logRecordsCount int
+	mu             sync.Mutex
+	logs           []pdata.Logs
+	logRecordCount int
 }
 
 var _ consumer.Logs = (*LogsSink)(nil)
@@ -135,7 +135,7 @@ func (sle *LogsSink) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	defer sle.mu.Unlock()
 
 	sle.logs = append(sle.logs, ld)
-	sle.logRecordsCount += ld.LogRecordCount()
+	sle.logRecordCount += ld.LogRecordCount()
 
 	return nil
 }
@@ -150,11 +150,11 @@ func (sle *LogsSink) AllLogs() []pdata.Logs {
 	return copyLogs
 }
 
-// LogRecordsCount returns the number of log records stored by this sink since last Reset.
-func (sle *LogsSink) LogRecordsCount() int {
+// LogRecordCount returns the number of log records stored by this sink since last Reset.
+func (sle *LogsSink) LogRecordCount() int {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
-	return sle.logRecordsCount
+	return sle.logRecordCount
 }
 
 // Reset deletes any stored data.
@@ -163,5 +163,5 @@ func (sle *LogsSink) Reset() {
 	defer sle.mu.Unlock()
 
 	sle.logs = nil
-	sle.logRecordsCount = 0
+	sle.logRecordCount = 0
 }

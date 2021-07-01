@@ -606,7 +606,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
 	logsReceivedByName := logsReceivedByName(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -656,7 +656,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
 	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, ld := range receivedMds {
@@ -671,7 +671,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	assert.Equal(t, 1, len(viewData))
 	distData := viewData[0].Data.(*view.DistributionData)
 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.LogRecordsCount(), int(distData.Sum()))
+	assert.Equal(t, sink.LogRecordCount(), int(distData.Sum()))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 
@@ -706,7 +706,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 	// Wait for at least one batch to be sent.
 	for {
-		if sink.LogRecordsCount() != 0 {
+		if sink.LogRecordCount() != 0 {
 			break
 		}
 		<-time.After(cfg.Timeout)
@@ -721,7 +721,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	expectedBatchesNum := 1
 	expectedBatchingFactor := 5
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, ld := range receivedMds {
@@ -754,7 +754,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	require.Equal(t, 1, len(sink.AllLogs()))
 }
 
