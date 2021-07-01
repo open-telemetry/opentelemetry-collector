@@ -93,16 +93,14 @@ func (md Metrics) OtlpProtoSize() int {
 	return md.orig.Size()
 }
 
-// MetricAndDataPointCount calculates the total number of metrics and data points.
-func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int) {
+// DataPointCount calculates the total number of data points.
+func (md Metrics) DataPointCount() (dataPointCount int) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
-			metrics := ilm.Metrics()
-			metricCount += metrics.Len()
 			ms := ilm.Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)

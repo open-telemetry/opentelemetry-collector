@@ -218,8 +218,7 @@ func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
-	_, dataPoints := md.MetricAndDataPointCount()
-	mc.numMetricsReceived.Add(uint64(dataPoints))
+	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
 }

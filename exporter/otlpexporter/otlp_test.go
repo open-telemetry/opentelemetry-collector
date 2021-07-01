@@ -131,8 +131,7 @@ type mockMetricsReceiver struct {
 
 func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (otlpgrpc.MetricsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
-	_, recordCount := md.MetricAndDataPointCount()
-	atomic.AddInt32(&r.totalItems, int32(recordCount))
+	atomic.AddInt32(&r.totalItems, int32(md.DataPointCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = md

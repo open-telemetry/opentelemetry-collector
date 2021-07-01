@@ -200,7 +200,7 @@ func (tr *transaction) Commit() error {
 	numPoints := 0
 	if len(metrics) > 0 {
 		md := internaldata.OCToMetrics(tr.node, tr.resource, metrics)
-		_, numPoints = md.MetricAndDataPointCount()
+		numPoints = md.DataPointCount()
 		err = tr.sink.ConsumeMetrics(ctx, md)
 	}
 	tr.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)

@@ -48,8 +48,8 @@ func New(id config.ComponentID, nextConsumer consumer.Metrics) *Receiver {
 
 // Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, md pdata.Metrics) (otlpgrpc.MetricsResponse, error) {
-	metricCount, dataPointCount := md.MetricAndDataPointCount()
-	if metricCount == 0 {
+	dataPointCount := md.DataPointCount()
+	if dataPointCount == 0 {
 		return otlpgrpc.NewMetricsResponse(), nil
 	}
 

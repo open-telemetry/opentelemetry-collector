@@ -55,8 +55,7 @@ func (req *metricsRequest) export(ctx context.Context) error {
 }
 
 func (req *metricsRequest) count() int {
-	_, numPoints := req.md.MetricAndDataPointCount()
-	return numPoints
+	return req.md.DataPointCount()
 }
 
 type metricsExporter struct {
