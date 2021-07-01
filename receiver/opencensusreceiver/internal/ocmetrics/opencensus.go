@@ -47,7 +47,7 @@ func New(id config.ComponentID, nextConsumer consumer.Metrics) (*Receiver, error
 	ocr := &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport, LongLivedCtx: true}),
 	}
 	return ocr, nil
 }
@@ -124,9 +124,7 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics []*ocmetrics.Metric) error {
-	ctx := ocr.obsrecv.StartMetricsOp(
-		longLivedRPCCtx,
-		obsreport.WithLongLivedCtx())
+	ctx := ocr.obsrecv.StartMetricsOp(longLivedRPCCtx)
 
 	numPoints := 0
 	// Count number of time series and data points.

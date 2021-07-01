@@ -462,10 +462,8 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for _, op := range ops {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
-		ctx := rec.StartTracesOp(
-			longLivedCtx,
-			WithLongLivedCtx())
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport, LongLivedCtx: true})
+		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
 
 		rec.EndTracesOp(

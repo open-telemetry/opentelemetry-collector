@@ -54,7 +54,7 @@ func New(id config.ComponentID, nextConsumer consumer.Traces) (*Receiver, error)
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		id:           id,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport, LongLivedCtx: true}),
 	}, nil
 }
 
@@ -139,9 +139,7 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
-	ctx := ocr.obsrecv.StartTracesOp(
-		longLivedRPCCtx,
-		obsreport.WithLongLivedCtx())
+	ctx := ocr.obsrecv.StartTracesOp(longLivedRPCCtx)
 
 	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
 	ocr.obsrecv.EndTracesOp(ctx, receiverDataFormat, td.SpanCount(), err)
