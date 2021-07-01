@@ -29,9 +29,9 @@ import (
 
 // Receiver is a helper to add obersvability to a component.Receiver.
 type Receiver struct {
-	receiverID   config.ComponentID
-	transport    string
-	longLivedCtx bool
+	spanNamePrefix string
+	transport      string
+	longLivedCtx   bool
 }
 
 // ReceiverSettings are settings for creating an Receiver.
@@ -49,9 +49,9 @@ type ReceiverSettings struct {
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
 	return &Receiver{
-		receiverID:   cfg.ReceiverID,
-		transport:    cfg.Transport,
-		longLivedCtx: cfg.LongLivedCtx,
+		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
+		transport:      cfg.Transport,
+		longLivedCtx:   cfg.LongLivedCtx,
 	}
 }
 
@@ -130,7 +130,7 @@ func ReceiverContext(
 func (rec *Receiver) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
 	var ctx context.Context
 	var span *trace.Span
-	spanName := obsmetrics.ReceiverPrefix + rec.receiverID.String() + operationSuffix
+	spanName := rec.spanNamePrefix + operationSuffix
 	if !rec.longLivedCtx {
 		ctx, span = trace.StartSpan(receiverCtx, spanName)
 	} else {
