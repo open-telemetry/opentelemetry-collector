@@ -198,31 +198,26 @@ func TestMetricCountWithEmpty(t *testing.T) {
 
 func TestMetricAndDataPointCount(t *testing.T) {
 	md := NewMetrics()
-	ms, dps := md.MetricAndDataPointCount()
-	assert.EqualValues(t, 0, ms)
+	dps := md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 
 	rms := md.ResourceMetrics()
 	rms.Resize(1)
-	ms, dps = md.MetricAndDataPointCount()
-	assert.EqualValues(t, 0, ms)
+	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 
 	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
 	ilms.Resize(1)
-	ms, dps = md.MetricAndDataPointCount()
-	assert.EqualValues(t, 0, ms)
+	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 
 	ilms.At(0).Metrics().Resize(1)
-	ms, dps = md.MetricAndDataPointCount()
-	assert.EqualValues(t, 1, ms)
+	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 	ilms.At(0).Metrics().At(0).SetDataType(MetricDataTypeIntSum)
 	intSum := ilms.At(0).Metrics().At(0).IntSum()
 	intSum.DataPoints().Resize(3)
-	_, dps = md.MetricAndDataPointCount()
-	assert.EqualValues(t, 3, dps)
+	assert.EqualValues(t, 3, md.DataPointCount())
 
 	md = NewMetrics()
 	rms = md.ResourceMetrics()
@@ -234,40 +229,24 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	ilms = rms.At(2).InstrumentationLibraryMetrics()
 	ilms.Resize(1)
 	ilms.At(0).Metrics().Resize(5)
-	ms, dps = md.MetricAndDataPointCount()
-	assert.EqualValues(t, 6, ms)
-	assert.EqualValues(t, 0, dps)
+	assert.EqualValues(t, 0, md.DataPointCount())
 	ilms.At(0).Metrics().At(1).SetDataType(MetricDataTypeDoubleGauge)
 	doubleGauge := ilms.At(0).Metrics().At(1).DoubleGauge()
 	doubleGauge.DataPoints().Resize(1)
 	ilms.At(0).Metrics().At(3).SetDataType(MetricDataTypeIntHistogram)
 	intHistogram := ilms.At(0).Metrics().At(3).IntHistogram()
 	intHistogram.DataPoints().Resize(3)
-	ms, dps = md.MetricAndDataPointCount()
-	assert.EqualValues(t, 6, ms)
-	assert.EqualValues(t, 4, dps)
+	assert.EqualValues(t, 4, md.DataPointCount())
 }
 
-func TestMetricAndDataPointCountWithEmpty(t *testing.T) {
-	ms, dps := generateMetricsEmptyResource().MetricAndDataPointCount()
-	assert.EqualValues(t, 0, ms)
-	assert.EqualValues(t, 0, dps)
-
-	ms, dps = generateMetricsEmptyInstrumentation().MetricAndDataPointCount()
-	assert.EqualValues(t, 0, ms)
-	assert.EqualValues(t, 0, dps)
-
-	ms, dps = generateMetricsEmptyMetrics().MetricAndDataPointCount()
-	assert.EqualValues(t, 1, ms)
-	assert.EqualValues(t, 0, dps)
-
-	ms, dps = generateMetricsEmptyDataPoints().MetricAndDataPointCount()
-	assert.EqualValues(t, 1, ms)
-	assert.EqualValues(t, 1, dps)
-
+func TestDataPointCountWithEmpty(t *testing.T) {
+	assert.EqualValues(t, 0, generateMetricsEmptyResource().DataPointCount())
+	assert.EqualValues(t, 0, generateMetricsEmptyInstrumentation().DataPointCount())
+	assert.EqualValues(t, 0, generateMetricsEmptyMetrics().DataPointCount())
+	assert.EqualValues(t, 1, generateMetricsEmptyDataPoints().DataPointCount())
 }
 
-func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
+func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	intGauge := ilm.Metrics().AppendEmpty()
@@ -282,11 +261,7 @@ func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
 	intSum.SetDataType(MetricDataTypeIntSum)
 	doubleSum := ilm.Metrics().AppendEmpty()
 	doubleSum.SetDataType(MetricDataTypeDoubleSum)
-
-	ms, dps := metrics.MetricAndDataPointCount()
-
-	assert.EqualValues(t, 6, ms)
-	assert.EqualValues(t, 0, dps)
+	assert.EqualValues(t, 0, metrics.DataPointCount())
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {

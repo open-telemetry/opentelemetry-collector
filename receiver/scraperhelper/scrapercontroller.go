@@ -194,8 +194,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
-	_, dataPointCount := metrics.MetricAndDataPointCount()
-
+	dataPointCount := metrics.DataPointCount()
 	ctx = sc.obsrecv.StartMetricsOp(ctx)
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
 	sc.obsrecv.EndMetricsOp(ctx, "", dataPointCount, err)

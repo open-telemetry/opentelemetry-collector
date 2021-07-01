@@ -358,8 +358,7 @@ func assertReceiverSpan(t *testing.T, spans []*trace.SpanData) {
 func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	dataPointCount := 0
 	for _, md := range sink.AllMetrics() {
-		_, dpc := md.MetricAndDataPointCount()
-		dataPointCount += dpc
+		dataPointCount += md.DataPointCount()
 	}
 	obsreporttest.CheckReceiverMetrics(t, config.NewID("receiver"), "", int64(dataPointCount), 0)
 }
