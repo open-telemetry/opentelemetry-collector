@@ -246,12 +246,12 @@ func TestScrapeController(t *testing.T) {
 				// wait until all calls to scrape have completed
 				if test.scrapeErr == nil {
 					require.Eventually(t, func() bool {
-						return sink.MetricsCount() == iterations*(test.scrapers+test.resourceScrapers)
+						return sink.DataPointCount() == iterations*(test.scrapers+test.resourceScrapers)
 					}, time.Second, time.Millisecond)
 				}
 
 				if test.expectScraped {
-					assert.GreaterOrEqual(t, sink.MetricsCount(), iterations)
+					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
 				spans := ss.PullAllSpans()
@@ -384,14 +384,14 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData)
 }
 
 func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.MetricsSink) {
-	expectedScraped := int64(sink.MetricsCount())
+	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
 		if partialError, isPartial := expectedErr.(scrapererror.PartialScrapeError); isPartial {
 			expectedErrored = int64(partialError.Failed)
 		} else {
 			expectedScraped = int64(0)
-			expectedErrored = int64(sink.MetricsCount())
+			expectedErrored = int64(sink.DataPointCount())
 		}
 	}
 
