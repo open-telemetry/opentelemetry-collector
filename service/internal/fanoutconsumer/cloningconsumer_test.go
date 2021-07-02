@@ -83,9 +83,9 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	mfc := NewMetricsCloning(processors)
 	md := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 
-	var wantMetricsCount = 0
+	var wantDataPointCount = 0
 	for i := 0; i < 2; i++ {
-		wantMetricsCount += md.MetricCount()
+		wantDataPointCount += md.DataPointCount()
 		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -95,7 +95,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 
 	for i, p := range processors {
 		m := p.(*consumertest.MetricsSink)
-		assert.Equal(t, wantMetricsCount, m.MetricsCount())
+		assert.Equal(t, wantDataPointCount, m.DataPointCount())
 		metricOrig := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		allMetrics := m.AllMetrics()
 		metricClone := allMetrics[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)

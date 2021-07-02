@@ -49,10 +49,10 @@ func TestMetricsSink(t *testing.T) {
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllMetrics())
-	assert.Equal(t, len(want), sink.MetricsCount())
+	assert.Equal(t, 2*len(want), sink.DataPointCount())
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllMetrics()))
-	assert.Equal(t, 0, sink.MetricsCount())
+	assert.Equal(t, 0, sink.DataPointCount())
 }
 
 func TestLogsSink(t *testing.T) {

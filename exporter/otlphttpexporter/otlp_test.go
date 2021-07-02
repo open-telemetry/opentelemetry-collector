@@ -230,7 +230,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 			md := testdata.GenerateMetricsOneMetric()
 			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 			require.Eventually(t, func() bool {
-				return sink.MetricsCount() > 0
+				return sink.DataPointCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allMetrics := sink.AllMetrics()
 			require.Len(t, allMetrics, 1)
