@@ -179,7 +179,6 @@ func (sc *controller) startScraping() {
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
 func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
-	ctx = obsreport.ReceiverContext(ctx, sc.id, "")
 	metrics := pdata.NewMetrics()
 
 	for _, scraper := range sc.scrapers {

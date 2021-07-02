@@ -64,8 +64,6 @@ const (
 // Export is the gRPC method that receives streamed metrics from
 // OpenCensus-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
-	longLivedRPCCtx := obsreport.ReceiverContext(mes.Context(), ocr.id, receiverTransport)
-
 	// Retrieve the first message. It MUST have a non-nil Node.
 	recv, err := mes.Recv()
 	if err != nil {
@@ -82,7 +80,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	// Now that we've got the first message with a Node, we can start to receive streamed up metrics.
 	for {
 		lastNonNilNode, resource, err = ocr.processReceivedMsg(
-			longLivedRPCCtx,
+			mes.Context(),
 			lastNonNilNode,
 			resource,
 			recv)

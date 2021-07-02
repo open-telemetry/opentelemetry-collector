@@ -244,8 +244,7 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // EmitBatch implements thrift-gen/agent/Agent and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
-	ctx = h.obsrecv.StartTracesOp(obsreport.ReceiverContext(ctx, h.id, h.transport))
-
+	ctx = h.obsrecv.StartTracesOp(ctx)
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
 	h.obsrecv.EndTracesOp(ctx, thriftFormat, numSpans, err)
 	return err
@@ -271,7 +270,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = jr.grpcObsrecv.StartTracesOp(obsreport.ReceiverContext(ctx, jr.id, grpcTransport))
+	ctx = jr.grpcObsrecv.StartTracesOp(ctx)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
 
@@ -420,7 +419,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = jr.httpObsrecv.StartTracesOp(obsreport.ReceiverContext(ctx, jr.id, collectorHTTPTransport))
+	ctx = jr.httpObsrecv.StartTracesOp(ctx)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {

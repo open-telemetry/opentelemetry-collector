@@ -32,6 +32,7 @@ type Receiver struct {
 	spanNamePrefix string
 	transport      string
 	longLivedCtx   bool
+	mutators       []tag.Mutator
 }
 
 // ReceiverSettings are settings for creating an Receiver.
@@ -52,6 +53,10 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
+		mutators: []tag.Mutator{
+			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
+			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
+		},
 	}
 }
 
@@ -109,30 +114,14 @@ func (rec *Receiver) EndMetricsOp(
 	rec.endOp(receiverCtx, format, numReceivedPoints, err, config.MetricsDataType)
 }
 
-// ReceiverContext adds the keys used when recording observability metrics to
-// the given context returning the newly created context. This context should
-// be used in related calls to the obsreport functions so metrics are properly
-// recorded.
-func ReceiverContext(
-	ctx context.Context,
-	receiverID config.ComponentID,
-	transport string,
-) context.Context {
-	ctx, _ = tag.New(ctx,
-		tag.Upsert(obsmetrics.TagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-		tag.Upsert(obsmetrics.TagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
-
-	return ctx
-}
-
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
 func (rec *Receiver) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
-	var ctx context.Context
+	ctx, _ := tag.New(receiverCtx, rec.mutators...)
 	var span *trace.Span
 	spanName := rec.spanNamePrefix + operationSuffix
 	if !rec.longLivedCtx {
-		ctx, span = trace.StartSpan(receiverCtx, spanName)
+		ctx, span = trace.StartSpan(ctx, spanName)
 	} else {
 		// Since the receiverCtx is long lived do not use it to start the span.
 		// This way this trace ends when the EndTracesOp is called.
@@ -142,7 +131,7 @@ func (rec *Receiver) startOp(receiverCtx context.Context, operationSuffix string
 		// If the long lived context has a parent span, then add it as a parent link.
 		setParentLink(receiverCtx, span)
 
-		ctx = trace.NewContext(receiverCtx, span)
+		ctx = trace.NewContext(ctx, span)
 	}
 
 	if rec.transport != "" {
