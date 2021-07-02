@@ -43,7 +43,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	defer doneFn()
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
-	ctx := rec.StartTracesOp(obsreport.ReceiverContext(context.Background(), receiver, transport))
+	ctx := rec.StartTracesOp(context.Background())
 	assert.NotNil(t, ctx)
 	rec.EndTracesOp(
 		ctx,
@@ -60,7 +60,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	defer doneFn()
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
-	ctx := rec.StartMetricsOp(obsreport.ReceiverContext(context.Background(), receiver, transport))
+	ctx := rec.StartMetricsOp(context.Background())
 	assert.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
@@ -73,7 +73,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	defer doneFn()
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
-	ctx := rec.StartLogsOp(obsreport.ReceiverContext(context.Background(), receiver, transport))
+	ctx := rec.StartLogsOp(context.Background())
 	assert.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)
 

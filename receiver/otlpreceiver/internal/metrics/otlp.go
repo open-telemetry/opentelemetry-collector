@@ -57,7 +57,7 @@ func (r *Receiver) Export(ctx context.Context, md pdata.Metrics) (otlpgrpc.Metri
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = r.obsrecv.StartMetricsOp(obsreport.ReceiverContext(ctx, r.id, receiverTransport))
+	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
 

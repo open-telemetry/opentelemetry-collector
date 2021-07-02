@@ -78,8 +78,6 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.id, receiverTransport)
-
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
 	if err != nil {
@@ -96,7 +94,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// Now that we've got the first message with a Node, we can start to receive streamed up spans.
 	for {
 		lastNonNilNode, resource, err = ocr.processReceivedMsg(
-			longLivedRPCCtx,
+			ctx,
 			lastNonNilNode,
 			resource,
 			recv)
