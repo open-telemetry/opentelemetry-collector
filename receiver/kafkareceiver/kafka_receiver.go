@@ -416,9 +416,9 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			return err
 		}
 
-		metricCount := metrics.MetricCount()
+		dataPointCount := metrics.DataPointCount()
 		err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
-		c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), metricCount, err)
+		c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
 		if err != nil {
 			return err
 		}
