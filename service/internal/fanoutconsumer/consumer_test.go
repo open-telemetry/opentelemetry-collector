@@ -161,7 +161,7 @@ func TestLogsProcessorMultiplexing(t *testing.T) {
 
 	for _, p := range processors {
 		m := p.(*consumertest.LogsSink)
-		assert.Equal(t, wantMetricsCount, m.LogRecordsCount())
+		assert.Equal(t, wantMetricsCount, m.LogRecordCount())
 		assert.EqualValues(t, ld, m.AllLogs()[0])
 	}
 }
@@ -184,6 +184,6 @@ func TestLogsProcessorWhenOneErrors(t *testing.T) {
 		assert.Error(t, lfc.ConsumeLogs(context.Background(), ld))
 	}
 
-	assert.Equal(t, wantMetricsCount, processors[0].(*consumertest.LogsSink).LogRecordsCount())
-	assert.Equal(t, wantMetricsCount, processors[2].(*consumertest.LogsSink).LogRecordsCount())
+	assert.Equal(t, wantMetricsCount, processors[0].(*consumertest.LogsSink).LogRecordCount())
+	assert.Equal(t, wantMetricsCount, processors[2].(*consumertest.LogsSink).LogRecordCount())
 }

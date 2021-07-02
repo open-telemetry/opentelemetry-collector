@@ -283,7 +283,7 @@ func TestLogsRoundTrip(t *testing.T) {
 			md := testdata.GenerateLogsOneLogRecord()
 			assert.NoError(t, exp.ConsumeLogs(context.Background(), md))
 			require.Eventually(t, func() bool {
-				return sink.LogRecordsCount() > 0
+				return sink.LogRecordCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allLogs := sink.AllLogs()
 			require.Len(t, allLogs, 1)
