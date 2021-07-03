@@ -168,10 +168,10 @@ func Scenario10kItemsPerSecond(
 		agentProc,
 		&testbed.PerfTestValidator{},
 		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(resourceSpec)
 	tc.StartBackend()
 	tc.StartAgent("--log-level=debug")
 
@@ -241,13 +241,9 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 				agentProc,
 				&testbed.PerfTestValidator{},
 				test.resultsSummary,
+				testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: test.expectedMaxCPU, ExpectedMaxRAM: test.expectedMaxRAM}),
 			)
 			defer tc.Stop()
-
-			tc.SetResourceLimits(testbed.ResourceSpec{
-				ExpectedMaxCPU: test.expectedMaxCPU,
-				ExpectedMaxRAM: test.expectedMaxRAM,
-			})
 
 			tc.StartBackend()
 			tc.StartAgent(args...)
@@ -305,11 +301,10 @@ func ScenarioTestTraceNoBackend10kSPS(
 		agentProc,
 		&testbed.PerfTestValidator{},
 		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
 	)
 
 	defer tc.Stop()
-
-	tc.SetResourceLimits(resourceSpec)
 
 	tc.StartAgent()
 	tc.StartLoad(options)

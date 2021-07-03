@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 type byLookupMetadataCache map[string]scrape.MetricMetadata
@@ -89,7 +90,7 @@ func TestIsCumulativeEquivalence(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mf := newMetricFamily(tt.name, mc).(*metricFamily)
+			mf := newMetricFamily(tt.name, mc, zap.NewNop()).(*metricFamily)
 			mfp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
 			assert.Equal(t, mf.isCumulativeType(), mfp.isCumulativeTypePdata(), "mismatch in isCumulative")
 			assert.Equal(t, mf.isCumulativeType(), tt.want, "isCumulative does not match for regular metricFamily")

@@ -20,6 +20,7 @@ import (
 
 type nonMutatingConsumer struct{}
 
+// Capabilities returns the base consumer capabilities.
 func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }

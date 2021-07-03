@@ -15,20 +15,35 @@
 package otlp
 
 import (
-	"go.opentelemetry.io/collector/internal/model"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// NewJSONTracesMarshaler returns a model.TracesMarshaler to decode from OTLP json bytes.
-func NewJSONTracesMarshaler() model.TracesMarshaler {
-	return model.NewTracesMarshaler(newJSONEncoder(), newFromTranslator())
+// NewJSONTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP json bytes.
+func NewJSONTracesMarshaler() pdata.TracesMarshaler {
+	return pdata.NewTracesMarshaler(newJSONEncoder(), newFromTranslator())
 }
 
-// NewJSONMetricsMarshaler returns a model.MetricsMarshaler to decode from OTLP json bytes.
-func NewJSONMetricsMarshaler() model.MetricsMarshaler {
-	return model.NewMetricsMarshaler(newJSONEncoder(), newFromTranslator())
+// NewJSONMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP json bytes.
+func NewJSONMetricsMarshaler() pdata.MetricsMarshaler {
+	return pdata.NewMetricsMarshaler(newJSONEncoder(), newFromTranslator())
 }
 
-// NewJSONLogsMarshaler returns a model.LogsMarshaler to decode from OTLP json bytes.
-func NewJSONLogsMarshaler() model.LogsMarshaler {
-	return model.NewLogsMarshaler(newJSONEncoder(), newFromTranslator())
+// NewJSONLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP json bytes.
+func NewJSONLogsMarshaler() pdata.LogsMarshaler {
+	return pdata.NewLogsMarshaler(newJSONEncoder(), newFromTranslator())
+}
+
+// NewProtobufTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
+	return pdata.NewTracesMarshaler(newPbEncoder(), newFromTranslator())
+}
+
+// NewProtobufMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufMetricsMarshaler() pdata.MetricsMarshaler {
+	return pdata.NewMetricsMarshaler(newPbEncoder(), newFromTranslator())
+}
+
+// NewProtobufLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
+	return pdata.NewLogsMarshaler(newPbEncoder(), newFromTranslator())
 }

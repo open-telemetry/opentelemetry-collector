@@ -17,8 +17,6 @@ package otlpreceiver
 import (
 	"fmt"
 
-	"github.com/spf13/cast"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -68,27 +66,19 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 		return err
 	}
 
-	// next manually search for protocols in viper, if a protocol is not present it means it is disable.
-	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
+	// next manually search for protocols in the configparser.Parser, if a protocol is not present it means it is disable.
+	protocols, err := componentParser.Sub(protocolsFieldName)
+	if err != nil {
+		return err
+	}
 
-	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
-	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
-	// include only known protocols.
-	knownProtocols := 0
-	if _, ok := protocols[protoGRPC]; !ok {
+	if !protocols.IsSet(protoGRPC) {
 		cfg.GRPC = nil
-	} else {
-		knownProtocols++
 	}
 
-	if _, ok := protocols[protoHTTP]; !ok {
+	if !protocols.IsSet(protoHTTP) {
 		cfg.HTTP = nil
-	} else {
-		knownProtocols++
 	}
 
-	if len(protocols) != knownProtocols {
-		return fmt.Errorf("unknown protocols in the OTLP receiver")
-	}
 	return nil
 }

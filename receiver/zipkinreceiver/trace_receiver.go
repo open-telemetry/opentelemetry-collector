@@ -18,7 +18,6 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -27,10 +26,6 @@ import (
 	"strings"
 	"sync"
 
-	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
-
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -38,7 +33,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
 const (
@@ -52,9 +48,6 @@ var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
 type ZipkinReceiver struct {
-	// mu protects the fields of this struct
-	mu sync.Mutex
-
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
 	nextConsumer consumer.Traces
@@ -63,6 +56,12 @@ type ZipkinReceiver struct {
 	shutdownWG sync.WaitGroup
 	server     *http.Server
 	config     *Config
+
+	v1ThriftUnmarshaler      pdata.TracesUnmarshaler
+	v1JSONUnmarshaler        pdata.TracesUnmarshaler
+	jsonUnmarshaler          pdata.TracesUnmarshaler
+	protobufUnmarshaler      pdata.TracesUnmarshaler
+	protobufDebugUnmarshaler pdata.TracesUnmarshaler
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
@@ -74,9 +73,14 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 	}
 
 	zr := &ZipkinReceiver{
-		nextConsumer: nextConsumer,
-		id:           config.ID(),
-		config:       config,
+		nextConsumer:             nextConsumer,
+		id:                       config.ID(),
+		config:                   config,
+		v1ThriftUnmarshaler:      zipkinv1.NewThriftTracesUnmarshaler(),
+		v1JSONUnmarshaler:        zipkinv1.NewJSONTracesUnmarshaler(config.ParseStringTags),
+		jsonUnmarshaler:          zipkinv2.NewJSONTracesUnmarshaler(config.ParseStringTags),
+		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, config.ParseStringTags),
+		protobufDebugUnmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(true, config.ParseStringTags),
 	}
 	return zr, nil
 }
@@ -86,9 +90,6 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
-
-	zr.mu.Lock()
-	defer zr.mu.Unlock()
 
 	zr.host = host
 	zr.server = zr.config.HTTPServerSettings.ToServer(zr)
@@ -112,14 +113,9 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
 func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
-		zSpans, err := jaegerzipkin.DeserializeThrift(blob)
-		if err != nil {
-			return pdata.NewTraces(), err
-		}
-
-		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
+		return zr.v1ThriftUnmarshaler.Unmarshal(blob)
 	}
-	return zipkin.V1JSONBatchToInternalTraces(blob, zr.config.ParseStringTags)
+	return zr.v1JSONUnmarshaler.Unmarshal(blob)
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
@@ -128,30 +124,20 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 	//      https://github.com/openzipkin/zipkin-go/blob/3793c981d4f621c0e3eb1457acffa2c1cc591384/proto/v2/zipkin.proto#L154
 	debugWasSet := hdr.Get("X-B3-Flags") == "1"
 
-	var zipkinSpans []*zipkinmodel.SpanModel
+	// By default, we'll assume using JSON
+	unmarshaler := zr.jsonUnmarshaler
 
 	// Zipkin can send protobuf via http
-	switch hdr.Get("Content-Type") {
-	// TODO: (@odeke-em) record the unique types of Content-Type uploads
-	case "application/x-protobuf":
-		zipkinSpans, err = zipkin_proto3.ParseSpans(blob, debugWasSet)
-
-	default: // By default, we'll assume using JSON
-		zipkinSpans, err = zr.deserializeFromJSON(blob)
+	if hdr.Get("Content-Type") == "application/x-protobuf" {
+		// TODO: (@odeke-em) record the unique types of Content-Type uploads
+		if debugWasSet {
+			unmarshaler = zr.protobufDebugUnmarshaler
+		} else {
+			unmarshaler = zr.protobufUnmarshaler
+		}
 	}
 
-	if err != nil {
-		return pdata.Traces{}, err
-	}
-
-	return zipkin.V2SpansToInternalTraces(zipkinSpans, zr.config.ParseStringTags)
-}
-
-func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte) (zs []*zipkinmodel.SpanModel, err error) {
-	if err = json.Unmarshal(jsonBlob, &zs); err != nil {
-		return nil, err
-	}
-	return zs, nil
+	return unmarshaler.Unmarshal(blob)
 }
 
 // Shutdown tells the receiver that should stop reception,

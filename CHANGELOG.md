@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+## v0.29.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Rename `service.Application` to `service.Collector` (#3268)
+- Provide case sensitivity in config yaml mappings by using Koanf instead of Viper (#3337)
+- Move zipkin constants to an internal package (#3431)
+- Disallow renaming metrics using metric relabel configs (#3410)
+- Move cgroup and iruntime utils from memory_limiter to internal folder (#3448)
+- Move model pdata interfaces to pdata, expose them publicly (#3455)
+
+## 💡 Enhancements 💡
+
+- Change obsreport helpers for scraper to use the same pattern as Processor/Exporter (#3327)
+- Convert `otlptext` to implement Marshaler interfaces (#3366)
+- Add encoder/decoder and marshaler/unmarshaler for OTLP protobuf (#3401)
+- Use the new marshaler/unmarshaler in `kafka` exporter (#3403)
+- Convert `zipkinv2` to to/from translator interfaces (#3409)
+- `zipkinv1`: Move to translator and encoders interfaces (#3419)
+- Use the new marshaler/unmarshaler in `kafka` receiver #3402
+- Change `oltp` receiver to use the new unmarshaler, avoid grpc-gateway dependency (#3406)
+- Use the new Marshaler in the `otlphttp` exporter (#3433)
+- Add grpc response struct for all signals instead of returning interface in `otlp` receiver/exporter (#3437)
+- `zipkinv2`: Add encoders, decoders, marshalers (#3426)
+- `scrapererror` receiver: Return concrete error type (#3360)
+- `kafka` receiver: Add metrics support (#3452)
+- `prometheus` receiver:
+  - Add store to track stale metrics (#3414)
+  - Add `up` and `scrape_xxxx` internal metrics (#3116)
+
+## 🧰 Bug fixes 🧰
+
+- `prometheus` receiver:
+  - Reject datapoints with duplicate label keys (#3408)
+  - Scrapers are not stopped when receiver is shutdown (#3450)
+- `prometheusremotewrite` exporter: Adjust default retry settings (#3416)
+- `hostmetrics` receiver: Fix missing startTimestamp for `processes` scraper (#3461)
+
 ## v0.28.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -33,6 +71,7 @@
 ## 💡 Enhancements 💡
 
 - Add `doc.go` files to the consumer package and its subpackages (#3270)
+- Improve documentation of consumer package and subpackages (#3269, #3361)
 - Automate triggering of doc-update on release (#3234)
 - Enable Dependabot for Github Actions (#3312)
 - Remove the proto dependency in `goldendataset` for traces (#3322)

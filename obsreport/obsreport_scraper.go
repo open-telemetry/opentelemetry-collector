@@ -45,22 +45,40 @@ func ScraperContext(
 	return ctx
 }
 
-// StartMetricsScrapeOp is called when a scrape operation is started. The
+// Scraper is a helper to add observability to a component.Scraper.
+type Scraper struct {
+	receiverID config.ComponentID
+	scraper    config.ComponentID
+}
+
+// ScraperSettings are settings for creating a Scraper.
+type ScraperSettings struct {
+	ReceiverID config.ComponentID
+	Scraper    config.ComponentID
+}
+
+// NewScraper creates a new Scraper.
+func NewScraper(cfg ScraperSettings) *Scraper {
+	return &Scraper{
+		receiverID: cfg.ReceiverID,
+		scraper:    cfg.Scraper,
+	}
+}
+
+// StartMetricsOp is called when a scrape operation is started. The
 // returned context should be used in other calls to the obsreport functions
 // dealing with the same scrape operation.
-func StartMetricsScrapeOp(
+func (s *Scraper) StartMetricsOp(
 	scraperCtx context.Context,
-	receiverID config.ComponentID,
-	scraper config.ComponentID,
 ) context.Context {
-	spanName := obsmetrics.ScraperPrefix + receiverID.String() + obsmetrics.NameSep + scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
+	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.NameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
 	ctx, _ := trace.StartSpan(scraperCtx, spanName)
 	return ctx
 }
 
-// EndMetricsScrapeOp completes the scrape operation that was started with
-// StartMetricsScrapeOp.
-func EndMetricsScrapeOp(
+// EndMetricsOp completes the scrape operation that was started with
+// StartMetricsOp.
+func (s *Scraper) EndMetricsOp(
 	scraperCtx context.Context,
 	numScrapedMetrics int,
 	err error,

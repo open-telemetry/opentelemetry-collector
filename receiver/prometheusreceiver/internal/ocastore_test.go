@@ -33,7 +33,7 @@ func TestOcaStore(t *testing.T) {
 	app := o.Appender(context.Background())
 	require.NotNil(t, app, "Expecting app")
 
-	_ = o.Close()
+	o.Close()
 
 	app = o.Appender(context.Background())
 	assert.Equal(t, noop, app)

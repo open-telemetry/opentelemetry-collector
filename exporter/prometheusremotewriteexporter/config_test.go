@@ -76,8 +76,8 @@ func Test_loadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				Timeout:         5 * time.Second,
 				Headers: map[string]string{
-					"prometheus-remote-write-version": "0.1.0",
-					"x-scope-orgid":                   "234"},
+					"Prometheus-Remote-Write-Version": "0.1.0",
+					"X-Scope-OrgID":                   "234"},
 			},
 			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
 		})

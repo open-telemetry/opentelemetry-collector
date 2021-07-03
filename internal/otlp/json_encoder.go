@@ -19,10 +19,10 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/internal/model"
 )
 
 type jsonEncoder struct {
@@ -36,35 +36,29 @@ func newJSONEncoder() *jsonEncoder {
 func (e *jsonEncoder) EncodeLogs(modelData interface{}) ([]byte, error) {
 	ld, ok := modelData.(*otlpcollectorlogs.ExportLogsServiceRequest)
 	if !ok {
-		return nil, model.NewErrIncompatibleType(&otlpcollectorlogs.ExportLogsServiceRequest{}, modelData)
+		return nil, pdata.NewErrIncompatibleType(&otlpcollectorlogs.ExportLogsServiceRequest{}, modelData)
 	}
 	buf := bytes.Buffer{}
-	if err := e.delegate.Marshal(&buf, ld); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	err := e.delegate.Marshal(&buf, ld)
+	return buf.Bytes(), err
 }
 
 func (e *jsonEncoder) EncodeMetrics(modelData interface{}) ([]byte, error) {
 	md, ok := modelData.(*otlpcollectormetrics.ExportMetricsServiceRequest)
 	if !ok {
-		return nil, model.NewErrIncompatibleType(&otlpcollectormetrics.ExportMetricsServiceRequest{}, modelData)
+		return nil, pdata.NewErrIncompatibleType(&otlpcollectormetrics.ExportMetricsServiceRequest{}, modelData)
 	}
 	buf := bytes.Buffer{}
-	if err := e.delegate.Marshal(&buf, md); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	err := e.delegate.Marshal(&buf, md)
+	return buf.Bytes(), err
 }
 
 func (e *jsonEncoder) EncodeTraces(modelData interface{}) ([]byte, error) {
 	td, ok := modelData.(*otlpcollectortrace.ExportTraceServiceRequest)
 	if !ok {
-		return nil, model.NewErrIncompatibleType(&otlpcollectortrace.ExportTraceServiceRequest{}, modelData)
+		return nil, pdata.NewErrIncompatibleType(&otlpcollectortrace.ExportTraceServiceRequest{}, modelData)
 	}
 	buf := bytes.Buffer{}
-	if err := e.delegate.Marshal(&buf, td); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	err := e.delegate.Marshal(&buf, td)
+	return buf.Bytes(), err
 }

@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"errors"
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
@@ -34,6 +35,101 @@ const (
 	startTime = uint64(12578940000000012345)
 	endTime   = uint64(12578940000000054321)
 )
+
+func TestMetricsMarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mm := NewMetricsMarshaler(encoder, translator)
+	md := NewMetrics()
+
+	translator.On("FromMetrics", md).Return(nil, errors.New("translation failed"))
+
+	_, err := mm.Marshal(md)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
+}
+
+func TestMetricsMarshal_SerializeError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mm := NewMetricsMarshaler(encoder, translator)
+	md := NewMetrics()
+	expectedModel := struct{}{}
+
+	translator.On("FromMetrics", md).Return(expectedModel, nil)
+	encoder.On("EncodeMetrics", expectedModel).Return(nil, errors.New("serialization failed"))
+
+	_, err := mm.Marshal(md)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "marshal failed: serialization failed")
+}
+
+func TestMetricsMarshal_Encode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mm := NewMetricsMarshaler(encoder, translator)
+	expectedMetrics := NewMetrics()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	translator.On("FromMetrics", expectedMetrics).Return(expectedModel, nil)
+	encoder.On("EncodeMetrics", expectedModel).Return(expectedBytes, nil)
+
+	actualBytes, err := mm.Marshal(expectedMetrics)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestMetricsUnmarshal_EncodingError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, errors.New("decode failed"))
+
+	_, err := mu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unmarshal failed: decode failed")
+}
+
+func TestMetricsUnmarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToMetrics", expectedModel).Return(NewMetrics(), errors.New("translation failed"))
+
+	_, err := mu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
+}
+
+func TestMetricsUnmarshal_Decode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	mu := NewMetricsUnmarshaler(encoder, translator)
+	expectedMetrics := NewMetrics()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeMetrics", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToMetrics", expectedModel).Return(expectedMetrics, nil)
+
+	actualMetrics, err := mu.Unmarshal(expectedBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMetrics, actualMetrics)
+}
 
 func TestCopyData(t *testing.T) {
 	tests := []struct {
@@ -174,19 +270,13 @@ func TestMetricCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.MetricCount())
 }
 
-func TestMetricSize(t *testing.T) {
-	md := NewMetrics()
-	assert.Equal(t, 0, md.OtlpProtoSize())
-	rms := md.ResourceMetrics()
-	metric := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(MetricDataTypeHistogram)
-	doubleHistogram := metric.Histogram()
-	pt := doubleHistogram.DataPoints().AppendEmpty()
-	pt.SetCount(123)
-	pt.SetSum(123)
-	otlp := internal.MetricsToOtlp(md.InternalRep())
-	size := otlp.Size()
-	bytes, err := otlp.Marshal()
+func TestMetricsSize(t *testing.T) {
+	assert.Equal(t, 0, NewMetrics().OtlpProtoSize())
+
+	md := generateMetricsEmptyDataPoints()
+	orig := md.orig
+	size := orig.Size()
+	bytes, err := orig.Marshal()
 	require.NoError(t, err)
 	assert.Equal(t, size, md.OtlpProtoSize())
 	assert.Equal(t, len(bytes), md.OtlpProtoSize())
@@ -296,7 +386,7 @@ func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
-	metricData := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -308,8 +398,8 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	}))
-	resourceMetrics := metricData.ResourceMetrics()
+	}}
+	resourceMetrics := md.ResourceMetrics()
 	assert.EqualValues(t, 1, resourceMetrics.Len())
 
 	resourceMetric := resourceMetrics.At(0)
@@ -384,7 +474,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
-	metricData := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -410,7 +500,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	}, internal.MetricsToOtlp(metricData.InternalRep()))
+	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
 func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
@@ -971,23 +1061,23 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 }
 
 func generateMetricsEmptyResource() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
-	}))
+	}}
 }
 
 func generateMetricsEmptyInstrumentation() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{{}},
 			},
 		},
-	}))
+	}}
 }
 
 func generateMetricsEmptyMetrics() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -997,11 +1087,11 @@ func generateMetricsEmptyMetrics() Metrics {
 				},
 			},
 		},
-	}))
+	}}
 }
 
 func generateMetricsEmptyDataPoints() Metrics {
-	return MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -1021,5 +1111,5 @@ func generateMetricsEmptyDataPoints() Metrics {
 				},
 			},
 		},
-	}))
+	}}
 }

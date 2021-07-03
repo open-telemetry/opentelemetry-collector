@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
@@ -97,8 +98,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	// 2. Serialize it
 	protoBlob, err := proto.Marshal(payloadFromWild)
 	require.NoError(t, err, "Failed to protobuf serialize payload: %v", err)
-	zi := new(ZipkinReceiver)
-	zi.config = createDefaultConfig().(*Config)
+	zi := newTestZipkinReceiver()
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 
@@ -161,6 +161,16 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				compareResourceSpans(t, wantRS, reqsRS)
 			}
 		}
+	}
+}
+
+func newTestZipkinReceiver() *ZipkinReceiver {
+	cfg := createDefaultConfig().(*Config)
+	return &ZipkinReceiver{
+		config:                   cfg,
+		jsonUnmarshaler:          zipkinv2.NewJSONTracesUnmarshaler(cfg.ParseStringTags),
+		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, cfg.ParseStringTags),
+		protobufDebugUnmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(true, cfg.ParseStringTags),
 	}
 }
 

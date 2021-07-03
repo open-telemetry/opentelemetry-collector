@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +25,101 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
+
+func TestLogsMarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lm := NewLogsMarshaler(encoder, translator)
+	ld := NewLogs()
+
+	translator.On("FromLogs", ld).Return(nil, errors.New("translation failed"))
+
+	_, err := lm.Marshal(ld)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
+}
+
+func TestLogsMarshal_SerializeError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lm := NewLogsMarshaler(encoder, translator)
+	ld := NewLogs()
+	expectedModel := struct{}{}
+
+	translator.On("FromLogs", ld).Return(expectedModel, nil)
+	encoder.On("EncodeLogs", expectedModel).Return(nil, errors.New("serialization failed"))
+
+	_, err := lm.Marshal(ld)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "marshal failed: serialization failed")
+}
+
+func TestLogsMarshal_Encode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lm := NewLogsMarshaler(encoder, translator)
+	expectedLogs := NewLogs()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	translator.On("FromLogs", expectedLogs).Return(expectedModel, nil)
+	encoder.On("EncodeLogs", expectedModel).Return(expectedBytes, nil)
+
+	actualBytes, err := lm.Marshal(expectedLogs)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestLogsUnmarshal_EncodingError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lu := NewLogsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, errors.New("decode failed"))
+
+	_, err := lu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unmarshal failed: decode failed")
+}
+
+func TestLogsUnmarshal_TranslationError(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lu := NewLogsUnmarshaler(encoder, translator)
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToLogs", expectedModel).Return(NewLogs(), errors.New("translation failed"))
+
+	_, err := lu.Unmarshal(expectedBytes)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
+}
+
+func TestLogsUnmarshal_Decode(t *testing.T) {
+	translator := &mockTranslator{}
+	encoder := &mockEncoder{}
+
+	lu := NewLogsUnmarshaler(encoder, translator)
+	expectedLogs := NewLogs()
+	expectedBytes := []byte{1, 2, 3}
+	expectedModel := struct{}{}
+
+	encoder.On("DecodeLogs", expectedBytes).Return(expectedModel, nil)
+	translator.On("ToLogs", expectedModel).Return(expectedLogs, nil)
+
+	actualLogs, err := lu.Unmarshal(expectedBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedLogs, actualLogs)
+}
 
 func TestLogRecordCount(t *testing.T) {
 	md := NewLogs()
@@ -48,17 +144,17 @@ func TestLogRecordCount(t *testing.T) {
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
-	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{{}},
-	})).LogRecordCount())
-	assert.Zero(t, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+	}}.LogRecordCount())
+	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
 			},
 		},
-	})).LogRecordCount())
-	assert.Equal(t, 1, LogsFromInternalRep(internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{
+	}}.LogRecordCount())
+	assert.Equal(t, 1, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
@@ -68,7 +164,7 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	})).LogRecordCount())
+	}}.LogRecordCount())
 }
 
 func TestToFromLogProto(t *testing.T) {
