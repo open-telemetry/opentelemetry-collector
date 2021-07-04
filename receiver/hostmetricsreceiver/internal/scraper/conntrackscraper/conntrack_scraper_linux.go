@@ -37,8 +37,8 @@ func scrapeAndAppendConntrackMetrics(s *scraper, metrics pdata.MetricSlice) erro
 	if len(conntrack) > 0 {
 		startIdx := metrics.Len()
 		metrics.Resize(startIdx + metricsLen)
-		initializeNetworkConntrackMetric(metrics.At(startIdx+0), metadata.Metrics.SystemConntrackCount, now, conntrack[0].ConnTrackCount)
-		initializeNetworkConntrackMetric(metrics.At(startIdx+1), metadata.Metrics.SystemConntrackMax, now, conntrack[0].ConnTrackMax)
+		initializeNetworkConntrackMetric(metrics.At(startIdx+0), metadata.Metrics.SystemConnectionsTableUsage, now, conntrack[0].ConnTrackCount)
+		initializeNetworkConntrackMetric(metrics.At(startIdx+1), metadata.Metrics.SystemConnectionsTableLimit, now, conntrack[0].ConnTrackMax)
 	}
 	return nil
 }

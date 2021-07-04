@@ -59,8 +59,8 @@ type metricStruct struct {
 	ProcessDiskIo               MetricIntf
 	ProcessMemoryPhysicalUsage  MetricIntf
 	ProcessMemoryVirtualUsage   MetricIntf
-	SystemConntrackCount        MetricIntf
-	SystemConntrackMax          MetricIntf
+	SystemConnectionsTableLimit MetricIntf
+	SystemConnectionsTableUsage MetricIntf
 	SystemCPULoadAverage15m     MetricIntf
 	SystemCPULoadAverage1m      MetricIntf
 	SystemCPULoadAverage5m      MetricIntf
@@ -94,8 +94,8 @@ func (m *metricStruct) Names() []string {
 		"process.disk.io",
 		"process.memory.physical_usage",
 		"process.memory.virtual_usage",
-		"system.conntrack.count",
-		"system.conntrack.max",
+		"system.connections.table.limit",
+		"system.connections.table.usage",
 		"system.cpu.load_average.15m",
 		"system.cpu.load_average.1m",
 		"system.cpu.load_average.5m",
@@ -128,8 +128,8 @@ var metricsByName = map[string]MetricIntf{
 	"process.disk.io":                Metrics.ProcessDiskIo,
 	"process.memory.physical_usage":  Metrics.ProcessMemoryPhysicalUsage,
 	"process.memory.virtual_usage":   Metrics.ProcessMemoryVirtualUsage,
-	"system.conntrack.count":         Metrics.SystemConntrackCount,
-	"system.conntrack.max":           Metrics.SystemConntrackMax,
+	"system.connections.table.limit": Metrics.SystemConnectionsTableLimit,
+	"system.connections.table.usage": Metrics.SystemConnectionsTableUsage,
 	"system.cpu.load_average.15m":    Metrics.SystemCPULoadAverage15m,
 	"system.cpu.load_average.1m":     Metrics.SystemCPULoadAverage1m,
 	"system.cpu.load_average.5m":     Metrics.SystemCPULoadAverage5m,
@@ -166,8 +166,8 @@ func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
 		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.Init,
 		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.Init,
 		Metrics.ProcessMemoryVirtualUsage.Name():   Metrics.ProcessMemoryVirtualUsage.Init,
-		Metrics.SystemConntrackCount.Name():        Metrics.SystemConntrackCount.Init,
-		Metrics.SystemConntrackMax.Name():          Metrics.SystemConntrackMax.Init,
+		Metrics.SystemConnectionsTableLimit.Name(): Metrics.SystemConnectionsTableLimit.Init,
+		Metrics.SystemConnectionsTableUsage.Name(): Metrics.SystemConnectionsTableUsage.Init,
 		Metrics.SystemCPULoadAverage15m.Name():     Metrics.SystemCPULoadAverage15m.Init,
 		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.Init,
 		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.Init,
@@ -243,10 +243,10 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"system.conntrack.count",
+		"system.connections.table.limit",
 		func(metric pdata.Metric) {
-			metric.SetName("system.conntrack.count")
-			metric.SetDescription("Number of currently allocated flow entries.")
+			metric.SetName("system.connections.table.limit")
+			metric.SetDescription("Size of connection tracking table.")
 			metric.SetUnit("{flow entries}")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(false)
@@ -254,10 +254,10 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"system.conntrack.max",
+		"system.connections.table.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.conntrack.max")
-			metric.SetDescription("Size of connection tracking table.")
+			metric.SetName("system.connections.table.usage")
+			metric.SetDescription("Number of currently allocated flow entries.")
 			metric.SetUnit("{flow entries}")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(false)
