@@ -20,7 +20,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/oteltest"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -144,18 +147,28 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, me, nil, 1)
+	checkWrapSpanForMetricsExporter(t, sr, tp.Tracer("test"), me, nil, 1)
 }
 
 func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
 	want := errors.New("my_error")
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, me, want, 1)
+	checkWrapSpanForMetricsExporter(t, sr, tp.Tracer("test"), me, want, 1)
 }
 
 func TestMetricsExporter_WithShutdown(t *testing.T) {
@@ -231,37 +244,28 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	}
 }
 
-func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numRequests int, wantError error) {
+func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me component.MetricsExporter, numRequests int, wantError error) {
 	md := testdata.GenerateMetricsOneMetricOneDataPoint()
-	ctx, span := trace.StartSpan(context.Background(), fakeMetricsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
+	ctx, span := tracer.Start(context.Background(), fakeMetricsParentSpanName)
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
 		require.Equal(t, wantError, me.ConsumeMetrics(ctx, md))
 	}
 }
 
-func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, numMetricPoints int64) {
-	ocSpansSaver := new(testOCTracesExporter)
-	trace.RegisterExporter(ocSpansSaver)
-	defer trace.UnregisterExporter(ocSpansSaver)
-
+func checkWrapSpanForMetricsExporter(t *testing.T, sr *oteltest.SpanRecorder, tracer trace.Tracer, me component.MetricsExporter, wantError error, numMetricPoints int64) {
 	const numRequests = 5
-	generateMetricsTraffic(t, me, numRequests, wantError)
+	generateMetricsTraffic(t, tracer, me, numRequests, wantError)
 
 	// Inspection time!
-	ocSpansSaver.mu.Lock()
-	defer ocSpansSaver.mu.Unlock()
-
-	require.NotEqual(t, 0, len(ocSpansSaver.spanData), "No exported span data")
-
-	gotSpanData := ocSpansSaver.spanData
+	gotSpanData := sr.Completed()
 	require.Equal(t, numRequests+1, len(gotSpanData))
 
 	parentSpan := gotSpanData[numRequests]
-	require.Equalf(t, fakeMetricsParentSpanName, parentSpan.Name, "SpanData %v", parentSpan)
+	require.Equalf(t, fakeMetricsParentSpanName, parentSpan.Name(), "SpanData %v", parentSpan)
 	for _, sd := range gotSpanData[:numRequests] {
-		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
-		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
+		require.Equalf(t, parentSpan.SpanContext().SpanID(), sd.ParentSpanID(), "Exporter span not a child\nSpanData %v", sd)
+		checkStatus(t, sd, wantError)
 
 		sentMetricPoints := numMetricPoints
 		var failedToSendMetricPoints int64
@@ -269,7 +273,7 @@ func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporter,
 			sentMetricPoints = 0
 			failedToSendMetricPoints = numMetricPoints
 		}
-		require.Equalf(t, sentMetricPoints, sd.Attributes[obsmetrics.SentMetricPointsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsmetrics.FailedToSendMetricPointsKey], "SpanData %v", sd)
+		require.Equalf(t, attribute.Int64Value(sentMetricPoints), sd.Attributes()[obsmetrics.SentMetricPointsKey], "SpanData %v", sd)
+		require.Equalf(t, attribute.Int64Value(failedToSendMetricPoints), sd.Attributes()[obsmetrics.FailedToSendMetricPointsKey], "SpanData %v", sd)
 	}
 }

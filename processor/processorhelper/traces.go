@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -57,14 +57,14 @@ func NewTracesProcessor(
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	traceAttributes := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(cfg.ID())
 	bs := fromOptions(options)
 	traceConsumer, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
-		span := trace.FromContext(ctx)
-		span.Annotate(traceAttributes, "Start processing.")
+		span := trace.SpanFromContext(ctx)
+		span.AddEvent("Start processing.", eventOptions)
 		var err error
 		td, err = processor.ProcessTraces(ctx, td)
-		span.Annotate(traceAttributes, "End processing.")
+		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
 			if errors.Is(err, ErrSkipProcessingData) {
 				return nil

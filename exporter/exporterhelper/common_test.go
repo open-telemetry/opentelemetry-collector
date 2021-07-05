@@ -20,7 +20,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/oteltest"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,19 +30,12 @@ import (
 )
 
 var (
-	okStatus = trace.Status{Code: trace.StatusCodeOK}
-
 	defaultExporterCfg  = config.NewExporterSettings(config.NewID(typeStr))
 	exporterTag, _      = tag.NewKey("exporter")
 	defaultExporterTags = []tag.Tag{
 		{Key: exporterTag, Value: "test"},
 	}
 )
-
-func TestErrorToStatus(t *testing.T) {
-	require.Equal(t, okStatus, errToStatus(nil))
-	require.Equal(t, trace.Status{Code: trace.StatusCodeUnknown, Message: "my_error"}, errToStatus(errors.New("my_error")))
-}
 
 func TestBaseExporter(t *testing.T) {
 	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions())
@@ -64,9 +58,11 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	require.Equal(t, want, be.Shutdown(context.Background()))
 }
 
-func errToStatus(err error) trace.Status {
+func checkStatus(t *testing.T, sd *oteltest.Span, err error) {
 	if err != nil {
-		return trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()}
+		require.Equal(t, codes.Error, sd.StatusCode(), "SpanData %v", sd)
+		require.Equal(t, err.Error(), sd.StatusMessage(), "SpanData %v", sd)
+	} else {
+		require.Equal(t, codes.Unset, sd.StatusCode(), "SpanData %v", sd)
 	}
-	return okStatus
 }
