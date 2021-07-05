@@ -195,16 +195,22 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOp
 	for _, o := range opts {
 		o(serverOpts)
 	}
-	if len(hss.CorsOrigins) > 0 {
-		co := cors.Options{AllowedOrigins: hss.CorsOrigins, AllowedHeaders: hss.CorsHeaders}
-		handler = cors.New(co).Handler(handler)
-	}
-	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
 
 	handler = middleware.HTTPContentDecompressor(
 		handler,
 		middleware.WithErrorHandler(serverOpts.errorHandler),
 	)
+
+	if len(hss.CorsOrigins) > 0 {
+		co := cors.Options{
+			AllowedOrigins:   hss.CorsOrigins,
+			AllowCredentials: true,
+			AllowedHeaders:   hss.CorsHeaders,
+		}
+		handler = cors.New(co).Handler(handler)
+	}
+	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
+
 	return &http.Server{
 		Handler: handler,
 	}
