@@ -74,7 +74,7 @@ func TestResourceLogsSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlplogs.ResourceLogs]bool, oldLen)
@@ -203,7 +203,7 @@ func TestInstrumentationLibraryLogsSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
@@ -332,7 +332,7 @@ func TestLogSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlplogs.LogRecord]bool, oldLen)
@@ -484,7 +484,7 @@ func generateTestResourceLogsSlice() ResourceLogsSlice {
 
 func fillTestResourceLogsSlice(tv ResourceLogsSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestResourceLogs(tv.AppendEmpty())
 	}
@@ -509,7 +509,7 @@ func generateTestInstrumentationLibraryLogsSlice() InstrumentationLibraryLogsSli
 
 func fillTestInstrumentationLibraryLogsSlice(tv InstrumentationLibraryLogsSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestInstrumentationLibraryLogs(tv.AppendEmpty())
 	}
@@ -534,7 +534,7 @@ func generateTestLogSlice() LogSlice {
 
 func fillTestLogSlice(tv LogSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestLogRecord(tv.AppendEmpty())
 	}

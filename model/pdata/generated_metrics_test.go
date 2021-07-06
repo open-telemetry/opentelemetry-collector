@@ -74,7 +74,7 @@ func TestResourceMetricsSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.ResourceMetrics]bool, oldLen)
@@ -203,7 +203,7 @@ func TestInstrumentationLibraryMetricsSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, oldLen)
@@ -332,7 +332,7 @@ func TestMetricSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.Metric]bool, oldLen)
@@ -617,7 +617,7 @@ func TestIntDataPointSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.IntDataPoint]bool, oldLen)
@@ -772,7 +772,7 @@ func TestDoubleDataPointSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.DoubleDataPoint]bool, oldLen)
@@ -927,7 +927,7 @@ func TestIntHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.IntHistogramDataPoint]bool, oldLen)
@@ -1106,7 +1106,7 @@ func TestHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.DoubleHistogramDataPoint]bool, oldLen)
@@ -1285,7 +1285,7 @@ func TestSummaryDataPointSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.DoubleSummaryDataPoint]bool, oldLen)
@@ -1448,7 +1448,7 @@ func TestValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile]bool, oldLen)
@@ -1536,7 +1536,7 @@ func TestIntExemplarSlice(t *testing.T) {
 	es = newIntExemplarSlice(&[]otlpmetrics.IntExemplar{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.Resize(7)
+	es.AppendEmptyN(7)
 	emptyVal := newIntExemplar(&otlpmetrics.IntExemplar{})
 	testVal := generateTestIntExemplar()
 	assert.EqualValues(t, 7, es.Len())
@@ -1562,46 +1562,38 @@ func TestIntExemplarSlice_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
 }
 
-func TestIntExemplarSlice_Resize(t *testing.T) {
+func TestIntExemplarSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestIntExemplarSlice()
-	emptyVal := newIntExemplar(&otlpmetrics.IntExemplar{})
-	// Test Resize less elements.
-	const resizeSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.IntExemplar]bool, resizeSmallLen)
-	for i := 0; i < resizeSmallLen; i++ {
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*otlpmetrics.IntExemplar]bool)
+	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
-	assert.Equal(t, resizeSmallLen, len(expectedEs))
-	es.Resize(resizeSmallLen)
-	assert.Equal(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.IntExemplar]bool, resizeSmallLen)
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*otlpmetrics.IntExemplar]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
-	const resizeLargeLen = 7
+	// Test ensure larger capacity
+	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.IntExemplar]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
-	es.Resize(resizeLargeLen)
-	assert.Equal(t, resizeLargeLen, es.Len())
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 	foundEs = make(map[*otlpmetrics.IntExemplar]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
-	for i := oldLen; i < resizeLargeLen; i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-	}
-
-	// Test Resize 0 elements.
-	es.Resize(0)
-	assert.Equal(t, 0, es.Len())
 }
 
 func TestIntExemplarSlice_MoveAndAppendTo(t *testing.T) {
@@ -1683,7 +1675,7 @@ func TestExemplarSlice(t *testing.T) {
 	es = newExemplarSlice(&[]otlpmetrics.DoubleExemplar{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.Resize(7)
+	es.AppendEmptyN(7)
 	emptyVal := newExemplar(&otlpmetrics.DoubleExemplar{})
 	testVal := generateTestExemplar()
 	assert.EqualValues(t, 7, es.Len())
@@ -1709,46 +1701,38 @@ func TestExemplarSlice_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestExemplarSlice(), dest)
 }
 
-func TestExemplarSlice_Resize(t *testing.T) {
+func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestExemplarSlice()
-	emptyVal := newExemplar(&otlpmetrics.DoubleExemplar{})
-	// Test Resize less elements.
-	const resizeSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.DoubleExemplar]bool, resizeSmallLen)
-	for i := 0; i < resizeSmallLen; i++ {
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*otlpmetrics.DoubleExemplar]bool)
+	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
-	assert.Equal(t, resizeSmallLen, len(expectedEs))
-	es.Resize(resizeSmallLen)
-	assert.Equal(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.DoubleExemplar]bool, resizeSmallLen)
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*otlpmetrics.DoubleExemplar]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
-	const resizeLargeLen = 7
+	// Test ensure larger capacity
+	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpmetrics.DoubleExemplar]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
-	es.Resize(resizeLargeLen)
-	assert.Equal(t, resizeLargeLen, es.Len())
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 	foundEs = make(map[*otlpmetrics.DoubleExemplar]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
-	for i := oldLen; i < resizeLargeLen; i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-	}
-
-	// Test Resize 0 elements.
-	es.Resize(0)
-	assert.Equal(t, 0, es.Len())
 }
 
 func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
@@ -1832,7 +1816,7 @@ func generateTestResourceMetricsSlice() ResourceMetricsSlice {
 
 func fillTestResourceMetricsSlice(tv ResourceMetricsSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestResourceMetrics(tv.AppendEmpty())
 	}
@@ -1857,7 +1841,7 @@ func generateTestInstrumentationLibraryMetricsSlice() InstrumentationLibraryMetr
 
 func fillTestInstrumentationLibraryMetricsSlice(tv InstrumentationLibraryMetricsSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestInstrumentationLibraryMetrics(tv.AppendEmpty())
 	}
@@ -1882,7 +1866,7 @@ func generateTestMetricSlice() MetricSlice {
 
 func fillTestMetricSlice(tv MetricSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestMetric(tv.AppendEmpty())
 	}
@@ -1986,7 +1970,7 @@ func generateTestIntDataPointSlice() IntDataPointSlice {
 
 func fillTestIntDataPointSlice(tv IntDataPointSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestIntDataPoint(tv.AppendEmpty())
 	}
@@ -2014,7 +1998,7 @@ func generateTestDoubleDataPointSlice() DoubleDataPointSlice {
 
 func fillTestDoubleDataPointSlice(tv DoubleDataPointSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestDoubleDataPoint(tv.AppendEmpty())
 	}
@@ -2042,7 +2026,7 @@ func generateTestIntHistogramDataPointSlice() IntHistogramDataPointSlice {
 
 func fillTestIntHistogramDataPointSlice(tv IntHistogramDataPointSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestIntHistogramDataPoint(tv.AppendEmpty())
 	}
@@ -2073,7 +2057,7 @@ func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
 
 func fillTestHistogramDataPointSlice(tv HistogramDataPointSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestHistogramDataPoint(tv.AppendEmpty())
 	}
@@ -2104,7 +2088,7 @@ func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
 
 func fillTestSummaryDataPointSlice(tv SummaryDataPointSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestSummaryDataPoint(tv.AppendEmpty())
 	}
@@ -2133,7 +2117,7 @@ func generateTestValueAtQuantileSlice() ValueAtQuantileSlice {
 
 func fillTestValueAtQuantileSlice(tv ValueAtQuantileSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestValueAtQuantile(tv.AppendEmpty())
 	}
@@ -2158,7 +2142,7 @@ func generateTestIntExemplarSlice() IntExemplarSlice {
 
 func fillTestIntExemplarSlice(tv IntExemplarSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestIntExemplar(tv.AppendEmpty())
 	}
@@ -2184,7 +2168,7 @@ func generateTestExemplarSlice() ExemplarSlice {
 
 func fillTestExemplarSlice(tv ExemplarSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestExemplar(tv.AppendEmpty())
 	}

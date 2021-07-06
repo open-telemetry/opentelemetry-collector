@@ -112,10 +112,12 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es ResourceSpansSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
 	}
 }
 
@@ -280,10 +282,12 @@ func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibraryS
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es InstrumentationLibrarySpansSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlptrace.InstrumentationLibrarySpans{})
 	}
 }
 
@@ -448,10 +452,12 @@ func (es SpanSlice) AppendEmpty() Span {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es SpanSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlptrace.Span{})
 	}
 }
 
@@ -750,10 +756,12 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es SpanEventSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlptrace.Span_Event{})
 	}
 }
 
@@ -946,10 +954,12 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es SpanLinkSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlptrace.Span_Link{})
 	}
 }
 

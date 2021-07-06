@@ -112,10 +112,12 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es ResourceMetricsSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
 	}
 }
 
@@ -280,10 +282,12 @@ func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibrar
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es InstrumentationLibraryMetricsSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.InstrumentationLibraryMetrics{})
 	}
 }
 
@@ -448,10 +452,12 @@ func (es MetricSlice) AppendEmpty() Metric {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es MetricSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.Metric{})
 	}
 }
 
@@ -929,10 +935,12 @@ func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es IntDataPointSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.IntDataPoint{})
 	}
 }
 
@@ -1130,10 +1138,12 @@ func (es DoubleDataPointSlice) AppendEmpty() DoubleDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es DoubleDataPointSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.DoubleDataPoint{})
 	}
 }
 
@@ -1331,10 +1341,12 @@ func (es IntHistogramDataPointSlice) AppendEmpty() IntHistogramDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es IntHistogramDataPointSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.IntHistogramDataPoint{})
 	}
 }
 
@@ -1565,10 +1577,12 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es HistogramDataPointSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.DoubleHistogramDataPoint{})
 	}
 }
 
@@ -1799,10 +1813,12 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es SummaryDataPointSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint{})
 	}
 }
 
@@ -2011,10 +2027,12 @@ func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es ValueAtQuantileSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
 	}
 }
 
@@ -2107,7 +2125,7 @@ func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
 // Important: zero-initialized instance is not valid for use.
 type IntExemplarSlice struct {
 	// orig points to the slice otlpmetrics.IntExemplar field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]otlpmetrics.IntExemplar
 }
 
@@ -2116,7 +2134,7 @@ func newIntExemplarSlice(orig *[]otlpmetrics.IntExemplar) IntExemplarSlice {
 }
 
 // NewIntExemplarSlice creates a IntExemplarSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewIntExemplarSlice() IntExemplarSlice {
 	orig := []otlpmetrics.IntExemplar(nil)
 	return IntExemplarSlice{&orig}
@@ -2155,36 +2173,26 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 	}
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new IntExemplarSlice can be initialized:
 //   es := NewIntExemplarSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es IntExemplarSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es IntExemplarSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]otlpmetrics.IntExemplar, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	empty := otlpmetrics.IntExemplar{}
-	for i := oldLen; i < newLen; i++ {
-		*es.orig = append(*es.orig, empty)
-	}
+	newOrig := make([]otlpmetrics.IntExemplar, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty IntExemplar.
@@ -2192,6 +2200,15 @@ func (es IntExemplarSlice) Resize(newLen int) {
 func (es IntExemplarSlice) AppendEmpty() IntExemplar {
 	*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
 	return es.At(es.Len() - 1)
+}
+
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
+func (es IntExemplarSlice) AppendEmptyN(n int) {
+	es.EnsureCapacity(es.Len() + n)
+	for i := 0; i < n; i++ {
+		*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
+	}
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2292,7 +2309,7 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 // Important: zero-initialized instance is not valid for use.
 type ExemplarSlice struct {
 	// orig points to the slice otlpmetrics.DoubleExemplar field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]otlpmetrics.DoubleExemplar
 }
 
@@ -2301,7 +2318,7 @@ func newExemplarSlice(orig *[]otlpmetrics.DoubleExemplar) ExemplarSlice {
 }
 
 // NewExemplarSlice creates a ExemplarSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExemplarSlice() ExemplarSlice {
 	orig := []otlpmetrics.DoubleExemplar(nil)
 	return ExemplarSlice{&orig}
@@ -2340,36 +2357,26 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	}
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ExemplarSlice can be initialized:
 //   es := NewExemplarSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es ExemplarSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es ExemplarSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]otlpmetrics.DoubleExemplar, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	empty := otlpmetrics.DoubleExemplar{}
-	for i := oldLen; i < newLen; i++ {
-		*es.orig = append(*es.orig, empty)
-	}
+	newOrig := make([]otlpmetrics.DoubleExemplar, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Exemplar.
@@ -2377,6 +2384,15 @@ func (es ExemplarSlice) Resize(newLen int) {
 func (es ExemplarSlice) AppendEmpty() Exemplar {
 	*es.orig = append(*es.orig, otlpmetrics.DoubleExemplar{})
 	return es.At(es.Len() - 1)
+}
+
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
+func (es ExemplarSlice) AppendEmptyN(n int) {
+	es.EnsureCapacity(es.Len() + n)
+	for i := 0; i < n; i++ {
+		*es.orig = append(*es.orig, otlpmetrics.DoubleExemplar{})
+	}
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

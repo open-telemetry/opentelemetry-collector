@@ -112,10 +112,12 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es ResourceLogsSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
 	}
 }
 
@@ -280,10 +282,12 @@ func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLo
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es InstrumentationLibraryLogsSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlplogs.InstrumentationLibraryLogs{})
 	}
 }
 
@@ -448,10 +452,12 @@ func (es LogSlice) AppendEmpty() LogRecord {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es LogSlice) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len() + n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &otlplogs.LogRecord{})
 	}
 }
 

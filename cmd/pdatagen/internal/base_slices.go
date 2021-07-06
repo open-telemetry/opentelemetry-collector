@@ -105,7 +105,7 @@ const commonSliceGenerateTest = `func generateTest${structName}() ${structName} 
 
 func fillTest${structName}(tv ${structName}) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTest${elementName}(tv.AppendEmpty())
 	}
@@ -202,10 +202,12 @@ func (es ${structName}) AppendEmpty() ${elementName} {
 	return es.At(es.Len() - 1)
 }
 
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
 func (es ${structName}) AppendEmptyN(n int) {
 	es.EnsureCapacity(es.Len()+n)
 	for i := 0; i < n; i++ {
-		es.AppendEmpty()
+		*es.orig = append(*es.orig, &${originName}{})
 	}
 }`
 
@@ -258,7 +260,7 @@ func Test${structName}_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*${originName}]bool, oldLen)
@@ -284,7 +286,7 @@ const sliceValueTemplate = `// ${structName} logically represents a slice of ${e
 // Important: zero-initialized instance is not valid for use.
 type ${structName} struct {
 	// orig points to the slice ${originName} field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]${originName}
 }
 
@@ -293,7 +295,7 @@ func new${structName}(orig *[]${originName}) ${structName} {
 }
 
 // New${structName} creates a ${structName} with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func New${structName}() ${structName} {
 	orig := []${originName}(nil)
 	return ${structName}{&orig}
@@ -332,36 +334,26 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 	}
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ${structName} can be initialized:
 //   es := New${structName}()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es ${structName}) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es ${structName}) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]${originName}, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	empty := ${originName}{}
-	for i := oldLen; i < newLen; i++ {
-		*es.orig = append(*es.orig, empty)
-	}
+	newOrig := make([]${originName}, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
@@ -369,6 +361,15 @@ func (es ${structName}) Resize(newLen int) {
 func (es ${structName}) AppendEmpty() ${elementName} {
 	*es.orig = append(*es.orig, ${originName}{})
 	return es.At(es.Len() - 1)
+}
+
+// AppendEmptyN will ensure that the slice has the capacity to hold n additional
+// entries and then append n empty entries to the end of the slice.
+func (es ${structName}) AppendEmptyN(n int) {
+	es.EnsureCapacity(es.Len()+n)
+	for i := 0; i < n; i++ {
+		*es.orig = append(*es.orig, ${originName}{})
+	}
 }`
 
 const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
@@ -377,7 +378,7 @@ const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
 	es = new${structName}(&[]${originName}{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.Resize(7)
+	es.AppendEmptyN(7)
 	emptyVal := new${elementName}(&${originName}{})
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 7, es.Len())
@@ -403,46 +404,38 @@ func Test${structName}_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTest${structName}(), dest)
 }
 
-func Test${structName}_Resize(t *testing.T) {
+func Test${structName}_EnsureCapacity(t *testing.T) {
 	es := generateTest${structName}()
-	emptyVal := new${elementName}(&${originName}{})
-	// Test Resize less elements.
-	const resizeSmallLen = 4
-	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
-	for i := 0; i < resizeSmallLen; i++ {
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*${originName}]bool)
+	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
-	assert.Equal(t, resizeSmallLen, len(expectedEs))
-	es.Resize(resizeSmallLen)
-	assert.Equal(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*${originName}]bool, resizeSmallLen)
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*${originName}]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
-	const resizeLargeLen = 7
+	// Test ensure larger capacity
+	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*${originName}]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
-	es.Resize(resizeLargeLen)
-	assert.Equal(t, resizeLargeLen, es.Len())
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 	foundEs = make(map[*${originName}]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
-	for i := oldLen; i < resizeLargeLen; i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-	}
-
-	// Test Resize 0 elements.
-	es.Resize(0)
-	assert.Equal(t, 0, es.Len())
 }`
 
 type baseSlice interface {

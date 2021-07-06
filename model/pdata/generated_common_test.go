@@ -53,7 +53,7 @@ func TestAnyValueArray(t *testing.T) {
 	es = newAnyValueArray(&[]otlpcommon.AnyValue{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.Resize(7)
+	es.AppendEmptyN(7)
 	emptyVal := newAttributeValue(&otlpcommon.AnyValue{})
 	testVal := generateTestAttributeValue()
 	assert.EqualValues(t, 7, es.Len())
@@ -79,46 +79,38 @@ func TestAnyValueArray_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestAnyValueArray(), dest)
 }
 
-func TestAnyValueArray_Resize(t *testing.T) {
+func TestAnyValueArray_EnsureCapacity(t *testing.T) {
 	es := generateTestAnyValueArray()
-	emptyVal := newAttributeValue(&otlpcommon.AnyValue{})
-	// Test Resize less elements.
-	const resizeSmallLen = 4
-	expectedEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
-	for i := 0; i < resizeSmallLen; i++ {
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*otlpcommon.AnyValue]bool)
+	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
-	assert.Equal(t, resizeSmallLen, len(expectedEs))
-	es.Resize(resizeSmallLen)
-	assert.Equal(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*otlpcommon.AnyValue]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
-	const resizeLargeLen = 7
+	// Test ensure larger capacity
+	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
-	es.Resize(resizeLargeLen)
-	assert.Equal(t, resizeLargeLen, es.Len())
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 	foundEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
-	for i := oldLen; i < resizeLargeLen; i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-	}
-
-	// Test Resize 0 elements.
-	es.Resize(0)
-	assert.Equal(t, 0, es.Len())
 }
 
 func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
@@ -183,7 +175,7 @@ func generateTestAnyValueArray() AnyValueArray {
 
 func fillTestAnyValueArray(tv AnyValueArray) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestAttributeValue(tv.AppendEmpty())
 	}

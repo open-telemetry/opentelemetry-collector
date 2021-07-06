@@ -74,7 +74,7 @@ func TestResourceSpansSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlptrace.ResourceSpans]bool, oldLen)
@@ -203,7 +203,7 @@ func TestInstrumentationLibrarySpansSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlptrace.InstrumentationLibrarySpans]bool, oldLen)
@@ -332,7 +332,7 @@ func TestSpanSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlptrace.Span]bool, oldLen)
@@ -565,7 +565,7 @@ func TestSpanEventSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlptrace.Span_Event]bool, oldLen)
@@ -712,7 +712,7 @@ func TestSpanLinkSlice_EnsureCapacity(t *testing.T) {
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test Resize more elements.
+	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlptrace.Span_Link]bool, oldLen)
@@ -848,7 +848,7 @@ func generateTestResourceSpansSlice() ResourceSpansSlice {
 
 func fillTestResourceSpansSlice(tv ResourceSpansSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestResourceSpans(tv.AppendEmpty())
 	}
@@ -873,7 +873,7 @@ func generateTestInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansS
 
 func fillTestInstrumentationLibrarySpansSlice(tv InstrumentationLibrarySpansSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestInstrumentationLibrarySpans(tv.AppendEmpty())
 	}
@@ -898,7 +898,7 @@ func generateTestSpanSlice() SpanSlice {
 
 func fillTestSpanSlice(tv SpanSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestSpan(tv.AppendEmpty())
 	}
@@ -936,7 +936,7 @@ func generateTestSpanEventSlice() SpanEventSlice {
 
 func fillTestSpanEventSlice(tv SpanEventSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestSpanEvent(tv.AppendEmpty())
 	}
@@ -963,7 +963,7 @@ func generateTestSpanLinkSlice() SpanLinkSlice {
 
 func fillTestSpanLinkSlice(tv SpanLinkSlice) {
 	l := 7
-	//tv.EnsureCapacity(l)
+	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
 		fillTestSpanLink(tv.AppendEmpty())
 	}
