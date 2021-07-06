@@ -59,7 +59,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 	// "out of order samples" errors.
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		set.Logger,
+		set,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
