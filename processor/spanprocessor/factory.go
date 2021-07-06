@@ -73,6 +73,6 @@ func createTracesProcessor(
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		sp,
+		sp.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
