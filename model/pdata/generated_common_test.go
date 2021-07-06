@@ -182,8 +182,9 @@ func generateTestAnyValueArray() AnyValueArray {
 }
 
 func fillTestAnyValueArray(tv AnyValueArray) {
-	tv.Resize(7)
-	for i := 0; i < tv.Len(); i++ {
-		fillTestAttributeValue(tv.At(i))
+	l := 7
+	//tv.EnsureCapacity(l)
+	for i := 0; i < l; i++ {
+		fillTestAttributeValue(tv.AppendEmpty())
 	}
 }

@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -455,7 +455,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 	var traceBatches []pdata.Traces
 	for i := 0; i < numBatches; i++ {
 		traces := pdata.NewTraces()
-		traces.ResourceSpans().Resize(resourceSpanCount)
+		traces.ResourceSpans().AppendEmptyN(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
 			rs := traces.ResourceSpans().At(j)
 			rs.Resource().Attributes().InsertString("service.name", serviceName)
@@ -463,7 +463,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			rs.Resource().Attributes().InsertString("string", "yes")
 			rs.Resource().Attributes().InsertInt("int64", 10000000)
 			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-			ils.Spans().Resize(numTracesPerBatch)
+			ils.Spans().AppendEmptyN(numTracesPerBatch)
 
 			for k := 0; k < numTracesPerBatch; k++ {
 				span := ils.Spans().At(k)

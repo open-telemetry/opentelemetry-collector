@@ -108,41 +108,56 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 		return metricDataPointCount(ms), true
 	}
 
-	msSize, i := metricDataPointCount(ms)-size, 0
+	msSize, i, j := metricDataPointCount(ms)-size, 0, 0
 	filterDataPoints := func() bool { i++; return i <= msSize }
+	filterDestPoints := func() bool { j++; return j > size }
 	switch ms.DataType() {
 	case pdata.MetricDataTypeIntGauge:
-		dest.IntGauge().DataPoints().Resize(size)
+		dest.IntGauge().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
+			return filterDestPoints()
+		})
 		ms.IntGauge().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeDoubleGauge:
-		dest.DoubleGauge().DataPoints().Resize(size)
+		dest.DoubleGauge().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
+			return filterDestPoints()
+		})
 		ms.DoubleGauge().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntSum:
-		dest.IntSum().DataPoints().Resize(size)
+		dest.IntSum().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
+			return filterDestPoints()
+		})
 		ms.IntSum().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeDoubleSum:
-		dest.DoubleSum().DataPoints().Resize(size)
+		dest.DoubleSum().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
+			return filterDestPoints()
+		})
 		ms.DoubleSum().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntHistogram:
-		dest.IntHistogram().DataPoints().Resize(size)
+		dest.IntHistogram().DataPoints().RemoveIf(func(_ pdata.IntHistogramDataPoint) bool {
+			return filterDestPoints()
+		})
 		ms.IntHistogram().DataPoints().RemoveIf(func(_ pdata.IntHistogramDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeHistogram:
-		dest.Histogram().DataPoints().Resize(size)
+		dest.Histogram().DataPoints().RemoveIf(func(_ pdata.HistogramDataPoint) bool {
+			return filterDestPoints()
+		})
 		ms.Histogram().DataPoints().RemoveIf(func(_ pdata.HistogramDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeSummary:
-		dest.Summary().DataPoints().Resize(size)
+		dest.Summary().DataPoints().RemoveIf(func(_ pdata.SummaryDataPoint) bool {
+			return filterDestPoints()
+		})
 		ms.Summary().DataPoints().RemoveIf(func(_ pdata.SummaryDataPoint) bool {
 			return filterDataPoints()
 		})

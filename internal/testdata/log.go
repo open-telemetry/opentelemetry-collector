@@ -120,7 +120,7 @@ func fillLogThree(log pdata.LogRecord) {
 func GenerateLogsManyLogRecordsSameResource(count int) pdata.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
 	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
-	logs.Resize(count)
+	logs.AppendEmptyN(count - logs.Len())
 	for i := 0; i < count; i++ {
 		l := logs.At(i)
 		if i%2 == 0 {

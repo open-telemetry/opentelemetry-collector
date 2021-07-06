@@ -38,9 +38,9 @@ func TestLogRecordCount(t *testing.T) {
 	assert.EqualValues(t, 1, md.LogRecordCount())
 
 	rms := md.ResourceLogs()
-	rms.Resize(3)
+	rms.AppendEmptyN(3)
 	rms.At(1).InstrumentationLibraryLogs().AppendEmpty()
-	rms.At(2).InstrumentationLibraryLogs().AppendEmpty().Logs().Resize(5)
+	rms.At(2).InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmptyN(5)
 	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.LogRecordCount())
 }

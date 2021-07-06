@@ -42,9 +42,9 @@ func TestSpanCount(t *testing.T) {
 	assert.EqualValues(t, 1, md.SpanCount())
 
 	rms := md.ResourceSpans()
-	rms.Resize(3)
+	rms.AppendEmptyN(3)
 	rms.At(1).InstrumentationLibrarySpans().AppendEmpty()
-	rms.At(2).InstrumentationLibrarySpans().AppendEmpty().Spans().Resize(5)
+	rms.At(2).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmptyN(5)
 	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.SpanCount())
 }

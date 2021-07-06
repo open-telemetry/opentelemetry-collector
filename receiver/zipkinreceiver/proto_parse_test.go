@@ -108,7 +108,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	require.Equal(t, reqs.ResourceSpans().Len(), 2, "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
 	want := pdata.NewTraces()
-	want.ResourceSpans().Resize(2)
+	want.ResourceSpans().AppendEmptyN(2)
 
 	// First span/resource
 	want.ResourceSpans().At(0).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "svc-1")
@@ -141,7 +141,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	span1.Attributes().UpsertString(conventions.AttributeNetPeerIP, "fe80::1453:a77c:da4d:d21b")
 	span1.Attributes().UpsertInt(conventions.AttributeNetPeerPort, 6379)
 	span1.Attributes().UpsertString(tracetranslator.TagSpanKind, string(tracetranslator.OpenTracingSpanKindProducer))
-	span1.Events().Resize(2)
+	span1.Events().AppendEmptyN(2)
 	span1.Events().At(0).SetName("DB reset")
 	span1.Events().At(0).SetTimestamp(pdata.TimestampFromTime(now.Add(-10 * time.Hour)))
 	span1.Events().At(1).SetName("GC Cycle 39")

@@ -67,7 +67,7 @@ func (dp *perfTestDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *ato
 func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	traceData := pdata.NewTraces()
 	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
-	spans.Resize(dp.options.ItemsPerBatch)
+	spans.AppendEmptyN(dp.options.ItemsPerBatch)
 
 	traceID := dp.traceIDSequence.Inc()
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
@@ -111,7 +111,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		}
 	}
 	metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-	metrics.Resize(dp.options.ItemsPerBatch)
+	metrics.AppendEmptyN(dp.options.ItemsPerBatch)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		metric := metrics.At(i)
@@ -124,7 +124,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 		dps := metric.IntGauge().DataPoints()
 		// Generate data points for the metric.
-		dps.Resize(dataPointsPerMetric)
+		dps.AppendEmptyN(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := dps.At(j)
 			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
@@ -150,7 +150,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 		}
 	}
 	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
-	logRecords.Resize(dp.options.ItemsPerBatch)
+	logRecords.AppendEmptyN(dp.options.ItemsPerBatch)
 
 	now := pdata.TimestampFromTime(time.Now())
 

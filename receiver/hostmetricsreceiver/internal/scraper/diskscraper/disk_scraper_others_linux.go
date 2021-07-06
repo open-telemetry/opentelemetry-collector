@@ -25,9 +25,9 @@ import (
 
 const systemSpecificMetricsLen = 2
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
-	initializeDiskWeightedIOTimeMetric(metrics.At(startIdx+0), startTime, now, ioCounters)
-	initializeDiskMergedMetric(metrics.At(startIdx+1), startTime, now, ioCounters)
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	initializeDiskWeightedIOTimeMetric(metrics.AppendEmpty(), startTime, now, ioCounters)
+	initializeDiskMergedMetric(metrics.AppendEmpty(), startTime, now, ioCounters)
 }
 
 func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
@@ -47,12 +47,10 @@ func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.Timest
 	metadata.Metrics.SystemDiskMerged.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(2 * len(ioCounters))
+	idps.EnsureCapacity(2 * len(ioCounters))
 
-	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.MergedReadCount))
-		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.MergedWriteCount))
-		idx += 2
+		initializeInt64DataPoint(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.MergedReadCount))
+		initializeInt64DataPoint(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.MergedWriteCount))
 	}
 }

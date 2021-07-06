@@ -29,7 +29,11 @@ func TestSplitLogs_noop(t *testing.T) {
 	split := splitLogs(splitSize, td)
 	assert.Equal(t, td, split)
 
-	td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(5)
+	i := 0
+	td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().RemoveIf(func(_ pdata.LogRecord) bool {
+		i++
+		return i > 5
+	})
 	assert.EqualValues(t, td, split)
 }
 
@@ -41,7 +45,7 @@ func TestSplitLogs(t *testing.T) {
 	}
 	cp := pdata.NewLogs()
 	cpLogs := cp.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
-	cpLogs.Resize(5)
+	cpLogs.AppendEmptyN(5)
 	ld.ResourceLogs().At(0).Resource().CopyTo(
 		cp.ResourceLogs().At(0).Resource())
 	ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().CopyTo(
@@ -82,10 +86,9 @@ func TestSplitLogsMultipleResourceLogs(t *testing.T) {
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(0, i))
 	}
-	td.ResourceLogs().Resize(2)
 	// add second index to resource logs
 	testdata.GenerateLogsManyLogRecordsSameResource(20).
-		ResourceLogs().At(0).CopyTo(td.ResourceLogs().At(1))
+		ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
 	logs = td.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(1, i))
@@ -105,10 +108,9 @@ func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testi
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(0, i))
 	}
-	td.ResourceLogs().Resize(2)
 	// add second index to resource logs
 	testdata.GenerateLogsManyLogRecordsSameResource(20).
-		ResourceLogs().At(0).CopyTo(td.ResourceLogs().At(1))
+		ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
 	logs = td.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetName(getTestLogName(1, i))

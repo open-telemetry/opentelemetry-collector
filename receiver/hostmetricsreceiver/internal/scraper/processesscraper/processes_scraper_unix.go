@@ -38,8 +38,8 @@ func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime p
 		return scrapererror.NewPartialScrapeError(err, unixMetricsLen)
 	}
 
-	metrics.Resize(startIndex + unixMetricsLen)
-	initializeProcessesCountMetric(metrics.At(startIndex+0), startTime, now, misc)
+	metrics.EnsureCapacity(startIndex + unixMetricsLen)
+	initializeProcessesCountMetric(metrics.AppendEmpty(), startTime, now, misc)
 	return appendUnixSystemSpecificProcessesMetrics(metrics, startTime, startIndex+1, now, misc)
 }
 
@@ -47,9 +47,9 @@ func initializeProcessesCountMetric(metric pdata.Metric, startTime pdata.Timesta
 	metadata.Metrics.SystemProcessesCount.Init(metric)
 
 	ddps := metric.IntSum().DataPoints()
-	ddps.Resize(2)
-	initializeProcessesCountDataPoint(ddps.At(0), startTime, now, metadata.LabelProcessesStatus.Running, int64(misc.ProcsRunning))
-	initializeProcessesCountDataPoint(ddps.At(1), startTime, now, metadata.LabelProcessesStatus.Blocked, int64(misc.ProcsBlocked))
+	ddps.EnsureCapacity(2)
+	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelProcessesStatus.Running, int64(misc.ProcsRunning))
+	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelProcessesStatus.Blocked, int64(misc.ProcsBlocked))
 }
 
 func initializeProcessesCountDataPoint(dataPoint pdata.IntDataPoint, startTime pdata.Timestamp, now pdata.Timestamp, statusLabel string, value int64) {

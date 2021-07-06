@@ -29,7 +29,11 @@ func TestSplitTraces_noop(t *testing.T) {
 	split := splitTraces(splitSize, td)
 	assert.Equal(t, td, split)
 
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(5)
+	i := 0
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().RemoveIf(func(_ pdata.Span) bool {
+		i++
+		return i > 5
+	})
 	assert.EqualValues(t, td, split)
 }
 
@@ -41,7 +45,7 @@ func TestSplitTraces(t *testing.T) {
 	}
 	cp := pdata.NewTraces()
 	cpSpans := cp.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
-	cpSpans.Resize(5)
+	cpSpans.AppendEmptyN(5)
 	td.ResourceSpans().At(0).Resource().CopyTo(
 		cp.ResourceSpans().At(0).Resource())
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).InstrumentationLibrary().CopyTo(
@@ -104,10 +108,9 @@ func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testin
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	}
-	td.ResourceSpans().Resize(2)
 	// add second index to resource spans
 	testdata.GenerateTracesManySpansSameResource(20).
-		ResourceSpans().At(0).CopyTo(td.ResourceSpans().At(1))
+		ResourceSpans().At(0).CopyTo(td.ResourceSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(1, i))

@@ -31,7 +31,7 @@ func TestResourceLogsSlice(t *testing.T) {
 	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.Resize(7)
+	es.AppendEmptyN(7)
 	emptyVal := newResourceLogs(&otlplogs.ResourceLogs{})
 	testVal := generateTestResourceLogs()
 	assert.EqualValues(t, 7, es.Len())
@@ -57,46 +57,38 @@ func TestResourceLogsSlice_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestResourceLogsSlice(), dest)
 }
 
-func TestResourceLogsSlice_Resize(t *testing.T) {
+func TestResourceLogsSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestResourceLogsSlice()
-	emptyVal := newResourceLogs(&otlplogs.ResourceLogs{})
-	// Test Resize less elements.
-	const resizeSmallLen = 4
-	expectedEs := make(map[*otlplogs.ResourceLogs]bool, resizeSmallLen)
-	for i := 0; i < resizeSmallLen; i++ {
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*otlplogs.ResourceLogs]bool)
+	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
-	assert.Equal(t, resizeSmallLen, len(expectedEs))
-	es.Resize(resizeSmallLen)
-	assert.Equal(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*otlplogs.ResourceLogs]bool, resizeSmallLen)
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*otlplogs.ResourceLogs]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test Resize more elements.
-	const resizeLargeLen = 7
+	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlplogs.ResourceLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
-	es.Resize(resizeLargeLen)
-	assert.Equal(t, resizeLargeLen, es.Len())
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 	foundEs = make(map[*otlplogs.ResourceLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
-	for i := oldLen; i < resizeLargeLen; i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-	}
-
-	// Test Resize 0 elements.
-	es.Resize(0)
-	assert.Equal(t, 0, es.Len())
 }
 
 func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
@@ -168,7 +160,7 @@ func TestInstrumentationLibraryLogsSlice(t *testing.T) {
 	es = newInstrumentationLibraryLogsSlice(&[]*otlplogs.InstrumentationLibraryLogs{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.Resize(7)
+	es.AppendEmptyN(7)
 	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 	testVal := generateTestInstrumentationLibraryLogs()
 	assert.EqualValues(t, 7, es.Len())
@@ -194,46 +186,38 @@ func TestInstrumentationLibraryLogsSlice_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
 }
 
-func TestInstrumentationLibraryLogsSlice_Resize(t *testing.T) {
+func TestInstrumentationLibraryLogsSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestInstrumentationLibraryLogsSlice()
-	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
-	// Test Resize less elements.
-	const resizeSmallLen = 4
-	expectedEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, resizeSmallLen)
-	for i := 0; i < resizeSmallLen; i++ {
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool)
+	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
-	assert.Equal(t, resizeSmallLen, len(expectedEs))
-	es.Resize(resizeSmallLen)
-	assert.Equal(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, resizeSmallLen)
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test Resize more elements.
-	const resizeLargeLen = 7
+	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
-	es.Resize(resizeLargeLen)
-	assert.Equal(t, resizeLargeLen, es.Len())
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 	foundEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
-	for i := oldLen; i < resizeLargeLen; i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-	}
-
-	// Test Resize 0 elements.
-	es.Resize(0)
-	assert.Equal(t, 0, es.Len())
 }
 
 func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
@@ -305,7 +289,7 @@ func TestLogSlice(t *testing.T) {
 	es = newLogSlice(&[]*otlplogs.LogRecord{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.Resize(7)
+	es.AppendEmptyN(7)
 	emptyVal := newLogRecord(&otlplogs.LogRecord{})
 	testVal := generateTestLogRecord()
 	assert.EqualValues(t, 7, es.Len())
@@ -331,46 +315,38 @@ func TestLogSlice_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestLogSlice(), dest)
 }
 
-func TestLogSlice_Resize(t *testing.T) {
+func TestLogSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestLogSlice()
-	emptyVal := newLogRecord(&otlplogs.LogRecord{})
-	// Test Resize less elements.
-	const resizeSmallLen = 4
-	expectedEs := make(map[*otlplogs.LogRecord]bool, resizeSmallLen)
-	for i := 0; i < resizeSmallLen; i++ {
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*otlplogs.LogRecord]bool)
+	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
-	assert.Equal(t, resizeSmallLen, len(expectedEs))
-	es.Resize(resizeSmallLen)
-	assert.Equal(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*otlplogs.LogRecord]bool, resizeSmallLen)
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*otlplogs.LogRecord]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test Resize more elements.
-	const resizeLargeLen = 7
+	const ensureLargeLen = 9
 	oldLen := es.Len()
 	expectedEs = make(map[*otlplogs.LogRecord]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
-	es.Resize(resizeLargeLen)
-	assert.Equal(t, resizeLargeLen, es.Len())
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 	foundEs = make(map[*otlplogs.LogRecord]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
-	for i := oldLen; i < resizeLargeLen; i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-	}
-
-	// Test Resize 0 elements.
-	es.Resize(0)
-	assert.Equal(t, 0, es.Len())
 }
 
 func TestLogSlice_MoveAndAppendTo(t *testing.T) {
@@ -507,9 +483,10 @@ func generateTestResourceLogsSlice() ResourceLogsSlice {
 }
 
 func fillTestResourceLogsSlice(tv ResourceLogsSlice) {
-	tv.Resize(7)
-	for i := 0; i < tv.Len(); i++ {
-		fillTestResourceLogs(tv.At(i))
+	l := 7
+	//tv.EnsureCapacity(l)
+	for i := 0; i < l; i++ {
+		fillTestResourceLogs(tv.AppendEmpty())
 	}
 }
 
@@ -531,9 +508,10 @@ func generateTestInstrumentationLibraryLogsSlice() InstrumentationLibraryLogsSli
 }
 
 func fillTestInstrumentationLibraryLogsSlice(tv InstrumentationLibraryLogsSlice) {
-	tv.Resize(7)
-	for i := 0; i < tv.Len(); i++ {
-		fillTestInstrumentationLibraryLogs(tv.At(i))
+	l := 7
+	//tv.EnsureCapacity(l)
+	for i := 0; i < l; i++ {
+		fillTestInstrumentationLibraryLogs(tv.AppendEmpty())
 	}
 }
 
@@ -555,9 +533,10 @@ func generateTestLogSlice() LogSlice {
 }
 
 func fillTestLogSlice(tv LogSlice) {
-	tv.Resize(7)
-	for i := 0; i < tv.Len(); i++ {
-		fillTestLogRecord(tv.At(i))
+	l := 7
+	//tv.EnsureCapacity(l)
+	for i := 0; i < l; i++ {
+		fillTestLogRecord(tv.AppendEmpty())
 	}
 }
 

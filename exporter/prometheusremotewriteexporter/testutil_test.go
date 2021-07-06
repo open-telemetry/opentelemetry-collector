@@ -202,7 +202,7 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 
 func getQuantiles(bounds []float64, values []float64) pdata.ValueAtQuantileSlice {
 	quantiles := pdata.NewValueAtQuantileSlice()
-	quantiles.Resize(len(bounds))
+	quantiles.AppendEmptyN(len(bounds))
 
 	for i := 0; i < len(bounds); i++ {
 		quantile := quantiles.At(i)
@@ -449,7 +449,7 @@ func getMetricsFromMetricList(metricList ...pdata.Metric) pdata.Metrics {
 
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.Metrics().Resize(len(metricList))
+	ilm.Metrics().AppendEmptyN(len(metricList))
 	for i := 0; i < len(metricList); i++ {
 		metricList[i].CopyTo(ilm.Metrics().At(i))
 	}

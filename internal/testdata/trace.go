@@ -89,9 +89,9 @@ func GenerateTracesTwoSpansSameResourceOneDifferent() pdata.Traces {
 func GenerateTracesManySpansSameResource(spansCount int) pdata.Traces {
 	td := GenerateTracesOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	rs0ils0.Spans().Resize(spansCount)
+	rs0ils0.Spans().EnsureCapacity(spansCount)
 	for i := 0; i < spansCount; i++ {
-		fillSpanOne(rs0ils0.Spans().At(i))
+		fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	}
 	return td
 }

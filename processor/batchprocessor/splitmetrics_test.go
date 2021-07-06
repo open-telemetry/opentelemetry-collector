@@ -29,7 +29,11 @@ func TestSplitMetrics_noop(t *testing.T) {
 	split := splitMetrics(splitSize, td)
 	assert.Equal(t, td, split)
 
-	td.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(5)
+	i := 0
+	td.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().RemoveIf(func(_ pdata.Metric) bool {
+		i++
+		return i > 5
+	})
 	assert.EqualValues(t, td, split)
 }
 
@@ -43,7 +47,7 @@ func TestSplitMetrics(t *testing.T) {
 	}
 	cp := pdata.NewMetrics()
 	cpMetrics := cp.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-	cpMetrics.Resize(5)
+	cpMetrics.AppendEmptyN(5)
 	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary().CopyTo(
 		cp.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary())
 	md.ResourceMetrics().At(0).Resource().CopyTo(
@@ -112,10 +116,9 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 		metrics.At(i).SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
 	}
-	td.ResourceMetrics().Resize(2)
 	// add second index to resource metrics
 	testdata.GenerateMetricsManyMetricsSameResource(20).
-		ResourceMetrics().At(0).CopyTo(td.ResourceMetrics().At(1))
+		ResourceMetrics().At(0).CopyTo(td.ResourceMetrics().AppendEmpty())
 	metrics = td.ResourceMetrics().At(1).InstrumentationLibraryMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(1, i))
