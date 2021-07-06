@@ -174,35 +174,33 @@ service:
 	}()
 	defer app.Shutdown()
 
-	// 5. Let's wait on at least 8 fetches.
+	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
 	for i := 0; i < 10; i++ {
 		wReqL = append(wReqL, <-prweUploads)
 	}
 	defer cancel()
 
-	// Assert that we encounter the stale markers aka special NaNs for every time series.
+	// 6. Assert that we encounter the stale markers aka special NaNs for the various time series.
 	staleMarkerCount := 0
 	totalSamples := 0
 	for i, wReq := range wReqL {
-		t.Run(fmt.Sprintf("WriteRequest#%d", i), func(t *testing.T) {
-			require.True(t, len(wReq.Timeseries) > 0, "Expecting at least 1 timeSeries")
-			for j, ts := range wReq.Timeseries {
-				t.Run(fmt.Sprintf("TimeSeries#%d", j), func(t *testing.T) {
-					assert.True(t, len(ts.Samples) > 0, "Expected at least 1 Sample")
-					for _, sample := range ts.Samples {
-						totalSamples++
-						if value.IsStaleNaN(sample.Value) {
-							staleMarkerCount++
-						}
-					}
-				})
+		name := fmt.Sprintf("WriteRequest#%d", i)
+		require.True(t, len(wReq.Timeseries) > 0, "Expecting at least 1 timeSeries for:: "+name)
+		for j, ts := range wReq.Timeseries {
+			fullName := fmt.Sprintf("%s/TimeSeries#%d", name, j)
+			assert.True(t, len(ts.Samples) > 0, "Expected at least 1 Sample"+fullName)
+			for _, sample := range ts.Samples {
+				totalSamples++
+				if value.IsStaleNaN(sample.Value) {
+					staleMarkerCount++
+				}
 			}
-		})
+		}
 	}
 
 	require.True(t, totalSamples > 0, "Expected at least 1 sample")
-	// Expect at least 40% chance of stale markers being emitted.
+	// Expect at least 10% chance of stale markers being emitted.
 	chance := float64(staleMarkerCount) / float64(totalSamples)
-	require.True(t, chance > 0.4, fmt.Sprintf("Expected at least one stale marker: %.3f", chance))
+	require.True(t, chance > 0.1, fmt.Sprintf("Expected at least one stale marker: %.3f", chance))
 }

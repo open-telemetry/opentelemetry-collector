@@ -54,6 +54,7 @@ type mockPrometheusResponse struct {
 }
 
 type mockPrometheus struct {
+	mu          sync.Mutex // mu protects the fields below.
 	endpoints   map[string][]mockPrometheusResponse
 	accessIndex map[string]*int32
 	wg          *sync.WaitGroup
@@ -79,6 +80,9 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 }
 
 func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(404)
@@ -1292,6 +1296,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 
 // TestEndToEnd  end to end test executor
 func TestEndToEnd(t *testing.T) {
+	t.Parallel()
 	// 1. setup input data
 	targets := []*testData{
 		{
@@ -1372,7 +1377,7 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.
 				timestamp = nil
 			}
 			for _, ts := range metric.GetTimeseries() {
-				assert.Equal(t, timestamp, ts.GetStartTimestamp())
+				assert.Equal(t, timestamp.AsTime(), ts.GetStartTimestamp().AsTime(), ts.String())
 				numTimeseries++
 			}
 		}
@@ -1382,6 +1387,7 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.
 
 // TestStartTimeMetric validates that timeseries have start time set to 'process_start_time_seconds'
 func TestStartTimeMetric(t *testing.T) {
+	t.Parallel()
 	targets := []*testData{
 		{
 			name: "target1",
@@ -1436,6 +1442,8 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	lres, lep := len(results), len(mp.endpoints)
 	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
+	// Skipping the validate loop below, because it falsely assumed that
+	// staleness markers would not be returned, yet the tests are a bit rigid.
 	if true {
 		t.Log(`Skipping the "up" metric checks as they seem to be spuriously failing after staleness marker insertions`)
 		return
@@ -1489,6 +1497,7 @@ example_process_start_time_seconds 400.8
 
 // TestStartTimeMetricRegex validates that timeseries have start time regex set to 'process_start_time_seconds'
 func TestStartTimeMetricRegex(t *testing.T) {
+	t.Parallel()
 	targets := []*testData{
 		{
 			name: "target1",
@@ -1505,7 +1514,15 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testEndToEndRegex(t, targets, true, "^(.+_)*process_start_time_seconds$")
+
+	// Splitting out targets, because the prior tests were oblivious
+	// about staleness metrics being emitted, and hence when trying
+	// to compare values across 2 different scrapes emits staleness
+	// markers whose NaN values are unaccounted for.
+	// TODO: Perhaps refactor these tests.
+	for _, target := range targets {
+		testEndToEndRegex(t, []*testData{target}, true, "^(.+_)*process_start_time_seconds$")
+	}
 }
 
 func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
