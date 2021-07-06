@@ -47,7 +47,7 @@ func New(id config.ComponentID, nextConsumer consumer.Metrics) (*Receiver, error
 	ocr := &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport, LongLivedCtx: true}),
 	}
 	return ocr, nil
 }
@@ -64,8 +64,6 @@ const (
 // Export is the gRPC method that receives streamed metrics from
 // OpenCensus-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
-	longLivedRPCCtx := obsreport.ReceiverContext(mes.Context(), ocr.id, receiverTransport)
-
 	// Retrieve the first message. It MUST have a non-nil Node.
 	recv, err := mes.Recv()
 	if err != nil {
@@ -82,7 +80,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	// Now that we've got the first message with a Node, we can start to receive streamed up metrics.
 	for {
 		lastNonNilNode, resource, err = ocr.processReceivedMsg(
-			longLivedRPCCtx,
+			mes.Context(),
 			lastNonNilNode,
 			resource,
 			recv)
@@ -124,9 +122,7 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics []*ocmetrics.Metric) error {
-	ctx := ocr.obsrecv.StartMetricsOp(
-		longLivedRPCCtx,
-		obsreport.WithLongLivedCtx())
+	ctx := ocr.obsrecv.StartMetricsOp(longLivedRPCCtx)
 
 	numPoints := 0
 	// Count number of time series and data points.

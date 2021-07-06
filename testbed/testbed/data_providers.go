@@ -237,8 +237,7 @@ func (dp *goldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	}
 	pdm := dp.metricsGenerated[dp.metricsIndex]
 	dp.metricsIndex++
-	_, dpCount := pdm.MetricAndDataPointCount()
-	dp.dataItemsGenerated.Add(uint64(dpCount))
+	dp.dataItemsGenerated.Add(uint64(pdm.DataPointCount()))
 	return pdm, false
 }
 
@@ -284,7 +283,7 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().UnmarshalMetrics(buf); err != nil {
 			return nil, err
 		}
-		_, dp.ItemsPerBatch = dp.metrics.MetricAndDataPointCount()
+		dp.ItemsPerBatch = dp.metrics.DataPointCount()
 	case config.LogsDataType:
 		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().UnmarshalLogs(buf); err != nil {
 			return nil, err

@@ -202,7 +202,6 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
 	transportTag := transportType(r, asZipkinv1)
-	ctx = obsreport.ReceiverContext(ctx, zr.id, transportTag)
 	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: zr.id, Transport: transportTag})
 	ctx = obsrecv.StartTracesOp(ctx)
 

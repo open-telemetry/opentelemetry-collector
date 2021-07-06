@@ -206,7 +206,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	}
 
 	assert.Eventually(t, func() bool {
-		return sink.SpansCount() > 0
+		return sink.SpanCount() > 0
 	}, 10*time.Second, 5*time.Millisecond)
 
 	gotTraces := sink.AllTraces()

@@ -47,8 +47,8 @@ var (
 )
 
 type receiveTestParams struct {
-	transport string
-	err       error
+	items int
+	err   error
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
@@ -60,26 +60,18 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	trace.RegisterExporter(ss)
 	defer trace.UnregisterExporter(ss)
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := trace.StartSpan(context.Background(), t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
-		{transport, errFake},
-		{"", nil},
+		{items: 13, err: errFake},
+		{items: 42, err: nil},
 	}
-	rcvdSpans := []int{13, 42}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartTracesOp(receiverCtx)
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		ctx := rec.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
-
-		rec.EndTracesOp(
-			ctx,
-			format,
-			rcvdSpans[i],
-			param.err)
+		rec.EndTracesOp(ctx, format, params[i].items, param.err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -90,23 +82,17 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name)
 		switch params[i].err {
 		case nil:
-			acceptedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsmetrics.AcceptedSpansKey])
+			acceptedSpans += params[i].items
+			assert.Equal(t, int64(params[i].items), span.Attributes[obsmetrics.AcceptedSpansKey])
 			assert.Equal(t, int64(0), span.Attributes[obsmetrics.RefusedSpansKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
-			refusedSpans += rcvdSpans[i]
+			refusedSpans += params[i].items
 			assert.Equal(t, int64(0), span.Attributes[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsmetrics.RefusedSpansKey])
+			assert.Equal(t, int64(params[i].items), span.Attributes[obsmetrics.RefusedSpansKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
-		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsmetrics.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsmetrics.TransportKey])
 		}
 	}
 	obsreporttest.CheckReceiverTraces(t, receiver, transport, int64(acceptedSpans), int64(refusedSpans))
@@ -125,22 +111,15 @@ func TestReceiveLogsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
-		{transport, errFake},
-		{"", nil},
+		{items: 13, err: errFake},
+		{items: 42, err: nil},
 	}
-	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartLogsOp(receiverCtx)
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		ctx := rec.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
-
-		rec.EndLogsOp(
-			ctx,
-			format,
-			rcvdLogRecords[i],
-			param.err)
+		rec.EndLogsOp(ctx, format, params[i].items, param.err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -151,23 +130,17 @@ func TestReceiveLogsOp(t *testing.T) {
 		assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name)
 		switch params[i].err {
 		case nil:
-			acceptedLogRecords += rcvdLogRecords[i]
-			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsmetrics.AcceptedLogRecordsKey])
+			acceptedLogRecords += params[i].items
+			assert.Equal(t, int64(params[i].items), span.Attributes[obsmetrics.AcceptedLogRecordsKey])
 			assert.Equal(t, int64(0), span.Attributes[obsmetrics.RefusedLogRecordsKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
-			refusedLogRecords += rcvdLogRecords[i]
+			refusedLogRecords += params[i].items
 			assert.Equal(t, int64(0), span.Attributes[obsmetrics.AcceptedLogRecordsKey])
-			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsmetrics.RefusedLogRecordsKey])
+			assert.Equal(t, int64(params[i].items), span.Attributes[obsmetrics.RefusedLogRecordsKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
-		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsmetrics.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsmetrics.TransportKey])
 		}
 	}
 	obsreporttest.CheckReceiverLogs(t, receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords))
@@ -186,22 +159,15 @@ func TestReceiveMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
-		{transport, errFake},
-		{"", nil},
+		{items: 23, err: errFake},
+		{items: 29, err: nil},
 	}
-	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartMetricsOp(receiverCtx)
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		ctx := rec.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
-
-		rec.EndMetricsOp(
-			ctx,
-			format,
-			rcvdMetricPts[i],
-			param.err)
+		rec.EndMetricsOp(ctx, format, params[i].items, param.err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -212,23 +178,17 @@ func TestReceiveMetricsOp(t *testing.T) {
 		assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name)
 		switch params[i].err {
 		case nil:
-			acceptedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsmetrics.AcceptedMetricPointsKey])
+			acceptedMetricPoints += params[i].items
+			assert.Equal(t, int64(params[i].items), span.Attributes[obsmetrics.AcceptedMetricPointsKey])
 			assert.Equal(t, int64(0), span.Attributes[obsmetrics.RefusedMetricPointsKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
-			refusedMetricPoints += rcvdMetricPts[i]
+			refusedMetricPoints += params[i].items
 			assert.Equal(t, int64(0), span.Attributes[obsmetrics.AcceptedMetricPointsKey])
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsmetrics.RefusedMetricPointsKey])
+			assert.Equal(t, int64(params[i].items), span.Attributes[obsmetrics.RefusedMetricPointsKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
-		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsmetrics.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsmetrics.TransportKey])
 		}
 	}
 
@@ -451,10 +411,9 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		})
 	}()
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(), t.Name())
+	longLivedCtx, parentSpan := trace.StartSpan(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	longLivedCtx := ReceiverContext(parentCtx, receiver, transport)
 	ops := []struct {
 		numSpans int
 		err      error
@@ -465,10 +424,8 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for _, op := range ops {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
-		ctx := rec.StartTracesOp(
-			longLivedCtx,
-			WithLongLivedCtx())
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport, LongLivedCtx: true})
+		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
 
 		rec.EndTracesOp(

@@ -20,7 +20,7 @@ import (
 
 // splitMetrics removes metrics from the input data and returns a new data of the specified size.
 func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
-	_, dataPoints := src.MetricAndDataPointCount()
+	dataPoints := src.DataPointCount()
 	if dataPoints <= size {
 		return src
 	}

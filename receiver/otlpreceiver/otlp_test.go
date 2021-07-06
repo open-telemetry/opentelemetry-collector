@@ -704,7 +704,7 @@ func TestShutdown(t *testing.T) {
 
 	// Wait until the receiver outputs anything to the sink.
 	assert.Eventually(t, func() bool {
-		return nextSink.SpansCount() > 0
+		return nextSink.SpanCount() > 0
 	}, time.Second, 10*time.Millisecond)
 
 	// Now shutdown the receiver, while continuing sending traces to it.
@@ -716,7 +716,7 @@ func TestShutdown(t *testing.T) {
 	// Remember how many spans the sink received. This number should not change after this
 	// point because after Shutdown() returns the component is not allowed to produce
 	// any more data.
-	sinkSpanCountAfterShutdown := nextSink.SpansCount()
+	sinkSpanCountAfterShutdown := nextSink.SpanCount()
 
 	// Now signal to generateTraces to exit the main generation loop, then send
 	// one more trace and stop.
@@ -729,7 +729,7 @@ func TestShutdown(t *testing.T) {
 
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
-	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpansCount())
+	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 }
 
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {

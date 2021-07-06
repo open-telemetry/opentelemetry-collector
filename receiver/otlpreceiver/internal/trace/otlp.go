@@ -58,7 +58,7 @@ func (r *Receiver) Export(ctx context.Context, td pdata.Traces) (otlpgrpc.Traces
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = r.obsrecv.StartTracesOp(obsreport.ReceiverContext(ctx, r.id, receiverTransport))
+	ctx = r.obsrecv.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 

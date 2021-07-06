@@ -169,7 +169,7 @@ func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pd
 
 // ProcessMetrics implements the MProcessor interface
 func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	_, numDataPoints := md.MetricAndDataPointCount()
+	numDataPoints := md.DataPointCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
@@ -177,7 +177,6 @@ func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
 		ml.obsrep.MetricsRefused(ctx, numDataPoints)
-
 		return md, errForcedDrop
 	}
 

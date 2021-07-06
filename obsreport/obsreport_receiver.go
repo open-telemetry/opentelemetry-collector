@@ -27,83 +27,44 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-// startReceiveOptions has the options related to starting a receive operation.
-type startReceiveOptions struct {
-	// LongLivedCtx when true indicates that the context passed in the call
-	// outlives the individual receive operation. See WithLongLivedCtx() for
-	// more information.
-	LongLivedCtx bool
-}
-
-// StartReceiveOption function applues changes to startReceiveOptions.
-type StartReceiveOption func(*startReceiveOptions)
-
-// WithLongLivedCtx indicates that the context passed in the call outlives the
-// receive operation at hand. Typically the long lived context is associated
-// to a connection, eg.: a gRPC stream or a TCP connection, for which many
-// batches of data are received in individual operations without a corresponding
-// new context per operation.
-//
-// Example:
-//
-//    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan pdata.Traces) {
-//        longLivedCtx := obsreport.ReceiverContext(ctx, r.config.Name(), r.transport, "")
-//        for {
-//            // Since the context outlives the individual receive operations call obsreport using
-//            // WithLongLivedCtx().
-//            ctx := obsreport.StartTracesOp(
-//                longLivedCtx,
-//                r.config.Name(),
-//                r.transport,
-//                obsreport.WithLongLivedCtx())
-//
-//            td, ok := <-rcvChan
-//            var err error
-//            if ok {
-//                err = r.nextConsumer.ConsumeTraces(ctx, td)
-//            }
-//            obsreport.EndTracesOp(
-//                ctx,
-//                r.format,
-//                len(td.Spans),
-//                err)
-//            if !ok {
-//                break
-//            }
-//        }
-//    }
-//
-func WithLongLivedCtx() StartReceiveOption {
-	return func(opts *startReceiveOptions) {
-		opts.LongLivedCtx = true
-	}
-}
-
 // Receiver is a helper to add obersvability to a component.Receiver.
 type Receiver struct {
-	receiverID config.ComponentID
-	transport  string
+	spanNamePrefix string
+	transport      string
+	longLivedCtx   bool
+	mutators       []tag.Mutator
 }
 
 // ReceiverSettings are settings for creating an Receiver.
 type ReceiverSettings struct {
 	ReceiverID config.ComponentID
 	Transport  string
+	// LongLivedCtx when true indicates that the context passed in the call
+	// outlives the individual receive operation.
+	// Typically the long lived context is associated to a connection,
+	// eg.: a gRPC stream, for which many batches of data are received in individual
+	// operations without a corresponding new context per operation.
+	LongLivedCtx bool
 }
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
 	return &Receiver{
-		receiverID: cfg.ReceiverID,
-		transport:  cfg.Transport,
+		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
+		transport:      cfg.Transport,
+		longLivedCtx:   cfg.LongLivedCtx,
+		mutators: []tag.Mutator{
+			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
+			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
+		},
 	}
 }
 
 // StartTracesOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func (rec *Receiver) StartTracesOp(operationCtx context.Context, opt ...StartReceiveOption) context.Context {
-	return rec.startOp(operationCtx, obsmetrics.ReceiveTraceDataOperationSuffix, opt...)
+func (rec *Receiver) StartTracesOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiveTraceDataOperationSuffix)
 }
 
 // EndTracesOp completes the receive operation that was started with
@@ -120,8 +81,8 @@ func (rec *Receiver) EndTracesOp(
 // StartLogsOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func (rec *Receiver) StartLogsOp(operationCtx context.Context, opt ...StartReceiveOption) context.Context {
-	return rec.startOp(operationCtx, obsmetrics.ReceiverLogsOperationSuffix, opt...)
+func (rec *Receiver) StartLogsOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiverLogsOperationSuffix)
 }
 
 // EndLogsOp completes the receive operation that was started with
@@ -138,8 +99,8 @@ func (rec *Receiver) EndLogsOp(
 // StartMetricsOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
-func (rec *Receiver) StartMetricsOp(operationCtx context.Context, opt ...StartReceiveOption) context.Context {
-	return rec.startOp(operationCtx, obsmetrics.ReceiverMetricsOperationSuffix, opt...)
+func (rec *Receiver) StartMetricsOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiverMetricsOperationSuffix)
 }
 
 // EndMetricsOp completes the receive operation that was started with
@@ -153,39 +114,14 @@ func (rec *Receiver) EndMetricsOp(
 	rec.endOp(receiverCtx, format, numReceivedPoints, err, config.MetricsDataType)
 }
 
-// ReceiverContext adds the keys used when recording observability metrics to
-// the given context returning the newly created context. This context should
-// be used in related calls to the obsreport functions so metrics are properly
-// recorded.
-func ReceiverContext(
-	ctx context.Context,
-	receiverID config.ComponentID,
-	transport string,
-) context.Context {
-	ctx, _ = tag.New(ctx,
-		tag.Upsert(obsmetrics.TagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-		tag.Upsert(obsmetrics.TagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
-
-	return ctx
-}
-
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
-func (rec *Receiver) startOp(
-	receiverCtx context.Context,
-	operationSuffix string,
-	opt ...StartReceiveOption,
-) context.Context {
-	var opts startReceiveOptions
-	for _, o := range opt {
-		o(&opts)
-	}
-
-	var ctx context.Context
+func (rec *Receiver) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
+	ctx, _ := tag.New(receiverCtx, rec.mutators...)
 	var span *trace.Span
-	spanName := obsmetrics.ReceiverPrefix + rec.receiverID.String() + operationSuffix
-	if !opts.LongLivedCtx {
-		ctx, span = trace.StartSpan(receiverCtx, spanName)
+	spanName := rec.spanNamePrefix + operationSuffix
+	if !rec.longLivedCtx {
+		ctx, span = trace.StartSpan(ctx, spanName)
 	} else {
 		// Since the receiverCtx is long lived do not use it to start the span.
 		// This way this trace ends when the EndTracesOp is called.
@@ -195,7 +131,7 @@ func (rec *Receiver) startOp(
 		// If the long lived context has a parent span, then add it as a parent link.
 		setParentLink(receiverCtx, span)
 
-		ctx = trace.NewContext(receiverCtx, span)
+		ctx = trace.NewContext(ctx, span)
 	}
 
 	if rec.transport != "" {
@@ -257,12 +193,9 @@ func (rec *Receiver) endOp(
 		}
 
 		span.AddAttributes(
-			trace.StringAttribute(
-				obsmetrics.FormatKey, format),
-			trace.Int64Attribute(
-				acceptedItemsKey, int64(numAccepted)),
-			trace.Int64Attribute(
-				refusedItemsKey, int64(numRefused)),
+			trace.StringAttribute(obsmetrics.FormatKey, format),
+			trace.Int64Attribute(acceptedItemsKey, int64(numAccepted)),
+			trace.Int64Attribute(refusedItemsKey, int64(numRefused)),
 		)
 		span.SetStatus(errToStatus(err))
 	}
