@@ -31,16 +31,16 @@ const (
 	unixMetricsLen         = standardUnixMetricsLen + unixSystemSpecificMetricsLen
 )
 
-func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, startIndex int, miscFunc getMiscStats) error {
+func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, miscFunc getMiscStats) error {
 	now := pdata.TimestampFromTime(time.Now())
 	misc, err := miscFunc()
 	if err != nil {
 		return scrapererror.NewPartialScrapeError(err, unixMetricsLen)
 	}
 
-	metrics.EnsureCapacity(startIndex + unixMetricsLen)
+	metrics.EnsureCapacity(unixMetricsLen)
 	initializeProcessesCountMetric(metrics.AppendEmpty(), startTime, now, misc)
-	return appendUnixSystemSpecificProcessesMetrics(metrics, startTime, startIndex+1, now, misc)
+	return appendUnixSystemSpecificProcessesMetrics(metrics, startTime, now, misc)
 }
 
 func initializeProcessesCountMetric(metric pdata.Metric, startTime pdata.Timestamp, now pdata.Timestamp, misc *load.MiscStat) {
