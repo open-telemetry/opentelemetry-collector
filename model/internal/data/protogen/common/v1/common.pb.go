@@ -377,6 +377,7 @@ func (m *StringKeyValue) GetValue() string {
 // InstrumentationLibrary is a message representing the instrumentation library information
 // such as the fully qualified name and version.
 type InstrumentationLibrary struct {
+	// An empty instrumentation library name means the name is unknown.
 	Name    string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 }
