@@ -1752,7 +1752,7 @@ func TestIntExemplar_FilteredLabels(t *testing.T) {
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newExemplarSlice(&[]otlpmetrics.Exemplar{})
+	es = newExemplarSlice(&[]*otlpmetrics.Exemplar{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
