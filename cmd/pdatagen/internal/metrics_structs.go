@@ -255,7 +255,14 @@ var doubleDataPoint = &messageValueStruct{
 		labelsField,
 		startTimeField,
 		timeField,
-		valueFloat64Field,
+		&primitiveAsDoubleField{
+			originFullName:  "otlpmetrics.NumberDataPoint",
+			fieldName:       "Value",
+			originFieldName: "Value",
+			returnType:      "float64",
+			defaultVal:      "float64(0.0)",
+			testVal:         "float64(17.13)",
+		},
 		exemplarsField,
 	},
 }
@@ -363,7 +370,7 @@ var intExemplar = &messageValueStruct{
 	},
 }
 
-var exemplarSlice = &sliceOfValues{
+var exemplarSlice = &sliceOfPtrs{
 	structName: "ExemplarSlice",
 	element:    exemplar,
 }
@@ -377,7 +384,14 @@ var exemplar = &messageValueStruct{
 	originFullName: "otlpmetrics.Exemplar",
 	fields: []baseField{
 		timeField,
-		valueFloat64Field,
+		&primitiveAsDoubleField{
+			originFullName:  "otlpmetrics.Exemplar",
+			fieldName:       "Value",
+			originFieldName: "Value",
+			returnType:      "float64",
+			defaultVal:      "float64(0.0)",
+			testVal:         "float64(17.13)",
+		},
 		&sliceField{
 			fieldName:       "FilteredLabels",
 			originFieldName: "FilteredLabels",
