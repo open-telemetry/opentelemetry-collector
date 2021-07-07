@@ -161,11 +161,12 @@ type GRPCServerSettings struct {
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
 func (gcs *GRPCClientSettings) SanitizedEndpoint() string {
-	if gcs.isSchemeHTTP() {
+	switch {
+	case gcs.isSchemeHTTP():
 		return strings.TrimPrefix(gcs.Endpoint, "http://")
-	} else if gcs.isSchemeHTTPS() {
+	case gcs.isSchemeHTTPS():
 		return strings.TrimPrefix(gcs.Endpoint, "https://")
-	} else {
+	default:
 		return gcs.Endpoint
 	}
 }
