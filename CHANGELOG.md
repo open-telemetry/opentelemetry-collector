@@ -5,6 +5,7 @@
 ## 🧰 Bug fixes 🧰
 
 - `scraperhelper`: Include the scraper name in log messages (#3487)
+- `otlpexporter`: Allow endpoint to be configured with a scheme of `http` or `https` (#3575)
 
 ## v0.29.0 Beta
 
