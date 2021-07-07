@@ -217,14 +217,22 @@ func (qrs *queuedRetrySender) shutdown() {
 
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
 type throttleRetry struct {
-	error
+	err   error
 	delay time.Duration
+}
+
+func (t throttleRetry) Error() string {
+	return "Throttle (" + t.delay.String() + "), error: " + t.err.Error()
+}
+
+func (t throttleRetry) Unwrap() error {
+	return t.err
 }
 
 // NewThrottleRetry creates a new throttle retry error.
 func NewThrottleRetry(err error, delay time.Duration) error {
-	return &throttleRetry{
-		error: err,
+	return throttleRetry{
+		err:   err,
 		delay: delay,
 	}
 }
@@ -302,7 +310,9 @@ func (rs *retrySender) send(req request) error {
 			return err
 		}
 
-		if throttleErr, isThrottle := err.(*throttleRetry); isThrottle {
+		throttleErr := throttleRetry{}
+		isThrottle := errors.As(err, &throttleErr)
+		if isThrottle {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
