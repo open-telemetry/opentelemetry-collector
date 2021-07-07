@@ -99,18 +99,9 @@ func TestAnyValueArray_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		expectedEs[es.At(i).orig] = true
-	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
