@@ -28,7 +28,6 @@ import (
 // ProcessMetricsViews is a struct that contains views related to process metrics (cpu, mem, etc)
 type ProcessMetricsViews struct {
 	prevTimeUnixNano int64
-	ballastSizeBytes uint64
 	views            []*view.View
 	done             chan struct{}
 	proc             *process.Process
@@ -108,10 +107,9 @@ var viewRSSMemory = &view.View{
 
 // NewProcessMetricsViews creates a new set of ProcessMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func NewProcessMetricsViews(ballastSizeBytes uint64) (*ProcessMetricsViews, error) {
+func NewProcessMetricsViews() (*ProcessMetricsViews, error) {
 	pmv := &ProcessMetricsViews{
 		prevTimeUnixNano: time.Now().UnixNano(),
-		ballastSizeBytes: ballastSizeBytes,
 		views:            []*view.View{viewProcessUptime, viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds, viewRSSMemory},
 		done:             make(chan struct{}),
 	}
@@ -176,8 +174,4 @@ func (pmv *ProcessMetricsViews) updateViews() {
 
 func (pmv *ProcessMetricsViews) readMemStats(ms *runtime.MemStats) {
 	runtime.ReadMemStats(ms)
-	ms.Alloc -= pmv.ballastSizeBytes
-	ms.HeapAlloc -= pmv.ballastSizeBytes
-	ms.HeapSys -= pmv.ballastSizeBytes
-	ms.HeapInuse -= pmv.ballastSizeBytes
 }

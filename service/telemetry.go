@@ -38,7 +38,7 @@ import (
 var applicationTelemetry appTelemetryExporter = &appTelemetry{}
 
 type appTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
+	init(asyncErrorChannel chan<- error, logger *zap.Logger) error
 	shutdown() error
 }
 
@@ -47,7 +47,7 @@ type appTelemetry struct {
 	server *http.Server
 }
 
-func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *appTelemetry) init(asyncErrorChannel chan<- error, logger *zap.Logger) error {
 	level := configtelemetry.GetMetricsLevelFlagValue()
 	metricsAddr := telemetry.GetMetricsAddr()
 
@@ -55,7 +55,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return nil
 	}
 
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews()
 	if err != nil {
 		return err
 	}
