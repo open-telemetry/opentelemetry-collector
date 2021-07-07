@@ -2371,7 +2371,6 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 		wrappers[i] = &origs[i]
 		newExemplar((*es.orig)[i]).CopyTo(newExemplar(wrappers[i]))
 	}
-
 	*dest.orig = wrappers
 }
 
