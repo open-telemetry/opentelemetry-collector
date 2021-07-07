@@ -15,6 +15,7 @@
 package configgrpc
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"strings"
@@ -158,6 +159,25 @@ type GRPCServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
+// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
+func (gcs *GRPCClientSettings) SanitizedEndpoint() string {
+	if gcs.isSchemeHTTP() {
+		return strings.TrimPrefix(gcs.Endpoint, "http://")
+	} else if gcs.isSchemeHTTPS() {
+		return strings.TrimPrefix(gcs.Endpoint, "https://")
+	} else {
+		return gcs.Endpoint
+	}
+}
+
+func (gcs *GRPCClientSettings) isSchemeHTTP() bool {
+	return strings.HasPrefix(gcs.Endpoint, "http://")
+}
+
+func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
+	return strings.HasPrefix(gcs.Endpoint, "https://")
+}
+
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
@@ -176,6 +196,8 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 	tlsDialOption := grpc.WithInsecure()
 	if tlsCfg != nil {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
+	} else if gcs.isSchemeHTTPS() {
+		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
 	}
 	opts = append(opts, tlsDialOption)
 
