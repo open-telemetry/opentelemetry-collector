@@ -21,9 +21,9 @@ and please don't use it if the following limitations is a concern:
 ## Getting Started
 
 This receiver is a drop-in replacement for getting Prometheus to scrape your
-services. It supports the full set of Prometheus configuration, including
-service discovery. Just like you would write in a YAML configuration file
-before starting Prometheus, such as with:
+services. It supports [the full set of Prometheus configuration in `scrape_config`][sc],
+including service discovery. Just like you would write in a YAML configuration
+file before starting Prometheus, such as with:
 
 **Note**: Since the collector configuration supports env variable substitution
 `$` characters in your prometheus configuration are interpreted as environment
@@ -65,3 +65,5 @@ receivers:
               regex: "(request_duration_seconds.*|response_duration_seconds.*)"
               action: keep
 ```
+
+[sc]: https://github.com/prometheus/prometheus/blob/v2.28.1/docs/configuration/configuration.md#scrape_config
