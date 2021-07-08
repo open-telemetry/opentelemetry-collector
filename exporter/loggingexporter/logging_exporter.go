@@ -94,11 +94,11 @@ func newLoggingExporter(level string, logger *zap.Logger) *loggingExporter {
 
 // newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTracesExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
+func newTracesExporter(config config.Exporter, level string, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewTracesExporter(
 		config,
-		logger,
+		set,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
@@ -111,11 +111,11 @@ func newTracesExporter(config config.Exporter, level string, logger *zap.Logger)
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
+func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
 	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewMetricsExporter(
 		config,
-		logger,
+		set,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
@@ -128,11 +128,11 @@ func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
+func newLogsExporter(config config.Exporter, level string, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
 	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewLogsExporter(
 		config,
-		logger,
+		set,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue

@@ -111,7 +111,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	}
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		set.Logger,
+		set,
 		exp.tracesPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -137,7 +137,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	}
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		set.Logger,
+		set,
 		exp.metricsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -163,7 +163,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	}
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		set.Logger,
+		set,
 		exp.logsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,

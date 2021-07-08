@@ -22,13 +22,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
-	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop())
+	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -39,7 +40,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop())
+	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -52,7 +53,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop())
+	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 

@@ -54,7 +54,7 @@ func createTracesExporter(
 	})
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		set.Logger,
+		set,
 		fe.Unwrap().(*fileExporter).ConsumeTraces,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
@@ -71,7 +71,7 @@ func createMetricsExporter(
 	})
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		set.Logger,
+		set,
 		fe.Unwrap().(*fileExporter).ConsumeMetrics,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
@@ -88,7 +88,7 @@ func createLogsExporter(
 	})
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		set.Logger,
+		set,
 		fe.Unwrap().(*fileExporter).ConsumeLogs,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
