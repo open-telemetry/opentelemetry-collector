@@ -116,6 +116,37 @@ func Test_cumulativeDistribution(t *testing.T) {
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
+func Test_summary_no_count(t *testing.T) {
+	script := []*metricsAdjusterTest{{
+		"Summary No Count: round 1 - initial instance, start time is established",
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
+		1,
+	}, {
+		"Summary No Count: round 2 - instance adjusted based on round 1",
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
+		0,
+	}, {
+		"Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
+		1,
+	}, {
+		"Summary No Count: round 4 - instance adjusted based on round 3",
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
+		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
+		0,
+	}}
+
+	for _, test := range script {
+		test.metrics[0].GetTimeseries()[0].Points[0].GetSummaryValue().Count = nil
+		test.adjusted[0].GetTimeseries()[0].Points[0].GetSummaryValue().Count = nil
+	}
+
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+}
+
 func Test_summary(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"Summary: round 1 - initial instance, start time is established",
