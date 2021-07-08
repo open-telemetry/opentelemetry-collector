@@ -4,7 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Rename `pdata.DoubleSum` to `pdata.Sum` (#)
+- Rename `pdata.DoubleSum` to `pdata.Sum` (#3583)
 
 ## 🧰 Bug fixes 🧰
 
