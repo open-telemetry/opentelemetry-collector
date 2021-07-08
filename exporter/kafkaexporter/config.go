@@ -45,7 +45,7 @@ type Config struct {
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
 
-	// MessageMaxSize defines the max size of the message.
+	// MessageMaxSize defines the max size of the message can be sent by sarama.
 	MessageMaxSize int `mapstructure:"message_max_size"`
 }
 

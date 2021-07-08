@@ -37,7 +37,7 @@ const (
 	defaultMetadataRetryBackoff = time.Millisecond * 250
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
-	// default message max size
+	// default message max size can be sent by sarama
 	defaultMessageMaxSize = 1024 * 1024
 )
 
