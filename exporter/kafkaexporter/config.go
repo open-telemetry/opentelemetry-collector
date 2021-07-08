@@ -44,6 +44,9 @@ type Config struct {
 
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
+
+	// MessageMaxSize defines the max size of the message.
+	MessageMaxSize int `mapstructure:"message_max_size"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.

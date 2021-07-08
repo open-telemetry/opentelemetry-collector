@@ -37,6 +37,8 @@ const (
 	defaultMetadataRetryBackoff = time.Millisecond * 250
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
+	// default message max size
+	defaultMessageMaxSize = 1024 * 1024
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -78,8 +80,9 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		Brokers:          []string{defaultBroker},
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:    "",
-		Encoding: defaultEncoding,
+		Topic:          "",
+		Encoding:       defaultEncoding,
+		MessageMaxSize: defaultMessageMaxSize,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
