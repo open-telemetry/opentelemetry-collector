@@ -51,8 +51,8 @@ func TestCopyData(t *testing.T) {
 		{
 			name: "DoubleGauge",
 			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_DoubleGauge{
-					DoubleGauge: &otlpmetrics.DoubleGauge{},
+				Data: &otlpmetrics.Metric_Gauge{
+					Gauge: &otlpmetrics.Gauge{},
 				},
 			},
 		},
@@ -67,8 +67,8 @@ func TestCopyData(t *testing.T) {
 		{
 			name: "DoubleSum",
 			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_DoubleSum{
-					DoubleSum: &otlpmetrics.DoubleSum{},
+				Data: &otlpmetrics.Metric_Sum{
+					Sum: &otlpmetrics.Sum{},
 				},
 			},
 		},
@@ -83,8 +83,8 @@ func TestCopyData(t *testing.T) {
 		{
 			name: "Histogram",
 			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_DoubleHistogram{
-					DoubleHistogram: &otlpmetrics.DoubleHistogram{},
+				Data: &otlpmetrics.Metric_Histogram{
+					Histogram: &otlpmetrics.Histogram{},
 				},
 			},
 		},
@@ -516,10 +516,10 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 								Name:        "new_my_metric_double",
 								Description: "My new metric",
 								Unit:        "1",
-								Data: &otlpmetrics.Metric_DoubleSum{
-									DoubleSum: &otlpmetrics.DoubleSum{
+								Data: &otlpmetrics.Metric_Sum{
+									Sum: &otlpmetrics.Sum{
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-										DataPoints: []*otlpmetrics.DoubleDataPoint{
+										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
 												Labels: []otlpcommon.StringKeyValue{
 													{
@@ -529,7 +529,9 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 												},
 												StartTimeUnixNano: startTime + 1,
 												TimeUnixNano:      endTime + 1,
-												Value:             124.1,
+												Value: &otlpmetrics.NumberDataPoint_AsDouble{
+													AsDouble: 124.1,
+												},
 											},
 										},
 									},
@@ -597,10 +599,10 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 								Name:        "new_my_metric_histogram",
 								Description: "My new metric",
 								Unit:        "1",
-								Data: &otlpmetrics.Metric_DoubleHistogram{
-									DoubleHistogram: &otlpmetrics.DoubleHistogram{
+								Data: &otlpmetrics.Metric_Histogram{
+									Histogram: &otlpmetrics.Histogram{
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
-										DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
+										DataPoints: []*otlpmetrics.HistogramDataPoint{
 											{
 												Labels: []otlpcommon.StringKeyValue{
 													{
@@ -804,10 +806,10 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 		Name:        "my_metric_double",
 		Description: "My metric",
 		Unit:        "ms",
-		Data: &otlpmetrics.Metric_DoubleSum{
-			DoubleSum: &otlpmetrics.DoubleSum{
+		Data: &otlpmetrics.Metric_Sum{
+			Sum: &otlpmetrics.Sum{
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-				DataPoints: []*otlpmetrics.DoubleDataPoint{
+				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
 						Labels: []otlpcommon.StringKeyValue{
 							{
@@ -817,7 +819,9 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 						},
 						StartTimeUnixNano: startTime,
 						TimeUnixNano:      endTime,
-						Value:             123.1,
+						Value: &otlpmetrics.NumberDataPoint_AsDouble{
+							AsDouble: 123.1,
+						},
 					},
 					{
 						Labels: []otlpcommon.StringKeyValue{
@@ -828,7 +832,9 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 						},
 						StartTimeUnixNano: startTime,
 						TimeUnixNano:      endTime,
-						Value:             456.1,
+						Value: &otlpmetrics.NumberDataPoint_AsDouble{
+							AsDouble: 456.1,
+						},
 					},
 				},
 			},
@@ -841,10 +847,10 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 		Name:        "my_metric_histogram",
 		Description: "My metric",
 		Unit:        "ms",
-		Data: &otlpmetrics.Metric_DoubleHistogram{
-			DoubleHistogram: &otlpmetrics.DoubleHistogram{
+		Data: &otlpmetrics.Metric_Histogram{
+			Histogram: &otlpmetrics.Histogram{
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
-				DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
+				DataPoints: []*otlpmetrics.HistogramDataPoint{
 					{
 						Labels: []otlpcommon.StringKeyValue{
 							{
@@ -913,9 +919,9 @@ func generateMetricsEmptyDataPoints() Metrics {
 					{
 						Metrics: []*otlpmetrics.Metric{
 							{
-								Data: &otlpmetrics.Metric_DoubleGauge{
-									DoubleGauge: &otlpmetrics.DoubleGauge{
-										DataPoints: []*otlpmetrics.DoubleDataPoint{
+								Data: &otlpmetrics.Metric_Gauge{
+									Gauge: &otlpmetrics.Gauge{
+										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{},
 										},
 									},

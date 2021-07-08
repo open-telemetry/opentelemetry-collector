@@ -143,7 +143,7 @@ var intGauge = &messageValueStruct{
 var doubleGauge = &messageValueStruct{
 	structName:     "DoubleGauge",
 	description:    "// DoubleGauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
-	originFullName: "otlpmetrics.DoubleGauge",
+	originFullName: "otlpmetrics.Gauge",
 	fields: []baseField{
 		&sliceField{
 			fieldName:       "DataPoints",
@@ -171,7 +171,7 @@ var intSum = &messageValueStruct{
 var doubleSum = &messageValueStruct{
 	structName:     "DoubleSum",
 	description:    "// DoubleSum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
-	originFullName: "otlpmetrics.DoubleSum",
+	originFullName: "otlpmetrics.Sum",
 	fields: []baseField{
 		aggregationTemporalityField,
 		isMonotonicField,
@@ -200,7 +200,7 @@ var intHistogram = &messageValueStruct{
 var histogram = &messageValueStruct{
 	structName:     "Histogram",
 	description:    "// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.",
-	originFullName: "otlpmetrics.DoubleHistogram",
+	originFullName: "otlpmetrics.Histogram",
 	fields: []baseField{
 		aggregationTemporalityField,
 		&sliceField{
@@ -214,7 +214,7 @@ var histogram = &messageValueStruct{
 var summary = &messageValueStruct{
 	structName:     "Summary",
 	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
-	originFullName: "otlpmetrics.DoubleSummary",
+	originFullName: "otlpmetrics.Summary",
 	fields: []baseField{
 		&sliceField{
 			fieldName:       "DataPoints",
@@ -250,12 +250,19 @@ var doubleDataPointSlice = &sliceOfPtrs{
 var doubleDataPoint = &messageValueStruct{
 	structName:     "DoubleDataPoint",
 	description:    "// DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
-	originFullName: "otlpmetrics.DoubleDataPoint",
+	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
 		timeField,
-		valueFloat64Field,
+		&primitiveAsDoubleField{
+			originFullName:  "otlpmetrics.NumberDataPoint",
+			fieldName:       "Value",
+			originFieldName: "Value",
+			returnType:      "float64",
+			defaultVal:      "float64(0.0)",
+			testVal:         "float64(17.13)",
+		},
 		exemplarsField,
 	},
 }
@@ -289,7 +296,7 @@ var histogramDataPointSlice = &sliceOfPtrs{
 var histogramDataPoint = &messageValueStruct{
 	structName:     "HistogramDataPoint",
 	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
-	originFullName: "otlpmetrics.DoubleHistogramDataPoint",
+	originFullName: "otlpmetrics.HistogramDataPoint",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
@@ -310,7 +317,7 @@ var summaryDataPointSlice = &sliceOfPtrs{
 var summaryDataPoint = &messageValueStruct{
 	structName:     "SummaryDataPoint",
 	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
-	originFullName: "otlpmetrics.DoubleSummaryDataPoint",
+	originFullName: "otlpmetrics.SummaryDataPoint",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
@@ -333,7 +340,7 @@ var quantileValuesSlice = &sliceOfPtrs{
 var quantileValues = &messageValueStruct{
 	structName:     "ValueAtQuantile",
 	description:    "// ValueAtQuantile is a quantile value within a Summary data point.",
-	originFullName: "otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile",
+	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
 	fields: []baseField{
 		quantileField,
 		valueFloat64Field,
@@ -363,7 +370,7 @@ var intExemplar = &messageValueStruct{
 	},
 }
 
-var exemplarSlice = &sliceOfValues{
+var exemplarSlice = &sliceOfPtrs{
 	structName: "ExemplarSlice",
 	element:    exemplar,
 }
@@ -374,10 +381,17 @@ var exemplar = &messageValueStruct{
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
 		"// for example the span and trace ID of the active span when the exemplar was recorded.",
 
-	originFullName: "otlpmetrics.DoubleExemplar",
+	originFullName: "otlpmetrics.Exemplar",
 	fields: []baseField{
 		timeField,
-		valueFloat64Field,
+		&primitiveAsDoubleField{
+			originFullName:  "otlpmetrics.Exemplar",
+			fieldName:       "Value",
+			originFieldName: "Value",
+			returnType:      "float64",
+			defaultVal:      "float64(0.0)",
+			testVal:         "float64(17.13)",
+		},
 		&sliceField{
 			fieldName:       "FilteredLabels",
 			originFieldName: "FilteredLabels",

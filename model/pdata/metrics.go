@@ -169,17 +169,17 @@ func (ms Metric) DataType() MetricDataType {
 	switch ms.orig.Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
 		return MetricDataTypeIntGauge
-	case *otlpmetrics.Metric_DoubleGauge:
+	case *otlpmetrics.Metric_Gauge:
 		return MetricDataTypeDoubleGauge
 	case *otlpmetrics.Metric_IntSum:
 		return MetricDataTypeIntSum
-	case *otlpmetrics.Metric_DoubleSum:
+	case *otlpmetrics.Metric_Sum:
 		return MetricDataTypeDoubleSum
 	case *otlpmetrics.Metric_IntHistogram:
 		return MetricDataTypeIntHistogram
-	case *otlpmetrics.Metric_DoubleHistogram:
+	case *otlpmetrics.Metric_Histogram:
 		return MetricDataTypeHistogram
-	case *otlpmetrics.Metric_DoubleSummary:
+	case *otlpmetrics.Metric_Summary:
 		return MetricDataTypeSummary
 	}
 	return MetricDataTypeNone
@@ -192,17 +192,17 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 	case MetricDataTypeIntGauge:
 		ms.orig.Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
 	case MetricDataTypeDoubleGauge:
-		ms.orig.Data = &otlpmetrics.Metric_DoubleGauge{DoubleGauge: &otlpmetrics.DoubleGauge{}}
+		ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
 	case MetricDataTypeIntSum:
 		ms.orig.Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
 	case MetricDataTypeDoubleSum:
-		ms.orig.Data = &otlpmetrics.Metric_DoubleSum{DoubleSum: &otlpmetrics.DoubleSum{}}
+		ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	case MetricDataTypeIntHistogram:
 		ms.orig.Data = &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
 	case MetricDataTypeHistogram:
-		ms.orig.Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{}}
+		ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
 	case MetricDataTypeSummary:
-		ms.orig.Data = &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}
+		ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
 	}
 }
 
@@ -217,7 +217,7 @@ func (ms Metric) IntGauge() IntGauge {
 // Calling this function when DataType() != MetricDataTypeDoubleGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleGauge() DoubleGauge {
-	return newDoubleGauge(ms.orig.Data.(*otlpmetrics.Metric_DoubleGauge).DoubleGauge)
+	return newDoubleGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
 }
 
 // IntSum returns the data as IntSum.
@@ -231,7 +231,7 @@ func (ms Metric) IntSum() IntSum {
 // Calling this function when DataType() != MetricDataTypeDoubleSum will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleSum() DoubleSum {
-	return newDoubleSum(ms.orig.Data.(*otlpmetrics.Metric_DoubleSum).DoubleSum)
+	return newDoubleSum(ms.orig.Data.(*otlpmetrics.Metric_Sum).Sum)
 }
 
 // IntHistogram returns the data as IntHistogram.
@@ -245,14 +245,14 @@ func (ms Metric) IntHistogram() IntHistogram {
 // Calling this function when DataType() != MetricDataTypeHistogram will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Histogram() Histogram {
-	return newHistogram(ms.orig.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
+	return newHistogram(ms.orig.Data.(*otlpmetrics.Metric_Histogram).Histogram)
 }
 
 // Summary returns the data as Summary.
 // Calling this function when DataType() != MetricDataTypeSummary will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Summary() Summary {
-	return newSummary(ms.orig.Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary)
+	return newSummary(ms.orig.Data.(*otlpmetrics.Metric_Summary).Summary)
 }
 
 func copyData(src, dest *otlpmetrics.Metric) {
@@ -261,29 +261,29 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		data := &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
 		newIntGauge(srcData.IntGauge).CopyTo(newIntGauge(data.IntGauge))
 		dest.Data = data
-	case *otlpmetrics.Metric_DoubleGauge:
-		data := &otlpmetrics.Metric_DoubleGauge{DoubleGauge: &otlpmetrics.DoubleGauge{}}
-		newDoubleGauge(srcData.DoubleGauge).CopyTo(newDoubleGauge(data.DoubleGauge))
+	case *otlpmetrics.Metric_Gauge:
+		data := &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
+		newDoubleGauge(srcData.Gauge).CopyTo(newDoubleGauge(data.Gauge))
 		dest.Data = data
 	case *otlpmetrics.Metric_IntSum:
 		data := &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
 		newIntSum(srcData.IntSum).CopyTo(newIntSum(data.IntSum))
 		dest.Data = data
-	case *otlpmetrics.Metric_DoubleSum:
-		data := &otlpmetrics.Metric_DoubleSum{DoubleSum: &otlpmetrics.DoubleSum{}}
-		newDoubleSum(srcData.DoubleSum).CopyTo(newDoubleSum(data.DoubleSum))
+	case *otlpmetrics.Metric_Sum:
+		data := &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
+		newDoubleSum(srcData.Sum).CopyTo(newDoubleSum(data.Sum))
 		dest.Data = data
 	case *otlpmetrics.Metric_IntHistogram:
 		data := &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
 		newIntHistogram(srcData.IntHistogram).CopyTo(newIntHistogram(data.IntHistogram))
 		dest.Data = data
-	case *otlpmetrics.Metric_DoubleHistogram:
-		data := &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{}}
-		newHistogram(srcData.DoubleHistogram).CopyTo(newHistogram(data.DoubleHistogram))
+	case *otlpmetrics.Metric_Histogram:
+		data := &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
+		newHistogram(srcData.Histogram).CopyTo(newHistogram(data.Histogram))
 		dest.Data = data
-	case *otlpmetrics.Metric_DoubleSummary:
-		data := &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}
-		newSummary(srcData.DoubleSummary).CopyTo(newSummary(data.DoubleSummary))
+	case *otlpmetrics.Metric_Summary:
+		data := &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
+		newSummary(srcData.Summary).CopyTo(newSummary(data.Summary))
 		dest.Data = data
 	}
 }
