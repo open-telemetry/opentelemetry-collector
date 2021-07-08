@@ -16,7 +16,6 @@ package prometheusreceiver
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/prometheus/prometheus/discovery"
@@ -30,7 +29,6 @@ import (
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
-	mu         sync.Mutex // mu protects the fields below.
 	cfg        *Config
 	consumer   consumer.Metrics
 	cancelFunc context.CancelFunc
@@ -53,9 +51,6 @@ func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metric
 // Start is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
 func (r *pReceiver) Start(_ context.Context, host component.Host) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 

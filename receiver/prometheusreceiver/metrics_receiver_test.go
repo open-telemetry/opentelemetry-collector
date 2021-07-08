@@ -1296,7 +1296,6 @@ func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetri
 
 // TestEndToEnd  end to end test executor
 func TestEndToEnd(t *testing.T) {
-	t.Parallel()
 	// 1. setup input data
 	targets := []*testData{
 		{
@@ -1387,7 +1386,6 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.
 
 // TestStartTimeMetric validates that timeseries have start time set to 'process_start_time_seconds'
 func TestStartTimeMetric(t *testing.T) {
-	t.Parallel()
 	targets := []*testData{
 		{
 			name: "target1",
@@ -1497,7 +1495,6 @@ example_process_start_time_seconds 400.8
 
 // TestStartTimeMetricRegex validates that timeseries have start time regex set to 'process_start_time_seconds'
 func TestStartTimeMetricRegex(t *testing.T) {
-	t.Parallel()
 	targets := []*testData{
 		{
 			name: "target1",
