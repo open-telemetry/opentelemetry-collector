@@ -89,17 +89,17 @@ func (ss *stalenessStore) isStale(lbl labels.Labels) bool {
 
 // markAsCurrentlySeen adds lbl to the manifest of labels seen in the current scrape.
 // This method should be called before refresh, but during a scrape whenever labels are encountered.
-func (ss *stalenessStore) markAsCurrentlySeen(lbl labels.Labels, at int64) {
+func (ss *stalenessStore) markAsCurrentlySeen(lbl labels.Labels, seenAtMs int64) {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
-	ss.currentHashes[lbl.Hash()] = at
+	ss.currentHashes[lbl.Hash()] = seenAtMs
 	ss.current = append(ss.current, lbl)
 }
 
 type staleEntry struct {
-	labels labels.Labels
-	at     int64
+	labels   labels.Labels
+	seenAtMs int64
 }
 
 // emitStaleLabels returns the labels that were previously seen in
@@ -111,7 +111,7 @@ func (ss *stalenessStore) emitStaleLabels() (stale []*staleEntry) {
 	for _, labels := range ss.previous {
 		hash := labels.Hash()
 		if _, ok := ss.currentHashes[hash]; !ok {
-			stale = append(stale, &staleEntry{at: ss.previousHashes[hash], labels: labels})
+			stale = append(stale, &staleEntry{seenAtMs: ss.previousHashes[hash], labels: labels})
 		}
 	}
 	return stale

@@ -77,7 +77,7 @@ type transaction struct {
 	logger               *zap.Logger
 	obsrecv              *obsreport.Receiver
 	stalenessStore       *stalenessStore
-	startTime            int64
+	startTimeMs          int64
 }
 
 func newTransaction(
@@ -104,7 +104,7 @@ func newTransaction(
 		logger:               logger,
 		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport}),
 		stalenessStore:       stalenessStore,
-		startTime:            -1,
+		startTimeMs:          -1,
 	}
 }
 
@@ -113,8 +113,8 @@ var _ storage.Appender = (*transaction)(nil)
 
 // Append always returns 0 to disable label caching.
 func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) (uint64, error) {
-	if tr.startTime < 0 {
-		tr.startTime = t
+	if tr.startTimeMs < 0 {
+		tr.startTimeMs = t
 	}
 	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
 	// scrape the remote target,  if the previous scrape was success and some data were cached internally
@@ -183,10 +183,10 @@ func (tr *transaction) Commit() error {
 	staleLabels := tr.stalenessStore.emitStaleLabels()
 
 	for _, sEntry := range staleLabels {
-		tr.metricBuilder.AddDataPoint(sEntry.labels, sEntry.at, stalenessSpecialValue)
+		tr.metricBuilder.AddDataPoint(sEntry.labels, sEntry.seenAtMs, stalenessSpecialValue)
 	}
 
-	tr.startTime = -1
+	tr.startTimeMs = -1
 
 	ctx := tr.obsrecv.StartMetricsOp(tr.ctx)
 	metrics, _, _, err := tr.metricBuilder.Build()
@@ -225,7 +225,7 @@ func (tr *transaction) Commit() error {
 }
 
 func (tr *transaction) Rollback() error {
-	tr.startTime = -1
+	tr.startTimeMs = -1
 	return nil
 }
 
