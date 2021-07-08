@@ -169,7 +169,7 @@ func (col *Collector) Shutdown() {
 func (col *Collector) setupTelemetry(ballastSizeBytes uint64) error {
 	col.logger.Info("Setting up own telemetry...")
 
-	err := applicationTelemetry.init(col.asyncErrorChannel, ballastSizeBytes, col.logger)
+	err := collectorTelemetry.init(col.asyncErrorChannel, ballastSizeBytes, col.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
@@ -302,8 +302,8 @@ func (col *Collector) execute(ctx context.Context) error {
 		}
 	}
 
-	if err := applicationTelemetry.shutdown(); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown application telemetry: %w", err))
+	if err := collectorTelemetry.shutdown(); err != nil {
+		errs = append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 
 	col.logger.Info("Shutdown complete.")
