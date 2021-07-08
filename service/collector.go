@@ -69,8 +69,8 @@ type Collector struct {
 
 	parserProvider parserprovider.ParserProvider
 
-	// stopTestChan is used to terminate the collector server in end to end tests.
-	stopTestChan chan struct{}
+	// shutdownChan is used to terminate the collector.
+	shutdownChan chan struct{}
 
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
@@ -160,10 +160,10 @@ func (col *Collector) Shutdown() {
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/483.
 	defer func() {
 		if r := recover(); r != nil {
-			col.logger.Info("stopTestChan already closed")
+			col.logger.Info("shutdownChan already closed")
 		}
 	}()
-	close(col.stopTestChan)
+	close(col.shutdownChan)
 }
 
 func (col *Collector) setupTelemetry(ballastSizeBytes uint64) error {
@@ -185,15 +185,14 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 	col.signalsChannel = make(chan os.Signal, 1)
 	signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 
-	// set the channel to stop testing.
-	col.stopTestChan = make(chan struct{})
+	col.shutdownChan = make(chan struct{})
 	col.stateChannel <- Running
 	select {
 	case err := <-col.asyncErrorChannel:
 		col.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 	case s := <-col.signalsChannel:
 		col.logger.Info("Received signal from OS", zap.String("signal", s.String()))
-	case <-col.stopTestChan:
+	case <-col.shutdownChan:
 		col.logger.Info("Received stop test request")
 	}
 	col.stateChannel <- Closing
