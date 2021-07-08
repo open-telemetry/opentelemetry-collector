@@ -196,9 +196,9 @@ var Metrics = &metricStruct{
 			metric.SetName("process.cpu.time")
 			metric.SetDescription("Total CPU seconds broken down by different states.")
 			metric.SetUnit("s")
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			metric.DoubleSum().SetIsMonotonic(true)
-			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -267,9 +267,9 @@ var Metrics = &metricStruct{
 			metric.SetName("system.cpu.time")
 			metric.SetDescription("Total CPU seconds broken down by different states.")
 			metric.SetUnit("s")
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			metric.DoubleSum().SetIsMonotonic(true)
-			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -289,9 +289,9 @@ var Metrics = &metricStruct{
 			metric.SetName("system.disk.io_time")
 			metric.SetDescription("Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.")
 			metric.SetUnit("s")
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			metric.DoubleSum().SetIsMonotonic(true)
-			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -311,9 +311,9 @@ var Metrics = &metricStruct{
 			metric.SetName("system.disk.operation_time")
 			metric.SetDescription("Time spent in disk operations.")
 			metric.SetUnit("s")
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			metric.DoubleSum().SetIsMonotonic(true)
-			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -344,9 +344,9 @@ var Metrics = &metricStruct{
 			metric.SetName("system.disk.weighted_io_time")
 			metric.SetDescription("Time disk spent activated multiplied by the queue length.")
 			metric.SetUnit("s")
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			metric.DoubleSum().SetIsMonotonic(true)
-			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{

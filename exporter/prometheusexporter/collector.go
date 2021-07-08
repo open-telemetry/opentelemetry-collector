@@ -64,8 +64,8 @@ func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error
 		return c.convertIntSum(metric)
 	case pdata.MetricDataTypeDoubleGauge:
 		return c.convertDoubleGauge(metric)
-	case pdata.MetricDataTypeDoubleSum:
-		return c.convertDoubleSum(metric)
+	case pdata.MetricDataTypeSum:
+		return c.convertSum(metric)
 	case pdata.MetricDataTypeIntHistogram:
 		return c.convertIntHistogram(metric)
 	case pdata.MetricDataTypeHistogram:
@@ -152,11 +152,11 @@ func (c *collector) convertIntSum(metric pdata.Metric) (prometheus.Metric, error
 	return m, nil
 }
 
-func (c *collector) convertDoubleSum(metric pdata.Metric) (prometheus.Metric, error) {
-	ip := metric.DoubleSum().DataPoints().At(0)
+func (c *collector) convertSum(metric pdata.Metric) (prometheus.Metric, error) {
+	ip := metric.Sum().DataPoints().At(0)
 
 	metricType := prometheus.GaugeValue
-	if metric.DoubleSum().IsMonotonic() {
+	if metric.Sum().IsMonotonic() {
 		metricType = prometheus.CounterValue
 	}
 

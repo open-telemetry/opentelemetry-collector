@@ -142,8 +142,8 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 							dropped++
 							errs = append(errs, err)
 						}
-					case pdata.MetricDataTypeDoubleSum:
-						dataPoints := metric.DoubleSum().DataPoints()
+					case pdata.MetricDataTypeSum:
+						dataPoints := metric.Sum().DataPoints()
 						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, err)

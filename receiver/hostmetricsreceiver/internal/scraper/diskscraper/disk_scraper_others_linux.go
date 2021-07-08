@@ -33,7 +33,7 @@ func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startT
 func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	metadata.Metrics.SystemDiskWeightedIoTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
+	ddps := metric.Sum().DataPoints()
 	ddps.Resize(len(ioCounters))
 
 	idx := 0

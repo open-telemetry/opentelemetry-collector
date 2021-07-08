@@ -194,12 +194,12 @@ func TestConvToPdataMetricType(t *testing.T) {
 		{
 			name:  "textparse.counter",
 			mtype: textparse.MetricTypeCounter,
-			want:  pdata.MetricDataTypeDoubleSum,
+			want:  pdata.MetricDataTypeSum,
 		},
 		{
 			name:  "textparse.gauge",
 			mtype: textparse.MetricTypeCounter,
-			want:  pdata.MetricDataTypeDoubleSum,
+			want:  pdata.MetricDataTypeSum,
 		},
 		{
 			name:  "textparse.unknown",
@@ -250,7 +250,7 @@ func TestIsusefulLabelPdata(t *testing.T) {
 				model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel,
 			},
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeDoubleGauge,
 				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
@@ -271,7 +271,7 @@ func TestIsusefulLabelPdata(t *testing.T) {
 		{
 			name: `bucket label with non "int_histogram", "histogram":: useful`,
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeDoubleGauge,
 				pdata.MetricDataTypeSummary,
 				pdata.MetricDataTypeIntSum,
@@ -294,7 +294,7 @@ func TestIsusefulLabelPdata(t *testing.T) {
 			name:      `quantile label with non-"summary": useful`,
 			labelKeys: []string{model.QuantileLabel},
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeDoubleGauge,
 				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
@@ -309,7 +309,7 @@ func TestIsusefulLabelPdata(t *testing.T) {
 			name:      `any other label with any type:: useful`,
 			labelKeys: []string{"any_label", "foo.bar"},
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeDoubleGauge,
 				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,

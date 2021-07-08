@@ -74,11 +74,11 @@ func pictToCfg(inputs PICTMetricInputs) MetricsCfg {
 		cfg.IsMonotonicSum = false
 	case MetricTypeDoubleGauge:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
-	case MetricTypeMonotonicDoubleSum:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+	case MetricTypeMonotonicSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
 		cfg.IsMonotonicSum = true
-	case MetricTypeNonMonotonicDoubleSum:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+	case MetricTypeNonMonotonicSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
 		cfg.IsMonotonicSum = false
 	case MetricTypeIntHistogram:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeIntHistogram

@@ -169,8 +169,8 @@ var intSum = &messageValueStruct{
 }
 
 var doubleSum = &messageValueStruct{
-	structName:     "DoubleSum",
-	description:    "// DoubleSum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
+	structName:     "Sum",
+	description:    "// Sum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Sum",
 	fields: []baseField{
 		aggregationTemporalityField,

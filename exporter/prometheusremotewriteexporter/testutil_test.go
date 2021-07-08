@@ -89,7 +89,7 @@ var (
 	validIntGauge     = "valid_IntGauge"
 	validDoubleGauge  = "valid_DoubleGauge"
 	validIntSum       = "valid_IntSum"
-	validDoubleSum    = "valid_DoubleSum"
+	validSum          = "valid_Sum"
 	validIntHistogram = "valid_IntHistogram"
 	validHistogram    = "valid_Histogram"
 	validSummary      = "valid_Summary"
@@ -106,7 +106,7 @@ var (
 		validDoubleGauge:  getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
 		validIntSum:       getIntSumMetric(validIntSum, lbs1, intVal1, time1),
 		suffixedCounter:   getIntSumMetric(suffixedCounter, lbs1, intVal1, time1),
-		validDoubleSum:    getDoubleSumMetric(validDoubleSum, lbs1, floatVal1, time1),
+		validSum:          getSumMetric(validSum, lbs1, floatVal1, time1),
 		validIntHistogram: getIntHistogramMetric(validIntHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
 		validHistogram:    getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
 		validSummary:      getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
@@ -115,7 +115,7 @@ var (
 		validIntGauge:               getIntGaugeMetric(validIntGauge, lbs2, intVal2, time2),
 		validDoubleGauge:            getDoubleGaugeMetric(validDoubleGauge, lbs2, floatVal2, time2),
 		validIntSum:                 getIntSumMetric(validIntSum, lbs2, intVal2, time2),
-		validDoubleSum:              getDoubleSumMetric(validDoubleSum, lbs2, floatVal2, time2),
+		validSum:                    getSumMetric(validSum, lbs2, floatVal2, time2),
 		validIntHistogram:           getIntHistogramMetric(validIntHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
 		validHistogram:              getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
 		validSummary:                getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
@@ -130,14 +130,14 @@ var (
 	emptyIntGauge     = "emptyIntGauge"
 	emptyDoubleGauge  = "emptyDoubleGauge"
 	emptyIntSum       = "emptyIntSum"
-	emptyDoubleSum    = "emptyDoubleSum"
+	emptySum          = "emptySum"
 	emptyIntHistogram = "emptyIntHistogram"
 	emptyHistogram    = "emptyHistogram"
 	emptySummary      = "emptySummary"
 
 	// Category 2: invalid type and temporality combination
 	emptyCumulativeIntSum       = "emptyCumulativeIntSum"
-	emptyCumulativeDoubleSum    = "emptyCumulativeDoubleSum"
+	emptyCumulativeSum          = "emptyCumulativeSum"
 	emptyCumulativeIntHistogram = "emptyCumulativeIntHistogram"
 	emptyCumulativeHistogram    = "emptyCumulativeHistogram"
 
@@ -147,12 +147,12 @@ var (
 		emptyIntGauge:               getEmptyIntGaugeMetric(emptyIntGauge),
 		emptyDoubleGauge:            getEmptyDoubleGaugeMetric(emptyDoubleGauge),
 		emptyIntSum:                 getEmptyIntSumMetric(emptyIntSum),
-		emptyDoubleSum:              getEmptyDoubleSumMetric(emptyDoubleSum),
+		emptySum:                    getEmptySumMetric(emptySum),
 		emptyIntHistogram:           getEmptyIntHistogramMetric(emptyIntHistogram),
 		emptyHistogram:              getEmptyHistogramMetric(emptyHistogram),
 		emptySummary:                getEmptySummaryMetric(emptySummary),
 		emptyCumulativeIntSum:       getEmptyCumulativeIntSumMetric(emptyCumulativeIntSum),
-		emptyCumulativeDoubleSum:    getEmptyCumulativeDoubleSumMetric(emptyCumulativeDoubleSum),
+		emptyCumulativeSum:          getEmptyCumulativeSumMetric(emptyCumulativeSum),
 		emptyCumulativeIntHistogram: getEmptyCumulativeIntHistogramMetric(emptyCumulativeIntHistogram),
 		emptyCumulativeHistogram:    getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
 	}
@@ -302,27 +302,27 @@ func getIntSumMetric(name string, labels pdata.StringMap, value int64, ts uint64
 	return metric
 }
 
-func getEmptyDoubleSumMetric(name string) pdata.Metric {
+func getEmptySumMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	metric.SetDataType(pdata.MetricDataTypeSum)
 	return metric
 }
 
-func getEmptyCumulativeDoubleSumMetric(name string) pdata.Metric {
+func getEmptyCumulativeSumMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
 }
 
-func getDoubleSumMetric(name string, labels pdata.StringMap, value float64, ts uint64) pdata.Metric {
+func getSumMetric(name string, labels pdata.StringMap, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	dp := metric.DoubleSum().DataPoints().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetValue(value)
 
 	labels.Range(func(k string, v string) bool {

@@ -188,7 +188,7 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat) {
 	metadata.Metrics.ProcessCPUTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
+	ddps := metric.Sum().DataPoints()
 	ddps.Resize(cpuStatesLen)
 	appendCPUTimeStateDataPoints(ddps, startTime, now, times)
 }

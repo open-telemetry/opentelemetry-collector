@@ -504,30 +504,30 @@ func TestIntSum_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestDoubleSum_CopyTo(t *testing.T) {
-	ms := NewDoubleSum()
-	generateTestDoubleSum().CopyTo(ms)
-	assert.EqualValues(t, generateTestDoubleSum(), ms)
+func TestSum_CopyTo(t *testing.T) {
+	ms := NewSum()
+	generateTestSum().CopyTo(ms)
+	assert.EqualValues(t, generateTestSum(), ms)
 }
 
-func TestDoubleSum_AggregationTemporality(t *testing.T) {
-	ms := NewDoubleSum()
+func TestSum_AggregationTemporality(t *testing.T) {
+	ms := NewSum()
 	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
-func TestDoubleSum_IsMonotonic(t *testing.T) {
-	ms := NewDoubleSum()
+func TestSum_IsMonotonic(t *testing.T) {
+	ms := NewSum()
 	assert.EqualValues(t, false, ms.IsMonotonic())
 	testValIsMonotonic := true
 	ms.SetIsMonotonic(testValIsMonotonic)
 	assert.EqualValues(t, testValIsMonotonic, ms.IsMonotonic())
 }
 
-func TestDoubleSum_DataPoints(t *testing.T) {
-	ms := NewDoubleSum()
+func TestSum_DataPoints(t *testing.T) {
+	ms := NewSum()
 	assert.EqualValues(t, NewDoubleDataPointSlice(), ms.DataPoints())
 	fillTestDoubleDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestDoubleDataPointSlice()
@@ -2003,13 +2003,13 @@ func fillTestIntSum(tv IntSum) {
 	fillTestIntDataPointSlice(tv.DataPoints())
 }
 
-func generateTestDoubleSum() DoubleSum {
-	tv := NewDoubleSum()
-	fillTestDoubleSum(tv)
+func generateTestSum() Sum {
+	tv := NewSum()
+	fillTestSum(tv)
 	return tv
 }
 
-func fillTestDoubleSum(tv DoubleSum) {
+func fillTestSum(tv Sum) {
 	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
 	tv.SetIsMonotonic(true)
 	fillTestDoubleDataPointSlice(tv.DataPoints())

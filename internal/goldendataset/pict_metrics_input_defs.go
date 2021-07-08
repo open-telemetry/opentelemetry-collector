@@ -32,14 +32,14 @@ type PICTMetricInputs struct {
 type PICTMetricDataType string
 
 const (
-	MetricTypeIntGauge              PICTMetricDataType = "IntGauge"
-	MetricTypeMonotonicIntSum       PICTMetricDataType = "MonotonicIntSum"
-	MetricTypeNonMonotonicIntSum    PICTMetricDataType = "NonMonotonicIntSum"
-	MetricTypeDoubleGauge           PICTMetricDataType = "DoubleGauge"
-	MetricTypeMonotonicDoubleSum    PICTMetricDataType = "MonotonicDoubleSum"
-	MetricTypeNonMonotonicDoubleSum PICTMetricDataType = "NonMonotonicDoubleSum"
-	MetricTypeIntHistogram          PICTMetricDataType = "IntHistogram"
-	MetricTypeHistogram             PICTMetricDataType = "Histogram"
+	MetricTypeIntGauge           PICTMetricDataType = "IntGauge"
+	MetricTypeMonotonicIntSum    PICTMetricDataType = "MonotonicIntSum"
+	MetricTypeNonMonotonicIntSum PICTMetricDataType = "NonMonotonicIntSum"
+	MetricTypeDoubleGauge        PICTMetricDataType = "DoubleGauge"
+	MetricTypeMonotonicSum       PICTMetricDataType = "MonotonicSum"
+	MetricTypeNonMonotonicSum    PICTMetricDataType = "NonMonotonicSum"
+	MetricTypeIntHistogram       PICTMetricDataType = "IntHistogram"
+	MetricTypeHistogram          PICTMetricDataType = "Histogram"
 )
 
 // PICTNumPtLabels enumerates the number of labels on each datapoint.

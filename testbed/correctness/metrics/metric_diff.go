@@ -112,10 +112,10 @@ func DiffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric)
 		diffs = diff(diffs, expected.IntSum().IsMonotonic(), actual.IntSum().IsMonotonic(), "IntSum IsMonotonic")
 		diffs = diff(diffs, expected.IntSum().AggregationTemporality(), actual.IntSum().AggregationTemporality(), "IntSum AggregationTemporality")
 		diffs = diffIntPts(diffs, expected.IntSum().DataPoints(), actual.IntSum().DataPoints())
-	case pdata.MetricDataTypeDoubleSum:
-		diffs = diff(diffs, expected.DoubleSum().IsMonotonic(), actual.DoubleSum().IsMonotonic(), "DoubleSum IsMonotonic")
-		diffs = diff(diffs, expected.DoubleSum().AggregationTemporality(), actual.DoubleSum().AggregationTemporality(), "DoubleSum AggregationTemporality")
-		diffs = diffDoublePts(diffs, expected.DoubleSum().DataPoints(), actual.DoubleSum().DataPoints())
+	case pdata.MetricDataTypeSum:
+		diffs = diff(diffs, expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic(), "Sum IsMonotonic")
+		diffs = diff(diffs, expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality(), "Sum AggregationTemporality")
+		diffs = diffDoublePts(diffs, expected.Sum().DataPoints(), actual.Sum().DataPoints())
 	case pdata.MetricDataTypeIntHistogram:
 		diffs = diff(diffs, expected.IntHistogram().AggregationTemporality(), actual.IntHistogram().AggregationTemporality(), "IntHistogram AggregationTemporality")
 		diffs = diffIntHistogramPts(diffs, expected.IntHistogram().DataPoints(), actual.IntHistogram().DataPoints())

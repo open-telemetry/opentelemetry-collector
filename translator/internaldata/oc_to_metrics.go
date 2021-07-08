@@ -182,11 +182,11 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeIntSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
-		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-		sum := metric.DoubleSum()
+		metric.SetDataType(pdata.MetricDataTypeSum)
+		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		return pdata.MetricDataTypeDoubleSum
+		return pdata.MetricDataTypeSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		metric.SetDataType(pdata.MetricDataTypeHistogram)
 		histo := metric.Histogram()
@@ -209,8 +209,8 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 		fillDoubleDataPoint(ocMetric, metric.DoubleGauge().DataPoints())
 	case pdata.MetricDataTypeIntSum:
 		fillIntDataPoint(ocMetric, metric.IntSum().DataPoints())
-	case pdata.MetricDataTypeDoubleSum:
-		fillDoubleDataPoint(ocMetric, metric.DoubleSum().DataPoints())
+	case pdata.MetricDataTypeSum:
+		fillDoubleDataPoint(ocMetric, metric.Sum().DataPoints())
 	case pdata.MetricDataTypeHistogram:
 		fillDoubleHistogramDataPoint(ocMetric, metric.Histogram().DataPoints())
 	case pdata.MetricDataTypeSummary:

@@ -56,8 +56,8 @@ func TestNilDoubleGauge(t *testing.T) {
 	testNilValue(t, dataType)
 }
 
-func TestNilDoubleSum(t *testing.T) {
-	dataType := pdata.MetricDataTypeDoubleSum
+func TestNilSum(t *testing.T) {
+	dataType := pdata.MetricDataTypeSum
 	testNilValue(t, dataType)
 }
 
@@ -111,13 +111,13 @@ func TestDoubleGaugeEmptyDataPoint(t *testing.T) {
 	assert.True(t, matched)
 }
 
-func TestDoubleSumEmptyDataPoint(t *testing.T) {
+func TestSumEmptyDataPoint(t *testing.T) {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeDoubleSum)
-	m.DoubleSum().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeSum)
+	m.Sum().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -248,21 +248,21 @@ func testMatchDoubleGauge(t *testing.T, metricName string) bool {
 	return match
 }
 
-func TestMatchDoubleSumByMetricName(t *testing.T) {
-	assert.True(t, matchDoubleSum(t, "my.metric"))
+func TestMatchSumByMetricName(t *testing.T) {
+	assert.True(t, matchSum(t, "my.metric"))
 }
 
-func TestNonMatchDoubleSumByMetricName(t *testing.T) {
-	assert.False(t, matchDoubleSum(t, "foo.metric"))
+func TestNonMatchSumByMetricName(t *testing.T) {
+	assert.False(t, matchSum(t, "foo.metric"))
 }
 
-func matchDoubleSum(t *testing.T, metricName string) bool {
+func matchSum(t *testing.T, metricName string) bool {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeDoubleSum)
-	dps := m.DoubleSum().DataPoints()
+	m.SetDataType(pdata.MetricDataTypeSum)
+	dps := m.Sum().DataPoints()
 	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
