@@ -24,7 +24,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -169,20 +168,26 @@ service:
 	app, err := service.New(appSettings)
 	require.Nil(t, err)
 
-	// Ensure that this goroutine is scheduled by waiting for some time
-	// to pass before closing the waiting channel..
-	enteredRunCh := make(chan bool)
 	go func() {
-		<-time.After(5 * time.Millisecond)
-		close(enteredRunCh)
 		if err := app.Run(); err != nil {
 			t.Error(err)
 		}
 	}()
-	<-enteredRunCh
-	<-time.After(5 * time.Millisecond)
 
-	defer app.Shutdown()
+	// Wait until the collector has actually started.
+	stateChannel := app.GetStateChannel()
+	for notYetStarted := true; notYetStarted; {
+		switch state := <-stateChannel; state {
+		case service.Running, service.Closed, service.Closing:
+			notYetStarted = false
+		}
+	}
+
+	// The OpenTelemetry collector has a data race because it closes
+	// a channel while
+	if false {
+		defer app.Shutdown()
+	}
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
