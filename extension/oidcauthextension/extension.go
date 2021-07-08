@@ -32,6 +32,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/collector/auth"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 )
@@ -106,8 +107,10 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errNotAuthenticated
 	}
 
+	raw := authHeaders[0]
+
 	// we only use the first header, if multiple values exist
-	parts := strings.Split(authHeaders[0], " ")
+	parts := strings.Split(raw, " ")
 	if len(parts) != 2 {
 		return ctx, errInvalidAuthenticationHeaderFormat
 	}
@@ -128,18 +131,22 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errFailedToObtainClaimsFromToken
 	}
 
-	_, err = getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
+	// we could have set this right after obtaining the raw auth string, but we should only change the
+	// context if the auth was successful
+	ctx = auth.NewContextFromRaw(ctx, raw)
+
+	sub, err := getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
+	ctx = auth.NewContextFromSubject(ctx, sub)
 
-	_, err = getGroupsFromClaims(claims, e.cfg.GroupsClaim)
+	groups, err := getGroupsFromClaims(claims, e.cfg.GroupsClaim)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
+	ctx = auth.NewContextFromMemberships(ctx, groups)
 
-	// TODO: once the design for #2734 is determined, we will probably need to add the auth data to the context
-	// https://github.com/open-telemetry/opentelemetry-collector/issues/2734
 	return ctx, nil
 }
 
