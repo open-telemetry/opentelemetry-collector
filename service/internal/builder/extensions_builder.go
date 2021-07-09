@@ -110,14 +110,6 @@ func (exts Extensions) ToMap() map[config.ComponentID]component.Extension {
 	return result
 }
 
-// exportersBuilder builds exporters from config.
-type extensionsBuilder struct {
-	logger    *zap.Logger
-	buildInfo component.BuildInfo
-	config    *config.Config
-	factories map[config.Type]component.ExtensionFactory
-}
-
 // BuildExtensions builds Extensions from config.
 func BuildExtensions(
 	logger *zap.Logger,
@@ -125,17 +117,19 @@ func BuildExtensions(
 	config *config.Config,
 	factories map[config.Type]component.ExtensionFactory,
 ) (Extensions, error) {
-	eb := &extensionsBuilder{logger.With(zap.String(zapKindKey, zapKindExtension)), buildInfo, config, factories}
-
+	logger = logger.With(zap.String(zapKindKey, zapKindExtension))
 	extensions := make(Extensions)
-	for _, extName := range eb.config.Service.Extensions {
-		extCfg, exists := eb.config.Extensions[extName]
+	for _, extName := range config.Service.Extensions {
+		extCfg, exists := config.Extensions[extName]
 		if !exists {
 			return nil, fmt.Errorf("extension %q is not configured", extName)
 		}
 
-		componentLogger := eb.logger.With(zap.Stringer(zapNameKey, extCfg.ID()))
-		ext, err := eb.buildExtension(componentLogger, eb.buildInfo, extCfg)
+		set := component.ExtensionCreateSettings{
+			Logger:    logger.With(zap.Stringer(zapNameKey, extCfg.ID())),
+			BuildInfo: buildInfo,
+		}
+		ext, err := buildExtension(context.Background(), factories, set, extCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -146,22 +140,17 @@ func BuildExtensions(
 	return extensions, nil
 }
 
-func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, buildInfo component.BuildInfo, cfg config.Extension) (*builtExtension, error) {
-	factory := eb.factories[cfg.ID().Type()]
+func buildExtension(ctx context.Context, factories map[config.Type]component.ExtensionFactory, creationSet component.ExtensionCreateSettings, cfg config.Extension) (*builtExtension, error) {
+	factory := factories[cfg.ID().Type()]
 	if factory == nil {
 		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.ID().Type())
 	}
 
 	ext := &builtExtension{
-		logger: logger,
+		logger: creationSet.Logger,
 	}
 
-	creationSet := component.ExtensionCreateSettings{
-		Logger:    logger,
-		BuildInfo: buildInfo,
-	}
-
-	ex, err := factory.CreateExtension(context.Background(), creationSet, cfg)
+	ex, err := factory.CreateExtension(ctx, creationSet, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create extension %v: %w", cfg.ID(), err)
 	}
