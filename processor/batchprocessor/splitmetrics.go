@@ -103,62 +103,88 @@ func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
 // splitMetric removes metric points from the input data and moves data of the specified size to destination.
 // Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
 func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
-	ms.CopyTo(dest)
 	if metricDataPointCount(ms) <= size {
+		ms.CopyTo(dest)
 		return metricDataPointCount(ms), true
 	}
 
-	msSize, i, j := metricDataPointCount(ms)-size, 0, 0
+	msSize, i := metricDataPointCount(ms)-size, 0
 	filterDataPoints := func() bool { i++; return i <= msSize }
-	filterDestPoints := func() bool { j++; return j > size }
+
+	dest.SetDataType(ms.DataType())
+	dest.SetName(ms.Name())
+	dest.SetDescription(ms.Description())
+	dest.SetUnit(ms.Unit())
+
 	switch ms.DataType() {
 	case pdata.MetricDataTypeIntGauge:
-		dest.IntGauge().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
-			return filterDestPoints()
-		})
-		ms.IntGauge().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
+		src := ms.IntGauge().DataPoints()
+		dst := dest.IntGauge().DataPoints()
+		dst.EnsureCapacity(size)
+		for j := 0; j < size; j++ {
+			src.At(j).CopyTo(dst.AppendEmpty())
+		}
+		src.RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeDoubleGauge:
-		dest.DoubleGauge().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
-			return filterDestPoints()
-		})
-		ms.DoubleGauge().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
+		src := ms.DoubleGauge().DataPoints()
+		dst := dest.DoubleGauge().DataPoints()
+		dst.EnsureCapacity(size)
+		for j := 0; j < size; j++ {
+			src.At(j).CopyTo(dst.AppendEmpty())
+		}
+		src.RemoveIf(func(_ pdata.DoubleDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntSum:
-		dest.IntSum().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
-			return filterDestPoints()
-		})
-		ms.IntSum().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
+		src := ms.IntSum().DataPoints()
+		dst := dest.IntSum().DataPoints()
+		dst.EnsureCapacity(size)
+		for j := 0; j < size; j++ {
+			src.At(j).CopyTo(dst.AppendEmpty())
+		}
+		src.RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeDoubleSum:
-		dest.DoubleSum().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
-			return filterDestPoints()
-		})
-		ms.DoubleSum().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
+		src := ms.DoubleSum().DataPoints()
+		dst := dest.DoubleSum().DataPoints()
+		dst.EnsureCapacity(size)
+		for j := 0; j < size; j++ {
+			src.At(j).CopyTo(dst.AppendEmpty())
+		}
+		src.RemoveIf(func(_ pdata.DoubleDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntHistogram:
-		dest.IntHistogram().DataPoints().RemoveIf(func(_ pdata.IntHistogramDataPoint) bool {
-			return filterDestPoints()
-		})
-		ms.IntHistogram().DataPoints().RemoveIf(func(_ pdata.IntHistogramDataPoint) bool {
+		src := ms.IntHistogram().DataPoints()
+		dst := dest.IntHistogram().DataPoints()
+		dst.EnsureCapacity(size)
+		for j := 0; j < size; j++ {
+			src.At(j).CopyTo(dst.AppendEmpty())
+		}
+		src.RemoveIf(func(_ pdata.IntHistogramDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeHistogram:
-		dest.Histogram().DataPoints().RemoveIf(func(_ pdata.HistogramDataPoint) bool {
-			return filterDestPoints()
-		})
-		ms.Histogram().DataPoints().RemoveIf(func(_ pdata.HistogramDataPoint) bool {
+		src := ms.Histogram().DataPoints()
+		dst := dest.Histogram().DataPoints()
+		dst.EnsureCapacity(size)
+		for j := 0; j < size; j++ {
+			src.At(j).CopyTo(dst.AppendEmpty())
+		}
+		src.RemoveIf(func(_ pdata.HistogramDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeSummary:
-		dest.Summary().DataPoints().RemoveIf(func(_ pdata.SummaryDataPoint) bool {
-			return filterDestPoints()
-		})
-		ms.Summary().DataPoints().RemoveIf(func(_ pdata.SummaryDataPoint) bool {
+		src := ms.Summary().DataPoints()
+		dst := dest.Summary().DataPoints()
+		dst.EnsureCapacity(size)
+		for j := 0; j < size; j++ {
+			src.At(j).CopyTo(dst.AppendEmpty())
+		}
+		src.RemoveIf(func(_ pdata.SummaryDataPoint) bool {
 			return filterDataPoints()
 		})
 	}
