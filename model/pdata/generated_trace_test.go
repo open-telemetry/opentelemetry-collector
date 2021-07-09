@@ -31,14 +31,15 @@ func TestResourceSpansSlice(t *testing.T) {
 	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newResourceSpans(&otlptrace.ResourceSpans{})
 	testVal := generateTestResourceSpans()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestResourceSpans(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestResourceSpans(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 
@@ -160,14 +161,15 @@ func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 	es = newInstrumentationLibrarySpansSlice(&[]*otlptrace.InstrumentationLibrarySpans{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
 	testVal := generateTestInstrumentationLibrarySpans()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestInstrumentationLibrarySpans(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestInstrumentationLibrarySpans(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 
@@ -289,14 +291,15 @@ func TestSpanSlice(t *testing.T) {
 	es = newSpanSlice(&[]*otlptrace.Span{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newSpan(&otlptrace.Span{})
 	testVal := generateTestSpan()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestSpan(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestSpan(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 
@@ -522,14 +525,15 @@ func TestSpanEventSlice(t *testing.T) {
 	es = newSpanEventSlice(&[]*otlptrace.Span_Event{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newSpanEvent(&otlptrace.Span_Event{})
 	testVal := generateTestSpanEvent()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestSpanEvent(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestSpanEvent(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 
@@ -669,14 +673,15 @@ func TestSpanLinkSlice(t *testing.T) {
 	es = newSpanLinkSlice(&[]*otlptrace.Span_Link{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newSpanLink(&otlptrace.Span_Link{})
 	testVal := generateTestSpanLink()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestSpanLink(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestSpanLink(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 

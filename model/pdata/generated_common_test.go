@@ -53,14 +53,15 @@ func TestAnyValueArray(t *testing.T) {
 	es = newAnyValueArray(&[]otlpcommon.AnyValue{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newAttributeValue(&otlpcommon.AnyValue{})
 	testVal := generateTestAttributeValue()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestAttributeValue(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestAttributeValue(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 

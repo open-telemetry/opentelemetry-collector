@@ -145,10 +145,10 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest pdata.SpanEventSlice) {
 		return
 	}
 
-	dest.AppendEmptyN(len(logs))
+	dest.EnsureCapacity(len(logs))
 
-	for i, log := range logs {
-		event := dest.At(i)
+	for _, log := range logs {
+		event := dest.AppendEmpty()
 
 		event.SetTimestamp(microsecondsToUnixNano(log.Timestamp))
 		if len(log.Fields) == 0 {

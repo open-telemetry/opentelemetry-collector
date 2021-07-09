@@ -45,16 +45,16 @@ func TestSplitTraces(t *testing.T) {
 	}
 	cp := pdata.NewTraces()
 	cpSpans := cp.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
-	cpSpans.AppendEmptyN(5)
+	cpSpans.EnsureCapacity(5)
 	td.ResourceSpans().At(0).Resource().CopyTo(
 		cp.ResourceSpans().At(0).Resource())
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).InstrumentationLibrary().CopyTo(
 		cp.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).InstrumentationLibrary())
-	spans.At(0).CopyTo(cpSpans.At(0))
-	spans.At(1).CopyTo(cpSpans.At(1))
-	spans.At(2).CopyTo(cpSpans.At(2))
-	spans.At(3).CopyTo(cpSpans.At(3))
-	spans.At(4).CopyTo(cpSpans.At(4))
+	spans.At(0).CopyTo(cpSpans.AppendEmpty())
+	spans.At(1).CopyTo(cpSpans.AppendEmpty())
+	spans.At(2).CopyTo(cpSpans.AppendEmpty())
+	spans.At(3).CopyTo(cpSpans.AppendEmpty())
+	spans.At(4).CopyTo(cpSpans.AppendEmpty())
 
 	splitSize := 5
 	split := splitTraces(splitSize, td)

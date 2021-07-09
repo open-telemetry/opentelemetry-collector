@@ -200,15 +200,6 @@ func (es ${structName}) EnsureCapacity(newCap int) {
 func (es ${structName}) AppendEmpty() ${elementName} {
 	*es.orig = append(*es.orig, &${originName}{})
 	return es.At(es.Len() - 1)
-}
-
-// AppendEmptyN will ensure that the slice has the capacity to hold n additional
-// entries and then append n empty entries to the end of the slice.
-func (es ${structName}) AppendEmptyN(n int) {
-	es.EnsureCapacity(es.Len()+n)
-	for i := 0; i < n; i++ {
-		*es.orig = append(*es.orig, &${originName}{})
-	}
 }`
 
 const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
@@ -217,14 +208,15 @@ const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
 	es = new${structName}(&[]*${originName}{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := new${elementName}(&${originName}{})
 	testVal := generateTest${elementName}()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTest${elementName}(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTest${elementName}(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 
@@ -361,15 +353,6 @@ func (es ${structName}) EnsureCapacity(newCap int) {
 func (es ${structName}) AppendEmpty() ${elementName} {
 	*es.orig = append(*es.orig, ${originName}{})
 	return es.At(es.Len() - 1)
-}
-
-// AppendEmptyN will ensure that the slice has the capacity to hold n additional
-// entries and then append n empty entries to the end of the slice.
-func (es ${structName}) AppendEmptyN(n int) {
-	es.EnsureCapacity(es.Len()+n)
-	for i := 0; i < n; i++ {
-		*es.orig = append(*es.orig, ${originName}{})
-	}
 }`
 
 const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
@@ -378,14 +361,15 @@ const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
 	es = new${structName}(&[]${originName}{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := new${elementName}(&${originName}{})
 	testVal := generateTest${elementName}()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTest${elementName}(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTest${elementName}(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 

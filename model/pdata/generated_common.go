@@ -155,15 +155,6 @@ func (es AnyValueArray) AppendEmpty() AttributeValue {
 	return es.At(es.Len() - 1)
 }
 
-// AppendEmptyN will ensure that the slice has the capacity to hold n additional
-// entries and then append n empty entries to the end of the slice.
-func (es AnyValueArray) AppendEmptyN(n int) {
-	es.EnsureCapacity(es.Len() + n)
-	for i := 0; i < n; i++ {
-		*es.orig = append(*es.orig, otlpcommon.AnyValue{})
-	}
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {

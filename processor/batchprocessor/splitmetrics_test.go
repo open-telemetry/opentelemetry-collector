@@ -47,16 +47,16 @@ func TestSplitMetrics(t *testing.T) {
 	}
 	cp := pdata.NewMetrics()
 	cpMetrics := cp.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-	cpMetrics.AppendEmptyN(5)
+	cpMetrics.EnsureCapacity(5)
 	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary().CopyTo(
 		cp.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary())
 	md.ResourceMetrics().At(0).Resource().CopyTo(
 		cp.ResourceMetrics().At(0).Resource())
-	metrics.At(0).CopyTo(cpMetrics.At(0))
-	metrics.At(1).CopyTo(cpMetrics.At(1))
-	metrics.At(2).CopyTo(cpMetrics.At(2))
-	metrics.At(3).CopyTo(cpMetrics.At(3))
-	metrics.At(4).CopyTo(cpMetrics.At(4))
+	metrics.At(0).CopyTo(cpMetrics.AppendEmpty())
+	metrics.At(1).CopyTo(cpMetrics.AppendEmpty())
+	metrics.At(2).CopyTo(cpMetrics.AppendEmpty())
+	metrics.At(3).CopyTo(cpMetrics.AppendEmpty())
+	metrics.At(4).CopyTo(cpMetrics.AppendEmpty())
 
 	splitMetricCount := 5
 	splitSize := splitMetricCount * dataPointCount

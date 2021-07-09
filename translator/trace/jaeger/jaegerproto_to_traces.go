@@ -305,10 +305,15 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		return
 	}
 
-	dest.AppendEmptyN(len(logs) - dest.Len())
+	dest.EnsureCapacity(len(logs))
 
 	for i, log := range logs {
-		event := dest.At(i)
+		var event pdata.SpanEvent
+		if dest.Len() > i {
+			event = dest.At(i)
+		} else {
+			event = dest.AppendEmpty()
+		}
 
 		event.SetTimestamp(pdata.TimestampFromTime(log.Timestamp))
 		if len(log.Fields) == 0 {

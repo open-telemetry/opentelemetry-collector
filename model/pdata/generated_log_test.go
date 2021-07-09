@@ -31,14 +31,15 @@ func TestResourceLogsSlice(t *testing.T) {
 	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newResourceLogs(&otlplogs.ResourceLogs{})
 	testVal := generateTestResourceLogs()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestResourceLogs(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestResourceLogs(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 
@@ -160,14 +161,15 @@ func TestInstrumentationLibraryLogsSlice(t *testing.T) {
 	es = newInstrumentationLibraryLogsSlice(&[]*otlplogs.InstrumentationLibraryLogs{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 	testVal := generateTestInstrumentationLibraryLogs()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestInstrumentationLibraryLogs(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestInstrumentationLibraryLogs(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 
@@ -289,14 +291,15 @@ func TestLogSlice(t *testing.T) {
 	es = newLogSlice(&[]*otlplogs.LogRecord{})
 	assert.EqualValues(t, 0, es.Len())
 
-	es.AppendEmptyN(7)
+	es.EnsureCapacity(7)
 	emptyVal := newLogRecord(&otlplogs.LogRecord{})
 	testVal := generateTestLogRecord()
-	assert.EqualValues(t, 7, es.Len())
+	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.At(i))
-		fillTestLogRecord(es.At(i))
-		assert.EqualValues(t, testVal, es.At(i))
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestLogRecord(el)
+		assert.EqualValues(t, testVal, el)
 	}
 }
 

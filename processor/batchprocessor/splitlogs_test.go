@@ -45,16 +45,16 @@ func TestSplitLogs(t *testing.T) {
 	}
 	cp := pdata.NewLogs()
 	cpLogs := cp.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
-	cpLogs.AppendEmptyN(5)
+	cpLogs.EnsureCapacity(5)
 	ld.ResourceLogs().At(0).Resource().CopyTo(
 		cp.ResourceLogs().At(0).Resource())
 	ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().CopyTo(
 		cp.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary())
-	logs.At(0).CopyTo(cpLogs.At(0))
-	logs.At(1).CopyTo(cpLogs.At(1))
-	logs.At(2).CopyTo(cpLogs.At(2))
-	logs.At(3).CopyTo(cpLogs.At(3))
-	logs.At(4).CopyTo(cpLogs.At(4))
+	logs.At(0).CopyTo(cpLogs.AppendEmpty())
+	logs.At(1).CopyTo(cpLogs.AppendEmpty())
+	logs.At(2).CopyTo(cpLogs.AppendEmpty())
+	logs.At(3).CopyTo(cpLogs.AppendEmpty())
+	logs.At(4).CopyTo(cpLogs.AppendEmpty())
 
 	splitSize := 5
 	split := splitLogs(splitSize, ld)
