@@ -114,6 +114,7 @@ func (exp *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend
 		exp.mutators,
 		sentMeasure.M(numSent),
 		failedToSendMeasure.M(numFailedToSend))
+	recordPipelineDuration(ctx)
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {

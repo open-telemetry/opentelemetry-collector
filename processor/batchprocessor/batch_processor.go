@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // batch_processor is a component that accepts spans and metrics, places them
@@ -40,13 +41,14 @@ import (
 // - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
 type batchProcessor struct {
 	logger           *zap.Logger
+	mutators         []tag.Mutator
 	exportCtx        context.Context
 	timer            *time.Timer
 	timeout          time.Duration
 	sendBatchSize    int
 	sendBatchMaxSize int
 
-	newItem chan interface{}
+	newItem chan item
 	batch   batch
 
 	shutdownC  chan struct{}
@@ -69,24 +71,25 @@ type batch interface {
 	add(item interface{})
 }
 
+type item struct {
+	ctx  context.Context
+	data interface{}
+}
+
 var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
 func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.ID().String()))
-	if err != nil {
-		return nil, err
-	}
 	return &batchProcessor{
-		logger:         set.Logger,
-		exportCtx:      exportCtx,
-		telemetryLevel: telemetryLevel,
-
+		logger:           set.Logger,
+		exportCtx:        context.Background(),
+		mutators:         []tag.Mutator{tag.Upsert(processorTagKey, cfg.ID().String())},
+		telemetryLevel:   telemetryLevel,
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
 		timeout:          cfg.Timeout,
-		newItem:          make(chan interface{}, runtime.NumCPU()),
+		newItem:          make(chan item, runtime.NumCPU()),
 		batch:            batch,
 		shutdownC:        make(chan struct{}, 1),
 	}, nil
@@ -121,8 +124,8 @@ func (bp *batchProcessor) startProcessingCycle() {
 		DONE:
 			for {
 				select {
-				case item := <-bp.newItem:
-					bp.processItem(item)
+				case i := <-bp.newItem:
+					bp.processItem(i)
 				default:
 					break DONE
 				}
@@ -134,11 +137,11 @@ func (bp *batchProcessor) startProcessingCycle() {
 				bp.sendItems(statTimeoutTriggerSend)
 			}
 			return
-		case item := <-bp.newItem:
-			if item == nil {
+		case i := <-bp.newItem:
+			if i.data == nil {
 				continue
 			}
-			bp.processItem(item)
+			bp.processItem(i)
 		case <-bp.timer.C:
 			if bp.batch.itemCount() > 0 {
 				bp.sendItems(statTimeoutTriggerSend)
@@ -148,8 +151,9 @@ func (bp *batchProcessor) startProcessingCycle() {
 	}
 }
 
-func (bp *batchProcessor) processItem(item interface{}) {
-	bp.batch.add(item)
+func (bp *batchProcessor) processItem(i item) {
+	bp.exportCtx = obsreport.MergeContexts(i.ctx, bp.exportCtx)
+	bp.batch.add(i.data)
 	sent := false
 	for bp.batch.itemCount() >= bp.sendBatchSize {
 		sent = true
@@ -174,33 +178,37 @@ func (bp *batchProcessor) resetTimer() {
 
 func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
 	// Add that it came form the trace pipeline?
-	stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
+	stats.RecordWithTags(bp.exportCtx, bp.mutators, triggerMeasure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
 
 	if bp.telemetryLevel == configtelemetry.LevelDetailed {
-		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bp.batch.size())))
+		stats.RecordWithTags(bp.exportCtx, bp.mutators, statBatchSendSizeBytes.M(int64(bp.batch.size())))
 	}
 
 	if err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize); err != nil {
 		bp.logger.Warn("Sender failed", zap.Error(err))
 	}
+	// The accumulated b.exportCtx was associated with the batch of telemetry
+	// we just exported.  Clear the context so that the next bacth is sent only
+	// with contexts used when constructing it.
+	bp.exportCtx = context.Background()
 }
 
 // ConsumeTraces implements TracesProcessor
-func (bp *batchProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	bp.newItem <- td
+func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	bp.newItem <- item{ctx: ctx, data: td}
 	return nil
 }
 
 // ConsumeMetrics implements MetricsProcessor
-func (bp *batchProcessor) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	// First thing is convert into a different internal format
-	bp.newItem <- md
+	bp.newItem <- item{ctx: ctx, data: md}
 	return nil
 }
 
 // ConsumeLogs implements LogsProcessor
-func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	bp.newItem <- ld
+func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	bp.newItem <- item{ctx: ctx, data: ld}
 	return nil
 }
 
