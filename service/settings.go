@@ -52,6 +52,8 @@ type CollectorSettings struct {
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
+	// If the provider is parserprovider.Watchable, collector
+	// may reload the configuration upon error.
 	ParserProvider parserprovider.ParserProvider
 
 	// LoggingOptions provides a way to change behavior of zap logging.
