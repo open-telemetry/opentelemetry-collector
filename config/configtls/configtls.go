@@ -106,7 +106,8 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 
 	var certificates []tls.Certificate
 	if c.CertFile != "" && c.KeyFile != "" {
-		tlsCert, err := tls.LoadX509KeyPair(filepath.Clean(c.CertFile), filepath.Clean(c.KeyFile))
+		var tlsCert tls.Certificate
+		tlsCert, err = tls.LoadX509KeyPair(filepath.Clean(c.CertFile), filepath.Clean(c.KeyFile))
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS cert and key: %w", err)
 		}
