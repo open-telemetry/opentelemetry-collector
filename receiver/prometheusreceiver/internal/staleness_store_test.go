@@ -16,6 +16,7 @@ package internal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,7 @@ func TestStalenessStore(t *testing.T) {
 		{Name: "__name__", Value: "lbl2"},
 		{Name: "b", Value: "1"},
 	}
-	ss.markAsCurrentlySeen(lbl1)
+	ss.markAsCurrentlySeen(lbl1, time.Now().Unix())
 	require.Nil(t, ss.emitStaleLabels())
 	require.False(t, ss.isStale(lbl1))
 	require.False(t, ss.isStale(lbl2))

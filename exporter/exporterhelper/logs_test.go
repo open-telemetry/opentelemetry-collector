@@ -20,7 +20,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/oteltest"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -145,18 +148,28 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, le, nil, 1)
+	checkWrapSpanForLogsExporter(t, sr, tp.Tracer("test"), le, nil, 1)
 }
 
 func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
 	want := errors.New("my_error")
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, le, want, 1)
+	checkWrapSpanForLogsExporter(t, sr, tp.Tracer("test"), le, want, 1)
 }
 
 func TestLogsExporter_WithShutdown(t *testing.T) {
@@ -207,37 +220,28 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 	}
 }
 
-func generateLogsTraffic(t *testing.T, le component.LogsExporter, numRequests int, wantError error) {
+func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le component.LogsExporter, numRequests int, wantError error) {
 	ld := testdata.GenerateLogsOneLogRecord()
-	ctx, span := trace.StartSpan(context.Background(), fakeLogsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
+	ctx, span := tracer.Start(context.Background(), fakeLogsParentSpanName)
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
 		require.Equal(t, wantError, le.ConsumeLogs(ctx, ld))
 	}
 }
 
-func checkWrapSpanForLogsExporter(t *testing.T, le component.LogsExporter, wantError error, numLogRecords int64) {
-	ocSpansSaver := new(testOCTracesExporter)
-	trace.RegisterExporter(ocSpansSaver)
-	defer trace.UnregisterExporter(ocSpansSaver)
-
+func checkWrapSpanForLogsExporter(t *testing.T, sr *oteltest.SpanRecorder, tracer trace.Tracer, le component.LogsExporter, wantError error, numLogRecords int64) {
 	const numRequests = 5
-	generateLogsTraffic(t, le, numRequests, wantError)
+	generateLogsTraffic(t, tracer, le, numRequests, wantError)
 
 	// Inspection time!
-	ocSpansSaver.mu.Lock()
-	defer ocSpansSaver.mu.Unlock()
-
-	require.NotEqual(t, 0, len(ocSpansSaver.spanData), "No exported span data")
-
-	gotSpanData := ocSpansSaver.spanData
+	gotSpanData := sr.Completed()
 	require.Equal(t, numRequests+1, len(gotSpanData))
 
 	parentSpan := gotSpanData[numRequests]
-	require.Equalf(t, fakeLogsParentSpanName, parentSpan.Name, "SpanData %v", parentSpan)
+	require.Equalf(t, fakeLogsParentSpanName, parentSpan.Name(), "SpanData %v", parentSpan)
 	for _, sd := range gotSpanData[:numRequests] {
-		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
-		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
+		require.Equalf(t, parentSpan.SpanContext().SpanID(), sd.ParentSpanID(), "Exporter span not a child\nSpanData %v", sd)
+		checkStatus(t, sd, wantError)
 
 		sentLogRecords := numLogRecords
 		var failedToSendLogRecords int64
@@ -245,7 +249,7 @@ func checkWrapSpanForLogsExporter(t *testing.T, le component.LogsExporter, wantE
 			sentLogRecords = 0
 			failedToSendLogRecords = numLogRecords
 		}
-		require.Equalf(t, sentLogRecords, sd.Attributes[obsmetrics.SentLogRecordsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendLogRecords, sd.Attributes[obsmetrics.FailedToSendLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, attribute.Int64Value(sentLogRecords), sd.Attributes()[obsmetrics.SentLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, attribute.Int64Value(failedToSendLogRecords), sd.Attributes()[obsmetrics.FailedToSendLogRecordsKey], "SpanData %v", sd)
 	}
 }
