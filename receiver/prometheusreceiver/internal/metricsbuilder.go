@@ -26,6 +26,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
+	"github.com/prometheus/prometheus/pkg/value"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -57,12 +58,13 @@ type metricBuilder struct {
 	startTime            float64
 	logger               *zap.Logger
 	currentMf            MetricFamily
+	stalenessStore       *stalenessStore
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger) *metricBuilder {
+func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger, stalenessStore *stalenessStore) *metricBuilder {
 	var regex *regexp.Regexp
 	if startTimeMetricRegex != "" {
 		regex, _ = regexp.Compile(startTimeMetricRegex)
@@ -75,6 +77,7 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetric
 		droppedTimeseries:    0,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: regex,
+		stalenessStore:       stalenessStore,
 	}
 }
 
@@ -87,7 +90,7 @@ func (b *metricBuilder) matchStartTimeMetric(metricName string) bool {
 }
 
 // AddDataPoint is for feeding prometheus data complexValue in its processing order
-func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error {
+func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) (rerr error) {
 	// Any datapoint with duplicate labels MUST be rejected per:
 	// * https://github.com/open-telemetry/wg-prometheus/issues/44
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
@@ -104,6 +107,14 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		sort.Strings(dupLabels)
 		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabels)
 	}
+
+	defer func() {
+		// Only mark this data point as in the current scrape
+		// iff it isn't a stale metric.
+		if rerr == nil && !value.IsStaleNaN(v) {
+			b.stalenessStore.markAsCurrentlySeen(ls, t)
+		}
+	}()
 
 	metricName := ls.Get(model.MetricNameLabel)
 	switch {

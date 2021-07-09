@@ -147,7 +147,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesExporter(&tt.config, zap.NewNop())
+			got, err := newTracesExporter(&tt.config, componenttest.NewNopExporterCreateSettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, got)
 			t.Cleanup(func() {

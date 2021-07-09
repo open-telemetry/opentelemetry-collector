@@ -726,11 +726,11 @@ func TestIntDataPoint_Exemplars(t *testing.T) {
 func TestDoubleDataPointSlice(t *testing.T) {
 	es := NewDoubleDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newDoubleDataPointSlice(&[]*otlpmetrics.DoubleDataPoint{})
+	es = newDoubleDataPointSlice(&[]*otlpmetrics.NumberDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.AppendEmptyN(7)
-	emptyVal := newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
+	emptyVal := newDoubleDataPoint(&otlpmetrics.NumberDataPoint{})
 	testVal := generateTestDoubleDataPoint()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -759,14 +759,14 @@ func TestDoubleDataPointSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestDoubleDataPointSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.DoubleDataPoint]bool)
+	expectedEs := make(map[*otlpmetrics.NumberDataPoint]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.DoubleDataPoint]bool, es.Len())
+	foundEs := make(map[*otlpmetrics.NumberDataPoint]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -775,14 +775,14 @@ func TestDoubleDataPointSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.DoubleDataPoint]bool, oldLen)
+	expectedEs = make(map[*otlpmetrics.NumberDataPoint]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.DoubleDataPoint]bool, oldLen)
+	foundEs = make(map[*otlpmetrics.NumberDataPoint]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1060,11 +1060,11 @@ func TestIntHistogramDataPoint_Exemplars(t *testing.T) {
 func TestHistogramDataPointSlice(t *testing.T) {
 	es := NewHistogramDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newHistogramDataPointSlice(&[]*otlpmetrics.DoubleHistogramDataPoint{})
+	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.AppendEmptyN(7)
-	emptyVal := newHistogramDataPoint(&otlpmetrics.DoubleHistogramDataPoint{})
+	emptyVal := newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
 	testVal := generateTestHistogramDataPoint()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -1093,14 +1093,14 @@ func TestHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestHistogramDataPointSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.DoubleHistogramDataPoint]bool)
+	expectedEs := make(map[*otlpmetrics.HistogramDataPoint]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.DoubleHistogramDataPoint]bool, es.Len())
+	foundEs := make(map[*otlpmetrics.HistogramDataPoint]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1109,14 +1109,14 @@ func TestHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.DoubleHistogramDataPoint]bool, oldLen)
+	expectedEs = make(map[*otlpmetrics.HistogramDataPoint]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.DoubleHistogramDataPoint]bool, oldLen)
+	foundEs = make(map[*otlpmetrics.HistogramDataPoint]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1239,11 +1239,11 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newSummaryDataPointSlice(&[]*otlpmetrics.DoubleSummaryDataPoint{})
+	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.AppendEmptyN(7)
-	emptyVal := newSummaryDataPoint(&otlpmetrics.DoubleSummaryDataPoint{})
+	emptyVal := newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
 	testVal := generateTestSummaryDataPoint()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -1272,14 +1272,14 @@ func TestSummaryDataPointSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestSummaryDataPointSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.DoubleSummaryDataPoint]bool)
+	expectedEs := make(map[*otlpmetrics.SummaryDataPoint]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.DoubleSummaryDataPoint]bool, es.Len())
+	foundEs := make(map[*otlpmetrics.SummaryDataPoint]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1288,14 +1288,14 @@ func TestSummaryDataPointSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.DoubleSummaryDataPoint]bool, oldLen)
+	expectedEs = make(map[*otlpmetrics.SummaryDataPoint]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.DoubleSummaryDataPoint]bool, oldLen)
+	foundEs = make(map[*otlpmetrics.SummaryDataPoint]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1402,11 +1402,11 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 func TestValueAtQuantileSlice(t *testing.T) {
 	es := NewValueAtQuantileSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newValueAtQuantileSlice(&[]*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
+	es = newValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.AppendEmptyN(7)
-	emptyVal := newValueAtQuantile(&otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
+	emptyVal := newValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	testVal := generateTestValueAtQuantile()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -1435,14 +1435,14 @@ func TestValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestValueAtQuantileSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile]bool)
+	expectedEs := make(map[*otlpmetrics.SummaryDataPoint_ValueAtQuantile]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile]bool, es.Len())
+	foundEs := make(map[*otlpmetrics.SummaryDataPoint_ValueAtQuantile]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1451,14 +1451,14 @@ func TestValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile]bool, oldLen)
+	expectedEs = make(map[*otlpmetrics.SummaryDataPoint_ValueAtQuantile]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile]bool, oldLen)
+	foundEs = make(map[*otlpmetrics.SummaryDataPoint_ValueAtQuantile]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1663,11 +1663,11 @@ func TestIntExemplar_FilteredLabels(t *testing.T) {
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newExemplarSlice(&[]otlpmetrics.DoubleExemplar{})
+	es = newExemplarSlice(&[]*otlpmetrics.Exemplar{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.AppendEmptyN(7)
-	emptyVal := newExemplar(&otlpmetrics.DoubleExemplar{})
+	emptyVal := newExemplar(&otlpmetrics.Exemplar{})
 	testVal := generateTestExemplar()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -1696,14 +1696,14 @@ func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestExemplarSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.DoubleExemplar]bool)
+	expectedEs := make(map[*otlpmetrics.Exemplar]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.DoubleExemplar]bool, es.Len())
+	foundEs := make(map[*otlpmetrics.Exemplar]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -1712,9 +1712,18 @@ func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
+	expectedEs = make(map[*otlpmetrics.Exemplar]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		expectedEs[es.At(i).orig] = true
+	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	foundEs = make(map[*otlpmetrics.Exemplar]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		foundEs[es.At(i).orig] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {

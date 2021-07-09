@@ -27,7 +27,7 @@ type svcSettings struct {
 	// Factories component factories.
 	Factories component.Factories
 
-	// BuildInfo provides application start information.
+	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
 
 	// Config represents the configuration of the service.
@@ -45,7 +45,7 @@ type CollectorSettings struct {
 	// Factories component factories.
 	Factories component.Factories
 
-	// BuildInfo provides application start information.
+	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
 
 	// ParserProvider provides the configuration's Parser.

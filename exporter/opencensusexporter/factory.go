@@ -59,7 +59,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -77,7 +77,7 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
