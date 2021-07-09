@@ -33,9 +33,9 @@ A good starting point for `spike_limit_mib` is 20% of the hard limit. Bigger
 `spike_limit_mib` values may be necessary for spiky traffic or for longer check intervals.
 
 In addition, if the ballast size is specified in [ballastextension](../../extension/ballastextension), 
-the same value that is provided via the `ballastextension` must also be defined in 
-the memory_limiter processor using `ballast_size_mib` config option. If ballast size specified in `ballastextension`  
-doesn't match the config option in `memory_limitor` then the `memory_limiter` processor will fail to start.
+the same value that is provided via the `ballastextension` will be used in `memory_limitor` for
+calculating the total allocated memory for the collector. 
+The `memory_limiter.ballast_size_mib` config has been deprecated and will be removed soon.
 
 Note that while the processor can help mitigate out of memory situations,
 it is not a replacement for properly sizing and configuring the
@@ -78,16 +78,14 @@ This option is used to calculate `spike_limit_mib` from the total available memo
 For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
 This option is intended to be used only with `limit_percentage`.
 
-The following configuration options can also be modified:
-- `ballast_size_mib` (default = 0): Must match the value of `ballast_size_mib` in `ballastextension` config.
-- `ballast_size_percentage` (default = 0): Must match the value of `size_in_percentage` in `ballastextension` config, and the value range is 0-100
+The `ballast_size_mib` configuration has been deprecated and replaced by `ballast_extension`.
+- <del>`ballast_size_mib` (default = 0): Must match the value of `ballast_size_mib` in `ballastextension` config</del>
 
 Examples:
 
 ```yaml
 processors:
   memory_limiter:
-    ballast_size_mib: 2000
     check_interval: 1s
     limit_mib: 4000
     spike_limit_mib: 800
@@ -96,16 +94,6 @@ processors:
 ```yaml
 processors:
   memory_limiter:
-    ballast_size_mib: 2000
-    check_interval: 1s
-    limit_percentage: 50
-    spike_limit_percentage: 30
-```
-
-```yaml
-processors:
-  memory_limiter:
-    ballast_size_percentage: 20
     check_interval: 1s
     limit_percentage: 50
     spike_limit_percentage: 30

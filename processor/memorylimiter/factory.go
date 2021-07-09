@@ -63,7 +63,6 @@ func createTracesProcessor(
 		nextConsumer,
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithStart(ml.start),
 		processorhelper.WithShutdown(ml.shutdown))
 }
 

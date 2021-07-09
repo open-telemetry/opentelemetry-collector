@@ -420,22 +420,22 @@ func TestBallastSizeMiB(t *testing.T) {
 	extCreateSet := componenttest.NewNopExtensionCreateSettings()
 
 	tests := []struct {
-		name                            string
-		ballastExtBallastSizeSetting    uint64
-		memoryLimiterBallastSizeSetting uint64
-		expectResult                    bool
+		name                          string
+		ballastExtBallastSizeSetting  uint64
+		expectedMemLimiterBallastSize uint64
+		expectResult                  bool
 	}{
 		{
-			name:                            "ballast size matched",
-			ballastExtBallastSizeSetting:    100,
-			memoryLimiterBallastSizeSetting: 100,
-			expectResult:                    true,
+			name:                          "ballast size matched",
+			ballastExtBallastSizeSetting:  100,
+			expectedMemLimiterBallastSize: 100,
+			expectResult:                  true,
 		},
 		{
-			name:                            "ballast size not matched",
-			ballastExtBallastSizeSetting:    1000,
-			memoryLimiterBallastSizeSetting: 100,
-			expectResult:                    false,
+			name:                          "ballast size not matched",
+			ballastExtBallastSizeSetting:  1000,
+			expectedMemLimiterBallastSize: 100,
+			expectResult:                  false,
 		},
 	}
 
@@ -444,58 +444,7 @@ func TestBallastSizeMiB(t *testing.T) {
 			ballastExtCfg.SizeMiB = tt.ballastExtBallastSizeSetting
 			ballastExt, _ := ballastExtFactory.CreateExtension(ctx, extCreateSet, ballastExtCfg)
 			ballastExt.Start(ctx, nil)
-			memoryLimiter := &memoryLimiter{ballastSize: tt.memoryLimiterBallastSizeSetting * mibBytes}
-			err := memoryLimiter.start(ctx, nil)
-			assert.Equal(t, tt.expectResult, validateResult(err))
+			assert.Equal(t, tt.expectResult, tt.expectedMemLimiterBallastSize*mibBytes == ballastextension.GetBallastSize())
 		})
 	}
-}
-
-func TestBallastSizePercentage(t *testing.T) {
-	ctx := context.Background()
-	ballastExtFactory := ballastextension.NewFactory()
-	ballastExtCfg := ballastExtFactory.CreateDefaultConfig().(*ballastextension.Config)
-	extCreateSet := componenttest.NewNopExtensionCreateSettings()
-
-	memLimiterCfg := &Config{
-		CheckInterval:  10,
-		MemoryLimitMiB: 1000,
-	}
-
-	tests := []struct {
-		name                               string
-		ballastExtBallastSizePercentage    uint64
-		memoryLimiterBallastSizePercentage uint32
-		expectResult                       bool
-	}{
-		{
-			name:                               "ballast size percentage matched",
-			ballastExtBallastSizePercentage:    20,
-			memoryLimiterBallastSizePercentage: 20,
-			expectResult:                       true,
-		},
-		{
-			name:                               "ballast size percentage not matched",
-			ballastExtBallastSizePercentage:    20,
-			memoryLimiterBallastSizePercentage: 30,
-			expectResult:                       false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ballastExtCfg.SizeInPercentage = tt.ballastExtBallastSizePercentage
-			ballastExt, _ := ballastExtFactory.CreateExtension(ctx, extCreateSet, ballastExtCfg)
-			ballastExt.Start(ctx, nil)
-			memLimiterCfg.BallastSizePercentage = tt.memoryLimiterBallastSizePercentage
-			memoryLimiter, err := newMemoryLimiter(zap.NewNop(), memLimiterCfg)
-			assert.NoError(t, err)
-			err = memoryLimiter.start(ctx, nil)
-			assert.Equal(t, tt.expectResult, validateResult(err))
-		})
-	}
-}
-
-func validateResult(err error) bool {
-	return err == nil
 }

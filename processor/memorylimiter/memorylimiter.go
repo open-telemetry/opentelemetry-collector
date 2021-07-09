@@ -24,7 +24,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
@@ -90,10 +89,8 @@ const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
-	ballastSize, err := calculateBallastSize(cfg)
-	if err != nil {
-		return nil, err
-	}
+	// Get ballast size in bytes from ballastextension
+	ballastSize := ballastextension.GetBallastSize()
 
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
@@ -145,14 +142,6 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
 		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
 	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage))
-}
-
-func (ml *memoryLimiter) start(_ context.Context, _ component.Host) error {
-	ballastSize := ballastextension.GetBallastSize()
-	if ml.ballastSize != ballastSize {
-		return fmt.Errorf("memorylimiter processor has ballast size set to %d failed to match ballastextension ballast size %d ", ml.ballastSize/mibBytes, ballastSize/mibBytes)
-	}
-	return nil
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
@@ -230,8 +219,7 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 	} else if !ml.configMismatchedLogged {
 		// This indicates misconfiguration. Log it once.
 		ml.configMismatchedLogged = true
-		ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
-			" must be set equal to ballast size set in ballast extension config.")
+		ml.logger.Warn(ballastSizeMibKey + " in ballast extension is likely incorrectly configured.")
 	}
 
 	return ms
@@ -343,19 +331,4 @@ func newPercentageMemUsageChecker(totalMemory uint64, percentageLimit, percentag
 		return nil, errPercentageLimitOutOfRange
 	}
 	return newFixedMemUsageChecker(percentageLimit*totalMemory/100, percentageSpike*totalMemory/100)
-}
-
-func calculateBallastSize(cfg *Config) (uint64, error) {
-	var ballastSizeBytes uint64
-	if cfg.BallastSizeMiB > 0 {
-		ballastSizeBytes = uint64(cfg.BallastSizeMiB * mibBytes)
-	} else {
-		totalMemory, err := getMemoryFn()
-		if err != nil {
-			return ballastSizeBytes, err
-		}
-		ballastPercentage := cfg.BallastSizePercentage
-		ballastSizeBytes = uint64(ballastPercentage) * totalMemory / 100
-	}
-	return ballastSizeBytes, nil
 }
