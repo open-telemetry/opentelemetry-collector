@@ -51,7 +51,7 @@ type CollectorSettings struct {
 	// DisableGracefulShutdown disables the automatic graceful shutdown
 	// of the collector on SIGINT or SIGTERM.
 	// Users who want to handle signals themselves can disable this behavior
-	// and manaully handle the signals to shutdown the collector.
+	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
 
 	// ParserProvider provides the configuration's Parser.
