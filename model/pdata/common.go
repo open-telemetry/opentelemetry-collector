@@ -608,7 +608,7 @@ func (am AttributeMap) Len() int {
 //
 // Example:
 //
-//   it := sm.Range(func(k string, v AttributeValue) {
+//   it := sm.Range(func(k string, v AttributeValue) bool {
 //       ...
 //   })
 func (am AttributeMap) Range(f func(k string, v AttributeValue) bool) {
