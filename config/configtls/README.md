@@ -34,6 +34,12 @@ won't use TLS at all.
 - `insecure_skip_verify` (default = false): whether to skip verifying the
   certificate or not.
 
+Minimum and maximum TLS version can be set:
+
+- `min_version` (default = "1.0"): Minimum acceptable TLS version.
+
+- `max_version` (default = "1.3"): Maximum acceptable TLS version.
+
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
 
@@ -63,6 +69,8 @@ exporters:
     ca_file: server.crt
     cert_file: client.crt
     key_file: client.key
+    min_version: "1.1"
+    max_version: "1.2"
   otlp/insecure:
     endpoint: myserver.local:55690
     insecure: true
