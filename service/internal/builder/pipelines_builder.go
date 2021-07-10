@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -81,23 +82,25 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 
 // pipelinesBuilder builds Pipelines from config.
 type pipelinesBuilder struct {
-	logger    *zap.Logger
-	buildInfo component.BuildInfo
-	config    *config.Config
-	exporters Exporters
-	factories map[config.Type]component.ProcessorFactory
+	logger         *zap.Logger
+	tracerProvider trace.TracerProvider
+	buildInfo      component.BuildInfo
+	config         *config.Config
+	exporters      Exporters
+	factories      map[config.Type]component.ProcessorFactory
 }
 
 // BuildPipelines builds pipeline processors from config. Requires exporters to be already
 // built via BuildExporters.
 func BuildPipelines(
 	logger *zap.Logger,
+	tracerProvider trace.TracerProvider,
 	buildInfo component.BuildInfo,
 	config *config.Config,
 	exporters Exporters,
 	factories map[config.Type]component.ProcessorFactory,
 ) (BuiltPipelines, error) {
-	pb := &pipelinesBuilder{logger, buildInfo, config, exporters, factories}
+	pb := &pipelinesBuilder{logger, tracerProvider, buildInfo, config, exporters, factories}
 
 	pipelineProcessors := make(BuiltPipelines)
 	for _, pipeline := range pb.config.Service.Pipelines {
@@ -151,8 +154,9 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		// which we will build in the next loop iteration).
 		var err error
 		set := component.ProcessorCreateSettings{
-			Logger:    pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID())),
-			BuildInfo: pb.buildInfo,
+			Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID())),
+			TracerProvider: pb.tracerProvider,
+			BuildInfo:      pb.buildInfo,
 		}
 
 		switch pipelineCfg.InputType {

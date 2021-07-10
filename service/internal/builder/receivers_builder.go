@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -89,6 +90,7 @@ type receiversBuilder struct {
 // BuildReceivers builds Receivers from config.
 func BuildReceivers(
 	logger *zap.Logger,
+	tracerProvider trace.TracerProvider,
 	buildInfo component.BuildInfo,
 	config *config.Config,
 	builtPipelines BuiltPipelines,
@@ -97,12 +99,13 @@ func BuildReceivers(
 	rb := &receiversBuilder{logger.With(zap.String(zapKindKey, zapKindReceiver)), buildInfo, config, builtPipelines, factories}
 
 	receivers := make(Receivers)
-	for _, cfg := range rb.config.Receivers {
+	for _, recvCfg := range rb.config.Receivers {
 		set := component.ReceiverCreateSettings{
-			Logger:    rb.logger.With(zap.Stringer(zapNameKey, cfg.ID())),
-			BuildInfo: buildInfo,
+			Logger:         rb.logger.With(zap.Stringer(zapNameKey, recvCfg.ID())),
+			TracerProvider: tracerProvider,
+			BuildInfo:      buildInfo,
 		}
-		rcv, err := rb.buildReceiver(context.Background(), set, cfg)
+		rcv, err := rb.buildReceiver(context.Background(), set, recvCfg)
 		if err != nil {
 			if err == errUnusedReceiver {
 				set.Logger.Info("Ignoring receiver as it is not used by any pipeline")
@@ -110,7 +113,7 @@ func BuildReceivers(
 			}
 			return nil, err
 		}
-		receivers[cfg] = rcv
+		receivers[recvCfg] = rcv
 	}
 
 	return receivers, nil
