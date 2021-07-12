@@ -52,6 +52,9 @@ func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
 func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 	md := &otlpcollectormetrics.ExportMetricsServiceRequest{}
 	err := md.Unmarshal(buf)
+	if err == nil {
+		internal.MetricsCompatibilityChanges(md)
+	}
 	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(md)), err
 }
 
