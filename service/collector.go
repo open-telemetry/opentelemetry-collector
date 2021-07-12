@@ -63,7 +63,7 @@ const (
 //   If configuration parser fails, collector's config can be reloaded.
 //   Collector can be shutdown if parser gets a shutdown error.
 // - execute runs runAndWaitForShutdownEvent and waits for a shutdown event.
-//   SIGINT and SIGTERM, errors, and *Collector).Shutdown can trigger the shutdown events.
+//   SIGINT and SIGTERM, errors, and (*Collector).Shutdown can trigger the shutdown events.
 // - Upon shutdown, pipelines are notified, then pipelines and extensions are shut down.
 // - Users can call (*Collector).Shutdown anytime to shutdown the collector.
 
