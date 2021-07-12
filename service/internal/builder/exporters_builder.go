@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -143,6 +144,7 @@ type exportersRequiredDataTypes map[config.Exporter]dataTypeRequirements
 // BuildExporters builds Exporters from config.
 func BuildExporters(
 	logger *zap.Logger,
+	tracerProvider trace.TracerProvider,
 	buildInfo component.BuildInfo,
 	config *config.Config,
 	factories map[config.Type]component.ExporterFactory,
@@ -155,17 +157,18 @@ func BuildExporters(
 
 	exporters := make(Exporters)
 	// BuildExporters exporters based on configuration and required input data types.
-	for _, cfg := range config.Exporters {
+	for _, expCfg := range config.Exporters {
 		set := component.ExporterCreateSettings{
-			Logger:    logger.With(zap.Stringer(zapNameKey, cfg.ID())),
-			BuildInfo: buildInfo,
+			Logger:         logger.With(zap.Stringer(zapNameKey, expCfg.ID())),
+			TracerProvider: tracerProvider,
+			BuildInfo:      buildInfo,
 		}
-		exp, err := buildExporter(context.Background(), factories, set, cfg, exporterInputDataTypes)
+		exp, err := buildExporter(context.Background(), factories, set, expCfg, exporterInputDataTypes)
 		if err != nil {
 			return nil, err
 		}
 
-		exporters[cfg] = exp
+		exporters[expCfg] = exp
 	}
 
 	return exporters, nil
