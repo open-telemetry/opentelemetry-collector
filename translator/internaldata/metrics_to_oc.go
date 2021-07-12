@@ -92,8 +92,8 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 		collectLabelKeysDoubleDataPoints(metric.DoubleGauge().DataPoints(), keySet)
 	case pdata.MetricDataTypeIntSum:
 		collectLabelKeysIntDataPoints(metric.IntSum().DataPoints(), keySet)
-	case pdata.MetricDataTypeDoubleSum:
-		collectLabelKeysDoubleDataPoints(metric.DoubleSum().DataPoints(), keySet)
+	case pdata.MetricDataTypeSum:
+		collectLabelKeysDoubleDataPoints(metric.Sum().DataPoints(), keySet)
 	case pdata.MetricDataTypeIntHistogram:
 		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeHistogram:
@@ -193,8 +193,8 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_INT64
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
-	case pdata.MetricDataTypeDoubleSum:
-		sd := metric.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		sd := metric.Sum()
 		if sd.IsMonotonic() && sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
 		}
@@ -225,8 +225,8 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		return doublePointToOC(metric.DoubleGauge().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeIntSum:
 		return intPointsToOC(metric.IntSum().DataPoints(), labelKeys)
-	case pdata.MetricDataTypeDoubleSum:
-		return doublePointToOC(metric.DoubleSum().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeSum:
+		return doublePointToOC(metric.Sum().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeIntHistogram:
 		return intHistogramPointToOC(metric.IntHistogram().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeHistogram:

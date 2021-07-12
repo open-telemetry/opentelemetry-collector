@@ -100,7 +100,7 @@ func (mf *metricFamilyPdata) updateLabelKeys(ls labels.Labels) {
 var _ = (*metricFamilyPdata)(nil).updateLabelKeys
 
 func (mf *metricFamilyPdata) isCumulativeTypePdata() bool {
-	return mf.mtype == pdata.MetricDataTypeDoubleSum ||
+	return mf.mtype == pdata.MetricDataTypeSum ||
 		mf.mtype == pdata.MetricDataTypeIntSum ||
 		mf.mtype == pdata.MetricDataTypeHistogram ||
 		mf.mtype == pdata.MetricDataTypeSummary

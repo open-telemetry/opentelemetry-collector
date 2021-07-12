@@ -137,7 +137,7 @@ func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Ti
 func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	metadata.Metrics.SystemDiskIoTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
+	ddps := metric.Sum().DataPoints()
 	ddps.Resize(len(ioCounters))
 
 	idx := 0
@@ -150,7 +150,7 @@ func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timest
 func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	metadata.Metrics.SystemDiskOperationTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
+	ddps := metric.Sum().DataPoints()
 	ddps.Resize(2 * len(ioCounters))
 
 	idx := 0

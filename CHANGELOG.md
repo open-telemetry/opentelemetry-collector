@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Rename `pdata.DoubleSum` to `pdata.Sum` (#3583)
+
 ## 🧰 Bug fixes 🧰
 
 - `scraperhelper`: Include the scraper name in log messages (#3487)

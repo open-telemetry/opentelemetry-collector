@@ -89,8 +89,8 @@ func (b *dataBuffer) logMetricDataPoints(m pdata.Metric) {
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logIntDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleSum:
-		data := m.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		data := m.Sum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleDataPoints(data.DataPoints())

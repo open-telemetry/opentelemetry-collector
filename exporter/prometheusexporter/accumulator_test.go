@@ -52,12 +52,12 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleSum",
+			name: "Sum",
 			fillMetric: func(ts time.Time, metric pdata.Metric) {
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -168,15 +168,15 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleSum",
+			name: "Sum",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetIsMonotonic(false)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(false)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(v)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -200,15 +200,15 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "MonotonicDoubleSum",
+			name: "MonotonicSum",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetIsMonotonic(true)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(true)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(v)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -345,12 +345,12 @@ func getMerticProperties(metric pdata.Metric) (
 		value = metric.DoubleGauge().DataPoints().At(0).Value()
 		temporality = pdata.AggregationTemporalityUnspecified
 		isMonotonic = false
-	case pdata.MetricDataTypeDoubleSum:
-		labels = metric.DoubleSum().DataPoints().At(0).LabelsMap()
-		ts = metric.DoubleSum().DataPoints().At(0).Timestamp().AsTime()
-		value = metric.DoubleSum().DataPoints().At(0).Value()
-		temporality = metric.DoubleSum().AggregationTemporality()
-		isMonotonic = metric.DoubleSum().IsMonotonic()
+	case pdata.MetricDataTypeSum:
+		labels = metric.Sum().DataPoints().At(0).LabelsMap()
+		ts = metric.Sum().DataPoints().At(0).Timestamp().AsTime()
+		value = metric.Sum().DataPoints().At(0).Value()
+		temporality = metric.Sum().AggregationTemporality()
+		isMonotonic = metric.Sum().IsMonotonic()
 	case pdata.MetricDataTypeIntHistogram:
 		labels = metric.IntHistogram().DataPoints().At(0).LabelsMap()
 		ts = metric.IntHistogram().DataPoints().At(0).Timestamp().AsTime()

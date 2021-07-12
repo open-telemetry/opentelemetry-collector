@@ -112,7 +112,7 @@ func GenerateMetricsAllTypesNoDataPoints() pdata.Metrics {
 	ms := ilm0.Metrics()
 	initMetric(ms.AppendEmpty(), TestGaugeDoubleMetricName, pdata.MetricDataTypeDoubleGauge)
 	initMetric(ms.AppendEmpty(), TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge)
-	initMetric(ms.AppendEmpty(), TestCounterDoubleMetricName, pdata.MetricDataTypeDoubleSum)
+	initMetric(ms.AppendEmpty(), TestCounterDoubleMetricName, pdata.MetricDataTypeSum)
 	initMetric(ms.AppendEmpty(), TestCounterIntMetricName, pdata.MetricDataTypeIntSum)
 	initMetric(ms.AppendEmpty(), TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
 	initMetric(ms.AppendEmpty(), TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram)
@@ -132,8 +132,8 @@ func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
 	initMetric(intGauge, TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge)
 	intGauge.IntGauge().DataPoints().AppendEmpty()
 	doubleSum := ms.AppendEmpty()
-	initMetric(doubleSum, TestCounterDoubleMetricName, pdata.MetricDataTypeDoubleSum)
-	doubleSum.DoubleSum().DataPoints().AppendEmpty()
+	initMetric(doubleSum, TestCounterDoubleMetricName, pdata.MetricDataTypeSum)
+	doubleSum.Sum().DataPoints().AppendEmpty()
 	intSum := ms.AppendEmpty()
 	initMetric(intSum, TestCounterIntMetricName, pdata.MetricDataTypeIntSum)
 	intSum.IntSum().DataPoints().AppendEmpty()
@@ -199,9 +199,9 @@ func initGaugeIntMetricOneDataPoint(im pdata.Metric) {
 }
 
 func initSumDoubleMetric(dm pdata.Metric) {
-	initMetric(dm, TestCounterDoubleMetricName, pdata.MetricDataTypeDoubleSum)
+	initMetric(dm, TestCounterDoubleMetricName, pdata.MetricDataTypeSum)
 
-	ddps := dm.DoubleSum().DataPoints()
+	ddps := dm.Sum().DataPoints()
 	ddp0 := ddps.AppendEmpty()
 	initMetricLabels12(ddp0.LabelsMap())
 	ddp0.SetStartTimestamp(TestMetricStartTimestamp)
@@ -295,8 +295,8 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 		sum := m.IntSum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	case pdata.MetricDataTypeDoubleSum:
-		sum := m.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		sum := m.Sum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	case pdata.MetricDataTypeIntHistogram:

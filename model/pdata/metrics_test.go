@@ -65,7 +65,7 @@ func TestCopyData(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleSum",
+			name: "Sum",
 			src: &otlpmetrics.Metric{
 				Data: &otlpmetrics.Metric_Sum{
 					Sum: &otlpmetrics.Sum{},
@@ -110,8 +110,8 @@ func TestDataType(t *testing.T) {
 	assert.Equal(t, MetricDataTypeDoubleGauge, m.DataType())
 	m.SetDataType(MetricDataTypeIntSum)
 	assert.Equal(t, MetricDataTypeIntSum, m.DataType())
-	m.SetDataType(MetricDataTypeDoubleSum)
-	assert.Equal(t, MetricDataTypeDoubleSum, m.DataType())
+	m.SetDataType(MetricDataTypeSum)
+	assert.Equal(t, MetricDataTypeSum, m.DataType())
 	m.SetDataType(MetricDataTypeIntHistogram)
 	assert.Equal(t, MetricDataTypeIntHistogram, m.DataType())
 	m.SetDataType(MetricDataTypeHistogram)
@@ -260,7 +260,7 @@ func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	intSum := ilm.Metrics().AppendEmpty()
 	intSum.SetDataType(MetricDataTypeIntSum)
 	doubleSum := ilm.Metrics().AppendEmpty()
-	doubleSum.SetDataType(MetricDataTypeDoubleSum)
+	doubleSum.SetDataType(MetricDataTypeSum)
 	assert.EqualValues(t, 0, metrics.DataPointCount())
 }
 
@@ -272,7 +272,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 					{
 						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -312,8 +312,8 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_double", metricDouble.Name())
 	assert.EqualValues(t, "My metric", metricDouble.Description())
 	assert.EqualValues(t, "ms", metricDouble.Unit())
-	assert.EqualValues(t, MetricDataTypeDoubleSum, metricDouble.DataType())
-	dsd := metricDouble.DoubleSum()
+	assert.EqualValues(t, MetricDataTypeSum, metricDouble.DataType())
+	dsd := metricDouble.Sum()
 	assert.EqualValues(t, AggregationTemporalityCumulative, dsd.AggregationTemporality())
 	doubleDataPoints := dsd.DataPoints()
 	assert.EqualValues(t, 2, doubleDataPoints.Len())
@@ -360,7 +360,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 					{
 						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -374,7 +374,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 					{
 						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -462,7 +462,7 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
-func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
+func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 
 	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
@@ -472,7 +472,7 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 					{
 						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleSumMetric()},
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoSumMetric()},
 					},
 				},
 			},
@@ -488,7 +488,7 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 	metric.SetUnit("1")
 	assert.EqualValues(t, "1", metric.Unit())
 	// Mutate DataPoints
-	dsd := metric.DoubleSum()
+	dsd := metric.Sum()
 	assert.EqualValues(t, 2, dsd.DataPoints().Len())
 	dsd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, dsd.DataPoints().Len())
@@ -653,7 +653,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 					{
 						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -696,7 +696,7 @@ func BenchmarkOtlpToFromInternal_IntGauge_MutateOneLabel(b *testing.B) {
 	}
 }
 
-func BenchmarkOtlpToFromInternal_DoubleSum_MutateOneLabel(b *testing.B) {
+func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
@@ -704,7 +704,7 @@ func BenchmarkOtlpToFromInternal_DoubleSum_MutateOneLabel(b *testing.B) {
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 					{
 						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleSumMetric()},
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoSumMetric()},
 					},
 				},
 			},
@@ -714,7 +714,7 @@ func BenchmarkOtlpToFromInternal_DoubleSum_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleSum().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
+		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
 		newReq := internal.MetricsToOtlp(md.InternalRep())
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -801,7 +801,7 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 		},
 	}
 }
-func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
+func generateTestProtoSumMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
 		Name:        "my_metric_double",
 		Description: "My metric",

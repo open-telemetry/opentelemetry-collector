@@ -69,7 +69,7 @@ func TestConvertInvalidMetric(t *testing.T) {
 	for _, mType := range []pdata.MetricDataType{
 		pdata.MetricDataTypeHistogram,
 		pdata.MetricDataTypeIntHistogram,
-		pdata.MetricDataTypeDoubleSum,
+		pdata.MetricDataTypeSum,
 		pdata.MetricDataTypeIntSum,
 		pdata.MetricDataTypeDoubleGauge,
 		pdata.MetricDataTypeIntGauge,
@@ -83,8 +83,8 @@ func TestConvertInvalidMetric(t *testing.T) {
 			metric.IntSum().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeDoubleGauge:
 			metric.DoubleGauge().DataPoints().AppendEmpty()
-		case pdata.MetricDataTypeDoubleSum:
-			metric.DoubleSum().DataPoints().AppendEmpty()
+		case pdata.MetricDataTypeSum:
+			metric.Sum().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeIntHistogram:
 			metric.IntHistogram().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeHistogram:
@@ -225,17 +225,17 @@ func TestCollectMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:       "DoubleSum",
+			name:       "Sum",
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetIsMonotonic(false)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(false)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -265,17 +265,17 @@ func TestCollectMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:       "MonotonicDoubleSum",
+			name:       "MonotonicSum",
 			metricType: prometheus.CounterValue,
 			value:      42.42,
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetIsMonotonic(true)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(true)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")

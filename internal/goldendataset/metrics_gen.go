@@ -129,9 +129,9 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.Instrumentat
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntPoints(cfg, sum.DataPoints())
-		case pdata.MetricDataTypeDoubleSum:
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			sum := metric.DoubleSum()
+		case pdata.MetricDataTypeSum:
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			sum := metric.Sum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoublePoints(cfg, sum.DataPoints())

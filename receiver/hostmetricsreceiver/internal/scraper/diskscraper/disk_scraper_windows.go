@@ -155,7 +155,7 @@ func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Ti
 func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskIoTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
+	ddps := metric.Sum().DataPoints()
 	ddps.Resize(len(logicalDiskCounterValues))
 	for idx, logicalDiskCounter := range logicalDiskCounterValues {
 		// disk active time = system boot time - disk idle time
@@ -166,7 +166,7 @@ func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timest
 func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskOperationTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
+	ddps := metric.Sum().DataPoints()
 	ddps.Resize(2 * len(logicalDiskCounterValues))
 	for idx, logicalDiskCounter := range logicalDiskCounterValues {
 		initializeDoubleDataPoint(ddps.At(2*idx+0), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDiskDirection.Read, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7)

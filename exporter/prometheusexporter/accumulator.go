@@ -88,8 +88,8 @@ func (a *lastValueAccumulator) addMetric(metric pdata.Metric, il pdata.Instrumen
 		return a.accumulateIntSum(metric, il, now)
 	case pdata.MetricDataTypeDoubleGauge:
 		return a.accumulateDoubleGauge(metric, il, now)
-	case pdata.MetricDataTypeDoubleSum:
-		return a.accumulateDoubleSum(metric, il, now)
+	case pdata.MetricDataTypeSum:
+		return a.accumulateSum(metric, il, now)
 	case pdata.MetricDataTypeIntHistogram:
 		return a.accumulateIntHistogram(metric, il, now)
 	case pdata.MetricDataTypeHistogram:
@@ -232,8 +232,8 @@ func (a *lastValueAccumulator) accumulateIntSum(metric pdata.Metric, il pdata.In
 	return
 }
 
-func (a *lastValueAccumulator) accumulateDoubleSum(metric pdata.Metric, il pdata.InstrumentationLibrary, now time.Time) (n int) {
-	doubleSum := metric.DoubleSum()
+func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.InstrumentationLibrary, now time.Time) (n int) {
+	doubleSum := metric.Sum()
 
 	// Drop metrics with non-cumulative aggregations
 	if doubleSum.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
@@ -249,24 +249,24 @@ func (a *lastValueAccumulator) accumulateDoubleSum(metric pdata.Metric, il pdata
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
 			m := createMetric(metric)
-			m.DoubleSum().SetIsMonotonic(metric.DoubleSum().IsMonotonic())
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			ip.CopyTo(m.DoubleSum().DataPoints().AppendEmpty())
+			m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
+			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
 			n++
 			continue
 		}
 		mv := v.(*accumulatedValue)
 
-		if ip.Timestamp().AsTime().Before(mv.value.DoubleSum().DataPoints().At(0).Timestamp().AsTime()) {
+		if ip.Timestamp().AsTime().Before(mv.value.Sum().DataPoints().At(0).Timestamp().AsTime()) {
 			// only keep datapoint with latest timestamp
 			continue
 		}
 
 		m := createMetric(metric)
-		m.DoubleSum().SetIsMonotonic(metric.DoubleSum().IsMonotonic())
-		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		ip.CopyTo(m.DoubleSum().DataPoints().AppendEmpty())
+		m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
+		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
 		n++
 	}
