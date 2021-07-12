@@ -16,8 +16,7 @@ The following settings are required:
 - `endpoint` (no default): host:port to which the exporter is going to send OTLP trace data,
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
-Including a scheme of `http` or `https` is allowed in the `endpoint`, but not required.
-If a scheme of `https` is used then client transport security overriding the `insecure` setting.
+If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
 
 By default, TLS is enabled:
 
