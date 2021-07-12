@@ -22,3 +22,5 @@ jobs:
           contrib_path=/tmp/opentelemetry-collector-contrib
           git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
           make CONTRIB_PATH=$contrib_path check-contrib
+      - name: Complete
+        run: echo "Tests are complete." # don't delete this, otherwise the previous step errors the entire job.
