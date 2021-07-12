@@ -18,9 +18,13 @@ package iruntime
 
 import "go.opentelemetry.io/collector/internal/cgroups"
 
+// unlimitedMemorySize defines the bytes size when memory limit is not set
+// for the container and process with cgroups
+const unlimitedMemorySize = 9223372036854771712
+
 // TotalMemory returns total available memory.
 // This implementation is meant for linux and uses cgroups to determine available memory.
-func TotalMemory() (int64, error) {
+func TotalMemory() (uint64, error) {
 	cgroups, err := cgroups.NewCGroupsForCurrentProcess()
 	if err != nil {
 		return 0, err
@@ -29,5 +33,14 @@ func TotalMemory() (int64, error) {
 	if err != nil || !defined {
 		return 0, err
 	}
-	return memoryQuota, nil
+
+	if memoryQuota == unlimitedMemorySize {
+		totalMem, err := readMemInfo()
+		if err != nil {
+			return 0, err
+		}
+		return totalMem, nil
+	}
+
+	return uint64(memoryQuota), nil
 }

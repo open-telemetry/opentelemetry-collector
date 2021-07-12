@@ -17,7 +17,8 @@ package processorhelper
 import (
 	"errors"
 
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
@@ -77,8 +78,6 @@ func fromOptions(options []Option) *baseSettings {
 	return opts
 }
 
-func spanAttributes(id config.ComponentID) []trace.Attribute {
-	return []trace.Attribute{
-		trace.StringAttribute(obsmetrics.ProcessorKey, id.String()),
-	}
+func spanAttributes(id config.ComponentID) trace.EventOption {
+	return trace.WithAttributes(attribute.String(obsmetrics.ProcessorKey, id.String()))
 }

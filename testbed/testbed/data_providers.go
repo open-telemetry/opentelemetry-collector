@@ -25,10 +25,10 @@ import (
 	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // DataProvider defines the interface for generators of test data used to drive various end-to-end tests.
@@ -248,8 +248,7 @@ func (dp *goldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	}
 	pdm := dp.metricsGenerated[dp.metricsIndex]
 	dp.metricsIndex++
-	_, dpCount := pdm.MetricAndDataPointCount()
-	dp.dataItemsGenerated.Add(uint64(dpCount))
+	dp.dataItemsGenerated.Add(uint64(pdm.DataPointCount()))
 	return pdm, false
 }
 
@@ -287,17 +286,17 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	// Load the message from the file and count the data points.
 	switch dataType {
 	case config.TracesDataType:
-		if dp.traces, err = otlp.NewJSONTracesUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.traces, err = otlp.NewJSONTracesUnmarshaler().UnmarshalTraces(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
 	case config.MetricsDataType:
-		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().UnmarshalMetrics(buf); err != nil {
 			return nil, err
 		}
-		_, dp.ItemsPerBatch = dp.metrics.MetricAndDataPointCount()
+		dp.ItemsPerBatch = dp.metrics.DataPointCount()
 	case config.LogsDataType:
-		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().UnmarshalLogs(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.logs.LogRecordCount()

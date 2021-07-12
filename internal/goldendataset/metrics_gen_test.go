@@ -19,14 +19,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestGenDefault(t *testing.T) {
 	md := MetricsFromCfg(DefaultCfg())
-	mCount, ptCount := md.MetricAndDataPointCount()
-	require.Equal(t, 1, mCount)
-	require.Equal(t, 1, ptCount)
+	require.Equal(t, 1, md.MetricCount())
+	require.Equal(t, 1, md.DataPointCount())
 	rms := md.ResourceMetrics()
 	rm := rms.At(0)
 	resource := rm.Resource()

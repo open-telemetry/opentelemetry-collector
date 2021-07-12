@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cast"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // NewAttributeValueRaw is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.

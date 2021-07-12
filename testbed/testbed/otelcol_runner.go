@@ -15,18 +15,22 @@
 package testbed
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/shirou/gopsutil/process"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/version"
-	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
+
+type StartParams struct {
+	Name         string
+	LogFilePath  string
+	CmdArgs      []string
+	resourceSpec *ResourceSpec
+}
+
+type ResourceConsumption struct {
+	CPUPercentAvg float64
+	CPUPercentMax float64
+	RAMMiBAvg     uint32
+	RAMMiBMax     uint32
+}
 
 // OtelcolRunner defines the interface for configuring, starting and stopping one or more instances of
 // otelcol which will be the subject of testing being executed.
@@ -49,112 +53,4 @@ type OtelcolRunner interface {
 	GetTotalConsumption() *ResourceConsumption
 	// GetResourceConsumption returns the data collected by the process monitor as a display string.
 	GetResourceConsumption() string
-}
-
-// InProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
-// same process as the test executor.
-type InProcessCollector struct {
-	logger    *zap.Logger
-	factories component.Factories
-	configStr string
-	svc       *service.Collector
-	appDone   chan struct{}
-	stopped   bool
-}
-
-// NewInProcessCollector crewtes a new InProcessCollector using the supplied component factories.
-func NewInProcessCollector(factories component.Factories) *InProcessCollector {
-	return &InProcessCollector{
-		factories: factories,
-	}
-}
-
-func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup func(), err error) {
-	configCleanup = func() {
-		// NoOp
-	}
-	var logger *zap.Logger
-	logger, err = configureLogger()
-	if err != nil {
-		return configCleanup, err
-	}
-	ipp.logger = logger
-	ipp.configStr = configStr
-	return configCleanup, err
-}
-
-func (ipp *InProcessCollector) Start(args StartParams) error {
-	settings := service.CollectorSettings{
-		BuildInfo: component.BuildInfo{
-			Command: "otelcol",
-			Version: version.Version,
-		},
-		Factories:      ipp.factories,
-		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
-	}
-	var err error
-	ipp.svc, err = service.New(settings)
-	if err != nil {
-		return err
-	}
-	ipp.svc.Command().SetArgs(args.CmdArgs)
-
-	ipp.appDone = make(chan struct{})
-	go func() {
-		defer close(ipp.appDone)
-		appErr := ipp.svc.Run()
-		if appErr != nil {
-			err = appErr
-		}
-	}()
-
-	for state := range ipp.svc.GetStateChannel() {
-		switch state {
-		case service.Starting:
-			// NoOp
-		case service.Running:
-			return err
-		default:
-			err = fmt.Errorf("unable to start, otelcol state is %d", state)
-		}
-	}
-	return err
-}
-
-func (ipp *InProcessCollector) Stop() (stopped bool, err error) {
-	if !ipp.stopped {
-		ipp.stopped = true
-		ipp.svc.Shutdown()
-	}
-	<-ipp.appDone
-	stopped = ipp.stopped
-	return stopped, err
-}
-
-func (ipp *InProcessCollector) WatchResourceConsumption() error {
-	return nil
-}
-
-func (ipp *InProcessCollector) GetProcessMon() *process.Process {
-	return nil
-}
-
-func (ipp *InProcessCollector) GetTotalConsumption() *ResourceConsumption {
-	return &ResourceConsumption{
-		CPUPercentAvg: 0,
-		CPUPercentMax: 0,
-		RAMMiBAvg:     0,
-		RAMMiBMax:     0,
-	}
-}
-
-func (ipp *InProcessCollector) GetResourceConsumption() string {
-	return ""
-}
-
-func configureLogger() (*zap.Logger, error) {
-	conf := zap.NewDevelopmentConfig()
-	conf.Level.SetLevel(zapcore.InfoLevel)
-	logger, err := conf.Build()
-	return logger, err
 }

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // MetricDiff is intended to support producing human-readable diffs between two MetricData structs during

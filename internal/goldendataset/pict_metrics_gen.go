@@ -17,7 +17,7 @@ package goldendataset
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // GenerateMetrics takes the filename of a PICT-generated file, walks through all of the rows in the PICT

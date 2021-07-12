@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -44,12 +45,11 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
-	"go.opentelemetry.io/collector/internal/otlp"
-	"go.opentelemetry.io/collector/internal/pdatagrpc"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -255,7 +255,7 @@ func TestProtoHttp(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 
 	td := testdata.GenerateTracesOneSpan()
-	traceBytes, err := otlp.NewProtobufTracesMarshaler().Marshal(td)
+	traceBytes, err := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -326,7 +326,8 @@ func testHTTPProtobufRequest(
 
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-		tmp := &collectortrace.ExportTraceServiceResponse{}
+		// TODO: Parse otlp response here instead of empty proto when pdata allows that.
+		tmp := &types.Empty{}
 		err := tmp.Unmarshal(respBytes)
 		require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
@@ -683,7 +684,7 @@ func TestShutdown(t *testing.T) {
 	}
 	senderHTTP := func(td pdata.Traces) {
 		// Send request via OTLP/HTTP.
-		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().Marshal(td)
+		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
 		if err2 != nil {
 			t.Errorf("Error marshaling protobuf: %v", err2)
 		}
@@ -703,7 +704,7 @@ func TestShutdown(t *testing.T) {
 
 	// Wait until the receiver outputs anything to the sink.
 	assert.Eventually(t, func() bool {
-		return nextSink.SpansCount() > 0
+		return nextSink.SpanCount() > 0
 	}, time.Second, 10*time.Millisecond)
 
 	// Now shutdown the receiver, while continuing sending traces to it.
@@ -715,7 +716,7 @@ func TestShutdown(t *testing.T) {
 	// Remember how many spans the sink received. This number should not change after this
 	// point because after Shutdown() returns the component is not allowed to produce
 	// any more data.
-	sinkSpanCountAfterShutdown := nextSink.SpansCount()
+	sinkSpanCountAfterShutdown := nextSink.SpanCount()
 
 	// Now signal to generateTraces to exit the main generation loop, then send
 	// one more trace and stop.
@@ -728,7 +729,7 @@ func TestShutdown(t *testing.T) {
 
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
-	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpansCount())
+	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 }
 
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {
@@ -752,7 +753,7 @@ loop:
 }
 
 func exportTraces(cc *grpc.ClientConn, td pdata.Traces) error {
-	acc := pdatagrpc.NewTracesClient(cc)
+	acc := otlpgrpc.NewTracesClient(cc)
 	_, err := acc.Export(context.Background(), td)
 
 	return err

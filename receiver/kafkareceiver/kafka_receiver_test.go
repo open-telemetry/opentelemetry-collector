@@ -32,10 +32,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
-	"go.opentelemetry.io/collector/internal/otlp"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -217,7 +217,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 	td := pdata.NewTraces()
 	td.ResourceSpans().AppendEmpty()
-	bts, err := otlp.NewProtobufTracesMarshaler().Marshal(td)
+	bts, err := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -401,7 +401,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateMetricsOneMetric()
-	bts, err := otlp.NewProtobufMetricsMarshaler().Marshal(ld)
+	bts, err := otlp.NewProtobufMetricsMarshaler().MarshalMetrics(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
@@ -585,7 +585,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	}()
 
 	ld := testdata.GenerateLogsOneLogRecord()
-	bts, err := otlp.NewProtobufLogsMarshaler().Marshal(ld)
+	bts, err := otlp.NewProtobufLogsMarshaler().MarshalLogs(ld)
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)

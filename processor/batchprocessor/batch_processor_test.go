@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
@@ -62,7 +62,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
 	spansReceivedByName := spansReceivedByName(receivedTraces)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -102,7 +102,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 	// wait for all spans to be reported
 	for {
-		if sink.SpansCount() == requestCount*spansPerRequest {
+		if sink.SpanCount() == requestCount*spansPerRequest {
 			break
 		}
 		<-time.After(cfg.Timeout)
@@ -110,7 +110,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	for i := 0; i < len(sink.AllTraces())-1; i++ {
 		assert.Equal(t, int(cfg.SendBatchMaxSize), sink.AllTraces()[i].SpanCount())
 	}
@@ -152,7 +152,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	expectedBatchesNum := requestCount * spansPerRequest / sendBatchSize
 	expectedBatchingFactor := sendBatchSize / spansPerRequest
 
-	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
 	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
 	for _, td := range receivedTraces {
@@ -168,7 +168,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	assert.Equal(t, 1, len(viewData))
 	distData := viewData[0].Data.(*view.DistributionData)
 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.SpansCount(), int(distData.Sum()))
+	assert.Equal(t, sink.SpanCount(), int(distData.Sum()))
 	assert.Equal(t, sendBatchSize, int(distData.Min))
 	assert.Equal(t, sendBatchSize, int(distData.Max))
 
@@ -203,7 +203,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 	// Wait for at least one batch to be sent.
 	for {
-		if sink.SpansCount() != 0 {
+		if sink.SpanCount() != 0 {
 			break
 		}
 		<-time.After(cfg.Timeout)
@@ -218,7 +218,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	expectedBatchesNum := 1
 	expectedBatchingFactor := 5
 
-	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
 	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
 	for _, td := range receivedTraces {
@@ -252,7 +252,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	require.Equal(t, 1, len(sink.AllTraces()))
 }
 
@@ -292,7 +292,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*metricsPerRequest, sink.MetricsCount())
+	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
 	receivedMds := sink.AllMetrics()
 	metricsReceivedByName := metricsReceivedByName(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -344,7 +344,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	expectedBatchesNum := requestCount * dataPointsPerRequest / int(cfg.SendBatchSize)
 	expectedBatchingFactor := int(cfg.SendBatchSize) / dataPointsPerRequest
 
-	require.Equal(t, requestCount*metricsPerRequest, sink.MetricsCount())
+	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
 	receivedMds := sink.AllMetrics()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, md := range receivedMds {
@@ -359,7 +359,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	assert.Equal(t, 1, len(viewData))
 	distData := viewData[0].Data.(*view.DistributionData)
 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.MetricsCount()*dataPointsPerMetric, int(distData.Sum()))
+	assert.Equal(t, sink.DataPointCount(), int(distData.Sum()))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 
@@ -384,8 +384,8 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 	batchMetrics.add(md)
 	require.Equal(t, dataPointsPerMetric*metricsCount, batchMetrics.dataPointCount)
 	require.NoError(t, batchMetrics.export(ctx, sendBatchMaxSize))
-	remainingDataPointsCount := metricsCount*dataPointsPerMetric - sendBatchMaxSize
-	require.Equal(t, remainingDataPointsCount, batchMetrics.dataPointCount)
+	remainingDataPointCount := metricsCount*dataPointsPerMetric - sendBatchMaxSize
+	require.Equal(t, remainingDataPointCount, batchMetrics.dataPointCount)
 }
 
 func TestBatchMetricsProcessor_Timeout(t *testing.T) {
@@ -411,7 +411,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 	// Wait for at least one batch to be sent.
 	for {
-		if sink.MetricsCount() != 0 {
+		if sink.DataPointCount() != 0 {
 			break
 		}
 		<-time.After(cfg.Timeout)
@@ -426,7 +426,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	expectedBatchesNum := 1
 	expectedBatchingFactor := 5
 
-	require.Equal(t, requestCount*metricsPerRequest, sink.MetricsCount())
+	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
 	receivedMds := sink.AllMetrics()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, md := range receivedMds {
@@ -459,7 +459,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*metricsPerRequest, sink.MetricsCount())
+	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
 	require.Equal(t, 1, len(sink.AllMetrics()))
 }
 
@@ -606,7 +606,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
 	logsReceivedByName := logsReceivedByName(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -656,7 +656,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
 	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, ld := range receivedMds {
@@ -671,7 +671,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	assert.Equal(t, 1, len(viewData))
 	distData := viewData[0].Data.(*view.DistributionData)
 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.LogRecordsCount(), int(distData.Sum()))
+	assert.Equal(t, sink.LogRecordCount(), int(distData.Sum()))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 
@@ -706,7 +706,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 	// Wait for at least one batch to be sent.
 	for {
-		if sink.LogRecordsCount() != 0 {
+		if sink.LogRecordCount() != 0 {
 			break
 		}
 		<-time.After(cfg.Timeout)
@@ -721,7 +721,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	expectedBatchesNum := 1
 	expectedBatchingFactor := 5
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, ld := range receivedMds {
@@ -754,7 +754,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
-	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	require.Equal(t, 1, len(sink.AllLogs()))
 }
 

@@ -19,11 +19,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestLogs(t *testing.T) {
+func TestLogsText(t *testing.T) {
 	type args struct {
 		ld pdata.Logs
 	}
@@ -39,7 +39,7 @@ func TestLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logs, err := NewTextLogsMarshaler().Marshal(tt.args.ld)
+			logs, err := NewTextLogsMarshaler().MarshalLogs(tt.args.ld)
 			assert.NoError(t, err)
 			if !tt.empty {
 				assert.NotEmpty(t, logs)

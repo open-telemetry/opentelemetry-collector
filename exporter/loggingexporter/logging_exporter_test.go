@@ -22,13 +22,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
-	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop())
+	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -39,7 +40,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop())
+	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -52,7 +53,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop())
+	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 
@@ -69,34 +70,26 @@ func TestLoggingExporterErrors(t *testing.T) {
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")
-	le.tracesMarshaler = &errTracesMarshaler{err: errWant}
-	le.metricsMarshaler = &errMetricsMarshaler{err: errWant}
-	le.logsMarshaler = &errLogsMarshaler{err: errWant}
+	le.tracesMarshaler = &errMarshaler{err: errWant}
+	le.metricsMarshaler = &errMarshaler{err: errWant}
+	le.logsMarshaler = &errMarshaler{err: errWant}
 	assert.Equal(t, errWant, le.pushTraces(context.Background(), pdata.NewTraces()))
 	assert.Equal(t, errWant, le.pushMetrics(context.Background(), pdata.NewMetrics()))
 	assert.Equal(t, errWant, le.pushLogs(context.Background(), pdata.NewLogs()))
 }
 
-type errLogsMarshaler struct {
+type errMarshaler struct {
 	err error
 }
 
-func (e errLogsMarshaler) Marshal(pdata.Logs) ([]byte, error) {
+func (e errMarshaler) MarshalLogs(pdata.Logs) ([]byte, error) {
 	return nil, e.err
 }
 
-type errMetricsMarshaler struct {
-	err error
-}
-
-func (e errMetricsMarshaler) Marshal(pdata.Metrics) ([]byte, error) {
+func (e errMarshaler) MarshalMetrics(pdata.Metrics) ([]byte, error) {
 	return nil, e.err
 }
 
-type errTracesMarshaler struct {
-	err error
-}
-
-func (e errTracesMarshaler) Marshal(pdata.Traces) ([]byte, error) {
+func (e errMarshaler) MarshalTraces(pdata.Traces) ([]byte, error) {
 	return nil, e.err
 }

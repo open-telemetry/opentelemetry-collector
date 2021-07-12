@@ -40,9 +40,9 @@ func TestTracesProcessorCloningMultiplexing(t *testing.T) {
 	tfc := NewTracesCloning(processors)
 	td := testdata.GenerateTracesTwoSpansSameResource()
 
-	var wantSpansCount = 0
+	var wantSpanCount = 0
 	for i := 0; i < 2; i++ {
-		wantSpansCount += td.SpanCount()
+		wantSpanCount += td.SpanCount()
 		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -52,7 +52,7 @@ func TestTracesProcessorCloningMultiplexing(t *testing.T) {
 
 	for i, p := range processors {
 		m := p.(*consumertest.TracesSink)
-		assert.Equal(t, wantSpansCount, m.SpansCount())
+		assert.Equal(t, wantSpanCount, m.SpanCount())
 		spanOrig := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 		allTraces := m.AllTraces()
 		spanClone := allTraces[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
@@ -83,9 +83,9 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	mfc := NewMetricsCloning(processors)
 	md := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 
-	var wantMetricsCount = 0
+	var wantDataPointCount = 0
 	for i := 0; i < 2; i++ {
-		wantMetricsCount += md.MetricCount()
+		wantDataPointCount += md.DataPointCount()
 		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
@@ -95,7 +95,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 
 	for i, p := range processors {
 		m := p.(*consumertest.MetricsSink)
-		assert.Equal(t, wantMetricsCount, m.MetricsCount())
+		assert.Equal(t, wantDataPointCount, m.DataPointCount())
 		metricOrig := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		allMetrics := m.AllMetrics()
 		metricClone := allMetrics[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
@@ -138,7 +138,7 @@ func TestLogsProcessorCloningMultiplexing(t *testing.T) {
 
 	for i, p := range processors {
 		m := p.(*consumertest.LogsSink)
-		assert.Equal(t, wantMetricsCount, m.LogRecordsCount())
+		assert.Equal(t, wantMetricsCount, m.LogRecordCount())
 		metricOrig := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
 		allLogs := m.AllLogs()
 		metricClone := allLogs[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)

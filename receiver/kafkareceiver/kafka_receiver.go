@@ -356,8 +356,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			zap.String("topic", message.Topic))
 		session.MarkMessage(message, "")
 
-		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		ctx = c.obsrecv.StartTracesOp(ctx)
+		ctx := c.obsrecv.StartTracesOp(session.Context())
 		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.String())}
 		_ = stats.RecordWithTags(ctx, statsTags,
 			statMessageCount.M(1),
@@ -404,8 +403,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			zap.String("topic", message.Topic))
 		session.MarkMessage(message, "")
 
-		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		ctx = c.obsrecv.StartMetricsOp(ctx)
+		ctx := c.obsrecv.StartMetricsOp(session.Context())
 		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.id.String())}
 		_ = stats.RecordWithTags(ctx, statsTags,
 			statMessageCount.M(1),
@@ -418,9 +416,9 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			return err
 		}
 
-		metricCount := metrics.MetricCount()
+		dataPointCount := metrics.DataPointCount()
 		err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
-		c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), metricCount, err)
+		c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
 		if err != nil {
 			return err
 		}
@@ -456,8 +454,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			zap.String("topic", message.Topic))
 		session.MarkMessage(message, "")
 
-		ctx := obsreport.ReceiverContext(session.Context(), c.id, transport)
-		ctx = c.obsrecv.StartTracesOp(ctx)
+		ctx := c.obsrecv.StartTracesOp(session.Context())
 		_ = stats.RecordWithTags(
 			ctx,
 			[]tag.Mutator{tag.Insert(tagInstanceName, c.id.String())},

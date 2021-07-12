@@ -19,7 +19,7 @@ import (
 	"io"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -362,9 +362,9 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 	attrMap.UpsertInt("ai-sampler.maxhops", 6)
 	attrMap.UpsertString("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
 	stages := pdata.NewAttributeValueArray()
-	stages.ArrayVal().Append(pdata.NewAttributeValueString("Launch"))
-	stages.ArrayVal().Append(pdata.NewAttributeValueString("Injestion"))
-	stages.ArrayVal().Append(pdata.NewAttributeValueString("Validation"))
+	stages.ArrayVal().AppendEmpty().SetStringVal("Launch")
+	stages.ArrayVal().AppendEmpty().SetStringVal("Injestion")
+	stages.ArrayVal().AppendEmpty().SetStringVal("Validation")
 	attrMap.Upsert("application.stages", stages)
 	subMap := pdata.NewAttributeValueMap()
 	subMap.MapVal().InsertBool("UIx", false)

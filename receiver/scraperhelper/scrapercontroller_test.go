@@ -17,13 +17,15 @@ package scraperhelper
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/oteltest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
@@ -68,7 +70,7 @@ func (ts *testScrapeMetrics) scrape(_ context.Context) (pdata.MetricSlice, error
 	ts.ch <- ts.timesScrapeCalled
 
 	if ts.err != nil {
-		return pdata.NewMetricSlice(), ts.err
+		return pdata.MetricSlice{}, ts.err
 	}
 
 	return singleMetric(), nil
@@ -85,7 +87,7 @@ func (ts *testScrapeResourceMetrics) scrape(_ context.Context) (pdata.ResourceMe
 	ts.ch <- ts.timesScrapeCalled
 
 	if ts.err != nil {
-		return pdata.NewResourceMetricsSlice(), ts.err
+		return pdata.ResourceMetricsSlice{}, ts.err
 	}
 
 	return singleResourceMetric(), nil
@@ -183,11 +185,10 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
-
-			ss := &spanStore{}
-			trace.RegisterExporter(ss)
-			defer trace.UnregisterExporter(ss)
+			sr := new(oteltest.SpanRecorder)
+			tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+			otel.SetTracerProvider(tp)
+			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
 			done, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
@@ -246,15 +247,15 @@ func TestScrapeController(t *testing.T) {
 				// wait until all calls to scrape have completed
 				if test.scrapeErr == nil {
 					require.Eventually(t, func() bool {
-						return sink.MetricsCount() == iterations*(test.scrapers+test.resourceScrapers)
+						return sink.DataPointCount() == iterations*(test.scrapers+test.resourceScrapers)
 					}, time.Second, time.Millisecond)
 				}
 
 				if test.expectScraped {
-					assert.GreaterOrEqual(t, sink.MetricsCount(), iterations)
+					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
-				spans := ss.PullAllSpans()
+				spans := sr.Completed()
 				assertReceiverSpan(t, spans)
 				assertReceiverViews(t, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)
@@ -290,7 +291,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		scrapeMetricsChs[i] = make(chan int)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddMetricsScraper(NewMetricsScraper("scraper", tsm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddScraper(NewMetricsScraper("scraper", tsm.scrape, scraperOptions...)))
 	}
 
 	for i := 0; i < test.resourceScrapers; i++ {
@@ -308,7 +309,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		testScrapeResourceMetricsChs[i] = make(chan int)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
@@ -344,10 +345,10 @@ func assertChannelCalled(t *testing.T, ch chan bool, message string) {
 	}
 }
 
-func assertReceiverSpan(t *testing.T, spans []*trace.SpanData) {
+func assertReceiverSpan(t *testing.T, spans []*oteltest.Span) {
 	receiverSpan := false
 	for _, span := range spans {
-		if span.Name == "receiver/receiver/MetricsReceived" {
+		if span.Name() == "receiver/receiver/MetricsReceived" {
 			receiverSpan = true
 			break
 		}
@@ -358,26 +359,25 @@ func assertReceiverSpan(t *testing.T, spans []*trace.SpanData) {
 func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	dataPointCount := 0
 	for _, md := range sink.AllMetrics() {
-		_, dpc := md.MetricAndDataPointCount()
-		dataPointCount += dpc
+		dataPointCount += md.DataPointCount()
 	}
 	obsreporttest.CheckReceiverMetrics(t, config.NewID("receiver"), "", int64(dataPointCount), 0)
 }
 
-func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData) {
-	expectedScrapeTraceStatus := trace.Status{Code: trace.StatusCodeOK}
-	expectedScrapeTraceMessage := ""
+func assertScraperSpan(t *testing.T, expectedErr error, spans []*oteltest.Span) {
+	expectedStatusCode := codes.Unset
+	expectedStatusMessage := ""
 	if expectedErr != nil {
-		expectedScrapeTraceStatus = trace.Status{Code: trace.StatusCodeUnknown, Message: expectedErr.Error()}
-		expectedScrapeTraceMessage = expectedErr.Error()
+		expectedStatusCode = codes.Error
+		expectedStatusMessage = expectedErr.Error()
 	}
 
 	scraperSpan := false
 	for _, span := range spans {
-		if span.Name == "scraper/receiver/scraper/MetricsScraped" {
+		if span.Name() == "scraper/receiver/scraper/MetricsScraped" {
 			scraperSpan = true
-			assert.Equal(t, expectedScrapeTraceStatus, span.Status)
-			assert.Equal(t, expectedScrapeTraceMessage, span.Message)
+			assert.Equal(t, expectedStatusCode, span.StatusCode())
+			assert.Equal(t, expectedStatusMessage, span.StatusMessage())
 			break
 		}
 	}
@@ -385,14 +385,14 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData)
 }
 
 func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.MetricsSink) {
-	expectedScraped := int64(sink.MetricsCount())
+	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
 		if partialError, isPartial := expectedErr.(scrapererror.PartialScrapeError); isPartial {
 			expectedErrored = int64(partialError.Failed)
 		} else {
 			expectedScraped = int64(0)
-			expectedErrored = int64(sink.MetricsCount())
+			expectedErrored = int64(sink.DataPointCount())
 		}
 	}
 
@@ -430,8 +430,8 @@ func TestSingleScrapePerTick(t *testing.T) {
 		cfg,
 		zap.NewNop(),
 		new(consumertest.MetricsSink),
-		AddMetricsScraper(NewMetricsScraper("", tsm.scrape)),
-		AddResourceMetricsScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
+		AddScraper(NewMetricsScraper("", tsm.scrape)),
+		AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
@@ -451,23 +451,4 @@ func TestSingleScrapePerTick(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		return
 	}
-}
-
-type spanStore struct {
-	sync.Mutex
-	spans []*trace.SpanData
-}
-
-func (ss *spanStore) ExportSpan(sd *trace.SpanData) {
-	ss.Lock()
-	ss.spans = append(ss.spans, sd)
-	ss.Unlock()
-}
-
-func (ss *spanStore) PullAllSpans() []*trace.SpanData {
-	ss.Lock()
-	capturedSpans := ss.spans
-	ss.spans = nil
-	ss.Unlock()
-	return capturedSpans
 }

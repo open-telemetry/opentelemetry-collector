@@ -65,7 +65,7 @@ func createTracesExporter(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
@@ -87,7 +87,7 @@ func createMetricsExporter(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
@@ -110,7 +110,7 @@ func createLogsExporter(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),

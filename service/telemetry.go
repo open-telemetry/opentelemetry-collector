@@ -34,20 +34,20 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-// applicationTelemetry is application's own telemetry.
-var applicationTelemetry appTelemetryExporter = &appTelemetry{}
+// collectorTelemetry is collector's own telemetry.
+var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
-type appTelemetryExporter interface {
+type collectorTelemetryExporter interface {
 	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
 	shutdown() error
 }
 
-type appTelemetry struct {
+type colTelemetry struct {
 	views  []*view.View
 	server *http.Server
 }
 
-func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	level := configtelemetry.GetMetricsLevelFlagValue()
 	metricsAddr := telemetry.GetMetricsAddr()
 
@@ -121,7 +121,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *appTelemetry) shutdown() error {
+func (tel *colTelemetry) shutdown() error {
 	view.Unregister(tel.views...)
 
 	if tel.server != nil {

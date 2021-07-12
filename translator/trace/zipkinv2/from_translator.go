@@ -24,8 +24,8 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
@@ -37,8 +37,7 @@ const (
 )
 
 var (
-	sampled                            = true
-	_       pdata.FromTracesTranslator = (*FromTranslator)(nil)
+	sampled = true
 )
 
 // FromTranslator converts from pdata to Zipkin data model.
@@ -46,7 +45,7 @@ type FromTranslator struct{}
 
 // FromTraces translates internal trace data into Zipkin v2 spans.
 // Returns a slice of Zipkin SpanModel's.
-func (t FromTranslator) FromTraces(td pdata.Traces) (interface{}, error) {
+func (t FromTranslator) FromTraces(td pdata.Traces) ([]*zipkinmodel.SpanModel, error) {
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil, nil

@@ -34,7 +34,7 @@ type ScraperFactory interface {
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.MetricsScraper, error)
+	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.Scraper, error)
 }
 
 // ResourceScraperFactory can create a ResourceScraper.
@@ -43,7 +43,7 @@ type ResourceScraperFactory interface {
 
 	// CreateResourceMetricsScraper creates a resource scraper based on this
 	// config. If the config is not valid, error will be returned instead.
-	CreateResourceMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.ResourceMetricsScraper, error)
+	CreateResourceMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.Scraper, error)
 }
 
 // Config is the configuration of a scraper.

@@ -43,8 +43,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -424,7 +424,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	zr.ServeHTTP(req, r)
 
 	require.Equal(t, 400, req.Code)
-	require.Equal(t, "unmarshal failed: invalid character 'i' looking for beginning of object key string\n", req.Body.String())
+	require.Equal(t, "invalid character 'i' looking for beginning of object key string\n", req.Body.String())
 }
 
 func TestReceiverConsumerError(t *testing.T) {

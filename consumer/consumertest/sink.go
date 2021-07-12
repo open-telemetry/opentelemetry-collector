@@ -19,16 +19,16 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // TracesSink is a consumer.Traces that acts like a sink that
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
 	nonMutatingConsumer
-	mu         sync.Mutex
-	traces     []pdata.Traces
-	spansCount int
+	mu        sync.Mutex
+	traces    []pdata.Traces
+	spanCount int
 }
 
 var _ consumer.Traces = (*TracesSink)(nil)
@@ -39,7 +39,7 @@ func (ste *TracesSink) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	defer ste.mu.Unlock()
 
 	ste.traces = append(ste.traces, td)
-	ste.spansCount += td.SpanCount()
+	ste.spanCount += td.SpanCount()
 
 	return nil
 }
@@ -54,11 +54,11 @@ func (ste *TracesSink) AllTraces() []pdata.Traces {
 	return copyTraces
 }
 
-// SpansCount returns the number of spans sent to this sink.
-func (ste *TracesSink) SpansCount() int {
+// SpanCount returns the number of spans sent to this sink.
+func (ste *TracesSink) SpanCount() int {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
-	return ste.spansCount
+	return ste.spanCount
 }
 
 // Reset deletes any stored data.
@@ -67,16 +67,16 @@ func (ste *TracesSink) Reset() {
 	defer ste.mu.Unlock()
 
 	ste.traces = nil
-	ste.spansCount = 0
+	ste.spanCount = 0
 }
 
 // MetricsSink is a consumer.Metrics that acts like a sink that
 // stores all metrics and allows querying them for testing.
 type MetricsSink struct {
 	nonMutatingConsumer
-	mu           sync.Mutex
-	metrics      []pdata.Metrics
-	metricsCount int
+	mu             sync.Mutex
+	metrics        []pdata.Metrics
+	dataPointCount int
 }
 
 var _ consumer.Metrics = (*MetricsSink)(nil)
@@ -87,7 +87,7 @@ func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) erro
 	defer sme.mu.Unlock()
 
 	sme.metrics = append(sme.metrics, md)
-	sme.metricsCount += md.MetricCount()
+	sme.dataPointCount += md.DataPointCount()
 
 	return nil
 }
@@ -102,11 +102,11 @@ func (sme *MetricsSink) AllMetrics() []pdata.Metrics {
 	return copyMetrics
 }
 
-// MetricsCount returns the number of metrics stored by this sink since last Reset.
-func (sme *MetricsSink) MetricsCount() int {
+// DataPointCount returns the number of metrics stored by this sink since last Reset.
+func (sme *MetricsSink) DataPointCount() int {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
-	return sme.metricsCount
+	return sme.dataPointCount
 }
 
 // Reset deletes any stored data.
@@ -115,16 +115,16 @@ func (sme *MetricsSink) Reset() {
 	defer sme.mu.Unlock()
 
 	sme.metrics = nil
-	sme.metricsCount = 0
+	sme.dataPointCount = 0
 }
 
 // LogsSink is a consumer.Logs that acts like a sink that
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
 	nonMutatingConsumer
-	mu              sync.Mutex
-	logs            []pdata.Logs
-	logRecordsCount int
+	mu             sync.Mutex
+	logs           []pdata.Logs
+	logRecordCount int
 }
 
 var _ consumer.Logs = (*LogsSink)(nil)
@@ -135,7 +135,7 @@ func (sle *LogsSink) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	defer sle.mu.Unlock()
 
 	sle.logs = append(sle.logs, ld)
-	sle.logRecordsCount += ld.LogRecordCount()
+	sle.logRecordCount += ld.LogRecordCount()
 
 	return nil
 }
@@ -150,11 +150,11 @@ func (sle *LogsSink) AllLogs() []pdata.Logs {
 	return copyLogs
 }
 
-// LogRecordsCount returns the number of log records stored by this sink since last Reset.
-func (sle *LogsSink) LogRecordsCount() int {
+// LogRecordCount returns the number of log records stored by this sink since last Reset.
+func (sle *LogsSink) LogRecordCount() int {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
-	return sle.logRecordsCount
+	return sle.logRecordCount
 }
 
 // Reset deletes any stored data.
@@ -163,5 +163,5 @@ func (sle *LogsSink) Reset() {
 	defer sle.mu.Unlock()
 
 	sle.logs = nil
-	sle.logRecordsCount = 0
+	sle.logRecordCount = 0
 }

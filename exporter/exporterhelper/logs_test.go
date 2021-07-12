@@ -20,8 +20,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/oteltest"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,9 +31,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -57,26 +59,26 @@ func TestLogsRequest(t *testing.T) {
 }
 
 func TestLogsExporter_InvalidName(t *testing.T) {
-	le, err := NewLogsExporter(nil, zap.NewNop(), newPushLogsData(nil))
+	le, err := NewLogsExporter(nil, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilConfig, err)
 }
 
 func TestLogsExporter_NilLogger(t *testing.T) {
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, nil, newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, component.ExporterCreateSettings{}, newPushLogsData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilLogger, err)
 }
 
 func TestLogsExporter_NilPushLogsData(t *testing.T) {
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), nil)
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), nil)
 	require.Nil(t, le)
 	require.Equal(t, errNilPushLogsData, err)
 }
 
 func TestLogsExporter_Default(t *testing.T) {
 	ld := pdata.NewLogs()
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -88,7 +90,7 @@ func TestLogsExporter_Default(t *testing.T) {
 
 func TestLogsExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithCapabilities(capabilities))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -98,14 +100,14 @@ func TestLogsExporter_WithCapabilities(t *testing.T) {
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	ld := pdata.NewLogs()
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -114,7 +116,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
@@ -131,7 +133,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -146,25 +148,35 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil))
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, le, nil, 1)
+	checkWrapSpanForLogsExporter(t, sr, tp.Tracer("test"), le, nil, 1)
 }
 
 func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, le, want, 1)
+	checkWrapSpanForLogsExporter(t, sr, tp.Tracer("test"), le, want, 1)
 }
 
 func TestLogsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdown))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil), WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -176,7 +188,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdownErr))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -208,37 +220,28 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 	}
 }
 
-func generateLogsTraffic(t *testing.T, le component.LogsExporter, numRequests int, wantError error) {
+func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le component.LogsExporter, numRequests int, wantError error) {
 	ld := testdata.GenerateLogsOneLogRecord()
-	ctx, span := trace.StartSpan(context.Background(), fakeLogsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
+	ctx, span := tracer.Start(context.Background(), fakeLogsParentSpanName)
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
 		require.Equal(t, wantError, le.ConsumeLogs(ctx, ld))
 	}
 }
 
-func checkWrapSpanForLogsExporter(t *testing.T, le component.LogsExporter, wantError error, numLogRecords int64) {
-	ocSpansSaver := new(testOCTracesExporter)
-	trace.RegisterExporter(ocSpansSaver)
-	defer trace.UnregisterExporter(ocSpansSaver)
-
+func checkWrapSpanForLogsExporter(t *testing.T, sr *oteltest.SpanRecorder, tracer trace.Tracer, le component.LogsExporter, wantError error, numLogRecords int64) {
 	const numRequests = 5
-	generateLogsTraffic(t, le, numRequests, wantError)
+	generateLogsTraffic(t, tracer, le, numRequests, wantError)
 
 	// Inspection time!
-	ocSpansSaver.mu.Lock()
-	defer ocSpansSaver.mu.Unlock()
-
-	require.NotEqual(t, 0, len(ocSpansSaver.spanData), "No exported span data")
-
-	gotSpanData := ocSpansSaver.spanData
+	gotSpanData := sr.Completed()
 	require.Equal(t, numRequests+1, len(gotSpanData))
 
 	parentSpan := gotSpanData[numRequests]
-	require.Equalf(t, fakeLogsParentSpanName, parentSpan.Name, "SpanData %v", parentSpan)
+	require.Equalf(t, fakeLogsParentSpanName, parentSpan.Name(), "SpanData %v", parentSpan)
 	for _, sd := range gotSpanData[:numRequests] {
-		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
-		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
+		require.Equalf(t, parentSpan.SpanContext().SpanID(), sd.ParentSpanID(), "Exporter span not a child\nSpanData %v", sd)
+		checkStatus(t, sd, wantError)
 
 		sentLogRecords := numLogRecords
 		var failedToSendLogRecords int64
@@ -246,7 +249,7 @@ func checkWrapSpanForLogsExporter(t *testing.T, le component.LogsExporter, wantE
 			sentLogRecords = 0
 			failedToSendLogRecords = numLogRecords
 		}
-		require.Equalf(t, sentLogRecords, sd.Attributes[obsmetrics.SentLogRecordsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendLogRecords, sd.Attributes[obsmetrics.FailedToSendLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, attribute.Int64Value(sentLogRecords), sd.Attributes()[obsmetrics.SentLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, attribute.Int64Value(failedToSendLogRecords), sd.Attributes()[obsmetrics.FailedToSendLogRecordsKey], "SpanData %v", sd)
 	}
 }

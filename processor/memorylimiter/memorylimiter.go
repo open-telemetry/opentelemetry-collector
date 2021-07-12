@@ -25,8 +25,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/iruntime"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -136,10 +136,10 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
 	}
 	logger.Info("Using percentage memory limiter",
-		zap.Int64("total_memory", totalMemory),
+		zap.Uint64("total_memory", totalMemory),
 		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
 		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
-	return newPercentageMemUsageChecker(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
+	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage))
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
@@ -169,7 +169,7 @@ func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pd
 
 // ProcessMetrics implements the MProcessor interface
 func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	_, numDataPoints := md.MetricAndDataPointCount()
+	numDataPoints := md.DataPointCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
@@ -177,7 +177,6 @@ func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
 		ml.obsrep.MetricsRefused(ctx, numDataPoints)
-
 		return md, errForcedDrop
 	}
 
@@ -325,9 +324,9 @@ func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) (*memUsageChec
 	}, nil
 }
 
-func newPercentageMemUsageChecker(totalMemory int64, percentageLimit, percentageSpike int64) (*memUsageChecker, error) {
+func newPercentageMemUsageChecker(totalMemory uint64, percentageLimit, percentageSpike uint64) (*memUsageChecker, error) {
 	if percentageLimit > 100 || percentageLimit <= 0 || percentageSpike > 100 || percentageSpike <= 0 {
 		return nil, errPercentageLimitOutOfRange
 	}
-	return newFixedMemUsageChecker(uint64(percentageLimit*totalMemory)/100, uint64(percentageSpike*totalMemory)/100)
+	return newFixedMemUsageChecker(percentageLimit*totalMemory/100, percentageSpike*totalMemory/100)
 }

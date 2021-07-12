@@ -19,7 +19,9 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -32,6 +34,7 @@ type Exporter struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
 	mutators       []tag.Mutator
+	tracer         trace.Tracer
 }
 
 // ExporterSettings are settings for creating an Exporter.
@@ -46,83 +49,82 @@ func NewExporter(cfg ExporterSettings) *Exporter {
 		level:          cfg.Level,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
+		tracer:         otel.GetTracerProvider().Tracer(cfg.ExporterID.String()),
 	}
 }
 
 // StartTracesOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (eor *Exporter) StartTracesOp(ctx context.Context) context.Context {
-	return eor.startSpan(ctx, obsmetrics.ExportTraceDataOperationSuffix)
+func (exp *Exporter) StartTracesOp(ctx context.Context) context.Context {
+	return exp.startSpan(ctx, obsmetrics.ExportTraceDataOperationSuffix)
 }
 
 // EndTracesOp completes the export operation that was started with StartTracesOp.
-func (eor *Exporter) EndTracesOp(ctx context.Context, numSpans int, err error) {
+func (exp *Exporter) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	eor.recordMetrics(ctx, numSent, numFailedToSend, obsmetrics.ExporterSentSpans, obsmetrics.ExporterFailedToSendSpans)
+	exp.recordMetrics(ctx, numSent, numFailedToSend, obsmetrics.ExporterSentSpans, obsmetrics.ExporterFailedToSendSpans)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
 // StartMetricsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (eor *Exporter) StartMetricsOp(ctx context.Context) context.Context {
-	return eor.startSpan(ctx, obsmetrics.ExportMetricsOperationSuffix)
+func (exp *Exporter) StartMetricsOp(ctx context.Context) context.Context {
+	return exp.startSpan(ctx, obsmetrics.ExportMetricsOperationSuffix)
 }
 
 // EndMetricsOp completes the export operation that was started with
 // StartMetricsOp.
-func (eor *Exporter) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
+func (exp *Exporter) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	eor.recordMetrics(ctx, numSent, numFailedToSend, obsmetrics.ExporterSentMetricPoints, obsmetrics.ExporterFailedToSendMetricPoints)
+	exp.recordMetrics(ctx, numSent, numFailedToSend, obsmetrics.ExporterSentMetricPoints, obsmetrics.ExporterFailedToSendMetricPoints)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
 // StartLogsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (eor *Exporter) StartLogsOp(ctx context.Context) context.Context {
-	return eor.startSpan(ctx, obsmetrics.ExportLogsOperationSuffix)
+func (exp *Exporter) StartLogsOp(ctx context.Context) context.Context {
+	return exp.startSpan(ctx, obsmetrics.ExportLogsOperationSuffix)
 }
 
 // EndLogsOp completes the export operation that was started with StartLogsOp.
-func (eor *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
+func (exp *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	eor.recordMetrics(ctx, numSent, numFailedToSend, obsmetrics.ExporterSentLogRecords, obsmetrics.ExporterFailedToSendLogRecords)
+	exp.recordMetrics(ctx, numSent, numFailedToSend, obsmetrics.ExporterSentLogRecords, obsmetrics.ExporterFailedToSendLogRecords)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
 // startSpan creates the span used to trace the operation. Returning
 // the updated context and the created span.
-func (eor *Exporter) startSpan(ctx context.Context, operationSuffix string) context.Context {
-	spanName := eor.spanNamePrefix + operationSuffix
-	ctx, _ = trace.StartSpan(ctx, spanName)
+func (exp *Exporter) startSpan(ctx context.Context, operationSuffix string) context.Context {
+	spanName := exp.spanNamePrefix + operationSuffix
+	ctx, _ = exp.tracer.Start(ctx, spanName)
 	return ctx
 }
 
-func (eor *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
+func (exp *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
 	if obsreportconfig.Level == configtelemetry.LevelNone {
 		return
 	}
 	// Ignore the error for now. This should not happen.
 	_ = stats.RecordWithTags(
 		ctx,
-		eor.mutators,
+		exp.mutators,
 		sentMeasure.M(numSent),
 		failedToSendMeasure.M(numFailedToSend))
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
-	span := trace.FromContext(ctx)
+	span := trace.SpanFromContext(ctx)
 	// End span according to errors.
-	if span.IsRecordingEvents() {
-		span.AddAttributes(
-			trace.Int64Attribute(
-				sentItemsKey, numSent),
-			trace.Int64Attribute(
-				failedToSendItemsKey, numFailedToSend),
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.Int64(sentItemsKey, numSent),
+			attribute.Int64(failedToSendItemsKey, numFailedToSend),
 		)
-		span.SetStatus(errToStatus(err))
+		recordError(span, err)
 	}
 	span.End()
 }
