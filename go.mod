@@ -22,7 +22,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/jaegertracing/jaeger v1.23.0
+	github.com/jaegertracing/jaeger v1.24.0
 	github.com/knadh/koanf v1.1.1
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/magiconair/properties v1.8.5
@@ -46,9 +46,9 @@ require (
 	github.com/xdg-go/scram v1.0.2
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector/model v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.21.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.21.0
 	go.opentelemetry.io/otel v1.0.0-RC1
-	go.opentelemetry.io/otel/oteltest v1.0.0-RC1 // indirect
+	go.opentelemetry.io/otel/oteltest v1.0.0-RC1
 	go.opentelemetry.io/otel/trace v1.0.0-RC1
 	go.uber.org/atomic v1.8.0
 	go.uber.org/zap v1.18.1
