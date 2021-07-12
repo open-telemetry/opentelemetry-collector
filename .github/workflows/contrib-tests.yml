@@ -17,6 +17,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Run Contrib Tests
+        continue-on-error: true
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
           git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
