@@ -32,8 +32,9 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -415,7 +416,7 @@ func (m *mockRequest) export(ctx context.Context) error {
 }
 
 func (m *mockRequest) marshal() ([]byte, error) {
-	return pdata.NewTraces().ToOtlpProtoBytes()
+	return otlp.NewProtobufTracesMarshaler().MarshalTraces(pdata.NewTraces())
 }
 
 func (m *mockRequest) onError(error) request {
