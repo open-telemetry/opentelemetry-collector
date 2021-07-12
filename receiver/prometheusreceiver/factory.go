@@ -32,10 +32,7 @@ const (
 	typeStr = "prometheus"
 )
 
-var (
-	errInvalidPrometheusConfig = errors.New("expecting a non-nil Prometheus config with a valid scrape_configs section")
-	errRenamingDisallowed      = errors.New("metric renaming using metric_relabel_configs is disallowed")
-)
+var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() component.ReceiverFactory {
