@@ -62,7 +62,7 @@ func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error
 		return c.convertIntGauge(metric)
 	case pdata.MetricDataTypeIntSum:
 		return c.convertIntSum(metric)
-	case pdata.MetricDataTypeDoubleGauge:
+	case pdata.MetricDataTypeGauge:
 		return c.convertDoubleGauge(metric)
 	case pdata.MetricDataTypeSum:
 		return c.convertSum(metric)
@@ -118,7 +118,7 @@ func (c *collector) convertIntGauge(metric pdata.Metric) (prometheus.Metric, err
 }
 
 func (c *collector) convertDoubleGauge(metric pdata.Metric) (prometheus.Metric, error) {
-	ip := metric.DoubleGauge().DataPoints().At(0)
+	ip := metric.Gauge().DataPoints().At(0)
 
 	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
 	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, ip.Value(), labels...)

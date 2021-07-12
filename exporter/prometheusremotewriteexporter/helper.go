@@ -51,8 +51,8 @@ func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 // matching metric type and field
 func validateMetrics(metric pdata.Metric) bool {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeDoubleGauge:
-		return metric.DoubleGauge().DataPoints().Len() != 0
+	case pdata.MetricDataTypeGauge:
+		return metric.Gauge().DataPoints().Len() != 0
 	case pdata.MetricDataTypeIntGauge:
 		return metric.IntGauge().DataPoints().Len() != 0
 	case pdata.MetricDataTypeSum:

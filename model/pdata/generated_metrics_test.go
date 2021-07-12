@@ -460,14 +460,14 @@ func TestIntGauge_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestDoubleGauge_CopyTo(t *testing.T) {
-	ms := NewDoubleGauge()
-	generateTestDoubleGauge().CopyTo(ms)
-	assert.EqualValues(t, generateTestDoubleGauge(), ms)
+func TestGauge_CopyTo(t *testing.T) {
+	ms := NewGauge()
+	generateTestGauge().CopyTo(ms)
+	assert.EqualValues(t, generateTestGauge(), ms)
 }
 
-func TestDoubleGauge_DataPoints(t *testing.T) {
-	ms := NewDoubleGauge()
+func TestGauge_DataPoints(t *testing.T) {
+	ms := NewGauge()
 	assert.EqualValues(t, NewDoubleDataPointSlice(), ms.DataPoints())
 	fillTestDoubleDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestDoubleDataPointSlice()
@@ -1981,13 +1981,13 @@ func fillTestIntGauge(tv IntGauge) {
 	fillTestIntDataPointSlice(tv.DataPoints())
 }
 
-func generateTestDoubleGauge() DoubleGauge {
-	tv := NewDoubleGauge()
-	fillTestDoubleGauge(tv)
+func generateTestGauge() Gauge {
+	tv := NewGauge()
+	fillTestGauge(tv)
 	return tv
 }
 
-func fillTestDoubleGauge(tv DoubleGauge) {
+func fillTestGauge(tv Gauge) {
 	fillTestDoubleDataPointSlice(tv.DataPoints())
 }
 

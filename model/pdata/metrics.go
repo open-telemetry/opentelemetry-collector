@@ -107,8 +107,8 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 				switch m.DataType() {
 				case MetricDataTypeIntGauge:
 					dataPointCount += m.IntGauge().DataPoints().Len()
-				case MetricDataTypeDoubleGauge:
-					dataPointCount += m.DoubleGauge().DataPoints().Len()
+				case MetricDataTypeGauge:
+					dataPointCount += m.Gauge().DataPoints().Len()
 				case MetricDataTypeIntSum:
 					dataPointCount += m.IntSum().DataPoints().Len()
 				case MetricDataTypeSum:
@@ -132,7 +132,7 @@ type MetricDataType int32
 const (
 	MetricDataTypeNone MetricDataType = iota
 	MetricDataTypeIntGauge
-	MetricDataTypeDoubleGauge
+	MetricDataTypeGauge
 	MetricDataTypeIntSum
 	MetricDataTypeSum
 	MetricDataTypeIntHistogram
@@ -147,8 +147,8 @@ func (mdt MetricDataType) String() string {
 		return "None"
 	case MetricDataTypeIntGauge:
 		return "IntGauge"
-	case MetricDataTypeDoubleGauge:
-		return "DoubleGauge"
+	case MetricDataTypeGauge:
+		return "Gauge"
 	case MetricDataTypeIntSum:
 		return "IntSum"
 	case MetricDataTypeSum:
@@ -170,7 +170,7 @@ func (ms Metric) DataType() MetricDataType {
 	case *otlpmetrics.Metric_IntGauge:
 		return MetricDataTypeIntGauge
 	case *otlpmetrics.Metric_Gauge:
-		return MetricDataTypeDoubleGauge
+		return MetricDataTypeGauge
 	case *otlpmetrics.Metric_IntSum:
 		return MetricDataTypeIntSum
 	case *otlpmetrics.Metric_Sum:
@@ -191,7 +191,7 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 	switch ty {
 	case MetricDataTypeIntGauge:
 		ms.orig.Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
-	case MetricDataTypeDoubleGauge:
+	case MetricDataTypeGauge:
 		ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
 	case MetricDataTypeIntSum:
 		ms.orig.Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
@@ -213,11 +213,11 @@ func (ms Metric) IntGauge() IntGauge {
 	return newIntGauge(ms.orig.Data.(*otlpmetrics.Metric_IntGauge).IntGauge)
 }
 
-// DoubleGauge returns the data as DoubleGauge.
-// Calling this function when DataType() != MetricDataTypeDoubleGauge will cause a panic.
+// Gauge returns the data as Gauge.
+// Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DoubleGauge() DoubleGauge {
-	return newDoubleGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
+func (ms Metric) Gauge() Gauge {
+	return newGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
 }
 
 // IntSum returns the data as IntSum.
@@ -263,7 +263,7 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		dest.Data = data
 	case *otlpmetrics.Metric_Gauge:
 		data := &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-		newDoubleGauge(srcData.Gauge).CopyTo(newDoubleGauge(data.Gauge))
+		newGauge(srcData.Gauge).CopyTo(newGauge(data.Gauge))
 		dest.Data = data
 	case *otlpmetrics.Metric_IntSum:
 		data := &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}

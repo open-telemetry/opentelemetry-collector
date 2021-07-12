@@ -88,8 +88,8 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		collectLabelKeysIntDataPoints(metric.IntGauge().DataPoints(), keySet)
-	case pdata.MetricDataTypeDoubleGauge:
-		collectLabelKeysDoubleDataPoints(metric.DoubleGauge().DataPoints(), keySet)
+	case pdata.MetricDataTypeGauge:
+		collectLabelKeysDoubleDataPoints(metric.Gauge().DataPoints(), keySet)
 	case pdata.MetricDataTypeIntSum:
 		collectLabelKeysIntDataPoints(metric.IntSum().DataPoints(), keySet)
 	case pdata.MetricDataTypeSum:
@@ -185,7 +185,7 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
-	case pdata.MetricDataTypeDoubleGauge:
+	case pdata.MetricDataTypeGauge:
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
 	case pdata.MetricDataTypeIntSum:
 		sd := metric.IntSum()
@@ -221,8 +221,8 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		return intPointsToOC(metric.IntGauge().DataPoints(), labelKeys)
-	case pdata.MetricDataTypeDoubleGauge:
-		return doublePointToOC(metric.DoubleGauge().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeGauge:
+		return doublePointToOC(metric.Gauge().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeIntSum:
 		return intPointsToOC(metric.IntSum().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeSum:

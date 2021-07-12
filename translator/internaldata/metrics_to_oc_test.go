@@ -183,7 +183,7 @@ func TestMetricsType(t *testing.T) {
 			name: "double-gauge",
 			internal: func() pdata.Metric {
 				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				m.SetDataType(pdata.MetricDataTypeGauge)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,

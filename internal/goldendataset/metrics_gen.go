@@ -120,9 +120,9 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.Instrumentat
 		case pdata.MetricDataTypeIntGauge:
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			populateIntPoints(cfg, metric.IntGauge().DataPoints())
-		case pdata.MetricDataTypeDoubleGauge:
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			populateDoublePoints(cfg, metric.DoubleGauge().DataPoints())
+		case pdata.MetricDataTypeGauge:
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+			populateDoublePoints(cfg, metric.Gauge().DataPoints())
 		case pdata.MetricDataTypeIntSum:
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			sum := metric.IntSum()

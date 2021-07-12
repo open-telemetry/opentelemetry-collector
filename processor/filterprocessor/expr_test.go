@@ -57,7 +57,7 @@ func testMatchError(t *testing.T, mdType pdata.MetricDataType) {
 
 func TestExprProcessor(t *testing.T) {
 	testFilter(t, pdata.MetricDataTypeIntGauge)
-	testFilter(t, pdata.MetricDataTypeDoubleGauge)
+	testFilter(t, pdata.MetricDataTypeGauge)
 	testFilter(t, pdata.MetricDataTypeIntSum)
 	testFilter(t, pdata.MetricDataTypeSum)
 	testFilter(t, pdata.MetricDataTypeIntHistogram)
@@ -95,8 +95,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
-						case pdata.MetricDataTypeDoubleGauge:
-							pts := metric.DoubleGauge().DataPoints()
+						case pdata.MetricDataTypeGauge:
+							pts := metric.Gauge().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
