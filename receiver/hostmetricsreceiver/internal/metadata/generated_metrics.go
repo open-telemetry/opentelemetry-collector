@@ -240,7 +240,7 @@ var Metrics = &metricStruct{
 			metric.SetName("system.cpu.load_average.15m")
 			metric.SetDescription("Average CPU Load over 15 minutes.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -249,7 +249,7 @@ var Metrics = &metricStruct{
 			metric.SetName("system.cpu.load_average.1m")
 			metric.SetDescription("Average CPU Load over 1 minute.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -258,7 +258,7 @@ var Metrics = &metricStruct{
 			metric.SetName("system.cpu.load_average.5m")
 			metric.SetDescription("Average CPU Load over 5 minutes.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{

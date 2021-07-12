@@ -106,8 +106,8 @@ func DiffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric)
 	switch actual.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		diffs = diffIntPts(diffs, expected.IntGauge().DataPoints(), actual.IntGauge().DataPoints())
-	case pdata.MetricDataTypeDoubleGauge:
-		diffs = diffDoublePts(diffs, expected.DoubleGauge().DataPoints(), actual.DoubleGauge().DataPoints())
+	case pdata.MetricDataTypeGauge:
+		diffs = diffDoublePts(diffs, expected.Gauge().DataPoints(), actual.Gauge().DataPoints())
 	case pdata.MetricDataTypeIntSum:
 		diffs = diff(diffs, expected.IntSum().IsMonotonic(), actual.IntSum().IsMonotonic(), "IntSum IsMonotonic")
 		diffs = diff(diffs, expected.IntSum().AggregationTemporality(), actual.IntSum().AggregationTemporality(), "IntSum AggregationTemporality")

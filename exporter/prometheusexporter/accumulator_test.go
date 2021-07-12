@@ -138,13 +138,13 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleGauge",
+			name: "Gauge",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metric.SetDataType(pdata.MetricDataTypeGauge)
 				metric.SetDescription("test description")
-				dp := metric.DoubleGauge().DataPoints().AppendEmpty()
+				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetValue(v)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -339,10 +339,10 @@ func getMerticProperties(metric pdata.Metric) (
 		value = float64(metric.IntSum().DataPoints().At(0).Value())
 		temporality = metric.IntSum().AggregationTemporality()
 		isMonotonic = metric.IntSum().IsMonotonic()
-	case pdata.MetricDataTypeDoubleGauge:
-		labels = metric.DoubleGauge().DataPoints().At(0).LabelsMap()
-		ts = metric.DoubleGauge().DataPoints().At(0).Timestamp().AsTime()
-		value = metric.DoubleGauge().DataPoints().At(0).Value()
+	case pdata.MetricDataTypeGauge:
+		labels = metric.Gauge().DataPoints().At(0).LabelsMap()
+		ts = metric.Gauge().DataPoints().At(0).Timestamp().AsTime()
+		value = metric.Gauge().DataPoints().At(0).Value()
 		temporality = pdata.AggregationTemporalityUnspecified
 		isMonotonic = false
 	case pdata.MetricDataTypeSum:

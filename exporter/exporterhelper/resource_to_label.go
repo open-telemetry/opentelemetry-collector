@@ -73,8 +73,8 @@ func addLabelsToMetric(metric *pdata.Metric, labelMap pdata.StringMap) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		addLabelsToIntDataPoints(metric.IntGauge().DataPoints(), labelMap)
-	case pdata.MetricDataTypeDoubleGauge:
-		addLabelsToDoubleDataPoints(metric.DoubleGauge().DataPoints(), labelMap)
+	case pdata.MetricDataTypeGauge:
+		addLabelsToDoubleDataPoints(metric.Gauge().DataPoints(), labelMap)
 	case pdata.MetricDataTypeIntSum:
 		addLabelsToIntDataPoints(metric.IntSum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeSum:

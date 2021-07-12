@@ -354,8 +354,8 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()
 			m.SetName(name)
-			m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			dp := m.DoubleGauge().DataPoints().AppendEmpty()
+			m.SetDataType(pdata.MetricDataTypeGauge)
+			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetValue(123)
 		}

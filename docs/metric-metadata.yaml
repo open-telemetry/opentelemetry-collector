@@ -23,7 +23,7 @@ metrics:
     unit:
     # Required
     data:
-      # Required: one of int gauge, int sum, int histogram, double gauge, sum, or histogram.
+      # Required: one of int gauge, int sum, int histogram, gauge, sum, or histogram.
       type:
       # Required for int sum and sum.
       monotonic: # true | false

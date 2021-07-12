@@ -173,8 +173,8 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		return pdata.MetricDataTypeIntGauge
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		return pdata.MetricDataTypeDoubleGauge
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		return pdata.MetricDataTypeGauge
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
 		metric.SetDataType(pdata.MetricDataTypeIntSum)
 		sum := metric.IntSum()
@@ -205,8 +205,8 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		fillIntDataPoint(ocMetric, metric.IntGauge().DataPoints())
-	case pdata.MetricDataTypeDoubleGauge:
-		fillDoubleDataPoint(ocMetric, metric.DoubleGauge().DataPoints())
+	case pdata.MetricDataTypeGauge:
+		fillDoubleDataPoint(ocMetric, metric.Gauge().DataPoints())
 	case pdata.MetricDataTypeIntSum:
 		fillIntDataPoint(ocMetric, metric.IntSum().DataPoints())
 	case pdata.MetricDataTypeSum:

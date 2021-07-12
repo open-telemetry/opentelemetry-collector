@@ -69,7 +69,7 @@ var (
 	ns1    = "test_ns"
 
 	twoPointsSameTs = map[string]*prompb.TimeSeries{
-		"DoubleGauge" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
+		"Gauge" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
 			getSample(float64(intVal1), msTime1),
 			getSample(float64(intVal2), msTime2)),
 	}
@@ -248,15 +248,15 @@ func getIntGaugeMetric(name string, labels pdata.StringMap, value int64, ts uint
 func getEmptyDoubleGaugeMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.SetDataType(pdata.MetricDataTypeGauge)
 	return metric
 }
 
 func getDoubleGaugeMetric(name string, labels pdata.StringMap, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dp := metric.DoubleGauge().DataPoints().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	dp := metric.Gauge().DataPoints().AppendEmpty()
 	dp.SetValue(value)
 
 	labels.Range(func(k string, v string) bool {

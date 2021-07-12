@@ -52,7 +52,7 @@ func TestNilIntGauge(t *testing.T) {
 }
 
 func TestNilDoubleGauge(t *testing.T) {
-	dataType := pdata.MetricDataTypeDoubleGauge
+	dataType := pdata.MetricDataTypeGauge
 	testNilValue(t, dataType)
 }
 
@@ -104,8 +104,8 @@ func TestDoubleGaugeEmptyDataPoint(t *testing.T) {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	m.DoubleGauge().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	m.Gauge().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -240,8 +240,8 @@ func testMatchDoubleGauge(t *testing.T, metricName string) bool {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dps := m.DoubleGauge().DataPoints()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	dps := m.Gauge().DataPoints()
 	dps.AppendEmpty()
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

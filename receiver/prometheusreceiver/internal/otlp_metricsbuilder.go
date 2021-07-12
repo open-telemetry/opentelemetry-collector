@@ -63,7 +63,7 @@ func convToPdataMetricType(metricType textparse.MetricType) pdata.MetricDataType
 		return pdata.MetricDataTypeSum
 	// textparse.MetricTypeUnknown is converted to gauge by default to fix Prometheus untyped metrics from being dropped
 	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
-		return pdata.MetricDataTypeDoubleGauge
+		return pdata.MetricDataTypeGauge
 	case textparse.MetricTypeHistogram:
 		return pdata.MetricDataTypeHistogram
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation

@@ -84,8 +84,8 @@ func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
 	switch ms.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		dataPointCount = ms.IntGauge().DataPoints().Len()
-	case pdata.MetricDataTypeDoubleGauge:
-		dataPointCount = ms.DoubleGauge().DataPoints().Len()
+	case pdata.MetricDataTypeGauge:
+		dataPointCount = ms.Gauge().DataPoints().Len()
 	case pdata.MetricDataTypeIntSum:
 		dataPointCount = ms.IntSum().DataPoints().Len()
 	case pdata.MetricDataTypeSum:
@@ -116,9 +116,9 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 		ms.IntGauge().DataPoints().RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
-	case pdata.MetricDataTypeDoubleGauge:
-		dest.DoubleGauge().DataPoints().Resize(size)
-		ms.DoubleGauge().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
+	case pdata.MetricDataTypeGauge:
+		dest.Gauge().DataPoints().Resize(size)
+		ms.Gauge().DataPoints().RemoveIf(func(_ pdata.DoubleDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntSum:

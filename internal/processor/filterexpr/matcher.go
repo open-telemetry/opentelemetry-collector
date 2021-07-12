@@ -46,8 +46,8 @@ func (m *Matcher) MatchMetric(metric pdata.Metric) (bool, error) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		return m.matchIntGauge(metricName, metric.IntGauge())
-	case pdata.MetricDataTypeDoubleGauge:
-		return m.matchDoubleGauge(metricName, metric.DoubleGauge())
+	case pdata.MetricDataTypeGauge:
+		return m.matchGauge(metricName, metric.Gauge())
 	case pdata.MetricDataTypeIntSum:
 		return m.matchIntSum(metricName, metric.IntSum())
 	case pdata.MetricDataTypeSum:
@@ -75,7 +75,7 @@ func (m *Matcher) matchIntGauge(metricName string, gauge pdata.IntGauge) (bool, 
 	return false, nil
 }
 
-func (m *Matcher) matchDoubleGauge(metricName string, gauge pdata.DoubleGauge) (bool, error) {
+func (m *Matcher) matchGauge(metricName string, gauge pdata.Gauge) (bool, error) {
 	pts := gauge.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())

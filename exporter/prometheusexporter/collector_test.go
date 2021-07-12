@@ -71,7 +71,7 @@ func TestConvertInvalidMetric(t *testing.T) {
 		pdata.MetricDataTypeIntHistogram,
 		pdata.MetricDataTypeSum,
 		pdata.MetricDataTypeIntSum,
-		pdata.MetricDataTypeDoubleGauge,
+		pdata.MetricDataTypeGauge,
 		pdata.MetricDataTypeIntGauge,
 	} {
 		metric := pdata.NewMetric()
@@ -81,8 +81,8 @@ func TestConvertInvalidMetric(t *testing.T) {
 			metric.IntGauge().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeIntSum:
 			metric.IntSum().DataPoints().AppendEmpty()
-		case pdata.MetricDataTypeDoubleGauge:
-			metric.DoubleGauge().DataPoints().AppendEmpty()
+		case pdata.MetricDataTypeGauge:
+			metric.Gauge().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeSum:
 			metric.Sum().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeIntHistogram:
@@ -187,15 +187,15 @@ func TestCollectMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:       "DoubleGauge",
+			name:       "Gauge",
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metric.SetDataType(pdata.MetricDataTypeGauge)
 				metric.SetDescription("test description")
-				dp := metric.DoubleGauge().DataPoints().AppendEmpty()
+				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")

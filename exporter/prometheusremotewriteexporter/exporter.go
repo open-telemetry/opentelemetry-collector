@@ -130,8 +130,8 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 
 					// handle individual metric based on type
 					switch metric.DataType() {
-					case pdata.MetricDataTypeDoubleGauge:
-						dataPoints := metric.DoubleGauge().DataPoints()
+					case pdata.MetricDataTypeGauge:
+						dataPoints := metric.Gauge().DataPoints()
 						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
