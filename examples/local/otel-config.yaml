@@ -1,5 +1,9 @@
 extensions:
   health_check:
+  aws_ecs_health_check:
+    endpoint: 0.0.0.0:13134
+    interval: "5m"
+    exporter_error_limit: 5
   pprof:
     endpoint: 0.0.0.0:1777
   zpages:
