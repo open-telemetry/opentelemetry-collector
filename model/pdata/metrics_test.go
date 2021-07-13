@@ -501,7 +501,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	// Mutate DataPoints
 	dsd := metric.Sum()
 	assert.EqualValues(t, 2, dsd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeDoubleSum)
+	metric.SetDataType(MetricDataTypeSum)
 	doubleDataPoints := metric.Sum().DataPoints()
 	metric.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
 	doubleDataPoints.AppendEmpty()
