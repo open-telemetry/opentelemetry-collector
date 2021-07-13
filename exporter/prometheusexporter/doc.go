@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package jaegerexporter sends trace data to a Jaeger Collector gRPC endpoint.
-package jaegerexporter
+// Package prometheusexporter exports metrics data as a Prometheus pull handler.
+package prometheusexporter

@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package jaegerexporter sends trace data to a Jaeger Collector gRPC endpoint.
-package jaegerexporter
+// Package otlpexporter exports data by using the OTLP format to a gPRC endpoint.
+package otlpexporter
