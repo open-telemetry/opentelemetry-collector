@@ -37,11 +37,6 @@ func (s *Settings) SetIDName(idName string) {
 	s.ComponentID = config.NewIDWithName(s.ComponentID.Type(), idName)
 }
 
-// Validate validates the configuration and returns an error if invalid.
-func (s *Settings) Validate() error {
-	return nil
-}
-
 // NewSettings return a new configsource.Settings struct with the given ComponentID.
 func NewSettings(id config.ComponentID) Settings {
 	return Settings{id}
