@@ -84,12 +84,12 @@ func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
 	switch ms.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		dataPointCount = ms.IntGauge().DataPoints().Len()
-	case pdata.MetricDataTypeDoubleGauge:
-		dataPointCount = ms.DoubleGauge().DataPoints().Len()
+	case pdata.MetricDataTypeGauge:
+		dataPointCount = ms.Gauge().DataPoints().Len()
 	case pdata.MetricDataTypeIntSum:
 		dataPointCount = ms.IntSum().DataPoints().Len()
-	case pdata.MetricDataTypeDoubleSum:
-		dataPointCount = ms.DoubleSum().DataPoints().Len()
+	case pdata.MetricDataTypeSum:
+		dataPointCount = ms.Sum().DataPoints().Len()
 	case pdata.MetricDataTypeIntHistogram:
 		dataPointCount = ms.IntHistogram().DataPoints().Len()
 	case pdata.MetricDataTypeHistogram:
@@ -127,9 +127,9 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 		src.RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
-	case pdata.MetricDataTypeDoubleGauge:
-		src := ms.DoubleGauge().DataPoints()
-		dst := dest.DoubleGauge().DataPoints()
+	case pdata.MetricDataTypeGauge:
+		src := ms.Gauge().DataPoints()
+		dst := dest.Gauge().DataPoints()
 		dst.EnsureCapacity(size)
 		for j := 0; j < size; j++ {
 			src.At(j).CopyTo(dst.AppendEmpty())
@@ -147,9 +147,9 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 		src.RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
-	case pdata.MetricDataTypeDoubleSum:
-		src := ms.DoubleSum().DataPoints()
-		dst := dest.DoubleSum().DataPoints()
+	case pdata.MetricDataTypeSum:
+		src := ms.Sum().DataPoints()
+		dst := dest.Sum().DataPoints()
 		dst.EnsureCapacity(size)
 		for j := 0; j < size; j++ {
 			src.At(j).CopyTo(dst.AppendEmpty())

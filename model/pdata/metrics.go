@@ -107,12 +107,12 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 				switch m.DataType() {
 				case MetricDataTypeIntGauge:
 					dataPointCount += m.IntGauge().DataPoints().Len()
-				case MetricDataTypeDoubleGauge:
-					dataPointCount += m.DoubleGauge().DataPoints().Len()
+				case MetricDataTypeGauge:
+					dataPointCount += m.Gauge().DataPoints().Len()
 				case MetricDataTypeIntSum:
 					dataPointCount += m.IntSum().DataPoints().Len()
-				case MetricDataTypeDoubleSum:
-					dataPointCount += m.DoubleSum().DataPoints().Len()
+				case MetricDataTypeSum:
+					dataPointCount += m.Sum().DataPoints().Len()
 				case MetricDataTypeIntHistogram:
 					dataPointCount += m.IntHistogram().DataPoints().Len()
 				case MetricDataTypeHistogram:
@@ -132,9 +132,9 @@ type MetricDataType int32
 const (
 	MetricDataTypeNone MetricDataType = iota
 	MetricDataTypeIntGauge
-	MetricDataTypeDoubleGauge
+	MetricDataTypeGauge
 	MetricDataTypeIntSum
-	MetricDataTypeDoubleSum
+	MetricDataTypeSum
 	MetricDataTypeIntHistogram
 	MetricDataTypeHistogram
 	MetricDataTypeSummary
@@ -147,12 +147,12 @@ func (mdt MetricDataType) String() string {
 		return "None"
 	case MetricDataTypeIntGauge:
 		return "IntGauge"
-	case MetricDataTypeDoubleGauge:
-		return "DoubleGauge"
+	case MetricDataTypeGauge:
+		return "Gauge"
 	case MetricDataTypeIntSum:
 		return "IntSum"
-	case MetricDataTypeDoubleSum:
-		return "DoubleSum"
+	case MetricDataTypeSum:
+		return "Sum"
 	case MetricDataTypeIntHistogram:
 		return "IntHistogram"
 	case MetricDataTypeHistogram:
@@ -170,11 +170,11 @@ func (ms Metric) DataType() MetricDataType {
 	case *otlpmetrics.Metric_IntGauge:
 		return MetricDataTypeIntGauge
 	case *otlpmetrics.Metric_Gauge:
-		return MetricDataTypeDoubleGauge
+		return MetricDataTypeGauge
 	case *otlpmetrics.Metric_IntSum:
 		return MetricDataTypeIntSum
 	case *otlpmetrics.Metric_Sum:
-		return MetricDataTypeDoubleSum
+		return MetricDataTypeSum
 	case *otlpmetrics.Metric_IntHistogram:
 		return MetricDataTypeIntHistogram
 	case *otlpmetrics.Metric_Histogram:
@@ -191,11 +191,11 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 	switch ty {
 	case MetricDataTypeIntGauge:
 		ms.orig.Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
-	case MetricDataTypeDoubleGauge:
+	case MetricDataTypeGauge:
 		ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
 	case MetricDataTypeIntSum:
 		ms.orig.Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
-	case MetricDataTypeDoubleSum:
+	case MetricDataTypeSum:
 		ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	case MetricDataTypeIntHistogram:
 		ms.orig.Data = &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
@@ -213,11 +213,11 @@ func (ms Metric) IntGauge() IntGauge {
 	return newIntGauge(ms.orig.Data.(*otlpmetrics.Metric_IntGauge).IntGauge)
 }
 
-// DoubleGauge returns the data as DoubleGauge.
-// Calling this function when DataType() != MetricDataTypeDoubleGauge will cause a panic.
+// Gauge returns the data as Gauge.
+// Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DoubleGauge() DoubleGauge {
-	return newDoubleGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
+func (ms Metric) Gauge() Gauge {
+	return newGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
 }
 
 // IntSum returns the data as IntSum.
@@ -227,11 +227,11 @@ func (ms Metric) IntSum() IntSum {
 	return newIntSum(ms.orig.Data.(*otlpmetrics.Metric_IntSum).IntSum)
 }
 
-// DoubleSum returns the data as DoubleSum.
-// Calling this function when DataType() != MetricDataTypeDoubleSum will cause a panic.
+// Sum returns the data as Sum.
+// Calling this function when DataType() != MetricDataTypeSum will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DoubleSum() DoubleSum {
-	return newDoubleSum(ms.orig.Data.(*otlpmetrics.Metric_Sum).Sum)
+func (ms Metric) Sum() Sum {
+	return newSum(ms.orig.Data.(*otlpmetrics.Metric_Sum).Sum)
 }
 
 // IntHistogram returns the data as IntHistogram.
@@ -263,7 +263,7 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		dest.Data = data
 	case *otlpmetrics.Metric_Gauge:
 		data := &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-		newDoubleGauge(srcData.Gauge).CopyTo(newDoubleGauge(data.Gauge))
+		newGauge(srcData.Gauge).CopyTo(newGauge(data.Gauge))
 		dest.Data = data
 	case *otlpmetrics.Metric_IntSum:
 		data := &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
@@ -271,7 +271,7 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		dest.Data = data
 	case *otlpmetrics.Metric_Sum:
 		data := &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-		newDoubleSum(srcData.Sum).CopyTo(newDoubleSum(data.Sum))
+		newSum(srcData.Sum).CopyTo(newSum(data.Sum))
 		dest.Data = data
 	case *otlpmetrics.Metric_IntHistogram:
 		data := &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}

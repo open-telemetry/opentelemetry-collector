@@ -655,35 +655,35 @@ func (ms IntGauge) CopyTo(dest IntGauge) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
-// DoubleGauge represents the type of a double scalar metric that always exports the "current value" for every data point.
+// Gauge represents the type of a double scalar metric that always exports the "current value" for every data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleGauge function to create new instances.
+// Must use NewGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleGauge struct {
+type Gauge struct {
 	orig *otlpmetrics.Gauge
 }
 
-func newDoubleGauge(orig *otlpmetrics.Gauge) DoubleGauge {
-	return DoubleGauge{orig: orig}
+func newGauge(orig *otlpmetrics.Gauge) Gauge {
+	return Gauge{orig: orig}
 }
 
-// NewDoubleGauge creates a new empty DoubleGauge.
+// NewGauge creates a new empty Gauge.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleGauge() DoubleGauge {
-	return newDoubleGauge(&otlpmetrics.Gauge{})
+func NewGauge() Gauge {
+	return newGauge(&otlpmetrics.Gauge{})
 }
 
-// DataPoints returns the DataPoints associated with this DoubleGauge.
-func (ms DoubleGauge) DataPoints() DoubleDataPointSlice {
+// DataPoints returns the DataPoints associated with this Gauge.
+func (ms Gauge) DataPoints() DoubleDataPointSlice {
 	return newDoubleDataPointSlice(&(*ms.orig).DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleGauge) CopyTo(dest DoubleGauge) {
+func (ms Gauge) CopyTo(dest Gauge) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
@@ -741,55 +741,55 @@ func (ms IntSum) CopyTo(dest IntSum) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
-// DoubleSum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.
+// Sum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleSum function to create new instances.
+// Must use NewSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleSum struct {
+type Sum struct {
 	orig *otlpmetrics.Sum
 }
 
-func newDoubleSum(orig *otlpmetrics.Sum) DoubleSum {
-	return DoubleSum{orig: orig}
+func newSum(orig *otlpmetrics.Sum) Sum {
+	return Sum{orig: orig}
 }
 
-// NewDoubleSum creates a new empty DoubleSum.
+// NewSum creates a new empty Sum.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleSum() DoubleSum {
-	return newDoubleSum(&otlpmetrics.Sum{})
+func NewSum() Sum {
+	return newSum(&otlpmetrics.Sum{})
 }
 
-// AggregationTemporality returns the aggregationtemporality associated with this DoubleSum.
-func (ms DoubleSum) AggregationTemporality() AggregationTemporality {
+// AggregationTemporality returns the aggregationtemporality associated with this Sum.
+func (ms Sum) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality((*ms.orig).AggregationTemporality)
 }
 
-// SetAggregationTemporality replaces the aggregationtemporality associated with this DoubleSum.
-func (ms DoubleSum) SetAggregationTemporality(v AggregationTemporality) {
+// SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
+func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
 	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
-// IsMonotonic returns the ismonotonic associated with this DoubleSum.
-func (ms DoubleSum) IsMonotonic() bool {
+// IsMonotonic returns the ismonotonic associated with this Sum.
+func (ms Sum) IsMonotonic() bool {
 	return (*ms.orig).IsMonotonic
 }
 
-// SetIsMonotonic replaces the ismonotonic associated with this DoubleSum.
-func (ms DoubleSum) SetIsMonotonic(v bool) {
+// SetIsMonotonic replaces the ismonotonic associated with this Sum.
+func (ms Sum) SetIsMonotonic(v bool) {
 	(*ms.orig).IsMonotonic = v
 }
 
-// DataPoints returns the DataPoints associated with this DoubleSum.
-func (ms DoubleSum) DataPoints() DoubleDataPointSlice {
+// DataPoints returns the DataPoints associated with this Sum.
+func (ms Sum) DataPoints() DoubleDataPointSlice {
 	return newDoubleDataPointSlice(&(*ms.orig).DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleSum) CopyTo(dest DoubleSum) {
+func (ms Sum) CopyTo(dest Sum) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())

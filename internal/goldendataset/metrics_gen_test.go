@@ -115,10 +115,10 @@ func TestGenDoubleHistogram(t *testing.T) {
 
 func TestGenDoubleGauge(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
+	cfg.MetricDescriptorType = pdata.MetricDataTypeGauge
 	md := MetricsFromCfg(cfg)
 	metric := getMetric(md)
-	pts := metric.DoubleGauge().DataPoints()
+	pts := metric.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 	require.EqualValues(t, 1, pt.Value())

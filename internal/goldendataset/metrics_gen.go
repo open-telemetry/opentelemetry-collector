@@ -120,18 +120,18 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.Instrumentat
 		case pdata.MetricDataTypeIntGauge:
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			populateIntPoints(cfg, metric.IntGauge().DataPoints())
-		case pdata.MetricDataTypeDoubleGauge:
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			populateDoublePoints(cfg, metric.DoubleGauge().DataPoints())
+		case pdata.MetricDataTypeGauge:
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+			populateDoublePoints(cfg, metric.Gauge().DataPoints())
 		case pdata.MetricDataTypeIntSum:
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			sum := metric.IntSum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntPoints(cfg, sum.DataPoints())
-		case pdata.MetricDataTypeDoubleSum:
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			sum := metric.DoubleSum()
+		case pdata.MetricDataTypeSum:
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			sum := metric.Sum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoublePoints(cfg, sum.DataPoints())

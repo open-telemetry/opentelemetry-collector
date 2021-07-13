@@ -31,7 +31,7 @@ metrics:
     description: Total CPU seconds broken down by different states.
     unit: s
     data:
-      type: double sum
+      type: sum
       aggregation: cumulative
     labels: []
 `
