@@ -16,6 +16,14 @@ Set(context.Context, string, []byte) error
 Delete(context.Context, string) error
 Close(context.Context) error
 ```
+
+As well as their batch counterparts (executed in a single transaction):
+```
+GetBatch(context.Context, []string) ([][]byte, error)
+SetBatch(context.Context, map[string][]byte) error
+DeleteBatch(context.Context, []string) error
+```
+
 Note: All methods should return error only if a problem occurred. (For example, if a file is no longer accessible, or if a remote service is unavailable.)
 
 Note: It is the responsibility of each component to `Close` a storage client that it has requested.
