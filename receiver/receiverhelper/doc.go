@@ -12,7 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package receiver contains implementations of Receiver components.
-//
-// A receiver must be added as a default component to be included in the collector.
-package receiver
+// Package receiverhelper contains utilities for receivers.
+package receiverhelper

@@ -12,6 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package prometheusreceiver has the logic for scraping Prometheus metrics from
-// already instrumented applications and then passing them onto a metricsink instance.
+// Package prometheusreceiver autodiscovers and scrapes Prometheus metrics handlers, often served at /metrics.
 package prometheusreceiver
