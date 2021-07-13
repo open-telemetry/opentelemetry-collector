@@ -86,6 +86,8 @@ type Collector struct {
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 
+	allowGracefulShutodwn bool
+
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
 }
@@ -100,6 +102,9 @@ func New(set CollectorSettings) (*Collector, error) {
 		info:         set.BuildInfo,
 		factories:    set.Factories,
 		stateChannel: make(chan State, Closed+1),
+		// We use a negative in the settings not to break the existing
+		// behavior. Internally, allowGracefulShutodwn is more readable.
+		allowGracefulShutodwn: !set.DisableGracefulShutdown,
 	}
 
 	rootCmd := &cobra.Command{
@@ -194,9 +199,11 @@ func (col *Collector) setupTelemetry(ballastSizeBytes uint64) error {
 func (col *Collector) runAndWaitForShutdownEvent() {
 	col.logger.Info("Everything is ready. Begin running and processing data.")
 
-	// plug SIGTERM signal into a channel.
 	col.signalsChannel = make(chan os.Signal, 1)
-	signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
+	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
+	if col.allowGracefulShutodwn {
+		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
+	}
 
 	col.shutdownChan = make(chan struct{})
 	col.stateChannel <- Running
@@ -206,7 +213,7 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 	case s := <-col.signalsChannel:
 		col.logger.Info("Received signal from OS", zap.String("signal", s.String()))
 	case <-col.shutdownChan:
-		col.logger.Info("Received stop test request")
+		col.logger.Info("Received shutdown request")
 	}
 	col.stateChannel <- Closing
 }

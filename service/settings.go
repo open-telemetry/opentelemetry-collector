@@ -48,6 +48,12 @@ type CollectorSettings struct {
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
 
+	// DisableGracefulShutdown disables the automatic graceful shutdown
+	// of the collector on SIGINT or SIGTERM.
+	// Users who want to handle signals themselves can disable this behavior
+	// and manually handle the signals to shutdown the collector.
+	DisableGracefulShutdown bool
+
 	// ParserProvider provides the configuration's Parser.
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
