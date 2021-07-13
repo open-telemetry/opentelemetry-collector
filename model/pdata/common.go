@@ -299,9 +299,28 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 			}
 		}
 		return true
+	case *otlpcommon.AnyValue_KvlistValue:
+		cc := v.KvlistValue.GetValues()
+		avv := av.orig.GetKvlistValue().GetValues()
+		if len(cc) != len(avv) {
+			return false
+		}
+
+		am := newAttributeMap(&avv)
+
+		for _, val := range cc {
+			av, ok := am.Get(val.Key)
+			if !ok {
+				return false
+			}
+
+			if !av.Equal(newAttributeValue(&val.Value)) {
+				return false
+			}
+		}
+		return true
 	}
 
-	// TODO: handle MAP data type
 	return false
 }
 
