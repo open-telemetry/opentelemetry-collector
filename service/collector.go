@@ -142,6 +142,8 @@ func New(set CollectorSettings) (*Collector, error) {
 
 // Run starts the collector according to the command and configuration
 // given by the user, and waits for it to complete.
+// Consecutive calls to Run are not allowed, Run shouldn't be called
+// once a collector is shut down.
 func (col *Collector) Run() error {
 	// From this point on do not show usage in case of error.
 	col.rootCmd.SilenceUsage = true
