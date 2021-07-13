@@ -25,8 +25,6 @@ type Settings struct {
 	config.ComponentID `mapstructure:"-"`
 }
 
-var _ Config = (*Settings)(nil)
-
 // ID returns the ID of the component that this configuration belongs to.
 func (s *Settings) ID() config.ComponentID {
 	return s.ComponentID
