@@ -69,10 +69,11 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
 
 	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
 }
@@ -209,10 +210,11 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
+	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
 
 	// verify
 	assert.Equal(t, errInvalidAuthenticationHeaderFormat, err)
+	assert.NotNil(t, ctx)
 }
 
 func TestOIDCNotAuthenticated(t *testing.T) {
@@ -224,10 +226,11 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	err = p.Authenticate(context.Background(), make(map[string][]string))
+	ctx, err := p.Authenticate(context.Background(), make(map[string][]string))
 
 	// verify
 	assert.Equal(t, errNotAuthenticated, err)
+	assert.NotNil(t, ctx)
 }
 
 func TestProviderNotReacheable(t *testing.T) {
@@ -262,10 +265,11 @@ func TestFailedToVerifyToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	err = p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
+	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
 
 	// verify
 	assert.Error(t, err)
+	assert.NotNil(t, ctx)
 }
 
 func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
@@ -325,10 +329,11 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			require.NoError(t, err)
 
 			// test
-			err = p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 			// verify
 			assert.ErrorIs(t, err, tt.expectedError)
+			assert.NotNil(t, ctx)
 		})
 	}
 }
