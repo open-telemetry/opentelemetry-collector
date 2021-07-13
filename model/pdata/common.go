@@ -57,15 +57,15 @@ func (avt AttributeValueType) String() string {
 	return ""
 }
 
-// AttributeValue represents a value of an attribute. Typically used in AttributeMap.
+// AttributeValue is a mutable cell containing the value of an attribute. Typically used in AttributeMap.
 // Must use one of NewAttributeValue+ functions below to create new instances.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
 // value representation. For the same reason passing by value and calling setters
 // will modify the original, e.g.:
 //
-//   function f1(val AttributeValue) { val.SetIntVal(234) }
-//   function f2() {
+//   func f1(val AttributeValue) { val.SetIntVal(234) }
+//   func f2() {
 //       v := NewAttributeValueString("a string")
 //       f1(v)
 //       _ := v.Type() // this will return AttributeValueTypeInt
