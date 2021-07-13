@@ -30,7 +30,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetricsSlice struct {
 	// orig points to the slice otlpmetrics.ResourceMetrics field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
@@ -39,7 +39,7 @@ func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetri
 }
 
 // NewResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceMetricsSlice() ResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
 	return ResourceMetricsSlice{&orig}
@@ -83,6 +83,28 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new ResourceMetricsSlice can be initialized:
+//   es := NewResourceMetricsSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.ResourceMetrics, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -94,6 +116,8 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es ResourceMetricsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -101,13 +125,11 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.ResourceMetrics, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.ResourceMetrics, newLen-oldLen)
 	for i := range extraOrigs {
@@ -201,7 +223,7 @@ func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetricsSlice struct {
 	// orig points to the slice otlpmetrics.InstrumentationLibraryMetrics field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.InstrumentationLibraryMetrics
 }
 
@@ -210,7 +232,7 @@ func newInstrumentationLibraryMetricsSlice(orig *[]*otlpmetrics.InstrumentationL
 }
 
 // NewInstrumentationLibraryMetricsSlice creates a InstrumentationLibraryMetricsSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewInstrumentationLibraryMetricsSlice() InstrumentationLibraryMetricsSlice {
 	orig := []*otlpmetrics.InstrumentationLibraryMetrics(nil)
 	return InstrumentationLibraryMetricsSlice{&orig}
@@ -254,6 +276,28 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new InstrumentationLibraryMetricsSlice can be initialized:
+//   es := NewInstrumentationLibraryMetricsSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es InstrumentationLibraryMetricsSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.InstrumentationLibraryMetrics, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -265,6 +309,8 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -272,13 +318,11 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.InstrumentationLibraryMetrics, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.InstrumentationLibraryMetrics, newLen-oldLen)
 	for i := range extraOrigs {
@@ -372,7 +416,7 @@ func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetric
 // Important: zero-initialized instance is not valid for use.
 type MetricSlice struct {
 	// orig points to the slice otlpmetrics.Metric field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.Metric
 }
 
@@ -381,7 +425,7 @@ func newMetricSlice(orig *[]*otlpmetrics.Metric) MetricSlice {
 }
 
 // NewMetricSlice creates a MetricSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMetricSlice() MetricSlice {
 	orig := []*otlpmetrics.Metric(nil)
 	return MetricSlice{&orig}
@@ -425,6 +469,28 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new MetricSlice can be initialized:
+//   es := NewMetricSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es MetricSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.Metric, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -436,6 +502,8 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es MetricSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -443,13 +511,11 @@ func (es MetricSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.Metric, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.Metric, newLen-oldLen)
 	for i := range extraOrigs {
@@ -856,7 +922,7 @@ func (ms Summary) CopyTo(dest Summary) {
 // Important: zero-initialized instance is not valid for use.
 type IntDataPointSlice struct {
 	// orig points to the slice otlpmetrics.IntDataPoint field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.IntDataPoint
 }
 
@@ -865,7 +931,7 @@ func newIntDataPointSlice(orig *[]*otlpmetrics.IntDataPoint) IntDataPointSlice {
 }
 
 // NewIntDataPointSlice creates a IntDataPointSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewIntDataPointSlice() IntDataPointSlice {
 	orig := []*otlpmetrics.IntDataPoint(nil)
 	return IntDataPointSlice{&orig}
@@ -909,6 +975,28 @@ func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new IntDataPointSlice can be initialized:
+//   es := NewIntDataPointSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es IntDataPointSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.IntDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -920,6 +1008,8 @@ func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es IntDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -927,13 +1017,11 @@ func (es IntDataPointSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.IntDataPoint, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.IntDataPoint, newLen-oldLen)
 	for i := range extraOrigs {
@@ -1060,7 +1148,7 @@ func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type DoubleDataPointSlice struct {
 	// orig points to the slice otlpmetrics.NumberDataPoint field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.NumberDataPoint
 }
 
@@ -1069,7 +1157,7 @@ func newDoubleDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) DoubleDataPoi
 }
 
 // NewDoubleDataPointSlice creates a DoubleDataPointSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewDoubleDataPointSlice() DoubleDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint(nil)
 	return DoubleDataPointSlice{&orig}
@@ -1113,6 +1201,28 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new DoubleDataPointSlice can be initialized:
+//   es := NewDoubleDataPointSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es DoubleDataPointSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.NumberDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -1124,6 +1234,8 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es DoubleDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1131,13 +1243,11 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.NumberDataPoint, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.NumberDataPoint, newLen-oldLen)
 	for i := range extraOrigs {
@@ -1266,7 +1376,7 @@ func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type IntHistogramDataPointSlice struct {
 	// orig points to the slice otlpmetrics.IntHistogramDataPoint field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.IntHistogramDataPoint
 }
 
@@ -1275,7 +1385,7 @@ func newIntHistogramDataPointSlice(orig *[]*otlpmetrics.IntHistogramDataPoint) I
 }
 
 // NewIntHistogramDataPointSlice creates a IntHistogramDataPointSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewIntHistogramDataPointSlice() IntHistogramDataPointSlice {
 	orig := []*otlpmetrics.IntHistogramDataPoint(nil)
 	return IntHistogramDataPointSlice{&orig}
@@ -1319,6 +1429,28 @@ func (es IntHistogramDataPointSlice) CopyTo(dest IntHistogramDataPointSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new IntHistogramDataPointSlice can be initialized:
+//   es := NewIntHistogramDataPointSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es IntHistogramDataPointSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.IntHistogramDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -1330,6 +1462,8 @@ func (es IntHistogramDataPointSlice) CopyTo(dest IntHistogramDataPointSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es IntHistogramDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1337,13 +1471,11 @@ func (es IntHistogramDataPointSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.IntHistogramDataPoint, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.IntHistogramDataPoint, newLen-oldLen)
 	for i := range extraOrigs {
@@ -1503,7 +1635,7 @@ func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPointSlice struct {
 	// orig points to the slice otlpmetrics.HistogramDataPoint field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.HistogramDataPoint
 }
 
@@ -1512,7 +1644,7 @@ func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) Histogr
 }
 
 // NewHistogramDataPointSlice creates a HistogramDataPointSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewHistogramDataPointSlice() HistogramDataPointSlice {
 	orig := []*otlpmetrics.HistogramDataPoint(nil)
 	return HistogramDataPointSlice{&orig}
@@ -1556,6 +1688,28 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new HistogramDataPointSlice can be initialized:
+//   es := NewHistogramDataPointSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.HistogramDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -1567,6 +1721,8 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es HistogramDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1574,13 +1730,11 @@ func (es HistogramDataPointSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.HistogramDataPoint, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.HistogramDataPoint, newLen-oldLen)
 	for i := range extraOrigs {
@@ -1740,7 +1894,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointSlice struct {
 	// orig points to the slice otlpmetrics.SummaryDataPoint field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.SummaryDataPoint
 }
 
@@ -1749,7 +1903,7 @@ func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) SummaryData
 }
 
 // NewSummaryDataPointSlice creates a SummaryDataPointSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSummaryDataPointSlice() SummaryDataPointSlice {
 	orig := []*otlpmetrics.SummaryDataPoint(nil)
 	return SummaryDataPointSlice{&orig}
@@ -1793,6 +1947,28 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new SummaryDataPointSlice can be initialized:
+//   es := NewSummaryDataPointSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.SummaryDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -1804,6 +1980,8 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es SummaryDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -1811,13 +1989,11 @@ func (es SummaryDataPointSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.SummaryDataPoint, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.SummaryDataPoint, newLen-oldLen)
 	for i := range extraOrigs {
@@ -1955,7 +2131,7 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type ValueAtQuantileSlice struct {
 	// orig points to the slice otlpmetrics.SummaryDataPoint_ValueAtQuantile field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
@@ -1964,7 +2140,7 @@ func newValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuanti
 }
 
 // NewValueAtQuantileSlice creates a ValueAtQuantileSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewValueAtQuantileSlice() ValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile(nil)
 	return ValueAtQuantileSlice{&orig}
@@ -2008,6 +2184,28 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new ValueAtQuantileSlice can be initialized:
+//   es := NewValueAtQuantileSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es ValueAtQuantileSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -2019,6 +2217,8 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es ValueAtQuantileSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2026,13 +2226,11 @@ func (es ValueAtQuantileSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.SummaryDataPoint_ValueAtQuantile, newLen-oldLen)
 	for i := range extraOrigs {
@@ -2136,7 +2334,7 @@ func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
 // Important: zero-initialized instance is not valid for use.
 type IntExemplarSlice struct {
 	// orig points to the slice otlpmetrics.IntExemplar field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]otlpmetrics.IntExemplar
 }
 
@@ -2145,7 +2343,7 @@ func newIntExemplarSlice(orig *[]otlpmetrics.IntExemplar) IntExemplarSlice {
 }
 
 // NewIntExemplarSlice creates a IntExemplarSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewIntExemplarSlice() IntExemplarSlice {
 	orig := []otlpmetrics.IntExemplar(nil)
 	return IntExemplarSlice{&orig}
@@ -2184,6 +2382,28 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 	}
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new IntExemplarSlice can be initialized:
+//   es := NewIntExemplarSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es IntExemplarSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]otlpmetrics.IntExemplar, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -2195,6 +2415,8 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es IntExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2202,13 +2424,11 @@ func (es IntExemplarSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]otlpmetrics.IntExemplar, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	empty := otlpmetrics.IntExemplar{}
 	for i := oldLen; i < newLen; i++ {
@@ -2321,7 +2541,7 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 // Important: zero-initialized instance is not valid for use.
 type ExemplarSlice struct {
 	// orig points to the slice otlpmetrics.Exemplar field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.Exemplar
 }
 
@@ -2330,7 +2550,7 @@ func newExemplarSlice(orig *[]*otlpmetrics.Exemplar) ExemplarSlice {
 }
 
 // NewExemplarSlice creates a ExemplarSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExemplarSlice() ExemplarSlice {
 	orig := []*otlpmetrics.Exemplar(nil)
 	return ExemplarSlice{&orig}
@@ -2374,6 +2594,28 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	*dest.orig = wrappers
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new ExemplarSlice can be initialized:
+//   es := NewExemplarSlice()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es ExemplarSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]*otlpmetrics.Exemplar, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -2385,6 +2627,8 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es ExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -2392,13 +2636,11 @@ func (es ExemplarSlice) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]*otlpmetrics.Exemplar, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	extraOrigs := make([]otlpmetrics.Exemplar, newLen-oldLen)
 	for i := range extraOrigs {

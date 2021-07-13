@@ -36,8 +36,7 @@ func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*
 
 	if len(metrics) == 0 {
 		// At least one of the md.Node or md.Resource is not nil. Set the resource and return.
-		rms.Resize(initialRmsLen + 1)
-		ocNodeResourceToInternal(node, resource, rms.At(initialRmsLen).Resource())
+		ocNodeResourceToInternal(node, resource, rms.AppendEmpty().Resource())
 		return dest
 	}
 
@@ -81,21 +80,18 @@ func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*
 		// +1 for all metrics with nil resource
 		resourceCount++
 	}
-	rms.Resize(resourceCount)
+	rms.EnsureCapacity(resourceCount)
 
 	// Translate "combinedMetrics" first
 
 	if combinedMetricCount > 0 {
-		rm0 := rms.At(initialRmsLen)
+		rm0 := rms.AppendEmpty()
 		ocNodeResourceToInternal(node, resource, rm0.Resource())
 
 		// Allocate a slice for metrics that need to be combined into first ResourceMetrics.
 		ilms := rm0.InstrumentationLibraryMetrics()
 		combinedMetrics := ilms.AppendEmpty().Metrics()
-		combinedMetrics.Resize(combinedMetricCount)
-
-		// Index to next available slot in "combinedMetrics" slice.
-		combinedMetricIdx := 0
+		combinedMetrics.EnsureCapacity(combinedMetricCount)
 
 		for _, ocMetric := range metrics {
 			if ocMetric == nil {
@@ -110,18 +106,12 @@ func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*
 			// Add the metric to the "combinedMetrics". combinedMetrics length is equal
 			// to combinedMetricCount. The loop above that calculates combinedMetricCount
 			// has exact same conditions as we have here in this loop.
-			ocMetricToMetrics(ocMetric, combinedMetrics.At(combinedMetricIdx))
-			combinedMetricIdx++
+			ocMetricToMetrics(ocMetric, combinedMetrics.AppendEmpty())
 		}
 	}
 
 	// Translate distinct metrics
 
-	resourceMetricIdx := 0
-	if combinedMetricCount > 0 {
-		// First resourcemetric is used for the default resource, so start with 1.
-		resourceMetricIdx = 1
-	}
 	for _, ocMetric := range metrics {
 		if ocMetric == nil {
 			// Skip nil metrics.
@@ -135,8 +125,7 @@ func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*
 		// This metric has a different Resource and must be placed in a different
 		// ResourceMetrics instance. Create a separate ResourceMetrics item just for this metric
 		// and store at resourceMetricIdx.
-		ocMetricToResourceMetrics(ocMetric, node, rms.At(initialRmsLen+resourceMetricIdx))
-		resourceMetricIdx++
+		ocMetricToResourceMetrics(ocMetric, node, rms.AppendEmpty())
 	}
 	return dest
 }
@@ -242,9 +231,8 @@ func fillLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetric
 
 func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 	ocPointsCount := getPointsCount(ocMetric)
-	dps.Resize(ocPointsCount)
+	dps.EnsureCapacity(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
-	pos := 0
 	for _, timeseries := range ocMetric.GetTimeseries() {
 		if timeseries == nil {
 			continue
@@ -256,23 +244,19 @@ func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 				continue
 			}
 
-			dp := dps.At(pos)
-			pos++
-
+			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
 			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetInt64Value())
 		}
 	}
-	dps.Resize(pos)
 }
 
 func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSlice) {
 	ocPointsCount := getPointsCount(ocMetric)
-	dps.Resize(ocPointsCount)
+	dps.EnsureCapacity(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
-	pos := 0
 	for _, timeseries := range ocMetric.GetTimeseries() {
 		if timeseries == nil {
 			continue
@@ -284,23 +268,19 @@ func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSl
 				continue
 			}
 
-			dp := dps.At(pos)
-			pos++
-
+			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
 			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetDoubleValue())
 		}
 	}
-	dps.Resize(pos)
 }
 
 func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.HistogramDataPointSlice) {
 	ocPointsCount := getPointsCount(ocMetric)
-	dps.Resize(ocPointsCount)
+	dps.EnsureCapacity(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
-	pos := 0
 	for _, timeseries := range ocMetric.GetTimeseries() {
 		if timeseries == nil {
 			continue
@@ -312,9 +292,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.Histogra
 				continue
 			}
 
-			dp := dps.At(pos)
-			pos++
-
+			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
 			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
@@ -325,14 +303,12 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.Histogra
 			dp.SetExplicitBounds(distributionValue.GetBucketOptions().GetExplicit().GetBounds())
 		}
 	}
-	dps.Resize(pos)
 }
 
 func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDataPointSlice) {
 	ocPointsCount := getPointsCount(ocMetric)
-	dps.Resize(ocPointsCount)
+	dps.EnsureCapacity(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
-	pos := 0
 	for _, timeseries := range ocMetric.GetTimeseries() {
 		if timeseries == nil {
 			continue
@@ -344,9 +320,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 				continue
 			}
 
-			dp := dps.At(pos)
-			pos++
-
+			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
 			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
@@ -356,7 +330,6 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 			ocSummaryPercentilesToMetrics(summaryValue.GetSnapshot().GetPercentileValues(), dp)
 		}
 	}
-	dps.Resize(pos)
 }
 
 func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket, dp pdata.HistogramDataPoint) {
@@ -380,11 +353,12 @@ func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snaps
 	}
 
 	quantiles := pdata.NewValueAtQuantileSlice()
-	quantiles.Resize(len(ocPercentiles))
+	quantiles.EnsureCapacity(len(ocPercentiles))
 
-	for i, percentile := range ocPercentiles {
-		quantiles.At(i).SetQuantile(percentile.GetPercentile() / 100)
-		quantiles.At(i).SetValue(percentile.GetValue())
+	for _, percentile := range ocPercentiles {
+		quantile := quantiles.AppendEmpty()
+		quantile.SetQuantile(percentile.GetPercentile() / 100)
+		quantile.SetValue(percentile.GetValue())
 	}
 
 	quantiles.CopyTo(dp.QuantileValues())

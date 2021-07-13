@@ -311,9 +311,9 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 func GenerateMetricsManyMetricsSameResource(metricsCount int) pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rs0ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	rs0ilm0.Metrics().Resize(metricsCount)
+	rs0ilm0.Metrics().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
-		initCounterIntMetric(rs0ilm0.Metrics().At(i))
+		initCounterIntMetric(rs0ilm0.Metrics().AppendEmpty())
 	}
 	return md
 }

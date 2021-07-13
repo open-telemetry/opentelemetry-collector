@@ -98,9 +98,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
-	rms.Resize(len(metadata))
-	for i, md := range metadata {
-		rm := rms.At(i)
+	rms.EnsureCapacity(len(metadata))
+	for _, md := range metadata {
+		rm := rms.AppendEmpty()
 		md.initializeResource(rm.Resource())
 		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
@@ -189,7 +189,7 @@ func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp
 	metadata.Metrics.ProcessCPUTime.Init(metric)
 
 	ddps := metric.Sum().DataPoints()
-	ddps.Resize(cpuStatesLen)
+	ddps.EnsureCapacity(cpuStatesLen)
 	appendCPUTimeStateDataPoints(ddps, startTime, now, times)
 }
 

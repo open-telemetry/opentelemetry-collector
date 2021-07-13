@@ -108,10 +108,10 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	require.Equal(t, reqs.ResourceSpans().Len(), 2, "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
 	want := pdata.NewTraces()
-	want.ResourceSpans().Resize(2)
+	want.ResourceSpans().EnsureCapacity(2)
 
 	// First span/resource
-	want.ResourceSpans().At(0).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "svc-1")
+	want.ResourceSpans().AppendEmpty().Resource().Attributes().UpsertString(conventions.AttributeServiceName, "svc-1")
 	span0 := want.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span0.SetTraceID(pdata.NewTraceID([16]byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
 	span0.SetSpanID(pdata.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
@@ -127,7 +127,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	span0.Attributes().UpsertString(tracetranslator.TagSpanKind, string(tracetranslator.OpenTracingSpanKindConsumer))
 
 	// Second span/resource
-	want.ResourceSpans().At(1).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "search")
+	want.ResourceSpans().AppendEmpty().Resource().Attributes().UpsertString(conventions.AttributeServiceName, "search")
 	span1 := want.ResourceSpans().At(1).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span1.SetTraceID(pdata.NewTraceID([16]byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0}))
 	span1.SetSpanID(pdata.NewSpanID([8]byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60}))
@@ -141,10 +141,10 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	span1.Attributes().UpsertString(conventions.AttributeNetPeerIP, "fe80::1453:a77c:da4d:d21b")
 	span1.Attributes().UpsertInt(conventions.AttributeNetPeerPort, 6379)
 	span1.Attributes().UpsertString(tracetranslator.TagSpanKind, string(tracetranslator.OpenTracingSpanKindProducer))
-	span1.Events().Resize(2)
-	span1.Events().At(0).SetName("DB reset")
+	span1.Events().EnsureCapacity(2)
+	span1.Events().AppendEmpty().SetName("DB reset")
 	span1.Events().At(0).SetTimestamp(pdata.TimestampFromTime(now.Add(-10 * time.Hour)))
-	span1.Events().At(1).SetName("GC Cycle 39")
+	span1.Events().AppendEmpty().SetName("GC Cycle 39")
 	span1.Events().At(1).SetTimestamp(pdata.TimestampFromTime(now.Add(-10 * time.Hour)))
 
 	assert.Equal(t, want.SpanCount(), reqs.SpanCount())

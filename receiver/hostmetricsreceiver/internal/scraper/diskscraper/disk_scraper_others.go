@@ -94,13 +94,13 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	ioCounters = s.filterByDevice(ioCounters)
 
 	if len(ioCounters) > 0 {
-		metrics.Resize(metricsLen)
-		initializeDiskIOMetric(metrics.At(0), s.startTime, now, ioCounters)
-		initializeDiskOperationsMetric(metrics.At(1), s.startTime, now, ioCounters)
-		initializeDiskIOTimeMetric(metrics.At(2), s.startTime, now, ioCounters)
-		initializeDiskOperationTimeMetric(metrics.At(3), s.startTime, now, ioCounters)
-		initializeDiskPendingOperationsMetric(metrics.At(4), now, ioCounters)
-		appendSystemSpecificMetrics(metrics, 5, s.startTime, now, ioCounters)
+		metrics.EnsureCapacity(metricsLen)
+		initializeDiskIOMetric(metrics.AppendEmpty(), s.startTime, now, ioCounters)
+		initializeDiskOperationsMetric(metrics.AppendEmpty(), s.startTime, now, ioCounters)
+		initializeDiskIOTimeMetric(metrics.AppendEmpty(), s.startTime, now, ioCounters)
+		initializeDiskOperationTimeMetric(metrics.AppendEmpty(), s.startTime, now, ioCounters)
+		initializeDiskPendingOperationsMetric(metrics.AppendEmpty(), now, ioCounters)
+		appendSystemSpecificMetrics(metrics, s.startTime, now, ioCounters)
 	}
 
 	return metrics, nil
@@ -110,13 +110,11 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 	metadata.Metrics.SystemDiskIo.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(2 * len(ioCounters))
+	idps.EnsureCapacity(2 * len(ioCounters))
 
-	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.ReadBytes))
-		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.WriteBytes))
-		idx += 2
+		initializeInt64DataPoint(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.ReadBytes))
+		initializeInt64DataPoint(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.WriteBytes))
 	}
 }
 
@@ -124,13 +122,11 @@ func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Ti
 	metadata.Metrics.SystemDiskOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(2 * len(ioCounters))
+	idps.EnsureCapacity(2 * len(ioCounters))
 
-	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.ReadCount))
-		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.WriteCount))
-		idx += 2
+		initializeInt64DataPoint(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.ReadCount))
+		initializeInt64DataPoint(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.WriteCount))
 	}
 }
 
@@ -138,12 +134,10 @@ func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timest
 	metadata.Metrics.SystemDiskIoTime.Init(metric)
 
 	ddps := metric.Sum().DataPoints()
-	ddps.Resize(len(ioCounters))
+	ddps.EnsureCapacity(len(ioCounters))
 
-	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDoubleDataPoint(ddps.At(idx+0), startTime, now, device, "", float64(ioCounter.IoTime)/1e3)
-		idx++
+		initializeDoubleDataPoint(ddps.AppendEmpty(), startTime, now, device, "", float64(ioCounter.IoTime)/1e3)
 	}
 }
 
@@ -151,13 +145,11 @@ func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata
 	metadata.Metrics.SystemDiskOperationTime.Init(metric)
 
 	ddps := metric.Sum().DataPoints()
-	ddps.Resize(2 * len(ioCounters))
+	ddps.EnsureCapacity(2 * len(ioCounters))
 
-	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDoubleDataPoint(ddps.At(idx+0), startTime, now, device, metadata.LabelDiskDirection.Read, float64(ioCounter.ReadTime)/1e3)
-		initializeDoubleDataPoint(ddps.At(idx+1), startTime, now, device, metadata.LabelDiskDirection.Write, float64(ioCounter.WriteTime)/1e3)
-		idx += 2
+		initializeDoubleDataPoint(ddps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, float64(ioCounter.ReadTime)/1e3)
+		initializeDoubleDataPoint(ddps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, float64(ioCounter.WriteTime)/1e3)
 	}
 }
 
@@ -165,12 +157,10 @@ func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timest
 	metadata.Metrics.SystemDiskPendingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(len(ioCounters))
+	idps.EnsureCapacity(len(ioCounters))
 
-	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDiskPendingDataPoint(idps.At(idx), now, device, int64(ioCounter.IopsInProgress))
-		idx++
+		initializeDiskPendingDataPoint(idps.AppendEmpty(), now, device, int64(ioCounter.IopsInProgress))
 	}
 }
 

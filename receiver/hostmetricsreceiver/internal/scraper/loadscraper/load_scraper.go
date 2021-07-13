@@ -63,11 +63,11 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.Resize(metricsLen)
+	metrics.EnsureCapacity(metricsLen)
 
-	initializeLoadMetric(metrics.At(0), metadata.Metrics.SystemCPULoadAverage1m, now, avgLoadValues.Load1)
-	initializeLoadMetric(metrics.At(1), metadata.Metrics.SystemCPULoadAverage5m, now, avgLoadValues.Load5)
-	initializeLoadMetric(metrics.At(2), metadata.Metrics.SystemCPULoadAverage15m, now, avgLoadValues.Load15)
+	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage1m, now, avgLoadValues.Load1)
+	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage5m, now, avgLoadValues.Load5)
+	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage15m, now, avgLoadValues.Load15)
 	return metrics, nil
 }
 
