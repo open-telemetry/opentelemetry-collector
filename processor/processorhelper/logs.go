@@ -29,12 +29,9 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// LProcessor is a helper interface that allows avoiding implementing all functions in LogsProcessor by using NewLogsProcessor.
-type LProcessor interface {
-	// ProcessLogs is a helper function that processes the incoming data and returns the data to be sent to the next component.
-	// If error is returned then returned data are ignored. It MUST not call the next component.
-	ProcessLogs(context.Context, pdata.Logs) (pdata.Logs, error)
-}
+// ProcessLogsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
+// If error is returned then returned data are ignored. It MUST not call the next component.
+type ProcessLogsFunc func(context.Context, pdata.Logs) (pdata.Logs, error)
 
 type logProcessor struct {
 	component.Component
@@ -46,11 +43,11 @@ type logProcessor struct {
 func NewLogsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
-	processor LProcessor,
+	logsFunc ProcessLogsFunc,
 	options ...Option,
 ) (component.LogsProcessor, error) {
-	if processor == nil {
-		return nil, errors.New("nil processor")
+	if logsFunc == nil {
+		return nil, errors.New("nil logsFunc")
 	}
 
 	if nextConsumer == nil {
@@ -63,7 +60,7 @@ func NewLogsProcessor(
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error
-		ld, err = processor.ProcessLogs(ctx, ld)
+		ld, err = logsFunc(ctx, ld)
 		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
 			if errors.Is(err, ErrSkipProcessingData) {

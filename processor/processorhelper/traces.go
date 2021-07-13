@@ -29,12 +29,9 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// TProcessor is a helper interface that allows avoiding implementing all functions in TracesProcessor by using NewTracesProcessor.
-type TProcessor interface {
-	// ProcessTraces is a helper function that processes the incoming data and returns the data to be sent to the next component.
-	// If error is returned then returned data are ignored. It MUST not call the next component.
-	ProcessTraces(context.Context, pdata.Traces) (pdata.Traces, error)
-}
+// ProcessTracesFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
+// If error is returned then returned data are ignored. It MUST not call the next component.
+type ProcessTracesFunc func(context.Context, pdata.Traces) (pdata.Traces, error)
 
 type tracesProcessor struct {
 	component.Component
@@ -46,11 +43,11 @@ type tracesProcessor struct {
 func NewTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
-	processor TProcessor,
+	tracesFunc ProcessTracesFunc,
 	options ...Option,
 ) (component.TracesProcessor, error) {
-	if processor == nil {
-		return nil, errors.New("nil processor")
+	if tracesFunc == nil {
+		return nil, errors.New("nil tracesFunc")
 	}
 
 	if nextConsumer == nil {
@@ -63,7 +60,7 @@ func NewTracesProcessor(
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error
-		td, err = processor.ProcessTraces(ctx, td)
+		td, err = tracesFunc(ctx, td)
 		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
 			if errors.Is(err, ErrSkipProcessingData) {

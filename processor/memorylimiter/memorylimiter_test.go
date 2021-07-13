@@ -122,7 +122,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
-		ml,
+		ml.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
 	require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
-		ml,
+		ml.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
 	require.NoError(t, err)
@@ -264,7 +264,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
-		ml,
+		ml.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
 	require.NoError(t, err)
