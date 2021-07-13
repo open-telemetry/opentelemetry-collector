@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package otlphttpexporter exports data by using OTLP format to an HTTP endpoint.
+// Package otlphttpexporter exports data by using the OTLP format to an HTTP endpoint.
 package otlphttpexporter
