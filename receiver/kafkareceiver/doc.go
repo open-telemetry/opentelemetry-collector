@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package kafkareceiver recieves traces from Kafka.
+// Package kafkareceiver receives traces from Kafka.
 package kafkareceiver
