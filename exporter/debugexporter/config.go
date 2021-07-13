@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loggingexporter
+package debugexporter
 
 import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Config defines configuration for logging exporter.
+// Config defines configuration for debug exporter.
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
+	// LogLevel defines log level of the debug exporter; options are debug, info, warn, error.
 	LogLevel string `mapstructure:"loglevel"`
 
 	// SamplingInitial defines how many samples are initially logged during each second.

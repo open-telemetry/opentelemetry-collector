@@ -13,7 +13,7 @@ exporters:
   otlp:
     endpoint: "otel-collector:4317"
     insecure: true
-  logging:
+  debug:
     loglevel: debug
 
 processors:
@@ -32,8 +32,8 @@ service:
     traces:
       receivers: [otlp, opencensus, jaeger, zipkin]
       processors: [batch]
-      exporters: [otlp, logging]
+      exporters: [otlp, debug]
     metrics:
       receivers: [otlp, opencensus]
       processors: [batch]
-      exporters: [otlp, logging]
+      exporters: [otlp, debug]

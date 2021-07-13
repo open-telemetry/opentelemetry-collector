@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loggingexporter
+package debugexporter
 
 import (
 	"context"
@@ -27,12 +27,12 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                   = "logging"
+	typeStr                   = "debug"
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
 
-// NewFactory creates a factory for Logging exporter
+// NewFactory creates a factory for Debug exporter
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -92,7 +92,7 @@ func createLogger(cfg *Config) (*zap.Logger, error) {
 	}
 
 	// We take development config as the base since it matches the purpose
-	// of logging exporter being used for debugging reasons (so e.g. console encoder)
+	// of debug exporter being used for debugging reasons (so e.g. console encoder)
 	conf := zap.NewDevelopmentConfig()
 	conf.Level = zap.NewAtomicLevelAt(level)
 	conf.Sampling = &zap.SamplingConfig{
@@ -100,9 +100,9 @@ func createLogger(cfg *Config) (*zap.Logger, error) {
 		Thereafter: cfg.SamplingThereafter,
 	}
 
-	logginglogger, err := conf.Build()
+	debuglogger, err := conf.Build()
 	if err != nil {
 		return nil, err
 	}
-	return logginglogger, nil
+	return debuglogger, nil
 }

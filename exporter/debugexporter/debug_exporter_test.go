@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package loggingexporter
+package debugexporter
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestLoggingTracesExporterNoErrors(t *testing.T) {
+func TestDebugTracesExporterNoErrors(t *testing.T) {
 	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
@@ -39,7 +39,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lte.Shutdown(context.Background()))
 }
 
-func TestLoggingMetricsExporterNoErrors(t *testing.T) {
+func TestDebugMetricsExporterNoErrors(t *testing.T) {
 	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }
 
-func TestLoggingLogsExporterNoErrors(t *testing.T) {
+func TestDebugLogsExporterNoErrors(t *testing.T) {
 	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
@@ -65,8 +65,8 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lle.Shutdown(context.Background()))
 }
 
-func TestLoggingExporterErrors(t *testing.T) {
-	le := newLoggingExporter("Debug", zap.NewNop())
+func TestDebugExporterErrors(t *testing.T) {
+	le := newDebugExporter("Debug", zap.NewNop())
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")

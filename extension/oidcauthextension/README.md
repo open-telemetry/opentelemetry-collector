@@ -22,7 +22,7 @@ receivers:
 processors:
 
 exporters:
-  logging:
+  debug:
     logLevel: debug
 
 service:
@@ -31,5 +31,5 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```

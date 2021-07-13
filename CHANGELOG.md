@@ -6,6 +6,7 @@
 
 - Rename `pdata.DoubleSum` to `pdata.Sum` (#3583)
 - Rename `pdata.DoubleGauge` to `pdata.Gauge` (#3599)
+- Rename `logging` exporter to `debug` (#3609)
 
 ## 🧰 Bug fixes 🧰
 

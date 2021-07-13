@@ -35,7 +35,7 @@ processors:
   batch:
 
 exporters:
-  logging:
+  debug:
     logLevel: debug
 
 service:
@@ -45,11 +45,11 @@ service:
     traces:
       receivers: [otlp, opencensus, jaeger, zipkin]
       processors: [batch]
-      exporters: [logging]
+      exporters: [debug]
 
     metrics:
       receivers: [otlp, opencensus, prometheus]
       processors: [batch]
-      exporters: [logging]
+      exporters: [debug]
 
   extensions: [health_check, pprof, zpages]

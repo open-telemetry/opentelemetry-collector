@@ -70,7 +70,7 @@ Important: when the same receiver is referenced in more than one pipeline the Co
 
 ### Exporters
 
-Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g “logging” exporter writes the telemetry data to a local file).
+Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g “debug” exporter writes the telemetry data to a local file).
 
 The configuration allows to have multiple exporters of the same type, even in the same pipeline. For example one can have 2 “opencensus” exporters defined each one sending to a different opencensus endpoint, e.g.:
 
