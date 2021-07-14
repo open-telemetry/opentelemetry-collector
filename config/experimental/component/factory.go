@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configsource
+package component
 
 import (
 	"context"
@@ -20,39 +20,41 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	stableconfig "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/experimental/config"
+	"go.opentelemetry.io/collector/config/experimental/configsource"
 )
 
-// CreateSettings is passed to Factory.CreateConfigSource function.
-type CreateSettings struct {
+// ConfigSourceCreateSettings is passed to ConfigSourceFactory.CreateConfigSource function.
+type ConfigSourceCreateSettings struct {
 	// Logger that the factory can use during creation and can pass to the created
-	// ConfigSource to be used later as well.
+	// Source to be used later as well.
 	Logger *zap.Logger
 
 	// BuildInfo can be used to retrieve data according to version, etc.
 	BuildInfo component.BuildInfo
 }
 
-// Factory is a factory interface for configuration sources.
-type Factory interface {
+// ConfigSourceFactory is a factory interface for configuration sources.
+type ConfigSourceFactory interface {
 	component.Factory
 
-	// CreateDefaultConfig creates the default configuration settings for the ConfigSource.
+	// CreateDefaultConfig creates the default configuration settings for the Source.
 	// This method can be called multiple times depending on the pipeline
 	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the ConfigSource.
+	// of multiple instances of the Source.
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() Config
+	// tests of any implementation of the ConfigSourceFactory interface.
+	CreateDefaultConfig() config.Source
 
 	// CreateConfigSource creates a configuration source based on the given config.
 	CreateConfigSource(
 		ctx context.Context,
-		set CreateSettings,
-		cfg Config,
-	) (ConfigSource, error)
+		set ConfigSourceCreateSettings,
+		cfg config.Source,
+	) (configsource.ConfigSource, error)
 }
 
-// Factories maps the type of a ConfigSource to the respective factory object.
-type Factories map[config.Type]Factory
+// ConfigSourceFactories maps the type of a ConfigSource to the respective factory object.
+type ConfigSourceFactories map[stableconfig.Type]ConfigSourceFactory
