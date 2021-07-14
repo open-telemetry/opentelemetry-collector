@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -88,7 +89,8 @@ const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
-	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
+	// Get ballast size in bytes from ballastextension
+	ballastSize := ballastextension.GetBallastSize()
 
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
@@ -213,8 +215,7 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 	} else if !ml.configMismatchedLogged {
 		// This indicates misconfiguration. Log it once.
 		ml.configMismatchedLogged = true
-		ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
-			" must be set equal to --mem-ballast-size-mib command line option.")
+		ml.logger.Warn(ballastSizeMibKey + " in ballast extension is likely incorrectly configured.")
 	}
 
 	return ms

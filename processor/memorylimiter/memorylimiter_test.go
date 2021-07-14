@@ -24,10 +24,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -406,6 +408,43 @@ func TestDropDecision(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			shouldDrop := test.usageChecker.aboveSoftLimit(test.ms)
 			assert.Equal(t, test.shouldDrop, shouldDrop)
+		})
+	}
+}
+
+func TestBallastSizeMiB(t *testing.T) {
+	ctx := context.Background()
+	ballastExtFactory := ballastextension.NewFactory()
+	ballastExtCfg := ballastExtFactory.CreateDefaultConfig().(*ballastextension.Config)
+	ballastExtCfg.SizeMiB = 100
+	extCreateSet := componenttest.NewNopExtensionCreateSettings()
+
+	tests := []struct {
+		name                          string
+		ballastExtBallastSizeSetting  uint64
+		expectedMemLimiterBallastSize uint64
+		expectResult                  bool
+	}{
+		{
+			name:                          "ballast size matched",
+			ballastExtBallastSizeSetting:  100,
+			expectedMemLimiterBallastSize: 100,
+			expectResult:                  true,
+		},
+		{
+			name:                          "ballast size not matched",
+			ballastExtBallastSizeSetting:  1000,
+			expectedMemLimiterBallastSize: 100,
+			expectResult:                  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ballastExtCfg.SizeMiB = tt.ballastExtBallastSizeSetting
+			ballastExt, _ := ballastExtFactory.CreateExtension(ctx, extCreateSet, ballastExtCfg)
+			ballastExt.Start(ctx, nil)
+			assert.Equal(t, tt.expectResult, tt.expectedMemLimiterBallastSize*mibBytes == ballastextension.GetBallastSize())
 		})
 	}
 }

@@ -81,7 +81,6 @@ type rawTracesServer struct {
 }
 
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortrace.ExportTraceServiceRequest) (*otlpcollectortrace.ExportTraceServiceResponse, error) {
-	internal.TracesCompatibilityChanges(request)
 	rsp, err := s.srv.Export(ctx, pdata.TracesFromInternalRep(internal.TracesFromOtlp(request)))
 	return rsp.orig, err
 }
