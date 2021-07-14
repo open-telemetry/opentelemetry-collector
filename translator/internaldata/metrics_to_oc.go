@@ -89,11 +89,11 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 	case pdata.MetricDataTypeIntGauge:
 		collectLabelKeysIntDataPoints(metric.IntGauge().DataPoints(), keySet)
 	case pdata.MetricDataTypeGauge:
-		collectLabelKeysDoubleDataPoints(metric.Gauge().DataPoints(), keySet)
+		collectLabelKeysNumberDataPoints(metric.Gauge().DataPoints(), keySet)
 	case pdata.MetricDataTypeIntSum:
 		collectLabelKeysIntDataPoints(metric.IntSum().DataPoints(), keySet)
 	case pdata.MetricDataTypeSum:
-		collectLabelKeysDoubleDataPoints(metric.Sum().DataPoints(), keySet)
+		collectLabelKeysNumberDataPoints(metric.Sum().DataPoints(), keySet)
 	case pdata.MetricDataTypeIntHistogram:
 		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeHistogram:
@@ -140,7 +140,7 @@ func collectLabelKeysIntDataPoints(ips pdata.IntDataPointSlice, keySet map[strin
 	}
 }
 
-func collectLabelKeysDoubleDataPoints(dps pdata.DoubleDataPointSlice, keySet map[string]struct{}) {
+func collectLabelKeysNumberDataPoints(dps pdata.NumberDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dps.Len(); i++ {
 		addLabelKeys(keySet, dps.At(i).LabelsMap())
 	}
@@ -262,7 +262,7 @@ func intPointsToOC(dps pdata.IntDataPointSlice, labelKeys *labelKeys) []*ocmetri
 	return timeseries
 }
 
-func doublePointToOC(dps pdata.DoubleDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func doublePointToOC(dps pdata.NumberDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
 	if dps.Len() == 0 {
 		return nil
 	}
