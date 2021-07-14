@@ -287,14 +287,14 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 
 		for i, val := range avv {
 			val := val
-			av := newAttributeValue(&vv[i])
+			newAv := newAttributeValue(&vv[i])
 
 			// According to the specification, array values must be scalar.
-			if avType := av.Type(); avType == AttributeValueTypeArray || avType == AttributeValueTypeMap {
+			if avType := newAv.Type(); avType == AttributeValueTypeArray || avType == AttributeValueTypeMap {
 				return false
 			}
 
-			if !av.Equal(newAttributeValue(&val)) {
+			if !newAv.Equal(newAttributeValue(&val)) {
 				return false
 			}
 		}
@@ -309,12 +309,12 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 		am := newAttributeMap(&avv)
 
 		for _, val := range cc {
-			av, ok := am.Get(val.Key)
+			newAv, ok := am.Get(val.Key)
 			if !ok {
 				return false
 			}
 
-			if !av.Equal(newAttributeValue(&val.Value)) {
+			if !newAv.Equal(newAttributeValue(&val.Value)) {
 				return false
 			}
 		}
