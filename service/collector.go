@@ -269,7 +269,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 				return
 			default:
 				col.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
-				col.reloadService(context.Background())
+				err := col.reloadService(context.Background())
+				if err != nil {
+					col.asyncErrorChannel <- err
+				}
 			}
 		}()
 	}
