@@ -16,6 +16,7 @@ package filterprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/internal/processor/filterlog"
 
 	"go.uber.org/zap"
 
@@ -184,4 +185,83 @@ func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pdata.Re
 	}
 
 	return true
+}
+
+type filterLogProcessor struct {
+	cfg              *Config
+	excludeAttribute filterlog.Matcher
+	logger           *zap.Logger
+}
+
+func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcessor, error) {
+
+	excludeAttr, err := createLogsMatcher(cfg.Logs.Exclude)
+	if err != nil {
+		return nil, err
+	}
+
+	var excludeResourceAttributes []filterconfig.Attribute
+	if cfg.Logs.Exclude != nil {
+		excludeResourceAttributes = cfg.Logs.Exclude.Resources
+	}
+
+	logger.Info(
+		"Logs filter configured",
+		zap.Any("exclude logs with resource attributes", excludeResourceAttributes),
+	)
+
+	return &filterLogProcessor{
+		cfg:              cfg,
+		excludeAttribute: excludeAttr,
+		logger:           logger,
+	}, nil
+}
+
+func createLogsMatcher(mp *filterconfig.MatchProperties) (filterlog.Matcher, error) {
+	// Nothing specified in configuration
+	if mp == nil {
+		return nil, nil
+	}
+
+	//var attributeMatcher filtermatcher.AttributesMatcher
+	//attributeMatcher, err := filtermatcher.NewAttributesMatcher(
+	//	filterset.Config{
+	//		MatchType:    filterset.MatchType(mp.MatchType),
+	//		RegexpConfig: mp.RegexpConfig,
+	//	},
+	//	mp.Attributes,
+	//)
+	//if err != nil {
+	//	return attributeMatcher, err
+	//}
+
+	excludeAttributesMatcher, err := filterlog.NewMatcher(mp)
+	return excludeAttributesMatcher, err
+}
+
+func (flp filterLogProcessor) ProcessLogs(ctx context.Context, logs pdata.Logs) (pdata.Logs, error) {
+	//pdm.ResourceMetrics().RemoveIf(func(rm pdata.ResourceMetrics) bool {
+	//	keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
+	//	if !keepMetricsForResource {
+	//		return true
+	//	}
+	//	rm.InstrumentationLibraryMetrics().RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
+	//		ilm.Metrics().RemoveIf(func(m pdata.Metric) bool {
+	//			keep, err := fmp.shouldKeepMetric(m)
+	//			if err != nil {
+	//				fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))
+	//				// don't `return`, keep the metric if there's an error
+	//			}
+	//			return !keep
+	//		})
+	//		// Filter out empty InstrumentationLibraryMetrics
+	//		return ilm.Metrics().Len() == 0
+	//	})
+	//	// Filter out empty ResourceMetrics
+	//	return rm.InstrumentationLibraryMetrics().Len() == 0
+	//})
+	//if pdm.ResourceMetrics().Len() == 0 {
+	//	return pdm, processorhelper.ErrSkipProcessingData
+	//}
+	//return pdm, nil
 }

@@ -16,6 +16,7 @@ package filterprocessor
 
 import (
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 )
 
@@ -24,6 +25,8 @@ type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	Metrics MetricFilters `mapstructure:"metrics"`
+
+	Logs LogFilters `mapstructure:"logs"`
 }
 
 // MetricFilters filters by Metric properties.
@@ -37,6 +40,14 @@ type MetricFilters struct {
 	// all other metrics should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filtermetric.MatchProperties `mapstructure:"exclude"`
+}
+
+// LogFilters filters by Log properties.
+type LogFilters struct {
+	// Exclude match properties describe metrics that should be excluded from the Collector Service pipeline,
+	// all other metrics should be included.
+	// If both Include and Exclude are specified, Include filtering occurs first.
+	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
 }
 
 var _ config.Processor = (*Config)(nil)
