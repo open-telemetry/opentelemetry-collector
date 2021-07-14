@@ -10,7 +10,7 @@ exporters:
   opencensus:
     endpoint: "localhost:56565"
     insecure: true
-  logging:
+  debug:
     loglevel: info
 
 processors:
@@ -23,7 +23,7 @@ service:
     traces:
       receivers: [jaeger]
       processors: [memory_limiter]
-      exporters: [opencensus,logging]
+      exporters: [opencensus,debug]
     metrics:
       receivers: [opencensus]
-      exporters: [opencensus,logging]
+      exporters: [opencensus,debug]

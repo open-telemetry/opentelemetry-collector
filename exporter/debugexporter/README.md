@@ -1,4 +1,4 @@
-# Logging Exporter
+# Debug Exporter
 
 Exports data to the console via zap.Logger.
 
@@ -8,7 +8,7 @@ Supported pipeline types: traces, metrics, logs
 
 The following settings are optional:
 
-- `loglevel` (default = `info`): the log level of the logging export
+- `loglevel` (default = `info`): the log level of the debug export
   (debug|info|warn|error). When set to `debug`, pipeline data is verbosely
   logged.
 - `sampling_initial` (default = `2`): number of messages initially logged each
@@ -22,7 +22,7 @@ Example:
 
 ```yaml
 exporters:
-  logging:
+  debug:
     loglevel: debug
     sampling_initial: 5
     sampling_thereafter: 200

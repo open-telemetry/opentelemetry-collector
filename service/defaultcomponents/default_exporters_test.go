@@ -82,7 +82,7 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter:      "logging",
+			exporter:      "debug",
 			skipLifecycle: runtime.GOOS == "darwin", // TODO: investigate why this fails on darwin.
 		},
 		{

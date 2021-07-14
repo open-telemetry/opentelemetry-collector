@@ -5,8 +5,8 @@ processors:
   nop:
 
 exporters:
-  logging:
-  logging/2:
+  debug:
+  debug/2:
     loglevel: debug
     sampling_initial: 10
     sampling_thereafter: 50
@@ -16,7 +16,7 @@ service:
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [logging]
+      exporters: [debug]
     metrics:
       receivers: [nop]
-      exporters: [logging,logging/2]
+      exporters: [debug,debug/2]

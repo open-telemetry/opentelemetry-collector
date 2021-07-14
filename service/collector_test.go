@@ -254,7 +254,7 @@ receivers:
     protocols:
       grpc:
 exporters:
-  logging:
+  debug:
 processors:
   batch:
 
@@ -266,7 +266,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging]
+      exporters: [debug]
 `
 	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
 }

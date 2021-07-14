@@ -16,7 +16,7 @@ receivers:
       processes:
 
 exporters:
-  logging:
+  debug:
   prometheus:
     endpoint: 0.0.0.0:8889
 
@@ -24,6 +24,6 @@ service:
   pipelines:
     metrics:
       receivers: [hostmetrics]
-      exporters: [prometheus, logging]
+      exporters: [prometheus, debug]
 
   extensions: [zpages]

@@ -316,7 +316,7 @@ exporters:
     protocol_version: 2.0.0
 
   # Data sources: traces, metrics, logs
-  logging:
+  debug:
     loglevel: debug
 
   # Data sources: traces, metrics

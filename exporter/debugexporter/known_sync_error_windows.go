@@ -12,27 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
+// +build windows
 
-package loggingexporter
+package debugexporter
 
-import (
-	"syscall"
-)
+import "golang.org/x/sys/windows"
 
 // knownSyncError returns true if the given error is one of the known
-// non-actionable errors returned by Sync on Linux and macOS:
+// non-actionable errors returned by Sync on Windows:
 //
-// Linux:
-// - sync /dev/stdout: invalid argument
-//
-// macOS:
-// - sync /dev/stdout: inappropriate ioctl for device
+// - sync /dev/stderr: The handle is invalid.
 //
 func knownSyncError(err error) bool {
-	switch err {
-	case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
-		return true
-	}
-	return false
+	return err == windows.ERROR_INVALID_HANDLE
 }
