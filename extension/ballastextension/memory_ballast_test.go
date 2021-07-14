@@ -73,6 +73,7 @@ func TestMemoryBallast(t *testing.T) {
 			assert.Nil(t, mbExt.ballast)
 
 			assert.NoError(t, mbExt.Start(context.Background(), componenttest.NewNopHost()))
+			assert.Equal(t, tt.expect, int(GetBallastSize()))
 			assert.Equal(t, tt.expect, len(mbExt.ballast))
 
 			assert.NoError(t, mbExt.Shutdown(context.Background()))
