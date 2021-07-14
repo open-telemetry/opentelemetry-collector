@@ -760,7 +760,7 @@ func (sm StringMap) Len() int {
 //
 // Example:
 //
-//   sm.Range(func(k string, v StringValue) {
+//   sm.Range(func(k string, v StringValue) bool {
 //       ...
 //   })
 func (sm StringMap) Range(f func(k string, v string) bool) {
