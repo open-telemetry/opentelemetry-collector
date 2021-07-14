@@ -2,14 +2,41 @@
 
 ## Unreleased
 
+## v0.30.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Rename `pdata.DoubleSum` to `pdata.Sum` (#3583)
 - Rename `pdata.DoubleGauge` to `pdata.Gauge` (#3599)
+- Migrated `pdata` to a dedicated package (#3483)
+- Change Marshaler/Unmarshaler to be consistent with other interfaces (#3502)
+- Remove consumer/simple package (#3438)
+- Remove unnecessary interfaces from pdata (#3506)
+- zipkinv1 implement directly Unmarshaler interface (#3504)
+- zipkinv2 implement directly Marshaler/Unmarshaler interface (#3505)
+- Change exporterhelper to accept ExporterCreateSettings instead of just logger (#3569)
+- Deprecate Resize() from pdata slice APIs (#3573) 
+- Use Func pattern in processorhelper, consistent with others (#3570)
+
+## 💡 Enhancements 💡
+
+- Update OTLP to v0.8.0 (#3572)
+- Migrate from OpenCensus to OpenTelemetry for internal tracing (#3567) 
+- Move internal/pdatagrpc to model/otlpgrpc (#3507) 
+- Move internal/otlp to model/otlp (#3508)
+- Create http Server via Config, enable cors and decompression (#3513)
+- Allow users to set min and max TLS versions (#3591)
+- Support setting ballast size in percentage of total Mem in ballast extension (#3456)
+- Publish go.opentelemetry.io/collector/model as a separate module (#3530)
+- Pass a TracerProvider via construct settings to all the components (#3592) 
+- Make graceful shutdown optional (#3577)
 
 ## 🧰 Bug fixes 🧰
 
 - `scraperhelper`: Include the scraper name in log messages (#3487)
+- `scraperhelper`: fix case when returned pdata is empty (#3520) 
+- Record the correct number of points not metrics in Kafka receiver (#3553) 
+- Validate the Prometheus configuration (#3589) 
 
 ## v0.29.0 Beta
 
