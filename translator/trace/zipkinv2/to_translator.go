@@ -53,9 +53,7 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 	rss := traceData.ResourceSpans()
 	prevServiceName := ""
 	prevInstrLibName := ""
-	rsCount := rss.Len()
-	ilsCount := 0
-	spanCount := 0
+	ilsIsNew := true
 	var curRscSpans pdata.ResourceSpans
 	var curILSpans pdata.InstrumentationLibrarySpans
 	var curSpans pdata.SpanSlice
@@ -67,29 +65,23 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 		localServiceName := extractLocalServiceName(zspan)
 		if localServiceName != prevServiceName {
 			prevServiceName = localServiceName
-			rss.Resize(rsCount + 1)
-			curRscSpans = rss.At(rsCount)
-			rsCount++
+			curRscSpans = rss.AppendEmpty()
 			populateResourceFromZipkinSpan(tags, localServiceName, curRscSpans.Resource())
 			prevInstrLibName = ""
-			ilsCount = 0
+			ilsIsNew = true
 		}
 		instrLibName := extractInstrumentationLibrary(zspan)
-		if instrLibName != prevInstrLibName || ilsCount == 0 {
+		if instrLibName != prevInstrLibName || ilsIsNew {
 			prevInstrLibName = instrLibName
-			curRscSpans.InstrumentationLibrarySpans().Resize(ilsCount + 1)
-			curILSpans = curRscSpans.InstrumentationLibrarySpans().At(ilsCount)
-			ilsCount++
+			curILSpans = curRscSpans.InstrumentationLibrarySpans().AppendEmpty()
+			ilsIsNew = false
 			populateILFromZipkinSpan(tags, instrLibName, curILSpans.InstrumentationLibrary())
-			spanCount = 0
 			curSpans = curILSpans.Spans()
 		}
-		curSpans.Resize(spanCount + 1)
-		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount), t.ParseStringTags)
+		err := zSpanToInternal(zspan, tags, curSpans.AppendEmpty(), t.ParseStringTags)
 		if err != nil {
 			return traceData, err
 		}
-		spanCount++
 	}
 
 	return traceData, nil
@@ -203,7 +195,6 @@ func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) pdata.S
 }
 
 func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
-	index := 0
 	for i := 0; i < 128; i++ {
 		key := fmt.Sprintf("otlp.link.%d", i)
 		val, ok := tags[key]
@@ -217,9 +208,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if partCnt < 5 {
 			continue
 		}
-		dest.Resize(index + 1)
-		link := dest.At(index)
-		index++
+		link := dest.AppendEmpty()
 
 		// Convert trace id.
 		rawTrace := [16]byte{}
@@ -264,9 +253,9 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 }
 
 func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlice) error {
-	events.Resize(len(zspan.Annotations))
-	for ix, anno := range zspan.Annotations {
-		event := events.At(ix)
+	events.EnsureCapacity(len(zspan.Annotations))
+	for _, anno := range zspan.Annotations {
+		event := events.AppendEmpty()
 		event.SetTimestamp(pdata.TimestampFromTime(anno.Timestamp))
 
 		parts := strings.Split(anno.Value, "|")

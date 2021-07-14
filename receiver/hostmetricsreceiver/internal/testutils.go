@@ -47,8 +47,8 @@ func AssertIntGaugeMetricLabelHasValue(t *testing.T, metric pdata.Metric, index 
 	assert.Equal(t, expectedVal, val)
 }
 
-func AssertDoubleSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
-	val, ok := metric.DoubleSum().DataPoints().At(index).LabelsMap().Get(labelName)
+func AssertSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
+	val, ok := metric.Sum().DataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 	assert.Equal(t, expectedVal, val)
 }
@@ -58,8 +58,8 @@ func AssertIntSumMetricLabelExists(t *testing.T, metric pdata.Metric, index int,
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 }
 
-func AssertDoubleSumMetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
-	_, ok := metric.DoubleSum().DataPoints().At(index).LabelsMap().Get(labelName)
+func AssertSumMetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
+	_, ok := metric.Sum().DataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 }
 
@@ -70,8 +70,8 @@ func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startT
 	}
 }
 
-func AssertDoubleSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
-	ddps := metric.DoubleSum().DataPoints()
+func AssertSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
+	ddps := metric.Sum().DataPoints()
 	for i := 0; i < ddps.Len(); i++ {
 		require.Equal(t, startTime, ddps.At(i).StartTimestamp())
 	}
@@ -97,8 +97,8 @@ func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, star
 			}
 		}
 
-		if dt == pdata.MetricDataTypeDoubleSum {
-			ddps := metric.DoubleSum().DataPoints()
+		if dt == pdata.MetricDataTypeSum {
+			ddps := metric.Sum().DataPoints()
 			for j := 0; j < ddps.Len(); j++ {
 				if ts == 0 {
 					ts = ddps.At(j).Timestamp()

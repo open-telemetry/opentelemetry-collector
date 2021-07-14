@@ -266,7 +266,7 @@ func (ma *MetricsAdjuster) adjustTimeseries(metricType metricspb.MetricDescripto
 
 func (ma *MetricsAdjuster) adjustPoints(metricType metricspb.MetricDescriptor_Type,
 	current, initial, previous []*metricspb.Point) bool {
-	if len(current) != 1 || len(initial) != 1 || len(current) != 1 {
+	if len(current) != 1 || len(initial) != 1 || len(previous) != 1 {
 		ma.logger.Info("Adjusting Points, all lengths should be 1",
 			zap.Int("len(current)", len(current)), zap.Int("len(initial)", len(initial)), zap.Int("len(previous)", len(previous)))
 		return true
@@ -286,6 +286,9 @@ func (ma *MetricsAdjuster) isReset(metricType metricspb.MetricDescriptor_Type,
 		// note: sum of squared deviation not currently supported
 		currentDist := current.GetDistributionValue()
 		previousDist := previous.GetDistributionValue()
+		if currentDist == nil || previousDist == nil {
+			return false
+		}
 		if currentDist.Count < previousDist.Count || currentDist.Sum < previousDist.Sum {
 			// reset detected
 			return false
@@ -293,7 +296,16 @@ func (ma *MetricsAdjuster) isReset(metricType metricspb.MetricDescriptor_Type,
 	case metricspb.MetricDescriptor_SUMMARY:
 		currentSummary := current.GetSummaryValue()
 		previousSummary := previous.GetSummaryValue()
-		if currentSummary.Count.GetValue() < previousSummary.Count.GetValue() || currentSummary.Sum.GetValue() < previousSummary.Sum.GetValue() {
+		if currentSummary == nil || previousSummary == nil {
+			return false
+		}
+		if (currentSummary.Count != nil &&
+			previousSummary.Count != nil &&
+			currentSummary.Count.GetValue() < previousSummary.Count.GetValue()) ||
+
+			(currentSummary.Sum != nil &&
+				previousSummary.Sum != nil &&
+				currentSummary.Sum.GetValue() < previousSummary.Sum.GetValue()) {
 			// reset detected
 			return false
 		}

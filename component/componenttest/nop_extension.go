@@ -17,6 +17,7 @@ package componenttest
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -27,8 +28,9 @@ import (
 // NewNopExtensionCreateSettings returns a new nop settings for Create*Extension functions.
 func NewNopExtensionCreateSettings() component.ExtensionCreateSettings {
 	return component.ExtensionCreateSettings{
-		Logger:    zap.NewNop(),
-		BuildInfo: component.DefaultBuildInfo(),
+		Logger:         zap.NewNop(),
+		TracerProvider: trace.NewNoopTracerProvider(),
+		BuildInfo:      component.DefaultBuildInfo(),
 	}
 }
 

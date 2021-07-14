@@ -78,7 +78,7 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 // Important: zero-initialized instance is not valid for use.
 type AnyValueArray struct {
 	// orig points to the slice otlpcommon.AnyValue field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]otlpcommon.AnyValue
 }
 
@@ -87,7 +87,7 @@ func newAnyValueArray(orig *[]otlpcommon.AnyValue) AnyValueArray {
 }
 
 // NewAnyValueArray creates a AnyValueArray with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAnyValueArray() AnyValueArray {
 	orig := []otlpcommon.AnyValue(nil)
 	return AnyValueArray{&orig}
@@ -126,6 +126,28 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 	}
 }
 
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new AnyValueArray can be initialized:
+//   es := NewAnyValueArray()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es AnyValueArray) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]otlpcommon.AnyValue, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
@@ -137,6 +159,8 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 //       e := es.At(i)
 //       // Here should set all the values for e.
 //   }
+//
+// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
 func (es AnyValueArray) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
@@ -144,13 +168,11 @@ func (es AnyValueArray) Resize(newLen int) {
 		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-
 	if newLen > oldCap {
 		newOrig := make([]otlpcommon.AnyValue, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
-
 	// Add extra empty elements to the array.
 	empty := otlpcommon.AnyValue{}
 	for i := oldLen; i < newLen; i++ {

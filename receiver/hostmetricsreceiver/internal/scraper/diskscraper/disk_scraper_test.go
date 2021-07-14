@@ -137,19 +137,19 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric)
 	if startTime != 0 {
-		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 
 	minExpectedPoints := 1
 	if expectDirectionLabels {
 		minExpectedPoints = 2
 	}
-	assert.GreaterOrEqual(t, metric.DoubleSum().DataPoints().Len(), minExpectedPoints)
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), minExpectedPoints)
 
-	internal.AssertDoubleSumMetricLabelExists(t, metric, 0, "device")
+	internal.AssertSumMetricLabelExists(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertDoubleSumMetricLabelHasValue(t, metric, 0, "direction", "read")
-		internal.AssertDoubleSumMetricLabelHasValue(t, metric, metric.DoubleSum().DataPoints().Len()-1, "direction", "write")
+		internal.AssertSumMetricLabelHasValue(t, metric, 0, "direction", "read")
+		internal.AssertSumMetricLabelHasValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", "write")
 	}
 }
 

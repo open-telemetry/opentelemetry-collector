@@ -23,11 +23,11 @@ metrics:
     unit:
     # Required
     data:
-      # Required: one of int gauge, int sum, int histogram, double gauge, double sum, or double histogram.
+      # Required: one of int gauge, int sum, int histogram, gauge, sum, or histogram.
       type:
-      # Required for int sum and double sum.
+      # Required for int sum and sum.
       monotonic: # true | false
-      # Required for int sum, int histogram, double sum, and double histogram.
+      # Required for int sum, int histogram, sum, and histogram.
       aggregation: # delta | cumulative
     # Optional: array of labels that were defined in the labels section that are emitted by this metric.
     labels:

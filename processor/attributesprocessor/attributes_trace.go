@@ -39,8 +39,7 @@ func newSpanAttributesProcessor(attrProc *processorhelper.AttrProc, include, exc
 	}
 }
 
-// ProcessTraces implements the TProcessor
-func (a *spanAttributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (a *spanAttributesProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)

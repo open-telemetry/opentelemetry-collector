@@ -128,9 +128,9 @@ func generateBenchmarkLogs(logsCount int) pdata.Logs {
 
 	md := pdata.NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
-	ilm.Logs().Resize(logsCount)
+	ilm.Logs().EnsureCapacity(logsCount)
 	for i := 0; i < logsCount; i++ {
-		im := ilm.Logs().At(i)
+		im := ilm.Logs().AppendEmpty()
 		im.SetName("test_name")
 		im.SetTimestamp(endTime)
 	}
@@ -144,9 +144,9 @@ func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 
 	md := pdata.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.Metrics().Resize(metricsCount)
+	ilm.Metrics().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
-		im := ilm.Metrics().At(i)
+		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
 		im.SetDataType(pdata.MetricDataTypeIntSum)
 		idp := im.IntSum().DataPoints().AppendEmpty()
@@ -164,9 +164,9 @@ func generateBenchmarkTraces(metricsCount int) pdata.Traces {
 
 	md := pdata.NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
-	ilm.Spans().Resize(metricsCount)
+	ilm.Spans().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
-		im := ilm.Spans().At(i)
+		im := ilm.Spans().AppendEmpty()
 		im.SetName("test_name")
 		im.SetStartTimestamp(startTime)
 		im.SetEndTimestamp(endTime)

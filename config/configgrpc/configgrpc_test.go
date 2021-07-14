@@ -44,7 +44,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	}
 	opts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Len(t, opts, 1)
+	assert.Len(t, opts, 3)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
@@ -75,14 +75,14 @@ func TestAllGrpcClientSettings(t *testing.T) {
 
 	opts, err := gcs.ToDialOptions(ext)
 	assert.NoError(t, err)
-	assert.Len(t, opts, 7)
+	assert.Len(t, opts, 9)
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Len(t, opts, 1)
+	assert.Len(t, opts, 2)
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
@@ -115,7 +115,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Len(t, opts, 8)
+	assert.Len(t, opts, 9)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
@@ -246,7 +246,7 @@ func TestUseSecure(t *testing.T) {
 	}
 	dialOpts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
 	assert.NoError(t, err)
-	assert.Equal(t, len(dialOpts), 1)
+	assert.Len(t, dialOpts, 3)
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {

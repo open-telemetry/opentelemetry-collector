@@ -38,7 +38,7 @@ const (
 	// Implementations MAY assume SpanKind to be INTERNAL when receiving UNSPECIFIED.
 	Span_SPAN_KIND_UNSPECIFIED Span_SpanKind = 0
 	// Indicates that the span represents an internal operation within an application,
-	// as opposed to an operations happening at the boundaries. Default value.
+	// as opposed to an operation happening at the boundaries. Default value.
 	Span_SPAN_KIND_INTERNAL Span_SpanKind = 1
 	// Indicates that the span covers server-side handling of an RPC or other
 	// remote network request.
@@ -153,7 +153,7 @@ func (Status_DeprecatedStatusCode) EnumDescriptor() ([]byte, []int) {
 }
 
 // For the semantics of status codes see
-// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-status
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 type Status_StatusCode int32
 
 const (
@@ -245,7 +245,8 @@ func (m *ResourceSpans) GetInstrumentationLibrarySpans() []*InstrumentationLibra
 // A collection of Spans produced by an InstrumentationLibrary.
 type InstrumentationLibrarySpans struct {
 	// The instrumentation library information for the spans in this message.
-	// If this field is not set then no library info is known.
+	// Semantically when InstrumentationLibrary isn't set, it is equivalent with
+	// an empty instrumentation library name (unknown).
 	InstrumentationLibrary v11.InstrumentationLibrary `protobuf:"bytes,1,opt,name=instrumentation_library,json=instrumentationLibrary,proto3" json:"instrumentation_library"`
 	// A list of Spans that originate from an instrumentation library.
 	Spans []*Span `protobuf:"bytes,2,rep,name=spans,proto3" json:"spans,omitempty"`

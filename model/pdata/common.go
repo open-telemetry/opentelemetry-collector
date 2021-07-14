@@ -57,15 +57,15 @@ func (avt AttributeValueType) String() string {
 	return ""
 }
 
-// AttributeValue represents a value of an attribute. Typically used in AttributeMap.
+// AttributeValue is a mutable cell containing the value of an attribute. Typically used in AttributeMap.
 // Must use one of NewAttributeValue+ functions below to create new instances.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
 // value representation. For the same reason passing by value and calling setters
 // will modify the original, e.g.:
 //
-//   function f1(val AttributeValue) { val.SetIntVal(234) }
-//   function f2() {
+//   func f1(val AttributeValue) { val.SetIntVal(234) }
+//   func f2() {
 //       v := NewAttributeValueString("a string")
 //       f1(v)
 //       _ := v.Type() // this will return AttributeValueTypeInt
@@ -287,21 +287,40 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 
 		for i, val := range avv {
 			val := val
-			av := newAttributeValue(&vv[i])
+			newAv := newAttributeValue(&vv[i])
 
 			// According to the specification, array values must be scalar.
-			if avType := av.Type(); avType == AttributeValueTypeArray || avType == AttributeValueTypeMap {
+			if avType := newAv.Type(); avType == AttributeValueTypeArray || avType == AttributeValueTypeMap {
 				return false
 			}
 
-			if !av.Equal(newAttributeValue(&val)) {
+			if !newAv.Equal(newAttributeValue(&val)) {
+				return false
+			}
+		}
+		return true
+	case *otlpcommon.AnyValue_KvlistValue:
+		cc := v.KvlistValue.GetValues()
+		avv := av.orig.GetKvlistValue().GetValues()
+		if len(cc) != len(avv) {
+			return false
+		}
+
+		am := newAttributeMap(&avv)
+
+		for _, val := range cc {
+			newAv, ok := am.Get(val.Key)
+			if !ok {
+				return false
+			}
+
+			if !newAv.Equal(newAttributeValue(&val.Value)) {
 				return false
 			}
 		}
 		return true
 	}
 
-	// TODO: handle MAP data type
 	return false
 }
 
@@ -608,7 +627,7 @@ func (am AttributeMap) Len() int {
 //
 // Example:
 //
-//   it := sm.Range(func(k string, v AttributeValue) {
+//   sm.Range(func(k string, v AttributeValue) bool {
 //       ...
 //   })
 func (am AttributeMap) Range(f func(k string, v AttributeValue) bool) {
@@ -760,7 +779,7 @@ func (sm StringMap) Len() int {
 //
 // Example:
 //
-//   it := sm.Range(func(k string, v StringValue) {
+//   sm.Range(func(k string, v StringValue) bool {
 //       ...
 //   })
 func (sm StringMap) Range(f func(k string, v string) bool) {

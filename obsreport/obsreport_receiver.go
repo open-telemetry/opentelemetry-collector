@@ -19,7 +19,9 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -33,6 +35,7 @@ type Receiver struct {
 	transport      string
 	longLivedCtx   bool
 	mutators       []tag.Mutator
+	tracer         trace.Tracer
 }
 
 // ReceiverSettings are settings for creating an Receiver.
@@ -57,6 +60,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
 		},
+		tracer: otel.GetTracerProvider().Tracer(cfg.ReceiverID.String()),
 	}
 }
 
@@ -118,24 +122,23 @@ func (rec *Receiver) EndMetricsOp(
 // the updated context with the created span.
 func (rec *Receiver) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
 	ctx, _ := tag.New(receiverCtx, rec.mutators...)
-	var span *trace.Span
+	var span trace.Span
 	spanName := rec.spanNamePrefix + operationSuffix
 	if !rec.longLivedCtx {
-		ctx, span = trace.StartSpan(ctx, spanName)
+		ctx, span = rec.tracer.Start(ctx, spanName)
 	} else {
 		// Since the receiverCtx is long lived do not use it to start the span.
 		// This way this trace ends when the EndTracesOp is called.
 		// Here is safe to ignore the returned context since it is not used below.
-		_, span = trace.StartSpan(context.Background(), spanName)
+		_, span = rec.tracer.Start(context.Background(), spanName, trace.WithLinks(trace.Link{
+			SpanContext: trace.SpanContextFromContext(receiverCtx),
+		}))
 
-		// If the long lived context has a parent span, then add it as a parent link.
-		setParentLink(receiverCtx, span)
-
-		ctx = trace.NewContext(ctx, span)
+		ctx = trace.ContextWithSpan(ctx, span)
 	}
 
 	if rec.transport != "" {
-		span.AddAttributes(trace.StringAttribute(obsmetrics.TransportKey, rec.transport))
+		span.SetAttributes(attribute.String(obsmetrics.TransportKey, rec.transport))
 	}
 	return ctx
 }
@@ -155,7 +158,7 @@ func (rec *Receiver) endOp(
 		numRefused = numReceivedItems
 	}
 
-	span := trace.FromContext(receiverCtx)
+	span := trace.SpanFromContext(receiverCtx)
 
 	if obsreportconfig.Level != configtelemetry.LevelNone {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
@@ -178,7 +181,7 @@ func (rec *Receiver) endOp(
 	}
 
 	// end span according to errors
-	if span.IsRecordingEvents() {
+	if span.IsRecording() {
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
 		case config.TracesDataType:
@@ -192,12 +195,12 @@ func (rec *Receiver) endOp(
 			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
 		}
 
-		span.AddAttributes(
-			trace.StringAttribute(obsmetrics.FormatKey, format),
-			trace.Int64Attribute(acceptedItemsKey, int64(numAccepted)),
-			trace.Int64Attribute(refusedItemsKey, int64(numRefused)),
+		span.SetAttributes(
+			attribute.String(obsmetrics.FormatKey, format),
+			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
+			attribute.Int64(refusedItemsKey, int64(numRefused)),
 		)
-		span.SetStatus(errToStatus(err))
+		recordError(span, err)
 	}
 	span.End()
 }
