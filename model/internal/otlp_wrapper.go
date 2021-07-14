@@ -18,6 +18,7 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -36,6 +37,24 @@ func MetricsToOtlp(mw MetricsWrapper) *otlpcollectormetrics.ExportMetricsService
 // MetricsFromOtlp internal helper to convert protobuf representation to MetricsWrapper.
 func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) MetricsWrapper {
 	return MetricsWrapper{req: req}
+}
+
+// MetricsCompatibilityChanges performs backward compatibility conversion on Metrics:
+// - Convert IntHistogram to Histogram. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L170
+//
+func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceRequest) {
+	for _, rsm := range req.ResourceMetrics {
+		for _, ilm := range rsm.InstrumentationLibraryMetrics {
+			for _, metric := range ilm.Metrics {
+				switch m := metric.Data.(type) {
+				case *otlpmetrics.Metric_IntHistogram:
+					metric.Data = intHistogramToHistogram(m)
+				// TODO: add cases for IntGauge and IntSum
+				default:
+				}
+			}
+		}
+	}
 }
 
 // TracesWrapper is an intermediary struct that is declared in an internal package
@@ -94,4 +113,38 @@ func LogsToOtlp(l LogsWrapper) *otlpcollectorlog.ExportLogsServiceRequest {
 // LogsFromOtlp internal helper to convert protobuf representation to LogsWrapper.
 func LogsFromOtlp(req *otlpcollectorlog.ExportLogsServiceRequest) LogsWrapper {
 	return LogsWrapper{req: req}
+}
+
+func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.Metric_Histogram {
+	datapoints := []*otlpmetrics.HistogramDataPoint{}
+	for _, datapoint := range src.IntHistogram.DataPoints {
+		exemplars := []*otlpmetrics.Exemplar{}
+		for _, exemplar := range datapoint.Exemplars {
+			exemplars = append(exemplars, &otlpmetrics.Exemplar{
+				FilteredLabels: exemplar.FilteredLabels,
+				TimeUnixNano:   exemplar.TimeUnixNano,
+				Value: &otlpmetrics.Exemplar_AsInt{
+					AsInt: exemplar.Value,
+				},
+				SpanId:  exemplar.SpanId,
+				TraceId: exemplar.TraceId,
+			})
+		}
+		datapoints = append(datapoints, &otlpmetrics.HistogramDataPoint{
+			Labels:            datapoint.Labels,
+			TimeUnixNano:      datapoint.TimeUnixNano,
+			Count:             datapoint.Count,
+			StartTimeUnixNano: datapoint.StartTimeUnixNano,
+			Sum:               float64(datapoint.Sum),
+			BucketCounts:      datapoint.BucketCounts,
+			ExplicitBounds:    datapoint.ExplicitBounds,
+			Exemplars:         exemplars,
+		})
+	}
+	return &otlpmetrics.Metric_Histogram{
+		Histogram: &otlpmetrics.Histogram{
+			AggregationTemporality: src.IntHistogram.GetAggregationTemporality(),
+			DataPoints:             datapoints,
+		},
+	}
 }

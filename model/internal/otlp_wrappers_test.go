@@ -19,7 +19,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -111,6 +114,120 @@ func TestDeprecatedStatusCode(t *testing.T) {
 			// Check that DeprecatedCode is passed as is.
 			assert.EqualValues(t, test.expectedRcvCode, spanProto.Status.Code)
 			assert.EqualValues(t, test.expectedDeprecatedCode, spanProto.Status.DeprecatedCode)
+		})
+	}
+}
+
+func TestDeprecatedIntHistogram(t *testing.T) {
+	tests := []struct {
+		inputMetrics  []*otlpmetrics.Metric
+		outputMetrics []*otlpmetrics.Metric
+	}{
+		{
+			inputMetrics: []*otlpmetrics.Metric{
+				{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{
+										{Key: "key", Value: "value"},
+									},
+									BucketCounts:      []uint64{11, 16, 2},
+									ExplicitBounds:    []float64{3, 4},
+									Sum:               10.1,
+									StartTimeUnixNano: 0,
+									TimeUnixNano:      1,
+									Count:             29,
+									Exemplars:         []*otlpmetrics.Exemplar{},
+								},
+							},
+						},
+					},
+				}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Histogram{
+					Histogram: &otlpmetrics.Histogram{
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+						DataPoints: []*otlpmetrics.HistogramDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "key", Value: "value"},
+								},
+								BucketCounts:      []uint64{11, 16, 2},
+								ExplicitBounds:    []float64{3, 4},
+								Sum:               10.1,
+								StartTimeUnixNano: 0,
+								TimeUnixNano:      1,
+								Count:             29,
+								Exemplars:         []*otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_IntHistogram{
+					IntHistogram: &otlpmetrics.IntHistogram{ //nolint:staticcheck // SA1019 ignore this!
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+						DataPoints: []*otlpmetrics.IntHistogramDataPoint{ //nolint:staticcheck // SA1019 ignore this!
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "key2", Value: "value2"},
+								},
+								BucketCounts:      []uint64{10, 15, 1},
+								ExplicitBounds:    []float64{1, 2},
+								Sum:               10,
+								StartTimeUnixNano: 2,
+								TimeUnixNano:      3,
+								Count:             26,
+								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Histogram{
+					Histogram: &otlpmetrics.Histogram{
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+						DataPoints: []*otlpmetrics.HistogramDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "key2", Value: "value2"},
+								},
+								BucketCounts:      []uint64{10, 15, 1},
+								ExplicitBounds:    []float64{1, 2},
+								Sum:               10.0,
+								StartTimeUnixNano: 2,
+								TimeUnixNano:      3,
+								Count:             26,
+								Exemplars:         []*otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
+			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+					{
+						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+							{
+								Metrics: test.inputMetrics,
+							},
+						}},
+				},
+			}
+			MetricsCompatibilityChanges(req)
+			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
 		})
 	}
 }

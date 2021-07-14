@@ -287,21 +287,40 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 
 		for i, val := range avv {
 			val := val
-			av := newAttributeValue(&vv[i])
+			newAv := newAttributeValue(&vv[i])
 
 			// According to the specification, array values must be scalar.
-			if avType := av.Type(); avType == AttributeValueTypeArray || avType == AttributeValueTypeMap {
+			if avType := newAv.Type(); avType == AttributeValueTypeArray || avType == AttributeValueTypeMap {
 				return false
 			}
 
-			if !av.Equal(newAttributeValue(&val)) {
+			if !newAv.Equal(newAttributeValue(&val)) {
+				return false
+			}
+		}
+		return true
+	case *otlpcommon.AnyValue_KvlistValue:
+		cc := v.KvlistValue.GetValues()
+		avv := av.orig.GetKvlistValue().GetValues()
+		if len(cc) != len(avv) {
+			return false
+		}
+
+		am := newAttributeMap(&avv)
+
+		for _, val := range cc {
+			newAv, ok := am.Get(val.Key)
+			if !ok {
+				return false
+			}
+
+			if !newAv.Equal(newAttributeValue(&val.Value)) {
 				return false
 			}
 		}
 		return true
 	}
 
-	// TODO: handle MAP data type
 	return false
 }
 

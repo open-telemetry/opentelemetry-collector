@@ -25,17 +25,18 @@ func TestAuthenticateFunc(t *testing.T) {
 	// prepare
 	m := &MockAuthenticator{}
 	called := false
-	m.AuthenticateFunc = func(c context.Context, m map[string][]string) error {
+	m.AuthenticateFunc = func(c context.Context, m map[string][]string) (context.Context, error) {
 		called = true
-		return nil
+		return context.Background(), nil
 	}
 
 	// test
-	err := m.Authenticate(context.Background(), nil)
+	ctx, err := m.Authenticate(context.Background(), nil)
 
 	// verify
 	assert.NoError(t, err)
 	assert.True(t, called)
+	assert.NotNil(t, ctx)
 }
 
 func TestNilOperations(t *testing.T) {
@@ -46,8 +47,9 @@ func TestNilOperations(t *testing.T) {
 	origCtx := context.Background()
 
 	{
-		err := m.Authenticate(origCtx, nil)
+		ctx, err := m.Authenticate(origCtx, nil)
 		assert.NoError(t, err)
+		assert.NotNil(t, ctx)
 	}
 
 	{
