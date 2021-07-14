@@ -71,7 +71,18 @@ func GenerateMetricsOneMetricNoResource() pdata.Metrics {
 func GenerateMetricsOneMetric() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
+	initCounterIntMetric(rm0ils0.Metrics().AppendEmpty())
+	return md
+}
+
+func GenerateMetricsOneSumMetric() pdata.Metrics {
+	// TODO: this is currently used in place of GenerateMetricsOneMetric
+	// because the OTLP receiver converts IntSum to Sum types and causes a
+	// failure in TestSendMetrics. Once Sum supports setting either Int
+	// or Double, this function can be removed.
+	md := GenerateMetricsOneEmptyInstrumentationLibrary()
+	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	initSumMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -80,6 +91,18 @@ func GenerateMetricsTwoMetrics() pdata.Metrics {
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
+	return md
+}
+
+func GenerateMetricsTwoSumMetrics() pdata.Metrics {
+	// TODO: this is currently used in place of GenerateMetricsTwoMetrics
+	// because the OTLP receiver converts IntSum to Sum types and causes a
+	// failure in TestSendMetrics. Once Sum supports setting either Int
+	// or Double, this function can be removed.
+	md := GenerateMetricsOneEmptyInstrumentationLibrary()
+	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	initSumMetric(rm0ils0.Metrics().AppendEmpty())
+	initSumMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -165,8 +188,24 @@ func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	return md
 }
 
-func initGaugeIntMetric(im pdata.Metric) {
-	initMetric(im, TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge)
+func initSumMetric(im pdata.Metric) {
+	initMetric(im, TestSumIntMetricName, pdata.MetricDataTypeSum)
+
+	idps := im.Sum().DataPoints()
+	idp0 := idps.AppendEmpty()
+	initMetricLabels1(idp0.LabelsMap())
+	idp0.SetStartTimestamp(TestMetricStartTimestamp)
+	idp0.SetTimestamp(TestMetricTimestamp)
+	idp0.SetValue(123)
+	idp1 := idps.AppendEmpty()
+	initMetricLabels2(idp1.LabelsMap())
+	idp1.SetStartTimestamp(TestMetricStartTimestamp)
+	idp1.SetTimestamp(TestMetricTimestamp)
+	idp1.SetValue(456)
+}
+
+func initCounterIntMetric(im pdata.Metric) {
+	initMetric(im, TestCounterIntMetricName, pdata.MetricDataTypeIntSum)
 
 	idps := im.IntGauge().DataPoints()
 	idp0 := idps.AppendEmpty()
