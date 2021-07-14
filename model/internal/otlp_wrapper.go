@@ -41,6 +41,7 @@ func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) Metr
 
 // MetricsCompatibilityChanges performs backward compatibility conversion on Metrics:
 // - Convert IntHistogram to Histogram. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L170
+// - Convert IntGauge to Gauge. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
 //
 func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceRequest) {
 	for _, rsm := range req.ResourceMetrics {
@@ -49,7 +50,9 @@ func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceR
 				switch m := metric.Data.(type) {
 				case *otlpmetrics.Metric_IntHistogram:
 					metric.Data = intHistogramToHistogram(m)
-				// TODO: add cases for IntGauge and IntSum
+				case *otlpmetrics.Metric_IntGauge:
+					metric.Data = intGaugeToGauge(m)
+				// TODO: add cases for IntSum
 				default:
 				}
 			}
@@ -118,18 +121,6 @@ func LogsFromOtlp(req *otlpcollectorlog.ExportLogsServiceRequest) LogsWrapper {
 func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.Metric_Histogram {
 	datapoints := []*otlpmetrics.HistogramDataPoint{}
 	for _, datapoint := range src.IntHistogram.DataPoints {
-		exemplars := []*otlpmetrics.Exemplar{}
-		for _, exemplar := range datapoint.Exemplars {
-			exemplars = append(exemplars, &otlpmetrics.Exemplar{
-				FilteredLabels: exemplar.FilteredLabels,
-				TimeUnixNano:   exemplar.TimeUnixNano,
-				Value: &otlpmetrics.Exemplar_AsInt{
-					AsInt: exemplar.Value,
-				},
-				SpanId:  exemplar.SpanId,
-				TraceId: exemplar.TraceId,
-			})
-		}
 		datapoints = append(datapoints, &otlpmetrics.HistogramDataPoint{
 			Labels:            datapoint.Labels,
 			TimeUnixNano:      datapoint.TimeUnixNano,
@@ -138,7 +129,7 @@ func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.
 			Sum:               float64(datapoint.Sum),
 			BucketCounts:      datapoint.BucketCounts,
 			ExplicitBounds:    datapoint.ExplicitBounds,
-			Exemplars:         exemplars,
+			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
 		})
 	}
 	return &otlpmetrics.Metric_Histogram{
@@ -147,4 +138,38 @@ func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.
 			DataPoints:             datapoints,
 		},
 	}
+}
+
+func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge {
+	datapoints := []*otlpmetrics.NumberDataPoint{}
+	for _, datapoint := range src.IntGauge.DataPoints {
+		datapoints = append(datapoints, &otlpmetrics.NumberDataPoint{
+			Labels:            datapoint.Labels,
+			TimeUnixNano:      datapoint.TimeUnixNano,
+			StartTimeUnixNano: datapoint.StartTimeUnixNano,
+			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
+			Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: datapoint.Value},
+		})
+	}
+	return &otlpmetrics.Metric_Gauge{
+		Gauge: &otlpmetrics.Gauge{
+			DataPoints: datapoints,
+		},
+	}
+}
+
+func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []*otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
+	exemplars := []*otlpmetrics.Exemplar{}
+	for _, exemplar := range src {
+		exemplars = append(exemplars, &otlpmetrics.Exemplar{
+			FilteredLabels: exemplar.FilteredLabels,
+			TimeUnixNano:   exemplar.TimeUnixNano,
+			Value: &otlpmetrics.Exemplar_AsInt{
+				AsInt: exemplar.Value,
+			},
+			SpanId:  exemplar.SpanId,
+			TraceId: exemplar.TraceId,
+		})
+	}
+	return exemplars
 }
