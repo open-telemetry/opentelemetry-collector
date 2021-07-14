@@ -231,3 +231,100 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 		})
 	}
 }
+
+func TestDeprecatedIntGauge(t *testing.T) {
+	tests := []struct {
+		inputMetrics  []*otlpmetrics.Metric
+		outputMetrics []*otlpmetrics.Metric
+	}{
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Gauge{
+					Gauge: &otlpmetrics.Gauge{
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "GaugeKey", Value: "GaugeValue"},
+								},
+								StartTimeUnixNano: 10,
+								TimeUnixNano:      11,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 100},
+								Exemplars:         []*otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Gauge{
+					Gauge: &otlpmetrics.Gauge{
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "GaugeKey", Value: "GaugeValue"},
+								},
+								StartTimeUnixNano: 10,
+								TimeUnixNano:      11,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 100},
+								Exemplars:         []*otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_IntGauge{
+					IntGauge: &otlpmetrics.IntGauge{ //nolint:staticcheck // SA1019 ignore this!
+						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntGaugeKey", Value: "IntGaugeValue"},
+								},
+								StartTimeUnixNano: 10,
+								TimeUnixNano:      11,
+								Value:             100,
+								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Gauge{
+					Gauge: &otlpmetrics.Gauge{
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntGaugeKey", Value: "IntGaugeValue"},
+								},
+								StartTimeUnixNano: 10,
+								TimeUnixNano:      11,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 100},
+								Exemplars:         []*otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
+			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+					{
+						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+							{
+								Metrics: test.inputMetrics,
+							},
+						}},
+				},
+			}
+			MetricsCompatibilityChanges(req)
+			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
+		})
+	}
+}
