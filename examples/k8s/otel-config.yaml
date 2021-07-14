@@ -25,8 +25,6 @@ data:
     processors:
       batch:
       memory_limiter:
-        # Same as --mem-ballast-size-mib CLI argument
-        ballast_size_mib: 165
         # 80% of maximum memory up to 2G
         limit_mib: 400
         # 25% of limit up to 2G
@@ -35,8 +33,10 @@ data:
     extensions:
       health_check: {}
       zpages: {}
+      memory_ballast:
+        size_mib: 165
     service:
-      extensions: [health_check, zpages]
+      extensions: [health_check, zpages, memory_ballast]
       pipelines:
         traces:
           receivers: [otlp]
@@ -65,8 +65,6 @@ spec:
       - command:
           - "/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-          # Memory Ballast size should be max 1/3 to 1/2 of memory.
-          - "--mem-ballast-size-mib=165"
         image: otel/opentelemetry-collector-dev:latest
         name: otel-agent
         resources:
@@ -121,8 +119,6 @@ data:
     processors:
       batch:
       memory_limiter:
-        # Same as --mem-ballast-size-mib CLI argument
-        ballast_size_mib: 683
         # 80% of maximum memory up to 2G
         limit_mib: 1500
         # 25% of limit up to 2G
@@ -131,6 +127,9 @@ data:
     extensions:
       health_check: {}
       zpages: {}
+      memory_ballast:
+        # Memory Ballast size should be max 1/3 to 1/2 of memory.
+        size_mib: 683
     exporters:
       zipkin:
         endpoint: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
@@ -138,7 +137,7 @@ data:
         endpoint: "somejaegergrpc.target.com:14250" # Replace with a real endpoint.
         insecure: true
     service:
-      extensions: [health_check, zpages]
+      extensions: [health_check, zpages, memory_ballast]
       pipelines:
         traces/1:
           receivers: [otlp, zipkin]
@@ -198,8 +197,6 @@ spec:
       - command:
           - "/otelcol"
           - "--config=/conf/otel-collector-config.yaml"
-#           Memory Ballast size should be max 1/3 to 1/2 of memory.
-          - "--mem-ballast-size-mib=683"
         image: otel/opentelemetry-collector-dev:latest
         name: otel-collector
         resources:

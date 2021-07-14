@@ -105,8 +105,8 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 	}
 
 	logger.Info("Memory limiter configured",
-		zap.Uint64("limit_mib", usageChecker.memAllocLimit),
-		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit),
+		zap.Uint64("limit_mib", usageChecker.memAllocLimit/mibBytes),
+		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit/mibBytes),
 		zap.Duration("check_interval", cfg.CheckInterval))
 
 	ml := &memoryLimiter{
@@ -138,7 +138,7 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
 	}
 	logger.Info("Using percentage memory limiter",
-		zap.Uint64("total_memory", totalMemory),
+		zap.Uint64("total_memory_mib", totalMemory/mibBytes),
 		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
 		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
 	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage))
@@ -249,7 +249,7 @@ func (ml *memoryLimiter) setForcingDrop(b bool) {
 }
 
 func memstatToZapField(ms *runtime.MemStats) zap.Field {
-	return zap.Uint64("cur_mem_mib", ms.Alloc/1024/1024)
+	return zap.Uint64("cur_mem_mib", ms.Alloc/mibBytes)
 }
 
 func (ml *memoryLimiter) doGCandReadMemStats() *runtime.MemStats {
