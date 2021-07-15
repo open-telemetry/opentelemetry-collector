@@ -38,7 +38,7 @@ import (
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
 type collectorTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
+	init(asyncErrorChannel chan<- error, logger *zap.Logger) error
 	shutdown() error
 }
 
@@ -47,7 +47,7 @@ type colTelemetry struct {
 	server *http.Server
 }
 
-func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *colTelemetry) init(asyncErrorChannel chan<- error, logger *zap.Logger) error {
 	level := configtelemetry.GetMetricsLevelFlagValue()
 	metricsAddr := telemetry.GetMetricsAddr()
 
@@ -55,7 +55,7 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return nil
 	}
 
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews()
 	if err != nil {
 		return err
 	}

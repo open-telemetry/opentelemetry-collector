@@ -184,10 +184,10 @@ func (col *Collector) Shutdown() {
 	close(col.shutdownChan)
 }
 
-func (col *Collector) setupTelemetry(ballastSizeBytes uint64) error {
+func (col *Collector) setupTelemetry() error {
 	col.logger.Info("Setting up own telemetry...")
 
-	err := collectorTelemetry.init(col.asyncErrorChannel, ballastSizeBytes, col.logger)
+	err := collectorTelemetry.init(col.asyncErrorChannel, col.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
@@ -284,13 +284,16 @@ func (col *Collector) execute(ctx context.Context) error {
 	)
 	col.stateChannel <- Starting
 
-	// Set memory ballast
-	ballast, ballastSizeBytes := col.createMemoryBallast()
+	// `mem-ballast-size-mib` warning message for the deprecation
+	//  Will remove all `mem-ballast-size-mib` footprints in a few releases.
+	if builder.MemBallastSize() > 0 {
+		col.logger.Warn("`mem-ballast-size-mib` command line option has been deprecated. Use `ballast extension` instead!!!")
+	}
 
 	col.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	err := col.setupTelemetry(ballastSizeBytes)
+	err := col.setupTelemetry()
 	if err != nil {
 		return err
 	}
@@ -307,7 +310,6 @@ func (col *Collector) execute(ctx context.Context) error {
 	var errs []error
 
 	// Begin shutdown sequence.
-	runtime.KeepAlive(ballast)
 	col.logger.Info("Starting shutdown...")
 
 	if closable, ok := col.parserProvider.(parserprovider.Closeable); ok {
@@ -331,17 +333,6 @@ func (col *Collector) execute(ctx context.Context) error {
 	close(col.stateChannel)
 
 	return consumererror.Combine(errs)
-}
-
-func (col *Collector) createMemoryBallast() ([]byte, uint64) {
-	ballastSizeMiB := builder.MemBallastSize()
-	if ballastSizeMiB > 0 {
-		ballastSizeBytes := uint64(ballastSizeMiB) * 1024 * 1024
-		ballast := make([]byte, ballastSizeBytes)
-		col.logger.Info("Using memory ballast", zap.Int("MiBs", ballastSizeMiB))
-		return ballast, ballastSizeBytes
-	}
-	return nil, 0
 }
 
 // reloadService shutdowns the current col.service and setups a new one according

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Deprecate `mem-ballast-size-mib` option in command line (#3626)
+
+
 ## v0.30.0 Beta
 
 ## 🛑 Breaking changes 🛑

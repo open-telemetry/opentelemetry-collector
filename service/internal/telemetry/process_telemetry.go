@@ -23,12 +23,13 @@ import (
 	"github.com/shirou/gopsutil/process"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+
+	"go.opentelemetry.io/collector/extension/ballastextension"
 )
 
 // ProcessMetricsViews is a struct that contains views related to process metrics (cpu, mem, etc)
 type ProcessMetricsViews struct {
 	prevTimeUnixNano int64
-	ballastSizeBytes uint64
 	views            []*view.View
 	done             chan struct{}
 	proc             *process.Process
@@ -108,10 +109,9 @@ var viewRSSMemory = &view.View{
 
 // NewProcessMetricsViews creates a new set of ProcessMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func NewProcessMetricsViews(ballastSizeBytes uint64) (*ProcessMetricsViews, error) {
+func NewProcessMetricsViews() (*ProcessMetricsViews, error) {
 	pmv := &ProcessMetricsViews{
 		prevTimeUnixNano: time.Now().UnixNano(),
-		ballastSizeBytes: ballastSizeBytes,
 		views:            []*view.View{viewProcessUptime, viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds, viewRSSMemory},
 		done:             make(chan struct{}),
 	}
@@ -176,8 +176,13 @@ func (pmv *ProcessMetricsViews) updateViews() {
 
 func (pmv *ProcessMetricsViews) readMemStats(ms *runtime.MemStats) {
 	runtime.ReadMemStats(ms)
-	ms.Alloc -= pmv.ballastSizeBytes
-	ms.HeapAlloc -= pmv.ballastSizeBytes
-	ms.HeapSys -= pmv.ballastSizeBytes
-	ms.HeapInuse -= pmv.ballastSizeBytes
+	var ballastSizeBytes uint64
+	// get ballast size if ballast extension has been setup
+	if ballastextension.GetBallastSize() > 0 {
+		ballastSizeBytes = ballastextension.GetBallastSize()
+		ms.Alloc -= ballastSizeBytes
+		ms.HeapAlloc -= ballastSizeBytes
+		ms.HeapSys -= ballastSizeBytes
+		ms.HeapInuse -= ballastSizeBytes
+	}
 }
