@@ -160,10 +160,10 @@ func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge
 	}
 }
 
-func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []*otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
-	exemplars := []*otlpmetrics.Exemplar{}
+func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
+	exemplars := []otlpmetrics.Exemplar{}
 	for _, exemplar := range src {
-		exemplars = append(exemplars, &otlpmetrics.Exemplar{
+		exemplars = append(exemplars, otlpmetrics.Exemplar{
 			FilteredLabels: exemplar.FilteredLabels,
 			TimeUnixNano:   exemplar.TimeUnixNano,
 			Value: &otlpmetrics.Exemplar_AsInt{
