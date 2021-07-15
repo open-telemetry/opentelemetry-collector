@@ -209,7 +209,7 @@ func genRandByteString(len int) string {
 
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
-func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors map[string]string) {
+func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors map[string]string, extensions map[string]string) {
 	for i := range tests {
 		test := tests[i]
 
@@ -228,7 +228,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 			receiver := testbed.NewOCDataReceiver(testbed.GetAvailablePort(t))
 
 			// Prepare config.
-			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
 			defer configCleanup()
