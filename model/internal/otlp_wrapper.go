@@ -179,8 +179,8 @@ func intSumToSum(src *otlpmetrics.Metric_IntSum) *otlpmetrics.Metric_Sum {
 	}
 }
 
-func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []*otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
-	exemplars := []*otlpmetrics.Exemplar{}
+func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
+	exemplars := []otlpmetrics.Exemplar{}
 	for _, exemplar := range src {
 		exemplars = append(exemplars, otlpmetrics.Exemplar{
 			FilteredLabels: exemplar.FilteredLabels,

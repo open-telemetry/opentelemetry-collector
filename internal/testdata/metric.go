@@ -71,7 +71,7 @@ func GenerateMetricsOneMetricNoResource() pdata.Metrics {
 func GenerateMetricsOneMetric() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	initCounterIntMetric(rm0ils0.Metrics().AppendEmpty())
+	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -204,8 +204,8 @@ func initSumMetric(im pdata.Metric) {
 	idp1.SetValue(456)
 }
 
-func initCounterIntMetric(im pdata.Metric) {
-	initMetric(im, TestCounterIntMetricName, pdata.MetricDataTypeIntSum)
+func initGaugeIntMetric(im pdata.Metric) {
+	initMetric(im, TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge)
 
 	idps := im.IntGauge().DataPoints()
 	idp0 := idps.AppendEmpty()
