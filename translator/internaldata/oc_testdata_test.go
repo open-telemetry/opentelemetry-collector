@@ -64,7 +64,7 @@ func generateOCTestDataNoPoints() *agentmetricspb.ExportMetricsServiceRequest {
 			},
 			{
 				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestCounterDoubleMetricName,
+					Name:        testdata.TestSumDoubleMetricName,
 					Description: "",
 					Unit:        "1",
 					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
@@ -72,7 +72,7 @@ func generateOCTestDataNoPoints() *agentmetricspb.ExportMetricsServiceRequest {
 			},
 			{
 				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestCounterIntMetricName,
+					Name:        testdata.TestSumIntMetricName,
 					Description: "",
 					Unit:        "1",
 					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
@@ -107,7 +107,7 @@ func generateOCTestDataNoPoints() *agentmetricspb.ExportMetricsServiceRequest {
 }
 
 func generateOCTestDataNoLabels() *agentmetricspb.ExportMetricsServiceRequest {
-	m := generateOCTestMetricInt()
+	m := generateOCTestMetricCumulativeInt()
 	m.MetricDescriptor.LabelKeys = nil
 	m.Timeseries[0].LabelValues = nil
 	m.Timeseries[1].LabelValues = nil
@@ -126,7 +126,7 @@ func generateOCTestDataMetricsOneMetric() *agentmetricspb.ExportMetricsServiceRe
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
-		Metrics: []*ocmetrics.Metric{generateOCTestMetricInt()},
+		Metrics: []*ocmetrics.Metric{generateOCTestMetricCumulativeInt()},
 	}
 }
 
@@ -136,12 +136,12 @@ func generateOCTestDataMetricsOneMetricOneNil() *agentmetricspb.ExportMetricsSer
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
-		Metrics: []*ocmetrics.Metric{generateOCTestMetricInt(), nil},
+		Metrics: []*ocmetrics.Metric{generateOCTestMetricCumulativeInt(), nil},
 	}
 }
 
 func generateOCTestDataMetricsOneMetricOneNilTimeseries() *agentmetricspb.ExportMetricsServiceRequest {
-	m := generateOCTestMetricInt()
+	m := generateOCTestMetricCumulativeInt()
 	m.Timeseries = append(m.Timeseries, nil)
 	return &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &occommon.Node{},
@@ -153,7 +153,7 @@ func generateOCTestDataMetricsOneMetricOneNilTimeseries() *agentmetricspb.Export
 }
 
 func generateOCTestDataMetricsOneMetricOneNilPoint() *agentmetricspb.ExportMetricsServiceRequest {
-	m := generateOCTestMetricInt()
+	m := generateOCTestMetricCumulativeInt()
 	m.Timeseries[0].Points = append(m.Timeseries[0].Points, nil)
 	return &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &occommon.Node{},
@@ -164,10 +164,142 @@ func generateOCTestDataMetricsOneMetricOneNilPoint() *agentmetricspb.ExportMetri
 	}
 }
 
-func generateOCTestMetricInt() *ocmetrics.Metric {
+func generateOCTestMetricGaugeInt() *ocmetrics.Metric {
 	return &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        testdata.TestCounterIntMetricName,
+			Name:        testdata.TestGaugeIntMetricName,
+			Description: "",
+			Unit:        "1",
+			Type:        ocmetrics.MetricDescriptor_GAUGE_INT64,
+			LabelKeys: []*ocmetrics.LabelKey{
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
+			},
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    testdata.TestLabelValue1,
+						HasValue: true,
+					},
+					{
+						// key2
+						HasValue: false,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_Int64Value{
+							Int64Value: 123,
+						},
+					},
+				},
+			},
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						HasValue: false,
+					},
+					{
+						// key2
+						Value:    testdata.TestLabelValue2,
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_Int64Value{
+							Int64Value: 456,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func generateOCTestMetricGaugeDouble() *ocmetrics.Metric {
+	return &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name: testdata.TestGaugeDoubleMetricName,
+			Unit: "1",
+			Type: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
+			LabelKeys: []*ocmetrics.LabelKey{
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
+				{Key: testdata.TestLabelKey3},
+			},
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    testdata.TestLabelValue1,
+						HasValue: true,
+					},
+					{
+						// key2
+						Value:    testdata.TestLabelValue2,
+						HasValue: true,
+					},
+					{
+						// key3
+						HasValue: false,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DoubleValue{
+							DoubleValue: 1.23,
+						},
+					},
+				},
+			},
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    testdata.TestLabelValue1,
+						HasValue: true,
+					},
+					{
+						// key2
+						HasValue: false,
+					},
+					{
+						// key3
+						Value:    testdata.TestLabelValue3,
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DoubleValue{
+							DoubleValue: 4.56,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func generateOCTestMetricCumulativeInt() *ocmetrics.Metric {
+	return &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        testdata.TestSumIntMetricName,
 			Description: "",
 			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
@@ -225,10 +357,10 @@ func generateOCTestMetricInt() *ocmetrics.Metric {
 	}
 }
 
-func generateOCTestMetricDouble() *ocmetrics.Metric {
+func generateOCTestMetricCumulativeDouble() *ocmetrics.Metric {
 	return &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name: "counter-double",
+			Name: testdata.TestSumDoubleMetricName,
 			Unit: "1",
 			Type: ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
 			LabelKeys: []*ocmetrics.LabelKey{
