@@ -370,7 +370,7 @@ var intExemplar = &messageValueStruct{
 	},
 }
 
-var exemplarSlice = &sliceOfPtrs{
+var exemplarSlice = &sliceOfValues{
 	structName: "ExemplarSlice",
 	element:    exemplar,
 }

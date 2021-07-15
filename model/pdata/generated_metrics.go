@@ -2542,17 +2542,17 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 type ExemplarSlice struct {
 	// orig points to the slice otlpmetrics.Exemplar field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
-	orig *[]*otlpmetrics.Exemplar
+	orig *[]otlpmetrics.Exemplar
 }
 
-func newExemplarSlice(orig *[]*otlpmetrics.Exemplar) ExemplarSlice {
+func newExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
 	return ExemplarSlice{orig}
 }
 
 // NewExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExemplarSlice() ExemplarSlice {
-	orig := []*otlpmetrics.Exemplar(nil)
+	orig := []otlpmetrics.Exemplar(nil)
 	return ExemplarSlice{&orig}
 }
 
@@ -2571,7 +2571,7 @@ func (es ExemplarSlice) Len() int {
 //       ... // Do something with the element
 //   }
 func (es ExemplarSlice) At(ix int) Exemplar {
-	return newExemplar((*es.orig)[ix])
+	return newExemplar(&(*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -2580,18 +2580,13 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newExemplar((*es.orig)[i]).CopyTo(newExemplar((*dest.orig)[i]))
-		}
-		return
+	} else {
+		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
 	}
-	origs := make([]otlpmetrics.Exemplar, srcLen)
-	wrappers := make([]*otlpmetrics.Exemplar, srcLen)
+
 	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newExemplar((*es.orig)[i]).CopyTo(newExemplar(wrappers[i]))
+		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
 	}
-	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -2611,7 +2606,7 @@ func (es ExemplarSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.Exemplar, len(*es.orig), newCap)
+	newOrig := make([]otlpmetrics.Exemplar, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -2637,21 +2632,21 @@ func (es ExemplarSlice) Resize(newLen int) {
 		return
 	}
 	if newLen > oldCap {
-		newOrig := make([]*otlpmetrics.Exemplar, oldLen, newLen)
+		newOrig := make([]otlpmetrics.Exemplar, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
 	// Add extra empty elements to the array.
-	extraOrigs := make([]otlpmetrics.Exemplar, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
+	empty := otlpmetrics.Exemplar{}
+	for i := oldLen; i < newLen; i++ {
+		*es.orig = append(*es.orig, empty)
 	}
 }
 
 // AppendEmpty will append to the end of the slice an empty Exemplar.
 // It returns the newly added Exemplar.
 func (es ExemplarSlice) AppendEmpty() Exemplar {
-	*es.orig = append(*es.orig, &otlpmetrics.Exemplar{})
+	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
 
