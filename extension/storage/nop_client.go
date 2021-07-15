@@ -45,17 +45,7 @@ func (c nopClient) Close(context.Context) error {
 	return nil
 }
 
-// GetBatch does nothing, and returns nil, nil
-func (c nopClient) GetBatch(ctx context.Context, strings []string) ([][]byte, error) {
+// Batch does nothing, and returns nil, nil
+func (c nopClient) Batch(ctx context.Context, strings []string, entries map[string][]byte) ([][]byte, error) {
 	return nil, nil // no result, but no problem
-}
-
-// SetBatch does nothing and returns nil
-func (c nopClient) SetBatch(ctx context.Context, entries map[string][]byte) error {
-	return nil // no problem
-}
-
-// DeleteBatch does nothing and returns nil
-func (c nopClient) DeleteBatch(ctx context.Context, strings []string) error {
-	return nil // no problem
 }
