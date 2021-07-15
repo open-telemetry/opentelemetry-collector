@@ -450,7 +450,7 @@ func newErrUnknownConfigSource(cfgSrcName string) error {
 // parseCfgSrc extracts the reference to a config source from a string value.
 // The caller should check for error explicitly since it is possible for the
 // other values to have been partially set.
-func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err error) {
+func parseCfgSrc(s string) (cfgSrcName, selector string, paramsParser *configparser.Parser, err error) {
 	parts := strings.SplitN(s, string(configSourceNameDelimChar), 2)
 	if len(parts) != 2 {
 		err = fmt.Errorf("invalid config source syntax at %q, it must have at least the config source name and a selector", s)
@@ -472,7 +472,7 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 			if err != nil {
 				return
 			}
-			params = cp.ToStringMap()
+			paramsParser = cp
 		}
 
 	default:
@@ -483,7 +483,7 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 
 		if len(parts) == 2 {
 			paramsPart := parts[1]
-			params, err = parseParamsAsURLQuery(paramsPart)
+			paramsParser, err = parseParamsAsURLQuery(paramsPart)
 			if err != nil {
 				err = fmt.Errorf("invalid parameters syntax at %q: %w", s, err)
 				return
@@ -491,10 +491,10 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 		}
 	}
 
-	return cfgSrcName, selector, params, err
+	return cfgSrcName, selector, paramsParser, err
 }
 
-func parseParamsAsURLQuery(s string) (interface{}, error) {
+func parseParamsAsURLQuery(s string) (*configparser.Parser, error) {
 	values, err := url.ParseQuery(s)
 	if err != nil {
 		return nil, err
@@ -525,7 +525,7 @@ func parseParamsAsURLQuery(s string) (interface{}, error) {
 			params[k] = elemSlice
 		}
 	}
-	return params, err
+	return configparser.NewParserFromStringMap(params), err
 }
 
 // expandEnvVars is used to expand environment variables with the same syntax used
