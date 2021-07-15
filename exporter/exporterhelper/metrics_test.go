@@ -136,14 +136,14 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	md := testdata.GenerateMetricsOneMetricOneDataPoint()
+	md := testdata.GenerateMetricsOneMetric()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		te.ConsumeMetrics(context.Background(), md)
 	}
 
-	// 2 batched must be in queue, and 5 metric points rejected due to queue overflow
-	checkExporterEnqueueFailedMetricsStats(t, fakeMetricsExporterName, int64(5))
+	// 2 batched must be in queue, and 10 metric points rejected due to queue overflow
+	checkExporterEnqueueFailedMetricsStats(t, fakeMetricsExporterName, int64(10))
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
@@ -155,7 +155,7 @@ func TestMetricsExporter_WithSpan(t *testing.T) {
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, sr, tp.Tracer("test"), me, nil, 1)
+	checkWrapSpanForMetricsExporter(t, sr, tp.Tracer("test"), me, nil, 2)
 }
 
 func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
@@ -168,7 +168,7 @@ func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, sr, tp.Tracer("test"), me, want, 1)
+	checkWrapSpanForMetricsExporter(t, sr, tp.Tracer("test"), me, want, 2)
 }
 
 func TestMetricsExporter_WithShutdown(t *testing.T) {
@@ -245,7 +245,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 }
 
 func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me component.MetricsExporter, numRequests int, wantError error) {
-	md := testdata.GenerateMetricsOneMetricOneDataPoint()
+	md := testdata.GenerateMetricsOneMetric()
 	ctx, span := tracer.Start(context.Background(), fakeMetricsParentSpanName)
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

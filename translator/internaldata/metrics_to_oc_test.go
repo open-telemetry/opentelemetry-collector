@@ -69,7 +69,7 @@ func TestMetricsToOC(t *testing.T) {
 			internal: testdata.GenerateMetricsOneMetricNoResource(),
 			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Metrics: []*ocmetrics.Metric{
-					generateOCTestMetricInt(),
+					generateOCTestMetricCumulativeInt(),
 				},
 			},
 		},
@@ -119,7 +119,7 @@ func TestMetricsToOC_InvalidDataType(t *testing.T) {
 		Metrics: []*ocmetrics.Metric{
 			{
 				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:      testdata.TestCounterIntMetricName,
+					Name:      testdata.TestSumIntMetricName,
 					Unit:      "1",
 					Type:      ocmetrics.MetricDescriptor_UNSPECIFIED,
 					LabelKeys: nil,
@@ -155,8 +155,10 @@ func generateOCTestData() *agentmetricspb.ExportMetricsServiceRequest {
 			},
 		},
 		Metrics: []*ocmetrics.Metric{
-			generateOCTestMetricInt(),
-			generateOCTestMetricDouble(),
+			generateOCTestMetricGaugeInt(),
+			generateOCTestMetricGaugeDouble(),
+			generateOCTestMetricCumulativeInt(),
+			generateOCTestMetricCumulativeDouble(),
 			generateOCTestMetricDoubleHistogram(),
 			generateOCTestMetricIntHistogram(),
 			generateOCTestMetricDoubleSummary(),
