@@ -14,15 +14,14 @@
 
 package internal
 
-/*
 import (
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -65,7 +64,7 @@ import (
 type timeseriesinfoPdata struct {
 	timeseriesinfo
 	mark     bool
-	initial  *pdatametricspb.TimeSeries
+	initial  *metricspb.TimeSeries
 	previous *metricspb.TimeSeries
 }
 
@@ -74,17 +73,16 @@ type timeseriesinfoPdata struct {
 type timeseriesMapPdata struct {
 	sync.RWMutex
 	mark   bool
-	tsiMap map[string]*timeseriesinfo
+	tsiMap map[string]*timeseriesinfoPdata
 }
 
 // Get the timeseriesinfo for the timeseries associated with the metric and label values.
-func (tsm *timeseriesMapPdata) get(
-	metric *metricspb.Metric, values []*metricspb.LabelValue) *timeseriesinfo {
+func (tsm *timeseriesMapPdata) get(metric *metricspb.Metric, values []*metricspb.LabelValue) *timeseriesinfoPdata {
 	name := metric.GetMetricDescriptor().GetName()
 	sig := getTimeseriesSignature(name, values)
 	tsi, ok := tsm.tsiMap[sig]
 	if !ok {
-		tsi = &timeseriesinfo{}
+		tsi = &timeseriesinfoPdata{}
 		tsm.tsiMap[sig] = tsi
 	}
 	tsm.mark = true
@@ -111,7 +109,7 @@ func (tsm *timeseriesMapPdata) gc() {
 }
 
 func newTimeseriesMapPdata() *timeseriesMapPdata {
-	return &timeseriesMapPdata{mark: true, tsiMap: map[string]*timeseriesinfo{}}
+	return &timeseriesMapPdata{mark: true, tsiMap: map[string]*timeseriesinfoPdata{}}
 }
 
 // Create a unique timeseries signature consisting of the metric name and label values.
@@ -130,12 +128,12 @@ type JobsMapPdata struct {
 	sync.RWMutex
 	gcInterval time.Duration
 	lastGC     time.Time
-	jobsMap    map[string]*timeseriesMap
+	jobsMap    map[string]*timeseriesMapPdata
 }
 
 // NewJobsMap creates a new (empty) JobsMap.
 func NewJobsMapPdata(gcInterval time.Duration) *JobsMapPdata {
-	return &JobsMapPdata{gcInterval: gcInterval, lastGC: time.Now(), jobsMap: make(map[string]*timeseriesMap)}
+	return &JobsMapPdata{gcInterval: gcInterval, lastGC: time.Now(), jobsMap: make(map[string]*timeseriesMapPdata)}
 }
 
 // Remove jobs and timeseries that have aged out.
@@ -182,7 +180,7 @@ func (jm *JobsMapPdata) get(job, instance string) *timeseriesMapPdata {
 	if ok2 {
 		return tsm2
 	}
-	tsm2 = newTimeseriesMap()
+	tsm2 = newTimeseriesMapPdata()
 	jm.jobsMap[sig] = tsm2
 	return tsm2
 }
@@ -212,7 +210,7 @@ func (ma *MetricsAdjusterPdata) AdjustMetricsPdata(metrics []*pdata.Metric) ([]*
 	ma.tsm.Lock()
 	defer ma.tsm.Unlock()
 	for _, metric := range metrics {
-		d := ma.adjustMetric(metric)
+		d := ma.adjustMetricPdata(metric)
 		resets += d
 		adjusted = append(adjusted, metric)
 	}
@@ -237,32 +235,40 @@ func (ma *MetricsAdjusterPdata) adjustMetricPdata(metric *pdata.Metric) int {
 	}
 }
 
+func pdataMetricLen(metric *pdata.Metric) int {
+	switch dataType := metric.DataType(); dataType {
+	case pdata.MetricDataTypeIntGauge:
+		return metric.IntGauge().DataPoints().Len()
+	case pdata.MetricDataTypeDoubleGauge:
+		return metric.DoubleGauge().DataPoints().Len()
+	case pdata.MetricDataTypeIntSum:
+		return metric.IntSum().DataPoints().Len()
+	case pdata.MetricDataTypeDoubleSum:
+		return metric.DoubleSum().DataPoints().Len()
+	case pdata.MetricDataTypeIntHistogram:
+		return metric.IntHistogram().DataPoints().Len()
+	case pdata.MetricDataTypeHistogram:
+		return metric.Histogram().DataPoints().Len()
+	case pdata.MetricDataTypeSummary:
+		return metric.Summary().DataPoints().Len()
+	default:
+		// Intentionally returning -1 so that we crash loudly instead
+		// of silently passing.
+		panic(fmt.Sprintf("Cannot determine the length of a unknown type: %d::%s", dataType, dataType))
+	}
+}
+
 // Returns  the number of timeseries that had reset start times.
 func (ma *MetricsAdjusterPdata) adjustMetricTimeseries(metric *pdata.Metric) int {
-	resets := 0
-	filtered := make([]*metricspb.TimeSeries, 0, len(metric.GetTimeseries()))
-	for _, current := range metric.GetTimeseries() {
-		tsi := ma.tsm.get(metric, current.GetLabelValues())
-		if tsi.initial == nil || !ma.adjustTimeseries(metric.MetricDescriptor.Type, current, tsi.initial, tsi.previous) {
-			// initial || reset timeseries
-			tsi.initial = current
-			resets++
-		}
-		tsi.previous = current
-		filtered = append(filtered, current)
-	}
-	metric.Timeseries = filtered
-	return resets
+	// TODO (@odeke-em): Fill me in.
+	return -1
 }
 
 // Returns true if 'current' was adjusted and false if 'current' is an the initial occurrence or a
 // reset of the timeseries.
-func (ma *MetricsAdjusterPdata) adjustTimeseries(metricType pdata.MetricDataType, current, initial, previous *metricspb.TimeSeries) bool {
-	if !ma.adjustPoints(metricType, current.GetPoints(), initial.GetPoints(), previous.GetPoints()) {
-		return false
-	}
-	current.StartTimestamp = initial.StartTimestamp
-	return true
+func (ma *MetricsAdjusterPdata) adjustTimeseries(mType pdata.MetricDataType, current, initial, previous *metricspb.TimeSeries) bool {
+	// TODO (@odeke-em): Fill me in.
+	return false
 }
 
 func (ma *MetricsAdjusterPdata) adjustPoints(metricType pdata.MetricDataType, current, initial, previous []*metricspb.Point) bool {
@@ -275,31 +281,6 @@ func (ma *MetricsAdjusterPdata) adjustPoints(metricType pdata.MetricDataType, cu
 }
 
 func (ma *MetricsAdjusterPdata) isReset(metricType pdata.MetricDataType, current, previous *metricspb.Point) bool {
-	switch metricType {
-	case pdata.MetricDataTypeDoubleSum:
-		if current.GetDoubleValue() < previous.GetDoubleValue() {
-			// reset detected
-			return false
-		}
-	case pdata.MetricDataTypeHistogram:
-		// note: sum of squared deviation not currently supported
-		currentDist := current.GetDistributionValue()
-		previousDist := previous.GetDistributionValue()
-		if currentDist.Count < previousDist.Count || currentDist.Sum < previousDist.Sum {
-			// reset detected
-			return false
-		}
-	case metricspb.MetricDescriptor_SUMMARY:
-		currentSummary := current.GetSummaryValue()
-		previousSummary := previous.GetSummaryValue()
-		if currentSummary.Count.GetValue() < previousSummary.Count.GetValue() || currentSummary.Sum.GetValue() < previousSummary.Sum.GetValue() {
-			// reset detected
-			return false
-		}
-	default:
-		// this shouldn't happen
-		ma.logger.Info("Adjust - skipping unexpected point", zap.String("type", metricType.String()))
-	}
-	return true
+	// TODO (@odeke-em): Fill me in.
+	return false
 }
-*/

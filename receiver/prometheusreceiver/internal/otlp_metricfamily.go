@@ -88,9 +88,9 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache) MetricFamily {
 	}
 }
 
-func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string) *pdata.HistogramDataPoint {
-	if !(mg.hasCount) || len(mg.complexValue) == 0 {
-		return nil
+func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest *pdata.HistogramDataPointSlice) bool {
+	if !mg.hasCount || len(mg.complexValue) == 0 {
+		return false
 	}
 
 	mg.sortPoints()
@@ -112,7 +112,7 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string) *pdat
 		bucketCounts[i] = uint64(adjustedCount)
 	}
 
-	point := pdata.NewHistogramDataPoint()
+	point := dest.AppendEmpty()
 	point.SetExplicitBounds(bounds)
 	point.SetCount(uint64(mg.count))
 	point.SetSum(mg.sum)
@@ -120,15 +120,15 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string) *pdat
 	point.SetStartTimestamp(pdata.Timestamp(mg.ts))
 	point.SetTimestamp(pdata.Timestamp(mg.ts))
 
-	return &point
+	return true
 }
 
-func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string) *pdata.SummaryDataPoint {
+func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdata.SummaryDataPointSlice) bool {
 	// expecting count to be provided, however, in the following two cases, they can be missed.
 	// 1. data is corrupted
 	// 2. ignored by startValue evaluation
-	if !(mg.hasCount) {
-		return nil
+	if !mg.hasCount {
+		return false
 	}
 
 	mg.sortPoints()
@@ -140,7 +140,7 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string) *pdata.Sum
 		quantile.SetQuantile(p.boundary * 100)
 	}
 
-	point := pdata.NewSummaryDataPoint()
+	point := dest.AppendEmpty()
 	quantileValues.CopyTo(point.QuantileValues())
 
 	strMap := populateLabelValuesPdata(orderedLabelKeys, mg.ls)
@@ -155,7 +155,7 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string) *pdata.Sum
 	point.SetSum(mg.sum)
 	point.SetCount(uint64(mg.count))
 
-	return &point
+	return true
 }
 
 func populateLabelValuesPdata(orderedKeys []string, ls labels.Labels) pdata.StringMap {
@@ -262,10 +262,9 @@ func (mf *metricFamilyPdata) ToMetricPdata() (metric *pdata.Metric, nTotalTimese
 	case pdata.MetricDataTypeHistogram:
 		histogramDataPoints := pdata.NewHistogramDataPointSlice()
 		for _, mg := range mf.getGroups() {
-			histogramPoint := mg.toDistributionPoint(mf.labelKeysOrdered)
-			if histogramPoint != nil {
-				histogramDataPoints.Append(*histogramPoint)
-			} else {
+			// The API for adding points to a HistogramDataPointSlice is so awkward
+			// and doesn't have a simple way of adding a point and requires
+			if added := mg.toDistributionPoint(mf.labelKeysOrdered, &histogramDataPoints); !added {
 				mf.droppedTimeseries++
 			}
 		}
@@ -282,10 +281,7 @@ func (mf *metricFamilyPdata) ToMetricPdata() (metric *pdata.Metric, nTotalTimese
 	case pdata.MetricDataTypeSummary:
 		summaryDataPoints := pdata.NewSummaryDataPointSlice()
 		for _, mg := range mf.getGroups() {
-			summaryPoint := mg.toSummaryPoint(mf.labelKeysOrdered)
-			if summaryPoint != nil {
-				summaryDataPoints.Append(*summaryPoint)
-			} else {
+			if added := mg.toSummaryPoint(mf.labelKeysOrdered, &summaryDataPoints); !added {
 				mf.droppedTimeseries++
 			}
 		}
@@ -302,10 +298,7 @@ func (mf *metricFamilyPdata) ToMetricPdata() (metric *pdata.Metric, nTotalTimese
 	default:
 		doubleDataPoints := pdata.NewDoubleDataPointSlice()
 		for _, mg := range mf.getGroups() {
-			doublePoint := mg.toDoublePoint(mf.labelKeysOrdered)
-			if doublePoint != nil {
-				doubleDataPoints.Append(*doublePoint)
-			} else {
+			if added := mg.toDoublePoint(mf.labelKeysOrdered, &doubleDataPoints); !added {
 				mf.droppedTimeseries++
 			}
 		}
@@ -331,7 +324,7 @@ func (mf *metricFamilyPdata) ToMetricPdata() (metric *pdata.Metric, nTotalTimese
 	return metric, numTimeseries + mf.droppedTimeseries, mf.droppedTimeseries
 }
 
-func (mg *metricGroupPdata) toDoublePoint(orderedLabelKeys []string) *pdata.DoubleDataPoint {
+func (mg *metricGroupPdata) toDoublePoint(orderedLabelKeys []string, dest *pdata.DoubleDataPointSlice) bool {
 	var startTs int64
 	// gauge/undefined types has no start time
 	if mg.family.isCumulativeTypePdata() {
@@ -343,5 +336,5 @@ func (mg *metricGroupPdata) toDoublePoint(orderedLabelKeys []string) *pdata.Doub
 	point.SetTimestamp(pdata.Timestamp(mg.ts))
 	point.SetValue(mg.value)
 
-	return &point
+	return true
 }

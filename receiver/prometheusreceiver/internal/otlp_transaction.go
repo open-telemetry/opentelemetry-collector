@@ -26,9 +26,8 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // A transaction is corresponding to an individual scrape operation or stale report.
@@ -40,7 +39,7 @@ import (
 type transactionPdata struct {
 	*transaction
 	resource      pdata.Resource
-	metricBuilder *metricBuilderPdata
+	jobsMap       *JobsMapPdata
 }
 
 func newTransactionPdata(
@@ -116,7 +115,7 @@ func (tr *transactionPdata) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.resource = createNodeAndResourcePdata(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilderPdata(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger)
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.stalenessStore)
 	tr.isNew = false
 	return nil
 }
@@ -130,6 +129,7 @@ func (tr *transactionPdata) Commit() error {
 	}
 
 	ctx := tr.obsrecv.StartMetricsOp(tr.ctx)
+	var metricsL []*pdata.Metric
 	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {
 		// Only error by Build() is errNoDataToBuild, with numReceivedPoints set to zero.
@@ -149,16 +149,30 @@ func (tr *transactionPdata) Commit() error {
 		}
 
 		adjustStartTimestampPdata(tr.metricBuilder.startTime, metrics)
+		metricsL = append(metricsL, metrics)
 	} else {
 		// AdjustMetrics - jobsMap has to be non-nil in this case.
 		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetrics()
-		metrics, _ = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
+		metricsL, _ = NewMetricsAdjusterPdata(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetricsPdata(metrics)
 	}
 
 	numPoints := 0
-	if len(metrics) > 0 {
-                numPoints = 
-		err = tr.sink.ConsumeMetrics(ctx, metrics)
+	if len(metricsL) > 0 {
+		pMetrics := pdata.NewMetrics()
+		rmL := pMetrics.ResourceMetrics()
+		rMetric := rmL.AppendEmpty()
+		ilMetricL := rMetric.InstrumentationLibraryMetrics()
+		ilMetrics := ilMetricL.AppendEmpty()
+		derivedMetrics := ilMetrics.Metrics()
+		for _, metric := range metricsL {
+			destMetric := derivedMetrics.AppendEmpty()
+			metric.CopyTo(destMetric)
+			numPoints += pdataMetricLen(metric)
+		}
+		// Also copy over the resource.
+		destResource := rMetric.Resource()
+		tr.resource.CopyTo(destResource)
+		err = tr.sink.ConsumeMetrics(ctx, pMetrics)
 	}
 	tr.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
 	return err
@@ -167,7 +181,7 @@ func (tr *transactionPdata) Commit() error {
 func adjustStartTimestampPdata(startTime float64, metrics []*pdata.Metric) {
 	startTimeTs := pdata.Timestamp(startTime)
 	for _, metric := range metrics {
-		switch metric.MetricDataType() {
+		switch metric.DataType() {
 		case pdata.MetricDataTypeDoubleGauge, pdata.MetricDataTypeHistogram:
 			continue
 
@@ -196,13 +210,6 @@ func adjustStartTimestampPdata(startTime float64, metrics []*pdata.Metric) {
 
 		case pdata.MetricDataTypeDoubleSum:
 			dataPoints := metric.DoubleSum().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
-				point := dataPoints.At(i)
-				point.SetStartTimestamp(startTimeTs)
-			}
-
-		case pdata.MetricDataTypeIntHistogram:
-			dataPoints := metric.IntHistogram().DataPoints()
 			for i := 0; i < dataPoints.Len(); i++ {
 				point := dataPoints.At(i)
 				point.SetStartTimestamp(startTimeTs)
