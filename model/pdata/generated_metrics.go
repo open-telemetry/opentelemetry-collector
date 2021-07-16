@@ -678,8 +678,8 @@ func NewGauge() Gauge {
 }
 
 // DataPoints returns the DataPoints associated with this Gauge.
-func (ms Gauge) DataPoints() DoubleDataPointSlice {
-	return newDoubleDataPointSlice(&(*ms.orig).DataPoints)
+func (ms Gauge) DataPoints() NumberDataPointSlice {
+	return newNumberDataPointSlice(&(*ms.orig).DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -784,8 +784,8 @@ func (ms Sum) SetIsMonotonic(v bool) {
 }
 
 // DataPoints returns the DataPoints associated with this Sum.
-func (ms Sum) DataPoints() DoubleDataPointSlice {
-	return newDoubleDataPointSlice(&(*ms.orig).DataPoints)
+func (ms Sum) DataPoints() NumberDataPointSlice {
+	return newNumberDataPointSlice(&(*ms.orig).DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1139,34 +1139,34 @@ func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
 	ms.Exemplars().CopyTo(dest.Exemplars())
 }
 
-// DoubleDataPointSlice logically represents a slice of DoubleDataPoint.
+// NumberDataPointSlice logically represents a slice of NumberDataPoint.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewDoubleDataPointSlice function to create new instances.
+// Must use NewNumberDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleDataPointSlice struct {
+type NumberDataPointSlice struct {
 	// orig points to the slice otlpmetrics.NumberDataPoint field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlpmetrics.NumberDataPoint
 }
 
-func newDoubleDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) DoubleDataPointSlice {
-	return DoubleDataPointSlice{orig}
+func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
+	return NumberDataPointSlice{orig}
 }
 
-// NewDoubleDataPointSlice creates a DoubleDataPointSlice with 0 elements.
+// NewNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewDoubleDataPointSlice() DoubleDataPointSlice {
+func NewNumberDataPointSlice() NumberDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint(nil)
-	return DoubleDataPointSlice{&orig}
+	return NumberDataPointSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewDoubleDataPointSlice()".
-func (es DoubleDataPointSlice) Len() int {
+// Returns "0" for a newly instance created with "NewNumberDataPointSlice()".
+func (es NumberDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -1177,18 +1177,18 @@ func (es DoubleDataPointSlice) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
-func (es DoubleDataPointSlice) At(ix int) DoubleDataPoint {
-	return newDoubleDataPoint((*es.orig)[ix])
+func (es NumberDataPointSlice) At(ix int) NumberDataPoint {
+	return newNumberDataPoint((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
+func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newDoubleDataPoint((*es.orig)[i]).CopyTo(newDoubleDataPoint((*dest.orig)[i]))
+			newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1196,7 +1196,7 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 	wrappers := make([]*otlpmetrics.NumberDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newDoubleDataPoint((*es.orig)[i]).CopyTo(newDoubleDataPoint(wrappers[i]))
+		newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1205,14 +1205,14 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new DoubleDataPointSlice can be initialized:
-//   es := NewDoubleDataPointSlice()
+// Here is how a new NumberDataPointSlice can be initialized:
+//   es := NewNumberDataPointSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
 //       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es DoubleDataPointSlice) EnsureCapacity(newCap int) {
+func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -1227,8 +1227,8 @@ func (es DoubleDataPointSlice) EnsureCapacity(newCap int) {
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
-// Here is how a new DoubleDataPointSlice can be initialized:
-//   es := NewDoubleDataPointSlice()
+// Here is how a new NumberDataPointSlice can be initialized:
+//   es := NewNumberDataPointSlice()
 //   es.Resize(4)
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
@@ -1236,7 +1236,7 @@ func (es DoubleDataPointSlice) EnsureCapacity(newCap int) {
 //   }
 //
 // Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es DoubleDataPointSlice) Resize(newLen int) {
+func (es NumberDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
@@ -1255,16 +1255,16 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 	}
 }
 
-// AppendEmpty will append to the end of the slice an empty DoubleDataPoint.
-// It returns the newly added DoubleDataPoint.
-func (es DoubleDataPointSlice) AppendEmpty() DoubleDataPoint {
+// AppendEmpty will append to the end of the slice an empty NumberDataPoint.
+// It returns the newly added NumberDataPoint.
+func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.NumberDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
+func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -1276,7 +1276,7 @@ func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es DoubleDataPointSlice) RemoveIf(f func(DoubleDataPoint) bool) {
+func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -1294,72 +1294,72 @@ func (es DoubleDataPointSlice) RemoveIf(f func(DoubleDataPoint) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
+// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleDataPoint function to create new instances.
+// Must use NewNumberDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleDataPoint struct {
+type NumberDataPoint struct {
 	orig *otlpmetrics.NumberDataPoint
 }
 
-func newDoubleDataPoint(orig *otlpmetrics.NumberDataPoint) DoubleDataPoint {
-	return DoubleDataPoint{orig: orig}
+func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
+	return NumberDataPoint{orig: orig}
 }
 
-// NewDoubleDataPoint creates a new empty DoubleDataPoint.
+// NewNumberDataPoint creates a new empty NumberDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleDataPoint() DoubleDataPoint {
-	return newDoubleDataPoint(&otlpmetrics.NumberDataPoint{})
+func NewNumberDataPoint() NumberDataPoint {
+	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) LabelsMap() StringMap {
+// LabelsMap returns the Labels associated with this NumberDataPoint.
+func (ms NumberDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTimestamp returns the starttimestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) StartTimestamp() Timestamp {
+// StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
+func (ms NumberDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTimestamp replaces the starttimestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetStartTimestamp(v Timestamp) {
+// SetStartTimestamp replaces the starttimestamp associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
-// Timestamp returns the timestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) Timestamp() Timestamp {
+// Timestamp returns the timestamp associated with this NumberDataPoint.
+func (ms NumberDataPoint) Timestamp() Timestamp {
 	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetTimestamp(v Timestamp) {
+// SetTimestamp replaces the timestamp associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Value returns the value associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) Value() float64 {
+// Value returns the value associated with this NumberDataPoint.
+func (ms NumberDataPoint) Value() float64 {
 	return (*ms.orig).GetAsDouble()
 }
 
-// SetValue replaces the value associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetValue(v float64) {
+// SetValue replaces the value associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetValue(v float64) {
 	(*ms.orig).Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
-// Exemplars returns the Exemplars associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) Exemplars() ExemplarSlice {
+// Exemplars returns the Exemplars associated with this NumberDataPoint.
+func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
+func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())

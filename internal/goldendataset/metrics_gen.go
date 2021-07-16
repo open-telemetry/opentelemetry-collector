@@ -167,7 +167,7 @@ func populateIntPoints(cfg MetricsCfg, pts pdata.IntDataPointSlice) {
 	}
 }
 
-func populateDoublePoints(cfg MetricsCfg, pts pdata.DoubleDataPointSlice) {
+func populateDoublePoints(cfg MetricsCfg, pts pdata.NumberDataPointSlice) {
 	pts.EnsureCapacity(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.AppendEmpty()

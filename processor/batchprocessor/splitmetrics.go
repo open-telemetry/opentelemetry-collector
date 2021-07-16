@@ -134,7 +134,7 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 		for j := 0; j < size; j++ {
 			src.At(j).CopyTo(dst.AppendEmpty())
 		}
-		src.RemoveIf(func(_ pdata.DoubleDataPoint) bool {
+		src.RemoveIf(func(_ pdata.NumberDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntSum:
@@ -154,7 +154,7 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 		for j := 0; j < size; j++ {
 			src.At(j).CopyTo(dst.AppendEmpty())
 		}
-		src.RemoveIf(func(_ pdata.DoubleDataPoint) bool {
+		src.RemoveIf(func(_ pdata.NumberDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeIntHistogram:

@@ -42,8 +42,8 @@ var metricsFile = &File{
 		summary,
 		intDataPointSlice,
 		intDataPoint,
-		doubleDataPointSlice,
-		doubleDataPoint,
+		numberDataPointSlice,
+		numberDataPoint,
 		intHistogramDataPointSlice,
 		intHistogramDataPoint,
 		histogramDataPointSlice,
@@ -148,7 +148,7 @@ var doubleGauge = &messageValueStruct{
 		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
-			returnSlice:     doubleDataPointSlice,
+			returnSlice:     numberDataPointSlice,
 		},
 	},
 }
@@ -178,7 +178,7 @@ var doubleSum = &messageValueStruct{
 		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
-			returnSlice:     doubleDataPointSlice,
+			returnSlice:     numberDataPointSlice,
 		},
 	},
 }
@@ -242,14 +242,14 @@ var intDataPoint = &messageValueStruct{
 	},
 }
 
-var doubleDataPointSlice = &sliceOfPtrs{
-	structName: "DoubleDataPointSlice",
-	element:    doubleDataPoint,
+var numberDataPointSlice = &sliceOfPtrs{
+	structName: "NumberDataPointSlice",
+	element:    numberDataPoint,
 }
 
-var doubleDataPoint = &messageValueStruct{
-	structName:     "DoubleDataPoint",
-	description:    "// DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
+var numberDataPoint = &messageValueStruct{
+	structName:     "NumberDataPoint",
+	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
 		labelsField,

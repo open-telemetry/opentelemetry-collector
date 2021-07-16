@@ -139,11 +139,11 @@ func diffMetricDescriptor(
 
 func diffDoublePts(
 	diffs []*MetricDiff,
-	expected pdata.DoubleDataPointSlice,
-	actual pdata.DoubleDataPointSlice,
+	expected pdata.NumberDataPointSlice,
+	actual pdata.NumberDataPointSlice,
 ) []*MetricDiff {
 	var mismatch bool
-	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "DoubleDataPointSlice len")
+	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "NumberDataPointSlice len")
 	if mismatch {
 		return diffs
 	}
@@ -155,10 +155,10 @@ func diffDoublePts(
 
 func diffDoublePt(
 	diffs []*MetricDiff,
-	expected pdata.DoubleDataPoint,
-	actual pdata.DoubleDataPoint,
+	expected pdata.NumberDataPoint,
+	actual pdata.NumberDataPoint,
 ) []*MetricDiff {
-	diffs = diff(diffs, expected.Value(), actual.Value(), "DoubleDataPoint value")
+	diffs = diff(diffs, expected.Value(), actual.Value(), "NumberDataPoint value")
 	return diffDoubleExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }
 

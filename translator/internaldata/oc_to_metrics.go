@@ -195,11 +195,11 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	case pdata.MetricDataTypeIntGauge:
 		fillIntDataPoint(ocMetric, metric.IntGauge().DataPoints())
 	case pdata.MetricDataTypeGauge:
-		fillDoubleDataPoint(ocMetric, metric.Gauge().DataPoints())
+		fillNumberDataPointAsDouble(ocMetric, metric.Gauge().DataPoints())
 	case pdata.MetricDataTypeIntSum:
 		fillIntDataPoint(ocMetric, metric.IntSum().DataPoints())
 	case pdata.MetricDataTypeSum:
-		fillDoubleDataPoint(ocMetric, metric.Sum().DataPoints())
+		fillNumberDataPointAsDouble(ocMetric, metric.Sum().DataPoints())
 	case pdata.MetricDataTypeHistogram:
 		fillDoubleHistogramDataPoint(ocMetric, metric.Histogram().DataPoints())
 	case pdata.MetricDataTypeSummary:
@@ -253,7 +253,7 @@ func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 	}
 }
 
-func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSlice) {
+func fillNumberDataPointAsDouble(ocMetric *ocmetrics.Metric, dps pdata.NumberDataPointSlice) {
 	ocPointsCount := getPointsCount(ocMetric)
 	dps.EnsureCapacity(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()

@@ -266,9 +266,9 @@ func sanitizeRune(r rune) rune {
 	return '_'
 }
 
-// addSingleDoubleDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
+// addSingleNumberDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
 // to its corresponding time series in tsMap
-func addSingleDoubleDataPoint(pt pdata.DoubleDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
+func addSingleNumberDataPoint(pt pdata.NumberDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	// create parameters for addSample
 	name := getPromMetricName(metric, namespace)
