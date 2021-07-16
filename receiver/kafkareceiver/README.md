@@ -1,8 +1,10 @@
 # Kafka Receiver
 
-Kafka receiver receives traces from Kafka. Message payload encoding is configurable.
+Kafka receiver receives traces, metrics, and logs from Kafka. Message payload encoding is configurable.
 
-Supported pipeline types: traces, logs
+Supported pipeline types: metrics, traces, logs
+
+Note that metrics and logs only support OTLP.
 
 ## Getting Started
 
