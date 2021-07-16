@@ -1,0 +1,19 @@
+extensions:
+  memory_ballast:
+    size_in_percentage: 200
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [memory_ballast]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

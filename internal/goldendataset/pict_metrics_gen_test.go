@@ -60,7 +60,7 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     1,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: pdata.MetricDataTypeDoubleGauge,
+				MetricDescriptorType: pdata.MetricDataTypeGauge,
 				NumPtLabels:          1,
 			},
 		},

@@ -24,11 +24,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver/internal"
 )
-
-const transport = "http"
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
@@ -80,9 +77,8 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	}
 	// Per component.Component Start instructions, for async operations we should not use the
 	// incoming context, it may get cancelled.
-	receiverCtx := obsreport.ReceiverContext(context.Background(), r.cfg.ID(), transport)
 	r.ocaStore = internal.NewOcaStore(
-		receiverCtx,
+		context.Background(),
 		r.consumer,
 		r.logger,
 		jobsMap,

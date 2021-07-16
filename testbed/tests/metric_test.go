@@ -36,7 +36,7 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 		dataProvider,
 		testbed.NewOCMetricDataSender(testbed.DefaultHost, 55678),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-		&testbed.ChildProcess{},
+		testbed.NewChildProcessCollector(),
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 200, ExpectedMaxRAM: 200}),
@@ -119,7 +119,7 @@ func TestMetricsFromFile(t *testing.T) {
 		// ItemsPerBatch is based on the data from the file.
 		ItemsPerBatch: dataProvider.ItemsPerBatch,
 	}
-	agentProc := &testbed.ChildProcess{}
+	agentProc := testbed.NewChildProcessCollector()
 
 	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))

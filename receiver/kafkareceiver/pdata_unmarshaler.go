@@ -23,6 +23,10 @@ type pdataLogsUnmarshaler struct {
 	encoding string
 }
 
+func (p pdataLogsUnmarshaler) Unmarshal(buf []byte) (pdata.Logs, error) {
+	return p.LogsUnmarshaler.UnmarshalLogs(buf)
+}
+
 func (p pdataLogsUnmarshaler) Encoding() string {
 	return p.encoding
 }
@@ -39,6 +43,10 @@ type pdataTracesUnmarshaler struct {
 	encoding string
 }
 
+func (p pdataTracesUnmarshaler) Unmarshal(buf []byte) (pdata.Traces, error) {
+	return p.TracesUnmarshaler.UnmarshalTraces(buf)
+}
+
 func (p pdataTracesUnmarshaler) Encoding() string {
 	return p.encoding
 }
@@ -53,6 +61,10 @@ func newPdataTracesUnmarshaler(unmarshaler pdata.TracesUnmarshaler, encoding str
 type pdataMetricsUnmarshaler struct {
 	pdata.MetricsUnmarshaler
 	encoding string
+}
+
+func (p pdataMetricsUnmarshaler) Unmarshal(buf []byte) (pdata.Metrics, error) {
+	return p.MetricsUnmarshaler.UnmarshalMetrics(buf)
 }
 
 func (p pdataMetricsUnmarshaler) Encoding() string {

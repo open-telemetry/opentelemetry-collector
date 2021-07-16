@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package prometheusremotewriteexporter implements an exporter that sends Prometheus remote write requests.
 package prometheusremotewriteexporter
 
 import (
@@ -130,9 +129,9 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 
 					// handle individual metric based on type
 					switch metric.DataType() {
-					case pdata.MetricDataTypeDoubleGauge:
-						dataPoints := metric.DoubleGauge().DataPoints()
-						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
+					case pdata.MetricDataTypeGauge:
+						dataPoints := metric.Gauge().DataPoints()
+						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
 						}
@@ -142,9 +141,9 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 							dropped++
 							errs = append(errs, err)
 						}
-					case pdata.MetricDataTypeDoubleSum:
-						dataPoints := metric.DoubleSum().DataPoints()
-						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
+					case pdata.MetricDataTypeSum:
+						dataPoints := metric.Sum().DataPoints()
+						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
 						}
@@ -231,12 +230,12 @@ func (prwe *PRWExporter) addIntDataPointSlice(dataPoints pdata.IntDataPointSlice
 	return nil
 }
 
-func (prwe *PRWExporter) addDoubleDataPointSlice(dataPoints pdata.DoubleDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+func (prwe *PRWExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	if dataPoints.Len() == 0 {
 		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 	}
 	for x := 0; x < dataPoints.Len(); x++ {
-		addSingleDoubleDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+		addSingleNumberDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }

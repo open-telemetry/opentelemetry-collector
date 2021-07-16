@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -66,7 +64,7 @@ type logsExporter struct {
 // NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
 	cfg config.Exporter,
-	logger *zap.Logger,
+	set component.ExporterCreateSettings,
 	pusher consumerhelper.ConsumeLogsFunc,
 	options ...Option,
 ) (component.LogsExporter, error) {
@@ -74,7 +72,7 @@ func NewLogsExporter(
 		return nil, errNilConfig
 	}
 
-	if logger == nil {
+	if set.Logger == nil {
 		return nil, errNilLogger
 	}
 
@@ -83,7 +81,7 @@ func NewLogsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, logger, bs)
+	be := newBaseExporter(cfg, set.Logger, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
 			obsrep:     be.obsrep,

@@ -16,14 +16,7 @@
 
 package iruntime
 
-import (
-	"fmt"
-)
-
-var errTotalMemoryNotAvailable = fmt.Errorf("reading cgroups total memory is available only on linux")
-
-// TotalMemory returns total available memory.
-// This is non-Linux version that returns -1 and errTotalMemoryNotAvailable.
-func TotalMemory() (int64, error) {
-	return -1, errTotalMemoryNotAvailable
+// TotalMemory returns total available memory for non-linux platforms.
+func TotalMemory() (uint64, error) {
+	return readMemInfo()
 }

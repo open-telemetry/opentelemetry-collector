@@ -17,6 +17,35 @@
 
 package testbed
 
+import (
+	"time"
+)
+
+// ResourceSpec is a resource consumption specification.
+type ResourceSpec struct {
+	// Percentage of one core the process is expected to consume at most.
+	// Test is aborted and failed if consumption during
+	// ResourceCheckPeriod exceeds this number. If 0 the CPU
+	// consumption is not monitored and does not affect the test result.
+	ExpectedMaxCPU uint32
+
+	// Maximum RAM in MiB the process is expected to consume.
+	// Test is aborted and failed if consumption exceeds this number.
+	// If 0 memory consumption is not monitored and does not affect
+	// the test result.
+	ExpectedMaxRAM uint32
+
+	// Period during which CPU and RAM of the process are measured.
+	// Bigger numbers will result in more averaging of short spikes.
+	ResourceCheckPeriod time.Duration
+}
+
+// isSpecified returns true if any part of ResourceSpec is specified,
+// i.e. has non-zero value.
+func (rs *ResourceSpec) isSpecified() bool {
+	return rs != nil && (rs.ExpectedMaxCPU != 0 || rs.ExpectedMaxRAM != 0)
+}
+
 // TestCaseOption defines a TestCase option.
 type TestCaseOption func(t *TestCase)
 

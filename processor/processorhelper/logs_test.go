@@ -77,14 +77,8 @@ func TestNewLogsProcessor_ProcessLogsErrSkipProcessingData(t *testing.T) {
 	assert.Equal(t, nil, lp.ConsumeLogs(context.Background(), pdata.NewLogs()))
 }
 
-type testLProcessor struct {
-	retError error
-}
-
-func newTestLProcessor(retError error) LProcessor {
-	return &testLProcessor{retError: retError}
-}
-
-func (tlp *testLProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
-	return ld, tlp.retError
+func newTestLProcessor(retError error) ProcessLogsFunc {
+	return func(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+		return ld, retError
+	}
 }

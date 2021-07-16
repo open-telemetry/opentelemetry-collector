@@ -49,7 +49,7 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	_ *zap.Logger,
 	config internal.Config,
-) (scraperhelper.MetricsScraper, error) {
+) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
 	s, err := newFileSystemScraper(ctx, cfg)
 	if err != nil {

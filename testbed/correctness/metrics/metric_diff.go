@@ -106,16 +106,16 @@ func DiffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric)
 	switch actual.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		diffs = diffIntPts(diffs, expected.IntGauge().DataPoints(), actual.IntGauge().DataPoints())
-	case pdata.MetricDataTypeDoubleGauge:
-		diffs = diffDoublePts(diffs, expected.DoubleGauge().DataPoints(), actual.DoubleGauge().DataPoints())
+	case pdata.MetricDataTypeGauge:
+		diffs = diffDoublePts(diffs, expected.Gauge().DataPoints(), actual.Gauge().DataPoints())
 	case pdata.MetricDataTypeIntSum:
 		diffs = diff(diffs, expected.IntSum().IsMonotonic(), actual.IntSum().IsMonotonic(), "IntSum IsMonotonic")
 		diffs = diff(diffs, expected.IntSum().AggregationTemporality(), actual.IntSum().AggregationTemporality(), "IntSum AggregationTemporality")
 		diffs = diffIntPts(diffs, expected.IntSum().DataPoints(), actual.IntSum().DataPoints())
-	case pdata.MetricDataTypeDoubleSum:
-		diffs = diff(diffs, expected.DoubleSum().IsMonotonic(), actual.DoubleSum().IsMonotonic(), "DoubleSum IsMonotonic")
-		diffs = diff(diffs, expected.DoubleSum().AggregationTemporality(), actual.DoubleSum().AggregationTemporality(), "DoubleSum AggregationTemporality")
-		diffs = diffDoublePts(diffs, expected.DoubleSum().DataPoints(), actual.DoubleSum().DataPoints())
+	case pdata.MetricDataTypeSum:
+		diffs = diff(diffs, expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic(), "Sum IsMonotonic")
+		diffs = diff(diffs, expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality(), "Sum AggregationTemporality")
+		diffs = diffDoublePts(diffs, expected.Sum().DataPoints(), actual.Sum().DataPoints())
 	case pdata.MetricDataTypeIntHistogram:
 		diffs = diff(diffs, expected.IntHistogram().AggregationTemporality(), actual.IntHistogram().AggregationTemporality(), "IntHistogram AggregationTemporality")
 		diffs = diffIntHistogramPts(diffs, expected.IntHistogram().DataPoints(), actual.IntHistogram().DataPoints())
@@ -139,11 +139,11 @@ func diffMetricDescriptor(
 
 func diffDoublePts(
 	diffs []*MetricDiff,
-	expected pdata.DoubleDataPointSlice,
-	actual pdata.DoubleDataPointSlice,
+	expected pdata.NumberDataPointSlice,
+	actual pdata.NumberDataPointSlice,
 ) []*MetricDiff {
 	var mismatch bool
-	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "DoubleDataPointSlice len")
+	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "NumberDataPointSlice len")
 	if mismatch {
 		return diffs
 	}
@@ -155,10 +155,10 @@ func diffDoublePts(
 
 func diffDoublePt(
 	diffs []*MetricDiff,
-	expected pdata.DoubleDataPoint,
-	actual pdata.DoubleDataPoint,
+	expected pdata.NumberDataPoint,
+	actual pdata.NumberDataPoint,
 ) []*MetricDiff {
-	diffs = diff(diffs, expected.Value(), actual.Value(), "DoubleDataPoint value")
+	diffs = diff(diffs, expected.Value(), actual.Value(), "NumberDataPoint value")
 	return diffDoubleExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }
 

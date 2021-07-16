@@ -23,12 +23,12 @@ import (
 
 const fileSystemStatesLen = 2
 
-func appendFileSystemUsageStateDataPoints(idps pdata.IntDataPointSlice, startIdx int, now pdata.Timestamp, deviceUsage *deviceUsage) {
-	initializeFileSystemUsageDataPoint(idps.At(startIdx+0), now, deviceUsage.partition, metadata.LabelFilesystemState.Used, int64(deviceUsage.usage.Used))
-	initializeFileSystemUsageDataPoint(idps.At(startIdx+1), now, deviceUsage.partition, metadata.LabelFilesystemState.Free, int64(deviceUsage.usage.Free))
+func appendFileSystemUsageStateDataPoints(idps pdata.IntDataPointSlice, now pdata.Timestamp, deviceUsage *deviceUsage) {
+	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Used, int64(deviceUsage.usage.Used))
+	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Free, int64(deviceUsage.usage.Free))
 }
 
 const systemSpecificMetricsLen = 0
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, now pdata.Timestamp, deviceUsages []*deviceUsage) {
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, deviceUsages []*deviceUsage) {
 }

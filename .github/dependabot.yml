@@ -34,3 +34,7 @@ updates:
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/model"
+    schedule:
+      interval: "weekly"

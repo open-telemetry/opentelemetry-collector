@@ -467,7 +467,9 @@ func TestHttpCors(t *testing.T) {
 
 			ln, err := hss.ToListener()
 			assert.NoError(t, err)
-			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
 			go func() {
 				_ = s.Serve(ln)
 			}()
@@ -478,14 +480,18 @@ func TestHttpCors(t *testing.T) {
 
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
+			expectedStatus := http.StatusNoContent
+			if len(tt.CorsOrigins) == 0 {
+				expectedStatus = http.StatusOK
+			}
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", false, 200, tt.allowedWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", true, 200, tt.extraHeaderWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", false, 200, tt.disallowedWorks)
+			verifyCorsResp(t, url, "disallowed-origin.com", false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})

@@ -15,105 +15,23 @@
 package pdata
 
 import (
-	"fmt"
-
-	"go.opentelemetry.io/collector/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/model/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
-
-// TracesDecoder is an interface to decode bytes into protocol-specific data model.
-type TracesDecoder interface {
-	// DecodeTraces decodes bytes into protocol-specific data model.
-	// If the error is not nil, the returned interface cannot be used.
-	DecodeTraces(buf []byte) (interface{}, error)
-}
-
-// TracesEncoder is an interface to encode protocol-specific data model into bytes.
-type TracesEncoder interface {
-	// EncodeTraces encodes protocol-specific data model into bytes.
-	// If the error is not nil, the returned bytes slice cannot be used.
-	EncodeTraces(model interface{}) ([]byte, error)
-}
-
-// FromTracesTranslator is an interface to translate pdata.Traces into protocol-specific data model.
-type FromTracesTranslator interface {
-	// FromTraces translates pdata.Traces into protocol-specific data model.
-	// If the error is not nil, the returned pdata.Traces cannot be used.
-	FromTraces(td Traces) (interface{}, error)
-}
-
-// ToTracesTranslator is an interface to translate a protocol-specific data model into pdata.Traces.
-type ToTracesTranslator interface {
-	// ToTraces translates a protocol-specific data model into pdata.Traces.
-	// If the error is not nil, the returned pdata.Traces cannot be used.
-	ToTraces(src interface{}) (Traces, error)
-}
 
 // TracesMarshaler marshals pdata.Traces into bytes.
 type TracesMarshaler interface {
-	// Marshal the given pdata.Traces into bytes.
+	// MarshalTraces the given pdata.Traces into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
-	Marshal(td Traces) ([]byte, error)
-}
-
-type tracesMarshaler struct {
-	encoder    TracesEncoder
-	translator FromTracesTranslator
-}
-
-// NewTracesMarshaler returns a new TracesMarshaler.
-func NewTracesMarshaler(encoder TracesEncoder, translator FromTracesTranslator) TracesMarshaler {
-	return &tracesMarshaler{
-		encoder:    encoder,
-		translator: translator,
-	}
-}
-
-// Marshal pdata.Traces into bytes.
-func (t *tracesMarshaler) Marshal(td Traces) ([]byte, error) {
-	model, err := t.translator.FromTraces(td)
-	if err != nil {
-		return nil, fmt.Errorf("converting pdata to model failed: %w", err)
-	}
-	buf, err := t.encoder.EncodeTraces(model)
-	if err != nil {
-		return nil, fmt.Errorf("marshal failed: %w", err)
-	}
-	return buf, nil
+	MarshalTraces(td Traces) ([]byte, error)
 }
 
 // TracesUnmarshaler unmarshalls bytes into pdata.Traces.
 type TracesUnmarshaler interface {
-	// Unmarshal the given bytes into pdata.Traces.
+	// UnmarshalTraces the given bytes into pdata.Traces.
 	// If the error is not nil, the returned pdata.Traces cannot be used.
-	Unmarshal(buf []byte) (Traces, error)
-}
-
-type tracesUnmarshaler struct {
-	decoder    TracesDecoder
-	translator ToTracesTranslator
-}
-
-// NewTracesUnmarshaler returns a new TracesUnmarshaler.
-func NewTracesUnmarshaler(decoder TracesDecoder, translator ToTracesTranslator) TracesUnmarshaler {
-	return &tracesUnmarshaler{
-		decoder:    decoder,
-		translator: translator,
-	}
-}
-
-// Unmarshal bytes into pdata.Traces. On error pdata.Traces is invalid.
-func (t *tracesUnmarshaler) Unmarshal(buf []byte) (Traces, error) {
-	model, err := t.decoder.DecodeTraces(buf)
-	if err != nil {
-		return Traces{}, fmt.Errorf("unmarshal failed: %w", err)
-	}
-	td, err := t.translator.ToTraces(model)
-	if err != nil {
-		return Traces{}, fmt.Errorf("converting model to pdata failed: %w", err)
-	}
-	return td, nil
+	UnmarshalTraces(buf []byte) (Traces, error)
 }
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
@@ -132,31 +50,10 @@ func TracesFromInternalRep(wrapper internal.TracesWrapper) Traces {
 	return Traces{orig: internal.TracesToOtlp(wrapper)}
 }
 
-// TracesFromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes to the internal Traces.
-//
-// Returns an invalid Traces instance if error is not nil.
-func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
-	req := otlpcollectortrace.ExportTraceServiceRequest{}
-	if err := req.Unmarshal(data); err != nil {
-		return Traces{}, err
-	}
-	internal.TracesCompatibilityChanges(&req)
-	return Traces{orig: &req}, nil
-}
-
 // InternalRep returns internal representation of the Traces.
 // Should not be used outside this module.
 func (td Traces) InternalRep() internal.TracesWrapper {
 	return internal.TracesFromOtlp(td.orig)
-}
-
-// ToOtlpProtoBytes converts this Traces to the OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes.
-//
-// Returns an nil byte-array if error is not nil.
-func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
-	return td.orig.Marshal()
 }
 
 // Clone returns a copy of Traces.
@@ -208,7 +105,7 @@ func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String()
 
 const (
 	// SpanKindUnspecified represents that the SpanKind is unspecified, it MUST NOT be used.
-	SpanKindUnspecified = SpanKind(0)
+	SpanKindUnspecified = SpanKind(otlptrace.Span_SPAN_KIND_UNSPECIFIED)
 	// SpanKindInternal indicates that the span represents an internal operation within an application,
 	// as opposed to an operation happening at the boundaries. Default value.
 	SpanKindInternal = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)

@@ -51,12 +51,12 @@ func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 // matching metric type and field
 func validateMetrics(metric pdata.Metric) bool {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeDoubleGauge:
-		return metric.DoubleGauge().DataPoints().Len() != 0
+	case pdata.MetricDataTypeGauge:
+		return metric.Gauge().DataPoints().Len() != 0
 	case pdata.MetricDataTypeIntGauge:
 		return metric.IntGauge().DataPoints().Len() != 0
-	case pdata.MetricDataTypeDoubleSum:
-		return metric.DoubleSum().DataPoints().Len() != 0 && metric.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
+	case pdata.MetricDataTypeSum:
+		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeIntSum:
 		return metric.IntSum().DataPoints().Len() != 0 && metric.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeHistogram:
@@ -266,9 +266,9 @@ func sanitizeRune(r rune) rune {
 	return '_'
 }
 
-// addSingleDoubleDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
+// addSingleNumberDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
 // to its corresponding time series in tsMap
-func addSingleDoubleDataPoint(pt pdata.DoubleDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
+func addSingleNumberDataPoint(pt pdata.NumberDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	// create parameters for addSample
 	name := getPromMetricName(metric, namespace)

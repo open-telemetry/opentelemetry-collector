@@ -164,7 +164,7 @@ jobs:
           sudo make gotest | tee test-results/junit/unittests.out
       - name: Upload Unit Test Results
         if: always()
-        uses: actions/upload-artifact@v2.2.3
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: unittests-results
           path: test-results/junit/unittests.xml
@@ -197,7 +197,7 @@ jobs:
       - name: Create Collector Binaries Archive
         run: tar -cvf bin.tar ./bin
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@v2.2.3
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: collector-binaries
           path: ./bin.tar
@@ -248,7 +248,7 @@ jobs:
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v2.2.3
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: test-results
           path: test_results.tar
@@ -388,7 +388,7 @@ jobs:
               ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*x86_64.rpm
           fi
       - name: Upload Packages
-        uses: actions/upload-artifact@v2.2.3
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: build-packages
           path: ./dist
@@ -424,7 +424,7 @@ jobs:
       - name: Validate MSI
         run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - name: Upload MSI
-        uses: actions/upload-artifact@v2.2.3
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: msi-binaries
           path: ./dist
