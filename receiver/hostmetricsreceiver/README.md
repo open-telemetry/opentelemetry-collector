@@ -33,10 +33,13 @@ The available scrapers are:
 | paging     | All                          | Paging/Swap space utilization and I/O metrics
 | processes  | Linux                        | Process count metrics                                  |
 | process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+| conntrack  | Linux <sup>[2]</sup>         | Conntrack count and max connections metrics            |
 
 ### Notes
 
 <sup>[1]</sup> Not supported on Mac when compiled without cgo which is the default.
+
+<sup>[2]</sup> Requires [conntrack-tools](http://conntrack-tools.netfilter.org/) to be installed.
 
 Several scrapers support additional configuration:
 

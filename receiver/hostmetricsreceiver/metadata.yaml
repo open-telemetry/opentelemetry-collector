@@ -293,6 +293,22 @@ metrics:
       monotonic: false
     labels: [network.protocol, network.state]
 
+  system.connections.table.usage:
+    description: Number of currently allocated flow entries.
+    unit: "{flow entries}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
+  system.connections.table.limit:
+    description: Size of connection tracking table.
+    unit: "{flow entries}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
   system.paging.usage:
     description: Swap (unix) or pagefile (windows) usage.
     unit: By
