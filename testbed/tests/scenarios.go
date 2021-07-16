@@ -19,10 +19,14 @@ package tests
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
+	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,6 +36,7 @@ import (
 
 var (
 	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+	itemsPerIntervalEnvVar                               = "ITEMS_PER_INTERVAL"
 )
 
 // createConfigYaml creates a collector config file that corresponds to the
@@ -183,6 +188,89 @@ func Scenario10kItemsPerSecond(
 
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		"all data items received")
+
+	tc.StopAgent()
+
+	tc.ValidateData()
+}
+
+func Scenario10kScrapeItemsPerSecond(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec,
+	resultsSummary testbed.TestResultsSummary,
+	processors map[string]string,
+	extensions map[string]string,
+	scrapeInterval time.Duration,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	// Because there are 7 datapoints per metric, this amounts to 10k items per second
+	itemsPerInterval := int(10000 * scrapeInterval.Seconds() / 7)
+	itemsPerIntervalString := os.Getenv(itemsPerIntervalEnvVar)
+	if itemsPerIntervalString != "" {
+		itemsPerInterval, err = strconv.Atoi(itemsPerIntervalString)
+		if err != nil {
+			log.Fatalf("Invalid "+itemsPerIntervalEnvVar+": %v. Expecting a valid integer.", itemsPerInterval)
+		}
+	}
+	options := testbed.LoadOptions{
+		DataItemsPerSecond: itemsPerInterval,
+		ItemsPerBatch:      itemsPerInterval,
+		Parallel:           1,
+		IsScraping:         true,
+	}
+	agentProc := &testbed.ChildProcess{}
+
+	timeToWait := scrapeInterval
+	if timeToWait.Seconds() < 10 {
+		timeToWait = time.Second * 10
+	}
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	// Use specified resource limits if not a custom test
+	if os.Getenv(itemsPerIntervalEnvVar) != "" {
+		resourceSpec = testbed.ResourceSpec{}
+	}
+
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{IsScraping: true, ScrapeInterval: scrapeInterval},
+		performanceResultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
+	)
+	defer tc.Stop()
+
+	// EnableMetricTimestampRecording enables recording of the metric timestamps.
+	tc.MockBackend.EnableMetricTimestampRecording()
+
+	tc.StartBackend()
+	tc.StartAgent("--log-level=error")
+
+	tc.StartLoad(options)
+
+	tc.Sleep(tc.Duration)
+
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 },
+		timeToWait,
+		"load generator started")
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() <= tc.MockBackend.DataItemsReceived() },
+		timeToWait,
 		"all data items received")
 
 	tc.StopAgent()

@@ -21,6 +21,7 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,6 +101,44 @@ func TestMetric10kDPS(t *testing.T) {
 		})
 	}
 
+}
+
+func TestMetrics10kDPSScraped(t *testing.T) {
+	tests := []struct {
+		name           string
+		sender         testbed.DataSender
+		receiver       testbed.DataReceiver
+		resourceSpec   testbed.ResourceSpec
+		processors     map[string]string
+		scrapeInterval time.Duration
+	}{
+		{
+			"PrometheusReceiver-OTLPExporter",
+			testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "1s"),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 18,
+				ExpectedMaxRAM: 95,
+			},
+			map[string]string{},
+			time.Second,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			Scenario10kScrapeItemsPerSecond(
+				t,
+				test.sender,
+				test.receiver,
+				test.resourceSpec,
+				performanceResultsSummary,
+				test.processors,
+				nil,
+				test.scrapeInterval,
+			)
+		})
+	}
 }
 
 func TestMetricsFromFile(t *testing.T) {

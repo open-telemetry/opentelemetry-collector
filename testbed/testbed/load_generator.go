@@ -62,6 +62,8 @@ type LoadOptions struct {
 
 	// Parallel specifies how many goroutines to send from.
 	Parallel int
+
+	IsScraping bool
 }
 
 // NewLoadGenerator creates a load generator that sends data using specified sender.
