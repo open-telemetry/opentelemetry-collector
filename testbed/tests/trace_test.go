@@ -213,12 +213,14 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 			expectedMaxRAM: 100,
 			resultsSummary: performanceResultsSummary,
 		},
-	}, nil)
+	}, nil, nil)
 }
 
 func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
-	args := []string{"--mem-ballast-size-mib", "1000"}
-	Scenario1kSPSWithAttrs(t, args, []TestCase{
+	ballastExtCfg := `
+  memory_ballast:
+    size_mib: 1000`
+	Scenario1kSPSWithAttrs(t, []string{}, []TestCase{
 		// No attributes.
 		{
 			attrCount:      0,
@@ -248,11 +250,13 @@ func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 			expectedMaxRAM: 2000,
 			resultsSummary: performanceResultsSummary,
 		},
-	}, nil)
+	}, nil, map[string]string{"memory_ballast": ballastExtCfg})
 }
 
 func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
-	args := []string{"--mem-ballast-size-mib", "1000"}
+	ballastExtCfg := `
+  memory_ballast:
+    size_mib: 1000`
 
 	attrProcCfg := `
   attributes:
@@ -275,7 +279,7 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 
 	Scenario1kSPSWithAttrs(
 		t,
-		args,
+		[]string{},
 		[]TestCase{
 			{
 				attrCount:      0,
@@ -307,6 +311,7 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 			},
 		},
 		map[string]string{"attributes": attrProcCfg},
+		map[string]string{"memory_ballast": ballastExtCfg},
 	)
 }
 
