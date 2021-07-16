@@ -17,6 +17,8 @@ package otlpexporter
 import (
 	"context"
 	"net"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -25,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
@@ -71,10 +74,25 @@ func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
 	return r.lastRequest
 }
 
-func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
+func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesReceiver, error) {
+	sopts := []grpc.ServerOption{}
+
+	if useTLS {
+		_, currentFile, _, _ := runtime.Caller(0)
+		basepath := filepath.Dir(currentFile)
+		certpath := filepath.Join(basepath, "testdata/test_cert.pem")
+		keypath := filepath.Join(basepath, "testdata/test_key.pem")
+
+		creds, err := credentials.NewServerTLSFromFile(certpath, keypath)
+		if err != nil {
+			return nil, err
+		}
+		sopts = append(sopts, grpc.Creds(creds))
+	}
+
 	rcv := &mockTracesReceiver{
 		mockReceiver: mockReceiver{
-			srv: grpc.NewServer(),
+			srv: grpc.NewServer(sopts...),
 		},
 	}
 
@@ -84,7 +102,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener) *mockTracesReceiver {
 		_ = rcv.srv.Serve(ln)
 	}()
 
-	return rcv
+	return rcv, nil
 }
 
 type mockLogsReceiver struct {
@@ -165,7 +183,7 @@ func TestSendTraces(t *testing.T) {
 	// Start an OTLP-compatible receiver.
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-	rcv := otlpTracesReceiverOnGRPCServer(ln)
+	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	// Also closes the connection.
 	defer rcv.srv.GracefulStop()
 
@@ -227,6 +245,79 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, td, rcv.GetLastRequest())
 
 	require.EqualValues(t, rcv.GetMetadata().Get("header"), expectedHeader)
+}
+
+func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
+	tests := []struct {
+		name               string
+		useTLS             bool
+		scheme             string
+		gRPCClientSettings configgrpc.GRPCClientSettings
+	}{
+		{
+			name:               "Use https scheme",
+			useTLS:             true,
+			scheme:             "https://",
+			gRPCClientSettings: configgrpc.GRPCClientSettings{},
+		},
+		{
+			name:   "Use http scheme",
+			useTLS: false,
+			scheme: "http://",
+			gRPCClientSettings: configgrpc.GRPCClientSettings{
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: true,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Start an OTLP-compatible receiver.
+			ln, err := net.Listen("tcp", "localhost:")
+			require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+			rcv, err := otlpTracesReceiverOnGRPCServer(ln, test.useTLS)
+			require.NoError(t, err, "Failed to start mock OTLP receiver")
+			// Also closes the connection.
+			defer rcv.srv.GracefulStop()
+
+			// Start an OTLP exporter and point to the receiver.
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.GRPCClientSettings = test.gRPCClientSettings
+			cfg.GRPCClientSettings.Endpoint = test.scheme + ln.Addr().String()
+			if test.useTLS {
+				cfg.GRPCClientSettings.TLSSetting.InsecureSkipVerify = true
+			}
+			set := componenttest.NewNopExporterCreateSettings()
+			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+			require.NoError(t, err)
+			require.NotNil(t, exp)
+
+			defer func() {
+				assert.NoError(t, exp.Shutdown(context.Background()))
+			}()
+
+			host := componenttest.NewNopHost()
+			assert.NoError(t, exp.Start(context.Background(), host))
+
+			// Ensure that initially there is no data in the receiver.
+			assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+
+			// Send empty trace.
+			td := pdata.NewTraces()
+			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+
+			// Wait until it is received.
+			assert.Eventually(t, func() bool {
+				return atomic.LoadInt32(&rcv.requestCount) > 0
+			}, 10*time.Second, 5*time.Millisecond)
+
+			// Ensure it was received empty.
+			assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
+		})
+	}
 }
 
 func TestSendMetrics(t *testing.T) {
@@ -397,7 +488,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	}()
 
 	time.Sleep(2 * time.Second)
-	rcv := otlpTracesReceiverOnGRPCServer(ln)
+	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	defer rcv.srv.GracefulStop()
 	// Wait until one of the conditions below triggers.
 	select {
@@ -410,7 +501,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 }
 
 func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pdata.Traces, ln net.Listener) {
-	rcv := otlpTracesReceiverOnGRPCServer(ln)
+	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
