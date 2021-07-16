@@ -282,9 +282,9 @@ func TestDeprecatedIntGauge(t *testing.T) {
 								Labels: []otlpcommon.StringKeyValue{
 									{Key: "IntGaugeKey", Value: "IntGaugeValue"},
 								},
-								StartTimeUnixNano: 10,
-								TimeUnixNano:      11,
-								Value:             100,
+								StartTimeUnixNano: 12,
+								TimeUnixNano:      13,
+								Value:             101,
 								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
 							},
 						},
@@ -299,9 +299,106 @@ func TestDeprecatedIntGauge(t *testing.T) {
 								Labels: []otlpcommon.StringKeyValue{
 									{Key: "IntGaugeKey", Value: "IntGaugeValue"},
 								},
-								StartTimeUnixNano: 10,
-								TimeUnixNano:      11,
-								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 100},
+								StartTimeUnixNano: 12,
+								TimeUnixNano:      13,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 101},
+								Exemplars:         []otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
+			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+					{
+						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+							{
+								Metrics: test.inputMetrics,
+							},
+						}},
+				},
+			}
+			MetricsCompatibilityChanges(req)
+			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
+		})
+	}
+}
+
+func TestDeprecatedIntSum(t *testing.T) {
+	tests := []struct {
+		inputMetrics  []*otlpmetrics.Metric
+		outputMetrics []*otlpmetrics.Metric
+	}{
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Sum{
+					Sum: &otlpmetrics.Sum{
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "SumKey", Value: "SumValue"},
+								},
+								StartTimeUnixNano: 20,
+								TimeUnixNano:      21,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
+								Exemplars:         []otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Sum{
+					Sum: &otlpmetrics.Sum{
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "SumKey", Value: "SumValue"},
+								},
+								StartTimeUnixNano: 20,
+								TimeUnixNano:      21,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
+								Exemplars:         []otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_IntSum{
+					IntSum: &otlpmetrics.IntSum{ //nolint:staticcheck // SA1019 ignore this!
+						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntSumKey", Value: "IntSumValue"},
+								},
+								StartTimeUnixNano: 22,
+								TimeUnixNano:      23,
+								Value:             201,
+								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Sum{
+					Sum: &otlpmetrics.Sum{
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntSumKey", Value: "IntSumValue"},
+								},
+								StartTimeUnixNano: 22,
+								TimeUnixNano:      23,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
 								Exemplars:         []otlpmetrics.Exemplar{},
 							},
 						},

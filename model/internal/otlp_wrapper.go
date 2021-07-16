@@ -43,7 +43,7 @@ func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) Metr
 // MetricsCompatibilityChanges performs backward compatibility conversion on Metrics:
 // - Convert IntHistogram to Histogram. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L170
 // - Convert IntGauge to Gauge. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
-//
+// - Convert IntSum to Sum. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
 func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceRequest) {
 	for _, rsm := range req.ResourceMetrics {
 		for _, ilm := range rsm.InstrumentationLibraryMetrics {
@@ -53,7 +53,8 @@ func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceR
 					metric.Data = intHistogramToHistogram(m)
 				case *otlpmetrics.Metric_IntGauge:
 					metric.Data = intGaugeToGauge(m)
-				// TODO: add cases for IntSum
+				case *otlpmetrics.Metric_IntSum:
+					metric.Data = intSumToSum(m)
 				default:
 				}
 			}
@@ -155,6 +156,24 @@ func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge
 	}
 	return &otlpmetrics.Metric_Gauge{
 		Gauge: &otlpmetrics.Gauge{
+			DataPoints: datapoints,
+		},
+	}
+}
+
+func intSumToSum(src *otlpmetrics.Metric_IntSum) *otlpmetrics.Metric_Sum {
+	datapoints := []*otlpmetrics.NumberDataPoint{}
+	for _, datapoint := range src.IntSum.DataPoints {
+		datapoints = append(datapoints, &otlpmetrics.NumberDataPoint{
+			Labels:            datapoint.Labels,
+			TimeUnixNano:      datapoint.TimeUnixNano,
+			StartTimeUnixNano: datapoint.StartTimeUnixNano,
+			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
+			Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: datapoint.Value},
+		})
+	}
+	return &otlpmetrics.Metric_Sum{
+		Sum: &otlpmetrics.Sum{
 			DataPoints: datapoints,
 		},
 	}
