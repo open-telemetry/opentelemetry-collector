@@ -22,6 +22,9 @@ exporters:
       initial_interval: 10s
       max_interval: 60s
       max_elapsed_time: 10m
+    compression:
+      codec: gzip
+      level: 8
 
 processors:
   nop:
