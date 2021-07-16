@@ -35,7 +35,7 @@ func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.Upsert(conventions.AttributeHostName, pdata.NewAttributeValueString("host1"))
-	attrs.Upsert(conventions.AttributeProcessID, pdata.NewAttributeValueInt(123))
+	attrs.Upsert(conventions.AttributeProcessPID, pdata.NewAttributeValueInt(123))
 	attrs.Upsert(occonventions.AttributeProcessStartTime, pdata.NewAttributeValueString("2020-02-11T20:26:00Z"))
 	attrs.Upsert(conventions.AttributeTelemetrySDKLanguage, pdata.NewAttributeValueString("cpp"))
 	attrs.Upsert(conventions.AttributeTelemetrySDKVersion, pdata.NewAttributeValueString("v2.0.1"))
