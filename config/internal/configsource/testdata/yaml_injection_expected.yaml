@@ -1,0 +1,15 @@
+yaml_00:
+  bool: true
+  int: 42
+  source: string
+  map:
+    k0: v0
+    k1: v1
+yaml_01: ":"
+yaml_02:
+  bool: true
+  int: 42
+  source: "[]byte"
+  map:
+    k0: v0
+    k1: v1
