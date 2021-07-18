@@ -226,6 +226,26 @@ func TestAttributeValueEqual(t *testing.T) {
 	av1.CopyTo(av2.ArrayVal().AppendEmpty())
 	assert.False(t, av1.Equal(av2))
 	assert.True(t, av1.Equal(av1))
+
+	av1 = NewAttributeValueMap()
+	av1.MapVal().InitFromMap(map[string]AttributeValue{
+		"foo": NewAttributeValueString("bar"),
+	})
+	assert.False(t, av1.Equal(av2))
+	assert.False(t, av2.Equal(av1))
+
+	av2 = NewAttributeValueMap()
+	av2.MapVal().InitFromMap(map[string]AttributeValue{
+		"foo": NewAttributeValueString("bar"),
+	})
+	assert.True(t, av1.Equal(av2))
+
+	fooVal, ok := av2.MapVal().Get("foo")
+	if !ok {
+		assert.Fail(t, "expected to find value with key foo")
+	}
+	fooVal.SetStringVal("not-bar")
+	assert.False(t, av1.Equal(av2))
 }
 
 func TestNilAttributeMap(t *testing.T) {

@@ -30,7 +30,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpansSlice struct {
 	// orig points to the slice otlptrace.ResourceSpans field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlptrace.ResourceSpans
 }
 
@@ -39,7 +39,7 @@ func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice 
 }
 
 // NewResourceSpansSlice creates a ResourceSpansSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceSpansSlice() ResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans(nil)
 	return ResourceSpansSlice{&orig}
@@ -83,36 +83,26 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ResourceSpansSlice can be initialized:
 //   es := NewResourceSpansSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es ResourceSpansSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.ResourceSpans, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.ResourceSpans, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlptrace.ResourceSpans, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceSpans.
@@ -201,7 +191,7 @@ func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpansSlice struct {
 	// orig points to the slice otlptrace.InstrumentationLibrarySpans field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlptrace.InstrumentationLibrarySpans
 }
 
@@ -210,7 +200,7 @@ func newInstrumentationLibrarySpansSlice(orig *[]*otlptrace.InstrumentationLibra
 }
 
 // NewInstrumentationLibrarySpansSlice creates a InstrumentationLibrarySpansSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansSlice {
 	orig := []*otlptrace.InstrumentationLibrarySpans(nil)
 	return InstrumentationLibrarySpansSlice{&orig}
@@ -254,36 +244,26 @@ func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpa
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new InstrumentationLibrarySpansSlice can be initialized:
 //   es := NewInstrumentationLibrarySpansSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es InstrumentationLibrarySpansSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.InstrumentationLibrarySpans, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.InstrumentationLibrarySpans, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlptrace.InstrumentationLibrarySpans, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibrarySpans.
@@ -372,7 +352,7 @@ func (ms InstrumentationLibrarySpans) CopyTo(dest InstrumentationLibrarySpans) {
 // Important: zero-initialized instance is not valid for use.
 type SpanSlice struct {
 	// orig points to the slice otlptrace.Span field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlptrace.Span
 }
 
@@ -381,7 +361,7 @@ func newSpanSlice(orig *[]*otlptrace.Span) SpanSlice {
 }
 
 // NewSpanSlice creates a SpanSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanSlice() SpanSlice {
 	orig := []*otlptrace.Span(nil)
 	return SpanSlice{&orig}
@@ -425,36 +405,26 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new SpanSlice can be initialized:
 //   es := NewSpanSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es SpanSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es SpanSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.Span, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.Span, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlptrace.Span, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Span.
@@ -677,7 +647,7 @@ func (ms Span) CopyTo(dest Span) {
 // Important: zero-initialized instance is not valid for use.
 type SpanEventSlice struct {
 	// orig points to the slice otlptrace.Span_Event field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlptrace.Span_Event
 }
 
@@ -686,7 +656,7 @@ func newSpanEventSlice(orig *[]*otlptrace.Span_Event) SpanEventSlice {
 }
 
 // NewSpanEventSlice creates a SpanEventSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanEventSlice() SpanEventSlice {
 	orig := []*otlptrace.Span_Event(nil)
 	return SpanEventSlice{&orig}
@@ -730,36 +700,26 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new SpanEventSlice can be initialized:
 //   es := NewSpanEventSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es SpanEventSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es SpanEventSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.Span_Event, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.Span_Event, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlptrace.Span_Event, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty SpanEvent.
@@ -876,7 +836,7 @@ func (ms SpanEvent) CopyTo(dest SpanEvent) {
 // Important: zero-initialized instance is not valid for use.
 type SpanLinkSlice struct {
 	// orig points to the slice otlptrace.Span_Link field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlptrace.Span_Link
 }
 
@@ -885,7 +845,7 @@ func newSpanLinkSlice(orig *[]*otlptrace.Span_Link) SpanLinkSlice {
 }
 
 // NewSpanLinkSlice creates a SpanLinkSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanLinkSlice() SpanLinkSlice {
 	orig := []*otlptrace.Span_Link(nil)
 	return SpanLinkSlice{&orig}
@@ -929,36 +889,26 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new SpanLinkSlice can be initialized:
 //   es := NewSpanLinkSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es SpanLinkSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.Span_Link, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.Span_Link, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlptrace.Span_Link, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty SpanLink.

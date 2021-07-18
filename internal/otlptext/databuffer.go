@@ -82,18 +82,18 @@ func (b *dataBuffer) logMetricDataPoints(m pdata.Metric) {
 		return
 	case pdata.MetricDataTypeIntGauge:
 		b.logIntDataPoints(m.IntGauge().DataPoints())
-	case pdata.MetricDataTypeDoubleGauge:
-		b.logDoubleDataPoints(m.DoubleGauge().DataPoints())
+	case pdata.MetricDataTypeGauge:
+		b.logNumberDataPoints(m.Gauge().DataPoints())
 	case pdata.MetricDataTypeIntSum:
 		data := m.IntSum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logIntDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleSum:
-		data := m.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		data := m.Sum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logDoubleDataPoints(data.DataPoints())
+		b.logNumberDataPoints(data.DataPoints())
 	case pdata.MetricDataTypeIntHistogram:
 		data := m.IntHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
@@ -120,10 +120,10 @@ func (b *dataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
 	}
 }
 
-func (b *dataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
+func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
-		b.logEntry("DoubleDataPoints #%d", i)
+		b.logEntry("NumberDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())

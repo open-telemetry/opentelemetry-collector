@@ -36,8 +36,8 @@ func TestOCToMetrics(t *testing.T) {
 	dh.Histogram().CopyTo(ih.Histogram())
 
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
-	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2)
-	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3)
+	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
+	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
 	ih.SetDataType(pdata.MetricDataTypeHistogram)
 	dh.Histogram().CopyTo(ih.Histogram())
 
@@ -90,7 +90,7 @@ func TestOCToMetrics(t *testing.T) {
 			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
-					generateOCTestMetricInt(),
+					generateOCTestMetricCumulativeInt(),
 					generateOCTestMetricDoubleSummary(),
 				},
 			},
@@ -126,8 +126,10 @@ func TestOCToMetrics(t *testing.T) {
 			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
-					generateOCTestMetricInt(),
-					generateOCTestMetricDouble(),
+					generateOCTestMetricGaugeInt(),
+					generateOCTestMetricGaugeDouble(),
+					generateOCTestMetricCumulativeInt(),
+					generateOCTestMetricCumulativeDouble(),
 					generateOCTestMetricDoubleHistogram(),
 					generateOCTestMetricIntHistogram(),
 					generateOCTestMetricDoubleSummary(),
@@ -176,9 +178,9 @@ func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 func BenchmarkMetricIntOCToMetrics(b *testing.B) {
 	ocResource := generateOCTestResource()
 	ocMetrics := []*ocmetrics.Metric{
-		generateOCTestMetricInt(),
-		generateOCTestMetricInt(),
-		generateOCTestMetricInt(),
+		generateOCTestMetricCumulativeInt(),
+		generateOCTestMetricCumulativeInt(),
+		generateOCTestMetricCumulativeInt(),
 	}
 
 	b.ResetTimer()
@@ -190,9 +192,9 @@ func BenchmarkMetricIntOCToMetrics(b *testing.B) {
 func BenchmarkMetricDoubleOCToMetrics(b *testing.B) {
 	ocResource := generateOCTestResource()
 	ocMetrics := []*ocmetrics.Metric{
-		generateOCTestMetricDouble(),
-		generateOCTestMetricDouble(),
-		generateOCTestMetricDouble(),
+		generateOCTestMetricCumulativeDouble(),
+		generateOCTestMetricCumulativeDouble(),
+		generateOCTestMetricCumulativeDouble(),
 	}
 
 	b.ResetTimer()

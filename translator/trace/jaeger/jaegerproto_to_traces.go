@@ -41,21 +41,14 @@ func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
 	}
 
 	rss := traceData.ResourceSpans()
-	rss.Resize(len(batches))
+	rss.EnsureCapacity(len(batches))
 
-	i := 0
 	for _, batch := range batches {
 		if batch.GetProcess() == nil && len(batch.GetSpans()) == 0 {
 			continue
 		}
 
-		protoBatchToResourceSpans(*batch, rss.At(i))
-		i++
-	}
-
-	// reduce traceData.ResourceSpans slice if some batched were skipped
-	if i < len(batches) {
-		rss.Resize(i)
+		protoBatchToResourceSpans(*batch, rss.AppendEmpty())
 	}
 
 	return traceData
@@ -312,10 +305,15 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		return
 	}
 
-	dest.Resize(len(logs))
+	dest.EnsureCapacity(len(logs))
 
 	for i, log := range logs {
-		event := dest.At(i)
+		var event pdata.SpanEvent
+		if dest.Len() > i {
+			event = dest.At(i)
+		} else {
+			event = dest.AppendEmpty()
+		}
 
 		event.SetTimestamp(pdata.TimestampFromTime(log.Timestamp))
 		if len(log.Fields) == 0 {
@@ -339,22 +337,15 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 		return
 	}
 
-	dest.Resize(len(refs))
-	i := 0
+	dest.EnsureCapacity(len(refs))
 	for _, ref := range refs {
-		link := dest.At(i)
 		if ref.SpanID == excludeParentID && ref.RefType == model.ChildOf {
 			continue
 		}
 
+		link := dest.AppendEmpty()
 		link.SetTraceID(idutils.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
 		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanID)))
-		i++
-	}
-
-	// Reduce slice size in case if excludeParentID was skipped
-	if i < len(refs) {
-		dest.Resize(i)
 	}
 }
 

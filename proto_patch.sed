@@ -42,5 +42,5 @@ s+Status \(.*\);+Status \1\
 s+repeated IntExemplar exemplars = \(.*\);+repeated IntExemplar exemplars = \1\
   [ (gogoproto.nullable) = false ];+g
 
-s+repeated DoubleExemplar exemplars = \(.*\);+repeated DoubleExemplar exemplars = \1\
+s+repeated Exemplar exemplars = \(.*\);+repeated Exemplar exemplars = \1\
   [ (gogoproto.nullable) = false ];+g

@@ -30,7 +30,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceLogsSlice struct {
 	// orig points to the slice otlplogs.ResourceLogs field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlplogs.ResourceLogs
 }
 
@@ -39,7 +39,7 @@ func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
 }
 
 // NewResourceLogsSlice creates a ResourceLogsSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceLogsSlice() ResourceLogsSlice {
 	orig := []*otlplogs.ResourceLogs(nil)
 	return ResourceLogsSlice{&orig}
@@ -83,36 +83,26 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ResourceLogsSlice can be initialized:
 //   es := NewResourceLogsSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es ResourceLogsSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlplogs.ResourceLogs, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlplogs.ResourceLogs, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlplogs.ResourceLogs, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceLogs.
@@ -201,7 +191,7 @@ func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryLogsSlice struct {
 	// orig points to the slice otlplogs.InstrumentationLibraryLogs field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlplogs.InstrumentationLibraryLogs
 }
 
@@ -210,7 +200,7 @@ func newInstrumentationLibraryLogsSlice(orig *[]*otlplogs.InstrumentationLibrary
 }
 
 // NewInstrumentationLibraryLogsSlice creates a InstrumentationLibraryLogsSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewInstrumentationLibraryLogsSlice() InstrumentationLibraryLogsSlice {
 	orig := []*otlplogs.InstrumentationLibraryLogs(nil)
 	return InstrumentationLibraryLogsSlice{&orig}
@@ -254,36 +244,26 @@ func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogs
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new InstrumentationLibraryLogsSlice can be initialized:
 //   es := NewInstrumentationLibraryLogsSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es InstrumentationLibraryLogsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlplogs.InstrumentationLibraryLogs, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlplogs.InstrumentationLibraryLogs, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlplogs.InstrumentationLibraryLogs, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibraryLogs.
@@ -372,7 +352,7 @@ func (ms InstrumentationLibraryLogs) CopyTo(dest InstrumentationLibraryLogs) {
 // Important: zero-initialized instance is not valid for use.
 type LogSlice struct {
 	// orig points to the slice otlplogs.LogRecord field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlplogs.LogRecord
 }
 
@@ -381,7 +361,7 @@ func newLogSlice(orig *[]*otlplogs.LogRecord) LogSlice {
 }
 
 // NewLogSlice creates a LogSlice with 0 elements.
-// Can use "Resize" to initialize with a given length.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLogSlice() LogSlice {
 	orig := []*otlplogs.LogRecord(nil)
 	return LogSlice{&orig}
@@ -425,36 +405,26 @@ func (es LogSlice) CopyTo(dest LogSlice) {
 	*dest.orig = wrappers
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new LogSlice can be initialized:
 //   es := NewLogSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es LogSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
+func (es LogSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
+	if newCap <= oldCap {
 		return
 	}
 
-	if newLen > oldCap {
-		newOrig := make([]*otlplogs.LogRecord, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlplogs.LogRecord, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
+	newOrig := make([]*otlplogs.LogRecord, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty LogRecord.

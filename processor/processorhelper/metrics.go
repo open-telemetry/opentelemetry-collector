@@ -29,12 +29,9 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// MProcessor is a helper interface that allows avoiding implementing all functions in MetricsProcessor by using NewTracesProcessor.
-type MProcessor interface {
-	// ProcessMetrics is a helper function that processes the incoming data and returns the data to be sent to the next component.
-	// If error is returned then returned data are ignored. It MUST not call the next component.
-	ProcessMetrics(context.Context, pdata.Metrics) (pdata.Metrics, error)
-}
+// ProcessMetricsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
+// If error is returned then returned data are ignored. It MUST not call the next component.
+type ProcessMetricsFunc func(context.Context, pdata.Metrics) (pdata.Metrics, error)
 
 type metricsProcessor struct {
 	component.Component
@@ -46,11 +43,11 @@ type metricsProcessor struct {
 func NewMetricsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
-	processor MProcessor,
+	metricsFunc ProcessMetricsFunc,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
-	if processor == nil {
-		return nil, errors.New("nil processor")
+	if metricsFunc == nil {
+		return nil, errors.New("nil metricsFunc")
 	}
 
 	if nextConsumer == nil {
@@ -63,7 +60,7 @@ func NewMetricsProcessor(
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error
-		md, err = processor.ProcessMetrics(ctx, md)
+		md, err = metricsFunc(ctx, md)
 		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
 			if errors.Is(err, ErrSkipProcessingData) {

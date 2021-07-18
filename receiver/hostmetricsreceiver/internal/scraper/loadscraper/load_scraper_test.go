@@ -89,5 +89,5 @@ func TestScrape(t *testing.T) {
 
 func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
-	assert.Equal(t, 1, metric.DoubleGauge().DataPoints().Len())
+	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 }

@@ -42,8 +42,8 @@ var metricsFile = &File{
 		summary,
 		intDataPointSlice,
 		intDataPoint,
-		doubleDataPointSlice,
-		doubleDataPoint,
+		numberDataPointSlice,
+		numberDataPoint,
 		intHistogramDataPointSlice,
 		intHistogramDataPoint,
 		histogramDataPointSlice,
@@ -141,14 +141,14 @@ var intGauge = &messageValueStruct{
 }
 
 var doubleGauge = &messageValueStruct{
-	structName:     "DoubleGauge",
-	description:    "// DoubleGauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
+	structName:     "Gauge",
+	description:    "// Gauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.Gauge",
 	fields: []baseField{
 		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
-			returnSlice:     doubleDataPointSlice,
+			returnSlice:     numberDataPointSlice,
 		},
 	},
 }
@@ -169,8 +169,8 @@ var intSum = &messageValueStruct{
 }
 
 var doubleSum = &messageValueStruct{
-	structName:     "DoubleSum",
-	description:    "// DoubleSum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
+	structName:     "Sum",
+	description:    "// Sum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Sum",
 	fields: []baseField{
 		aggregationTemporalityField,
@@ -178,7 +178,7 @@ var doubleSum = &messageValueStruct{
 		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
-			returnSlice:     doubleDataPointSlice,
+			returnSlice:     numberDataPointSlice,
 		},
 	},
 }
@@ -242,14 +242,14 @@ var intDataPoint = &messageValueStruct{
 	},
 }
 
-var doubleDataPointSlice = &sliceOfPtrs{
-	structName: "DoubleDataPointSlice",
-	element:    doubleDataPoint,
+var numberDataPointSlice = &sliceOfPtrs{
+	structName: "NumberDataPointSlice",
+	element:    numberDataPoint,
 }
 
-var doubleDataPoint = &messageValueStruct{
-	structName:     "DoubleDataPoint",
-	description:    "// DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
+var numberDataPoint = &messageValueStruct{
+	structName:     "NumberDataPoint",
+	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
 		labelsField,
@@ -370,7 +370,7 @@ var intExemplar = &messageValueStruct{
 	},
 }
 
-var exemplarSlice = &sliceOfPtrs{
+var exemplarSlice = &sliceOfValues{
 	structName: "ExemplarSlice",
 	element:    exemplar,
 }

@@ -58,8 +58,5 @@ func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	td := &otlpcollectortrace.ExportTraceServiceRequest{}
 	err := td.Unmarshal(buf)
-	if err == nil {
-		internal.TracesCompatibilityChanges(td)
-	}
 	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(td)), err
 }

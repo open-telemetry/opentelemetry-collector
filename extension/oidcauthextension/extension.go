@@ -100,21 +100,21 @@ func (e *oidcExtension) Shutdown(context.Context) error {
 }
 
 // Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
-func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) error {
+func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	authHeaders := headers[e.cfg.Attribute]
 	if len(authHeaders) == 0 {
-		return errNotAuthenticated
+		return ctx, errNotAuthenticated
 	}
 
 	// we only use the first header, if multiple values exist
 	parts := strings.Split(authHeaders[0], " ")
 	if len(parts) != 2 {
-		return errInvalidAuthenticationHeaderFormat
+		return ctx, errInvalidAuthenticationHeaderFormat
 	}
 
 	idToken, err := e.verifier.Verify(ctx, parts[1])
 	if err != nil {
-		return fmt.Errorf("failed to verify token: %w", err)
+		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
 
 	claims := map[string]interface{}{}
@@ -125,20 +125,22 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		// to read the claims. It could fail if we were using a custom struct. Instead of
 		// swalling the error, it's better to make this future-proof, in case the underlying
 		// code changes
-		return errFailedToObtainClaimsFromToken
+		return ctx, errFailedToObtainClaimsFromToken
 	}
 
 	_, err = getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
 	if err != nil {
-		return fmt.Errorf("failed to get subject from claims in the token: %w", err)
+		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
 
 	_, err = getGroupsFromClaims(claims, e.cfg.GroupsClaim)
 	if err != nil {
-		return fmt.Errorf("failed to get groups from claims in the token: %w", err)
+		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
 
-	return nil
+	// TODO: once the design for #2734 is determined, we will probably need to add the auth data to the context
+	// https://github.com/open-telemetry/opentelemetry-collector/issues/2734
+	return ctx, nil
 }
 
 // GRPCUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.

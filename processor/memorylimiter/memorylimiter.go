@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -88,7 +89,8 @@ const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
-	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
+	// Get ballast size in bytes from ballastextension
+	ballastSize := ballastextension.GetBallastSize()
 
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
@@ -147,8 +149,7 @@ func (ml *memoryLimiter) shutdown(context.Context) error {
 	return nil
 }
 
-// ProcessTraces implements the TProcessor interface
-func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (ml *memoryLimiter) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	numSpans := td.SpanCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -167,8 +168,7 @@ func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pd
 	return td, nil
 }
 
-// ProcessMetrics implements the MProcessor interface
-func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (ml *memoryLimiter) processMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	numDataPoints := md.DataPointCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -186,8 +186,7 @@ func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (
 	return md, nil
 }
 
-// ProcessLogs implements the LProcessor interface
-func (ml *memoryLimiter) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (ml *memoryLimiter) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	numRecords := ld.LogRecordCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -216,8 +215,7 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 	} else if !ml.configMismatchedLogged {
 		// This indicates misconfiguration. Log it once.
 		ml.configMismatchedLogged = true
-		ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
-			" must be set equal to --mem-ballast-size-mib command line option.")
+		ml.logger.Warn(ballastSizeMibKey + " in ballast extension is likely incorrectly configured.")
 	}
 
 	return ms

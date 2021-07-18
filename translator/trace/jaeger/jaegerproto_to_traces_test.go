@@ -452,9 +452,9 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	expected := generateTracesOneSpanNoResource()
 	resource := generateTracesResourceOnly().ResourceSpans().At(0).Resource()
 	resource.CopyTo(expected.ResourceSpans().At(0).Resource())
-	expected.ResourceSpans().Resize(2)
+	tgt := expected.ResourceSpans().AppendEmpty()
 	twoSpans := generateTracesTwoSpansChildParent().ResourceSpans().At(0)
-	twoSpans.CopyTo(expected.ResourceSpans().At(1))
+	twoSpans.CopyTo(tgt)
 
 	got := ProtoBatchesToInternalTraces(batches)
 	assert.EqualValues(t, expected, got)
@@ -710,9 +710,8 @@ func generateProtoSpanWithTraceState() *model.Span {
 func generateTracesTwoSpansChildParent() pdata.Traces {
 	td := generateTracesOneSpanNoResource()
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
-	spans.Resize(2)
 
-	span := spans.At(1)
+	span := spans.AppendEmpty()
 	span.SetName("operationB")
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetParentSpanID(spans.At(0).SpanID())
@@ -764,9 +763,8 @@ func generateProtoChildSpan() *model.Span {
 func generateTracesTwoSpansWithFollower() pdata.Traces {
 	td := generateTracesOneSpanNoResource()
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
-	spans.Resize(2)
 
-	span := spans.At(1)
+	span := spans.AppendEmpty()
 	span.SetName("operationC")
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetTraceID(spans.At(0).TraceID())
@@ -838,9 +836,9 @@ func generateTracesTwoSpansFromTwoLibraries() pdata.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 
 	rs0 := td.ResourceSpans().At(0)
-	rs0.InstrumentationLibrarySpans().Resize(2)
+	rs0.InstrumentationLibrarySpans().EnsureCapacity(2)
 
-	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
+	rs0ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
 	rs0ils0.InstrumentationLibrary().SetName("library1")
 	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
 	span1 := rs0ils0.Spans().AppendEmpty()
@@ -850,7 +848,7 @@ func generateTracesTwoSpansFromTwoLibraries() pdata.Traces {
 	span1.SetStartTimestamp(testSpanStartTimestamp)
 	span1.SetEndTimestamp(testSpanEndTimestamp)
 
-	rs0ils1 := rs0.InstrumentationLibrarySpans().At(1)
+	rs0ils1 := rs0.InstrumentationLibrarySpans().AppendEmpty()
 	rs0ils1.InstrumentationLibrary().SetName("library2")
 	rs0ils1.InstrumentationLibrary().SetVersion("0.42.0")
 	span2 := rs0ils1.Spans().AppendEmpty()

@@ -1319,6 +1319,7 @@ func Test_normalizeMetricName(t *testing.T) {
 		{"count", "foo_count", "foo"},
 		{"bucket", "foo_bucket", "foo"},
 		{"sum", "foo_sum", "foo"},
+		{"total", "foo_total", "foo"},
 		{"no_prefix", "_sum", "_sum"},
 	}
 	for _, tt := range tests {
