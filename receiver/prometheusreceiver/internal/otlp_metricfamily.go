@@ -139,6 +139,39 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	return true
 }
 
+func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdata.SummaryDataPointSlice) bool {
+	// expecting count to be provided, however, in the following two cases, they can be missed.
+	// 1. data is corrupted
+	// 2. ignored by startValue evaluation
+	if !mg.hasCount {
+		return false
+	}
+
+	mg.sortPoints()
+
+	point := dest.AppendEmpty()
+	quantileValues := point.QuantileValues()
+	for _, p := range mg.complexValue {
+		quantile := quantileValues.AppendEmpty()
+		quantile.SetValue(p.value)
+		quantile.SetQuantile(p.boundary * 100)
+	}
+
+	// Based on the summary description from https://prometheus.io/docs/concepts/metric_types/#summary
+	// the quantiles are calculated over a sliding time window, however, the count is the total count of
+	// observations and the corresponding sum is a sum of all observed values, thus the sum and count used
+	// at the global level of the metricspb.SummaryValue
+	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
+	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	point.SetStartTimestamp(tsNanos)
+	point.SetTimestamp(tsNanos)
+	point.SetSum(mg.sum)
+	point.SetCount(uint64(mg.count))
+	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+
+	return true
+}
+
 func populateLabelValuesPdata(orderedKeys []string, ls labels.Labels, dest pdata.StringMap) {
 	src := ls.Map()
 	for _, key := range orderedKeys {
