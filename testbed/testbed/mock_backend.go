@@ -192,8 +192,8 @@ func getFirstMetricTimestamp(md pdata.Metrics) time.Time {
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
 					}
-				case pdata.MetricDataTypeDoubleGauge:
-					dataPoints := m.DoubleGauge().DataPoints()
+				case pdata.MetricDataTypeGauge:
+					dataPoints := m.Gauge().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
 					}
@@ -202,8 +202,8 @@ func getFirstMetricTimestamp(md pdata.Metrics) time.Time {
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
 					}
-				case pdata.MetricDataTypeDoubleSum:
-					dataPoints := m.DoubleSum().DataPoints()
+				case pdata.MetricDataTypeSum:
+					dataPoints := m.Sum().DataPoints()
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
 					}
