@@ -37,8 +37,16 @@ type TestCaseValidator interface {
 
 // PerfTestValidator implements TestCaseValidator for test suites using PerformanceResults for summarizing results.
 type PerfTestValidator struct {
-	IsScraping     bool
+
+	// IsScraping specifies if the load generator
+	IsScraping bool
+
+	// ScrapeInterval is the interval the receiver is scraping at, if IsScraping is enabled
 	ScrapeInterval time.Duration
+
+	// ExtraItemsScrapedPerIntervalCount accounts for if the receiver adds additional metrics than those sent
+	// such as the Prometheus 'up' metric
+	ExtraItemsScrapedPerIntervalCount int
 }
 
 const prometheusInternalMetricsCount = 5
@@ -47,9 +55,10 @@ func (v *PerfTestValidator) Validate(tc *TestCase) {
 	expectedDataItemsReceived := tc.MockBackend.DataItemsReceived()
 
 	if v.IsScraping {
-		
-		// Prometheus adds 5 internal metrics every scrape
-		expectedDataItemsReceived = tc.MockBackend.DataItemsReceived() - (uint64(len(tc.MockBackend.ReceivedTimestamps) * prometheusInternalMetricsCount))
+
+		// Get expected amount if additional metrics are added after scrape
+		expectedTotalExtraItemsReceived := (uint64(len(tc.MockBackend.ReceivedTimestamps) * v.ExtraItemsScrapedPerIntervalCount))
+		expectedDataItemsReceived = tc.MockBackend.DataItemsReceived() - expectedTotalExtraItemsReceived
 
 		// Check that each scrape is the same as the expected scrape interval
 		for i, timestamp := range tc.MockBackend.ReceivedTimestamps {

@@ -114,7 +114,7 @@ func TestMetrics10kDPSScraped(t *testing.T) {
 	}{
 		{
 			"PrometheusReceiver-OTLPExporter",
-			testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "1s"),
+			testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), time.Second),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 18,

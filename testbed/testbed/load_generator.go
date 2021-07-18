@@ -63,6 +63,8 @@ type LoadOptions struct {
 	// Parallel specifies how many goroutines to send from.
 	Parallel int
 
+	// IsScraping specifies if the load generated will be scraped, so that values for the same
+	// timeseries are generated each time, instead of having unique labels each iteration.
 	IsScraping bool
 }
 

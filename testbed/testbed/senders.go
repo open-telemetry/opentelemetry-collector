@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -84,6 +85,10 @@ type DataSenderBase struct {
 }
 
 func (dsb *DataSenderBase) GetEndpoint() net.Addr {
+	if dsb.Port == 0 && dsb.Host == "" {
+		return nil
+	}
+
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", dsb.Host, dsb.Port))
 	return addr
 }
@@ -536,17 +541,17 @@ type prometheusDataSender struct {
 	DataSenderBase
 	consumer.Metrics
 	namespace      string
-	scrapeInterval string
 	endpointString string
+	scrapeInterval time.Duration
 }
 
 // NewPrometheusDataSender creates a new Prometheus sender that will expose data
 // on the specified port after Start is called.
-func NewPrometheusDataSender(host string, port int, interval string) MetricDataSender {
+func NewPrometheusDataSender(host string, port int, interval time.Duration) MetricDataSender {
 	return &prometheusDataSender{
 		DataSenderBase: DataSenderBase{},
-		scrapeInterval: interval,
 		endpointString: fmt.Sprintf("%s:%d", host, port),
+		scrapeInterval: interval,
 	}
 }
 
@@ -575,7 +580,7 @@ func (pds *prometheusDataSender) GenConfigYAMLStr() string {
           static_configs:
             - targets: ['%s']
 `
-	return fmt.Sprintf(format, pds.scrapeInterval, pds.endpointString)
+	return fmt.Sprintf(format, pds.scrapeInterval.String(), pds.endpointString)
 }
 
 func (pds *prometheusDataSender) ProtocolName() string {

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
@@ -147,7 +148,7 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	case "opencensus":
 		sender = testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "prometheus":
-		sender = testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "100ms")
+		sender = testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), 100 * time.Millisecond)
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}

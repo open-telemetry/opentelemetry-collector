@@ -223,7 +223,7 @@ func Scenario10kScrapeItemsPerSecond(
 		Parallel:           1,
 		IsScraping:         true,
 	}
-	agentProc := &testbed.ChildProcess{}
+	agentProc := testbed.NewChildProcessCollector()
 
 	timeToWait := scrapeInterval
 	if timeToWait.Seconds() < 10 {
@@ -248,7 +248,7 @@ func Scenario10kScrapeItemsPerSecond(
 		sender,
 		receiver,
 		agentProc,
-		&testbed.PerfTestValidator{IsScraping: true, ScrapeInterval: scrapeInterval},
+		&testbed.PerfTestValidator{IsScraping: true, ScrapeInterval: scrapeInterval, ExtraItemsScrapedPerIntervalCount: 5},
 		performanceResultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
 	)

@@ -46,13 +46,13 @@ type MockBackend struct {
 	startedAt time.Time
 
 	// Recording fields.
-	isRecording        bool
-	isScraping         bool
-	recordMutex        sync.Mutex
-	ReceivedTraces     []pdata.Traces
-	ReceivedMetrics    []pdata.Metrics
-	ReceivedLogs       []pdata.Logs
-	ReceivedTimestamps []time.Time
+	isRecording                 bool
+	isRecordingMetricTimestamps bool
+	recordMutex                 sync.Mutex
+	ReceivedTraces              []pdata.Traces
+	ReceivedMetrics             []pdata.Metrics
+	ReceivedLogs                []pdata.Logs
+	ReceivedTimestamps          []time.Time
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -121,7 +121,7 @@ func (mb *MockBackend) EnableRecording() {
 func (mb *MockBackend) EnableMetricTimestampRecording() {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
-	mb.isScraping = true
+	mb.isRecordingMetricTimestamps = true
 }
 
 func (mb *MockBackend) GetStats() string {
@@ -162,9 +162,11 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 
 	// Record the timestamp of a metric from each scrape.
 	// Then the validator can check the difference between timestamps are the same as the scrape interval.
-	if mb.isScraping {
+	if mb.isRecordingMetricTimestamps {
 		currentTimestamp := getFirstMetricTimestamp(md)
 		receivedTimestampsCount := len(mb.ReceivedTimestamps)
+
+		// Record the timestamp only if it's the first recorded or if it's different from the last recorded timestamp
 		if receivedTimestampsCount == 0 || !mb.ReceivedTimestamps[receivedTimestampsCount-1].Equal(currentTimestamp) {
 			mb.ReceivedTimestamps = append(mb.ReceivedTimestamps, currentTimestamp)
 		}
