@@ -66,8 +66,6 @@ func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error
 		return c.convertDoubleGauge(metric)
 	case pdata.MetricDataTypeSum:
 		return c.convertSum(metric)
-	case pdata.MetricDataTypeIntHistogram:
-		return c.convertIntHistogram(metric)
 	case pdata.MetricDataTypeHistogram:
 		return c.convertDoubleHistogram(metric)
 	case pdata.MetricDataTypeSummary:
@@ -162,44 +160,6 @@ func (c *collector) convertSum(metric pdata.Metric) (prometheus.Metric, error) {
 
 	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
 	m, err := prometheus.NewConstMetric(desc, metricType, ip.Value(), labels...)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m), nil
-	}
-	return m, nil
-}
-
-func (c *collector) convertIntHistogram(metric pdata.Metric) (prometheus.Metric, error) {
-	ip := metric.IntHistogram().DataPoints().At(0)
-	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
-
-	indicesMap := make(map[float64]int)
-	buckets := make([]float64, 0, len(ip.BucketCounts()))
-	for index, bucket := range ip.ExplicitBounds() {
-		if _, added := indicesMap[bucket]; !added {
-			indicesMap[bucket] = index
-			buckets = append(buckets, bucket)
-		}
-	}
-	sort.Float64s(buckets)
-
-	cumCount := uint64(0)
-
-	points := make(map[float64]uint64)
-	for _, bucket := range buckets {
-		index := indicesMap[bucket]
-		var countPerBucket uint64
-		if len(ip.ExplicitBounds()) > 0 && index < len(ip.ExplicitBounds()) {
-			countPerBucket = ip.BucketCounts()[index]
-		}
-		cumCount += countPerBucket
-		points[bucket] = cumCount
-	}
-
-	m, err := prometheus.NewConstHistogram(desc, ip.Count(), float64(ip.Sum()), points, labels...)
 	if err != nil {
 		return nil, err
 	}

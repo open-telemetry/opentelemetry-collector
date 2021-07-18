@@ -79,28 +79,6 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 	require.EqualValues(t, 2, pt.BucketCounts()[1])
 }
 
-func TestIntHistogramFunctions(t *testing.T) {
-	pt := pdata.NewIntHistogramDataPoint()
-	setIntHistogramBounds(pt, 1, 2, 3, 4, 5)
-	require.Equal(t, 5, len(pt.ExplicitBounds()))
-	require.Equal(t, 5, len(pt.BucketCounts()))
-
-	addIntHistogramVal(pt, 1)
-	require.EqualValues(t, 1, pt.Count())
-	require.EqualValues(t, 1, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[0])
-
-	addIntHistogramVal(pt, 2)
-	require.EqualValues(t, 2, pt.Count())
-	require.EqualValues(t, 3, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[1])
-
-	addIntHistogramVal(pt, 2)
-	require.EqualValues(t, 3, pt.Count())
-	require.EqualValues(t, 5, pt.Sum())
-	require.EqualValues(t, 2, pt.BucketCounts()[1])
-}
-
 func TestGenDoubleHistogram(t *testing.T) {
 	cfg := DefaultCfg()
 	cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram

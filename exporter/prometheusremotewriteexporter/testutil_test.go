@@ -86,75 +86,66 @@ var (
 	quantileValues = []float64{7, 8, 9}
 	quantiles      = getQuantiles(quantileBounds, quantileValues)
 
-	validIntGauge     = "valid_IntGauge"
-	validDoubleGauge  = "valid_DoubleGauge"
-	validIntSum       = "valid_IntSum"
-	validSum          = "valid_Sum"
-	validIntHistogram = "valid_IntHistogram"
-	validHistogram    = "valid_Histogram"
-	validSummary      = "valid_Summary"
-	suffixedCounter   = "valid_IntSum_total"
+	validIntGauge    = "valid_IntGauge"
+	validDoubleGauge = "valid_DoubleGauge"
+	validIntSum      = "valid_IntSum"
+	validSum         = "valid_Sum"
+	validHistogram   = "valid_Histogram"
+	validSummary     = "valid_Summary"
+	suffixedCounter  = "valid_IntSum_total"
 
 	validIntGaugeDirty = "*valid_IntGauge$"
 
-	unmatchedBoundBucketIntHist = "unmatchedBoundBucketIntHist"
-	unmatchedBoundBucketHist    = "unmatchedBoundBucketHist"
+	unmatchedBoundBucketHist = "unmatchedBoundBucketHist"
 
 	// valid metrics as input should not return error
 	validMetrics1 = map[string]pdata.Metric{
-		validIntGauge:     getIntGaugeMetric(validIntGauge, lbs1, intVal1, time1),
-		validDoubleGauge:  getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
-		validIntSum:       getIntSumMetric(validIntSum, lbs1, intVal1, time1),
-		suffixedCounter:   getIntSumMetric(suffixedCounter, lbs1, intVal1, time1),
-		validSum:          getSumMetric(validSum, lbs1, floatVal1, time1),
-		validIntHistogram: getIntHistogramMetric(validIntHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
-		validHistogram:    getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
-		validSummary:      getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
+		validIntGauge:    getIntGaugeMetric(validIntGauge, lbs1, intVal1, time1),
+		validDoubleGauge: getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
+		validIntSum:      getIntSumMetric(validIntSum, lbs1, intVal1, time1),
+		suffixedCounter:  getIntSumMetric(suffixedCounter, lbs1, intVal1, time1),
+		validSum:         getSumMetric(validSum, lbs1, floatVal1, time1),
+		validHistogram:   getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
+		validSummary:     getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
 	}
 	validMetrics2 = map[string]pdata.Metric{
-		validIntGauge:               getIntGaugeMetric(validIntGauge, lbs2, intVal2, time2),
-		validDoubleGauge:            getDoubleGaugeMetric(validDoubleGauge, lbs2, floatVal2, time2),
-		validIntSum:                 getIntSumMetric(validIntSum, lbs2, intVal2, time2),
-		validSum:                    getSumMetric(validSum, lbs2, floatVal2, time2),
-		validIntHistogram:           getIntHistogramMetric(validIntHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
-		validHistogram:              getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
-		validSummary:                getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
-		validIntGaugeDirty:          getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
-		unmatchedBoundBucketIntHist: getIntHistogramMetric(unmatchedBoundBucketIntHist, pdata.NewStringMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
-		unmatchedBoundBucketHist:    getHistogramMetric(unmatchedBoundBucketHist, pdata.NewStringMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
+		validIntGauge:            getIntGaugeMetric(validIntGauge, lbs2, intVal2, time2),
+		validDoubleGauge:         getDoubleGaugeMetric(validDoubleGauge, lbs2, floatVal2, time2),
+		validIntSum:              getIntSumMetric(validIntSum, lbs2, intVal2, time2),
+		validSum:                 getSumMetric(validSum, lbs2, floatVal2, time2),
+		validHistogram:           getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
+		validSummary:             getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+		validIntGaugeDirty:       getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
+		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pdata.NewStringMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
 	}
 
 	empty = "empty"
 
 	// Category 1: type and data field doesn't match
-	emptyIntGauge     = "emptyIntGauge"
-	emptyDoubleGauge  = "emptyDoubleGauge"
-	emptyIntSum       = "emptyIntSum"
-	emptySum          = "emptySum"
-	emptyIntHistogram = "emptyIntHistogram"
-	emptyHistogram    = "emptyHistogram"
-	emptySummary      = "emptySummary"
+	emptyIntGauge    = "emptyIntGauge"
+	emptyDoubleGauge = "emptyDoubleGauge"
+	emptyIntSum      = "emptyIntSum"
+	emptySum         = "emptySum"
+	emptyHistogram   = "emptyHistogram"
+	emptySummary     = "emptySummary"
 
 	// Category 2: invalid type and temporality combination
-	emptyCumulativeIntSum       = "emptyCumulativeIntSum"
-	emptyCumulativeSum          = "emptyCumulativeSum"
-	emptyCumulativeIntHistogram = "emptyCumulativeIntHistogram"
-	emptyCumulativeHistogram    = "emptyCumulativeHistogram"
+	emptyCumulativeIntSum    = "emptyCumulativeIntSum"
+	emptyCumulativeSum       = "emptyCumulativeSum"
+	emptyCumulativeHistogram = "emptyCumulativeHistogram"
 
 	// different metrics that will not pass validate metrics and will cause the exporter to return an error
 	invalidMetrics = map[string]pdata.Metric{
-		empty:                       pdata.NewMetric(),
-		emptyIntGauge:               getEmptyIntGaugeMetric(emptyIntGauge),
-		emptyDoubleGauge:            getEmptyDoubleGaugeMetric(emptyDoubleGauge),
-		emptyIntSum:                 getEmptyIntSumMetric(emptyIntSum),
-		emptySum:                    getEmptySumMetric(emptySum),
-		emptyIntHistogram:           getEmptyIntHistogramMetric(emptyIntHistogram),
-		emptyHistogram:              getEmptyHistogramMetric(emptyHistogram),
-		emptySummary:                getEmptySummaryMetric(emptySummary),
-		emptyCumulativeIntSum:       getEmptyCumulativeIntSumMetric(emptyCumulativeIntSum),
-		emptyCumulativeSum:          getEmptyCumulativeSumMetric(emptyCumulativeSum),
-		emptyCumulativeIntHistogram: getEmptyCumulativeIntHistogramMetric(emptyCumulativeIntHistogram),
-		emptyCumulativeHistogram:    getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
+		empty:                    pdata.NewMetric(),
+		emptyIntGauge:            getEmptyIntGaugeMetric(emptyIntGauge),
+		emptyDoubleGauge:         getEmptyDoubleGaugeMetric(emptyDoubleGauge),
+		emptyIntSum:              getEmptyIntSumMetric(emptyIntSum),
+		emptySum:                 getEmptySumMetric(emptySum),
+		emptyHistogram:           getEmptyHistogramMetric(emptyHistogram),
+		emptySummary:             getEmptySummaryMetric(emptySummary),
+		emptyCumulativeIntSum:    getEmptyCumulativeIntSumMetric(emptyCumulativeIntSum),
+		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
+		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
 	}
 )
 
@@ -324,42 +315,6 @@ func getSumMetric(name string, labels pdata.StringMap, value float64, ts uint64)
 	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetValue(value)
-
-	labels.Range(func(k string, v string) bool {
-		dp.LabelsMap().Upsert(k, v)
-		return true
-	})
-
-	dp.SetStartTimestamp(pdata.Timestamp(0))
-	dp.SetTimestamp(pdata.Timestamp(ts))
-	return metric
-}
-
-func getEmptyIntHistogramMetric(name string) pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-	return metric
-}
-
-func getEmptyCumulativeIntHistogramMetric(name string) pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-	metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	return metric
-}
-
-func getIntHistogramMetric(name string, labels pdata.StringMap, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-	metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	dp := metric.IntHistogram().DataPoints().AppendEmpty()
-	dp.SetCount(count)
-	dp.SetSum(int64(sum))
-	dp.SetBucketCounts(buckets)
-	dp.SetExplicitBounds(bounds)
 
 	labels.Range(func(k string, v string) bool {
 		dp.LabelsMap().Upsert(k, v)

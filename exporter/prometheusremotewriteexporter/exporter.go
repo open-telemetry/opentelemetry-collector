@@ -153,15 +153,6 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 							dropped++
 							errs = append(errs, err)
 						}
-					case pdata.MetricDataTypeIntHistogram:
-						dataPoints := metric.IntHistogram().DataPoints()
-						if dataPoints.Len() == 0 {
-							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleIntHistogramDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-						}
 					case pdata.MetricDataTypeHistogram:
 						dataPoints := metric.Histogram().DataPoints()
 						if dataPoints.Len() == 0 {

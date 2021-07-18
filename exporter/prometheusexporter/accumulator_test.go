@@ -65,22 +65,6 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			},
 		},
 		{
-			name: "IntHistogram",
-			fillMetric: func(ts time.Time, metric pdata.Metric) {
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-				dp := metric.IntHistogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
-				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{1.2, 10.0})
-				dp.SetSum(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-			},
-		},
-		{
 			name: "Histogram",
 			fillMetric: func(ts time.Time, metric pdata.Metric) {
 				metric.SetName("test_metric")
@@ -216,24 +200,6 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "IntHistogram",
-			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
-				metric := metrics.AppendEmpty()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
-				dp := metric.IntHistogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
-				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{1.2, 10.0})
-				dp.SetSum(int64(v))
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-			},
-		},
-		{
 			name: "Histogram",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
@@ -351,12 +317,6 @@ func getMerticProperties(metric pdata.Metric) (
 		value = metric.Sum().DataPoints().At(0).Value()
 		temporality = metric.Sum().AggregationTemporality()
 		isMonotonic = metric.Sum().IsMonotonic()
-	case pdata.MetricDataTypeIntHistogram:
-		labels = metric.IntHistogram().DataPoints().At(0).LabelsMap()
-		ts = metric.IntHistogram().DataPoints().At(0).Timestamp().AsTime()
-		value = float64(metric.IntHistogram().DataPoints().At(0).Sum())
-		temporality = metric.IntHistogram().AggregationTemporality()
-		isMonotonic = true
 	case pdata.MetricDataTypeHistogram:
 		labels = metric.Histogram().DataPoints().At(0).LabelsMap()
 		ts = metric.Histogram().DataPoints().At(0).Timestamp().AsTime()
