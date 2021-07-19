@@ -135,11 +135,6 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.Instrumentat
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoublePoints(cfg, sum.DataPoints())
-		case pdata.MetricDataTypeIntHistogram:
-			metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-			histo := metric.IntHistogram()
-			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			populateIntHistogram(cfg, histo)
 		case pdata.MetricDataTypeHistogram:
 			metric.SetDataType(pdata.MetricDataTypeHistogram)
 			histo := metric.Histogram()
@@ -209,43 +204,6 @@ func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 	for i := 0; i < len(bounds); i++ {
 		bound := bounds[i]
 		if val <= bound {
-			buckets[i]++
-			break
-		}
-	}
-}
-
-func populateIntHistogram(cfg MetricsCfg, dh pdata.IntHistogram) {
-	pts := dh.DataPoints()
-	pts.EnsureCapacity(cfg.NumPtsPerMetric)
-	for i := 0; i < cfg.NumPtsPerMetric; i++ {
-		pt := pts.AppendEmpty()
-		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
-		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
-		pt.SetTimestamp(ts)
-		populatePtLabels(cfg, pt.LabelsMap())
-		setIntHistogramBounds(pt, 1, 2, 3, 4, 5)
-		addIntHistogramVal(pt, 1)
-		for i := 0; i < cfg.PtVal; i++ {
-			addIntHistogramVal(pt, 3)
-		}
-		addIntHistogramVal(pt, 5)
-	}
-}
-
-func setIntHistogramBounds(hdp pdata.IntHistogramDataPoint, bounds ...float64) {
-	hdp.SetBucketCounts(make([]uint64, len(bounds)))
-	hdp.SetExplicitBounds(bounds)
-}
-
-func addIntHistogramVal(hdp pdata.IntHistogramDataPoint, val int64) {
-	hdp.SetCount(hdp.Count() + 1)
-	hdp.SetSum(hdp.Sum() + val)
-	buckets := hdp.BucketCounts()
-	bounds := hdp.ExplicitBounds()
-	for i := 0; i < len(bounds); i++ {
-		bound := bounds[i]
-		if float64(val) <= bound {
 			buckets[i]++
 			break
 		}

@@ -148,21 +148,21 @@ func Test_timeSeriesSignature(t *testing.T) {
 		{
 			"histogram_signature",
 			promLbs2,
-			validMetrics1[validIntHistogram],
-			validMetrics1[validIntHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram],
+			validMetrics1[validHistogram].DataType().String() + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
-			validMetrics1[validIntHistogram],
-			validMetrics1[validIntHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram],
+			validMetrics1[validHistogram].DataType().String() + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
 			nil,
-			validMetrics1[validIntHistogram],
-			validMetrics1[validIntHistogram].DataType().String(),
+			validMetrics1[validHistogram],
+			validMetrics1[validHistogram].DataType().String(),
 		},
 	}
 

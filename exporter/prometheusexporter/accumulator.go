@@ -90,8 +90,6 @@ func (a *lastValueAccumulator) addMetric(metric pdata.Metric, il pdata.Instrumen
 		return a.accumulateDoubleGauge(metric, il, now)
 	case pdata.MetricDataTypeSum:
 		return a.accumulateSum(metric, il, now)
-	case pdata.MetricDataTypeIntHistogram:
-		return a.accumulateIntHistogram(metric, il, now)
 	case pdata.MetricDataTypeHistogram:
 		return a.accumulateDoubleHistogram(metric, il, now)
 	case pdata.MetricDataTypeSummary:
@@ -267,44 +265,6 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 		m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
 		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
-		n++
-	}
-	return
-}
-
-func (a *lastValueAccumulator) accumulateIntHistogram(metric pdata.Metric, il pdata.InstrumentationLibrary, now time.Time) (n int) {
-	intHistogram := metric.IntHistogram()
-
-	// Drop metrics with non-cumulative aggregations
-	if intHistogram.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
-		return
-	}
-
-	dps := intHistogram.DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		ip := dps.At(i)
-
-		signature := timeseriesSignature(il.Name(), metric, ip.LabelsMap())
-
-		v, ok := a.registeredMetrics.Load(signature)
-		if !ok {
-			m := createMetric(metric)
-			ip.CopyTo(m.IntHistogram().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
-			n++
-			continue
-		}
-		mv := v.(*accumulatedValue)
-
-		if ip.Timestamp().AsTime().Before(mv.value.IntHistogram().DataPoints().At(0).Timestamp().AsTime()) {
-			// only keep datapoint with latest timestamp
-			continue
-		}
-
-		m := createMetric(metric)
-		ip.CopyTo(m.IntHistogram().DataPoints().AppendEmpty())
-		m.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
 		n++
 	}

@@ -94,10 +94,6 @@ func (b *dataBuffer) logMetricDataPoints(m pdata.Metric) {
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logNumberDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeIntHistogram:
-		data := m.IntHistogram()
-		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logIntHistogramDataPoints(data.DataPoints())
 	case pdata.MetricDataTypeHistogram:
 		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
@@ -142,33 +138,6 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
-
-		bounds := p.ExplicitBounds()
-		if len(bounds) != 0 {
-			for i, bound := range bounds {
-				b.logEntry("ExplicitBounds #%d: %f", i, bound)
-			}
-		}
-
-		buckets := p.BucketCounts()
-		if len(buckets) != 0 {
-			for j, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", j, bucket)
-			}
-		}
-	}
-}
-
-func (b *dataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
-
-		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
-		b.logEntry("Timestamp: %s", p.Timestamp())
-		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %d", p.Sum())
 
 		bounds := p.ExplicitBounds()
 		if len(bounds) != 0 {

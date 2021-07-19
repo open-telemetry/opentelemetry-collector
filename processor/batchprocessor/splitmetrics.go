@@ -90,8 +90,6 @@ func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
 		dataPointCount = ms.IntSum().DataPoints().Len()
 	case pdata.MetricDataTypeSum:
 		dataPointCount = ms.Sum().DataPoints().Len()
-	case pdata.MetricDataTypeIntHistogram:
-		dataPointCount = ms.IntHistogram().DataPoints().Len()
 	case pdata.MetricDataTypeHistogram:
 		dataPointCount = ms.Histogram().DataPoints().Len()
 	case pdata.MetricDataTypeSummary:
@@ -155,16 +153,6 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 			src.At(j).CopyTo(dst.AppendEmpty())
 		}
 		src.RemoveIf(func(_ pdata.NumberDataPoint) bool {
-			return filterDataPoints()
-		})
-	case pdata.MetricDataTypeIntHistogram:
-		src := ms.IntHistogram().DataPoints()
-		dst := dest.IntHistogram().DataPoints()
-		dst.EnsureCapacity(size)
-		for j := 0; j < size; j++ {
-			src.At(j).CopyTo(dst.AppendEmpty())
-		}
-		src.RemoveIf(func(_ pdata.IntHistogramDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeHistogram:

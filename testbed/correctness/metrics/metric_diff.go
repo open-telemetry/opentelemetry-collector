@@ -116,9 +116,6 @@ func DiffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric)
 		diffs = diff(diffs, expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic(), "Sum IsMonotonic")
 		diffs = diff(diffs, expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality(), "Sum AggregationTemporality")
 		diffs = diffDoublePts(diffs, expected.Sum().DataPoints(), actual.Sum().DataPoints())
-	case pdata.MetricDataTypeIntHistogram:
-		diffs = diff(diffs, expected.IntHistogram().AggregationTemporality(), actual.IntHistogram().AggregationTemporality(), "IntHistogram AggregationTemporality")
-		diffs = diffIntHistogramPts(diffs, expected.IntHistogram().DataPoints(), actual.IntHistogram().DataPoints())
 	case pdata.MetricDataTypeHistogram:
 		diffs = diff(diffs, expected.Histogram().AggregationTemporality(), actual.Histogram().AggregationTemporality(), "Histogram AggregationTemporality")
 		diffs = diffDoubleHistogramPts(diffs, expected.Histogram().DataPoints(), actual.Histogram().DataPoints())
@@ -195,51 +192,6 @@ func diffDoubleExemplars(
 	diffs []*MetricDiff,
 	expected pdata.ExemplarSlice,
 	actual pdata.ExemplarSlice,
-) []*MetricDiff {
-	var mismatch bool
-	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "ExemplarSlice len")
-	if mismatch {
-		return diffs
-	}
-	for i := 0; i < expected.Len(); i++ {
-		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "Exemplar Value")
-	}
-	return diffs
-}
-
-func diffIntHistogramPts(
-	diffs []*MetricDiff,
-	expected pdata.IntHistogramDataPointSlice,
-	actual pdata.IntHistogramDataPointSlice,
-) []*MetricDiff {
-	var mismatch bool
-	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "HistogramDataPointSlice len")
-	if mismatch {
-		return diffs
-	}
-	for i := 0; i < expected.Len(); i++ {
-		diffs = diffIntHistogramPt(diffs, expected.At(i), actual.At(i))
-	}
-	return diffs
-}
-
-func diffIntHistogramPt(
-	diffs []*MetricDiff,
-	expected pdata.IntHistogramDataPoint,
-	actual pdata.IntHistogramDataPoint,
-) []*MetricDiff {
-	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
-	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
-	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
-	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
-	// todo LabelsMap()
-	return diffIntExemplars(diffs, expected.Exemplars(), actual.Exemplars())
-}
-
-func diffIntExemplars(
-	diffs []*MetricDiff,
-	expected pdata.IntExemplarSlice,
-	actual pdata.IntExemplarSlice,
 ) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "ExemplarSlice len")

@@ -38,7 +38,6 @@ const (
 	MetricTypeDoubleGauge           PICTMetricDataType = "DoubleGauge"
 	MetricTypeMonotonicDoubleSum    PICTMetricDataType = "MonotonicDoubleSum"
 	MetricTypeNonMonotonicDoubleSum PICTMetricDataType = "NonMonotonicDoubleSum"
-	MetricTypeIntHistogram          PICTMetricDataType = "IntHistogram"
 	MetricTypeHistogram             PICTMetricDataType = "Histogram"
 )
 

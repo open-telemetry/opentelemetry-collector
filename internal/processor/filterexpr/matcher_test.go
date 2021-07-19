@@ -66,11 +66,6 @@ func TestNilIntSum(t *testing.T) {
 	testNilValue(t, dataType)
 }
 
-func TestNilIntHistogram(t *testing.T) {
-	dataType := pdata.MetricDataTypeIntHistogram
-	testNilValue(t, dataType)
-}
-
 func TestNilDoubleHistogram(t *testing.T) {
 	dataType := pdata.MetricDataTypeHistogram
 	testNilValue(t, dataType)
@@ -130,18 +125,6 @@ func TestIntSumEmptyDataPoint(t *testing.T) {
 	m.SetName("my.metric")
 	m.SetDataType(pdata.MetricDataTypeIntSum)
 	m.IntSum().DataPoints().AppendEmpty()
-	matched, err := matcher.MatchMetric(m)
-	assert.NoError(t, err)
-	assert.True(t, matched)
-}
-
-func TestIntHistogramEmptyDataPoint(t *testing.T) {
-	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
-	require.NoError(t, err)
-	m := pdata.NewMetric()
-	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeIntHistogram)
-	m.IntHistogram().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -280,27 +263,6 @@ func matchIntSum(t *testing.T, metricName string) bool {
 	m.SetName(metricName)
 	m.SetDataType(pdata.MetricDataTypeIntSum)
 	dps := m.IntSum().DataPoints()
-	dps.AppendEmpty()
-	matched, err := matcher.MatchMetric(m)
-	assert.NoError(t, err)
-	return matched
-}
-
-func TestMatchIntHistogramByMetricName(t *testing.T) {
-	assert.True(t, matchIntHistogram(t, "my.metric"))
-}
-
-func TestNonMatchIntHistogramByMetricName(t *testing.T) {
-	assert.False(t, matchIntHistogram(t, "foo.metric"))
-}
-
-func matchIntHistogram(t *testing.T, metricName string) bool {
-	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
-	require.NoError(t, err)
-	m := pdata.NewMetric()
-	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeIntHistogram)
-	dps := m.IntHistogram().DataPoints()
 	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

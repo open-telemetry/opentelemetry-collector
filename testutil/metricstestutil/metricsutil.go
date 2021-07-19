@@ -180,10 +180,6 @@ func SortedMetrics(metrics pdata.Metrics) pdata.Metrics {
 					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
 						m.Sum().DataPoints().At(l).LabelsMap().Sort()
 					}
-				case pdata.MetricDataTypeIntHistogram:
-					for l := 0; l < m.IntHistogram().DataPoints().Len(); l++ {
-						m.IntHistogram().DataPoints().At(l).LabelsMap().Sort()
-					}
 				case pdata.MetricDataTypeHistogram:
 					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
 						m.Histogram().DataPoints().At(l).LabelsMap().Sort()
