@@ -172,6 +172,25 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	return true
 }
 
+func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *pdata.NumberDataPointSlice) bool {
+	var startTsNanos pdata.Timestamp
+	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	// gauge/undefined types have no start time.
+	if mg.family.isCumulativeTypePdata() {
+		// TODO(@odeke-em): use the actual interval start time as reported in
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/3691
+		startTsNanos = tsNanos
+	}
+
+	point := dest.AppendEmpty()
+	point.SetStartTimestamp(startTsNanos)
+	point.SetTimestamp(tsNanos)
+	point.SetValue(mg.value)
+	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+
+	return true
+}
+
 func populateLabelValuesPdata(orderedKeys []string, ls labels.Labels, dest pdata.StringMap) {
 	src := ls.Map()
 	for _, key := range orderedKeys {
