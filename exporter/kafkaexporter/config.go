@@ -46,7 +46,7 @@ type Config struct {
 	Authentication Authentication `mapstructure:"auth"`
 
 	// MessageMaxSize defines the max size of the message can be sent by sarama.
-	MessageMaxSize int `mapstructure:"message_max_size"`
+	MessageMaxSize int64 `mapstructure:"message_max_size"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
