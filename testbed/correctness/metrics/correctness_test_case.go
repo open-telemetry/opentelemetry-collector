@@ -32,7 +32,7 @@ type correctnessTestCase struct {
 	sender    testbed.DataSender
 	receiver  testbed.DataReceiver
 	harness   *testHarness
-	collector *testbed.InProcessCollector
+	collector testbed.OtelcolRunner
 }
 
 func newCorrectnessTestCase(

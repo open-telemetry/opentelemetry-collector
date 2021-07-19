@@ -121,7 +121,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 			require.NoError(t, err)
 
-			agentProc := &testbed.ChildProcess{}
+			agentProc := testbed.NewChildProcessCollector()
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}

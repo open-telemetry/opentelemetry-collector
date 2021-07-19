@@ -15,7 +15,6 @@
 package pdata
 
 import (
-	"errors"
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
@@ -24,105 +23,10 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/model/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
-
-func TestTracesMarshal_TranslationError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	tm := NewTracesMarshaler(encoder, translator)
-	td := NewTraces()
-
-	translator.On("FromTraces", td).Return(nil, errors.New("translation failed"))
-
-	_, err := tm.Marshal(td)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "converting pdata to model failed: translation failed")
-}
-
-func TestTracesMarshal_SerializeError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	tm := NewTracesMarshaler(encoder, translator)
-	td := NewTraces()
-	expectedModel := struct{}{}
-
-	translator.On("FromTraces", td).Return(expectedModel, nil)
-	encoder.On("EncodeTraces", expectedModel).Return(nil, errors.New("serialization failed"))
-
-	_, err := tm.Marshal(td)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "marshal failed: serialization failed")
-}
-
-func TestTracesMarshal_Encode(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	tm := NewTracesMarshaler(encoder, translator)
-	expectedTraces := NewTraces()
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	translator.On("FromTraces", expectedTraces).Return(expectedModel, nil)
-	encoder.On("EncodeTraces", expectedModel).Return(expectedBytes, nil)
-
-	actualBytes, err := tm.Marshal(expectedTraces)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedBytes, actualBytes)
-}
-
-func TestTracesUnmarshal_EncodingError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	tu := NewTracesUnmarshaler(encoder, translator)
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, errors.New("decode failed"))
-
-	_, err := tu.Unmarshal(expectedBytes)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "unmarshal failed: decode failed")
-}
-
-func TestTracesUnmarshal_TranslationError(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	tu := NewTracesUnmarshaler(encoder, translator)
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
-	translator.On("ToTraces", expectedModel).Return(NewTraces(), errors.New("translation failed"))
-
-	_, err := tu.Unmarshal(expectedBytes)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "converting model to pdata failed: translation failed")
-}
-
-func TestTracesUnmarshal_Decode(t *testing.T) {
-	translator := &mockTranslator{}
-	encoder := &mockEncoder{}
-
-	tu := NewTracesUnmarshaler(encoder, translator)
-	expectedTraces := NewTraces()
-	expectedBytes := []byte{1, 2, 3}
-	expectedModel := struct{}{}
-
-	encoder.On("DecodeTraces", expectedBytes).Return(expectedModel, nil)
-	translator.On("ToTraces", expectedModel).Return(expectedTraces, nil)
-
-	actualTraces, err := tu.Unmarshal(expectedBytes)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedTraces, actualTraces)
-}
 
 func TestSpanCount(t *testing.T) {
 	md := NewTraces()
@@ -138,9 +42,12 @@ func TestSpanCount(t *testing.T) {
 	assert.EqualValues(t, 1, md.SpanCount())
 
 	rms := md.ResourceSpans()
-	rms.Resize(3)
-	rms.At(1).InstrumentationLibrarySpans().AppendEmpty()
-	rms.At(2).InstrumentationLibrarySpans().AppendEmpty().Spans().Resize(5)
+	rms.EnsureCapacity(3)
+	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+	ilss := rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+	for i := 0; i < 5; i++ {
+		ilss.AppendEmpty()
+	}
 	// 5 + 1 (from rms.At(0) initialized first)
 	assert.EqualValues(t, 6, md.SpanCount())
 }
@@ -257,22 +164,6 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	assert.EqualValues(t, pdataRS.orig, &gogoprotoRS2)
 }
 
-func TestTracesToFromOtlpProtoBytes(t *testing.T) {
-	send := NewTraces()
-	fillTestResourceSpansSlice(send.ResourceSpans())
-	bytes, err := send.ToOtlpProtoBytes()
-	assert.NoError(t, err)
-
-	recv, err := TracesFromOtlpProtoBytes(bytes)
-	assert.NoError(t, err)
-	assert.EqualValues(t, send, recv)
-}
-
-func TestTracesFromInvalidOtlpProtoBytes(t *testing.T) {
-	_, err := TracesFromOtlpProtoBytes([]byte{0xFF})
-	assert.EqualError(t, err, "unexpected EOF")
-}
-
 func TestTracesClone(t *testing.T) {
 	traces := NewTraces()
 	fillTestResourceSpansSlice(traces.ResourceSpans())
@@ -288,31 +179,5 @@ func BenchmarkTracesClone(b *testing.B) {
 		if clone.ResourceSpans().Len() != traces.ResourceSpans().Len() {
 			b.Fail()
 		}
-	}
-}
-
-func BenchmarkTracesToOtlp(b *testing.B) {
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		buf, err := traces.ToOtlpProtoBytes()
-		require.NoError(b, err)
-		assert.NotEqual(b, 0, len(buf))
-	}
-}
-
-func BenchmarkTracesFromOtlp(b *testing.B) {
-	baseTraces := NewTraces()
-	fillTestResourceSpansSlice(baseTraces.ResourceSpans())
-	buf, err := baseTraces.ToOtlpProtoBytes()
-	require.NoError(b, err)
-	assert.NotEqual(b, 0, len(buf))
-	b.ResetTimer()
-	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		traces, err := TracesFromOtlpProtoBytes(buf)
-		require.NoError(b, err)
-		assert.Equal(b, baseTraces.ResourceSpans().Len(), traces.ResourceSpans().Len())
 	}
 }

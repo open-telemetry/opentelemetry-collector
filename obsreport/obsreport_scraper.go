@@ -19,7 +19,9 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -49,6 +51,7 @@ func ScraperContext(
 type Scraper struct {
 	receiverID config.ComponentID
 	scraper    config.ComponentID
+	tracer     trace.Tracer
 }
 
 // ScraperSettings are settings for creating a Scraper.
@@ -62,6 +65,7 @@ func NewScraper(cfg ScraperSettings) *Scraper {
 	return &Scraper{
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
+		tracer:     otel.GetTracerProvider().Tracer(cfg.Scraper.String()),
 	}
 }
 
@@ -72,7 +76,7 @@ func (s *Scraper) StartMetricsOp(
 	scraperCtx context.Context,
 ) context.Context {
 	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.NameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
-	ctx, _ := trace.StartSpan(scraperCtx, spanName)
+	ctx, _ := s.tracer.Start(scraperCtx, spanName)
 	return ctx
 }
 
@@ -93,7 +97,7 @@ func (s *Scraper) EndMetricsOp(
 		}
 	}
 
-	span := trace.FromContext(scraperCtx)
+	span := trace.SpanFromContext(scraperCtx)
 
 	if obsreportconfig.Level != configtelemetry.LevelNone {
 		stats.Record(
@@ -103,14 +107,13 @@ func (s *Scraper) EndMetricsOp(
 	}
 
 	// end span according to errors
-	if span.IsRecordingEvents() {
-		span.AddAttributes(
-			trace.StringAttribute(obsmetrics.FormatKey, string(config.MetricsDataType)),
-			trace.Int64Attribute(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
-			trace.Int64Attribute(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.String(obsmetrics.FormatKey, string(config.MetricsDataType)),
+			attribute.Int64(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
+			attribute.Int64(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)
-
-		span.SetStatus(errToStatus(err))
+		recordError(span, err)
 	}
 
 	span.End()

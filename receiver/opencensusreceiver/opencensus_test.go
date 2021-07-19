@@ -74,9 +74,8 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
-	// Verify that CORS is not enabled by default, but that it gives an 405
-	// method not allowed error.
-	verifyCorsResp(t, url, "origin.com", 405, false)
+	// Verify that CORS is not enabled by default, but that it gives a method not allowed error.
+	verifyCorsResp(t, url, "origin.com", http.StatusMethodNotAllowed, false)
 
 	traceJSON := []byte(`
     {
@@ -172,10 +171,10 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
 	// Verify allowed domain gets responses that allow CORS.
-	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
+	verifyCorsResp(t, url, "allowed-origin.com", http.StatusNoContent, true)
 
 	// Verify disallowed domain gets responses that disallow CORS.
-	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
+	verifyCorsResp(t, url, "disallowed-origin.com", http.StatusNoContent, false)
 }
 
 func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
@@ -196,10 +195,10 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	url := fmt.Sprintf("http://%s/v1/metrics", addr)
 
 	// Verify allowed domain gets responses that allow CORS.
-	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
+	verifyCorsResp(t, url, "allowed-origin.com", http.StatusNoContent, true)
 
 	// Verify disallowed domain gets responses that disallow CORS.
-	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
+	verifyCorsResp(t, url, "disallowed-origin.com", http.StatusNoContent, false)
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {

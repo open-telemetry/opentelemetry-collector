@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -60,7 +61,7 @@ func TestBuildExporters(t *testing.T) {
 		},
 	}
 
-	exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -89,7 +90,7 @@ func TestBuildExporters(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "trace")
-	exporters, err = BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err = BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
@@ -127,7 +128,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 		},
 	}
 
-	exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -152,7 +153,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "logs")
-	exporters, err = BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err = BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
@@ -238,7 +239,7 @@ func TestBuildExporters_NotSupportedDataType(t *testing.T) {
 			cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
-			exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+			exporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 			assert.Error(t, err)
 			assert.Zero(t, len(exporters))
 		})

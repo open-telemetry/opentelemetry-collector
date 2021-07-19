@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/otlp"
 )
 
 func TestNewPdataTracesUnmarshaler(t *testing.T) {

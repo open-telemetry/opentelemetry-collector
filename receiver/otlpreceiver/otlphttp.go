@@ -44,7 +44,7 @@ func handleTraces(
 		return
 	}
 
-	td, err := tracesUnmarshaler.Unmarshal(body)
+	td, err := tracesUnmarshaler.UnmarshalTraces(body)
 	if err != nil {
 		writeError(resp, contentType, err, http.StatusBadRequest)
 		return
@@ -56,7 +56,7 @@ func handleTraces(
 		return
 	}
 
-	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
 	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
@@ -71,7 +71,7 @@ func handleMetrics(
 		return
 	}
 
-	md, err := metricsUnmarshaler.Unmarshal(body)
+	md, err := metricsUnmarshaler.UnmarshalMetrics(body)
 	if err != nil {
 		writeError(resp, contentType, err, http.StatusBadRequest)
 		return
@@ -83,7 +83,7 @@ func handleMetrics(
 		return
 	}
 
-	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
 	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 
@@ -98,7 +98,7 @@ func handleLogs(
 		return
 	}
 
-	ld, err := logsUnmarshaler.Unmarshal(body)
+	ld, err := logsUnmarshaler.UnmarshalLogs(body)
 	if err != nil {
 		writeError(resp, contentType, err, http.StatusBadRequest)
 		return
@@ -110,7 +110,7 @@ func handleLogs(
 		return
 	}
 
-	// TODO: Pass response from grpc handler when pdatagrpc returns concrete type.
+	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
 	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
 }
 

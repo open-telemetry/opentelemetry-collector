@@ -17,12 +17,15 @@ package obsreport
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/oteltest"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -47,8 +50,8 @@ var (
 )
 
 type receiveTestParams struct {
-	transport string
-	err       error
+	items int
+	err   error
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
@@ -56,57 +59,45 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
-		{transport, errFake},
-		{"", nil},
+		{items: 13, err: errFake},
+		{items: 42, err: nil},
 	}
-	rcvdSpans := []int{13, 42}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartTracesOp(receiverCtx)
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		ctx := rec.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
-
-		rec.EndTracesOp(
-			ctx,
-			format,
-			rcvdSpans[i],
-			param.err)
+		rec.EndTracesOp(ctx, format, params[i].items, param.err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := sr.Completed()
 	require.Equal(t, len(params), len(spans))
 
 	var acceptedSpans, refusedSpans int
 	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name)
+		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
 		switch params[i].err {
 		case nil:
-			acceptedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			acceptedSpans += params[i].items
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedSpansKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedSpansKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			refusedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, params[i].err.Error(), span.Status.Message)
+			refusedSpans += params[i].items
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedSpansKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedSpansKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
-		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsmetrics.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsmetrics.TransportKey])
 		}
 	}
 	obsreporttest.CheckReceiverTraces(t, receiver, transport, int64(acceptedSpans), int64(refusedSpans))
@@ -117,57 +108,45 @@ func TestReceiveLogsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
-		{transport, errFake},
-		{"", nil},
+		{items: 13, err: errFake},
+		{items: 42, err: nil},
 	}
-	rcvdLogRecords := []int{13, 42}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartLogsOp(receiverCtx)
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		ctx := rec.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
-
-		rec.EndLogsOp(
-			ctx,
-			format,
-			rcvdLogRecords[i],
-			param.err)
+		rec.EndLogsOp(ctx, format, params[i].items, param.err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := sr.Completed()
 	require.Equal(t, len(params), len(spans))
 
 	var acceptedLogRecords, refusedLogRecords int
 	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name)
+		assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name())
 		switch params[i].err {
 		case nil:
-			acceptedLogRecords += rcvdLogRecords[i]
-			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsmetrics.AcceptedLogRecordsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.RefusedLogRecordsKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			acceptedLogRecords += params[i].items
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedLogRecordsKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedLogRecordsKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			refusedLogRecords += rcvdLogRecords[i]
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.AcceptedLogRecordsKey])
-			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsmetrics.RefusedLogRecordsKey])
-			assert.Equal(t, params[i].err.Error(), span.Status.Message)
+			refusedLogRecords += params[i].items
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedLogRecordsKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedLogRecordsKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
-		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsmetrics.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsmetrics.TransportKey])
 		}
 	}
 	obsreporttest.CheckReceiverLogs(t, receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords))
@@ -178,57 +157,45 @@ func TestReceiveMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport)
 	params := []receiveTestParams{
-		{transport, errFake},
-		{"", nil},
+		{items: 23, err: errFake},
+		{items: 29, err: nil},
 	}
-	rcvdMetricPts := []int{23, 29}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: param.transport})
-		ctx := rec.StartMetricsOp(receiverCtx)
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		ctx := rec.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
-
-		rec.EndMetricsOp(
-			ctx,
-			format,
-			rcvdMetricPts[i],
-			param.err)
+		rec.EndMetricsOp(ctx, format, params[i].items, param.err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := sr.Completed()
 	require.Equal(t, len(params), len(spans))
 
 	var acceptedMetricPoints, refusedMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name)
+		assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name())
 		switch params[i].err {
 		case nil:
-			acceptedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsmetrics.AcceptedMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.RefusedMetricPointsKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			acceptedMetricPoints += params[i].items
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedMetricPointsKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedMetricPointsKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			refusedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.AcceptedMetricPointsKey])
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsmetrics.RefusedMetricPointsKey])
-			assert.Equal(t, params[i].err.Error(), span.Status.Message)
+			refusedMetricPoints += params[i].items
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedMetricPointsKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedMetricPointsKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
-		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsmetrics.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsmetrics.TransportKey])
 		}
 	}
 
@@ -240,53 +207,56 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	receiverCtx := ScraperContext(parentCtx, receiver, scraper)
-	errParams := []error{partialErrFake, errFake, nil}
-	scrapedMetricPts := []int{23, 29, 15}
-	for i, err := range errParams {
+	params := []receiveTestParams{
+		{items: 23, err: partialErrFake},
+		{items: 29, err: errFake},
+		{items: 15, err: nil},
+	}
+	for i := range params {
 		scrp := NewScraper(ScraperSettings{ReceiverID: receiver, Scraper: scraper})
 		ctx := scrp.StartMetricsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		scrp.EndMetricsOp(
-			ctx,
-			scrapedMetricPts[i],
-			err)
+		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := ss.PullAllSpans()
-	require.Equal(t, len(errParams), len(spans))
+	spans := sr.Completed()
+	require.Equal(t, len(params), len(spans))
 
 	var scrapedMetricPoints, erroredMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name)
-		switch errParams[i] {
+		assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name())
+		switch params[i].err {
 		case nil:
-			scrapedMetricPoints += scrapedMetricPts[i]
-			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsmetrics.ScrapedMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.ErroredMetricPointsKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			scrapedMetricPoints += params[i].items
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.ScrapedMetricPointsKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.ErroredMetricPointsKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			erroredMetricPoints += scrapedMetricPts[i]
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.ScrapedMetricPointsKey])
-			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsmetrics.ErroredMetricPointsKey])
-			assert.Equal(t, errParams[i].Error(), span.Status.Message)
+			erroredMetricPoints += params[i].items
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.ScrapedMetricPointsKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.ErroredMetricPointsKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+
 		case partialErrFake:
-			scrapedMetricPoints += scrapedMetricPts[i]
+			scrapedMetricPoints += params[i].items
 			erroredMetricPoints++
-			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsmetrics.ScrapedMetricPointsKey])
-			assert.Equal(t, int64(1), span.Attributes[obsmetrics.ErroredMetricPointsKey])
-			assert.Equal(t, errParams[i].Error(), span.Status.Message)
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.ScrapedMetricPointsKey])
+			assert.Equal(t, attribute.Int64Value(1), span.Attributes()[obsmetrics.ErroredMetricPointsKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
-			t.Fatalf("unexpected err param: %v", errParams[i])
+			t.Fatalf("unexpected err param: %v", params[i].err)
 		}
 	}
 
@@ -298,42 +268,46 @@ func TestExportTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
-	errs := []error{nil, errFake}
-	numExportedSpans := []int{22, 14}
-	for i, err := range errs {
+
+	params := []receiveTestParams{
+		{items: 22, err: nil},
+		{items: 14, err: errFake},
+	}
+	for i := range params {
 		ctx := obsrep.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
-		obsrep.EndTracesOp(ctx, numExportedSpans[i], err)
+		obsrep.EndTracesOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := ss.PullAllSpans()
-	require.Equal(t, len(errs), len(spans))
+	spans := sr.Completed()
+	require.Equal(t, len(params), len(spans))
 
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter.String()+"/traces", span.Name)
-		switch errs[i] {
+		assert.Equal(t, "exporter/"+exporter.String()+"/traces", span.Name())
+		switch params[i].err {
 		case nil:
-			sentSpans += numExportedSpans[i]
-			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[obsmetrics.SentSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.FailedToSendSpansKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			sentSpans += params[i].items
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.SentSpansKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.FailedToSendSpansKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			failedToSendSpans += numExportedSpans[i]
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.SentSpansKey])
-			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[obsmetrics.FailedToSendSpansKey])
-			assert.Equal(t, errs[i].Error(), span.Status.Message)
+			failedToSendSpans += params[i].items
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.SentSpansKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.FailedToSendSpansKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
-			t.Fatalf("unexpected error: %v", errs[i])
+			t.Fatalf("unexpected error: %v", params[i].err)
 		}
 	}
 
@@ -345,44 +319,47 @@ func TestExportMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
 
-	errs := []error{nil, errFake}
-	toSendMetricPoints := []int{17, 23}
-	for i, err := range errs {
+	params := []receiveTestParams{
+		{items: 17, err: nil},
+		{items: 23, err: errFake},
+	}
+	for i := range params {
 		ctx := obsrep.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndMetricsOp(ctx, toSendMetricPoints[i], err)
+		obsrep.EndMetricsOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := ss.PullAllSpans()
-	require.Equal(t, len(errs), len(spans))
+	spans := sr.Completed()
+	require.Equal(t, len(params), len(spans))
 
 	var sentMetricPoints, failedToSendMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter.String()+"/metrics", span.Name)
-		switch errs[i] {
+		assert.Equal(t, "exporter/"+exporter.String()+"/metrics", span.Name())
+		switch params[i].err {
 		case nil:
-			sentMetricPoints += toSendMetricPoints[i]
-			assert.Equal(t, int64(toSendMetricPoints[i]), span.Attributes[obsmetrics.SentMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.FailedToSendMetricPointsKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			sentMetricPoints += params[i].items
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.SentMetricPointsKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.FailedToSendMetricPointsKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			failedToSendMetricPoints += toSendMetricPoints[i]
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.SentMetricPointsKey])
-			assert.Equal(t, int64(toSendMetricPoints[i]), span.Attributes[obsmetrics.FailedToSendMetricPointsKey])
-			assert.Equal(t, errs[i].Error(), span.Status.Message)
+			failedToSendMetricPoints += params[i].items
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.SentMetricPointsKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.FailedToSendMetricPointsKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
-			t.Fatalf("unexpected error: %v", errs[i])
+			t.Fatalf("unexpected error: %v", params[i].err)
 		}
 	}
 
@@ -394,43 +371,46 @@ func TestExportLogsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
-	errs := []error{nil, errFake}
-	toSendLogRecords := []int{17, 23}
-	for i, err := range errs {
+	params := []receiveTestParams{
+		{items: 17, err: nil},
+		{items: 23, err: errFake},
+	}
+	for i := range params {
 		ctx := obsrep.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
 
-		obsrep.EndLogsOp(ctx, toSendLogRecords[i], err)
+		obsrep.EndLogsOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := ss.PullAllSpans()
-	require.Equal(t, len(errs), len(spans))
+	spans := sr.Completed()
+	require.Equal(t, len(params), len(spans))
 
 	var sentLogRecords, failedToSendLogRecords int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter.String()+"/logs", span.Name)
-		switch errs[i] {
+		assert.Equal(t, "exporter/"+exporter.String()+"/logs", span.Name())
+		switch params[i].err {
 		case nil:
-			sentLogRecords += toSendLogRecords[i]
-			assert.Equal(t, int64(toSendLogRecords[i]), span.Attributes[obsmetrics.SentLogRecordsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.FailedToSendLogRecordsKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			sentLogRecords += params[i].items
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.SentLogRecordsKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.FailedToSendLogRecordsKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			failedToSendLogRecords += toSendLogRecords[i]
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.SentLogRecordsKey])
-			assert.Equal(t, int64(toSendLogRecords[i]), span.Attributes[obsmetrics.FailedToSendLogRecordsKey])
-			assert.Equal(t, errs[i].Error(), span.Status.Message)
+			failedToSendLogRecords += params[i].items
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.SentLogRecordsKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.FailedToSendLogRecordsKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
-			t.Fatalf("unexpected error: %v", errs[i])
+			t.Fatalf("unexpected error: %v", params[i].err)
 		}
 	}
 
@@ -438,69 +418,50 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	sr := new(oteltest.SpanRecorder)
+	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(tp)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	trace.ApplyConfig(trace.Config{
-		DefaultSampler: trace.AlwaysSample(),
-	})
-	defer func() {
-		trace.ApplyConfig(trace.Config{
-			DefaultSampler: trace.ProbabilitySampler(1e-4),
-		})
-	}()
-
-	parentCtx, parentSpan := trace.StartSpan(context.Background(), t.Name())
+	longLivedCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	longLivedCtx := ReceiverContext(parentCtx, receiver, transport)
-	ops := []struct {
-		numSpans int
-		err      error
-	}{
-		{numSpans: 13},
-		{numSpans: 42, err: errFake},
+	params := []receiveTestParams{
+		{items: 17, err: nil},
+		{items: 23, err: errFake},
 	}
-	for _, op := range ops {
+	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
-		ctx := rec.StartTracesOp(
-			longLivedCtx,
-			WithLongLivedCtx())
+		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport, LongLivedCtx: true})
+		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
-
-		rec.EndTracesOp(
-			ctx,
-			format,
-			op.numSpans,
-			op.err)
+		rec.EndTracesOp(ctx, format, params[i].items, params[i].err)
 	}
 
-	spans := ss.PullAllSpans()
-	require.Equal(t, len(ops), len(spans))
+	spans := sr.Completed()
+	require.Equal(t, len(params), len(spans))
 
 	for i, span := range spans {
-		assert.Equal(t, trace.SpanID{}, span.ParentSpanID)
-		require.Equal(t, 1, len(span.Links))
-		link := span.Links[0]
-		assert.Equal(t, trace.LinkTypeParent, link.Type)
-		assert.Equal(t, parentSpan.SpanContext().TraceID, link.TraceID)
-		assert.Equal(t, parentSpan.SpanContext().SpanID, link.SpanID)
-		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name)
-		assert.Equal(t, transport, span.Attributes[obsmetrics.TransportKey])
-		switch ops[i].err {
+		assert.Equal(t, trace.SpanID{}, span.ParentSpanID())
+		require.Equal(t, 1, len(span.Links()))
+		link := span.Links()[0]
+		assert.Equal(t, parentSpan.SpanContext().TraceID(), link.SpanContext.TraceID())
+		assert.Equal(t, parentSpan.SpanContext().SpanID(), link.SpanContext.SpanID())
+		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
+		assert.Equal(t, attribute.StringValue(transport), span.Attributes()[obsmetrics.TransportKey])
+		switch params[i].err {
 		case nil:
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedSpansKey])
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedSpansKey])
+			assert.Equal(t, codes.Unset, span.StatusCode())
 		case errFake:
-			assert.Equal(t, int64(0), span.Attributes[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, ops[i].err.Error(), span.Status.Message)
+			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedSpansKey])
+			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedSpansKey])
+			assert.Equal(t, codes.Error, span.StatusCode())
+			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
 		default:
-			t.Fatalf("unexpected error: %v", ops[i].err)
+			t.Fatalf("unexpected error: %v", params[i].err)
 		}
 	}
 }
@@ -576,23 +537,4 @@ func TestProcessorLogRecords(t *testing.T) {
 	obsrep.LogsDropped(context.Background(), droppedRecords)
 
 	obsreporttest.CheckProcessorLogs(t, processor, acceptedRecords, refusedRecords, droppedRecords)
-}
-
-type spanStore struct {
-	sync.Mutex
-	spans []*trace.SpanData
-}
-
-func (ss *spanStore) ExportSpan(sd *trace.SpanData) {
-	ss.Lock()
-	ss.spans = append(ss.spans, sd)
-	ss.Unlock()
-}
-
-func (ss *spanStore) PullAllSpans() []*trace.SpanData {
-	ss.Lock()
-	capturedSpans := ss.spans
-	ss.spans = nil
-	ss.Unlock()
-	return capturedSpans
 }

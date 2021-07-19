@@ -20,12 +20,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
+	"go.opentelemetry.io/collector/internal/iruntime"
 )
 
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "memory_ballast"
 )
+
+// memHandler returns the total memory of the target host/vm
+var memHandler = iruntime.TotalMemory
 
 // NewFactory creates a factory for FluentBit extension.
 func NewFactory() component.ExtensionFactory {
@@ -42,5 +46,5 @@ func createDefaultConfig() config.Extension {
 }
 
 func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	return newMemoryBallast(cfg.(*Config), set.Logger), nil
+	return newMemoryBallast(cfg.(*Config), set.Logger, memHandler), nil
 }

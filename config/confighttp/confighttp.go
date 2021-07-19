@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -195,16 +197,34 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOp
 	for _, o := range opts {
 		o(serverOpts)
 	}
-	if len(hss.CorsOrigins) > 0 {
-		co := cors.Options{AllowedOrigins: hss.CorsOrigins, AllowedHeaders: hss.CorsHeaders}
-		handler = cors.New(co).Handler(handler)
-	}
-	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
 
 	handler = middleware.HTTPContentDecompressor(
 		handler,
 		middleware.WithErrorHandler(serverOpts.errorHandler),
 	)
+
+	if len(hss.CorsOrigins) > 0 {
+		co := cors.Options{
+			AllowedOrigins:   hss.CorsOrigins,
+			AllowCredentials: true,
+			AllowedHeaders:   hss.CorsHeaders,
+		}
+		handler = cors.New(co).Handler(handler)
+	}
+	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
+
+	// Enable OpenTelemetry observability plugin.
+	// TODO: Consider to use component ID string as prefix for all the operations.
+	handler = otelhttp.NewHandler(
+		handler,
+		"",
+		otelhttp.WithTracerProvider(otel.GetTracerProvider()),
+		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return r.URL.Path
+		}),
+	)
+
 	return &http.Server{
 		Handler: handler,
 	}

@@ -73,12 +73,12 @@ func addLabelsToMetric(metric *pdata.Metric, labelMap pdata.StringMap) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		addLabelsToIntDataPoints(metric.IntGauge().DataPoints(), labelMap)
-	case pdata.MetricDataTypeDoubleGauge:
-		addLabelsToDoubleDataPoints(metric.DoubleGauge().DataPoints(), labelMap)
+	case pdata.MetricDataTypeGauge:
+		addLabelsToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
 	case pdata.MetricDataTypeIntSum:
 		addLabelsToIntDataPoints(metric.IntSum().DataPoints(), labelMap)
-	case pdata.MetricDataTypeDoubleSum:
-		addLabelsToDoubleDataPoints(metric.DoubleSum().DataPoints(), labelMap)
+	case pdata.MetricDataTypeSum:
+		addLabelsToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeIntHistogram:
 		addLabelsToIntHistogramDataPoints(metric.IntHistogram().DataPoints(), labelMap)
 	case pdata.MetricDataTypeHistogram:
@@ -92,7 +92,7 @@ func addLabelsToIntDataPoints(ps pdata.IntDataPointSlice, newLabelMap pdata.Stri
 	}
 }
 
-func addLabelsToDoubleDataPoints(ps pdata.DoubleDataPointSlice, newLabelMap pdata.StringMap) {
+func addLabelsToNumberDataPoints(ps pdata.NumberDataPointSlice, newLabelMap pdata.StringMap) {
 	for i := 0; i < ps.Len(); i++ {
 		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
 	}

@@ -107,6 +107,27 @@ func TestOptionsToConfig(t *testing.T) {
 				CAFile: "testdata/testCA.pem",
 			},
 		},
+		{
+			name: "should pass with valid min and max version",
+			options: TLSSetting{
+				MinVersion: "1.1",
+				MaxVersion: "1.2",
+			},
+		},
+		{
+			name: "should pass with invalid min",
+			options: TLSSetting{
+				MinVersion: "1.7",
+			},
+			expectError: "invalid TLS min_",
+		},
+		{
+			name: "should pass with invalid max",
+			options: TLSSetting{
+				MaxVersion: "1.7",
+			},
+			expectError: "invalid TLS max_",
+		},
 	}
 
 	for _, test := range tests {

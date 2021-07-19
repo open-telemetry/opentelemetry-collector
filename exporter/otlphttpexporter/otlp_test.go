@@ -120,7 +120,7 @@ func TestTraceRoundTrip(t *testing.T) {
 			td := testdata.GenerateTracesOneSpan()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 			require.Eventually(t, func() bool {
-				return sink.SpansCount() > 0
+				return sink.SpanCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allTraces := sink.AllTraces()
 			require.Len(t, allTraces, 1)
@@ -177,7 +177,7 @@ func TestCompressionOptions(t *testing.T) {
 			td := testdata.GenerateTracesOneSpan()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 			require.Eventually(t, func() bool {
-				return sink.SpansCount() > 0
+				return sink.SpanCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allTraces := sink.AllTraces()
 			require.Len(t, allTraces, 1)
@@ -227,10 +227,10 @@ func TestMetricsRoundTrip(t *testing.T) {
 			startMetricsReceiver(t, addr, sink)
 			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
 
-			md := testdata.GenerateMetricsOneMetric()
+			md := testdata.GenerateMetricsOneSumMetric()
 			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 			require.Eventually(t, func() bool {
-				return sink.MetricsCount() > 0
+				return sink.DataPointCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allMetrics := sink.AllMetrics()
 			require.Len(t, allMetrics, 1)
@@ -283,7 +283,7 @@ func TestLogsRoundTrip(t *testing.T) {
 			md := testdata.GenerateLogsOneLogRecord()
 			assert.NoError(t, exp.ConsumeLogs(context.Background(), md))
 			require.Eventually(t, func() bool {
-				return sink.LogRecordsCount() > 0
+				return sink.LogRecordCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
 			allLogs := sink.AllLogs()
 			require.Len(t, allLogs, 1)

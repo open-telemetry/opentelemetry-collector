@@ -57,10 +57,11 @@ func createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
+	proc := &resourceProcessor{attrProc: attrProc}
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		&resourceProcessor{attrProc: attrProc},
+		proc.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
@@ -73,10 +74,11 @@ func createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
+	proc := &resourceProcessor{attrProc: attrProc}
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
-		&resourceProcessor{attrProc: attrProc},
+		proc.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
@@ -89,10 +91,11 @@ func createLogsProcessor(
 	if err != nil {
 		return nil, err
 	}
+	proc := &resourceProcessor{attrProc: attrProc}
 	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
-		&resourceProcessor{attrProc: attrProc},
+		proc.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 

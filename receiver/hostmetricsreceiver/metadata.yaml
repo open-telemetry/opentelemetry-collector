@@ -101,7 +101,7 @@ metrics:
     description: Total CPU seconds broken down by different states.
     unit: s
     data:
-      type: double sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [process.state]
@@ -135,7 +135,7 @@ metrics:
     description: Total CPU seconds broken down by different states.
     unit: s
     data:
-      type: double sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [cpu.state]
@@ -153,19 +153,19 @@ metrics:
     description: Average CPU Load over 1 minute.
     unit: 1
     data:
-      type: double gauge
+      type: gauge
 
   system.cpu.load_average.5m:
     description: Average CPU Load over 5 minutes.
     unit: 1
     data:
-      type: double gauge
+      type: gauge
 
   system.cpu.load_average.15m:
     description: Average CPU Load over 15 minutes.
     unit: 1
     data:
-      type: double gauge
+      type: gauge
 
   system.disk.io:
     description: Disk bytes transferred.
@@ -189,7 +189,7 @@ metrics:
     description: Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.
     unit: s
     data:
-      type: double sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [disk.device]
@@ -198,7 +198,7 @@ metrics:
     description: Time spent in disk operations.
     unit: s
     data:
-      type: double sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [disk.device, disk.direction]
@@ -207,7 +207,7 @@ metrics:
     description: Time disk spent activated multiplied by the queue length.
     unit: s
     data:
-      type: double sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [disk.device]

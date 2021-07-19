@@ -22,8 +22,8 @@ var (
 	_ MetricData = &intGauge{}
 	_ MetricData = &intSum{}
 	_ MetricData = &intHistogram{}
-	_ MetricData = &doubleGauge{}
-	_ MetricData = &doubleSum{}
+	_ MetricData = &gauge{}
+	_ MetricData = &sum{}
 	_ MetricData = &histogram{}
 )
 
@@ -50,10 +50,10 @@ func (e *ymlMetricData) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		md = &intSum{}
 	case "int histogram":
 		md = &intHistogram{}
-	case "double gauge":
-		md = &doubleGauge{}
-	case "double sum":
-		md = &doubleSum{}
+	case "gauge":
+		md = &gauge{}
+	case "sum":
+		md = &sum{}
 	case "histogram":
 		md = &histogram{}
 	default:
@@ -116,18 +116,18 @@ func (i intGauge) HasAggregated() bool {
 	return false
 }
 
-type doubleGauge struct {
+type gauge struct {
 }
 
-func (d doubleGauge) Type() string {
-	return "DoubleGauge"
+func (d gauge) Type() string {
+	return "Gauge"
 }
 
-func (d doubleGauge) HasMonotonic() bool {
+func (d gauge) HasMonotonic() bool {
 	return false
 }
 
-func (d doubleGauge) HasAggregated() bool {
+func (d gauge) HasAggregated() bool {
 	return false
 }
 
@@ -148,20 +148,20 @@ func (i intSum) HasAggregated() bool {
 	return true
 }
 
-type doubleSum struct {
+type sum struct {
 	Aggregated `yaml:",inline"`
 	Mono       `yaml:",inline"`
 }
 
-func (d doubleSum) Type() string {
-	return "DoubleSum"
+func (d sum) Type() string {
+	return "Sum"
 }
 
-func (d doubleSum) HasMonotonic() bool {
+func (d sum) HasMonotonic() bool {
 	return true
 }
 
-func (d doubleSum) HasAggregated() bool {
+func (d sum) HasAggregated() bool {
 	return true
 }
 
