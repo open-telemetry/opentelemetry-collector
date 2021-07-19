@@ -23,7 +23,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/jaegertracing/jaeger v1.24.0
-	github.com/knadh/koanf v1.1.1
+	github.com/knadh/koanf v1.2.0
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.1
