@@ -216,6 +216,11 @@ func (pcs *persistentContiguousStorage) stop() {
 
 // put marshals the request and puts it into the persistent queue
 func (pcs *persistentContiguousStorage) put(req request) error {
+	// Nil requests are ignored
+	if req == nil {
+		return nil
+	}
+
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 

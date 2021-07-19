@@ -199,6 +199,25 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 	ext.Shutdown(context.Background())
 }
 
+func TestPersistentStorage_EmptyRequest(t *testing.T) {
+	path := createTemporaryDirectory()
+	defer os.RemoveAll(path)
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+
+	require.Equal(t, 0, ps.size())
+
+	err := ps.put(nil)
+	require.NoError(t, err)
+
+	require.Equal(t, 0, ps.size())
+
+	err = ext.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 	cases := []struct {
 		numTraces        int
