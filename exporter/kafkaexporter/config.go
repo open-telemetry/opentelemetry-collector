@@ -46,7 +46,7 @@ type Config struct {
 	Authentication Authentication `mapstructure:"auth"`
 
 	// MessageMaxSize defines the max size of the message can be sent by sarama.
-	MessageMaxSize int64 `mapstructure:"message_max_size"`
+	MessageMaxSize int `mapstructure:"message_max_size"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
@@ -67,7 +67,7 @@ type Metadata struct {
 type MetadataRetry struct {
 	// The total number of times to retry a metadata request when the
 	// cluster is in the middle of a leader election or at startup (default 3).
-	Max int64 `mapstructure:"max"`
+	Max int `mapstructure:"max"`
 	// How long to wait for leader election to occur before retrying
 	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
 	Backoff time.Duration `mapstructure:"backoff"`
