@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -75,42 +76,52 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	requireItemIndexesEqual(t, ps, []itemIndex{0})
+	// Item index 0 is currently in unbuffered channel
+	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0})
 
+	// Now, this will take item 0 and pull item 1 into the unbuffered channel
 	readReq := getItemFromChannel(t, ps)
 	require.Equal(t, req.(*tracesRequest).td, readReq.(*tracesRequest).td)
+	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 1})
 
-	requireItemIndexesEqual(t, ps, []itemIndex{0, 1})
-
+	// This takes item 1 from channel and pulls another one (item 2) into the unbuffered channel
 	secondReadReq := getItemFromChannel(t, ps)
-	requireItemIndexesEqual(t, ps, []itemIndex{0, 1, 2})
+	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 1, 2})
 
+	// Lets mark item 1 as finished, it will remove it from the currently processed items list
 	secondReadReq.onProcessingFinished()
-	requireItemIndexesEqual(t, ps, []itemIndex{0, 2})
+	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 2})
 
-	// Reload the storage and check how many items are there, which, after the current one is fetched should go to 3
+	// Reload the storage. Since items 0 and 2 were not finished, those should be requeued at the end.
+	// The queue should be essentially {3,4,0,2} out of which item "3" should be pulled right away into
+	// the unbuffered channel. Check how many items are there, which, after the current one is fetched should go to 3.
 	newPs := createTestPersistentStorage(client)
 	require.Eventually(t, func() bool {
 		return newPs.size() == 3
 	}, 500*time.Millisecond, 10*time.Millisecond)
 
-	requireItemIndexesEqual(t, newPs, []itemIndex{3})
+	requireCurrentItemIndexesEqual(t, newPs, []itemIndex{3})
 
+	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
 		req := getItemFromChannel(t, newPs)
 		req.onProcessingFinished()
 	}
 
-	requireItemIndexesEqual(t, newPs, nil)
+	// The queue should be now empty
+	requireCurrentItemIndexesEqual(t, newPs, nil)
 	require.Eventually(t, func() bool {
 		return newPs.size() == 0
 	}, 500*time.Millisecond, 10*time.Millisecond)
 
 	// The writeIndex should be now set accordingly
 	require.Equal(t, 7, int(newPs.writeIndex))
+
 	// There should be no items left in the storage
 	for i := 0; i < int(newPs.writeIndex); i++ {
-		require.Nil(t, newPs._clientGetBuf(context.Background(), newPs.itemKey(itemIndex(i))))
+		bb, err := client.Get(context.Background(), newPs.itemKey(itemIndex(i)))
+		require.NoError(t, err)
+		require.Nil(t, bb)
 	}
 }
 
@@ -131,7 +142,7 @@ func TestPersistentStorage_MetricsReported(t *testing.T) {
 	}
 
 	_ = getItemFromChannel(t, ps)
-	requireItemIndexesEqual(t, ps, []itemIndex{0, 1})
+	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 1})
 	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/processed_batches_size")
 
 	ps.stop()
@@ -277,7 +288,7 @@ func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) request 
 	return readReq
 }
 
-func requireItemIndexesEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
+func requireCurrentItemIndexesEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
 	require.Eventually(t, func() bool {
 		pcs.mu.Lock()
 		defer pcs.mu.Unlock()
@@ -310,28 +321,58 @@ func newMockStorageClient() storage.Client {
 }
 
 type mockStorageClient struct {
-	st map[string][]byte
+	st  map[string][]byte
+	mux sync.Mutex
 }
 
-func (m mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
+func (m *mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
 	val, found := m.st[s]
 	if !found {
-		return []byte{}, errors.New("key not found")
+		return nil, nil
 	}
 
 	return val, nil
 }
 
-func (m mockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
+func (m *mockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
 	m.st[s] = bytes
 	return nil
 }
 
-func (m mockStorageClient) Delete(_ context.Context, s string) error {
+func (m *mockStorageClient) Delete(_ context.Context, s string) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
 	delete(m.st, s)
 	return nil
 }
 
-func (m mockStorageClient) Close(_ context.Context) error {
+func (m *mockStorageClient) Close(_ context.Context) error {
+	return nil
+}
+
+func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = m.st[op.Key]
+		case storage.Set:
+			m.st[op.Key] = op.Value
+		case storage.Delete:
+			delete(m.st, op.Key)
+		default:
+			return errors.New("wrong operation type")
+		}
+	}
+
 	return nil
 }

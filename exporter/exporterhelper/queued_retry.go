@@ -97,7 +97,7 @@ type RetrySettings struct {
 	// MaxInterval is the upper bound on backoff interval. Once this value is reached the delay between
 	// consecutive retries will always be `MaxInterval`.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
-	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
+	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batchStruct.
 	// Once this value is reached, the data is discarded.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
@@ -423,7 +423,7 @@ func (rs *retrySender) send(req request) error {
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			// throw away the batch
+			// throw away the batchStruct
 			err = fmt.Errorf("max elapsed time expired %w", err)
 			return rs.onTemporaryFailure(req, err)
 		}

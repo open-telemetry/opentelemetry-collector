@@ -40,7 +40,7 @@ func DefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
-// request is an abstraction of an individual request (batch of data) independent of the type of the data (traces, metrics, logs).
+// request is an abstraction of an individual request (batchStruct of data) independent of the type of the data (traces, metrics, logs).
 type request interface {
 	// context returns the Context of the requests.
 	context() context.Context

@@ -15,9 +15,7 @@
 package exporterhelper
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"sync"
@@ -98,8 +96,9 @@ const (
 )
 
 var (
-	errStoringItemToQueue = errors.New("item could not be stored to persistent queue")
-	errUpdatingIndex      = errors.New("index could not be updated")
+	errValueNotSet = errors.New("value not set")
+
+	errKeyNotPresentInBatch = errors.New("key was not present in get batchStruct")
 )
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue. It needs to be initialized separately
@@ -127,23 +126,28 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, logge
 	return wcs
 }
 
-func initPersistentContiguousStorage(ctx context.Context, wcs *persistentContiguousStorage) {
-	readIndexIf := wcs._clientGet(ctx, readIndexKey, bytesToItemIndex)
-	if readIndexIf == nil {
-		wcs.logger.Debug("failed getting read index, starting with a new one",
-			zap.String(zapQueueNameKey, wcs.queueName))
-		wcs.readIndex = 0
-	} else {
-		wcs.readIndex = readIndexIf.(itemIndex)
+func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContiguousStorage) {
+	var writeIndex itemIndex
+	var readIndex itemIndex
+	batch, err := newBatch(pcs).get(readIndexKey, writeIndexKey).execute(ctx)
+
+	if err == nil {
+		readIndex, err = batch.getItemIndexResult(readIndexKey)
 	}
 
-	writeIndexIf := wcs._clientGet(ctx, writeIndexKey, bytesToItemIndex)
-	if writeIndexIf == nil {
-		wcs.logger.Debug("failed getting write index, starting with a new one",
-			zap.String(zapQueueNameKey, wcs.queueName))
-		wcs.writeIndex = 0
+	if err == nil {
+		writeIndex, err = batch.getItemIndexResult(writeIndexKey)
+	}
+
+	if err != nil {
+		pcs.logger.Debug("failed getting read/write index, starting with new ones",
+			zap.String(zapQueueNameKey, pcs.queueName),
+			zap.Error(err))
+		pcs.readIndex = 0
+		pcs.writeIndex = 0
 	} else {
-		wcs.writeIndex = writeIndexIf.(itemIndex)
+		pcs.readIndex = readIndex
+		pcs.writeIndex = writeIndex
 	}
 }
 
@@ -218,13 +222,11 @@ func (pcs *persistentContiguousStorage) put(req request) error {
 	ctx := context.Background()
 
 	itemKey := pcs.itemKey(pcs.writeIndex)
-	if !pcs._clientSet(ctx, itemKey, req, requestToBytes) {
-		return errStoringItemToQueue
-	}
-
 	pcs.writeIndex++
-	if !pcs._clientSet(ctx, writeIndexKey, pcs.writeIndex, itemIndexToBytes) {
-		return errUpdatingIndex
+
+	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -243,8 +245,13 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 		pcs.updateReadIndex(ctx)
 		pcs.itemProcessingStart(ctx, index)
 
-		req := pcs._clientGet(ctx, pcs.itemKey(index), pcs.bytesToRequest).(request)
-		if req == nil {
+		batch, err := newBatch(pcs).get(pcs.itemKey(index)).execute(ctx)
+		if err != nil {
+			return nil, false
+		}
+
+		req, err := batch.getRequestResult(pcs.itemKey(index))
+		if err != nil || req == nil {
 			return nil, false
 		}
 
@@ -263,18 +270,18 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 // and moves the items back to the queue
 func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Context) []request {
 	var reqs []request
+	var processedItems []itemIndex
+
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	pcs.logger.Debug("checking if there are items left by consumers")
-	processedItemsIf := pcs._clientGet(ctx, currentlyProcessedItemsKey, bytesToItemIndexArray)
-	if processedItemsIf == nil {
-		return reqs
+	pcs.logger.Debug("checking if there are items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
+	batch, err := newBatch(pcs).get(currentlyProcessedItemsKey).execute(ctx)
+	if err == nil {
+		processedItems, err = batch.getItemIndexArrayResult(currentlyProcessedItemsKey)
 	}
-	processedItems, ok := processedItemsIf.([]itemIndex)
-	if !ok {
-		pcs.logger.Warn("failed fetching list of unprocessed items",
-			zap.String(zapQueueNameKey, pcs.queueName))
+	if err != nil {
+		pcs.logger.Warn("could not fetch items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
 		return reqs
 	}
 
@@ -285,10 +292,30 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 		pcs.logger.Debug("no items left for processing by consumers")
 	}
 
-	for _, it := range processedItems {
-		req := pcs._clientGet(ctx, pcs.itemKey(it), pcs.bytesToRequest).(request)
-		pcs._clientDelete(ctx, pcs.itemKey(it))
-		reqs = append(reqs, req)
+	reqs = make([]request, len(processedItems))
+	keys := make([]string, len(processedItems))
+	batch = newBatch(pcs)
+	for i, it := range processedItems {
+		keys[i] = pcs.itemKey(it)
+		batch.
+			get(keys[i]).
+			delete(keys[i])
+	}
+
+	_, err = batch.execute(ctx)
+	if err != nil {
+		pcs.logger.Warn("failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
+		return reqs
+	}
+
+	for i, key := range keys {
+		req, err := batch.getRequestResult(key)
+		if err != nil {
+			pcs.logger.Warn("failed unmarshalling item",
+				zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key))
+		} else {
+			reqs[i] = req
+		}
 	}
 
 	return reqs
@@ -297,7 +324,13 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 // itemProcessingStart appends the item to the list of currently processed items
 func (pcs *persistentContiguousStorage) itemProcessingStart(ctx context.Context, index itemIndex) {
 	pcs.currentlyProcessedItems = append(pcs.currentlyProcessedItems, index)
-	pcs._clientSet(ctx, currentlyProcessedItemsKey, pcs.currentlyProcessedItems, itemIndexArrayToBytes)
+	_, err := newBatch(pcs).
+		setItemIndexArray(currentlyProcessedItemsKey, pcs.currentlyProcessedItems).
+		execute(ctx)
+	if err != nil {
+		pcs.logger.Warn("failed updating currently processed items",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+	}
 }
 
 // itemProcessingFinish removes the item from the list of currently processed items and deletes it from the persistent queue
@@ -310,131 +343,27 @@ func (pcs *persistentContiguousStorage) itemProcessingFinish(ctx context.Context
 	}
 	pcs.currentlyProcessedItems = updatedProcessedItems
 
-	pcs._clientSet(ctx, currentlyProcessedItemsKey, pcs.currentlyProcessedItems, itemIndexArrayToBytes)
-	pcs._clientDelete(ctx, pcs.itemKey(index))
+	_, err := newBatch(pcs).
+		setItemIndexArray(currentlyProcessedItemsKey, pcs.currentlyProcessedItems).
+		delete(pcs.itemKey(index)).
+		execute(ctx)
+	if err != nil {
+		pcs.logger.Warn("failed updating currently processed items",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+	}
 }
 
 func (pcs *persistentContiguousStorage) updateReadIndex(ctx context.Context) {
-	pcs._clientSet(ctx, readIndexKey, pcs.readIndex, itemIndexToBytes)
+	_, err := newBatch(pcs).
+		setItemIndex(readIndexKey, pcs.readIndex).
+		execute(ctx)
+
+	if err != nil {
+		pcs.logger.Warn("failed updating read index",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+	}
 }
 
 func (pcs *persistentContiguousStorage) itemKey(index itemIndex) string {
 	return fmt.Sprintf("%d", index)
-}
-
-func (pcs *persistentContiguousStorage) _clientSet(ctx context.Context, key string, value interface{}, marshal func(interface{}) ([]byte, error)) bool {
-	valueBytes, err := marshal(value)
-	if err != nil {
-		pcs.logger.Warn("failed marshaling item",
-			zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
-		return false
-	}
-
-	return pcs._clientSetBuf(ctx, key, valueBytes)
-}
-
-func (pcs *persistentContiguousStorage) _clientGet(ctx context.Context, key string, unmarshal func([]byte) (interface{}, error)) interface{} {
-	valueBytes := pcs._clientGetBuf(ctx, key)
-	if valueBytes == nil {
-		return nil
-	}
-
-	item, err := unmarshal(valueBytes)
-	if err != nil {
-		pcs.logger.Warn("failed unmarshaling item",
-			zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
-		return nil
-	}
-
-	return item
-}
-
-func (pcs *persistentContiguousStorage) _clientDelete(ctx context.Context, key string) {
-	err := pcs.client.Delete(ctx, key)
-	if err != nil {
-		pcs.logger.Warn("failed deleting item",
-			zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key))
-	}
-}
-
-func (pcs *persistentContiguousStorage) _clientGetBuf(ctx context.Context, key string) []byte {
-	buf, err := pcs.client.Get(ctx, key)
-	if err != nil {
-		pcs.logger.Debug("error when getting item from persistent storage",
-			zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
-		return nil
-	}
-	return buf
-}
-
-func (pcs *persistentContiguousStorage) _clientSetBuf(ctx context.Context, key string, buf []byte) bool {
-	err := pcs.client.Set(ctx, key, buf)
-	if err != nil {
-		pcs.logger.Debug("error when storing item to persistent storage",
-			zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
-		return false
-	}
-	return true
-}
-
-func itemIndexToBytes(val interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	err := binary.Write(&buf, binary.LittleEndian, val)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), err
-}
-
-func bytesToItemIndex(b []byte) (interface{}, error) {
-	var val itemIndex
-	err := binary.Read(bytes.NewReader(b), binary.LittleEndian, &val)
-	if err != nil {
-		return val, err
-	}
-	return val, nil
-}
-
-func itemIndexArrayToBytes(arr interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	count := 0
-
-	if arr != nil {
-		arrItemIndex, ok := arr.([]itemIndex)
-		if ok {
-			count = len(arrItemIndex)
-		}
-	}
-
-	err := binary.Write(&buf, binary.LittleEndian, uint32(count))
-	if err != nil {
-		return nil, err
-	}
-
-	err = binary.Write(&buf, binary.LittleEndian, arr)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), err
-}
-
-func bytesToItemIndexArray(b []byte) (interface{}, error) {
-	var size uint32
-	reader := bytes.NewReader(b)
-	err := binary.Read(reader, binary.LittleEndian, &size)
-	if err != nil {
-		return nil, err
-	}
-
-	val := make([]itemIndex, size)
-	err = binary.Read(reader, binary.LittleEndian, &val)
-	return val, err
-}
-
-func requestToBytes(req interface{}) ([]byte, error) {
-	return req.(request).marshal()
-}
-
-func (pcs *persistentContiguousStorage) bytesToRequest(b []byte) (interface{}, error) {
-	return pcs.unmarshaler(b)
 }
