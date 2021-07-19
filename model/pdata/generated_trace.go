@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"sort"
+	
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -112,6 +114,15 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ResourceSpansSlice) Sort(less func(i, j int) bool) ResourceSpansSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
@@ -273,6 +284,15 @@ func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibraryS
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the InstrumentationLibrarySpans elements within InstrumentationLibrarySpansSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es InstrumentationLibrarySpansSlice) Sort(less func(i, j int) bool) InstrumentationLibrarySpansSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationLibrarySpansSlice) {
@@ -434,6 +454,15 @@ func (es SpanSlice) AppendEmpty() Span {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the Span elements within SpanSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanSlice) Sort(less func(i, j int) bool) SpanSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
@@ -729,6 +758,15 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the SpanEvent elements within SpanEventSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanEventSlice) Sort(less func(i, j int) bool) SpanEventSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
@@ -918,6 +956,15 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the SpanLink elements within SpanLinkSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanLinkSlice) Sort(less func(i, j int) bool) SpanLinkSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {

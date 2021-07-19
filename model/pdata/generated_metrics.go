@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"sort"
+	
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -112,6 +114,15 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ResourceMetricsSlice) Sort(less func(i, j int) bool) ResourceMetricsSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
@@ -273,6 +284,15 @@ func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibrar
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the InstrumentationLibraryMetrics elements within InstrumentationLibraryMetricsSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es InstrumentationLibraryMetricsSlice) Sort(less func(i, j int) bool) InstrumentationLibraryMetricsSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest InstrumentationLibraryMetricsSlice) {
@@ -434,6 +454,15 @@ func (es MetricSlice) AppendEmpty() Metric {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the Metric elements within MetricSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es MetricSlice) Sort(less func(i, j int) bool) MetricSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
@@ -518,6 +547,8 @@ func (ms Metric) Unit() string {
 func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
+
+
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
@@ -865,6 +896,15 @@ func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the IntDataPoint elements within IntDataPointSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es IntDataPointSlice) Sort(less func(i, j int) bool) IntDataPointSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
@@ -1059,6 +1099,15 @@ func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the NumberDataPoint elements within NumberDataPointSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es NumberDataPointSlice) Sort(less func(i, j int) bool) NumberDataPointSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
@@ -1255,6 +1304,15 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es HistogramDataPointSlice) Sort(less func(i, j int) bool) HistogramDataPointSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
@@ -1482,6 +1540,15 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SummaryDataPointSlice) Sort(less func(i, j int) bool) SummaryDataPointSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
@@ -1687,6 +1754,15 @@ func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the ValueAtQuantile elements within ValueAtQuantileSlice given the
+// provided less function so that two instances can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ValueAtQuantileSlice) Sort(less func(i, j int) bool) ValueAtQuantileSlice {
+	sort.SliceStable(*es.orig, less)
+	return es
+}
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
@@ -1852,7 +1928,6 @@ func (es IntExemplarSlice) AppendEmpty() IntExemplar {
 	*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
@@ -2027,7 +2102,6 @@ func (es ExemplarSlice) AppendEmpty() Exemplar {
 	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {

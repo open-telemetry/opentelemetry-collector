@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+
 func TestResource_CopyTo(t *testing.T) {
 	ms := NewResource()
 	generateTestResource().CopyTo(ms)
