@@ -15,30 +15,42 @@
 package internal
 
 import (
+	"math"
+	"sync"
+
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/value"
 )
+
+// Prometheus uses a special NaN to record staleness as per
+// https://github.com/prometheus/prometheus/blob/67dc912ac8b24f94a1fc478f352d25179c94ab9b/pkg/value/value.go#L24-L28
+var stalenessSpecialValue = math.Float64frombits(value.StaleNaN)
 
 // stalenessStore tracks metrics/labels that appear between scrapes, the current and last scrape.
 // The labels that appear only in the previous scrape are considered stale and for those, we
 // issue a staleness marker aka a special NaN value.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/3413
 type stalenessStore struct {
-	currentHashes  map[uint64]bool
-	previousHashes map[uint64]bool
+	mu             sync.Mutex // mu protects all the fields below.
+	currentHashes  map[uint64]int64
+	previousHashes map[uint64]int64
 	previous       []labels.Labels
 	current        []labels.Labels
 }
 
 func newStalenessStore() *stalenessStore {
 	return &stalenessStore{
-		previousHashes: make(map[uint64]bool),
-		currentHashes:  make(map[uint64]bool),
+		previousHashes: make(map[uint64]int64),
+		currentHashes:  make(map[uint64]int64),
 	}
 }
 
 // refresh copies over all the current values to previous, and prepares.
 // refresh must be called before every new scrape.
 func (ss *stalenessStore) refresh() {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
 	// 1. Clear ss.previousHashes firstly. Please don't edit
 	// this map clearing idiom as it ensures speed.
 	// See:
@@ -66,24 +78,40 @@ func (ss *stalenessStore) refresh() {
 
 // isStale returns whether lbl was seen only in the previous scrape and not the current.
 func (ss *stalenessStore) isStale(lbl labels.Labels) bool {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
 	hash := lbl.Hash()
-	return ss.previousHashes[hash] && !ss.currentHashes[hash]
+	_, inPrev := ss.previousHashes[hash]
+	_, inCurrent := ss.currentHashes[hash]
+	return inPrev && !inCurrent
 }
 
 // markAsCurrentlySeen adds lbl to the manifest of labels seen in the current scrape.
 // This method should be called before refresh, but during a scrape whenever labels are encountered.
-func (ss *stalenessStore) markAsCurrentlySeen(lbl labels.Labels) {
-	ss.currentHashes[lbl.Hash()] = true
+func (ss *stalenessStore) markAsCurrentlySeen(lbl labels.Labels, seenAtMs int64) {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
+	ss.currentHashes[lbl.Hash()] = seenAtMs
 	ss.current = append(ss.current, lbl)
+}
+
+type staleEntry struct {
+	labels   labels.Labels
+	seenAtMs int64
 }
 
 // emitStaleLabels returns the labels that were previously seen in
 // the prior scrape, but are not currently present in this scrape cycle.
-func (ss *stalenessStore) emitStaleLabels() (stale []labels.Labels) {
+func (ss *stalenessStore) emitStaleLabels() (stale []*staleEntry) {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
 	for _, labels := range ss.previous {
 		hash := labels.Hash()
-		if ok := ss.currentHashes[hash]; !ok {
-			stale = append(stale, labels)
+		if _, ok := ss.currentHashes[hash]; !ok {
+			stale = append(stale, &staleEntry{seenAtMs: ss.previousHashes[hash], labels: labels})
 		}
 	}
 	return stale

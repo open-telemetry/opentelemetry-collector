@@ -77,14 +77,8 @@ func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
 	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
 }
 
-type testMProcessor struct {
-	retError error
-}
-
-func newTestMProcessor(retError error) MProcessor {
-	return &testMProcessor{retError: retError}
-}
-
-func (tmp *testMProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	return md, tmp.retError
+func newTestMProcessor(retError error) ProcessMetricsFunc {
+	return func(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+		return md, retError
+	}
 }

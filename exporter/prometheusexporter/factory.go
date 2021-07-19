@@ -60,7 +60,7 @@ func createMetricsExporter(
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
-		set.Logger,
+		set,
 		prometheus.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(prometheus.Start),

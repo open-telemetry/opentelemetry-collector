@@ -32,11 +32,10 @@ value (otherwise memory usage may exceed the hard limit - even if temporarily).
 A good starting point for `spike_limit_mib` is 20% of the hard limit. Bigger
 `spike_limit_mib` values may be necessary for spiky traffic or for longer check intervals.
 
-In addition, if the command line option `mem-ballast-size-mib` is used to specify a
-ballast (see command line help for details), the same value that is provided via the
-command line must also be defined in the memory_limiter processor using `ballast_size_mib`
-config option. If the command line option value and config option value don't match
-the behavior of the memory_limiter processor will be unpredictable.
+In addition, if the ballast size is specified in [ballastextension](../../extension/ballastextension), 
+the same value that is provided via the `ballastextension` will be used in `memory_limitor` for
+calculating the total allocated memory for the collector. 
+The `memory_limiter.ballast_size_mib` config has been deprecated and will be removed soon.
 
 Note that while the processor can help mitigate out of memory situations,
 it is not a replacement for properly sizing and configuring the
@@ -44,8 +43,8 @@ collector. Keep in mind that if the soft limit is crossed, the collector will
 return errors to all receive operations until enough memory is freed. This will
 result in dropped data.
 
-It is highly recommended to configure the ballast command line option as well as the
-memory_limiter processor on every collector. The ballast should be configured to
+It is highly recommended to configure `ballastextension` as well as the
+`memory_limiter` processor on every collector. The ballast should be configured to
 be 1/3 to 1/2 of the memory allocated to the collector. The memory_limiter
 processor should be the first processor defined in the pipeline (immediately after
 the receivers). This is to ensure that backpressure can be sent to applicable
@@ -79,16 +78,14 @@ This option is used to calculate `spike_limit_mib` from the total available memo
 For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
 This option is intended to be used only with `limit_percentage`.
 
-The following configuration options can also be modified:
-- `ballast_size_mib` (default = 0): Must match the `mem-ballast-size-mib`
-command line option.
+The `ballast_size_mib` configuration has been deprecated and replaced by `ballast_extension`.
+- <del>`ballast_size_mib` (default = 0): Must match the value of `ballast_size_mib` in `ballastextension` config</del>
 
 Examples:
 
 ```yaml
 processors:
   memory_limiter:
-    ballast_size_mib: 2000
     check_interval: 1s
     limit_mib: 4000
     spike_limit_mib: 800
@@ -97,7 +94,6 @@ processors:
 ```yaml
 processors:
   memory_limiter:
-    ballast_size_mib: 2000
     check_interval: 1s
     limit_percentage: 50
     spike_limit_percentage: 30

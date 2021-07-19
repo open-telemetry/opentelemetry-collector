@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -455,18 +455,18 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 	var traceBatches []pdata.Traces
 	for i := 0; i < numBatches; i++ {
 		traces := pdata.NewTraces()
-		traces.ResourceSpans().Resize(resourceSpanCount)
+		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
-			rs := traces.ResourceSpans().At(j)
+			rs := traces.ResourceSpans().AppendEmpty()
 			rs.Resource().Attributes().InsertString("service.name", serviceName)
 			rs.Resource().Attributes().InsertBool("bool", true)
 			rs.Resource().Attributes().InsertString("string", "yes")
 			rs.Resource().Attributes().InsertInt("int64", 10000000)
 			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-			ils.Spans().Resize(numTracesPerBatch)
+			ils.Spans().EnsureCapacity(numTracesPerBatch)
 
 			for k := 0; k < numTracesPerBatch; k++ {
-				span := ils.Spans().At(k)
+				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
 				attributes := make(map[string]pdata.AttributeValue)

@@ -18,7 +18,9 @@
 package tests
 
 import (
-	"strconv"
+	"fmt"
+	"io/ioutil"
+	"path"
 	"testing"
 	"time"
 
@@ -60,18 +62,24 @@ func TestBallastMemory(t *testing.T) {
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
+		ballastCfg, err := readCfgTemplate()
+		assert.NoError(t, err)
+		ballastCfg = fmt.Sprintf(ballastCfg, test.ballastSize)
+		cp := testbed.NewChildProcessCollector()
+		cleanup, err := cp.PrepareConfig(ballastCfg)
+		assert.NoError(t, err)
 		tc := testbed.NewTestCase(
 			t,
 			dataProvider,
 			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-			testbed.NewChildProcessCollector(),
+			cp,
 			&testbed.PerfTestValidator{},
 			performanceResultsSummary,
 			testbed.WithSkipResults(),
 			testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxRAM: test.maxRSS}),
 		)
-		tc.StartAgent("--mem-ballast-size-mib", strconv.Itoa(int(test.ballastSize)))
+		tc.StartAgent()
 
 		var rss, vms uint32
 		// It is possible that the process is not ready or the ballast code path
@@ -88,6 +96,15 @@ func TestBallastMemory(t *testing.T) {
 		// we give some room here instead of failing when the memory usage isn't that much higher than the max
 		lenientMax := 1.1 * float32(test.maxRSS)
 		assert.LessOrEqual(t, float32(rss), lenientMax)
+		cleanup()
 		tc.Stop()
 	}
+}
+
+func readCfgTemplate() (string, error) {
+	cfgBytes, err := ioutil.ReadFile(path.Join("testdata", "ballast_extension.yaml"))
+	if err != nil {
+		return "", err
+	}
+	return string(cfgBytes), nil
 }

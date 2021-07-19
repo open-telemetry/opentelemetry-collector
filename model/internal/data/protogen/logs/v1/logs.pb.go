@@ -33,7 +33,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type SeverityNumber int32
 
 const (
-	// UNSPECIFIED is the default SeverityNumber, it MUST not be used.
+	// UNSPECIFIED is the default SeverityNumber, it MUST NOT be used.
 	SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED SeverityNumber = 0
 	SeverityNumber_SEVERITY_NUMBER_TRACE       SeverityNumber = 1
 	SeverityNumber_SEVERITY_NUMBER_TRACE2      SeverityNumber = 2
@@ -154,7 +154,7 @@ func (LogRecordFlags) EnumDescriptor() ([]byte, []int) {
 // A collection of InstrumentationLibraryLogs from a Resource.
 type ResourceLogs struct {
 	// The resource for the logs in this message.
-	// If this field is not set then no resource info is known.
+	// If this field is not set then resource info is unknown.
 	Resource v1.Resource `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource"`
 	// A list of InstrumentationLibraryLogs that originate from a resource.
 	InstrumentationLibraryLogs []*InstrumentationLibraryLogs `protobuf:"bytes,2,rep,name=instrumentation_library_logs,json=instrumentationLibraryLogs,proto3" json:"instrumentation_library_logs,omitempty"`
@@ -210,7 +210,8 @@ func (m *ResourceLogs) GetInstrumentationLibraryLogs() []*InstrumentationLibrary
 // A collection of Logs produced by an InstrumentationLibrary.
 type InstrumentationLibraryLogs struct {
 	// The instrumentation library information for the logs in this message.
-	// If this field is not set then no library info is known.
+	// Semantically when InstrumentationLibrary isn't set, it is equivalent with
+	// an empty instrumentation library name (unknown).
 	InstrumentationLibrary v11.InstrumentationLibrary `protobuf:"bytes,1,opt,name=instrumentation_library,json=instrumentationLibrary,proto3" json:"instrumentation_library"`
 	// A list of log records.
 	Logs []*LogRecord `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
@@ -264,7 +265,7 @@ func (m *InstrumentationLibraryLogs) GetLogs() []*LogRecord {
 }
 
 // A log record according to OpenTelemetry Log Data Model:
-// https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
+// https://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md
 type LogRecord struct {
 	// time_unix_nano is the time when the event occurred.
 	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.

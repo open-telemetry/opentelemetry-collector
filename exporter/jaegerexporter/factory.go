@@ -64,5 +64,5 @@ func createTracesExporter(
 			expCfg.ID().String())
 	}
 
-	return newTracesExporter(expCfg, set.Logger)
+	return newTracesExporter(expCfg, set)
 }

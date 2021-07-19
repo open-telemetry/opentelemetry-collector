@@ -15,6 +15,7 @@
 package prometheusreceiver
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -49,18 +50,20 @@ type Config struct {
 var _ config.Receiver = (*Config)(nil)
 var _ config.CustomUnmarshable = (*Config)(nil)
 
-// Validate checks the receiver configuration is valid
+// Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
-	if cfg.PrometheusConfig != nil {
-		if len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
-			return errNilScrapeConfig
-		}
-		for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
-			for _, rc := range sc.MetricRelabelConfigs {
-				if rc.TargetLabel == "__name__" {
-					// TODO(#2297): Remove validation after renaming is fixed
-					return fmt.Errorf("error validating scrapeconfig for job %v: %w", sc.JobName, errRenamingDisallowed)
-				}
+	if cfg.PrometheusConfig == nil {
+		return nil // noop receiver
+	}
+	if len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
+		return errors.New("no Prometheus scrape_configs")
+	}
+
+	for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
+		for _, rc := range sc.MetricRelabelConfigs {
+			if rc.TargetLabel == "__name__" {
+				// TODO(#2297): Remove validation after renaming is fixed
+				return fmt.Errorf("error validating scrapeconfig for job %v: %w", sc.JobName, errRenamingDisallowed)
 			}
 		}
 	}
@@ -94,5 +97,6 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
 	}
+
 	return nil
 }

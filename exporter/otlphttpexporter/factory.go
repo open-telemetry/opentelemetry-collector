@@ -90,7 +90,7 @@ func createTracesExporter(
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -118,7 +118,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -146,7 +146,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		set.Logger,
+		set,
 		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

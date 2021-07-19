@@ -63,24 +63,23 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.Resize(metricsLen)
-	initializeCPUTimeMetric(metrics.At(0), s.startTime, now, cpuTimes)
+	initializeCPUTimeMetric(metrics.AppendEmpty(), s.startTime, now, cpuTimes)
 	return metrics, nil
 }
 
 func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, cpuTimes []cpu.TimesStat) {
 	metadata.Metrics.SystemCPUTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
-	ddps.Resize(len(cpuTimes) * cpuStatesLen)
-	for i, cpuTime := range cpuTimes {
-		appendCPUTimeStateDataPoints(ddps, i*cpuStatesLen, startTime, now, cpuTime)
+	ddps := metric.Sum().DataPoints()
+	ddps.EnsureCapacity(len(cpuTimes) * cpuStatesLen)
+	for _, cpuTime := range cpuTimes {
+		appendCPUTimeStateDataPoints(ddps, startTime, now, cpuTime)
 	}
 }
 
 const gopsCPUTotal string = "cpu-total"
 
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, cpuLabel string, stateLabel string, value float64) {
+func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, cpuLabel string, stateLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	// ignore cpu label if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {

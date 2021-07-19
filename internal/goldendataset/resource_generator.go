@@ -120,7 +120,6 @@ func appendExecAttributes(attrMap pdata.AttributeMap) {
 	parts := pdata.NewAttributeValueArray()
 	parts.ArrayVal().AppendEmpty().SetStringVal("otelcol")
 	parts.ArrayVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
-	parts.ArrayVal().AppendEmpty().SetStringVal("--mem-ballast-size-mib=683")
 	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)
 	attrMap.UpsertString(conventions.AttributeProcessExecutablePath, "/usr/local/bin/otelcol")
 	attrMap.UpsertInt(conventions.AttributeProcessID, 2020)

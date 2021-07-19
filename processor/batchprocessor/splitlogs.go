@@ -46,7 +46,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 			// If possible to move all metrics do that.
 			srcLogsLen := srcIlm.Logs().Len()
-			if size-totalCopiedLogs >= srcLogsLen {
+			if size >= srcLogsLen+totalCopiedLogs {
 				totalCopiedLogs += srcLogsLen
 				srcIlm.Logs().MoveAndAppendTo(destIlm.Logs())
 				return true

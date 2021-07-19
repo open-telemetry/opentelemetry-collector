@@ -24,6 +24,8 @@ import (
 
 const megaBytes = 1024 * 1024
 
+var ballastSizeBytes uint64
+
 type memoryBallast struct {
 	cfg         *Config
 	logger      *zap.Logger
@@ -32,7 +34,6 @@ type memoryBallast struct {
 }
 
 func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
-	var ballastSizeBytes uint64
 	// absolute value supersedes percentage setting
 	if m.cfg.SizeMiB > 0 {
 		ballastSizeBytes = m.cfg.SizeMiB * megaBytes
@@ -65,4 +66,9 @@ func newMemoryBallast(cfg *Config, logger *zap.Logger, getTotalMem func() (uint6
 		logger:      logger,
 		getTotalMem: getTotalMem,
 	}
+}
+
+// GetBallastSize returns the current ballast memory setting in bytes
+func GetBallastSize() uint64 {
+	return ballastSizeBytes
 }

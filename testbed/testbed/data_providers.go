@@ -67,7 +67,7 @@ func (dp *perfTestDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *ato
 func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	traceData := pdata.NewTraces()
 	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
-	spans.Resize(dp.options.ItemsPerBatch)
+	spans.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	traceID := dp.traceIDSequence.Inc()
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
@@ -77,7 +77,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 		spanID := dp.dataItemsGenerated.Inc()
 
-		span := spans.At(i)
+		span := spans.AppendEmpty()
 
 		// Create a span.
 		span.SetTraceID(idutils.UInt64ToTraceID(0, traceID))
@@ -111,10 +111,10 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		}
 	}
 	metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-	metrics.Resize(dp.options.ItemsPerBatch)
+	metrics.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
-		metric := metrics.At(i)
+		metric := metrics.AppendEmpty()
 		metric.SetName("load_generator_" + strconv.Itoa(i))
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
@@ -124,9 +124,9 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 		dps := metric.IntGauge().DataPoints()
 		// Generate data points for the metric.
-		dps.Resize(dataPointsPerMetric)
+		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
-			dataPoint := dps.At(j)
+			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))
@@ -150,7 +150,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 		}
 	}
 	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
-	logRecords.Resize(dp.options.ItemsPerBatch)
+	logRecords.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	now := pdata.TimestampFromTime(time.Now())
 
@@ -158,7 +158,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
-		record := logRecords.At(i)
+		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(pdata.SeverityNumberINFO3)
 		record.SetSeverityText("INFO3")
 		record.SetName("load_generator_" + strconv.Itoa(i))

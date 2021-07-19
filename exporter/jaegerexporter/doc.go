@@ -12,6 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package jaegerexporter implements an exporter that sends trace data to
-// a Jaeger collector gRPC endpoint.
+// Package jaegerexporter sends trace data to a Jaeger Collector gRPC endpoint.
 package jaegerexporter
