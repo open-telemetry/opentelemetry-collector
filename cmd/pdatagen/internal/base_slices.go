@@ -195,38 +195,6 @@ func (es ${structName}) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new ${structName} can be initialized:
-//   es := New${structName}()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es ${structName}) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*${originName}, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]${originName}, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
 // It returns the newly added ${elementName}.
 func (es ${structName}) AppendEmpty() ${elementName} {
@@ -378,38 +346,6 @@ func (es ${structName}) EnsureCapacity(newCap int) {
 	newOrig := make([]${originName}, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
-}
-
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new ${structName} can be initialized:
-//   es := New${structName}()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es ${structName}) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]${originName}, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	empty := ${originName}{}
-	for i := oldLen; i < newLen; i++ {
-		*es.orig = append(*es.orig, empty)
-	}
 }
 
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
