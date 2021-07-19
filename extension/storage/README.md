@@ -17,13 +17,21 @@ Delete(context.Context, string) error
 Close(context.Context) error
 ```
 
-It is possible to execute several operations in a single transaction via `BatchOp`. The method takes
-two collections as arguments:
-* list of keys for which the values are retrieved and returned,
-* a map, which specifies the key/value pairs that are going to be updated; when a value is `nil`, the key is deleted.
+It is possible to execute several operations in a single transaction via `Batch`. The method takes a collection of
+`Operation` arguments (each of which contains `Key`, `Value` and `Type` properties):
 ```
-BatchOp(context.Context, []string, map[]string[]byte) ([][]byte, error)
+Batch(context.Context, ...Operation) error
 ```
+
+The elements itself can be created using:
+
+```
+SetOperation(string, []byte) Operation
+GetOperation(string) Operation
+DeleteOperation(string) Operation
+```
+
+Get operation results are stored in-place into the given Operation and can be retrieved using its `Value` property.
 
 Note: All methods should return error only if a problem occurred. (For example, if a file is no longer accessible, or if a remote service is unavailable.)
 

@@ -53,11 +53,48 @@ type Client interface {
 	// Delete will delete data associated with the specified key
 	Delete(context.Context, string) error
 
-	// Batch will, respectively - get values for selected keys or upsert key/values. When the value specified
-	// is nil, the key is being deleted. It will return an array of results, where each
-	// one corresponds to a key at a given position and will be nil, if key is not found
-	Batch(context.Context, []string, map[string][]byte) ([][]byte, error)
+	// Batch handles specified operations in batch. Get operation results are put in-place
+	Batch(context.Context, ...Operation) error
 
 	// Close will release any resources held by the client
 	Close(context.Context) error
+}
+
+const (
+	Get = iota
+	Set
+	Delete
+)
+
+type operation struct {
+	// Key specifies key which is going to be get/set/deleted
+	Key string
+	// Value specifies value that is going to be set or holds result of get operation
+	Value []byte
+	// Type describes the operation type
+	Type int
+}
+
+type Operation *operation
+
+func SetOperation(key string, value []byte) Operation {
+	return &operation{
+		Key:   key,
+		Value: value,
+		Type:  Set,
+	}
+}
+
+func GetOperation(key string) Operation {
+	return &operation{
+		Key:  key,
+		Type: Get,
+	}
+}
+
+func DeleteOperation(key string) Operation {
+	return &operation{
+		Key:  key,
+		Type: Delete,
+	}
 }
