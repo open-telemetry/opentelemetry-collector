@@ -117,7 +117,7 @@ func TestMetrics10kDPSScraped(t *testing.T) {
 			testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), time.Second),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 15,
+				ExpectedMaxCPU: 18,
 				ExpectedMaxRAM: 95,
 			},
 			map[string]string{},

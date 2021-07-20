@@ -169,7 +169,6 @@ func (tc *TestCase) StartAgent(args ...string) {
 	}()
 
 	endpoint := tc.LoadGenerator.sender.GetEndpoint()
-
 	if endpoint != nil {
 		// Wait for agent to start. We consider the agent started when we can
 		// connect to the port to which we intend to send load. We only do this
