@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove Resize() from pdata slice APIs (#3675)
+
 ## v0.30.0 Beta
 
 ## 🛑 Breaking changes 🛑
