@@ -94,8 +94,6 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 		collectLabelKeysIntDataPoints(metric.IntSum().DataPoints(), keySet)
 	case pdata.MetricDataTypeSum:
 		collectLabelKeysNumberDataPoints(metric.Sum().DataPoints(), keySet)
-	case pdata.MetricDataTypeIntHistogram:
-		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeHistogram:
 		collectLabelKeysDoubleHistogramDataPoints(metric.Histogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeSummary:
@@ -143,12 +141,6 @@ func collectLabelKeysIntDataPoints(ips pdata.IntDataPointSlice, keySet map[strin
 func collectLabelKeysNumberDataPoints(dps pdata.NumberDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dps.Len(); i++ {
 		addLabelKeys(keySet, dps.At(i).LabelsMap())
-	}
-}
-
-func collectLabelKeysIntHistogramDataPoints(ihdp pdata.IntHistogramDataPointSlice, keySet map[string]struct{}) {
-	for i := 0; i < ihdp.Len(); i++ {
-		addLabelKeys(keySet, ihdp.At(i).LabelsMap())
 	}
 }
 
@@ -205,12 +197,6 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case pdata.MetricDataTypeIntHistogram:
-		hd := metric.IntHistogram()
-		if hd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
-			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
-		}
-		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
 	case pdata.MetricDataTypeSummary:
 		return ocmetrics.MetricDescriptor_SUMMARY
 	}
@@ -227,8 +213,6 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		return intPointsToOC(metric.IntSum().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeSum:
 		return doublePointToOC(metric.Sum().DataPoints(), labelKeys)
-	case pdata.MetricDataTypeIntHistogram:
-		return intHistogramPointToOC(metric.IntHistogram().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeHistogram:
 		return doubleHistogramPointToOC(metric.Histogram().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeSummary:
@@ -306,39 +290,6 @@ func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labe
 						DistributionValue: &ocmetrics.DistributionValue{
 							Count:                 int64(dp.Count()),
 							Sum:                   dp.Sum(),
-							SumOfSquaredDeviation: 0,
-							BucketOptions:         histogramExplicitBoundsToOC(dp.ExplicitBounds()),
-							Buckets:               buckets,
-						},
-					},
-				},
-			},
-		}
-		timeseries = append(timeseries, ts)
-	}
-	return timeseries
-}
-
-func intHistogramPointToOC(dps pdata.IntHistogramDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
-	if dps.Len() == 0 {
-		return nil
-	}
-	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		buckets := histogramBucketsToOC(dp.BucketCounts())
-		intExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
-
-		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
-			Points: []*ocmetrics.Point{
-				{
-					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
-					Value: &ocmetrics.Point_DistributionValue{
-						DistributionValue: &ocmetrics.DistributionValue{
-							Count:                 int64(dp.Count()),
-							Sum:                   float64(dp.Sum()),
 							SumOfSquaredDeviation: 0,
 							BucketOptions:         histogramExplicitBoundsToOC(dp.ExplicitBounds()),
 							Buckets:               buckets,
@@ -436,25 +387,6 @@ func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionVa
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
 		val := exemplar.Value()
-		pos := 0
-		for ; pos < len(bounds); pos++ {
-			if val > bounds[pos] {
-				continue
-			}
-			break
-		}
-		ocBuckets[pos].Exemplar = exemplarToOC(exemplar.FilteredLabels(), val, exemplar.Timestamp())
-	}
-}
-
-func intExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pdata.IntExemplarSlice) {
-	if exemplars.Len() == 0 {
-		return
-	}
-
-	for i := 0; i < exemplars.Len(); i++ {
-		exemplar := exemplars.At(i)
-		val := float64(exemplar.Value())
 		pos := 0
 		for ; pos < len(bounds); pos++ {
 			if val > bounds[pos] {

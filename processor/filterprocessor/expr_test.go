@@ -60,7 +60,6 @@ func TestExprProcessor(t *testing.T) {
 	testFilter(t, pdata.MetricDataTypeGauge)
 	testFilter(t, pdata.MetricDataTypeIntSum)
 	testFilter(t, pdata.MetricDataTypeSum)
-	testFilter(t, pdata.MetricDataTypeIntHistogram)
 	testFilter(t, pdata.MetricDataTypeHistogram)
 }
 
@@ -107,11 +106,6 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 							}
 						case pdata.MetricDataTypeSum:
 							pts := metric.Sum().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
-							}
-						case pdata.MetricDataTypeIntHistogram:
-							pts := metric.IntHistogram().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}

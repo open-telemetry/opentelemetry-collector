@@ -113,8 +113,6 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 					dataPointCount += m.IntSum().DataPoints().Len()
 				case MetricDataTypeSum:
 					dataPointCount += m.Sum().DataPoints().Len()
-				case MetricDataTypeIntHistogram:
-					dataPointCount += m.IntHistogram().DataPoints().Len()
 				case MetricDataTypeHistogram:
 					dataPointCount += m.Histogram().DataPoints().Len()
 				case MetricDataTypeSummary:
@@ -135,7 +133,6 @@ const (
 	MetricDataTypeGauge
 	MetricDataTypeIntSum
 	MetricDataTypeSum
-	MetricDataTypeIntHistogram
 	MetricDataTypeHistogram
 	MetricDataTypeSummary
 )
@@ -153,8 +150,6 @@ func (mdt MetricDataType) String() string {
 		return "IntSum"
 	case MetricDataTypeSum:
 		return "Sum"
-	case MetricDataTypeIntHistogram:
-		return "IntHistogram"
 	case MetricDataTypeHistogram:
 		return "Histogram"
 	case MetricDataTypeSummary:
@@ -175,8 +170,6 @@ func (ms Metric) DataType() MetricDataType {
 		return MetricDataTypeIntSum
 	case *otlpmetrics.Metric_Sum:
 		return MetricDataTypeSum
-	case *otlpmetrics.Metric_IntHistogram:
-		return MetricDataTypeIntHistogram
 	case *otlpmetrics.Metric_Histogram:
 		return MetricDataTypeHistogram
 	case *otlpmetrics.Metric_Summary:
@@ -197,8 +190,6 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 		ms.orig.Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
 	case MetricDataTypeSum:
 		ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	case MetricDataTypeIntHistogram:
-		ms.orig.Data = &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
 	case MetricDataTypeHistogram:
 		ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
 	case MetricDataTypeSummary:
@@ -234,13 +225,6 @@ func (ms Metric) Sum() Sum {
 	return newSum(ms.orig.Data.(*otlpmetrics.Metric_Sum).Sum)
 }
 
-// IntHistogram returns the data as IntHistogram.
-// Calling this function when DataType() != MetricDataTypeIntHistogram will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntHistogram() IntHistogram {
-	return newIntHistogram(ms.orig.Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram)
-}
-
 // Histogram returns the data as Histogram.
 // Calling this function when DataType() != MetricDataTypeHistogram will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -272,10 +256,6 @@ func copyData(src, dest *otlpmetrics.Metric) {
 	case *otlpmetrics.Metric_Sum:
 		data := &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 		newSum(srcData.Sum).CopyTo(newSum(data.Sum))
-		dest.Data = data
-	case *otlpmetrics.Metric_IntHistogram:
-		data := &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
-		newIntHistogram(srcData.IntHistogram).CopyTo(newIntHistogram(data.IntHistogram))
 		dest.Data = data
 	case *otlpmetrics.Metric_Histogram:
 		data := &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}

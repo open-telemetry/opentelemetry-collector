@@ -160,7 +160,6 @@ func generateOCTestData() *agentmetricspb.ExportMetricsServiceRequest {
 			generateOCTestMetricCumulativeInt(),
 			generateOCTestMetricCumulativeDouble(),
 			generateOCTestMetricDoubleHistogram(),
-			generateOCTestMetricIntHistogram(),
 			generateOCTestMetricDoubleSummary(),
 		},
 	}

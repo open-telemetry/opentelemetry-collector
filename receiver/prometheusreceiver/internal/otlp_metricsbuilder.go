@@ -29,8 +29,7 @@ func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {
 	case model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel:
 		return false
 	case model.BucketLabel:
-		return mType != pdata.MetricDataTypeIntHistogram &&
-			mType != pdata.MetricDataTypeHistogram
+		return mType != pdata.MetricDataTypeHistogram
 	case model.QuantileLabel:
 		return mType != pdata.MetricDataTypeSummary
 	}
@@ -40,7 +39,7 @@ func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {
 func getBoundaryPdata(metricType pdata.MetricDataType, labels labels.Labels) (float64, error) {
 	labelName := ""
 	switch metricType {
-	case pdata.MetricDataTypeHistogram, pdata.MetricDataTypeIntHistogram:
+	case pdata.MetricDataTypeHistogram:
 		labelName = model.BucketLabel
 	case pdata.MetricDataTypeSummary:
 		labelName = model.QuantileLabel

@@ -80,9 +80,9 @@ func pictToCfg(inputs PICTMetricInputs) MetricsCfg {
 	case MetricTypeNonMonotonicDoubleSum:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
 		cfg.IsMonotonicSum = false
-	case MetricTypeIntHistogram:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
-	case MetricTypeHistogram:
+	case MetricTypeDoubleExemplarsHistogram:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
+	case MetricTypeIntExemplarsHistogram:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
 	default:
 		panic("Should not happen, unsupported type " + string(inputs.MetricType))
