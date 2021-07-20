@@ -43,6 +43,9 @@ is designed so that the following goal can be achieved:
            a serialized representation of the structure, and not through structure literals,
            additive changes to the set of exported fields in a configuration structure are
            not considered to break backward compatibility.
+         * Struct tags used to configure serialization mechanisms (`yaml:`, `mapstructure:`, etc)
+           are to be considered part of the structure definition and must maintain compatibility
+           to the same extent as the structure.
 * Versioning of the associated [contrib
   repository](https://github.com/open-telemetry/opentelemetry-collector-contrib) of
   this project will be idiomatic of a Go project using [Go
