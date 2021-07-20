@@ -207,11 +207,6 @@ func getFirstMetricTimestamp(md pdata.Metrics) time.Time {
 					if dataPoints.Len() > 0 {
 						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
 					}
-				case pdata.MetricDataTypeIntHistogram:
-					dataPoints := m.IntHistogram().DataPoints()
-					if dataPoints.Len() > 0 {
-						currentTimestamp = dataPoints.At(0).Timestamp().AsTime()
-					}
 				case pdata.MetricDataTypeHistogram:
 					dataPoints := m.Histogram().DataPoints()
 					if dataPoints.Len() > 0 {
