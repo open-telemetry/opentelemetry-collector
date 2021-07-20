@@ -231,7 +231,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	ilm.At(1).SetDataType(MetricDataTypeGauge)
 	doubleGauge := ilm.At(1).Gauge()
 	doubleGauge.DataPoints().AppendEmpty()
-	assert.EqualValues(t, 4, md.DataPointCount())
+	assert.EqualValues(t, 1, md.DataPointCount())
 }
 
 func TestDataPointCountWithEmpty(t *testing.T) {
