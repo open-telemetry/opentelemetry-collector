@@ -269,6 +269,10 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 		return a.orig.Value == av.orig.Value
 	}
 
+	if a.Type() != av.Type() {
+		return false
+	}
+
 	switch v := a.orig.Value.(type) {
 	case *otlpcommon.AnyValue_StringValue:
 		return v.StringValue == av.orig.GetStringValue()
