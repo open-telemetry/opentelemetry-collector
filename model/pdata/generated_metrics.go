@@ -563,8 +563,6 @@ func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
 
-
-
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
@@ -1968,6 +1966,7 @@ func (es IntExemplarSlice) AppendEmpty() IntExemplar {
 	*es.orig = append(*es.orig, otlpmetrics.IntExemplar{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
@@ -2142,6 +2141,7 @@ func (es ExemplarSlice) AppendEmpty() Exemplar {
 	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {

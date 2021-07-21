@@ -120,7 +120,7 @@ func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
 func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewResourceLogsSlice()
-	emptySlice.RemoveIf(func (el ResourceLogs) bool {
+	emptySlice.RemoveIf(func(el ResourceLogs) bool {
 		t.Fail()
 		return false
 	})
@@ -128,13 +128,12 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestResourceLogsSlice()
 	pos := 0
-	filtered.RemoveIf(func (el ResourceLogs) bool {
+	filtered.RemoveIf(func(el ResourceLogs) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestResourceLogs_CopyTo(t *testing.T) {
 	ms := NewResourceLogs()
@@ -251,7 +250,7 @@ func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
 func TestInstrumentationLibraryLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewInstrumentationLibraryLogsSlice()
-	emptySlice.RemoveIf(func (el InstrumentationLibraryLogs) bool {
+	emptySlice.RemoveIf(func(el InstrumentationLibraryLogs) bool {
 		t.Fail()
 		return false
 	})
@@ -259,13 +258,12 @@ func TestInstrumentationLibraryLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestInstrumentationLibraryLogsSlice()
 	pos := 0
-	filtered.RemoveIf(func (el InstrumentationLibraryLogs) bool {
+	filtered.RemoveIf(func(el InstrumentationLibraryLogs) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
@@ -382,7 +380,7 @@ func TestLogSlice_MoveAndAppendTo(t *testing.T) {
 func TestLogSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewLogSlice()
-	emptySlice.RemoveIf(func (el LogRecord) bool {
+	emptySlice.RemoveIf(func(el LogRecord) bool {
 		t.Fail()
 		return false
 	})
@@ -390,13 +388,12 @@ func TestLogSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestLogSlice()
 	pos := 0
-	filtered.RemoveIf(func (el LogRecord) bool {
+	filtered.RemoveIf(func(el LogRecord) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
 
 func TestLogRecord_CopyTo(t *testing.T) {
 	ms := NewLogRecord()
