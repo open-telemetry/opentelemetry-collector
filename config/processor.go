@@ -14,19 +14,23 @@
 
 package config
 
-// Processor is the configuration of a processor. Specific processors must implement this
-// interface and will typically embed ProcessorSettings struct or a struct that extends it.
-// Embedded validatable will force each processor to implement Validate() function.
+// Processor is the configuration of a component.Processor. Specific extensions must implement
+// this interface and must embed ProcessorSettings struct or a struct that extends it.
 type Processor interface {
 	identifiable
 	validatable
+
+	privateConfigProcessor()
 }
 
 // Processors is a map of names to Processors.
 type Processors map[ComponentID]Processor
 
-// ProcessorSettings defines common settings for a processor configuration.
+// ProcessorSettings defines common settings for a component.Processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
+//
+// It is highly recommended to "override" the Validate() function.
+//
 // When embedded in the processor config it must be with `mapstructure:",squash"` tag.
 type ProcessorSettings struct {
 	id ComponentID `mapstructure:"-"`
@@ -53,3 +57,5 @@ func (rs *ProcessorSettings) SetIDName(idName string) {
 func (rs *ProcessorSettings) Validate() error {
 	return nil
 }
+
+func (rs *ProcessorSettings) privateConfigProcessor() {}
