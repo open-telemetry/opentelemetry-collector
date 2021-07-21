@@ -19,7 +19,7 @@ package pdata
 
 import (
 	"sort"
-	
+
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
