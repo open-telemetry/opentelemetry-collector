@@ -81,15 +81,3 @@ func TestDoubleHistogram(t *testing.T) {
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 3)
 }
-
-func TestIntHistogram(t *testing.T) {
-	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
-	expected := goldendataset.MetricsFromCfg(cfg1)
-	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
-	cfg2.PtVal = 2
-	actual := goldendataset.MetricsFromCfg(cfg2)
-	diffs := diffMetricData(expected, actual)
-	assert.Len(t, diffs, 3)
-}

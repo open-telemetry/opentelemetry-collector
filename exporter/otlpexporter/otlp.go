@@ -101,7 +101,7 @@ func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extensio
 	}
 
 	var clientConn *grpc.ClientConn
-	if clientConn, err = grpc.Dial(config.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
+	if clientConn, err = grpc.Dial(config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
 		return nil, err
 	}
 

@@ -28,18 +28,9 @@ import (
 )
 
 func TestOCToMetrics(t *testing.T) {
-	// From OC we never generate Int Histograms, will generate Double Histogram always.
+	// From OC we will generate Double Histogram always.
 	allTypesNoDataPoints := testdata.GenerateMetricsAllTypesNoDataPoints()
-	dh := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
-	ih := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
-	ih.SetDataType(pdata.MetricDataTypeHistogram)
-	dh.Histogram().CopyTo(ih.Histogram())
-
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
-	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
-	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
-	ih.SetDataType(pdata.MetricDataTypeHistogram)
-	dh.Histogram().CopyTo(ih.Histogram())
 
 	tests := []struct {
 		name     string
@@ -131,7 +122,6 @@ func TestOCToMetrics(t *testing.T) {
 					generateOCTestMetricCumulativeInt(),
 					generateOCTestMetricCumulativeDouble(),
 					generateOCTestMetricDoubleHistogram(),
-					generateOCTestMetricIntHistogram(),
 					generateOCTestMetricDoubleSummary(),
 				},
 			},

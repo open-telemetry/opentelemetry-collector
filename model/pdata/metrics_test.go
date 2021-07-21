@@ -73,14 +73,6 @@ func TestCopyData(t *testing.T) {
 			},
 		},
 		{
-			name: "IntHistogram",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_IntHistogram{
-					IntHistogram: &otlpmetrics.IntHistogram{},
-				},
-			},
-		},
-		{
 			name: "Histogram",
 			src: &otlpmetrics.Metric{
 				Data: &otlpmetrics.Metric_Histogram{
@@ -112,8 +104,6 @@ func TestDataType(t *testing.T) {
 	assert.Equal(t, MetricDataTypeIntSum, m.DataType())
 	m.SetDataType(MetricDataTypeSum)
 	assert.Equal(t, MetricDataTypeSum, m.DataType())
-	m.SetDataType(MetricDataTypeIntHistogram)
-	assert.Equal(t, MetricDataTypeIntHistogram, m.DataType())
 	m.SetDataType(MetricDataTypeHistogram)
 	assert.Equal(t, MetricDataTypeHistogram, m.DataType())
 	m.SetDataType(MetricDataTypeSummary)
@@ -241,12 +231,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	ilm.At(1).SetDataType(MetricDataTypeGauge)
 	doubleGauge := ilm.At(1).Gauge()
 	doubleGauge.DataPoints().AppendEmpty()
-	ilm.At(3).SetDataType(MetricDataTypeIntHistogram)
-	intHistogram := ilm.At(3).IntHistogram()
-	intHistogram.DataPoints().AppendEmpty()
-	intHistogram.DataPoints().AppendEmpty()
-	intHistogram.DataPoints().AppendEmpty()
-	assert.EqualValues(t, 4, md.DataPointCount())
+	assert.EqualValues(t, 1, md.DataPointCount())
 }
 
 func TestDataPointCountWithEmpty(t *testing.T) {
@@ -263,8 +248,6 @@ func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	intGauge.SetDataType(MetricDataTypeIntGauge)
 	doubleGauge := ilm.Metrics().AppendEmpty()
 	doubleGauge.SetDataType(MetricDataTypeGauge)
-	intHistogram := ilm.Metrics().AppendEmpty()
-	intHistogram.SetDataType(MetricDataTypeIntHistogram)
 	doubleHistogram := ilm.Metrics().AppendEmpty()
 	doubleHistogram.SetDataType(MetricDataTypeHistogram)
 	intSum := ilm.Metrics().AppendEmpty()

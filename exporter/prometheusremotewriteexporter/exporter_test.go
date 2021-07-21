@@ -363,15 +363,11 @@ func Test_PushMetrics(t *testing.T) {
 
 	doubleGaugeBatch := getMetricsFromMetricList(validMetrics1[validDoubleGauge], validMetrics2[validDoubleGauge])
 
-	intHistogramBatch := getMetricsFromMetricList(validMetrics1[validIntHistogram], validMetrics2[validIntHistogram])
-
 	histogramBatch := getMetricsFromMetricList(validMetrics1[validHistogram], validMetrics2[validHistogram])
 
 	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
 
 	// len(BucketCount) > len(ExplicitBounds)
-	unmatchedBoundBucketIntHistBatch := getMetricsFromMetricList(validMetrics2[unmatchedBoundBucketIntHist])
-
 	unmatchedBoundBucketHistBatch := getMetricsFromMetricList(validMetrics2[unmatchedBoundBucketHist])
 
 	// fail cases
@@ -382,8 +378,6 @@ func Test_PushMetrics(t *testing.T) {
 	emptyCumulativeIntSumBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeIntSum])
 
 	emptyCumulativeSumBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeSum])
-
-	emptyCumulativeIntHistogramBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeIntHistogram])
 
 	emptyCumulativeHistogramBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeHistogram])
 
@@ -457,14 +451,6 @@ func Test_PushMetrics(t *testing.T) {
 			false,
 		},
 		{
-			"intHistogram_case",
-			&intHistogramBatch,
-			checkFunc,
-			12,
-			http.StatusAccepted,
-			false,
-		},
-		{
 			"histogram_case",
 			&histogramBatch,
 			checkFunc,
@@ -477,14 +463,6 @@ func Test_PushMetrics(t *testing.T) {
 			&summaryBatch,
 			checkFunc,
 			10,
-			http.StatusAccepted,
-			false,
-		},
-		{
-			"unmatchedBoundBucketIntHist_case",
-			&unmatchedBoundBucketIntHistBatch,
-			checkFunc,
-			5,
 			http.StatusAccepted,
 			false,
 		},
@@ -539,14 +517,6 @@ func Test_PushMetrics(t *testing.T) {
 		{
 			"emptyCumulativeHistogram_case",
 			&emptyCumulativeHistogramBatch,
-			checkFunc,
-			0,
-			http.StatusAccepted,
-			true,
-		},
-		{
-			"emptyCumulativeIntHistogram_case",
-			&emptyCumulativeIntHistogramBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,

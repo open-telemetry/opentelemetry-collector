@@ -37,15 +37,12 @@ var metricsFile = &File{
 		doubleGauge,
 		intSum,
 		doubleSum,
-		intHistogram,
 		histogram,
 		summary,
 		intDataPointSlice,
 		intDataPoint,
 		numberDataPointSlice,
 		numberDataPoint,
-		intHistogramDataPointSlice,
-		intHistogramDataPoint,
 		histogramDataPointSlice,
 		histogramDataPoint,
 		summaryDataPointSlice,
@@ -183,20 +180,6 @@ var doubleSum = &messageValueStruct{
 	},
 }
 
-var intHistogram = &messageValueStruct{
-	structName:     "IntHistogram",
-	description:    "// IntHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.",
-	originFullName: "otlpmetrics.IntHistogram",
-	fields: []baseField{
-		aggregationTemporalityField,
-		&sliceField{
-			fieldName:       "DataPoints",
-			originFieldName: "DataPoints",
-			returnSlice:     intHistogramDataPointSlice,
-		},
-	},
-}
-
 var histogram = &messageValueStruct{
 	structName:     "Histogram",
 	description:    "// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.",
@@ -264,27 +247,6 @@ var numberDataPoint = &messageValueStruct{
 			testVal:         "float64(17.13)",
 		},
 		exemplarsField,
-	},
-}
-
-var intHistogramDataPointSlice = &sliceOfPtrs{
-	structName: "IntHistogramDataPointSlice",
-	element:    intHistogramDataPoint,
-}
-
-var intHistogramDataPoint = &messageValueStruct{
-	structName:     "IntHistogramDataPoint",
-	description:    "// IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.",
-	originFullName: "otlpmetrics.IntHistogramDataPoint",
-	fields: []baseField{
-		labelsField,
-		startTimeField,
-		timeField,
-		countField,
-		intSumField,
-		bucketCountsField,
-		explicitBoundsField,
-		intExemplarsField,
 	},
 }
 
@@ -424,14 +386,6 @@ var countField = &primitiveField{
 	returnType:      "uint64",
 	defaultVal:      "uint64(0)",
 	testVal:         "uint64(17)",
-}
-
-var intSumField = &primitiveField{
-	fieldName:       "Sum",
-	originFieldName: "Sum",
-	returnType:      "int64",
-	defaultVal:      "int64(0.0)",
-	testVal:         "int64(1713)",
 }
 
 var doubleSumField = &primitiveField{

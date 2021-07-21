@@ -48,7 +48,7 @@ func TestGetBoundaryEquivalence(t *testing.T) {
 		{
 			name:   "gauge histogram with bucket label",
 			mtype:  metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
-			pmtype: pdata.MetricDataTypeIntHistogram,
+			pmtype: pdata.MetricDataTypeHistogram,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -129,7 +129,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 		},
 		{
 			name:  "gauge histogram with bucket label",
-			mtype: pdata.MetricDataTypeIntHistogram,
+			mtype: pdata.MetricDataTypeHistogram,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -252,7 +252,6 @@ func TestIsusefulLabelPdata(t *testing.T) {
 			mtypes: []pdata.MetricDataType{
 				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeSummary,
 				pdata.MetricDataTypeIntSum,
@@ -261,12 +260,6 @@ func TestIsusefulLabelPdata(t *testing.T) {
 				pdata.MetricDataTypeIntSum,
 			},
 			want: false,
-		},
-		{
-			name:      `bucket label with "int_histogram", "histogram":: non-useful`,
-			mtypes:    []pdata.MetricDataType{pdata.MetricDataTypeIntHistogram, pdata.MetricDataTypeHistogram},
-			labelKeys: []string{model.BucketLabel},
-			want:      false,
 		},
 		{
 			name: `bucket label with non "int_histogram", "histogram":: useful`,
@@ -296,7 +289,6 @@ func TestIsusefulLabelPdata(t *testing.T) {
 			mtypes: []pdata.MetricDataType{
 				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeIntSum,
 				pdata.MetricDataTypeNone,
@@ -311,7 +303,6 @@ func TestIsusefulLabelPdata(t *testing.T) {
 			mtypes: []pdata.MetricDataType{
 				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeSummary,
 				pdata.MetricDataTypeIntSum,

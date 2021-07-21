@@ -68,7 +68,6 @@ func TestConvertInvalidDataType(t *testing.T) {
 func TestConvertInvalidMetric(t *testing.T) {
 	for _, mType := range []pdata.MetricDataType{
 		pdata.MetricDataTypeHistogram,
-		pdata.MetricDataTypeIntHistogram,
 		pdata.MetricDataTypeSum,
 		pdata.MetricDataTypeIntSum,
 		pdata.MetricDataTypeGauge,
@@ -85,8 +84,6 @@ func TestConvertInvalidMetric(t *testing.T) {
 			metric.Gauge().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeSum:
 			metric.Sum().DataPoints().AppendEmpty()
-		case pdata.MetricDataTypeIntHistogram:
-			metric.IntHistogram().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeHistogram:
 			metric.Histogram().DataPoints().AppendEmpty()
 		}
@@ -358,32 +355,6 @@ func TestAccumulateHistograms(t *testing.T) {
 		histogramSum    float64
 		histogramCount  uint64
 	}{
-		{
-			name: "IntHistogram",
-			histogramPoints: map[float64]uint64{
-				1.2:  5,
-				10.0: 7,
-			},
-			histogramSum:   42.0,
-			histogramCount: 7,
-			metric: func(ts time.Time) (metric pdata.Metric) {
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
-				dp := metric.IntHistogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
-				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{1.2, 10.0})
-				dp.SetSum(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				return
-			},
-		},
 		{
 			name: "Histogram",
 			histogramPoints: map[float64]uint64{

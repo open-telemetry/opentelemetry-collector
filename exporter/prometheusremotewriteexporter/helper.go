@@ -61,8 +61,6 @@ func validateMetrics(metric pdata.Metric) bool {
 		return metric.IntSum().DataPoints().Len() != 0 && metric.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeHistogram:
 		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityCumulative
-	case pdata.MetricDataTypeIntHistogram:
-		return metric.IntHistogram().DataPoints().Len() != 0 && metric.IntHistogram().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeSummary:
 		return metric.Summary().DataPoints().Len() != 0
 	}
@@ -294,57 +292,6 @@ func addSingleIntDataPoint(pt pdata.IntDataPoint, resource pdata.Resource, metri
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}
 	addSample(tsMap, sample, labels, metric)
-}
-
-// addSingleIntHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
-// ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
-func addSingleIntHistogramDataPoint(pt pdata.IntHistogramDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
-	time := convertTimeStamp(pt.Timestamp())
-	// sum, count, and buckets of the histogram should append suffix to baseName
-	baseName := getPromMetricName(metric, namespace)
-	// treat sum as a sample in an individual TimeSeries
-	sum := &prompb.Sample{
-		Value:     float64(pt.Sum()),
-		Timestamp: time,
-	}
-
-	sumlabels := createLabelSet(resource, pt.LabelsMap(), externalLabels, nameStr, baseName+sumStr)
-	addSample(tsMap, sum, sumlabels, metric)
-
-	// treat count as a sample in an individual TimeSeries
-	count := &prompb.Sample{
-		Value:     float64(pt.Count()),
-		Timestamp: time,
-	}
-	countlabels := createLabelSet(resource, pt.LabelsMap(), externalLabels, nameStr, baseName+countStr)
-	addSample(tsMap, count, countlabels, metric)
-
-	// cumulative count for conversion to cumulative histogram
-	var cumulativeCount uint64
-
-	// process each bound, ignore extra bucket values
-	for index, bound := range pt.ExplicitBounds() {
-		if index >= len(pt.BucketCounts()) {
-			break
-		}
-		cumulativeCount += pt.BucketCounts()[index]
-		bucket := &prompb.Sample{
-			Value:     float64(cumulativeCount),
-			Timestamp: time,
-		}
-		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-		labels := createLabelSet(resource, pt.LabelsMap(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
-		addSample(tsMap, bucket, labels, metric)
-	}
-	// add le=+Inf bucket
-	cumulativeCount += pt.BucketCounts()[len(pt.BucketCounts())-1]
-	infBucket := &prompb.Sample{
-		Value:     float64(cumulativeCount),
-		Timestamp: time,
-	}
-	infLabels := createLabelSet(resource, pt.LabelsMap(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
-	addSample(tsMap, infBucket, infLabels, metric)
 }
 
 // addSingleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It

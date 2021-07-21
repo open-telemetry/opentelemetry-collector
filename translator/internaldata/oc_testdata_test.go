@@ -88,14 +88,6 @@ func generateOCTestDataNoPoints() *agentmetricspb.ExportMetricsServiceRequest {
 			},
 			{
 				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestIntHistogramMetricName,
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-				},
-			},
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
 					Name:        testdata.TestDoubleSummaryMetricName,
 					Description: "",
 					Unit:        "1",
@@ -523,12 +515,6 @@ func generateOCTestMetricDoubleHistogram() *ocmetrics.Metric {
 			},
 		},
 	}
-}
-
-func generateOCTestMetricIntHistogram() *ocmetrics.Metric {
-	m := generateOCTestMetricDoubleHistogram()
-	m.MetricDescriptor.Name = testdata.TestIntHistogramMetricName
-	return m
 }
 
 func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
