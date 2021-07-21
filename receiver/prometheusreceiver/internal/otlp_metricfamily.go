@@ -96,6 +96,56 @@ func (mf *metricFamilyPdata) updateLabelKeys(ls labels.Labels) {
 	}
 }
 
+func (mf *metricFamilyPdata) getGroupKey(ls labels.Labels) string {
+	mf.updateLabelKeys(ls)
+	return dpgSignature(mf.labelKeysOrdered, ls)
+}
+
+func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest *pdata.HistogramDataPointSlice) bool {
+	if !mg.hasCount || len(mg.complexValue) == 0 {
+		return false
+	}
+
+	mg.sortPoints()
+
+	// for OCAgent Proto, the bounds won't include +inf
+	// TODO: (@odeke-em) should we also check OpenTelemetry Pdata for bucket bounds?
+	bounds := make([]float64, len(mg.complexValue)-1)
+	bucketCounts := make([]uint64, len(mg.complexValue))
+
+	for i := 0; i < len(mg.complexValue); i++ {
+		if i != len(mg.complexValue)-1 {
+			// not need to add +inf as bound to oc proto
+			bounds[i] = mg.complexValue[i].boundary
+		}
+		adjustedCount := mg.complexValue[i].value
+		if i != 0 {
+			adjustedCount -= mg.complexValue[i-1].value
+		}
+		bucketCounts[i] = uint64(adjustedCount)
+	}
+
+	point := dest.AppendEmpty()
+	point.SetExplicitBounds(bounds)
+	point.SetCount(uint64(mg.count))
+	point.SetSum(mg.sum)
+	point.SetBucketCounts(bucketCounts)
+	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
+	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	point.SetStartTimestamp(tsNanos)
+	point.SetTimestamp(tsNanos)
+	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+
+	return true
+}
+
+func populateLabelValuesPdata(orderedKeys []string, ls labels.Labels, dest pdata.StringMap) {
+	src := ls.Map()
+	for _, key := range orderedKeys {
+		dest.Insert(key, src[key])
+	}
+}
+
 // Purposefully being referenced to avoid lint warnings about being "unused".
 var _ = (*metricFamilyPdata)(nil).updateLabelKeys
 
@@ -112,8 +162,8 @@ func (mf *metricFamilyPdata) loadMetricGroupOrCreate(groupKey string, ls labels.
 		mg = &metricGroupPdata{
 			family: mf,
 			metricGroup: metricGroup{
-				ls:           ls,
 				ts:           ts,
+				ls:           ls,
 				complexValue: make([]*dataPoint, 0),
 			},
 		}
