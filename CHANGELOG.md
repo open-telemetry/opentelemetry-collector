@@ -39,6 +39,7 @@
 
 - `scraperhelper`: Include the scraper name in log messages (#3487)
 - `scraperhelper`: fix case when returned pdata is empty (#3520) 
+- `otlpexporter`: Allow endpoint to be configured with a scheme of `http` or `https` (#3575)
 - Record the correct number of points not metrics in Kafka receiver (#3553) 
 - Validate the Prometheus configuration (#3589) 
 
