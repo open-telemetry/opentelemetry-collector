@@ -183,7 +183,7 @@ func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, startTim
 	}
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 }
 
 func initializeDiskPendingDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, deviceLabel string, value int64) {

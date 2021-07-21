@@ -1163,7 +1163,7 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
+// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -1210,15 +1210,27 @@ func (ms NumberDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Value returns the value associated with this NumberDataPoint.
-func (ms NumberDataPoint) Value() float64 {
+// DoubleVal returns the doubleval associated with this NumberDataPoint.
+func (ms NumberDataPoint) DoubleVal() float64 {
 	return (*ms.orig).GetAsDouble()
 }
 
-// SetValue replaces the value associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetValue(v float64) {
+// SetDoubleVal replaces the doubleval associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetDoubleVal(v float64) {
 	(*ms.orig).Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
+	}
+}
+
+// IntVal returns the intval associated with this NumberDataPoint.
+func (ms NumberDataPoint) IntVal() int64 {
+	return (*ms.orig).GetAsInt()
+}
+
+// SetIntVal replaces the intval associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetIntVal(v int64) {
+	(*ms.orig).Value = &otlpmetrics.NumberDataPoint_AsInt{
+		AsInt: v,
 	}
 }
 
@@ -1232,7 +1244,13 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
-	dest.SetValue(ms.Value())
+	switch ms.Type() {
+	case NumberDataPointTypeDouble:
+		dest.SetDoubleVal(ms.DoubleVal())
+	case NumberDataPointTypeInt:
+		dest.SetIntVal(ms.IntVal())
+	}
+
 	ms.Exemplars().CopyTo(dest.Exemplars())
 }
 

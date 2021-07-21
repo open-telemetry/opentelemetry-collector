@@ -36,7 +36,7 @@ func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now 
 	labelsMap.Insert(metadata.Labels.ProcessState, stateLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {

@@ -190,12 +190,12 @@ func initSumMetric(im pdata.Metric) {
 	initMetricLabels1(idp0.LabelsMap())
 	idp0.SetStartTimestamp(TestMetricStartTimestamp)
 	idp0.SetTimestamp(TestMetricTimestamp)
-	idp0.SetValue(123)
+	idp0.SetDoubleVal(123)
 	idp1 := idps.AppendEmpty()
 	initMetricLabels2(idp1.LabelsMap())
 	idp1.SetStartTimestamp(TestMetricStartTimestamp)
 	idp1.SetTimestamp(TestMetricTimestamp)
-	idp1.SetValue(456)
+	idp1.SetDoubleVal(456)
 }
 
 func initGaugeIntMetric(im pdata.Metric) {
@@ -222,12 +222,12 @@ func initGaugeDoubleMetric(im pdata.Metric) {
 	initMetricLabels12(idp0.LabelsMap())
 	idp0.SetStartTimestamp(TestMetricStartTimestamp)
 	idp0.SetTimestamp(TestMetricTimestamp)
-	idp0.SetValue(1.23)
+	idp0.SetDoubleVal(1.23)
 	idp1 := idps.AppendEmpty()
 	initMetricLabels13(idp1.LabelsMap())
 	idp1.SetStartTimestamp(TestMetricStartTimestamp)
 	idp1.SetTimestamp(TestMetricTimestamp)
-	idp1.SetValue(4.56)
+	idp1.SetDoubleVal(4.56)
 }
 
 func initSumIntMetric(im pdata.Metric) {
@@ -254,13 +254,13 @@ func initSumDoubleMetric(dm pdata.Metric) {
 	initMetricLabels12(ddp0.LabelsMap())
 	ddp0.SetStartTimestamp(TestMetricStartTimestamp)
 	ddp0.SetTimestamp(TestMetricTimestamp)
-	ddp0.SetValue(1.23)
+	ddp0.SetDoubleVal(1.23)
 
 	ddp1 := ddps.AppendEmpty()
 	initMetricLabels13(ddp1.LabelsMap())
 	ddp1.SetStartTimestamp(TestMetricStartTimestamp)
 	ddp1.SetTimestamp(TestMetricTimestamp)
-	ddp1.SetValue(4.56)
+	ddp1.SetDoubleVal(4.56)
 }
 
 func initDoubleHistogramMetric(hm pdata.Metric) {

@@ -124,7 +124,7 @@ func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
-		b.logEntry("Value: %f", p.Value())
+		b.logEntry("Value: %f", p.DoubleVal())
 	}
 }
 

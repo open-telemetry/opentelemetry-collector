@@ -75,5 +75,5 @@ func initializeLoadMetric(metric pdata.Metric, metricDescriptor metadata.MetricI
 	metricDescriptor.Init(metric)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
-	dp.SetValue(value)
+	dp.SetDoubleVal(value)
 }

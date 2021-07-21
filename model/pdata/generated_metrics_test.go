@@ -845,12 +845,19 @@ func TestNumberDataPoint_Timestamp(t *testing.T) {
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
 
-func TestNumberDataPoint_Value(t *testing.T) {
+func TestNumberDataPoint_DoubleVal(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.EqualValues(t, float64(0.0), ms.Value())
-	testValValue := float64(17.13)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
+	assert.EqualValues(t, float64(0.0), ms.DoubleVal())
+	testValDoubleVal := float64(17.13)
+	ms.SetDoubleVal(testValDoubleVal)
+	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+func TestNumberDataPoint_IntVal(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, int64(0), ms.IntVal())
+	testValIntVal := int64(17)
+	ms.SetIntVal(testValIntVal)
+	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
@@ -1794,7 +1801,8 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(float64(17.13))
+	tv.SetDoubleVal(float64(17.13))
+
 	fillTestExemplarSlice(tv.Exemplars())
 }
 

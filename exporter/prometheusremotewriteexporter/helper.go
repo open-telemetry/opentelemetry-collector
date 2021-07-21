@@ -272,7 +272,7 @@ func addSingleNumberDataPoint(pt pdata.NumberDataPoint, resource pdata.Resource,
 	name := getPromMetricName(metric, namespace)
 	labels := createLabelSet(resource, pt.LabelsMap(), externalLabels, nameStr, name)
 	sample := &prompb.Sample{
-		Value: pt.Value(),
+		Value: pt.DoubleVal(),
 		// convert ns to ms
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}

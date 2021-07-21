@@ -248,7 +248,7 @@ func getDoubleGaugeMetric(name string, labels pdata.StringMap, value float64, ts
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
-	dp.SetValue(value)
+	dp.SetDoubleVal(value)
 
 	labels.Range(func(k string, v string) bool {
 		dp.LabelsMap().Upsert(k, v)
@@ -314,7 +314,7 @@ func getSumMetric(name string, labels pdata.StringMap, value float64, ts uint64)
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
-	dp.SetValue(value)
+	dp.SetDoubleVal(value)
 
 	labels.Range(func(k string, v string) bool {
 		dp.LabelsMap().Upsert(k, v)
