@@ -54,7 +54,7 @@ type (
 
 // Manager is used to inject data from config sources into a configuration and also
 // to monitor for updates on the items injected into the configuration.  All methods
-// of a Manager must be called only once and have a expected sequence:
+// of a Manager must be called only once and have an expected sequence:
 //
 // 1. NewManager to create a new instance;
 // 2. Resolve to inject the data from config sources into a configuration;
@@ -156,7 +156,7 @@ type (
 //      field_0: ${file:/var/secret.txt} # Injects the data from a config sourced named "file" using the selector "/var/secret.txt".
 //      field_1: ${file}:/var/secret.txt # Expands the environment variable "file" and adds the suffix ":/var/secret.txt" to it.
 //
-// If the the character following the '$' is in the set {'*', '#', '$', '@', '!', '?', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+// If the character following the '$' is in the set {'*', '#', '$', '@', '!', '?', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 // the code will consider it to be the name of an environment variable to expand, or config source if followed by ':'. Do not use any of these
 // characters as the first char on the name of a config source or an environment variable (even if allowed by the system) to avoid unexpected
 // results.
