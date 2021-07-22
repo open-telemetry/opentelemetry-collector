@@ -50,7 +50,7 @@ import (
 func initProvider() func() {
 	ctx := context.Background()
 
-	otelAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
+	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if !ok {
 		otelAgentAddr = "0.0.0.0:4317"
 	}

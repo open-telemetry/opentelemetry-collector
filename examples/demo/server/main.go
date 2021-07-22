@@ -50,7 +50,7 @@ var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 func initProvider() func() {
 	ctx := context.Background()
 
-	otelAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
+	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if !ok {
 		otelAgentAddr = "0.0.0.0:4317"
 	}
@@ -141,9 +141,9 @@ func main() {
 		var sleep int64
 		switch modulus := time.Now().Unix() % 5; modulus {
 		case 0:
-			sleep = rng.Int63n(17001)
+			sleep = rng.Int63n(2000)
 		case 1:
-			sleep = rng.Int63n(8007)
+			sleep = rng.Int63n(15)
 		case 2:
 			sleep = rng.Int63n(917)
 		case 3:
