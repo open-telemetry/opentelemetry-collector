@@ -129,14 +129,12 @@ func main() {
 	defer shutdown()
 
 	meter := global.Meter("demo-server-meter")
-
-	requestCount := metric.Must(meter).
-		NewInt64Counter(
-			"demoserver/request_counts",
-			metric.WithDescription("The number of requests received"),
-		).Bind()
-	defer requestCount.Unbind()
-
+	serverAttribute := attribute.String("server-attribute", "foo")
+	commonLabels := []attribute.KeyValue{serverAttribute}
+	requestCount := metric.Must(meter).NewInt64Counter(
+		"demo_server/request_counts",
+		metric.WithDescription("The number of requests received"),
+	)
 
 	// create a handler wrapped in OpenTelemetry instrumentation
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -155,10 +153,14 @@ func main() {
 			sleep = rng.Int63n(1173)
 		}
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
-		cxt := req.Context()
-		requestCount.Add(cxt, 1)
-		span := trace.SpanFromContext(cxt)
-		span.SetAttributes(attribute.String("server-attribute", "foo"))
+		ctx := req.Context()
+		meter.RecordBatch(
+			ctx,
+			commonLabels,
+			requestCount.Measurement(1),
+		)
+		span := trace.SpanFromContext(ctx)
+		span.SetAttributes(serverAttribute)
 		w.Write([]byte("Hello World"))
 	})
 	wrappedHandler := otelhttp.NewHandler(handler, "/hello")

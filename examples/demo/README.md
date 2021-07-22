@@ -2,10 +2,18 @@
 
 *IMPORTANT:* This is a pre-released version of the OpenTelemetry Collector.
 
+This demo contains a simple client and server applications that use the
+opentelemetry Go library for instrumentation and for sending telemetry data
+to the opentelemetry collector.
+
+The client periodically makes a simple http call to the server, those calls
+create client and server spans and metrics track basic information like
+number of http requests and latencies.
+
 This demo presents the typical flow of observability data with multiple
 OpenTelemetry Collectors deployed:
 
-- Applications send data directly to a Collector configured to use fewer
+- The client and server send data directly to a Collector configured to use fewer
  resources, aka the _agent_;
 - The agent then forwards the data to Collector(s) that receive data from
  multiple agents. Collectors on this layer typically are allowed to use more

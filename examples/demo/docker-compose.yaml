@@ -51,32 +51,17 @@ services:
     depends_on:
       - otel-collector
 
-  # Synthetic load generators
-  jaeger-emitter:
-    image: omnition/synthetic-load-generator:1.0.25
-    environment:
-      - JAEGER_COLLECTOR_URL=http://otel-agent:14268
-    depends_on:
-      - otel-agent
-
-  zipkin-emitter:
-    image: omnition/synthetic-load-generator:1.0.25
-    environment:
-      - ZIPKINV2_JSON_URL=http://otel-agent:9411/api/v2/spans
-    depends_on:
-      - otel-agent
-
-  metrics-load-generator:
+  demo-client:
     build:
-      dockerfile: $PWD/app/Dockerfile
-      context: ./app
+      dockerfile: $PWD/client/Dockerfile
+      context: ./client
     environment:
       - OTEL_AGENT_ENDPOINT=otel-agent:4317
-      - DEMO_SERVER_ENDPOINT=http://tracing-demo-server:7080/hello
+      - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
     depends_on:
-      - tracing-demo-server
+      - demo-server
 
-  tracing-demo-server:
+  demo-server:
     build:
       dockerfile: $PWD/server/Dockerfile
       context: ./server

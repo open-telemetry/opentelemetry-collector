@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Sample contains a program that exports to the OpenTelemetry service.
+// Sample contains a simple client that periodically makes a simple http request
+// to a server and exports to the OpenTelemetry service.
 package main
 
 import (
@@ -87,7 +88,7 @@ func initProvider() func() {
 		resource.WithHost(),
 		resource.WithAttributes(
 			// the service name used to display traces in backends
-			semconv.ServiceNameKey.String("test-service"),
+			semconv.ServiceNameKey.String("demo-client"),
 		),
 	)
 	handleErr(err, "failed to create resource")
@@ -126,8 +127,8 @@ func main() {
 	shutdown := initProvider()
 	defer shutdown()
 
-	tracer := otel.Tracer("test-tracer")
-	meter := global.Meter("test-meter")
+	tracer := otel.Tracer("demo-client-tracer")
+	meter := global.Meter("demo-client-meter")
 
 	method, _ := baggage.NewMember("method","repl")
 	client, _ := baggage.NewMember("client","cli")
@@ -144,34 +145,29 @@ func main() {
 	// Recorder metric example
 	requestLatency := metric.Must(meter).
 		NewFloat64ValueRecorder(
-			"appdemo/request_latency",
+			"demo_client/request_latency",
 			metric.WithDescription("The latency of requests processed"),
-		).Bind(commonLabels...)
-	defer requestLatency.Unbind()
+		)
 
 	// TODO: Use a view to just count number of measurements for requestLatency when available.
 	requestCount := metric.Must(meter).
 		NewInt64Counter(
-			"appdemo/request_counts",
+			"demo_client/request_counts",
 			metric.WithDescription("The number of requests processed"),
-		).Bind(commonLabels...)
-	defer requestCount.Unbind()
+		)
 
 	lineLengths := metric.Must(meter).
 		NewInt64ValueRecorder(
-			"appdemo/line_lengths",
+			"demo_client/line_lengths",
 			metric.WithDescription("The lengths of the various lines in"),
-		).Bind(commonLabels...)
-	defer lineLengths.Unbind()
+		)
 
 	// TODO: Use a view to just count number of measurements for lineLengths when available.
 	lineCounts := metric.Must(meter).
 		NewInt64Counter(
-			"appdemo/line_counts",
+			"demo_client/line_counts",
 			metric.WithDescription("The counts of the lines in"),
-		).Bind(commonLabels...)
-	defer lineCounts.Unbind()
-
+		)
 
 	defaultCtx := baggage.ContextWithBaggage(context.Background(), bag)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -184,13 +180,22 @@ func main() {
 		nr := int(rng.Int31n(7))
 		for i := 0; i < nr; i++ {
 			randLineLength := rng.Int63n(999)
-			lineLengths.Record(ctx, randLineLength)
-			lineCounts.Add(ctx, 1)
+			meter.RecordBatch(
+				ctx,
+				commonLabels,
+				lineCounts.Measurement(1),
+				lineLengths.Measurement(randLineLength),
+			)
 			fmt.Printf("#%d: LineLength: %dBy\n", i, randLineLength)
 		}
 
-		requestLatency.Record(ctx, latencyMs)
-		requestCount.Add(ctx, 1)
+		meter.RecordBatch(
+			ctx,
+			commonLabels,
+			requestLatency.Measurement(latencyMs),
+			requestCount.Measurement(1),
+		)
+
 		fmt.Printf("Latency: %.3fms\n", latencyMs)
 		time.Sleep(time.Duration(1) * time.Second)
 	}
