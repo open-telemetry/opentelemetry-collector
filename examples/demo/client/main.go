@@ -41,7 +41,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv/v1.4.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"google.golang.org/grpc"
 )
 
@@ -105,13 +105,13 @@ func initProvider() func() {
 	otel.SetTracerProvider(tracerProvider)
 
 	return func() {
-		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		cxt, cancel := context.WithTimeout(ctx, time.Second)
 		defer cancel()
-		if err := traceExp.Shutdown(ctx); err != nil {
+		if err := traceExp.Shutdown(cxt); err != nil {
 			otel.Handle(err)
 		}
 		// pushes any last exports to the receiver
-		if err := pusher.Stop(ctx); err != nil {
+		if err := pusher.Stop(cxt); err != nil {
 			otel.Handle(err)
 		}
 	}
@@ -130,8 +130,8 @@ func main() {
 	tracer := otel.Tracer("demo-client-tracer")
 	meter := global.Meter("demo-client-meter")
 
-	method, _ := baggage.NewMember("method","repl")
-	client, _ := baggage.NewMember("client","cli")
+	method, _ := baggage.NewMember("method", "repl")
+	client, _ := baggage.NewMember("client", "cli")
 	bag, _ := baggage.New(method, client)
 
 	// labels represent additional key-value descriptors that can be bound to a
@@ -216,7 +216,7 @@ func makeRequest(ctx context.Context) {
 	// Make sure we pass the context to the request to avoid broken traces.
 	req, err := http.NewRequestWithContext(ctx, "GET", demoServerAddr, nil)
 	if err != nil {
-		fmt.Errorf("error creating http request %w", err)
+		handleErr(err, "failed to http request")
 	}
 
 	// All requests made with this client will create spans.

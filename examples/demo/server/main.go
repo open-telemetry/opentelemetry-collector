@@ -17,7 +17,6 @@ package main
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"math/rand"
 	"net/http"
@@ -39,12 +38,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv/v1.4.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 )
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
-
 
 // Initializes an OTLP exporter, and configures the corresponding trace and
 // metric providers.
@@ -106,13 +105,13 @@ func initProvider() func() {
 	otel.SetTracerProvider(tracerProvider)
 
 	return func() {
-		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		cxt, cancel := context.WithTimeout(ctx, time.Second)
 		defer cancel()
-		if err := traceExp.Shutdown(ctx); err != nil {
+		if err := traceExp.Shutdown(cxt); err != nil {
 			otel.Handle(err)
 		}
 		// pushes any last exports to the receiver
-		if err := pusher.Stop(ctx); err != nil {
+		if err := pusher.Stop(cxt); err != nil {
 			otel.Handle(err)
 		}
 	}
