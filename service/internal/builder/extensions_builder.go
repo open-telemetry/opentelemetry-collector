@@ -119,20 +119,26 @@ func BuildExtensions(
 	config *config.Config,
 	factories map[config.Type]component.ExtensionFactory,
 ) (Extensions, error) {
-	logger = logger.With(zap.String(zapKindKey, zapKindExtension))
 	extensions := make(Extensions)
-	for _, extName := range config.Service.Extensions {
-		extCfg, exists := config.Extensions[extName]
-		if !exists {
-			return nil, fmt.Errorf("extension %q is not configured", extName)
+	for _, extID := range config.Service.Extensions {
+		extCfg, existsCfg := config.Extensions[extID]
+		if !existsCfg {
+			return nil, fmt.Errorf("extension %q is not configured", extID)
+		}
+
+		factory, existsFactory := factories[extID.Type()]
+		if !existsFactory {
+			return nil, fmt.Errorf("extension factory for type %q is not configured", extID.Type())
 		}
 
 		set := component.ExtensionCreateSettings{
-			Logger:         logger.With(zap.Stringer(zapNameKey, extCfg.ID())),
+			Logger: logger.With(
+				zap.String(zapKindKey, zapKindExtension),
+				zap.String(zapNameKey, extID.String())),
 			TracerProvider: tracerProvider,
 			BuildInfo:      buildInfo,
 		}
-		ext, err := buildExtension(context.Background(), factories, set, extCfg)
+		ext, err := buildExtension(context.Background(), factory, set, extCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -143,12 +149,7 @@ func BuildExtensions(
 	return extensions, nil
 }
 
-func buildExtension(ctx context.Context, factories map[config.Type]component.ExtensionFactory, creationSet component.ExtensionCreateSettings, cfg config.Extension) (*builtExtension, error) {
-	factory := factories[cfg.ID().Type()]
-	if factory == nil {
-		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.ID().Type())
-	}
-
+func buildExtension(ctx context.Context, factory component.ExtensionFactory, creationSet component.ExtensionCreateSettings, cfg config.Extension) (*builtExtension, error) {
 	ext := &builtExtension{
 		logger: creationSet.Logger,
 	}

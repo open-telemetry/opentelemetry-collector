@@ -144,17 +144,24 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	// the processor itself becomes a consumer for the one that precedes it in
 	// in the pipeline and so on.
 	for i := len(pipelineCfg.Processors) - 1; i >= 0; i-- {
-		procName := pipelineCfg.Processors[i]
-		procCfg := pb.config.Processors[procName]
+		procID := pipelineCfg.Processors[i]
 
-		factory := pb.factories[procCfg.ID().Type()]
+		procCfg, existsCfg := pb.config.Processors[procID]
+		if !existsCfg {
+			return nil, fmt.Errorf("processor %q is not configured", procID)
+		}
+
+		factory, existsFactory := pb.factories[procID.Type()]
+		if !existsFactory {
+			return nil, fmt.Errorf("processor factory for type %q is not configured", procID.Type())
+		}
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
 		set := component.ProcessorCreateSettings{
-			Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID())),
+			Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
 			TracerProvider: pb.tracerProvider,
 			BuildInfo:      pb.buildInfo,
 		}
@@ -188,17 +195,17 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		default:
 			return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %s is not supported",
-				procName, pipelineCfg.Name, pipelineCfg.InputType)
+				procID, pipelineCfg.Name, pipelineCfg.InputType)
 		}
 
 		if err != nil {
 			return nil, fmt.Errorf("error creating processor %q in pipeline %q: %v",
-				procName, pipelineCfg.Name, err)
+				procID, pipelineCfg.Name, err)
 		}
 
 		// Check if the factory really created the processor.
 		if tc == nil && mc == nil && lc == nil {
-			return nil, fmt.Errorf("factory for %v produced a nil processor", procCfg.ID())
+			return nil, fmt.Errorf("factory for %v produced a nil processor", procID)
 		}
 	}
 

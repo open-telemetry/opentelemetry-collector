@@ -83,7 +83,7 @@ func TestBuildExporters(t *testing.T) {
 		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may
 		// already stop because it cannot connect.
 		// The test should stop running if this isn't the error cause.
-		require.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+		require.EqualError(t, err, "rpc error: code = Canceled desc = grpc: the client connection is closing")
 	}
 
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
