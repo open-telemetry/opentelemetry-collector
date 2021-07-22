@@ -94,8 +94,8 @@ func TestIsCumulativeEquivalence(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mf := newMetricFamily(tt.name, mc, zap.NewNop()).(*metricFamily)
-			mfp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			mf := newMetricFamily(tt.name, mc, zap.NewNop(), 1).(*metricFamily)
+			mfp := newMetricFamilyPdata(tt.name, mc, 1).(*metricFamilyPdata)
 			assert.Equal(t, mf.isCumulativeType(), mfp.isCumulativeTypePdata(), "mismatch in isCumulative")
 			assert.Equal(t, mf.isCumulativeType(), tt.want, "isCumulative does not match for regular metricFamily")
 			assert.Equal(t, mfp.isCumulativeTypePdata(), tt.want, "isCumulative does not match for pdata metricFamily")
@@ -110,14 +110,18 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 		metric string
 	}
 	tests := []struct {
-		name    string
-		labels  labels.Labels
-		scrapes []*scrape
-		want    func() pdata.HistogramDataPoint
+		name                string
+		metricName          string
+		labels              labels.Labels
+		scrapes             []*scrape
+		want                func() pdata.HistogramDataPoint
+		intervalStartTimeMs int64
 	}{
 		{
-			name:   "histogram",
-			labels: labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			name:                "histogram with startTimestamp of 11",
+			metricName:          "histogram",
+			intervalStartTimeMs: 1717,
+			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
 			scrapes: []*scrape{
 				{at: 11, value: 10, metric: "histogram_count"},
 				{at: 11, value: 1004.78, metric: "histogram_sum"},
@@ -142,7 +146,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricName, mc, tt.intervalStartTimeMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -183,11 +187,12 @@ func TestMetricGroupData_toDistributionPointEquivalence(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		tt := tt
+		intervalStartTimeMs := int64(i + 1)
 		t.Run(tt.name, func(t *testing.T) {
-			mf := newMetricFamily(tt.name, mc, zap.NewNop()).(*metricFamily)
-			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			mf := newMetricFamily(tt.name, mc, zap.NewNop(), intervalStartTimeMs).(*metricFamily)
+			mp := newMetricFamilyPdata(tt.name, mc, intervalStartTimeMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 				require.NoError(t, mf.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
@@ -350,7 +355,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, 1).(*metricFamilyPdata)
 			for _, lbs := range tt.labelsScrapes {
 				for _, scrape := range lbs.scrapes {
 					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
@@ -400,8 +405,8 @@ func TestMetricGroupData_toSummaryPointEquivalence(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mf := newMetricFamily(tt.name, mc, zap.NewNop()).(*metricFamily)
-			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			mf := newMetricFamily(tt.name, mc, zap.NewNop(), 1).(*metricFamily)
+			mp := newMetricFamilyPdata(tt.name, mc, 1).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 				require.NoError(t, mf.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
@@ -453,22 +458,45 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 		metric string
 	}
 	tests := []struct {
-		name    string
-		labels  labels.Labels
-		scrapes []*scrape
-		want    func() pdata.NumberDataPoint
+		name                     string
+		metricKind               string
+		labels                   labels.Labels
+		scrapes                  []*scrape
+		intervalStartTimestampMs int64
+		want                     func() pdata.NumberDataPoint
 	}{
 		{
-			name:   "counter",
-			labels: labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			metricKind:               "counter",
+			name:                     "counter:: startTimestampMs of 11",
+			intervalStartTimestampMs: 11,
+			labels:                   labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
 			scrapes: []*scrape{
-				{at: 38, value: 39.9, metric: "value"},
+				{at: 13, value: 33.7, metric: "value"},
 			},
 			want: func() pdata.NumberDataPoint {
 				point := pdata.NewNumberDataPoint()
-				point.SetDoubleVal(39.9)
-				point.SetTimestamp(38 * 1e6) // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(38 * 1e6)
+				point.SetDoubleVal(33.7)
+				point.SetTimestamp(13 * 1e6) // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(11 * 1e6)
+				labelsMap := point.LabelsMap()
+				labelsMap.Insert("a", "A")
+				labelsMap.Insert("b", "B")
+				return point
+			},
+		},
+		{
+			name:                     "counter:: startTimestampMs of 0",
+			metricKind:               "counter",
+			intervalStartTimestampMs: 0,
+			labels:                   labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			scrapes: []*scrape{
+				{at: 28, value: 99.9, metric: "value"},
+			},
+			want: func() pdata.NumberDataPoint {
+				point := pdata.NewNumberDataPoint()
+				point.SetDoubleVal(99.9)
+				point.SetTimestamp(28 * 1e6) // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(0)
 				labelsMap := point.LabelsMap()
 				labelsMap.Insert("a", "A")
 				labelsMap.Insert("b", "B")
@@ -480,7 +508,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricKind, mc, tt.intervalStartTimestampMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -506,9 +534,10 @@ func TestMetricGroupData_toNumberDataPointEquivalence(t *testing.T) {
 		metric string
 	}
 	tests := []struct {
-		name    string
-		labels  labels.Labels
-		scrapes []*scrape
+		name      string
+		labels    labels.Labels
+		scrapes   []*scrape
+		wantValue float64
 	}{
 		{
 			name:   "counter",
@@ -516,14 +545,16 @@ func TestMetricGroupData_toNumberDataPointEquivalence(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 13, value: 33.7, metric: "value"},
 			},
+			wantValue: 33.7,
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		tt := tt
+		intervalStartTimeMs := int64(11 + i)
 		t.Run(tt.name, func(t *testing.T) {
-			mf := newMetricFamily(tt.name, mc, zap.NewNop()).(*metricFamily)
-			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			mf := newMetricFamily(tt.name, mc, zap.NewNop(), intervalStartTimeMs).(*metricFamily)
+			mp := newMetricFamilyPdata(tt.name, mc, intervalStartTimeMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 				require.NoError(t, mf.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
@@ -537,9 +568,11 @@ func TestMetricGroupData_toNumberDataPointEquivalence(t *testing.T) {
 			ocPoint := ocTimeseries.Points[0]
 			pdataPoint := ddpL.At(0)
 			// 1. Ensure that the startTimestamps are equal.
-			require.Equal(t, ocTimeseries.GetStartTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "The timestamp must be equal")
+			require.Equal(t, ocTimeseries.GetStartTimestamp().AsTime(), pdataPoint.StartTimestamp().AsTime(), "The timestamp must be equal")
+			require.Equal(t, intervalStartTimeMs*1e6, pdataPoint.StartTimestamp().AsTime().UnixNano(), "intervalStartTimeMs must be the same")
 			// 2. Ensure that the value is equal.
-			require.Equal(t, ocPoint.GetDoubleValue(), pdataPoint.DoubleVal(), "Count must be equal")
+			require.Equal(t, ocPoint.GetDoubleValue(), pdataPoint.DoubleVal(), "Values must be equal")
+			require.Equal(t, tt.wantValue, pdataPoint.DoubleVal(), "Values must be equal")
 			// 4. Ensure that the point's timestamp is equal to that from the OpenCensusProto data point.
 			require.Equal(t, ocPoint.GetTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "Point timestamps must be equal")
 			// 5. Ensure that the labels all match up.
