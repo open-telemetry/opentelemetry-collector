@@ -18,6 +18,7 @@ package pdata
 // such as timestamps, attributes, etc.
 
 import (
+	"fmt"
 	"sort"
 
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
@@ -835,4 +836,25 @@ func (sm StringMap) Sort() StringMap {
 
 func newStringKeyValue(k, v string) otlpcommon.StringKeyValue {
 	return otlpcommon.StringKeyValue{Key: k, Value: v}
+}
+
+// ProtoSizeForKnownTypes returns the protobuf generated .Size() for any of Traces, Metrics, Logs.
+// If the type is not known, an error will be returned.
+func ProtoSizeForKnownTypes(v interface{}) (int, error) {
+	switch conv := v.(type) {
+	case Traces:
+		return conv.orig.Size(), nil
+	case *Traces:
+		return conv.orig.Size(), nil
+	case Metrics:
+		return conv.orig.Size(), nil
+	case *Metrics:
+		return conv.orig.Size(), nil
+	case Logs:
+		return conv.orig.Size(), nil
+	case *Logs:
+		return conv.orig.Size(), nil
+	default:
+		return 0, fmt.Errorf("unknown type: %T", v)
+	}
 }

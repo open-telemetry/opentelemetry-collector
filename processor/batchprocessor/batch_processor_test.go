@@ -140,7 +140,9 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
-		sizeSum += td.OtlpProtoSize()
+		size, err := pdata.ProtoSizeForKnownTypes(td)
+		assert.NoError(t, err)
+		sizeSum += size
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -510,7 +512,8 @@ func getTestMetricName(requestNum, index int) string {
 func BenchmarkTraceSizeBytes(b *testing.B) {
 	td := testdata.GenerateTracesManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
-		fmt.Println(td.OtlpProtoSize())
+		protoSize, _ := pdata.ProtoSizeForKnownTypes(td)
+		fmt.Println(protoSize)
 	}
 }
 

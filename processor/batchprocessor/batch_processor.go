@@ -63,7 +63,7 @@ type batch interface {
 	itemCount() int
 
 	// size returns the size in bytes of the current batch
-	size() int
+	size() (int, error)
 
 	// add item to the current batch
 	add(item interface{})
@@ -177,7 +177,8 @@ func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
 	stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
 
 	if bp.telemetryLevel == configtelemetry.LevelDetailed {
-		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bp.batch.size())))
+		protoSize, _ := bp.batch.size()
+		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(protoSize)))
 	}
 
 	if err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize); err != nil {
@@ -258,8 +259,8 @@ func (bt *batchTraces) itemCount() int {
 	return bt.spanCount
 }
 
-func (bt *batchTraces) size() int {
-	return bt.traceData.OtlpProtoSize()
+func (bt *batchTraces) size() (int, error) {
+	return pdata.ProtoSizeForKnownTypes(bt.traceData)
 }
 
 type batchMetrics struct {
@@ -289,8 +290,8 @@ func (bm *batchMetrics) itemCount() int {
 	return bm.dataPointCount
 }
 
-func (bm *batchMetrics) size() int {
-	return bm.metricData.OtlpProtoSize()
+func (bm *batchMetrics) size() (int, error) {
+	return pdata.ProtoSizeForKnownTypes(bm.metricData)
 }
 
 func (bm *batchMetrics) add(item interface{}) {
@@ -331,8 +332,8 @@ func (bl *batchLogs) itemCount() int {
 	return bl.logCount
 }
 
-func (bl *batchLogs) size() int {
-	return bl.logData.OtlpProtoSize()
+func (bl *batchLogs) size() (int, error) {
+	return pdata.ProtoSizeForKnownTypes(bl.logData)
 }
 
 func (bl *batchLogs) add(item interface{}) {
