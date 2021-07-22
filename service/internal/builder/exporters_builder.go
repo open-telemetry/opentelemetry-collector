@@ -85,7 +85,7 @@ func (bexp *builtExporter) getLogExporter() component.LogsExporter {
 }
 
 // Exporters is a map of exporters created from exporter configs.
-type Exporters map[config.Exporter]*builtExporter
+type Exporters map[config.ComponentID]*builtExporter
 
 // StartAll starts all exporters.
 func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
@@ -121,9 +121,9 @@ func (exps Exporters) ToMapByDataType() map[config.DataType]map[config.Component
 	exportersMap[config.MetricsDataType] = make(map[config.ComponentID]component.Exporter, len(exps))
 	exportersMap[config.LogsDataType] = make(map[config.ComponentID]component.Exporter, len(exps))
 
-	for cfg, bexp := range exps {
+	for expID, bexp := range exps {
 		for t, exp := range bexp.expByDataType {
-			exportersMap[t][cfg.ID()] = exp
+			exportersMap[t][expID] = exp
 		}
 	}
 
@@ -175,7 +175,7 @@ func BuildExporters(
 			return nil, err
 		}
 
-		exporters[expCfg] = exp
+		exporters[expID] = exp
 	}
 
 	return exporters, nil
