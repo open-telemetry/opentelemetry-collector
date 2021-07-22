@@ -25,7 +25,7 @@ import (
 )
 
 type zpagesExtension struct {
-	config Config
+	config *Config
 	logger *zap.Logger
 	server http.Server
 	stopCh chan struct{}
@@ -74,7 +74,7 @@ func (zpe *zpagesExtension) Shutdown(context.Context) error {
 	return err
 }
 
-func newServer(config Config, logger *zap.Logger) *zpagesExtension {
+func newServer(config *Config, logger *zap.Logger) *zpagesExtension {
 	return &zpagesExtension{
 		config: config,
 		logger: logger,

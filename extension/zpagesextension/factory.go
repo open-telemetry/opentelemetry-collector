@@ -16,7 +16,6 @@ package zpagesextension
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -50,10 +49,5 @@ func createDefaultConfig() config.Extension {
 
 // createExtension creates the extension based on this config.
 func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	config := cfg.(*Config)
-	if config.TCPAddr.Endpoint == "" {
-		return nil, errors.New("\"endpoint\" is required when using the \"zpages\" extension")
-	}
-
-	return newServer(*config, set.Logger), nil
+	return newServer(cfg.(*Config), set.Logger), nil
 }
