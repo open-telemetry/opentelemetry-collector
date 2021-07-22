@@ -119,7 +119,7 @@ func TestService_setupExtensions(t *testing.T) {
 			ext, err := BuildExtensions(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), tt.config, tt.factories.Extensions)
 
 			assert.Error(t, err)
-			assert.Equal(t, tt.wantErrMsg, err.Error())
+			assert.EqualError(t, err, tt.wantErrMsg)
 			assert.Equal(t, 0, len(ext))
 		})
 	}
