@@ -99,7 +99,7 @@ func TestGenDoubleGauge(t *testing.T) {
 	pts := metric.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	require.EqualValues(t, 1, pt.Value())
+	require.EqualValues(t, 1, pt.DoubleVal())
 }
 
 func getMetric(md pdata.Metrics) pdata.Metric {

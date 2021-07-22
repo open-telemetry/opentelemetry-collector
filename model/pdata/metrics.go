@@ -285,3 +285,39 @@ const (
 func (at AggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
+
+// NumberDataPointType specifies the type of NumberDataPoint.
+type NumberDataPointType int32
+
+const (
+	NumberDataPointTypeNone NumberDataPointType = iota
+	NumberDataPointTypeInt
+	NumberDataPointTypeDouble
+)
+
+// Type returns the type of the value for this NumberDataPoint.
+// Calling this function on zero-initialized NumberDataPoint will cause a panic.
+func (ms NumberDataPoint) Type() NumberDataPointType {
+	if ms.orig.Value == nil {
+		return NumberDataPointTypeNone
+	}
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		return NumberDataPointTypeDouble
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		return NumberDataPointTypeInt
+	}
+	return NumberDataPointTypeNone
+}
+
+// Value returns the value associated with this NumberDataPoint.
+// Deprecated: Use DoubleVal instead.
+func (ms NumberDataPoint) Value() float64 {
+	return ms.DoubleVal()
+}
+
+// SetValue replaces the value associated with this NumberDataPoint.
+// Deprecated: Use SetDoubleVal instead.
+func (ms NumberDataPoint) SetValue(v float64) {
+	ms.SetDoubleVal(v)
+}

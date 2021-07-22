@@ -155,7 +155,7 @@ func diffDoublePt(
 	expected pdata.NumberDataPoint,
 	actual pdata.NumberDataPoint,
 ) []*MetricDiff {
-	diffs = diff(diffs, expected.Value(), actual.Value(), "NumberDataPoint value")
+	diffs = diff(diffs, expected.DoubleVal(), actual.DoubleVal(), "NumberDataPoint value")
 	return diffDoubleExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }
 

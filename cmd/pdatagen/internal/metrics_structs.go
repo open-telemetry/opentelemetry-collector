@@ -234,19 +234,33 @@ var numberDataPointSlice = &sliceOfPtrs{
 
 var numberDataPoint = &messageValueStruct{
 	structName:     "NumberDataPoint",
-	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
+	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
 		timeField,
-		&primitiveAsDoubleField{
-			originFullName:  "otlpmetrics.NumberDataPoint",
-			fieldName:       "Value",
-			originFieldName: "Value",
-			returnType:      "float64",
-			defaultVal:      "float64(0.0)",
-			testVal:         "float64(17.13)",
+		&numberField{
+			fields: []*oneOfPrimitiveValue{
+				{
+					originFullName:  "otlpmetrics.NumberDataPoint",
+					name:            "DoubleVal",
+					originFieldName: "Value",
+					returnType:      "float64",
+					defaultVal:      "float64(0.0)",
+					testVal:         "float64(17.13)",
+					fieldType:       "Double",
+				},
+				{
+					originFullName:  "otlpmetrics.NumberDataPoint",
+					name:            "IntVal",
+					originFieldName: "Value",
+					returnType:      "int64",
+					defaultVal:      "int64(0)",
+					testVal:         "int64(17)",
+					fieldType:       "Int",
+				},
+			},
 		},
 		exemplarsField,
 	},

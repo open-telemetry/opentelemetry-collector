@@ -272,7 +272,7 @@ func fillNumberDataPointAsDouble(ocMetric *ocmetrics.Metric, dps pdata.NumberDat
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
 			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
-			dp.SetValue(point.GetDoubleValue())
+			dp.SetDoubleVal(point.GetDoubleValue())
 		}
 	}
 }

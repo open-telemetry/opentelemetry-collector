@@ -260,7 +260,7 @@ func doublePointToOC(dps pdata.NumberDataPointSlice, labelKeys *labelKeys) []*oc
 				{
 					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
 					Value: &ocmetrics.Point_DoubleValue{
-						DoubleValue: dp.Value(),
+						DoubleValue: dp.DoubleVal(),
 					},
 				},
 			},

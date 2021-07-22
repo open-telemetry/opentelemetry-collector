@@ -168,7 +168,7 @@ func populateDoublePoints(cfg MetricsCfg, pts pdata.NumberDataPointSlice) {
 		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
-		pt.SetValue(float64(cfg.PtVal + i))
+		pt.SetDoubleVal(float64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
 }
