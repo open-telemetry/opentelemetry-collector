@@ -24,6 +24,14 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
+// MetricFamilyPdata is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
+// a single scrape.
+type MetricFamilyPdata interface {
+	Add(metricName string, ls labels.Labels, t int64, v float64) error
+	IsSameFamily(metricName string) bool
+	ToMetricPdata(metrics *pdata.MetricSlice) (int, int)
+}
+
 type metricFamilyPdata struct {
 	// We are composing the already present metricFamily to
 	// make for a scalable migration, so that we only edit target
@@ -44,7 +52,7 @@ type metricGroupPdata struct {
 	family *metricFamilyPdata
 }
 
-func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTimeMs int64) MetricFamily {
+func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTimeMs int64) MetricFamilyPdata {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -253,4 +261,69 @@ func (mf *metricFamilyPdata) Add(metricName string, ls labels.Labels, t int64, v
 	}
 
 	return nil
+}
+
+// getGroups to return groups in insertion order
+func (mf *metricFamilyPdata) getGroups() []*metricGroupPdata {
+	groups := make([]*metricGroupPdata, len(mf.groupOrders))
+	for k, v := range mf.groupOrders {
+		groups[v] = mf.groups[k]
+	}
+	return groups
+}
+
+func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int) {
+	metric := pdata.NewMetric()
+	pointCount := 0
+
+	switch mf.mtype {
+	case pdata.MetricDataTypeHistogram:
+		histogram := metric.Histogram()
+		hdpL := histogram.DataPoints()
+		for _, mg := range mf.getGroups() {
+			if !mg.toDistributionPoint(mf.labelKeysOrdered, &hdpL) {
+				mf.droppedTimeseries++
+			}
+		}
+		pointCount = hdpL.Len()
+
+	case pdata.MetricDataTypeSummary:
+		summary := metric.Summary()
+		sdpL := summary.DataPoints()
+		for _, mg := range mf.getGroups() {
+			if !mg.toSummaryPoint(mf.labelKeysOrdered, &sdpL) {
+				mf.droppedTimeseries++
+			}
+		}
+		pointCount = sdpL.Len()
+
+	case pdata.MetricDataTypeSum:
+		sum := metric.Sum()
+		sdpL := sum.DataPoints()
+		for _, mg := range mf.getGroups() {
+			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &sdpL) {
+				mf.droppedTimeseries++
+			}
+		}
+		pointCount = sdpL.Len()
+
+	default:
+		gauge := metric.Gauge()
+		gdpL := gauge.DataPoints()
+		for _, mg := range mf.getGroups() {
+			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &gdpL) {
+				mf.droppedTimeseries++
+			}
+		}
+		pointCount = gdpL.Len()
+	}
+
+	if pointCount == 0 {
+		return mf.droppedTimeseries, mf.droppedTimeseries
+	}
+
+	metric.CopyTo(metrics.AppendEmpty())
+
+	// note: the total number of points is the number of points+droppedTimeseries.
+	return pointCount + mf.droppedTimeseries, mf.droppedTimeseries
 }
