@@ -369,7 +369,7 @@ func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempla
 		exemplar.SetTimestamp(pdata.TimestampFromTime(ocExemplar.GetTimestamp().AsTime()))
 	}
 	ocAttachments := ocExemplar.GetAttachments()
-	exemplar.SetValue(ocExemplar.GetValue())
+	exemplar.SetDoubleVal(ocExemplar.GetValue())
 	filteredLabels := exemplar.FilteredLabels()
 	filteredLabels.Clear()
 	filteredLabels.EnsureCapacity(len(ocAttachments))

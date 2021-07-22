@@ -321,3 +321,30 @@ func (ms NumberDataPoint) Value() float64 {
 func (ms NumberDataPoint) SetValue(v float64) {
 	ms.SetDoubleVal(v)
 }
+
+// Type returns the type of the value for this Exemplar.
+// Calling this function on zero-initialized Exemplar will cause a panic.
+func (ms Exemplar) Type() NumberDataPointType {
+	if ms.orig.Value == nil {
+		return NumberDataPointTypeNone
+	}
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		return NumberDataPointTypeDouble
+	case *otlpmetrics.Exemplar_AsInt:
+		return NumberDataPointTypeInt
+	}
+	return NumberDataPointTypeNone
+}
+
+// Value returns the value associated with this Exemplar.
+// Deprecated: Use DoubleVal instead.
+func (ms Exemplar) Value() float64 {
+	return ms.DoubleVal()
+}
+
+// SetValue replaces the value associated with this Exemplar.
+// Deprecated: Use SetDoubleVal instead.
+func (ms Exemplar) SetValue(v float64) {
+	ms.SetDoubleVal(v)
+}
