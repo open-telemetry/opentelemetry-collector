@@ -100,6 +100,12 @@ features such as automatic upgrade handling, `Service` configuration based on
 the OpenTelemetry configuration, automatic sidecar injection into deployments,
 among others.
 
+### Nomad
+
+Reference job files to deploy the Collector as an agent, gateway and in the
+full demo can be found at
+[https://github.com/hashicorp/nomad-open-telemetry-getting-started](https://github.com/hashicorp/nomad-open-telemetry-getting-started).
+
 ### Linux Packaging
 
 Every Collector release includes DEB and RPM packaging for Linux amd64/arm64
