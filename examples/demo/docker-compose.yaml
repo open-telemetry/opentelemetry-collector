@@ -72,6 +72,18 @@ services:
       context: ./app
     environment:
       - OTEL_AGENT_ENDPOINT=otel-agent:4317
+      - DEMO_SERVER_ENDPOINT=http://tracing-demo-server:7080/hello
+    depends_on:
+      - tracing-demo-server
+
+  tracing-demo-server:
+    build:
+      dockerfile: $PWD/server/Dockerfile
+      context: ./server
+    environment:
+      - OTEL_AGENT_ENDPOINT=otel-agent:4317
+    ports:
+      - "7080"
     depends_on:
       - otel-agent
 
