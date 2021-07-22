@@ -15,6 +15,8 @@
 package zpagesextension
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 )
@@ -33,5 +35,8 @@ var _ config.Extension = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.TCPAddr.Endpoint == "" {
+		return errors.New("\"endpoint\" is required when using the \"zpages\" extension")
+	}
 	return nil
 }
