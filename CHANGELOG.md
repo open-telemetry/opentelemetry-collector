@@ -3,9 +3,10 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
-
 - Remove Resize() from pdata slice APIs (#3675)
-
+- Remove the ballast allocation when `mem-ballast-size-mib` is set in command line (#3626)
+  - Use [`ballast extension`](./extension/ballastextension/README.md) to set memory ballast instead.
+  
 ## v0.30.0 Beta
 
 ## 🛑 Breaking changes 🛑
