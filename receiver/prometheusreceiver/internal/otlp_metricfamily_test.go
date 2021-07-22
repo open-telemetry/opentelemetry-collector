@@ -445,3 +445,109 @@ func TestMetricGroupData_toSummaryPointEquivalence(t *testing.T) {
 		})
 	}
 }
+
+func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
+	type scrape struct {
+		at     int64
+		value  float64
+		metric string
+	}
+	tests := []struct {
+		name    string
+		labels  labels.Labels
+		scrapes []*scrape
+		want    func() pdata.NumberDataPoint
+	}{
+		{
+			name:   "counter",
+			labels: labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			scrapes: []*scrape{
+				{at: 38, value: 39.9, metric: "value"},
+			},
+			want: func() pdata.NumberDataPoint {
+				point := pdata.NewNumberDataPoint()
+				point.SetValue(39.9)
+				point.SetTimestamp(38 * 1e6) // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(38 * 1e6)
+				labelsMap := point.LabelsMap()
+				labelsMap.Insert("a", "A")
+				labelsMap.Insert("b", "B")
+				return point
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			for _, tv := range tt.scrapes {
+				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
+			}
+
+			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
+			groupKey := mp.getGroupKey(tt.labels.Copy())
+			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
+
+			ndpL := pdata.NewNumberDataPointSlice()
+			require.True(t, mp.groups[groupKey].toNumberDataPoint(mp.labelKeysOrdered, &ndpL))
+			require.Equal(t, 1, ndpL.Len(), "Exactly one point expected")
+			got := ndpL.At(0)
+			want := tt.want()
+			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricGroupData_toNumberDataPointEquivalence(t *testing.T) {
+	type scrape struct {
+		at     int64
+		value  float64
+		metric string
+	}
+	tests := []struct {
+		name    string
+		labels  labels.Labels
+		scrapes []*scrape
+	}{
+		{
+			name:   "counter",
+			labels: labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			scrapes: []*scrape{
+				{at: 13, value: 33.7, metric: "value"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			mf := newMetricFamily(tt.name, mc, zap.NewNop()).(*metricFamily)
+			mp := newMetricFamilyPdata(tt.name, mc).(*metricFamilyPdata)
+			for _, tv := range tt.scrapes {
+				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
+				require.NoError(t, mf.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
+			}
+			groupKey := mf.getGroupKey(tt.labels.Copy())
+			ocTimeseries := mf.groups[groupKey].toDoubleValueTimeSeries(mf.labelKeysOrdered)
+			ddpL := pdata.NewNumberDataPointSlice()
+			require.True(t, mp.groups[groupKey].toNumberDataPoint(mp.labelKeysOrdered, &ddpL))
+			require.Equal(t, len(ocTimeseries.Points), ddpL.Len(), "They should have the exact same number of points")
+			require.Equal(t, 1, ddpL.Len(), "Exactly one point expected")
+			ocPoint := ocTimeseries.Points[0]
+			pdataPoint := ddpL.At(0)
+			// 1. Ensure that the startTimestamps are equal.
+			require.Equal(t, ocTimeseries.GetStartTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "The timestamp must be equal")
+			// 2. Ensure that the value is equal.
+			require.Equal(t, ocPoint.GetDoubleValue(), pdataPoint.Value(), "Count must be equal")
+			// 4. Ensure that the point's timestamp is equal to that from the OpenCensusProto data point.
+			require.Equal(t, ocPoint.GetTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "Point timestamps must be equal")
+			// 5. Ensure that the labels all match up.
+			ocStringMap := pdata.NewStringMap()
+			for i, labelValue := range ocTimeseries.LabelValues {
+				ocStringMap.Insert(mf.labelKeysOrdered[i], labelValue.Value)
+			}
+			require.Equal(t, ocStringMap.Sort(), pdataPoint.LabelsMap().Sort())
+		})
+	}
+}

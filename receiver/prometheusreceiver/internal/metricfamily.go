@@ -388,6 +388,8 @@ func (mg *metricGroup) toDoubleValueTimeSeries(orderedLabelKeys []string) *metri
 	var startTs *timestamppb.Timestamp
 	// gauge/undefined types has no start time
 	if mg.family.isCumulativeType() {
+		// TODO(@odeke-em): use the actual interval start time as reported in
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/3691
 		startTs = timestampFromMs(mg.ts)
 	}
 
