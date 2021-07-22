@@ -27,6 +27,9 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/zpages"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,14 +39,9 @@ import (
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
-)
-
-const (
-	servicezPath   = "servicez"
-	pipelinezPath  = "pipelinez"
-	extensionzPath = "extensionz"
 )
 
 // State defines Collector's state.
@@ -72,6 +70,9 @@ type Collector struct {
 	info    component.BuildInfo
 	rootCmd *cobra.Command
 	logger  *zap.Logger
+
+	tracerProvider      *sdktrace.TracerProvider
+	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service      *service
 	stateChannel chan State
@@ -115,6 +116,15 @@ func New(set CollectorSettings) (*Collector, error) {
 			if col.logger, err = newLogger(set.LoggingOptions); err != nil {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
+
+			col.zPagesSpanProcessor = zpages.NewSpanProcessor()
+			col.tracerProvider = sdktrace.NewTracerProvider(
+				sdktrace.WithSampler(internal.AlwaysRecord()),
+				sdktrace.WithSpanProcessor(col.zPagesSpanProcessor))
+
+			// Set the constructed tracer provider as Global, in case any component uses the
+			// global TracerProvider.
+			otel.SetTracerProvider(col.tracerProvider)
 
 			return col.execute(cmd.Context())
 		},
@@ -240,11 +250,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.logger.Info("Applying configuration...")
 
 	service, err := newService(&svcSettings{
-		BuildInfo:         col.info,
-		Factories:         col.factories,
-		Config:            cfg,
-		Logger:            col.logger,
-		AsyncErrorChannel: col.asyncErrorChannel,
+		BuildInfo:           col.info,
+		Factories:           col.factories,
+		Config:              cfg,
+		Logger:              col.logger,
+		TracerProvider:      col.tracerProvider,
+		ZPagesSpanProcessor: col.zPagesSpanProcessor,
+		AsyncErrorChannel:   col.asyncErrorChannel,
 	})
 	if err != nil {
 		return err

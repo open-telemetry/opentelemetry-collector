@@ -15,6 +15,8 @@
 package service
 
 import (
+	"go.opentelemetry.io/contrib/zpages"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +37,12 @@ type svcSettings struct {
 
 	// Logger represents the logger used for all the components.
 	Logger *zap.Logger
+
+	// TracerProvider represents the TracerProvider used for all the components.
+	TracerProvider *sdktrace.TracerProvider
+
+	// ZPagesSpanProcessor represents the SpanProcessor for tracez page.
+	ZPagesSpanProcessor *zpages.SpanProcessor
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
