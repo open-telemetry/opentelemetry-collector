@@ -17,6 +17,8 @@ package internal
 var metricsFile = &File{
 	Name: "metrics",
 	imports: []string{
+		`"sort"`,
+		``,
 		`otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"`,
 	},
 	testImports: []string{

@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"sort"
+
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
@@ -110,6 +112,20 @@ func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
+// provided less function so that two instances of ResourceLogsSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b ResourceLogs) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) ResourceLogsSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -273,6 +289,20 @@ func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLo
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the InstrumentationLibraryLogs elements within InstrumentationLibraryLogsSlice given the
+// provided less function so that two instances of InstrumentationLibraryLogsSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b InstrumentationLibraryLogs) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es InstrumentationLibraryLogsSlice) Sort(less func(a, b InstrumentationLibraryLogs) bool) InstrumentationLibraryLogsSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLibraryLogsSlice) {
@@ -432,6 +462,20 @@ func (es LogSlice) EnsureCapacity(newCap int) {
 func (es LogSlice) AppendEmpty() LogRecord {
 	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the LogRecord elements within LogSlice given the
+// provided less function so that two instances of LogSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b LogRecord) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es LogSlice) Sort(less func(a, b LogRecord) bool) LogSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
