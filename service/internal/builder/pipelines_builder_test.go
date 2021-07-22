@@ -139,11 +139,11 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			assert.NotNil(t, processor.firstLC)
 
 			// Compose the list of created exporters.
-			exporterNames := []config.ComponentID{config.NewID("exampleexporter")}
+			exporterIDs := []config.ComponentID{config.NewID("exampleexporter")}
 			var exporters []*builtExporter
-			for _, name := range exporterNames {
+			for _, expID := range exporterIDs {
 				// Ensure exporter is created.
-				exp := allExporters[cfg.Exporters[name]]
+				exp := allExporters[expID]
 				require.NotNil(t, exp)
 				exporters = append(exporters, exp)
 			}
@@ -203,9 +203,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
-	for _, name := range exporterIDs {
+	for _, expID := range exporterIDs {
 		// Ensure exporter is created.
-		exp := allExporters[cfg.Exporters[name]]
+		exp := allExporters[expID]
 		require.NotNil(t, exp)
 		exporters = append(exporters, exp)
 	}

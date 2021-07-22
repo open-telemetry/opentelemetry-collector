@@ -46,7 +46,7 @@ func (ext *builtExtension) Shutdown(ctx context.Context) error {
 var _ component.Extension = (*builtExtension)(nil)
 
 // Extensions is a map of extensions created from extension configs.
-type Extensions map[config.Extension]*builtExtension
+type Extensions map[config.ComponentID]*builtExtension
 
 // StartAll starts all exporters.
 func (exts Extensions) StartAll(ctx context.Context, host component.Host) error {
@@ -105,8 +105,8 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 
 func (exts Extensions) ToMap() map[config.ComponentID]component.Extension {
 	result := make(map[config.ComponentID]component.Extension, len(exts))
-	for k, v := range exts {
-		result[k.ID()] = v.extension
+	for extID, v := range exts {
+		result[extID] = v.extension
 	}
 	return result
 }
@@ -143,7 +143,7 @@ func BuildExtensions(
 			return nil, err
 		}
 
-		extensions[extCfg] = ext
+		extensions[extID] = ext
 	}
 
 	return extensions, nil

@@ -226,10 +226,10 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 }
 
 // Converts the list of exporter names to a list of corresponding builtExporters.
-func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterIDs []config.ComponentID) []*builtExporter {
+func (pb *pipelinesBuilder) getBuiltExportersByIDs(exporterIDs []config.ComponentID) []*builtExporter {
 	var result []*builtExporter
-	for _, name := range exporterIDs {
-		exporter := pb.exporters[pb.config.Exporters[name]]
+	for _, expID := range exporterIDs {
+		exporter := pb.exporters[expID]
 		result = append(result, exporter)
 	}
 
@@ -237,7 +237,7 @@ func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterIDs []config.Compon
 }
 
 func (pb *pipelinesBuilder) buildFanoutExportersTracesConsumer(exporterIDs []config.ComponentID) consumer.Traces {
-	builtExporters := pb.getBuiltExportersByNames(exporterIDs)
+	builtExporters := pb.getBuiltExportersByIDs(exporterIDs)
 
 	var exporters []consumer.Traces
 	for _, builtExp := range builtExporters {
@@ -249,7 +249,7 @@ func (pb *pipelinesBuilder) buildFanoutExportersTracesConsumer(exporterIDs []con
 }
 
 func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterIDs []config.ComponentID) consumer.Metrics {
-	builtExporters := pb.getBuiltExportersByNames(exporterIDs)
+	builtExporters := pb.getBuiltExportersByIDs(exporterIDs)
 
 	var exporters []consumer.Metrics
 	for _, builtExp := range builtExporters {
@@ -261,7 +261,7 @@ func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterIDs []co
 }
 
 func (pb *pipelinesBuilder) buildFanoutExportersLogsConsumer(exporterIDs []config.ComponentID) consumer.Logs {
-	builtExporters := pb.getBuiltExportersByNames(exporterIDs)
+	builtExporters := pb.getBuiltExportersByIDs(exporterIDs)
 
 	exporters := make([]consumer.Logs, len(builtExporters))
 	for i, builtExp := range builtExporters {

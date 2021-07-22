@@ -50,7 +50,7 @@ func (rcv *builtReceiver) Shutdown(ctx context.Context) error {
 }
 
 // Receivers is a map of receivers created from receiver configs.
-type Receivers map[config.Receiver]*builtReceiver
+type Receivers map[config.ComponentID]*builtReceiver
 
 // ShutdownAll stops all receivers.
 func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
@@ -112,7 +112,7 @@ func BuildReceivers(
 			}
 			return nil, err
 		}
-		receivers[recvCfg] = rcv
+		receivers[recvID] = rcv
 	}
 
 	return receivers, nil
