@@ -1590,12 +1590,19 @@ func TestExemplar_Timestamp(t *testing.T) {
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
 
-func TestExemplar_Value(t *testing.T) {
+func TestExemplar_DoubleVal(t *testing.T) {
 	ms := NewExemplar()
-	assert.EqualValues(t, float64(0.0), ms.Value())
-	testValValue := float64(17.13)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
+	assert.EqualValues(t, float64(0.0), ms.DoubleVal())
+	testValDoubleVal := float64(17.13)
+	ms.SetDoubleVal(testValDoubleVal)
+	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+func TestExemplar_IntVal(t *testing.T) {
+	ms := NewExemplar()
+	assert.EqualValues(t, int64(0), ms.IntVal())
+	testValIntVal := int64(17)
+	ms.SetIntVal(testValIntVal)
+	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
 func TestExemplar_FilteredLabels(t *testing.T) {
@@ -1939,6 +1946,7 @@ func generateTestExemplar() Exemplar {
 
 func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(float64(17.13))
+	tv.SetDoubleVal(float64(17.13))
+
 	fillTestStringMap(tv.FilteredLabels())
 }

@@ -199,7 +199,7 @@ func diffDoubleExemplars(
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "Exemplar Value")
+		diffs = diff(diffs, expected.At(i).DoubleVal(), actual.At(i).DoubleVal(), "Exemplar Value")
 	}
 	return diffs
 }

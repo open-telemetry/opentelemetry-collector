@@ -362,13 +362,27 @@ var exemplar = &messageValueStruct{
 	originFullName: "otlpmetrics.Exemplar",
 	fields: []baseField{
 		timeField,
-		&primitiveAsDoubleField{
-			originFullName:  "otlpmetrics.Exemplar",
-			fieldName:       "Value",
-			originFieldName: "Value",
-			returnType:      "float64",
-			defaultVal:      "float64(0.0)",
-			testVal:         "float64(17.13)",
+		&numberField{
+			fields: []*oneOfPrimitiveValue{
+				{
+					originFullName:  "otlpmetrics.Exemplar",
+					name:            "DoubleVal",
+					originFieldName: "Value",
+					returnType:      "float64",
+					defaultVal:      "float64(0.0)",
+					testVal:         "float64(17.13)",
+					fieldType:       "Double",
+				},
+				{
+					originFullName:  "otlpmetrics.Exemplar",
+					name:            "IntVal",
+					originFieldName: "Value",
+					returnType:      "int64",
+					defaultVal:      "int64(0)",
+					testVal:         "int64(17)",
+					fieldType:       "Int",
+				},
+			},
 		},
 		&sliceField{
 			fieldName:       "FilteredLabels",

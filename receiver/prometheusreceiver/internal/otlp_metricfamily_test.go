@@ -227,7 +227,7 @@ func TestMetricGroupData_toDistributionPointEquivalence(t *testing.T) {
 				pdataExemplar := pdataPoint.Exemplars().At(i)
 				msgPrefix := fmt.Sprintf("Exemplar #%d:: ", i)
 				require.Equal(t, ocExemplar.Timestamp.AsTime(), pdataExemplar.Timestamp().AsTime(), msgPrefix+"timestamp mismatch")
-				require.Equal(t, ocExemplar.Value, pdataExemplar.Value(), msgPrefix+"value mismatch")
+				require.Equal(t, ocExemplar.Value, pdataExemplar.DoubleVal(), msgPrefix+"value mismatch")
 				pdataExemplarAttachments := make(map[string]string)
 				pdataExemplar.FilteredLabels().Range(func(key, value string) bool {
 					pdataExemplarAttachments[key] = value
