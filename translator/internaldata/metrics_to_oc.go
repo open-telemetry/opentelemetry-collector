@@ -386,7 +386,7 @@ func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionVa
 
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		val := exemplar.Value()
+		val := exemplar.DoubleVal()
 		pos := 0
 		for ; pos < len(bounds); pos++ {
 			if val > bounds[pos] {

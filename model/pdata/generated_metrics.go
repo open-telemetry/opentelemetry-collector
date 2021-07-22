@@ -2227,15 +2227,27 @@ func (ms Exemplar) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Value returns the value associated with this Exemplar.
-func (ms Exemplar) Value() float64 {
+// DoubleVal returns the doubleval associated with this Exemplar.
+func (ms Exemplar) DoubleVal() float64 {
 	return (*ms.orig).GetAsDouble()
 }
 
-// SetValue replaces the value associated with this Exemplar.
-func (ms Exemplar) SetValue(v float64) {
+// SetDoubleVal replaces the doubleval associated with this Exemplar.
+func (ms Exemplar) SetDoubleVal(v float64) {
 	(*ms.orig).Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
+	}
+}
+
+// IntVal returns the intval associated with this Exemplar.
+func (ms Exemplar) IntVal() int64 {
+	return (*ms.orig).GetAsInt()
+}
+
+// SetIntVal replaces the intval associated with this Exemplar.
+func (ms Exemplar) SetIntVal(v int64) {
+	(*ms.orig).Value = &otlpmetrics.Exemplar_AsInt{
+		AsInt: v,
 	}
 }
 
@@ -2247,6 +2259,12 @@ func (ms Exemplar) FilteredLabels() StringMap {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
-	dest.SetValue(ms.Value())
+	switch ms.Type() {
+	case NumberDataPointTypeDouble:
+		dest.SetDoubleVal(ms.DoubleVal())
+	case NumberDataPointTypeInt:
+		dest.SetIntVal(ms.IntVal())
+	}
+
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
 }

@@ -282,7 +282,7 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	hdp1.SetBucketCounts([]uint64{0, 1})
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
-	exemplar.SetValue(15)
+	exemplar.SetDoubleVal(15)
 	initMetricAttachment(exemplar.FilteredLabels())
 	hdp1.SetExplicitBounds([]float64{1})
 }
