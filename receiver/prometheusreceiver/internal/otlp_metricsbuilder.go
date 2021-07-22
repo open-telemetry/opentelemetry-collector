@@ -24,9 +24,9 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/pkg/value"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {
@@ -109,10 +109,6 @@ func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeM
 		},
 	}
 }
-
-// This code is used in follow-up changes but golangci-lint is so pedantic.
-var _ = newMetricBuilderPdata
-var _ = (*metricBuilderPdata)(nil).AddDataPoint
 
 // AddDataPoint is for feeding prometheus data complexValue in its processing order
 func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) (rerr error) {
