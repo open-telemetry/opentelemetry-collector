@@ -17,8 +17,6 @@ package main
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"math/rand"
@@ -28,8 +26,12 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
@@ -37,7 +39,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/semconv/v1.4.0"
+	"google.golang.org/grpc"
 )
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -53,14 +56,37 @@ func initProvider() func() {
 		otelAgentAddr = "0.0.0.0:4317"
 	}
 
-	exp, err := otlp.NewExporter(ctx, otlpgrpc.NewDriver(
-		otlpgrpc.WithInsecure(),
-		otlpgrpc.WithEndpoint(otelAgentAddr),
-	))
+	metricClient := otlpmetricgrpc.NewClient(
+		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithEndpoint(otelAgentAddr))
+	metricExp, err := otlpmetric.New(ctx, metricClient)
+	handleErr(err, "Failed to create the collector metric exporter")
 
-	handleErr(err, "failed to create exporter")
+	pusher := controller.New(
+		processor.New(
+			simple.NewWithExactDistribution(),
+			metricExp,
+		),
+		controller.WithExporter(metricExp),
+		controller.WithCollectPeriod(2*time.Second),
+	)
+	global.SetMeterProvider(pusher.MeterProvider())
+
+	err = pusher.Start(ctx)
+	handleErr(err, "Failed to start metric pusher")
+
+	traceClient := otlptracegrpc.NewClient(
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(otelAgentAddr),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()))
+	traceExp, err := otlptrace.New(ctx, traceClient)
+	handleErr(err, "Failed to create the collector trace exporter")
 
 	res, err := resource.New(ctx,
+		resource.WithFromEnv(),
+		resource.WithProcess(),
+		resource.WithTelemetrySDK(),
+		resource.WithHost(),
 		resource.WithAttributes(
 			// the service name used to display traces in backends
 			semconv.ServiceNameKey.String("demo-server"),
@@ -68,32 +94,27 @@ func initProvider() func() {
 	)
 	handleErr(err, "failed to create resource")
 
-	bsp := sdktrace.NewBatchSpanProcessor(exp)
+	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
 
-	cont := controller.New(
-		processor.New(
-			simple.NewWithExactDistribution(),
-			exp,
-		),
-		controller.WithCollectPeriod(7*time.Second),
-		controller.WithExporter(exp),
-	)
-
 	// set global propagator to tracecontext (the default is no-op).
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 	otel.SetTracerProvider(tracerProvider)
-	global.SetMeterProvider(cont.MeterProvider())
-	handleErr(cont.Start(context.Background()), "failed to start metric controller")
 
 	return func() {
-		handleErr(tracerProvider.Shutdown(ctx), "failed to shutdown provider")
-		handleErr(cont.Stop(context.Background()), "failed to stop metrics controller") // pushes any last exports to the receiver
-		handleErr(exp.Shutdown(ctx), "failed to stop exporter")
+		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		if err := traceExp.Shutdown(ctx); err != nil {
+			otel.Handle(err)
+		}
+		// pushes any last exports to the receiver
+		if err := pusher.Stop(ctx); err != nil {
+			otel.Handle(err)
+		}
 	}
 }
 
