@@ -190,48 +190,36 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
 
-		factory := pb.factories[procCfg.ID().Type()]
 		btProc := btProcs[i]
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
-		set := component.ProcessorCreateSettings{
-			Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID())),
-			TracerProvider: pb.tracerProvider,
-			BuildInfo:      pb.buildInfo,
-		}
 
 		switch pipelineCfg.InputType {
 		case config.TracesDataType:
-			var proc component.TracesProcessor
-			proc, err = factory.CreateTracesProcessor(ctx, set, procCfg, tc)
-			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
+			if btProc != nil {
+				mutatesConsumedData = mutatesConsumedData || btProc.Capabilities().MutatesData
 			}
 			btProc.nextTc.tc = tc
-			processors[i] = proc
+			processors[i] = btProc
 			tc = btProc
 
 		case config.MetricsDataType:
-			var proc component.MetricsProcessor
-			proc, err = factory.CreateMetricsProcessor(ctx, set, procCfg, mc)
-			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
+			if btProc != nil {
+				mutatesConsumedData = mutatesConsumedData || btProc.Capabilities().MutatesData
 			}
 			btProc.nextMc.mc = mc
-			processors[i] = proc
+			processors[i] = btProc
 			mc = btProc
 
 		case config.LogsDataType:
-			var proc component.LogsProcessor
-			proc, err = factory.CreateLogsProcessor(ctx, set, procCfg, lc)
-			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
+			if btProc != nil {
+				mutatesConsumedData = mutatesConsumedData || btProc.Capabilities().MutatesData
 			}
 			btProc.nextLc.lc = lc
-			processors[i] = proc
+			processors[i] = btProc
 			lc = btProc
 
 		default:
