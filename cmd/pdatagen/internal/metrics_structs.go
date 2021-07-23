@@ -51,8 +51,6 @@ var metricsFile = &File{
 		summaryDataPoint,
 		quantileValuesSlice,
 		quantileValues,
-		intExemplarSlice,
-		intExemplar,
 		exemplarSlice,
 		exemplar,
 	},
@@ -226,7 +224,6 @@ var intDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		valueInt64Field,
-		intExemplarsField,
 	},
 }
 
@@ -328,29 +325,6 @@ var quantileValues = &messageValueStruct{
 	},
 }
 
-var intExemplarSlice = &sliceOfValues{
-	structName: "IntExemplarSlice",
-	element:    intExemplar,
-}
-
-var intExemplar = &messageValueStruct{
-	structName: "IntExemplar",
-	description: "// IntExemplar is a sample input int measurement.\n//\n" +
-		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
-		"// for example the span and trace ID of the active span when the exemplar was recorded.",
-
-	originFullName: "otlpmetrics.IntExemplar",
-	fields: []baseField{
-		timeField,
-		valueInt64Field,
-		&sliceField{
-			fieldName:       "FilteredLabels",
-			originFieldName: "FilteredLabels",
-			returnSlice:     stringMap,
-		},
-	},
-}
-
 var exemplarSlice = &sliceOfValues{
 	structName: "ExemplarSlice",
 	element:    exemplar,
@@ -399,12 +373,6 @@ var labelsField = &sliceField{
 	fieldName:       "LabelsMap",
 	originFieldName: "Labels",
 	returnSlice:     stringMap,
-}
-
-var intExemplarsField = &sliceField{
-	fieldName:       "Exemplars",
-	originFieldName: "Exemplars",
-	returnSlice:     intExemplarSlice,
 }
 
 var exemplarsField = &sliceField{
