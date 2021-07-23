@@ -377,6 +377,7 @@ func (col *Collector) reloadService(ctx context.Context) error {
 
 	if col.service != nil && reload {
 		if err := col.service.Reload(ctx, cfg); err != nil {
+			col.asyncErrorChannel <- err
 			return err
 		}
 		col.service.config = cfg
@@ -408,10 +409,12 @@ func (col *Collector) watchForUpdate() {
 			case errors.Is(err, configsource.ErrSessionClosed):
 				// This is the case of shutdown of the whole application, nothing to do.
 				col.logger.Info("Config WatchForUpdate closed", zap.Error(err))
-				return
 			default:
 				col.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
-				col.reloadService(context.Background())
+				err = col.reloadService(context.Background())
+			}
+			if err != nil {
+				col.asyncErrorChannel <- err
 			}
 		}()
 	}
