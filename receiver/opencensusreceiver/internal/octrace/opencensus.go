@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -54,7 +54,7 @@ func New(id config.ComponentID, nextConsumer consumer.Traces) (*Receiver, error)
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		id:           id,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport, LongLivedCtx: true}),
 	}, nil
 }
 
@@ -78,8 +78,6 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.id, receiverTransport)
-
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
 	if err != nil {
@@ -96,7 +94,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// Now that we've got the first message with a Node, we can start to receive streamed up spans.
 	for {
 		lastNonNilNode, resource, err = ocr.processReceivedMsg(
-			longLivedRPCCtx,
+			ctx,
 			lastNonNilNode,
 			resource,
 			recv)
@@ -139,9 +137,7 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
-	ctx := ocr.obsrecv.StartTracesOp(
-		longLivedRPCCtx,
-		obsreport.WithLongLivedCtx())
+	ctx := ocr.obsrecv.StartTracesOp(longLivedRPCCtx)
 
 	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
 	ocr.obsrecv.EndTracesOp(ctx, receiverDataFormat, td.SpanCount(), err)

@@ -26,10 +26,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type metricNameTest struct {
@@ -354,8 +354,8 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()
 			m.SetName(name)
-			m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			dp := m.DoubleGauge().DataPoints().AppendEmpty()
+			m.SetDataType(pdata.MetricDataTypeGauge)
+			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetValue(123)
 		}

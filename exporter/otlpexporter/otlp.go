@@ -29,9 +29,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type exporter struct {
@@ -86,9 +86,9 @@ func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 
 type grpcSender struct {
 	// gRPC clients and connection.
-	traceExporter  pdatagrpc.TracesClient
-	metricExporter pdatagrpc.MetricsClient
-	logExporter    pdatagrpc.LogsClient
+	traceExporter  otlpgrpc.TracesClient
+	metricExporter otlpgrpc.MetricsClient
+	logExporter    otlpgrpc.LogsClient
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
@@ -106,9 +106,9 @@ func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extensio
 	}
 
 	gs := &grpcSender{
-		traceExporter:  pdatagrpc.NewTracesClient(clientConn),
-		metricExporter: pdatagrpc.NewMetricsClient(clientConn),
-		logExporter:    pdatagrpc.NewLogsClient(clientConn),
+		traceExporter:  otlpgrpc.NewTracesClient(clientConn),
+		metricExporter: otlpgrpc.NewMetricsClient(clientConn),
+		logExporter:    otlpgrpc.NewLogsClient(clientConn),
 		clientConn:     clientConn,
 		metadata:       metadata.New(config.GRPCClientSettings.Headers),
 		callOptions: []grpc.CallOption{

@@ -34,9 +34,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
@@ -357,7 +357,7 @@ func Test_PushMetrics(t *testing.T) {
 	// success cases
 	intSumBatch := testdata.GenerateMetricsManyMetricsSameResource(10)
 
-	doubleSumBatch := getMetricsFromMetricList(validMetrics1[validDoubleSum], validMetrics2[validDoubleSum])
+	sumBatch := getMetricsFromMetricList(validMetrics1[validSum], validMetrics2[validSum])
 
 	intGaugeBatch := getMetricsFromMetricList(validMetrics1[validIntGauge], validMetrics2[validIntGauge])
 
@@ -381,7 +381,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	emptyCumulativeIntSumBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeIntSum])
 
-	emptyCumulativeDoubleSumBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeDoubleSum])
+	emptyCumulativeSumBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeSum])
 
 	emptyCumulativeIntHistogramBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeIntHistogram])
 
@@ -434,7 +434,7 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			"doubleSum_case",
-			&doubleSumBatch,
+			&sumBatch,
 			checkFunc,
 			2,
 			http.StatusAccepted,
@@ -521,8 +521,8 @@ func Test_PushMetrics(t *testing.T) {
 			true,
 		},
 		{
-			"emptyCumulativeDoubleSum_case",
-			&emptyCumulativeDoubleSumBatch,
+			"emptyCumulativeSum_case",
+			&emptyCumulativeSumBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,

@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -65,11 +65,11 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		tsp,
+		tsp.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (tsp *tracesamplerprocessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs pdata.ResourceSpans) bool {
 		rs.InstrumentationLibrarySpans().RemoveIf(func(ils pdata.InstrumentationLibrarySpans) bool {
 			ils.Spans().RemoveIf(func(s pdata.Span) bool {

@@ -19,19 +19,19 @@ package cpuscraper
 import (
 	"github.com/shirou/gopsutil/cpu"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const cpuStatesLen = 8
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startIdx int, startTime, now pdata.Timestamp, cpuTime cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.At(startIdx+0), startTime, now, cpuTime.CPU, metadata.LabelCPUState.User, cpuTime.User)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+1), startTime, now, cpuTime.CPU, metadata.LabelCPUState.System, cpuTime.System)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+2), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Idle, cpuTime.Idle)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+3), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Interrupt, cpuTime.Irq)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+4), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Nice, cpuTime.Nice)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+5), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Softirq, cpuTime.Softirq)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+6), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Steal, cpuTime.Steal)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+7), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Wait, cpuTime.Iowait)
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime cpu.TimesStat) {
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.User, cpuTime.User)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.System, cpuTime.System)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Idle, cpuTime.Idle)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Interrupt, cpuTime.Irq)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Nice, cpuTime.Nice)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Softirq, cpuTime.Softirq)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Steal, cpuTime.Steal)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Wait, cpuTime.Iowait)
 }

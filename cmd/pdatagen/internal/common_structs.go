@@ -17,14 +17,14 @@ package internal
 var commonFile = &File{
 	Name: "common",
 	imports: []string{
-		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
+		`otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
-		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
+		`otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"`,
 	},
 	structs: []baseStruct{
 		instrumentationLibrary,

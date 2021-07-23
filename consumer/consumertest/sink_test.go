@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestTracesSink(t *testing.T) {
@@ -34,10 +34,10 @@ func TestTracesSink(t *testing.T) {
 		want = append(want, td)
 	}
 	assert.Equal(t, want, sink.AllTraces())
-	assert.Equal(t, len(want), sink.SpansCount())
+	assert.Equal(t, len(want), sink.SpanCount())
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllTraces()))
-	assert.Equal(t, 0, sink.SpansCount())
+	assert.Equal(t, 0, sink.SpanCount())
 }
 
 func TestMetricsSink(t *testing.T) {
@@ -49,10 +49,10 @@ func TestMetricsSink(t *testing.T) {
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllMetrics())
-	assert.Equal(t, len(want), sink.MetricsCount())
+	assert.Equal(t, 2*len(want), sink.DataPointCount())
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllMetrics()))
-	assert.Equal(t, 0, sink.MetricsCount())
+	assert.Equal(t, 0, sink.DataPointCount())
 }
 
 func TestLogsSink(t *testing.T) {
@@ -64,8 +64,8 @@ func TestLogsSink(t *testing.T) {
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllLogs())
-	assert.Equal(t, len(want), sink.LogRecordsCount())
+	assert.Equal(t, len(want), sink.LogRecordCount())
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllLogs()))
-	assert.Equal(t, 0, sink.LogRecordsCount())
+	assert.Equal(t, 0, sink.LogRecordCount())
 }

@@ -17,7 +17,7 @@ package goldendataset
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Simple utilities for generating metrics for testing
@@ -86,9 +86,9 @@ func newMetricGenerator() metricGenerator {
 func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
-	rms.Resize(cfg.NumResourceMetrics)
+	rms.EnsureCapacity(cfg.NumResourceMetrics)
 	for i := 0; i < cfg.NumResourceMetrics; i++ {
-		rm := rms.At(i)
+		rm := rms.AppendEmpty()
 		resource := rm.Resource()
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
 			resource.Attributes().Insert(
@@ -103,35 +103,35 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pdata.Metrics {
 
 func (g *metricGenerator) populateIlm(cfg MetricsCfg, rm pdata.ResourceMetrics) {
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(cfg.NumILMPerResource)
+	ilms.EnsureCapacity(cfg.NumILMPerResource)
 	for i := 0; i < cfg.NumILMPerResource; i++ {
-		ilm := ilms.At(i)
+		ilm := ilms.AppendEmpty()
 		g.populateMetrics(cfg, ilm)
 	}
 }
 
 func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.InstrumentationLibraryMetrics) {
 	metrics := ilm.Metrics()
-	metrics.Resize(cfg.NumMetricsPerILM)
+	metrics.EnsureCapacity(cfg.NumMetricsPerILM)
 	for i := 0; i < cfg.NumMetricsPerILM; i++ {
-		metric := metrics.At(i)
+		metric := metrics.AppendEmpty()
 		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
 		case pdata.MetricDataTypeIntGauge:
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			populateIntPoints(cfg, metric.IntGauge().DataPoints())
-		case pdata.MetricDataTypeDoubleGauge:
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			populateDoublePoints(cfg, metric.DoubleGauge().DataPoints())
+		case pdata.MetricDataTypeGauge:
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+			populateDoublePoints(cfg, metric.Gauge().DataPoints())
 		case pdata.MetricDataTypeIntSum:
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			sum := metric.IntSum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntPoints(cfg, sum.DataPoints())
-		case pdata.MetricDataTypeDoubleSum:
-			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			sum := metric.DoubleSum()
+		case pdata.MetricDataTypeSum:
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			sum := metric.Sum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoublePoints(cfg, sum.DataPoints())
@@ -157,9 +157,9 @@ func (g *metricGenerator) populateMetricDesc(cfg MetricsCfg, metric pdata.Metric
 }
 
 func populateIntPoints(cfg MetricsCfg, pts pdata.IntDataPointSlice) {
-	pts.Resize(cfg.NumPtsPerMetric)
+	pts.EnsureCapacity(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
-		pt := pts.At(i)
+		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(int64(cfg.PtVal + i))
@@ -168,9 +168,9 @@ func populateIntPoints(cfg MetricsCfg, pts pdata.IntDataPointSlice) {
 }
 
 func populateDoublePoints(cfg MetricsCfg, pts pdata.DoubleDataPointSlice) {
-	pts.Resize(cfg.NumPtsPerMetric)
+	pts.EnsureCapacity(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
-		pt := pts.At(i)
+		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(float64(cfg.PtVal + i))
@@ -180,9 +180,9 @@ func populateDoublePoints(cfg MetricsCfg, pts pdata.DoubleDataPointSlice) {
 
 func populateDoubleHistogram(cfg MetricsCfg, dh pdata.Histogram) {
 	pts := dh.DataPoints()
-	pts.Resize(cfg.NumPtsPerMetric)
+	pts.EnsureCapacity(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
-		pt := pts.At(i)
+		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
 		pt.SetTimestamp(ts)
@@ -217,9 +217,9 @@ func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 
 func populateIntHistogram(cfg MetricsCfg, dh pdata.IntHistogram) {
 	pts := dh.DataPoints()
-	pts.Resize(cfg.NumPtsPerMetric)
+	pts.EnsureCapacity(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
-		pt := pts.At(i)
+		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
 		pt.SetTimestamp(ts)

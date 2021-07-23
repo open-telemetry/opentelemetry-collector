@@ -18,7 +18,7 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type Matcher struct {
@@ -46,12 +46,12 @@ func (m *Matcher) MatchMetric(metric pdata.Metric) (bool, error) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		return m.matchIntGauge(metricName, metric.IntGauge())
-	case pdata.MetricDataTypeDoubleGauge:
-		return m.matchDoubleGauge(metricName, metric.DoubleGauge())
+	case pdata.MetricDataTypeGauge:
+		return m.matchGauge(metricName, metric.Gauge())
 	case pdata.MetricDataTypeIntSum:
 		return m.matchIntSum(metricName, metric.IntSum())
-	case pdata.MetricDataTypeDoubleSum:
-		return m.matchDoubleSum(metricName, metric.DoubleSum())
+	case pdata.MetricDataTypeSum:
+		return m.matchSum(metricName, metric.Sum())
 	case pdata.MetricDataTypeIntHistogram:
 		return m.matchIntHistogram(metricName, metric.IntHistogram())
 	case pdata.MetricDataTypeHistogram:
@@ -75,7 +75,7 @@ func (m *Matcher) matchIntGauge(metricName string, gauge pdata.IntGauge) (bool, 
 	return false, nil
 }
 
-func (m *Matcher) matchDoubleGauge(metricName string, gauge pdata.DoubleGauge) (bool, error) {
+func (m *Matcher) matchGauge(metricName string, gauge pdata.Gauge) (bool, error) {
 	pts := gauge.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
@@ -89,7 +89,7 @@ func (m *Matcher) matchDoubleGauge(metricName string, gauge pdata.DoubleGauge) (
 	return false, nil
 }
 
-func (m *Matcher) matchDoubleSum(metricName string, sum pdata.DoubleSum) (bool, error) {
+func (m *Matcher) matchSum(metricName string, sum pdata.Sum) (bool, error) {
 	pts := sum.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())

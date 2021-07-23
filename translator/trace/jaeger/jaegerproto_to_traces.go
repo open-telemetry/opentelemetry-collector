@@ -24,9 +24,9 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -41,21 +41,14 @@ func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
 	}
 
 	rss := traceData.ResourceSpans()
-	rss.Resize(len(batches))
+	rss.EnsureCapacity(len(batches))
 
-	i := 0
 	for _, batch := range batches {
 		if batch.GetProcess() == nil && len(batch.GetSpans()) == 0 {
 			continue
 		}
 
-		protoBatchToResourceSpans(*batch, rss.At(i))
-		i++
-	}
-
-	// reduce traceData.ResourceSpans slice if some batched were skipped
-	if i < len(batches) {
-		rss.Resize(i)
+		protoBatchToResourceSpans(*batch, rss.AppendEmpty())
 	}
 
 	return traceData
@@ -148,13 +141,7 @@ func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.Span
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
 			continue
 		}
-		pSpan, library := jSpanToInternal(span)
-		ss, found := spansByLibrary[library]
-		if !found {
-			ss = pdata.NewSpanSlice()
-			spansByLibrary[library] = ss
-		}
-		ss.Append(pSpan)
+		jSpanToInternal(span, spansByLibrary)
 	}
 	return spansByLibrary
 }
@@ -163,8 +150,15 @@ type instrumentationLibrary struct {
 	name, version string
 }
 
-func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
-	dest := pdata.NewSpan()
+func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary]pdata.SpanSlice) {
+	il := getInstrumentationLibrary(span)
+	ss, found := spansByLibrary[il]
+	if !found {
+		ss = pdata.NewSpanSlice()
+		spansByLibrary[il] = ss
+	}
+
+	dest := ss.AppendEmpty()
 	dest.SetTraceID(idutils.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
@@ -186,16 +180,6 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 		attrs.Delete(tracetranslator.TagSpanKind)
 	}
 
-	il := instrumentationLibrary{}
-	if libraryName, ok := attrs.Get(conventions.InstrumentationLibraryName); ok {
-		il.name = libraryName.StringVal()
-		attrs.Delete(conventions.InstrumentationLibraryName)
-		if libraryVersion, ok := attrs.Get(conventions.InstrumentationLibraryVersion); ok {
-			il.version = libraryVersion.StringVal()
-			attrs.Delete(conventions.InstrumentationLibraryVersion)
-		}
-	}
-
 	dest.SetTraceState(getTraceStateFromAttrs(attrs))
 
 	// drop the attributes slice if all of them were replaced during translation
@@ -205,8 +189,6 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 
 	jLogsToSpanEvents(span.Logs, dest.Events())
 	jReferencesToSpanLinks(span.References, parentSpanID, dest.Links())
-
-	return dest, il
 }
 
 func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
@@ -323,10 +305,15 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		return
 	}
 
-	dest.Resize(len(logs))
+	dest.EnsureCapacity(len(logs))
 
 	for i, log := range logs {
-		event := dest.At(i)
+		var event pdata.SpanEvent
+		if dest.Len() > i {
+			event = dest.At(i)
+		} else {
+			event = dest.AppendEmpty()
+		}
 
 		event.SetTimestamp(pdata.TimestampFromTime(log.Timestamp))
 		if len(log.Fields) == 0 {
@@ -350,22 +337,15 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 		return
 	}
 
-	dest.Resize(len(refs))
-	i := 0
+	dest.EnsureCapacity(len(refs))
 	for _, ref := range refs {
-		link := dest.At(i)
 		if ref.SpanID == excludeParentID && ref.RefType == model.ChildOf {
 			continue
 		}
 
+		link := dest.AppendEmpty()
 		link.SetTraceID(idutils.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
 		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanID)))
-		i++
-	}
-
-	// Reduce slice size in case if excludeParentID was skipped
-	if i < len(refs) {
-		dest.Resize(i)
 	}
 }
 
@@ -377,4 +357,26 @@ func getTraceStateFromAttrs(attrs pdata.AttributeMap) pdata.TraceState {
 		attrs.Delete(tracetranslator.TagW3CTraceState)
 	}
 	return traceState
+}
+
+func getInstrumentationLibrary(span *model.Span) instrumentationLibrary {
+	il := instrumentationLibrary{}
+	if libraryName, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryName); ok {
+		il.name = libraryName
+		if libraryVersion, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryVersion); ok {
+			il.version = libraryVersion
+		}
+	}
+	return il
+}
+
+func getAndDeleteTag(span *model.Span, key string) (string, bool) {
+	for i := range span.Tags {
+		if span.Tags[i].Key == key {
+			value := span.Tags[i].GetVStr()
+			span.Tags = append(span.Tags[:i], span.Tags[i+1:]...)
+			return value, true
+		}
+	}
+	return "", false
 }

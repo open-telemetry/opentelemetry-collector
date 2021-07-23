@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var testMetricsCfg = config.NewProcessorSettings(config.NewID(typeStr))
@@ -77,14 +77,8 @@ func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
 	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
 }
 
-type testMProcessor struct {
-	retError error
-}
-
-func newTestMProcessor(retError error) MProcessor {
-	return &testMProcessor{retError: retError}
-}
-
-func (tmp *testMProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	return md, tmp.retError
+func newTestMProcessor(retError error) ProcessMetricsFunc {
+	return func(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+		return md, retError
+	}
 }

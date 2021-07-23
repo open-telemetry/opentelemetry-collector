@@ -8,8 +8,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type exporterWrapper struct {
@@ -19,8 +18,7 @@ type exporterWrapper struct {
 	lc        consumer.Logs
 	exporter  component.Exporter
 	id        config.ComponentID
-	logger    *zap.Logger
-	buildInfo component.BuildInfo
+	set       component.ExporterCreateSettings
 	factory   component.ExporterFactory
 }
 
@@ -87,16 +85,11 @@ func (wrapper *exporterWrapper) Reload(host component.Host, ctx context.Context,
 
 	oldExp := wrapper.exporter
 
-	creationParams := component.ExporterCreateSettings{
-		Logger:    wrapper.logger,
-		BuildInfo: wrapper.buildInfo,
-	}
-
 	var err error
 	switch wrapper.inputType {
 	case config.MetricsDataType:
 		var exp component.MetricsExporter
-		exp, err = wrapper.factory.CreateMetricsExporter(ctx, creationParams, expCfg)
+		exp, err = wrapper.factory.CreateMetricsExporter(ctx, wrapper.set, expCfg)
 		if exp != nil && err == nil {
 			err = exp.Start(ctx, host)
 		}
@@ -111,7 +104,7 @@ func (wrapper *exporterWrapper) Reload(host component.Host, ctx context.Context,
 		}
 	case config.LogsDataType:
 		var exp component.LogsExporter
-		exp, err = wrapper.factory.CreateLogsExporter(ctx, creationParams, expCfg)
+		exp, err = wrapper.factory.CreateLogsExporter(ctx, wrapper.set, expCfg)
 		if exp != nil && err == nil {
 			err = exp.Start(ctx, host)
 		}
@@ -126,7 +119,7 @@ func (wrapper *exporterWrapper) Reload(host component.Host, ctx context.Context,
 		}
 	case config.TracesDataType:
 		var exp component.TracesExporter
-		exp, err = wrapper.factory.CreateTracesExporter(ctx, creationParams, expCfg)
+		exp, err = wrapper.factory.CreateTracesExporter(ctx, wrapper.set, expCfg)
 		if exp != nil && err == nil {
 			err = exp.Start(ctx, host)
 		}

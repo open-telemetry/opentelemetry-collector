@@ -25,7 +25,8 @@ import (
 	"go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -103,7 +104,7 @@ type queuedRetrySender struct {
 	consumerSender  requestSender
 	queue           *queue.BoundedQueue
 	retryStopCh     chan struct{}
-	traceAttributes []trace.Attribute
+	traceAttributes []attribute.KeyValue
 	logger          *zap.Logger
 }
 
@@ -129,7 +130,7 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
-	traceAttr := trace.StringAttribute(obsmetrics.ExporterKey, fullName)
+	traceAttr := attribute.String(obsmetrics.ExporterKey, fullName)
 	return &queuedRetrySender{
 		fullName: fullName,
 		cfg:      qCfg,
@@ -142,7 +143,7 @@ func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySetting
 		},
 		queue:           queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
 		retryStopCh:     retryStopCh,
-		traceAttributes: []trace.Attribute{traceAttr},
+		traceAttributes: []attribute.KeyValue{traceAttr},
 		logger:          sampledLogger,
 	}
 }
@@ -184,17 +185,17 @@ func (qrs *queuedRetrySender) send(req request) error {
 	// The grpc/http based receivers will cancel the request context after this function returns.
 	req.setContext(noCancellationContext{Context: req.context()})
 
-	span := trace.FromContext(req.context())
+	span := trace.SpanFromContext(req.context())
 	if !qrs.queue.Produce(req) {
 		qrs.logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
 			zap.Int("dropped_items", req.count()),
 		)
-		span.Annotate(qrs.traceAttributes, "Dropped item, sending_queue is full.")
+		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qrs.traceAttributes...))
 		return errSendingQueueIsFull
 	}
 
-	span.Annotate(qrs.traceAttributes, "Enqueued item.")
+	span.AddEvent("Enqueued item.", trace.WithAttributes(qrs.traceAttributes...))
 	return nil
 }
 
@@ -217,20 +218,28 @@ func (qrs *queuedRetrySender) shutdown() {
 
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
 type throttleRetry struct {
-	error
+	err   error
 	delay time.Duration
+}
+
+func (t throttleRetry) Error() string {
+	return "Throttle (" + t.delay.String() + "), error: " + t.err.Error()
+}
+
+func (t throttleRetry) Unwrap() error {
+	return t.err
 }
 
 // NewThrottleRetry creates a new throttle retry error.
 func NewThrottleRetry(err error, delay time.Duration) error {
-	return &throttleRetry{
-		error: err,
+	return throttleRetry{
+		err:   err,
 		delay: delay,
 	}
 }
 
 type retrySender struct {
-	traceAttribute trace.Attribute
+	traceAttribute attribute.KeyValue
 	cfg            RetrySettings
 	nextSender     requestSender
 	stopCh         chan struct{}
@@ -262,14 +271,12 @@ func (rs *retrySender) send(req request) error {
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
-	span := trace.FromContext(req.context())
+	span := trace.SpanFromContext(req.context())
 	retryNum := int64(0)
 	for {
-		span.Annotate(
-			[]trace.Attribute{
-				rs.traceAttribute,
-				trace.Int64Attribute("retry_num", retryNum)},
-			"Sending request.")
+		span.AddEvent(
+			"Sending request.",
+			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
 
 		err := rs.nextSender.send(req)
 		if err == nil {
@@ -302,17 +309,19 @@ func (rs *retrySender) send(req request) error {
 			return err
 		}
 
-		if throttleErr, isThrottle := err.(*throttleRetry); isThrottle {
+		throttleErr := throttleRetry{}
+		isThrottle := errors.As(err, &throttleErr)
+		if isThrottle {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
 		backoffDelayStr := backoffDelay.String()
-		span.Annotate(
-			[]trace.Attribute{
+		span.AddEvent(
+			"Exporting failed. Will retry the request after interval.",
+			trace.WithAttributes(
 				rs.traceAttribute,
-				trace.StringAttribute("interval", backoffDelayStr),
-				trace.StringAttribute("error", err.Error())},
-			"Exporting failed. Will retry the request after interval.")
+				attribute.String("interval", backoffDelayStr),
+				attribute.String("error", err.Error())))
 		rs.logger.Info(
 			"Exporting failed. Will retry the request after interval.",
 			zap.Error(err),

@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -94,12 +94,12 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetric
 	cpuTimeMetric := getMetric(t, metadata.Metrics.ProcessCPUTime.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessCPUTime.New(), cpuTimeMetric)
 	if startTime != 0 {
-		internal.AssertDoubleSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 0, "state", "user")
-	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 1, "state", "system")
+	internal.AssertSumMetricLabelHasValue(t, cpuTimeMetric, 0, "state", "user")
+	internal.AssertSumMetricLabelHasValue(t, cpuTimeMetric, 1, "state", "system")
 	if runtime.GOOS == "linux" {
-		internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 2, "state", "wait")
+		internal.AssertSumMetricLabelHasValue(t, cpuTimeMetric, 2, "state", "wait")
 	}
 }
 

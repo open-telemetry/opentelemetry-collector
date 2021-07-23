@@ -26,7 +26,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const (
@@ -51,12 +51,12 @@ func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 // matching metric type and field
 func validateMetrics(metric pdata.Metric) bool {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeDoubleGauge:
-		return metric.DoubleGauge().DataPoints().Len() != 0
+	case pdata.MetricDataTypeGauge:
+		return metric.Gauge().DataPoints().Len() != 0
 	case pdata.MetricDataTypeIntGauge:
 		return metric.IntGauge().DataPoints().Len() != 0
-	case pdata.MetricDataTypeDoubleSum:
-		return metric.DoubleSum().DataPoints().Len() != 0 && metric.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
+	case pdata.MetricDataTypeSum:
+		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeIntSum:
 		return metric.IntSum().DataPoints().Len() != 0 && metric.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeHistogram:

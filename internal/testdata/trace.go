@@ -17,7 +17,7 @@ package testdata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (
@@ -86,12 +86,12 @@ func GenerateTracesTwoSpansSameResourceOneDifferent() pdata.Traces {
 	return td
 }
 
-func GenerateTracesManySpansSameResource(spansCount int) pdata.Traces {
+func GenerateTracesManySpansSameResource(spanCount int) pdata.Traces {
 	td := GenerateTracesOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	rs0ils0.Spans().Resize(spansCount)
-	for i := 0; i < spansCount; i++ {
-		fillSpanOne(rs0ils0.Spans().At(i))
+	rs0ils0.Spans().EnsureCapacity(spanCount)
+	for i := 0; i < spanCount; i++ {
+		fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	}
 	return td
 }

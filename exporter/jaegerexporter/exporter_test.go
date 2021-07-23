@@ -35,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestNew(t *testing.T) {
@@ -147,7 +147,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesExporter(&tt.config, zap.NewNop())
+			got, err := newTracesExporter(&tt.config, componenttest.NewNopExporterCreateSettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, got)
 			t.Cleanup(func() {

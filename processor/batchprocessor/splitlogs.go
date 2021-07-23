@@ -15,7 +15,7 @@
 package batchprocessor
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // splitLogs removes logrecords from the input data and returns a new data of the specified size.
@@ -46,7 +46,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 			// If possible to move all metrics do that.
 			srcLogsLen := srcIlm.Logs().Len()
-			if size-totalCopiedLogs >= srcLogsLen {
+			if size >= srcLogsLen+totalCopiedLogs {
 				totalCopiedLogs += srcLogsLen
 				srcIlm.Logs().MoveAndAppendTo(destIlm.Logs())
 				return true

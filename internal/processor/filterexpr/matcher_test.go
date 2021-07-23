@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestCompileExprError(t *testing.T) {
@@ -52,12 +52,12 @@ func TestNilIntGauge(t *testing.T) {
 }
 
 func TestNilDoubleGauge(t *testing.T) {
-	dataType := pdata.MetricDataTypeDoubleGauge
+	dataType := pdata.MetricDataTypeGauge
 	testNilValue(t, dataType)
 }
 
-func TestNilDoubleSum(t *testing.T) {
-	dataType := pdata.MetricDataTypeDoubleSum
+func TestNilSum(t *testing.T) {
+	dataType := pdata.MetricDataTypeSum
 	testNilValue(t, dataType)
 }
 
@@ -104,20 +104,20 @@ func TestDoubleGaugeEmptyDataPoint(t *testing.T) {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	m.DoubleGauge().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	m.Gauge().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
 }
 
-func TestDoubleSumEmptyDataPoint(t *testing.T) {
+func TestSumEmptyDataPoint(t *testing.T) {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeDoubleSum)
-	m.DoubleSum().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeSum)
+	m.Sum().DataPoints().AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
@@ -214,13 +214,9 @@ func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
 	m.SetName("my.metric")
 	m.SetDataType(pdata.MetricDataTypeIntGauge)
 	dps := m.IntGauge().DataPoints()
-	dps.Resize(2)
 
-	pt1 := dps.At(0)
-	pt1.LabelsMap().Insert("foo", "bar")
-
-	pt2 := dps.At(1)
-	pt2.LabelsMap().Insert("baz", "glarch")
+	dps.AppendEmpty().LabelsMap().Insert("foo", "bar")
+	dps.AppendEmpty().LabelsMap().Insert("baz", "glarch")
 
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
@@ -240,29 +236,29 @@ func testMatchDoubleGauge(t *testing.T, metricName string) bool {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dps := m.DoubleGauge().DataPoints()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	dps := m.Gauge().DataPoints()
 	dps.AppendEmpty()
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	return match
 }
 
-func TestMatchDoubleSumByMetricName(t *testing.T) {
-	assert.True(t, matchDoubleSum(t, "my.metric"))
+func TestMatchSumByMetricName(t *testing.T) {
+	assert.True(t, matchSum(t, "my.metric"))
 }
 
-func TestNonMatchDoubleSumByMetricName(t *testing.T) {
-	assert.False(t, matchDoubleSum(t, "foo.metric"))
+func TestNonMatchSumByMetricName(t *testing.T) {
+	assert.False(t, matchSum(t, "foo.metric"))
 }
 
-func matchDoubleSum(t *testing.T, metricName string) bool {
+func matchSum(t *testing.T, metricName string) bool {
 	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeDoubleSum)
-	dps := m.DoubleSum().DataPoints()
+	m.SetDataType(pdata.MetricDataTypeSum)
+	dps := m.Sum().DataPoints()
 	dps.AppendEmpty()
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

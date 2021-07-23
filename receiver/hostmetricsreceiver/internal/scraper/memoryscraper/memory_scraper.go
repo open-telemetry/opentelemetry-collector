@@ -20,7 +20,7 @@ import (
 
 	"github.com/shirou/gopsutil/mem"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
@@ -49,8 +49,8 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.Resize(metricsLen)
-	initializeMemoryUsageMetric(metrics.At(0), now, memInfo)
+	metrics.EnsureCapacity(metricsLen)
+	initializeMemoryUsageMetric(metrics.AppendEmpty(), now, memInfo)
 	return metrics, nil
 }
 
@@ -58,7 +58,7 @@ func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.Timestamp, memIn
 	metadata.Metrics.SystemMemoryUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(memStatesLen)
+	idps.EnsureCapacity(memStatesLen)
 	appendMemoryUsageStateDataPoints(idps, now, memInfo)
 }
 

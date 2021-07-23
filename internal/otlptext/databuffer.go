@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -82,15 +82,15 @@ func (b *dataBuffer) logMetricDataPoints(m pdata.Metric) {
 		return
 	case pdata.MetricDataTypeIntGauge:
 		b.logIntDataPoints(m.IntGauge().DataPoints())
-	case pdata.MetricDataTypeDoubleGauge:
-		b.logDoubleDataPoints(m.DoubleGauge().DataPoints())
+	case pdata.MetricDataTypeGauge:
+		b.logDoubleDataPoints(m.Gauge().DataPoints())
 	case pdata.MetricDataTypeIntSum:
 		data := m.IntSum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logIntDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleSum:
-		data := m.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		data := m.Sum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleDataPoints(data.DataPoints())

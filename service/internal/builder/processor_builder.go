@@ -7,15 +7,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
 type builtProcessor struct {
-	dataType  config.DataType
-	cfg       config.Processor
-	factory   component.ProcessorFactory
-	buildInfo component.BuildInfo
+	dataType config.DataType
+	cfg      config.Processor
+	factory  component.ProcessorFactory
+	set      component.ProcessorCreateSettings
 
 	tc consumer.Traces
 	mc consumer.Metrics
@@ -24,8 +24,6 @@ type builtProcessor struct {
 	nextTc *builtProcessor
 	nextMc *builtProcessor
 	nextLc *builtProcessor
-
-	logger *zap.Logger
 
 	mutatesData bool
 	processor   component.Processor
@@ -84,16 +82,11 @@ func (btProc *builtProcessor) Reload(host component.Host, ctx context.Context, c
 
 	oldProcessor := btProc.processor
 
-	creationParams := component.ProcessorCreateSettings{
-		Logger:    btProc.logger,
-		BuildInfo: btProc.buildInfo,
-	}
-
 	var err error
 	switch btProc.dataType {
 	case config.TracesDataType:
 		var proc component.TracesProcessor
-		proc, err = btProc.factory.CreateTracesProcessor(ctx, creationParams, procCfg, btProc.nextTc)
+		proc, err = btProc.factory.CreateTracesProcessor(ctx, btProc.set, procCfg, btProc.nextTc)
 
 		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)
@@ -110,7 +103,7 @@ func (btProc *builtProcessor) Reload(host component.Host, ctx context.Context, c
 		}
 	case config.MetricsDataType:
 		var proc component.MetricsProcessor
-		proc, err = btProc.factory.CreateMetricsProcessor(ctx, creationParams, procCfg, btProc.nextMc)
+		proc, err = btProc.factory.CreateMetricsProcessor(ctx, btProc.set, procCfg, btProc.nextMc)
 
 		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)
@@ -127,7 +120,7 @@ func (btProc *builtProcessor) Reload(host component.Host, ctx context.Context, c
 		}
 	case config.LogsDataType:
 		var proc component.LogsProcessor
-		proc, err = btProc.factory.CreateLogsProcessor(ctx, creationParams, procCfg, btProc.nextLc)
+		proc, err = btProc.factory.CreateLogsProcessor(ctx, btProc.set, procCfg, btProc.nextLc)
 
 		if proc != nil && err == nil {
 			err = proc.Start(ctx, host)
@@ -156,8 +149,7 @@ func (btProc *builtProcessor) Reload(host component.Host, ctx context.Context, c
 }
 
 type processorsBuilder struct {
-	logger    *zap.Logger
-	buildInfo component.BuildInfo
+	set       component.ProcessorCreateSettings
 	config    *config.Config
 	factories map[config.Type]component.ProcessorFactory
 }
@@ -169,10 +161,11 @@ func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataT
 		procCfg := procBuilder.config.Processors[procId]
 		factory := procBuilder.factories[procCfg.ID().Type()]
 
-		componentLogger := procBuilder.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID()))
+		componentLogger := procBuilder.set.Logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID()))
 		creationParams := component.ProcessorCreateSettings{
-			Logger:    componentLogger,
-			BuildInfo: procBuilder.buildInfo,
+			Logger:         componentLogger,
+			BuildInfo:      procBuilder.set.BuildInfo,
+			TracerProvider: procBuilder.set.TracerProvider,
 		}
 
 		nextProc := &builtProcessor{}
@@ -184,7 +177,7 @@ func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataT
 			if proc != nil {
 				mutatesConsumedData = proc.Capabilities().MutatesData
 			}
-			btProc := &builtProcessor{config.TracesDataType, procCfg, factory, procBuilder.buildInfo, proc, nil, nil, nextProc, nil, nil, creationParams.Logger, mutatesConsumedData, proc, procId}
+			btProc := &builtProcessor{config.TracesDataType, procCfg, factory, procBuilder.set, proc, nil, nil, nextProc, nil, nil, mutatesConsumedData, proc, procId}
 			btProcs[i] = btProc
 		case config.MetricsDataType:
 			var proc component.MetricsProcessor
@@ -192,7 +185,7 @@ func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataT
 			if proc != nil {
 				mutatesConsumedData = proc.Capabilities().MutatesData
 			}
-			btProc := &builtProcessor{config.MetricsDataType, procCfg, factory, procBuilder.buildInfo, nil, proc, nil, nil, nextProc, nil, creationParams.Logger, mutatesConsumedData, proc, procId}
+			btProc := &builtProcessor{config.MetricsDataType, procCfg, factory, procBuilder.set, nil, proc, nil, nil, nextProc, nil, mutatesConsumedData, proc, procId}
 			btProcs[i] = btProc
 		case config.LogsDataType:
 			var proc component.LogsProcessor
@@ -200,7 +193,7 @@ func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataT
 			if proc != nil {
 				mutatesConsumedData = proc.Capabilities().MutatesData
 			}
-			btProc := &builtProcessor{config.LogsDataType, procCfg, factory, procBuilder.buildInfo, nil, nil, proc, nil, nil, nextProc, creationParams.Logger, mutatesConsumedData, proc, procId}
+			btProc := &builtProcessor{config.LogsDataType, procCfg, factory, procBuilder.set, nil, nil, proc, nil, nil, nextProc, mutatesConsumedData, proc, procId}
 			btProcs[i] = btProc
 		default:
 			return nil, fmt.Errorf("error creating processor %q , data type %s is not supported",
@@ -216,13 +209,12 @@ func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataT
 }
 
 func BuildProcessors(
-	logger *zap.Logger,
-	buildInfo component.BuildInfo,
+	set component.ProcessorCreateSettings,
 	config *config.Config,
 	factories map[config.Type]component.ProcessorFactory,
 	dataType config.DataType,
 	processors []config.ComponentID,
 ) (builtProcessors, error) {
-	procBuilder := &processorsBuilder{logger, buildInfo, config, factories}
+	procBuilder := &processorsBuilder{set, config, factories}
 	return procBuilder.buildProcessors(context.Background(), dataType, processors)
 }

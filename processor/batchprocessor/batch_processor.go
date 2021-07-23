@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // batch_processor is a component that accepts spans and metrics, places them
@@ -296,7 +296,7 @@ func (bm *batchMetrics) size() int {
 func (bm *batchMetrics) add(item interface{}) {
 	md := item.(pdata.Metrics)
 
-	_, newDataPointCount := md.MetricAndDataPointCount()
+	newDataPointCount := md.DataPointCount()
 	if newDataPointCount == 0 {
 		return
 	}

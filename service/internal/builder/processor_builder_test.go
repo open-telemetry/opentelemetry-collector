@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -104,15 +105,17 @@ func TestProcessorsReload(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	factories.Processors[exampleProcessorFactory.Type()] = exampleProcessorFactory
 	factories.Processors[rldExampleProcessorFactory.Type()] = rldExampleProcessorFactory
+	eSet := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
+	pSet := component.ProcessorCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
 	assert.NoError(t, err)
 	cfg, err := configtest.LoadConfigAndValidate("testdata/reload_pipelines_builder.yaml", factories)
 	// Load the config
 	require.Nil(t, err)
 
 	// BuildProcessors the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(eSet.Logger, eSet.TracerProvider, eSet.BuildInfo, cfg, factories.Exporters)
 	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	pipelineProcessors, err := BuildPipelines(pSet.Logger, pSet.TracerProvider, pSet.BuildInfo, cfg, allExporters, factories.Processors)
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
@@ -120,7 +123,7 @@ func TestProcessorsReload(t *testing.T) {
 	assert.NoError(t, pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost()))
 
 	oldExpProc := pipelineProcessors["traces"].btProcs[0].tc.(*exampleProcessor)
-	err = pipelineProcessors.ReloadProcessors(context.Background(), componenttest.NewNopHost(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	err = pipelineProcessors.ReloadProcessors(context.Background(), componenttest.NewNopHost(), pSet.Logger, pSet.TracerProvider, pSet.BuildInfo, cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
 	// Ensure pipeline has its fields correctly populated.
 	btProc := pipelineProcessors["traces"].btProcs[1]

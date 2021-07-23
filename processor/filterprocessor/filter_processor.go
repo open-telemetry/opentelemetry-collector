@@ -19,11 +19,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -113,8 +113,8 @@ func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filt
 	return nameMatcher, attributeMatcher, err
 }
 
-// ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
+// processMetrics filters the given metrics based off the filterMetricProcessor's filters.
+func (fmp *filterMetricProcessor) processMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
 	pdm.ResourceMetrics().RemoveIf(func(rm pdata.ResourceMetrics) bool {
 		keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
 		if !keepMetricsForResource {

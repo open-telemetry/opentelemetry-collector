@@ -28,9 +28,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const filteredMetric = "p0_metric_1"
@@ -57,9 +57,9 @@ func testMatchError(t *testing.T, mdType pdata.MetricDataType) {
 
 func TestExprProcessor(t *testing.T) {
 	testFilter(t, pdata.MetricDataTypeIntGauge)
-	testFilter(t, pdata.MetricDataTypeDoubleGauge)
+	testFilter(t, pdata.MetricDataTypeGauge)
 	testFilter(t, pdata.MetricDataTypeIntSum)
-	testFilter(t, pdata.MetricDataTypeDoubleSum)
+	testFilter(t, pdata.MetricDataTypeSum)
 	testFilter(t, pdata.MetricDataTypeIntHistogram)
 	testFilter(t, pdata.MetricDataTypeHistogram)
 }
@@ -95,8 +95,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
-						case pdata.MetricDataTypeDoubleGauge:
-							pts := metric.DoubleGauge().DataPoints()
+						case pdata.MetricDataTypeGauge:
+							pts := metric.Gauge().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
@@ -105,8 +105,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
-						case pdata.MetricDataTypeDoubleSum:
-							pts := metric.DoubleSum().DataPoints()
+						case pdata.MetricDataTypeSum:
+							pts := metric.Sum().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}

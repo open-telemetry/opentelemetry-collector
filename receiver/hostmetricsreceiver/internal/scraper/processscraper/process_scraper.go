@@ -24,8 +24,8 @@ import (
 	"github.com/shirou/gopsutil/process"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
@@ -98,9 +98,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
-	rms.Resize(len(metadata))
-	for i, md := range metadata {
-		rm := rms.At(i)
+	rms.EnsureCapacity(len(metadata))
+	for _, md := range metadata {
+		rm := rms.AppendEmpty()
 		md.initializeResource(rm.Resource())
 		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
@@ -181,17 +181,15 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 		return err
 	}
 
-	startIdx := metrics.Len()
-	metrics.Resize(startIdx + cpuMetricsLen)
-	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times)
+	initializeCPUTimeMetric(metrics.AppendEmpty(), startTime, now, times)
 	return nil
 }
 
 func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat) {
 	metadata.Metrics.ProcessCPUTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
-	ddps.Resize(cpuStatesLen)
+	ddps := metric.Sum().DataPoints()
+	ddps.EnsureCapacity(cpuStatesLen)
 	appendCPUTimeStateDataPoints(ddps, startTime, now, times)
 }
 
@@ -201,10 +199,8 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 		return err
 	}
 
-	startIdx := metrics.Len()
-	metrics.Resize(startIdx + memoryMetricsLen)
-	initializeMemoryUsageMetric(metrics.At(startIdx+0), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS))
-	initializeMemoryUsageMetric(metrics.At(startIdx+1), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS))
+	initializeMemoryUsageMetric(metrics.AppendEmpty(), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS))
+	initializeMemoryUsageMetric(metrics.AppendEmpty(), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS))
 	return nil
 }
 
@@ -224,9 +220,7 @@ func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata
 		return err
 	}
 
-	startIdx := metrics.Len()
-	metrics.Resize(startIdx + diskMetricsLen)
-	initializeDiskIOMetric(metrics.At(startIdx), startTime, now, io)
+	initializeDiskIOMetric(metrics.AppendEmpty(), startTime, now, io)
 	return nil
 }
 
@@ -234,9 +228,8 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 	metadata.Metrics.ProcessDiskIo.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(2)
-	initializeDiskIODataPoint(idps.At(0), startTime, now, int64(io.ReadBytes), metadata.LabelProcessDirection.Read)
-	initializeDiskIODataPoint(idps.At(1), startTime, now, int64(io.WriteBytes), metadata.LabelProcessDirection.Write)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.LabelProcessDirection.Read)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.LabelProcessDirection.Write)
 }
 
 func initializeDiskIODataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {

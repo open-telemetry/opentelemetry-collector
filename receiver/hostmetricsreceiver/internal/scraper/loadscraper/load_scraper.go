@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
@@ -63,17 +63,17 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.Resize(metricsLen)
+	metrics.EnsureCapacity(metricsLen)
 
-	initializeLoadMetric(metrics.At(0), metadata.Metrics.SystemCPULoadAverage1m, now, avgLoadValues.Load1)
-	initializeLoadMetric(metrics.At(1), metadata.Metrics.SystemCPULoadAverage5m, now, avgLoadValues.Load5)
-	initializeLoadMetric(metrics.At(2), metadata.Metrics.SystemCPULoadAverage15m, now, avgLoadValues.Load15)
+	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage1m, now, avgLoadValues.Load1)
+	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage5m, now, avgLoadValues.Load5)
+	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage15m, now, avgLoadValues.Load15)
 	return metrics, nil
 }
 
 func initializeLoadMetric(metric pdata.Metric, metricDescriptor metadata.MetricIntf, now pdata.Timestamp, value float64) {
 	metricDescriptor.Init(metric)
-	dp := metric.DoubleGauge().DataPoints().AppendEmpty()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
 	dp.SetValue(value)
 }

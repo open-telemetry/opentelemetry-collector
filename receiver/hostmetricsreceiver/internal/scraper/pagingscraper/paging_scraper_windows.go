@@ -24,7 +24,7 @@ import (
 	"github.com/shirou/gopsutil/host"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -103,8 +103,8 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 	}
 
 	idx := metrics.Len()
-	metrics.Resize(idx + pagingUsageMetricsLen)
-	s.initializePagingUsageMetric(metrics.At(idx), now, pageFiles)
+	metrics.EnsureCapacity(idx + pagingUsageMetricsLen)
+	s.initializePagingUsageMetric(metrics.AppendEmpty(), now, pageFiles)
 	return nil
 }
 
@@ -112,13 +112,11 @@ func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Tim
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(2 * len(pageFiles))
+	idps.EnsureCapacity(2 * len(pageFiles))
 
-	idx := 0
 	for _, pageFile := range pageFiles {
-		initializePagingUsageDataPoint(idps.At(idx+0), now, pageFile.name, metadata.LabelPagingState.Used, int64(pageFile.usedPages*s.pageSize))
-		initializePagingUsageDataPoint(idps.At(idx+1), now, pageFile.name, metadata.LabelPagingState.Free, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
-		idx += 2
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.name, metadata.LabelPagingState.Used, int64(pageFile.usedPages*s.pageSize))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.name, metadata.LabelPagingState.Free, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
 	}
 }
 
@@ -150,8 +148,8 @@ func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlic
 
 	if len(memoryCounterValues) > 0 {
 		idx := metrics.Len()
-		metrics.Resize(idx + pagingMetricsLen)
-		initializePagingOperationsMetric(metrics.At(idx), s.startTime, now, memoryCounterValues[0])
+		metrics.EnsureCapacity(idx + pagingMetricsLen)
+		initializePagingOperationsMetric(metrics.AppendEmpty(), s.startTime, now, memoryCounterValues[0])
 	}
 
 	return nil
@@ -161,9 +159,9 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 	metadata.Metrics.SystemPagingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(2)
-	initializePagingOperationsDataPoint(idps.At(0), startTime, now, metadata.LabelPagingDirection.PageIn, memoryCounterValues.Values[pageReadsPerSec])
-	initializePagingOperationsDataPoint(idps.At(1), startTime, now, metadata.LabelPagingDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
+	idps.EnsureCapacity(2)
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelPagingDirection.PageIn, memoryCounterValues.Values[pageReadsPerSec])
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelPagingDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, directionLabel string, value int64) {

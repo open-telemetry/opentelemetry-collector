@@ -25,10 +25,10 @@ import (
 	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // DataProvider defines the interface for generators of test data used to drive various end-to-end tests.
@@ -67,7 +67,7 @@ func (dp *perfTestDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *ato
 func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	traceData := pdata.NewTraces()
 	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
-	spans.Resize(dp.options.ItemsPerBatch)
+	spans.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	traceID := dp.traceIDSequence.Inc()
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
@@ -77,7 +77,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 		spanID := dp.dataItemsGenerated.Inc()
 
-		span := spans.At(i)
+		span := spans.AppendEmpty()
 
 		// Create a span.
 		span.SetTraceID(idutils.UInt64ToTraceID(0, traceID))
@@ -111,10 +111,10 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		}
 	}
 	metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-	metrics.Resize(dp.options.ItemsPerBatch)
+	metrics.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
-		metric := metrics.At(i)
+		metric := metrics.AppendEmpty()
 		metric.SetName("load_generator_" + strconv.Itoa(i))
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
@@ -124,9 +124,9 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 		dps := metric.IntGauge().DataPoints()
 		// Generate data points for the metric.
-		dps.Resize(dataPointsPerMetric)
+		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
-			dataPoint := dps.At(j)
+			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))
@@ -150,7 +150,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 		}
 	}
 	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
-	logRecords.Resize(dp.options.ItemsPerBatch)
+	logRecords.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	now := pdata.TimestampFromTime(time.Now())
 
@@ -158,7 +158,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
-		record := logRecords.At(i)
+		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(pdata.SeverityNumberINFO3)
 		record.SetSeverityText("INFO3")
 		record.SetName("load_generator_" + strconv.Itoa(i))
@@ -237,8 +237,7 @@ func (dp *goldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	}
 	pdm := dp.metricsGenerated[dp.metricsIndex]
 	dp.metricsIndex++
-	_, dpCount := pdm.MetricAndDataPointCount()
-	dp.dataItemsGenerated.Add(uint64(dpCount))
+	dp.dataItemsGenerated.Add(uint64(pdm.DataPointCount()))
 	return pdm, false
 }
 
@@ -276,17 +275,17 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	// Load the message from the file and count the data points.
 	switch dataType {
 	case config.TracesDataType:
-		if dp.traces, err = otlp.NewJSONTracesUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.traces, err = otlp.NewJSONTracesUnmarshaler().UnmarshalTraces(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
 	case config.MetricsDataType:
-		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.metrics, err = otlp.NewJSONMetricsUnmarshaler().UnmarshalMetrics(buf); err != nil {
 			return nil, err
 		}
-		_, dp.ItemsPerBatch = dp.metrics.MetricAndDataPointCount()
+		dp.ItemsPerBatch = dp.metrics.DataPointCount()
 	case config.LogsDataType:
-		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().Unmarshal(buf); err != nil {
+		if dp.logs, err = otlp.NewJSONLogsUnmarshaler().UnmarshalLogs(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.logs.LogRecordCount()

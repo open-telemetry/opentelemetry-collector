@@ -32,18 +32,18 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
 // newTracesExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func newTracesExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
-	s := newProtoGRPCSender(cfg, logger)
+func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	s := newProtoGRPCSender(cfg, set.Logger)
 	return exporterhelper.NewTracesExporter(
-		cfg, logger, s.pushTraces,
+		cfg, set, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithShutdown(s.shutdown),

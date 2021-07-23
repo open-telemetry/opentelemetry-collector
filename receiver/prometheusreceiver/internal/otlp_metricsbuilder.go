@@ -21,7 +21,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {
@@ -60,10 +60,10 @@ func convToPdataMetricType(metricType textparse.MetricType) pdata.MetricDataType
 	switch metricType {
 	case textparse.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
-		return pdata.MetricDataTypeDoubleSum
+		return pdata.MetricDataTypeSum
 	// textparse.MetricTypeUnknown is converted to gauge by default to fix Prometheus untyped metrics from being dropped
 	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
-		return pdata.MetricDataTypeDoubleGauge
+		return pdata.MetricDataTypeGauge
 	case textparse.MetricTypeHistogram:
 		return pdata.MetricDataTypeHistogram
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation

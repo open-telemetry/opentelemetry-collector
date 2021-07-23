@@ -17,7 +17,7 @@ package goldendataset
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // GenerateMetrics takes the filename of a PICT-generated file, walks through all of the rows in the PICT
@@ -73,12 +73,12 @@ func pictToCfg(inputs PICTMetricInputs) MetricsCfg {
 		cfg.MetricDescriptorType = pdata.MetricDataTypeIntSum
 		cfg.IsMonotonicSum = false
 	case MetricTypeDoubleGauge:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
+		cfg.MetricDescriptorType = pdata.MetricDataTypeGauge
 	case MetricTypeMonotonicDoubleSum:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
 		cfg.IsMonotonicSum = true
 	case MetricTypeNonMonotonicDoubleSum:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
 		cfg.IsMonotonicSum = false
 	case MetricTypeIntHistogram:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeIntHistogram

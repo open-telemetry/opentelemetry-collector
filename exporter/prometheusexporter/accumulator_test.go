@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestInvalidDataType(t *testing.T) {
@@ -52,12 +52,12 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleSum",
+			name: "Sum",
 			fillMetric: func(ts time.Time, metric pdata.Metric) {
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -138,13 +138,13 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleGauge",
+			name: "Gauge",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metric.SetDataType(pdata.MetricDataTypeGauge)
 				metric.SetDescription("test description")
-				dp := metric.DoubleGauge().DataPoints().AppendEmpty()
+				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetValue(v)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -168,15 +168,15 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleSum",
+			name: "Sum",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetIsMonotonic(false)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(false)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(v)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -200,15 +200,15 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "MonotonicDoubleSum",
+			name: "MonotonicSum",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().SetIsMonotonic(true)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(true)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.DoubleSum().DataPoints().AppendEmpty()
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetValue(v)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
@@ -339,18 +339,18 @@ func getMerticProperties(metric pdata.Metric) (
 		value = float64(metric.IntSum().DataPoints().At(0).Value())
 		temporality = metric.IntSum().AggregationTemporality()
 		isMonotonic = metric.IntSum().IsMonotonic()
-	case pdata.MetricDataTypeDoubleGauge:
-		labels = metric.DoubleGauge().DataPoints().At(0).LabelsMap()
-		ts = metric.DoubleGauge().DataPoints().At(0).Timestamp().AsTime()
-		value = metric.DoubleGauge().DataPoints().At(0).Value()
+	case pdata.MetricDataTypeGauge:
+		labels = metric.Gauge().DataPoints().At(0).LabelsMap()
+		ts = metric.Gauge().DataPoints().At(0).Timestamp().AsTime()
+		value = metric.Gauge().DataPoints().At(0).Value()
 		temporality = pdata.AggregationTemporalityUnspecified
 		isMonotonic = false
-	case pdata.MetricDataTypeDoubleSum:
-		labels = metric.DoubleSum().DataPoints().At(0).LabelsMap()
-		ts = metric.DoubleSum().DataPoints().At(0).Timestamp().AsTime()
-		value = metric.DoubleSum().DataPoints().At(0).Value()
-		temporality = metric.DoubleSum().AggregationTemporality()
-		isMonotonic = metric.DoubleSum().IsMonotonic()
+	case pdata.MetricDataTypeSum:
+		labels = metric.Sum().DataPoints().At(0).LabelsMap()
+		ts = metric.Sum().DataPoints().At(0).Timestamp().AsTime()
+		value = metric.Sum().DataPoints().At(0).Value()
+		temporality = metric.Sum().AggregationTemporality()
+		isMonotonic = metric.Sum().IsMonotonic()
 	case pdata.MetricDataTypeIntHistogram:
 		labels = metric.IntHistogram().DataPoints().At(0).LabelsMap()
 		ts = metric.IntHistogram().DataPoints().At(0).Timestamp().AsTime()

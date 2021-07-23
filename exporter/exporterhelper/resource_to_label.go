@@ -15,7 +15,7 @@
 package exporterhelper
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -73,12 +73,12 @@ func addLabelsToMetric(metric *pdata.Metric, labelMap pdata.StringMap) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		addLabelsToIntDataPoints(metric.IntGauge().DataPoints(), labelMap)
-	case pdata.MetricDataTypeDoubleGauge:
-		addLabelsToDoubleDataPoints(metric.DoubleGauge().DataPoints(), labelMap)
+	case pdata.MetricDataTypeGauge:
+		addLabelsToDoubleDataPoints(metric.Gauge().DataPoints(), labelMap)
 	case pdata.MetricDataTypeIntSum:
 		addLabelsToIntDataPoints(metric.IntSum().DataPoints(), labelMap)
-	case pdata.MetricDataTypeDoubleSum:
-		addLabelsToDoubleDataPoints(metric.DoubleSum().DataPoints(), labelMap)
+	case pdata.MetricDataTypeSum:
+		addLabelsToDoubleDataPoints(metric.Sum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeIntHistogram:
 		addLabelsToIntHistogramDataPoints(metric.IntHistogram().DataPoints(), labelMap)
 	case pdata.MetricDataTypeHistogram:

@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -408,7 +408,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 `,
 			}
 
-			agentProc := &testbed.ChildProcess{}
+			agentProc := testbed.NewChildProcessCollector()
 			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)

@@ -15,7 +15,9 @@
 package zipkinv2
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -25,17 +27,13 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
-
-var _ pdata.ToTracesTranslator = (*ToTranslator)(nil)
 
 // ToTranslator converts from Zipkin data model to pdata.
 type ToTranslator struct {
@@ -43,13 +41,8 @@ type ToTranslator struct {
 	ParseStringTags bool
 }
 
-// ToTraces translates Zipkin v2 spans into internal trace data.
-func (t ToTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
-	zipkinSpans, ok := src.([]*zipkinmodel.SpanModel)
-	if !ok {
-		return pdata.Traces{}, pdata.NewErrIncompatibleType([]*zipkinmodel.SpanModel{}, src)
-	}
-
+// ToTraces translates Zipkin v2 spans into pdata.Traces.
+func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil
@@ -60,9 +53,7 @@ func (t ToTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
 	rss := traceData.ResourceSpans()
 	prevServiceName := ""
 	prevInstrLibName := ""
-	rsCount := rss.Len()
-	ilsCount := 0
-	spanCount := 0
+	ilsIsNew := true
 	var curRscSpans pdata.ResourceSpans
 	var curILSpans pdata.InstrumentationLibrarySpans
 	var curSpans pdata.SpanSlice
@@ -74,29 +65,23 @@ func (t ToTranslator) ToTraces(src interface{}) (pdata.Traces, error) {
 		localServiceName := extractLocalServiceName(zspan)
 		if localServiceName != prevServiceName {
 			prevServiceName = localServiceName
-			rss.Resize(rsCount + 1)
-			curRscSpans = rss.At(rsCount)
-			rsCount++
+			curRscSpans = rss.AppendEmpty()
 			populateResourceFromZipkinSpan(tags, localServiceName, curRscSpans.Resource())
 			prevInstrLibName = ""
-			ilsCount = 0
+			ilsIsNew = true
 		}
 		instrLibName := extractInstrumentationLibrary(zspan)
-		if instrLibName != prevInstrLibName || ilsCount == 0 {
+		if instrLibName != prevInstrLibName || ilsIsNew {
 			prevInstrLibName = instrLibName
-			curRscSpans.InstrumentationLibrarySpans().Resize(ilsCount + 1)
-			curILSpans = curRscSpans.InstrumentationLibrarySpans().At(ilsCount)
-			ilsCount++
+			curILSpans = curRscSpans.InstrumentationLibrarySpans().AppendEmpty()
+			ilsIsNew = false
 			populateILFromZipkinSpan(tags, instrLibName, curILSpans.InstrumentationLibrary())
-			spanCount = 0
 			curSpans = curILSpans.Spans()
 		}
-		curSpans.Resize(spanCount + 1)
-		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount), t.ParseStringTags)
+		err := zSpanToInternal(zspan, tags, curSpans.AppendEmpty(), t.ParseStringTags)
 		if err != nil {
 			return traceData, err
 		}
-		spanCount++
 	}
 
 	return traceData, nil
@@ -172,7 +157,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 
 func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 	if value, ok := tags[tracetranslator.TagStatusCode]; ok {
-		status.SetCode(pdata.StatusCode(otlptrace.Status_StatusCode_value[value]))
+		status.SetCode(pdata.StatusCode(statusCodeValue[value]))
 		delete(tags, tracetranslator.TagStatusCode)
 		if value, ok := tags[tracetranslator.TagStatusMsg]; ok {
 			status.SetMessage(value)
@@ -210,7 +195,6 @@ func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) pdata.S
 }
 
 func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
-	index := 0
 	for i := 0; i < 128; i++ {
 		key := fmt.Sprintf("otlp.link.%d", i)
 		val, ok := tags[key]
@@ -224,25 +208,23 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if partCnt < 5 {
 			continue
 		}
-		dest.Resize(index + 1)
-		link := dest.At(index)
-		index++
+		link := dest.AppendEmpty()
 
 		// Convert trace id.
-		rawTrace := data.TraceID{}
-		errTrace := rawTrace.UnmarshalJSON([]byte(parts[0]))
+		rawTrace := [16]byte{}
+		errTrace := unmarshalJSON(rawTrace[:], []byte(parts[0]))
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.NewTraceID(rawTrace.Bytes()))
+		link.SetTraceID(pdata.NewTraceID(rawTrace))
 
 		// Convert span id.
-		rawSpan := data.SpanID{}
-		errSpan := rawSpan.UnmarshalJSON([]byte(parts[1]))
+		rawSpan := [8]byte{}
+		errSpan := unmarshalJSON(rawSpan[:], []byte(parts[1]))
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.NewSpanID(rawSpan.Bytes()))
+		link.SetSpanID(pdata.NewSpanID(rawSpan))
 
 		link.SetTraceState(pdata.TraceState(parts[2]))
 
@@ -271,9 +253,9 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 }
 
 func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlice) error {
-	events.Resize(len(zspan.Annotations))
-	for ix, anno := range zspan.Annotations {
-		event := events.At(ix)
+	events.EnsureCapacity(len(zspan.Annotations))
+	for _, anno := range zspan.Annotations {
+		event := events.AppendEmpty()
 		event.SetTimestamp(pdata.TimestampFromTime(anno.Timestamp))
 
 		parts := strings.Split(anno.Value, "|")
@@ -464,4 +446,33 @@ func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pd
 		dest.SetStartTimestamp(pdata.TimestampFromTime(zspan.Timestamp))
 		dest.SetEndTimestamp(pdata.TimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
 	}
+}
+
+// unmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
+// TODO: Find a way to avoid this duplicate code. Consider to expose this in model/pdata.
+func unmarshalJSON(dst []byte, src []byte) error {
+	if l := len(src); l >= 2 && src[0] == '"' && src[l-1] == '"' {
+		src = src[1 : l-1]
+	}
+	nLen := len(src)
+	if nLen == 0 {
+		return nil
+	}
+
+	if len(dst) != hex.DecodedLen(nLen) {
+		return errors.New("invalid length for ID")
+	}
+
+	_, err := hex.Decode(dst, src)
+	if err != nil {
+		return fmt.Errorf("cannot unmarshal ID from string '%s': %w", string(src), err)
+	}
+	return nil
+}
+
+// TODO: Find a way to avoid this duplicate code. Consider to expose this in model/pdata.
+var statusCodeValue = map[string]int32{
+	"STATUS_CODE_UNSET": 0,
+	"STATUS_CODE_OK":    1,
+	"STATUS_CODE_ERROR": 2,
 }

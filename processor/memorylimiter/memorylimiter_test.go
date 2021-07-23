@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/iruntime"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -122,7 +122,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
-		ml,
+		ml.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
 	require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
-		ml,
+		ml.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
 	require.NoError(t, err)
@@ -264,7 +264,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
-		ml,
+		ml.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
 	require.NoError(t, err)
@@ -330,7 +330,7 @@ func TestGetDecision(t *testing.T) {
 	t.Cleanup(func() {
 		getMemoryFn = iruntime.TotalMemory
 	})
-	getMemoryFn = func() (int64, error) {
+	getMemoryFn = func() (uint64, error) {
 		return 100 * mibBytes, nil
 	}
 	t.Run("percentage_limit", func(t *testing.T) {

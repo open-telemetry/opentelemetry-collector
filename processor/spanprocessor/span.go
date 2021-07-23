@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type spanProcessor struct {
@@ -79,7 +79,7 @@ func newSpanProcessor(config Config) (*spanProcessor, error) {
 	return sp, nil
 }
 
-func (sp *spanProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (sp *spanProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)

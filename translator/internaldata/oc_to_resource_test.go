@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/occonventions"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestOcNodeResourceToInternal(t *testing.T) {

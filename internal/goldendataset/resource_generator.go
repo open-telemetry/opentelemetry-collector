@@ -15,7 +15,7 @@
 package goldendataset
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -118,9 +118,9 @@ func appendFassAttributes(attrMap pdata.AttributeMap) {
 func appendExecAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeProcessExecutableName, "otelcol")
 	parts := pdata.NewAttributeValueArray()
-	parts.ArrayVal().Append(pdata.NewAttributeValueString("otelcol"))
-	parts.ArrayVal().Append(pdata.NewAttributeValueString("--config=/etc/otel-collector-config.yaml"))
-	parts.ArrayVal().Append(pdata.NewAttributeValueString("--mem-ballast-size-mib=683"))
+	parts.ArrayVal().AppendEmpty().SetStringVal("otelcol")
+	parts.ArrayVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
+	parts.ArrayVal().AppendEmpty().SetStringVal("--mem-ballast-size-mib=683")
 	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)
 	attrMap.UpsertString(conventions.AttributeProcessExecutablePath, "/usr/local/bin/otelcol")
 	attrMap.UpsertInt(conventions.AttributeProcessID, 2020)

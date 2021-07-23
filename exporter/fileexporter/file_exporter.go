@@ -22,8 +22,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/otlp"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON.
@@ -44,7 +44,7 @@ func (e *fileExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	buf, err := tracesMarshaler.Marshal(td)
+	buf, err := tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
-	buf, err := metricsMarshaler.Marshal(md)
+	buf, err := metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	buf, err := logsMarshaler.Marshal(ld)
+	buf, err := logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
 	}

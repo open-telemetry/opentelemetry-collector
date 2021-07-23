@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestGetBoundaryEquivalence(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGetBoundaryEquivalence(t *testing.T) {
 		{
 			name:   "other data types without matches",
 			mtype:  metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			pmtype: pdata.MetricDataTypeDoubleGauge,
+			pmtype: pdata.MetricDataTypeGauge,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -161,7 +161,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 		},
 		{
 			name:  "other data types without matches",
-			mtype: pdata.MetricDataTypeDoubleGauge,
+			mtype: pdata.MetricDataTypeGauge,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -194,17 +194,17 @@ func TestConvToPdataMetricType(t *testing.T) {
 		{
 			name:  "textparse.counter",
 			mtype: textparse.MetricTypeCounter,
-			want:  pdata.MetricDataTypeDoubleSum,
+			want:  pdata.MetricDataTypeSum,
 		},
 		{
 			name:  "textparse.gauge",
 			mtype: textparse.MetricTypeCounter,
-			want:  pdata.MetricDataTypeDoubleSum,
+			want:  pdata.MetricDataTypeSum,
 		},
 		{
 			name:  "textparse.unknown",
 			mtype: textparse.MetricTypeUnknown,
-			want:  pdata.MetricDataTypeDoubleGauge,
+			want:  pdata.MetricDataTypeGauge,
 		},
 		{
 			name:  "textparse.histogram",
@@ -250,8 +250,8 @@ func TestIsusefulLabelPdata(t *testing.T) {
 				model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel,
 			},
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
-				pdata.MetricDataTypeDoubleGauge,
+				pdata.MetricDataTypeSum,
+				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeSummary,
@@ -271,8 +271,8 @@ func TestIsusefulLabelPdata(t *testing.T) {
 		{
 			name: `bucket label with non "int_histogram", "histogram":: useful`,
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
-				pdata.MetricDataTypeDoubleGauge,
+				pdata.MetricDataTypeSum,
+				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeSummary,
 				pdata.MetricDataTypeIntSum,
 				pdata.MetricDataTypeNone,
@@ -294,8 +294,8 @@ func TestIsusefulLabelPdata(t *testing.T) {
 			name:      `quantile label with non-"summary": useful`,
 			labelKeys: []string{model.QuantileLabel},
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
-				pdata.MetricDataTypeDoubleGauge,
+				pdata.MetricDataTypeSum,
+				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeIntSum,
@@ -309,8 +309,8 @@ func TestIsusefulLabelPdata(t *testing.T) {
 			name:      `any other label with any type:: useful`,
 			labelKeys: []string{"any_label", "foo.bar"},
 			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeDoubleSum,
-				pdata.MetricDataTypeDoubleGauge,
+				pdata.MetricDataTypeSum,
+				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeIntHistogram,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeSummary,

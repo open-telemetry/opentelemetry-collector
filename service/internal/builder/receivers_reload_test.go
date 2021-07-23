@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const expRcvType = "example"
@@ -198,13 +199,16 @@ func testReloadReceivers(t *testing.T, test testCase) {
 
 	cfg, err := configtest.LoadConfigAndValidate("testdata/reload_receiver.yaml", factories)
 	require.NoError(t, err)
+	rSet := component.ReceiverCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
+	pSet := component.ProcessorCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
+	eSet := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
 
 	// Build the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(eSet.Logger, eSet.TracerProvider, eSet.BuildInfo, cfg, factories.Exporters)
 	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	pipelineProcessors, err := BuildPipelines(pSet.Logger, pSet.TracerProvider, pSet.BuildInfo, cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
-	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
+	receivers, err := BuildReceivers(rSet.Logger, rSet.TracerProvider, rSet.BuildInfo, cfg, pipelineProcessors, factories.Receivers)
 	assert.NoError(t, err)
 
 	err = allExporters.StartAll(context.Background(), componenttest.NewNopHost())
@@ -221,11 +225,11 @@ func testReloadReceivers(t *testing.T, test testCase) {
 
 	cfg, err = configtest.LoadConfigAndValidate("testdata/reload_receiver.yaml", factories)
 	require.NoError(t, err)
-	err = allExporters.ReloadExporters(context.Background(), zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters, componenttest.NewNopHost())
+	err = allExporters.ReloadExporters(context.Background(), eSet.Logger, eSet.TracerProvider, eSet.BuildInfo, cfg, factories.Exporters, componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = pipelineProcessors.ReloadProcessors(context.Background(), componenttest.NewNopHost(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	err = pipelineProcessors.ReloadProcessors(context.Background(), componenttest.NewNopHost(), pSet.Logger, pSet.TracerProvider, pSet.BuildInfo, cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
-	err = receivers.ReloadReceivers(context.Background(), zap.NewNop(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers, componenttest.NewNopHost())
+	err = receivers.ReloadReceivers(context.Background(), rSet.TracerProvider, rSet.Logger, rSet.BuildInfo, cfg, pipelineProcessors, factories.Receivers, componenttest.NewNopHost())
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
 

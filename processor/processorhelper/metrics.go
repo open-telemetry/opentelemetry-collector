@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -26,15 +26,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// MProcessor is a helper interface that allows avoiding implementing all functions in MetricsProcessor by using NewTracesProcessor.
-type MProcessor interface {
-	// ProcessMetrics is a helper function that processes the incoming data and returns the data to be sent to the next component.
-	// If error is returned then returned data are ignored. It MUST not call the next component.
-	ProcessMetrics(context.Context, pdata.Metrics) (pdata.Metrics, error)
-}
+// ProcessMetricsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
+// If error is returned then returned data are ignored. It MUST not call the next component.
+type ProcessMetricsFunc func(context.Context, pdata.Metrics) (pdata.Metrics, error)
 
 type metricsProcessor struct {
 	component.Component
@@ -46,25 +43,25 @@ type metricsProcessor struct {
 func NewMetricsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
-	processor MProcessor,
+	metricsFunc ProcessMetricsFunc,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
-	if processor == nil {
-		return nil, errors.New("nil processor")
+	if metricsFunc == nil {
+		return nil, errors.New("nil metricsFunc")
 	}
 
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	traceAttributes := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(cfg.ID())
 	bs := fromOptions(options)
 	metricsConsumer, err := consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
-		span := trace.FromContext(ctx)
-		span.Annotate(traceAttributes, "Start processing.")
+		span := trace.SpanFromContext(ctx)
+		span.AddEvent("Start processing.", eventOptions)
 		var err error
-		md, err = processor.ProcessMetrics(ctx, md)
-		span.Annotate(traceAttributes, "End processing.")
+		md, err = metricsFunc(ctx, md)
+		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
 			if errors.Is(err, ErrSkipProcessingData) {
 				return nil

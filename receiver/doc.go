@@ -14,9 +14,5 @@
 
 // Package receiver contains implementations of Receiver components.
 //
-// To implement a custom receiver you will need to implement component.ReceiverFactory
-// interface and component.Receiver interface.
-//
-// To make the custom receiver part of the Collector build the factory must be added
-// to defaultcomponents.Components() function.
+// A receiver must be added as a default component to be included in the collector.
 package receiver

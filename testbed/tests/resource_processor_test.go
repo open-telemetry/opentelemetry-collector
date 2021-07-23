@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
@@ -121,7 +121,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 			require.NoError(t, err)
 
-			agentProc := &testbed.ChildProcess{}
+			agentProc := testbed.NewChildProcessCollector()
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}

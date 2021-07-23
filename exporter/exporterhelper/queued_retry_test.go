@@ -209,6 +209,14 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	require.Zero(t, be.qrSender.queue.Size())
 }
 
+type wrappedError struct {
+	error
+}
+
+func (e wrappedError) Unwrap() error {
+	return e.error
+}
+
 func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
@@ -222,7 +230,8 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	mockR := newMockRequest(context.Background(), 2, NewThrottleRetry(errors.New("throttle error"), 100*time.Millisecond))
+	retry := NewThrottleRetry(errors.New("throttle error"), 100*time.Millisecond)
+	mockR := newMockRequest(context.Background(), 2, wrappedError{retry})
 	start := time.Now()
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.

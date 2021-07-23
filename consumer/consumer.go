@@ -17,7 +17,7 @@ package consumer
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Capabilities describes the capabilities of a Processor.

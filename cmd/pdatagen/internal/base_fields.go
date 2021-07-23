@@ -53,6 +53,18 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v
 }`
 
+const accessorsPrimitiveAsDoubleTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return (*ms.orig).GetAsDouble()
+}
+
+// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+	(*ms.orig).${originFieldName} = &${originFullName}_AsDouble{
+		AsDouble: v,
+	}
+}`
+
 const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
 	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
@@ -393,3 +405,60 @@ func (one oneofField) generateCopyToValue(sb *strings.Builder) {
 }
 
 var _ baseField = (*oneofField)(nil)
+
+type primitiveAsDoubleField struct {
+	originFullName  string
+	fieldName       string
+	originFieldName string
+	returnType      string
+	defaultVal      string
+	testVal         string
+}
+
+func (pf *primitiveAsDoubleField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsPrimitiveAsDoubleTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return pf.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(pf.fieldName)
+		case "returnType":
+			return pf.returnType
+		case "originFieldName":
+			return pf.originFieldName
+		case "originFullName":
+			return pf.originFullName
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (pf *primitiveAsDoubleField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "defaultVal":
+			return pf.defaultVal
+		case "fieldName":
+			return pf.fieldName
+		case "testValue":
+			return pf.testVal
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (pf *primitiveAsDoubleField) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\ttv.Set" + pf.fieldName + "(" + pf.testVal + ")")
+}
+
+func (pf *primitiveAsDoubleField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())")
+}
+
+var _ baseField = (*primitiveField)(nil)

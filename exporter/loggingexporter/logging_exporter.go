@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/otlptext"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type loggingExporter struct {
@@ -44,7 +44,7 @@ func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 		return nil
 	}
 
-	buf, err := s.tracesMarshaler.Marshal(td)
+	buf, err := s.tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error
 		return nil
 	}
 
-	buf, err := s.metricsMarshaler.Marshal(md)
+	buf, err := s.metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
 		return nil
 	}
 
-	buf, err := s.logsMarshaler.Marshal(ld)
+	buf, err := s.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
 	}
@@ -94,11 +94,11 @@ func newLoggingExporter(level string, logger *zap.Logger) *loggingExporter {
 
 // newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTracesExporter(config config.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
+func newTracesExporter(config config.Exporter, level string, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewTracesExporter(
 		config,
-		logger,
+		set,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
@@ -111,11 +111,11 @@ func newTracesExporter(config config.Exporter, level string, logger *zap.Logger)
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
+func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
 	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewMetricsExporter(
 		config,
-		logger,
+		set,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
@@ -128,11 +128,11 @@ func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
+func newLogsExporter(config config.Exporter, level string, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
 	s := newLoggingExporter(level, logger)
 	return exporterhelper.NewLogsExporter(
 		config,
-		logger,
+		set,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue

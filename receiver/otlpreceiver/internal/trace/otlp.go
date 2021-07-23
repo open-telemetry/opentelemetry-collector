@@ -20,13 +20,14 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/pdatagrpc"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
 const (
 	dataFormatProtobuf = "protobuf"
+	receiverTransport  = "grpc"
 )
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
@@ -38,37 +39,19 @@ type Receiver struct {
 
 // New creates a new Receiver reference.
 func New(id config.ComponentID, nextConsumer consumer.Traces) *Receiver {
-	r := &Receiver{
+	return &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
 		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport}),
 	}
-
-	return r
 }
-
-const (
-	receiverTransport = "grpc"
-)
-
-var receiverID = config.NewIDWithName("otlp", "trace")
 
 // Export implements the service Export traces func.
-func (r *Receiver) Export(ctx context.Context, td pdata.Traces) (pdatagrpc.TracesResponse, error) {
+func (r *Receiver) Export(ctx context.Context, td pdata.Traces) (otlpgrpc.TracesResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.id, receiverTransport)
-	err := r.sendToNextConsumer(ctxWithReceiverName, td)
-	if err != nil {
-		return pdatagrpc.TracesResponse{}, err
-	}
-
-	return pdatagrpc.NewTracesResponse(), nil
-}
-
-func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.Traces) error {
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
-		return nil
+		return otlpgrpc.NewTracesResponse(), nil
 	}
 
 	if c, ok := client.FromGRPC(ctx); ok {
@@ -79,5 +62,5 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.Traces) erro
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return err
+	return otlpgrpc.NewTracesResponse(), err
 }

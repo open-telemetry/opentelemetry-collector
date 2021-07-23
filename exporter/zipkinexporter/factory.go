@@ -77,7 +77,7 @@ func createTracesExporter(
 	}
 	return exporterhelper.NewTracesExporter(
 		zc,
-		set.Logger,
+		set,
 		ze.pushTraces,
 		exporterhelper.WithStart(ze.start),
 		// explicitly disable since we rely on http.Client timeout logic.

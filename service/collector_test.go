@@ -77,7 +77,7 @@ func TestApplication_StartAndReload(t *testing.T) {
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
 	assert.Equal(t, Running, <-col.GetStateChannel())
-	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
+	require.True(t, isCollectorAvailable(t, "http://"+healthCheckEndpoint))
 	assert.Equal(t, col.logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
@@ -97,7 +97,7 @@ func TestApplication_StartAndReload(t *testing.T) {
 	// Trigger another configuration load.
 	oldService := col.service
 	require.NoError(t, col.reloadService(context.Background()))
-	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
+	require.True(t, isCollectorAvailable(t, "http://"+healthCheckEndpoint))
 	assert.Equal(t, oldService, col.service)
 
 	parser, _ := configparser.NewParserFromFile("testdata/otelcol-config-restart.yaml")
@@ -105,7 +105,7 @@ func TestApplication_StartAndReload(t *testing.T) {
 
 	oldService = col.service
 	require.NoError(t, col.reloadService(context.Background()))
-	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
+	require.True(t, isCollectorAvailable(t, "http://"+healthCheckEndpoint))
 	assert.NotEqual(t, oldService, col.service)
 
 	col.signalsChannel <- syscall.SIGTERM
@@ -122,21 +122,21 @@ func (fkp *fakeParseProvider) Get() (*configparser.Parser, error) {
 	return fkp.parser, nil
 }
 
-type mockAppTelemetry struct{}
+type mockColTelemetry struct{}
 
-func (tel *mockAppTelemetry) init(chan<- error, uint64, *zap.Logger) error {
+func (tel *mockColTelemetry) init(chan<- error, uint64, *zap.Logger) error {
 	return nil
 }
 
-func (tel *mockAppTelemetry) shutdown() error {
+func (tel *mockColTelemetry) shutdown() error {
 	return errors.New("err1")
 }
 
 func TestCollector_ReportError(t *testing.T) {
 	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := applicationTelemetry
-	applicationTelemetry = &mockAppTelemetry{}
-	defer func() { applicationTelemetry = preservedAppTelemetry }()
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &mockColTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestCollector_ReportError(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.EqualError(t, col.Run(), "failed to shutdown application telemetry: err1")
+		assert.EqualError(t, col.Run(), "failed to shutdown collector telemetry: err1")
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -191,9 +191,9 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	assert.Equal(t, Closed, <-col.GetStateChannel())
 }
 
-// isAppAvailable checks if the healthcheck server at the given endpoint is
+// isCollectorAvailable checks if the healthcheck server at the given endpoint is
 // returning `available`.
-func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
+func isCollectorAvailable(t *testing.T, healthCheckEndPoint string) bool {
 	client := &http.Client{}
 	resp, err := client.Get(healthCheckEndPoint)
 	require.NoError(t, err)

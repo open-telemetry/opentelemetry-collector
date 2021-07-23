@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Gauge creates a gauge metric.
@@ -172,13 +172,13 @@ func SortedMetrics(metrics pdata.Metrics) pdata.Metrics {
 					for l := 0; l < m.IntSum().DataPoints().Len(); l++ {
 						m.IntSum().DataPoints().At(l).LabelsMap().Sort()
 					}
-				case pdata.MetricDataTypeDoubleGauge:
-					for l := 0; l < m.DoubleGauge().DataPoints().Len(); l++ {
-						m.DoubleGauge().DataPoints().At(l).LabelsMap().Sort()
+				case pdata.MetricDataTypeGauge:
+					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
+						m.Gauge().DataPoints().At(l).LabelsMap().Sort()
 					}
-				case pdata.MetricDataTypeDoubleSum:
-					for l := 0; l < m.DoubleSum().DataPoints().Len(); l++ {
-						m.DoubleSum().DataPoints().At(l).LabelsMap().Sort()
+				case pdata.MetricDataTypeSum:
+					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+						m.Sum().DataPoints().At(l).LabelsMap().Sort()
 					}
 				case pdata.MetricDataTypeIntHistogram:
 					for l := 0; l < m.IntHistogram().DataPoints().Len(); l++ {

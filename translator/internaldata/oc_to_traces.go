@@ -23,8 +23,8 @@ import (
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/occonventions"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -81,22 +81,18 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 	// 1 (for all spans with nil resource) + numSpansWithResource (distinctResourceCount).
 
 	rss := traceData.ResourceSpans()
-	rss.Resize(distinctResourceCount + 1)
-	rs0 := rss.At(0)
+	rss.EnsureCapacity(distinctResourceCount + 1)
+	rs0 := rss.AppendEmpty()
 	ocNodeResourceToInternal(node, resource, rs0.Resource())
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
 	ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
 	combinedSpans := ils0.Spans()
-	combinedSpans.Resize(combinedSpanCount)
+	combinedSpans.EnsureCapacity(combinedSpanCount)
 
 	// Now do the span translation and place them in appropriate ResourceSpans
 	// instances.
 
-	// Index to next available slot in "combinedSpans" slice.
-	combinedSpanIdx := 0
-	// First ResourceSpans is used for the default resource, so start with 1.
-	resourceSpanIdx := 1
 	for _, ocSpan := range spans {
 		if ocSpan == nil {
 			// Skip nil spans.
@@ -107,13 +103,11 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 			// Add the span to the "combinedSpans". combinedSpans length is equal
 			// to combinedSpanCount. The loop above that calculates combinedSpanCount
 			// has exact same conditions as we have here in this loop.
-			ocSpanToInternal(ocSpan, combinedSpans.At(combinedSpanIdx))
-			combinedSpanIdx++
+			ocSpanToInternal(ocSpan, combinedSpans.AppendEmpty())
 		} else {
 			// This span has a different Resource and must be placed in a different
 			// ResourceSpans instance. Create a separate ResourceSpans item just for this span.
-			ocSpanToResourceSpans(ocSpan, node, traceData.ResourceSpans().At(resourceSpanIdx))
-			resourceSpanIdx++
+			ocSpanToResourceSpans(ocSpan, node, traceData.ResourceSpans().AppendEmpty())
 		}
 	}
 
@@ -294,18 +288,15 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 	}
 
 	events := dest.Events()
-	events.Resize(len(ocEvents.TimeEvent))
+	events.EnsureCapacity(len(ocEvents.TimeEvent))
 
-	i := 0
 	for _, ocEvent := range ocEvents.TimeEvent {
 		if ocEvent == nil {
 			// Skip nil source events.
 			continue
 		}
 
-		event := events.At(i)
-		i++
-
+		event := events.AppendEmpty()
 		event.SetTimestamp(pdata.TimestampFromTime(ocEvent.Time.AsTime()))
 
 		switch teValue := ocEvent.Value.(type) {
@@ -326,9 +317,6 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 			event.SetName("An unknown OpenCensus TimeEvent type was detected when translating")
 		}
 	}
-
-	// Truncate the slice to only include populated items.
-	events.Resize(i)
 }
 
 func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
@@ -343,26 +331,20 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 	}
 
 	links := dest.Links()
-	links.Resize(len(ocLinks.Link))
+	links.EnsureCapacity(len(ocLinks.Link))
 
-	i := 0
 	for _, ocLink := range ocLinks.Link {
 		if ocLink == nil {
 			continue
 		}
 
-		link := links.At(i)
-		i++
-
+		link := links.AppendEmpty()
 		link.SetTraceID(traceIDToInternal(ocLink.TraceId))
 		link.SetSpanID(spanIDToInternal(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())
 		link.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(ocLink.Attributes))
 	}
-
-	// Truncate the slice to only include populated items.
-	links.Resize(i)
 }
 
 func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent, dest pdata.AttributeMap) {

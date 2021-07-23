@@ -24,7 +24,7 @@ import (
 	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // MockBackend is a backend that allows receiving the data locally.
@@ -218,14 +218,13 @@ func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
-	_, dataPoints := md.MetricAndDataPointCount()
-	mc.numMetricsReceived.Add(uint64(dataPoints))
+	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
 }
 
-func (tc *MockTraceConsumer) MockConsumeTraceData(spansCount int) error {
-	tc.numSpansReceived.Add(uint64(spansCount))
+func (tc *MockTraceConsumer) MockConsumeTraceData(spanCount int) error {
+	tc.numSpansReceived.Add(uint64(spanCount))
 	return nil
 }
 

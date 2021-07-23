@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +34,7 @@ type service struct {
 	buildInfo         component.BuildInfo
 	config            *config.Config
 	logger            *zap.Logger
+	tracerProvider    trace.TracerProvider
 	asyncErrorChannel chan error
 
 	builtExporters  builder.Exporters
@@ -42,10 +45,12 @@ type service struct {
 
 func newService(set *svcSettings) (*service, error) {
 	srv := &service{
-		factories:         set.Factories,
-		buildInfo:         set.BuildInfo,
-		config:            set.Config,
-		logger:            set.Logger,
+		factories: set.Factories,
+		buildInfo: set.BuildInfo,
+		config:    set.Config,
+		logger:    set.Logger,
+		// TODO: Configure the right tracer provider.
+		tracerProvider:    otel.GetTracerProvider(),
 		asyncErrorChannel: set.AsyncErrorChannel,
 	}
 
@@ -138,7 +143,7 @@ func (srv *service) GetExporters() map[config.DataType]map[config.ComponentID]co
 
 func (srv *service) buildExtensions() error {
 	var err error
-	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.buildInfo, srv.config, srv.factories.Extensions)
+	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.tracerProvider, srv.buildInfo, srv.config, srv.factories.Extensions)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
@@ -168,7 +173,7 @@ func (srv *service) reloadExtensions(ctx context.Context, cfg *config.Config) er
 	}
 
 	var err error
-	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.buildInfo, cfg, srv.factories.Extensions)
+	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.tracerProvider, srv.buildInfo, cfg, srv.factories.Extensions)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
@@ -195,20 +200,20 @@ func (srv *service) buildPipelines() error {
 
 	// First create exporters.
 	var err error
-	srv.builtExporters, err = builder.BuildExporters(srv.logger, srv.buildInfo, srv.config, srv.factories.Exporters)
+	srv.builtExporters, err = builder.BuildExporters(srv.logger, srv.tracerProvider, srv.buildInfo, srv.config, srv.factories.Exporters)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExporters: %w", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	srv.builtPipelines, err = builder.BuildPipelines(srv.logger, srv.buildInfo, srv.config, srv.builtExporters, srv.factories.Processors)
+	srv.builtPipelines, err = builder.BuildPipelines(srv.logger, srv.tracerProvider, srv.buildInfo, srv.config, srv.builtExporters, srv.factories.Processors)
 	if err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	srv.builtReceivers, err = builder.BuildReceivers(srv.logger, srv.buildInfo, srv.config, srv.builtPipelines, srv.factories.Receivers)
+	srv.builtReceivers, err = builder.BuildReceivers(srv.logger, srv.tracerProvider, srv.buildInfo, srv.config, srv.builtPipelines, srv.factories.Receivers)
 	if err != nil {
 		return fmt.Errorf("cannot build receivers: %w", err)
 	}
@@ -240,15 +245,15 @@ func (srv *service) reloadPipelines(ctx context.Context, config *config.Config) 
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	if err := srv.builtExporters.ReloadExporters(ctx, srv.logger, srv.buildInfo, config, srv.factories.Exporters, srv); err != nil {
+	if err := srv.builtExporters.ReloadExporters(ctx, srv.logger, srv.tracerProvider, srv.buildInfo, config, srv.factories.Exporters, srv); err != nil {
 		return err
 	}
 
-	if err := srv.builtPipelines.ReloadProcessors(ctx, srv, srv.buildInfo, config, srv.builtExporters, srv.factories.Processors); err != nil {
+	if err := srv.builtPipelines.ReloadProcessors(ctx, srv, srv.logger, srv.tracerProvider, srv.buildInfo, config, srv.builtExporters, srv.factories.Processors); err != nil {
 		return err
 	}
 
-	if err := srv.builtReceivers.ReloadReceivers(ctx, srv.logger, srv.buildInfo, config, srv.builtPipelines, srv.factories.Receivers, srv); err != nil {
+	if err := srv.builtReceivers.ReloadReceivers(ctx, srv.tracerProvider, srv.logger, srv.buildInfo, config, srv.builtPipelines, srv.factories.Receivers, srv); err != nil {
 		return err
 	}
 

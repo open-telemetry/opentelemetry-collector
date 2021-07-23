@@ -58,7 +58,7 @@ func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory compo
 
 	// The Shutdown() is done. It means the processor must have sent everything we
 	// gave it to the next sink.
-	assert.EqualValues(t, generatedCount, nextSink.SpansCount())
+	assert.EqualValues(t, generatedCount, nextSink.SpanCount())
 }
 
 // VerifyProcessorShutdown verifies the processor doesn't produce telemetry data after shutdown.

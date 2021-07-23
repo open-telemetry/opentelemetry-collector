@@ -17,8 +17,8 @@ package attributesprocessor
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterlog"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -39,8 +39,7 @@ func newLogAttributesProcessor(attrProc *processorhelper.AttrProc, include, excl
 	}
 }
 
-// ProcessLogs implements the LogsProcessor
-func (a *logAttributesProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rs := rls.At(i)

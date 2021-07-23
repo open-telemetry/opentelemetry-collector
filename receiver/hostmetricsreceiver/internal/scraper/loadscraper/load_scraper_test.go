@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -89,5 +89,5 @@ func TestScrape(t *testing.T) {
 
 func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
-	assert.Equal(t, 1, metric.DoubleGauge().DataPoints().Len())
+	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 }

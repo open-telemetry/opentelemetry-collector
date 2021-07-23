@@ -15,18 +15,18 @@
 package otlptext
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// NewTextLogsMarshaler returns a serializer.LogsMarshaler to encode to OTLP json bytes.
+// NewTextLogsMarshaler returns a serializer.LogsMarshaler to encode to OTLP text bytes.
 func NewTextLogsMarshaler() pdata.LogsMarshaler {
-	return logsMarshaler{}
+	return textLogsMarshaler{}
 }
 
-type logsMarshaler struct{}
+type textLogsMarshaler struct{}
 
-// Marshal data to text.
-func (logsMarshaler) Marshal(ld pdata.Logs) ([]byte, error) {
+// MarshalLogs pdata.Logs to OTLP text.
+func (textLogsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 	buf := dataBuffer{}
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {

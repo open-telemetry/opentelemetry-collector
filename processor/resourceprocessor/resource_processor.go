@@ -17,7 +17,7 @@ package resourceprocessor
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -25,8 +25,7 @@ type resourceProcessor struct {
 	attrProc *processorhelper.AttrProc
 }
 
-// ProcessTraces implements the TProcessor interface
-func (rp *resourceProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (rp *resourceProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rp.attrProc.Process(rss.At(i).Resource().Attributes())
@@ -34,8 +33,7 @@ func (rp *resourceProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (
 	return td, nil
 }
 
-// ProcessMetrics implements the MProcessor interface
-func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (rp *resourceProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rp.attrProc.Process(rms.At(i).Resource().Attributes())
@@ -43,8 +41,7 @@ func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics)
 	return md, nil
 }
 
-// ProcessLogs implements the LProcessor interface
-func (rp *resourceProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (rp *resourceProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rp.attrProc.Process(rls.At(i).Resource().Attributes())

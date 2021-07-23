@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -26,15 +26,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// LProcessor is a helper interface that allows avoiding implementing all functions in LogsProcessor by using NewLogsProcessor.
-type LProcessor interface {
-	// ProcessLogs is a helper function that processes the incoming data and returns the data to be sent to the next component.
-	// If error is returned then returned data are ignored. It MUST not call the next component.
-	ProcessLogs(context.Context, pdata.Logs) (pdata.Logs, error)
-}
+// ProcessLogsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
+// If error is returned then returned data are ignored. It MUST not call the next component.
+type ProcessLogsFunc func(context.Context, pdata.Logs) (pdata.Logs, error)
 
 type logProcessor struct {
 	component.Component
@@ -46,25 +43,25 @@ type logProcessor struct {
 func NewLogsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
-	processor LProcessor,
+	logsFunc ProcessLogsFunc,
 	options ...Option,
 ) (component.LogsProcessor, error) {
-	if processor == nil {
-		return nil, errors.New("nil processor")
+	if logsFunc == nil {
+		return nil, errors.New("nil logsFunc")
 	}
 
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	traceAttributes := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(cfg.ID())
 	bs := fromOptions(options)
 	logsConsumer, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
-		span := trace.FromContext(ctx)
-		span.Annotate(traceAttributes, "Start processing.")
+		span := trace.SpanFromContext(ctx)
+		span.AddEvent("Start processing.", eventOptions)
 		var err error
-		ld, err = processor.ProcessLogs(ctx, ld)
-		span.Annotate(traceAttributes, "End processing.")
+		ld, err = logsFunc(ctx, ld)
+		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
 			if errors.Is(err, ErrSkipProcessingData) {
 				return nil

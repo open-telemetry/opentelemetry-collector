@@ -19,26 +19,25 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const typeStr = "test"
 
 var (
 	defaultCfg           = config.NewExporterSettings(config.NewID(typeStr))
-	nopTracesExporter, _ = NewTracesExporter(&defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
+	nopTracesExporter, _ = NewTracesExporter(&defaultCfg, componenttest.NewNopExporterCreateSettings(), func(ctx context.Context, td pdata.Traces) error {
 		return nil
 	})
-	nopMetricsExporter, _ = NewMetricsExporter(&defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) error {
+	nopMetricsExporter, _ = NewMetricsExporter(&defaultCfg, componenttest.NewNopExporterCreateSettings(), func(ctx context.Context, md pdata.Metrics) error {
 		return nil
 	})
-	nopLogsExporter, _ = NewLogsExporter(&defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Logs) error {
+	nopLogsExporter, _ = NewLogsExporter(&defaultCfg, componenttest.NewNopExporterCreateSettings(), func(ctx context.Context, md pdata.Logs) error {
 		return nil
 	})
 )

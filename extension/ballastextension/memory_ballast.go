@@ -25,17 +25,32 @@ import (
 const megaBytes = 1024 * 1024
 
 type memoryBallast struct {
-	cfg     *Config
-	logger  *zap.Logger
-	ballast []byte
+	cfg         *Config
+	logger      *zap.Logger
+	ballast     []byte
+	getTotalMem func() (uint64, error)
 }
 
 func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
+	var ballastSizeBytes uint64
+	// absolute value supersedes percentage setting
 	if m.cfg.SizeMiB > 0 {
-		ballastSizeBytes := uint64(m.cfg.SizeMiB) * megaBytes
-		m.ballast = make([]byte, ballastSizeBytes)
-		m.logger.Info("Using memory ballast", zap.Uint32("MiBs", m.cfg.SizeMiB))
+		ballastSizeBytes = m.cfg.SizeMiB * megaBytes
+	} else {
+		totalMemory, err := m.getTotalMem()
+		if err != nil {
+			return err
+		}
+		ballastPercentage := m.cfg.SizeInPercentage
+		ballastSizeBytes = ballastPercentage * totalMemory / 100
 	}
+
+	if ballastSizeBytes > 0 {
+		m.ballast = make([]byte, ballastSizeBytes)
+	}
+
+	m.logger.Info("Setting memory ballast", zap.Uint32("MiBs", uint32(ballastSizeBytes/megaBytes)))
+
 	return nil
 }
 
@@ -44,9 +59,10 @@ func (m *memoryBallast) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func newMemoryBallast(cfg *Config, logger *zap.Logger) *memoryBallast {
+func newMemoryBallast(cfg *Config, logger *zap.Logger, getTotalMem func() (uint64, error)) *memoryBallast {
 	return &memoryBallast{
-		cfg:    cfg,
-		logger: logger,
+		cfg:         cfg,
+		logger:      logger,
+		getTotalMem: getTotalMem,
 	}
 }

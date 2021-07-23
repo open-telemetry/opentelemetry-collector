@@ -10,8 +10,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -159,7 +160,8 @@ func createRldLogsExporter(
 func TestExporterWrapperReload(t *testing.T) {
 	exp := &exampleExporter{}
 	rldExp := &reloadableExporter{*exp, nil, 0}
-	logWrapper := &exporterWrapper{config.LogsDataType, nil, nil, rldExp, rldExp, config.NewIDWithName(rldExpType, "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory}
+	set := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
+	logWrapper := &exporterWrapper{config.LogsDataType, nil, nil, rldExp, rldExp, config.NewIDWithName(rldExpType, "1"), set, exampleRldExporterFactory}
 	err := logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createRldDefaultConfig())
 	assert.NoError(t, err)
 	assert.True(t, logWrapper.lc == rldExp)
@@ -186,12 +188,12 @@ func TestExporterWrapperReload(t *testing.T) {
 			exp.startErr = mockStartErr
 			return exp, nil
 		}))
-	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), zap.NewNop(), component.DefaultBuildInfo(), mockExporterFactory}
+	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), set, mockExporterFactory}
 	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
 	assert.Equal(t, err, mockStartErr)
 	assert.True(t, logWrapper.lc == exp)
 
-	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory}
+	logWrapper = &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), set, exampleExporterFactory}
 	exp.shutdownErr = errors.New("mock shutdown err")
 	err = logWrapper.Reload(componenttest.NewNopHost(), context.Background(), createDefaultConfig())
 	assert.False(t, logWrapper.lc == exp)
@@ -200,7 +202,8 @@ func TestExporterWrapperReload(t *testing.T) {
 }
 func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 	exp := &exampleExporter{}
-	logWrapper := &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory}
+	set := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
+	logWrapper := &exporterWrapper{config.LogsDataType, nil, nil, exp, exp, config.NewIDWithName(expType, "1"), set, exampleExporterFactory}
 
 	// Test Logs
 	ld := pdata.NewLogs()
@@ -253,7 +256,7 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 	assert.Error(t, err)
 
 	// Test Metrics
-	metricWrapper := &exporterWrapper{config.MetricsDataType, exp, nil, nil, exp, config.NewIDWithName(expType, "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory}
+	metricWrapper := &exporterWrapper{config.MetricsDataType, exp, nil, nil, exp, config.NewIDWithName(expType, "1"), set, exampleExporterFactory}
 	md := pdata.NewMetrics()
 	err = metricWrapper.ConsumeMetrics(context.Background(), md)
 	assert.NoError(t, err)
@@ -304,7 +307,7 @@ func TestExporterWrapperConsumeAndNormalReload(t *testing.T) {
 	assert.Error(t, err)
 
 	// Test Traces
-	traceWrapper := &exporterWrapper{config.TracesDataType, nil, exp, nil, exp, config.NewIDWithName(expType, "1"), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory}
+	traceWrapper := &exporterWrapper{config.TracesDataType, nil, exp, nil, exp, config.NewIDWithName(expType, "1"), set, exampleExporterFactory}
 	td := pdata.NewTraces()
 	err = traceWrapper.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)

@@ -21,7 +21,7 @@ import (
 
 	"github.com/shirou/gopsutil/disk"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
@@ -84,9 +84,9 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	}
 
 	if len(usages) > 0 {
-		metrics.Resize(metricsLen)
-		initializeFileSystemUsageMetric(metrics.At(0), now, usages)
-		appendSystemSpecificMetrics(metrics, 1, now, usages)
+		metrics.EnsureCapacity(metricsLen)
+		initializeFileSystemUsageMetric(metrics.AppendEmpty(), now, usages)
+		appendSystemSpecificMetrics(metrics, now, usages)
 	}
 
 	err = errors.Combine()
@@ -101,9 +101,9 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, d
 	metadata.Metrics.SystemFilesystemUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
-	idps.Resize(fileSystemStatesLen * len(deviceUsages))
-	for i, deviceUsage := range deviceUsages {
-		appendFileSystemUsageStateDataPoints(idps, i*fileSystemStatesLen, now, deviceUsage)
+	idps.EnsureCapacity(fileSystemStatesLen * len(deviceUsages))
+	for _, deviceUsage := range deviceUsages {
+		appendFileSystemUsageStateDataPoints(idps, now, deviceUsage)
 	}
 }
 

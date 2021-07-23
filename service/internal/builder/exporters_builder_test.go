@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -65,7 +66,7 @@ func TestBuildExporters(t *testing.T) {
 		},
 	}
 
-	exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -106,7 +107,7 @@ func TestBuildExporters(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "trace")
-	exporters, err = BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err = BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
@@ -144,7 +145,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 		},
 	}
 
-	exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -169,7 +170,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "logs")
-	exporters, err = BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	exporters, err = BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
@@ -189,12 +190,13 @@ func TestBuildExporters_StartAll(t *testing.T) {
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
+	set := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
 	exporters[expCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
-			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
-			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
 		},
 	}
 	assert.False(t, traceExporter.ExporterStarted)
@@ -220,12 +222,14 @@ func TestBuildExporters_Reload(t *testing.T) {
 	traceExporter := &exampleExporter{}
 	metricExporter := &exampleExporter{}
 	logExporter := &exampleExporter{}
+	set := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
+
 	exporters[expCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory},
-			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory},
-			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logExporter, logExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleExporterFactory},
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), set, exampleExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), set, exampleExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logExporter, logExporter, expCfg.ID(), set, exampleExporterFactory},
 		},
 	}
 
@@ -240,9 +244,9 @@ func TestBuildExporters_Reload(t *testing.T) {
 	exporters[rldExpCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, rldTraceExporter, nil, rldTraceExporter, rldExpCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory},
-			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, rldMetricExporter, nil, nil, rldMetricExporter, rldExpCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory},
-			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, rldLogExporter, rldLogExporter, rldExpCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), exampleRldExporterFactory},
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, rldTraceExporter, nil, rldTraceExporter, rldExpCfg.ID(), set, exampleRldExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, rldMetricExporter, nil, nil, rldMetricExporter, rldExpCfg.ID(), set, exampleRldExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, rldLogExporter, rldLogExporter, rldExpCfg.ID(), set, exampleRldExporterFactory},
 		},
 	}
 
@@ -269,7 +273,7 @@ func TestBuildExporters_Reload(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = exporters.ReloadExporters(context.Background(), zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters, componenttest.NewNopHost())
+		err = exporters.ReloadExporters(context.Background(), set.Logger, set.TracerProvider, set.BuildInfo, cfg, factories.Exporters, componenttest.NewNopHost())
 		assert.NoError(t, err)
 	}()
 	wg.Wait()
@@ -290,12 +294,13 @@ func TestBuildExporters_StopAll(t *testing.T) {
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
+	set := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
 	exporters[expCfg.ID()] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
-			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
-			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, expCfg.ID(), zap.NewNop(), component.DefaultBuildInfo(), testcomponents.ExampleExporterFactory},
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
 		},
 	}
 	assert.False(t, traceExporter.ExporterShutdown)
@@ -331,7 +336,7 @@ func TestBuildExporters_NotSupportedDataType(t *testing.T) {
 			cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
-			exporters, err := BuildExporters(zap.NewNop(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+			exporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
 			assert.Error(t, err)
 			assert.Zero(t, len(exporters))
 		})

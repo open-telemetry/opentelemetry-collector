@@ -21,8 +21,8 @@ import (
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -80,18 +80,12 @@ func jThriftSpansToInternal(spans []*jaeger.Span, dest pdata.SpanSlice) {
 		return
 	}
 
-	dest.Resize(len(spans))
-	i := 0
+	dest.EnsureCapacity(len(spans))
 	for _, span := range spans {
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
 			continue
 		}
-		jThriftSpanToInternal(span, dest.At(i))
-		i++
-	}
-
-	if i < len(spans) {
-		dest.Resize(i)
+		jThriftSpanToInternal(span, dest.AppendEmpty())
 	}
 }
 
@@ -151,10 +145,10 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest pdata.SpanEventSlice) {
 		return
 	}
 
-	dest.Resize(len(logs))
+	dest.EnsureCapacity(len(logs))
 
-	for i, log := range logs {
-		event := dest.At(i)
+	for _, log := range logs {
+		event := dest.AppendEmpty()
 
 		event.SetTimestamp(microsecondsToUnixNano(log.Timestamp))
 		if len(log.Fields) == 0 {
@@ -177,22 +171,15 @@ func jThriftReferencesToSpanLinks(refs []*jaeger.SpanRef, excludeParentID int64,
 		return
 	}
 
-	dest.Resize(len(refs))
-	i := 0
+	dest.EnsureCapacity(len(refs))
 	for _, ref := range refs {
-		link := dest.At(i)
 		if ref.SpanId == excludeParentID && ref.RefType == jaeger.SpanRefType_CHILD_OF {
 			continue
 		}
 
+		link := dest.AppendEmpty()
 		link.SetTraceID(idutils.UInt64ToTraceID(uint64(ref.TraceIdHigh), uint64(ref.TraceIdLow)))
 		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanId)))
-		i++
-	}
-
-	// Reduce slice size in case if excludeParentID was skipped
-	if i < len(refs) {
-		dest.Resize(i)
 	}
 }
 

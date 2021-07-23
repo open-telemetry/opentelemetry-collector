@@ -19,14 +19,14 @@ package processesscraper
 import (
 	"github.com/shirou/gopsutil/load"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const unixSystemSpecificMetricsLen = 1
 
-func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, startIndex int, now pdata.Timestamp, misc *load.MiscStat) error {
-	initializeProcessesCreatedMetric(metrics.At(startIndex), startTime, now, misc)
+func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, now pdata.Timestamp, misc *load.MiscStat) error {
+	initializeProcessesCreatedMetric(metrics.AppendEmpty(), startTime, now, misc)
 	return nil
 }
 
