@@ -1245,9 +1245,9 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.Type() {
-	case NumberDataPointTypeDouble:
+	case MetricValueTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
-	case NumberDataPointTypeInt:
+	case MetricValueTypeInt:
 		dest.SetIntVal(ms.IntVal())
 	}
 
@@ -2260,9 +2260,9 @@ func (ms Exemplar) FilteredLabels() StringMap {
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.Type() {
-	case NumberDataPointTypeDouble:
+	case MetricValueTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
-	case NumberDataPointTypeInt:
+	case MetricValueTypeInt:
 		dest.SetIntVal(ms.IntVal())
 	}
 
