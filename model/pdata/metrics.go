@@ -286,28 +286,28 @@ func (at AggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
-// NumberDataPointType specifies the type of NumberDataPoint.
-type NumberDataPointType int32
+// MetricValueType specifies the type of NumberDataPoint.
+type MetricValueType int32
 
 const (
-	NumberDataPointTypeNone NumberDataPointType = iota
-	NumberDataPointTypeInt
-	NumberDataPointTypeDouble
+	MetricValueTypeNone MetricValueType = iota
+	MetricValueTypeInt
+	MetricValueTypeDouble
 )
 
 // Type returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
-func (ms NumberDataPoint) Type() NumberDataPointType {
+func (ms NumberDataPoint) Type() MetricValueType {
 	if ms.orig.Value == nil {
-		return NumberDataPointTypeNone
+		return MetricValueTypeNone
 	}
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
-		return NumberDataPointTypeDouble
+		return MetricValueTypeDouble
 	case *otlpmetrics.NumberDataPoint_AsInt:
-		return NumberDataPointTypeInt
+		return MetricValueTypeInt
 	}
-	return NumberDataPointTypeNone
+	return MetricValueTypeNone
 }
 
 // Value returns the value associated with this NumberDataPoint.
@@ -324,17 +324,17 @@ func (ms NumberDataPoint) SetValue(v float64) {
 
 // Type returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
-func (ms Exemplar) Type() NumberDataPointType {
+func (ms Exemplar) Type() MetricValueType {
 	if ms.orig.Value == nil {
-		return NumberDataPointTypeNone
+		return MetricValueTypeNone
 	}
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
-		return NumberDataPointTypeDouble
+		return MetricValueTypeDouble
 	case *otlpmetrics.Exemplar_AsInt:
-		return NumberDataPointTypeInt
+		return MetricValueTypeInt
 	}
-	return NumberDataPointTypeNone
+	return MetricValueTypeNone
 }
 
 // Value returns the value associated with this Exemplar.

@@ -463,7 +463,7 @@ func (opv *oneOfPrimitiveValue) generateSetWithTestValue(sb *strings.Builder) {
 }
 
 func (opv *oneOfPrimitiveValue) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tcase NumberDataPointType" + opv.fieldType + ":\n")
+	sb.WriteString("\tcase MetricValueType" + opv.fieldType + ":\n")
 	sb.WriteString("\t dest.Set" + opv.name + "(ms." + opv.name + "())\n")
 }
 
