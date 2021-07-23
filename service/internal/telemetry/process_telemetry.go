@@ -111,8 +111,8 @@ var viewRSSMemory = &view.View{
 func NewProcessMetricsViews(ballastSizeBytes uint64) (*ProcessMetricsViews, error) {
 	pmv := &ProcessMetricsViews{
 		prevTimeUnixNano: time.Now().UnixNano(),
-		ballastSizeBytes: ballastSizeBytes,
 		views:            []*view.View{viewProcessUptime, viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds, viewRSSMemory},
+		ballastSizeBytes: ballastSizeBytes,
 		done:             make(chan struct{}),
 	}
 
@@ -176,8 +176,10 @@ func (pmv *ProcessMetricsViews) updateViews() {
 
 func (pmv *ProcessMetricsViews) readMemStats(ms *runtime.MemStats) {
 	runtime.ReadMemStats(ms)
-	ms.Alloc -= pmv.ballastSizeBytes
-	ms.HeapAlloc -= pmv.ballastSizeBytes
-	ms.HeapSys -= pmv.ballastSizeBytes
-	ms.HeapInuse -= pmv.ballastSizeBytes
+	if pmv.ballastSizeBytes > 0 {
+		ms.Alloc -= pmv.ballastSizeBytes
+		ms.HeapAlloc -= pmv.ballastSizeBytes
+		ms.HeapSys -= pmv.ballastSizeBytes
+		ms.HeapInuse -= pmv.ballastSizeBytes
+	}
 }
