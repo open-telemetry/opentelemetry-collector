@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -286,18 +287,24 @@ func (col *Collector) execute(ctx context.Context) error {
 	)
 	col.stateChannel <- Starting
 
-	// Set memory ballast
-	ballast, ballastSizeBytes := col.createMemoryBallast()
+	//  Add `mem-ballast-size-mib` warning message if it is still enabled
+	//  TODO: will remove all `mem-ballast-size-mib` footprints after some baking time.
+	if builder.MemBallastSize() > 0 {
+		col.logger.Warn("`mem-ballast-size-mib` command line option has been deprecated. Please use `ballast extension` instead!")
+	}
 
 	col.asyncErrorChannel = make(chan error)
 
-	// Setup everything.
-	err := col.setupTelemetry(ballastSizeBytes)
+	err := col.setupConfigurationComponents(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = col.setupConfigurationComponents(ctx)
+	// Get ballastSizeBytes if ballast extension is enabled
+	ballastSizeBytes := col.getBallastSize()
+
+	// Setup Telemetry.
+	err = col.setupTelemetry(ballastSizeBytes)
 	if err != nil {
 		return err
 	}
@@ -309,7 +316,6 @@ func (col *Collector) execute(ctx context.Context) error {
 	var errs []error
 
 	// Begin shutdown sequence.
-	runtime.KeepAlive(ballast)
 	col.logger.Info("Starting shutdown...")
 
 	if closable, ok := col.parserProvider.(parserprovider.Closeable); ok {
@@ -335,17 +341,6 @@ func (col *Collector) execute(ctx context.Context) error {
 	return consumererror.Combine(errs)
 }
 
-func (col *Collector) createMemoryBallast() ([]byte, uint64) {
-	ballastSizeMiB := builder.MemBallastSize()
-	if ballastSizeMiB > 0 {
-		ballastSizeBytes := uint64(ballastSizeMiB) * 1024 * 1024
-		ballast := make([]byte, ballastSizeBytes)
-		col.logger.Info("Using memory ballast", zap.Int("MiBs", ballastSizeMiB))
-		return ballast, ballastSizeBytes
-	}
-	return nil, 0
-}
-
 // reloadService shutdowns the current col.service and setups a new one according
 // to the latest configuration. It requires that col.parserProvider and col.factories
 // are properly populated to finish successfully.
@@ -369,4 +364,16 @@ func (col *Collector) reloadService(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (col *Collector) getBallastSize() uint64 {
+	var ballastSize uint64
+	extensions := col.service.GetExtensions()
+	for _, extension := range extensions {
+		if ext, ok := extension.(*ballastextension.MemoryBallast); ok {
+			ballastSize = ext.GetBallastSize()
+			break
+		}
+	}
+	return ballastSize
 }
