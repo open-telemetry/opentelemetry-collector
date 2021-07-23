@@ -191,7 +191,7 @@ const (
 )
 
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
-// unmarshals them and sends them along to the nextConsumer.
+// unmarshalls them and sends them along to the nextConsumer.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if c, ok := client.FromHTTP(r); ok {
