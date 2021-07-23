@@ -40,8 +40,6 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
-
-	PerRPCAuthTypeBearer = "bearer"
 )
 
 var (
