@@ -118,18 +118,18 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		metric.SetName("load_generator_" + strconv.Itoa(i))
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
-		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
 
 		batchIndex := dp.traceIDSequence.Inc()
 
-		dps := metric.IntGauge().DataPoints()
+		dps := metric.Gauge().DataPoints()
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
-			dataPoint.SetValue(int64(value))
+			dataPoint.SetIntVal(int64(value))
 			dataPoint.LabelsMap().InitFromMap(map[string]string{
 				"item_index":  "item_" + strconv.Itoa(j),
 				"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
