@@ -69,17 +69,11 @@ func TestConvertInvalidMetric(t *testing.T) {
 	for _, mType := range []pdata.MetricDataType{
 		pdata.MetricDataTypeHistogram,
 		pdata.MetricDataTypeSum,
-		pdata.MetricDataTypeIntSum,
 		pdata.MetricDataTypeGauge,
-		pdata.MetricDataTypeIntGauge,
 	} {
 		metric := pdata.NewMetric()
 		metric.SetDataType(mType)
 		switch metric.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			metric.IntGauge().DataPoints().AppendEmpty()
-		case pdata.MetricDataTypeIntSum:
-			metric.IntSum().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeGauge:
 			metric.Gauge().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeSum:
@@ -118,10 +112,10 @@ func (*errorCheckCore) Sync() error { return nil }
 func TestCollectMetricsLabelSanitize(t *testing.T) {
 	metric := pdata.NewMetric()
 	metric.SetName("test_metric")
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.SetDescription("test description")
-	dp := metric.IntGauge().DataPoints().AppendEmpty()
-	dp.SetValue(42)
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetIntVal(42)
 	dp.LabelsMap().Insert("label.1", "1")
 	dp.LabelsMap().Insert("label/2", "2")
 	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
@@ -172,10 +166,10 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntGauge)
+				metric.SetDataType(pdata.MetricDataTypeGauge)
 				metric.SetDescription("test description")
-				dp := metric.IntGauge().DataPoints().AppendEmpty()
-				dp.SetValue(42)
+				dp := metric.Gauge().DataPoints().AppendEmpty()
+				dp.SetIntVal(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
@@ -208,12 +202,12 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntSum)
-				metric.IntSum().SetIsMonotonic(false)
-				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(false)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.IntSum().DataPoints().AppendEmpty()
-				dp.SetValue(42)
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntVal(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
@@ -248,12 +242,12 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntSum)
-				metric.IntSum().SetIsMonotonic(true)
-				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(true)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.IntSum().DataPoints().AppendEmpty()
-				dp.SetValue(42)
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntVal(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
