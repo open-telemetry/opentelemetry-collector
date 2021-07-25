@@ -28,6 +28,7 @@ import (
 //
 // Must use NewResource function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Resource struct {
 	orig *otlpresource.Resource
 }

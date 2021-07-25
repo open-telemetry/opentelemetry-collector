@@ -130,6 +130,7 @@ var intGauge = &messageValueStruct{
 	structName:     "IntGauge",
 	description:    "// IntGauge represents the type of a int scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.IntGauge",
+	deprecated:     "Deprecated: Use Gauge instead.",
 	fields: []baseField{
 		&sliceField{
 			fieldName:       "DataPoints",
@@ -156,6 +157,7 @@ var intSum = &messageValueStruct{
 	structName:     "IntSum",
 	description:    "// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.IntSum",
+	deprecated:     "Deprecated: Use Sum instead.",
 	fields: []baseField{
 		aggregationTemporalityField,
 		isMonotonicField,
@@ -218,6 +220,7 @@ var intDataPoint = &messageValueStruct{
 	structName:     "IntDataPoint",
 	description:    "// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.",
 	originFullName: "otlpmetrics.IntDataPoint",
+	deprecated:     "Deprecated: Use NumberDataPoint instead.",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
