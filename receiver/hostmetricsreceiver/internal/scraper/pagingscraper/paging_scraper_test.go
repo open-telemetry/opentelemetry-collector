@@ -93,7 +93,7 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingUsage.New(), hostPagingUsageMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
-	if hostPagingUsageMetric.IntSum().DataPoints().Len() == 0 {
+	if hostPagingUsageMetric.Sum().DataPoints().Len() == 0 {
 		return
 	}
 
@@ -104,24 +104,24 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 		expectedDataPoints = 2
 	}
 
-	assert.GreaterOrEqual(t, hostPagingUsageMetric.IntSum().DataPoints().Len(), expectedDataPoints)
-	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 0, "state", "used")
-	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 1, "state", "free")
+	assert.GreaterOrEqual(t, hostPagingUsageMetric.Sum().DataPoints().Len(), expectedDataPoints)
+	internal.AssertSumMetricHasLabelValue(t, hostPagingUsageMetric, 0, "state", "used")
+	internal.AssertSumMetricHasLabelValue(t, hostPagingUsageMetric, 1, "state", "free")
 	// on non-windows, also expect a cached state label
 	if runtime.GOOS != "windows" {
-		internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 2, "state", "cached")
+		internal.AssertSumMetricHasLabelValue(t, hostPagingUsageMetric, 2, "state", "cached")
 	}
 	// on windows, also expect the page file device name label
 	if runtime.GOOS == "windows" {
-		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 0, "device")
-		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 1, "device")
+		internal.AssertSumMetricHasLabel(t, hostPagingUsageMetric, 0, "device")
+		internal.AssertSumMetricHasLabel(t, hostPagingUsageMetric, 1, "device")
 	}
 }
 
 func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingOperations.New(), pagingMetric)
 	if startTime != 0 {
-		internal.AssertIntSumMetricStartTimeEquals(t, pagingMetric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, pagingMetric, startTime)
 	}
 
 	// expect an in & out datapoint, for both major and minor paging types (windows does not currently support minor paging data)
@@ -129,27 +129,27 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, 
 	if runtime.GOOS == "windows" {
 		expectedDataPoints = 2
 	}
-	assert.Equal(t, expectedDataPoints, pagingMetric.IntSum().DataPoints().Len())
+	assert.Equal(t, expectedDataPoints, pagingMetric.Sum().DataPoints().Len())
 
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 0, "type", "major")
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 0, "direction", "page_in")
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 1, "type", "major")
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 1, "direction", "page_out")
+	internal.AssertSumMetricHasLabelValue(t, pagingMetric, 0, "type", "major")
+	internal.AssertSumMetricHasLabelValue(t, pagingMetric, 0, "direction", "page_in")
+	internal.AssertSumMetricHasLabelValue(t, pagingMetric, 1, "type", "major")
+	internal.AssertSumMetricHasLabelValue(t, pagingMetric, 1, "direction", "page_out")
 	if runtime.GOOS != "windows" {
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 2, "type", "minor")
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 2, "direction", "page_in")
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 3, "type", "minor")
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 3, "direction", "page_out")
+		internal.AssertSumMetricHasLabelValue(t, pagingMetric, 2, "type", "minor")
+		internal.AssertSumMetricHasLabelValue(t, pagingMetric, 2, "direction", "page_in")
+		internal.AssertSumMetricHasLabelValue(t, pagingMetric, 3, "type", "minor")
+		internal.AssertSumMetricHasLabelValue(t, pagingMetric, 3, "direction", "page_out")
 	}
 }
 
 func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingFaults.New(), pageFaultsMetric)
 	if startTime != 0 {
-		internal.AssertIntSumMetricStartTimeEquals(t, pageFaultsMetric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, pageFaultsMetric, startTime)
 	}
 
-	assert.Equal(t, 2, pageFaultsMetric.IntSum().DataPoints().Len())
-	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 0, "type", "major")
-	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 1, "type", "minor")
+	assert.Equal(t, 2, pageFaultsMetric.Sum().DataPoints().Len())
+	internal.AssertSumMetricHasLabelValue(t, pageFaultsMetric, 0, "type", "major")
+	internal.AssertSumMetricHasLabelValue(t, pageFaultsMetric, 1, "type", "minor")
 }

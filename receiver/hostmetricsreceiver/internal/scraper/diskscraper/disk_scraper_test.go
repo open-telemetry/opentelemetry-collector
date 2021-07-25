@@ -124,14 +124,14 @@ func TestScrape(t *testing.T) {
 func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric)
 	if startTime != 0 {
-		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 
-	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, "device")
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "direction", "read")
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "direction", "write")
+	internal.AssertSumMetricHasLabel(t, metric, 0, "device")
+	internal.AssertSumMetricHasLabelValue(t, metric, 0, "direction", "read")
+	internal.AssertSumMetricHasLabelValue(t, metric, 1, "direction", "write")
 }
 
 func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
@@ -146,15 +146,15 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDesc
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), minExpectedPoints)
 
-	internal.AssertSumMetricLabelExists(t, metric, 0, "device")
+	internal.AssertSumMetricHasLabel(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertSumMetricLabelHasValue(t, metric, 0, "direction", "read")
-		internal.AssertSumMetricLabelHasValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", "write")
+		internal.AssertSumMetricHasLabelValue(t, metric, 0, "direction", "read")
+		internal.AssertSumMetricHasLabelValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", "write")
 	}
 }
 
 func assertDiskPendingOperationsMetricValid(t *testing.T, metric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemDiskPendingOperations.New(), metric)
-	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 1)
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, "device")
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
+	internal.AssertSumMetricHasLabel(t, metric, 0, "device")
 }

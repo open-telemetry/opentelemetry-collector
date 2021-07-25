@@ -110,18 +110,18 @@ func TestScrape(t *testing.T) {
 func assertProcessesCountMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), metric)
 	if startTime != 0 {
-		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	assert.Equal(t, 2, metric.IntSum().DataPoints().Len())
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "status", "running")
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "status", "blocked")
+	assert.Equal(t, 2, metric.Sum().DataPoints().Len())
+	internal.AssertSumMetricHasLabelValue(t, metric, 0, "status", "running")
+	internal.AssertSumMetricHasLabelValue(t, metric, 1, "status", "blocked")
 }
 
 func assertProcessesCreatedMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
 	if startTime != 0 {
-		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCreated.New(), metric)
-	assert.Equal(t, 1, metric.IntSum().DataPoints().Len())
-	assert.Equal(t, 0, metric.IntSum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, metric.Sum().DataPoints().Len())
+	assert.Equal(t, 0, metric.Sum().DataPoints().At(0).LabelsMap().Len())
 }

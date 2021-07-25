@@ -100,14 +100,14 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, deviceUsages []*deviceUsage) {
 	metadata.Metrics.SystemFilesystemUsage.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(fileSystemStatesLen * len(deviceUsages))
 	for _, deviceUsage := range deviceUsages {
 		appendFileSystemUsageStateDataPoints(idps, now, deviceUsage)
 	}
 }
 
-func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.FilesystemDevice, partition.Device)
 	labelsMap.Insert(metadata.Labels.FilesystemType, partition.Fstype)
@@ -115,7 +115,7 @@ func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.
 	labelsMap.Insert(metadata.Labels.FilesystemMountpoint, partition.Mountpoint)
 	labelsMap.Insert(metadata.Labels.FilesystemState, stateLabel)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 }
 
 func getMountMode(opts string) string {
