@@ -167,6 +167,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 //
 // Must use NewResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type ResourceMetrics struct {
 	orig *otlpmetrics.ResourceMetrics
 }
@@ -342,6 +343,7 @@ func (es InstrumentationLibraryMetricsSlice) RemoveIf(f func(InstrumentationLibr
 //
 // Must use NewInstrumentationLibraryMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type InstrumentationLibraryMetrics struct {
 	orig *otlpmetrics.InstrumentationLibraryMetrics
 }
@@ -518,6 +520,7 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 //
 // Must use NewMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Metric struct {
 	orig *otlpmetrics.Metric
 }
@@ -578,6 +581,7 @@ func (ms Metric) CopyTo(dest Metric) {
 //
 // Must use NewIntGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+// Deprecated: Use Gauge instead.
 type IntGauge struct {
 	orig *otlpmetrics.IntGauge
 }
@@ -610,6 +614,7 @@ func (ms IntGauge) CopyTo(dest IntGauge) {
 //
 // Must use NewGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Gauge struct {
 	orig *otlpmetrics.Gauge
 }
@@ -642,6 +647,7 @@ func (ms Gauge) CopyTo(dest Gauge) {
 //
 // Must use NewIntSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+// Deprecated: Use Sum instead.
 type IntSum struct {
 	orig *otlpmetrics.IntSum
 }
@@ -696,6 +702,7 @@ func (ms IntSum) CopyTo(dest IntSum) {
 //
 // Must use NewSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Sum struct {
 	orig *otlpmetrics.Sum
 }
@@ -750,6 +757,7 @@ func (ms Sum) CopyTo(dest Sum) {
 //
 // Must use NewHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Histogram struct {
 	orig *otlpmetrics.Histogram
 }
@@ -793,6 +801,7 @@ func (ms Histogram) CopyTo(dest Histogram) {
 //
 // Must use NewSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Summary struct {
 	orig *otlpmetrics.Summary
 }
@@ -962,6 +971,7 @@ func (es IntDataPointSlice) RemoveIf(f func(IntDataPoint) bool) {
 //
 // Must use NewIntDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+// Deprecated: Use NumberDataPoint instead.
 type IntDataPoint struct {
 	orig *otlpmetrics.IntDataPoint
 }
@@ -1170,6 +1180,7 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 //
 // Must use NewNumberDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type NumberDataPoint struct {
 	orig *otlpmetrics.NumberDataPoint
 }
@@ -1398,6 +1409,7 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 //
 // Must use NewHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type HistogramDataPoint struct {
 	orig *otlpmetrics.HistogramDataPoint
 }
@@ -1639,6 +1651,7 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 //
 // Must use NewSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type SummaryDataPoint struct {
 	orig *otlpmetrics.SummaryDataPoint
 }
@@ -1858,6 +1871,7 @@ func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
 //
 // Must use NewValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type ValueAtQuantile struct {
 	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
@@ -2027,6 +2041,7 @@ func (es IntExemplarSlice) RemoveIf(f func(IntExemplar) bool) {
 //
 // Must use NewIntExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type IntExemplar struct {
 	orig *otlpmetrics.IntExemplar
 }
@@ -2202,6 +2217,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 //
 // Must use NewExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Exemplar struct {
 	orig *otlpmetrics.Exemplar
 }

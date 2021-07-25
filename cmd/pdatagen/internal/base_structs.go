@@ -26,6 +26,7 @@ const messageValueTemplate = `${description}
 //
 // Must use New${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+// ${deprecated}
 type ${structName} struct {
 	orig *${originName}
 }
@@ -78,6 +79,7 @@ type messageValueStruct struct {
 	structName     string
 	description    string
 	originFullName string
+	deprecated     string
 	fields         []baseField
 }
 
@@ -94,6 +96,8 @@ func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
 			return ms.originFullName
 		case "description":
 			return ms.description
+		case "deprecated":
+			return ms.deprecated
 		default:
 			panic(name)
 		}
