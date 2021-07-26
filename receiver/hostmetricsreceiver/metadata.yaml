@@ -110,7 +110,7 @@ metrics:
     description: The amount of physical memory in use.
     unit: By
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
 
@@ -118,7 +118,7 @@ metrics:
     description: Virtual memory size.
     unit: By
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
 
@@ -126,7 +126,7 @@ metrics:
     description: Disk bytes transferred.
     unit: By
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [process.direction]
@@ -144,7 +144,7 @@ metrics:
     description: Bytes of memory in use.
     unit: By
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
     labels: [mem.state]
@@ -171,7 +171,7 @@ metrics:
     description: Disk bytes transferred.
     unit: By
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [disk.device, disk.direction]
@@ -180,7 +180,7 @@ metrics:
     description: Disk operations count.
     unit: "{operations}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [disk.device, disk.direction]
@@ -216,7 +216,7 @@ metrics:
     description: The queue size of pending I/O operations.
     unit: "{operations}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
     labels: [disk.device]
@@ -225,7 +225,7 @@ metrics:
     description: The number of disk reads merged into single physical disk access operations.
     unit: "{operations}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [disk.device, disk.direction]
@@ -234,7 +234,7 @@ metrics:
     description: Filesystem bytes used.
     unit: By
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
     labels: [filesystem.device, filesystem.mode, filesystem.mountpoint, filesystem.type, filesystem.state]
@@ -243,7 +243,7 @@ metrics:
     description: FileSystem inodes used.
     unit: "{inodes}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
     labels: [filesystem.device, filesystem.mode, filesystem.mountpoint, filesystem.type, filesystem.state]
@@ -252,7 +252,7 @@ metrics:
     description: The number of packets transferred.
     unit: "{packets}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [network.device, network.direction]
@@ -261,7 +261,7 @@ metrics:
     description: The number of packets dropped.
     unit: "{packets}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [network.device, network.direction]
@@ -270,7 +270,7 @@ metrics:
     description: The number of errors encountered.
     unit: "{errors}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [network.device, network.direction]
@@ -279,7 +279,7 @@ metrics:
     description: The number of bytes transmitted and received.
     unit: "By"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [network.device, network.direction]
@@ -288,7 +288,7 @@ metrics:
     description: The number of connections.
     unit: "{connections}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
     labels: [network.protocol, network.state]
@@ -297,7 +297,7 @@ metrics:
     description: Swap (unix) or pagefile (windows) usage.
     unit: By
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
     labels: [paging.device, paging.state]
@@ -306,7 +306,7 @@ metrics:
     description: The number of paging operations.
     unit: "{operations}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [paging.direction, paging.type]
@@ -315,7 +315,7 @@ metrics:
     description: The number of page faults.
     unit: "{faults}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
     labels: [paging.type]
@@ -324,7 +324,7 @@ metrics:
     description: Total number of created processes.
     unit: "{processes}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: true
 
@@ -332,7 +332,7 @@ metrics:
     description: Total number of processes in each state.
     unit: "{processes}"
     data:
-      type: int sum
+      type: sum
       aggregation: cumulative
       monotonic: false
     labels: [processes.status]

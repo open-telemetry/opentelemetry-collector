@@ -19,8 +19,6 @@ import (
 )
 
 var (
-	_ MetricData = &intGauge{}
-	_ MetricData = &intSum{}
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
 	_ MetricData = &histogram{}
@@ -43,10 +41,6 @@ func (e *ymlMetricData) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var md MetricData
 
 	switch m.Type {
-	case "int gauge":
-		md = &intGauge{}
-	case "int sum":
-		md = &intSum{}
 	case "gauge":
 		md = &gauge{}
 	case "sum":
@@ -98,21 +92,6 @@ type Mono struct {
 	Monotonic bool `yaml:"monotonic"`
 }
 
-type intGauge struct {
-}
-
-func (i intGauge) Type() string {
-	return "IntGauge"
-}
-
-func (i intGauge) HasMonotonic() bool {
-	return false
-}
-
-func (i intGauge) HasAggregated() bool {
-	return false
-}
-
 type gauge struct {
 }
 
@@ -126,23 +105,6 @@ func (d gauge) HasMonotonic() bool {
 
 func (d gauge) HasAggregated() bool {
 	return false
-}
-
-type intSum struct {
-	Aggregated `yaml:",inline"`
-	Mono       `yaml:",inline"`
-}
-
-func (i intSum) Type() string {
-	return "IntSum"
-}
-
-func (i intSum) HasMonotonic() bool {
-	return true
-}
-
-func (i intSum) HasAggregated() bool {
-	return true
 }
 
 type sum struct {

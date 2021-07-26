@@ -46,16 +46,16 @@ func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime p
 func initializeProcessesCountMetric(metric pdata.Metric, startTime pdata.Timestamp, now pdata.Timestamp, misc *load.MiscStat) {
 	metadata.Metrics.SystemProcessesCount.Init(metric)
 
-	ddps := metric.IntSum().DataPoints()
+	ddps := metric.Sum().DataPoints()
 	ddps.EnsureCapacity(2)
 	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelProcessesStatus.Running, int64(misc.ProcsRunning))
 	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelProcessesStatus.Blocked, int64(misc.ProcsBlocked))
 }
 
-func initializeProcessesCountDataPoint(dataPoint pdata.IntDataPoint, startTime pdata.Timestamp, now pdata.Timestamp, statusLabel string, value int64) {
+func initializeProcessesCountDataPoint(dataPoint pdata.NumberDataPoint, startTime pdata.Timestamp, now pdata.Timestamp, statusLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessesStatus, statusLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 }
