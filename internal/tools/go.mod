@@ -12,5 +12,5 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.14.0
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
-	golang.org/x/tools v0.1.4
+	golang.org/x/tools v0.1.5
 )
