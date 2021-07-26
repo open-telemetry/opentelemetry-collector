@@ -58,10 +58,6 @@ var errUnknownMetricType = fmt.Errorf("unknown metric type")
 
 func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error) {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		return c.convertIntGauge(metric)
-	case pdata.MetricDataTypeIntSum:
-		return c.convertIntSum(metric)
 	case pdata.MetricDataTypeGauge:
 		return c.convertDoubleGauge(metric)
 	case pdata.MetricDataTypeSum:
@@ -100,46 +96,18 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, labels pdata.StringMa
 	), values
 }
 
-func (c *collector) convertIntGauge(metric pdata.Metric) (prometheus.Metric, error) {
-	ip := metric.IntGauge().DataPoints().At(0)
-
-	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
-	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, float64(ip.Value()), labels...)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m), nil
-	}
-	return m, nil
-}
-
 func (c *collector) convertDoubleGauge(metric pdata.Metric) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
 	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
-	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, ip.DoubleVal(), labels...)
-	if err != nil {
-		return nil, err
+	var value float64
+	switch ip.Type() {
+	case pdata.MetricValueTypeInt:
+		value = float64(ip.IntVal())
+	case pdata.MetricValueTypeDouble:
+		value = ip.DoubleVal()
 	}
-
-	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m), nil
-	}
-	return m, nil
-}
-
-func (c *collector) convertIntSum(metric pdata.Metric) (prometheus.Metric, error) {
-	ip := metric.IntSum().DataPoints().At(0)
-
-	metricType := prometheus.GaugeValue
-	if metric.IntSum().IsMonotonic() {
-		metricType = prometheus.CounterValue
-	}
-
-	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
-	m, err := prometheus.NewConstMetric(desc, metricType, float64(ip.Value()), labels...)
+	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, labels...)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +127,14 @@ func (c *collector) convertSum(metric pdata.Metric) (prometheus.Metric, error) {
 	}
 
 	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
-	m, err := prometheus.NewConstMetric(desc, metricType, ip.DoubleVal(), labels...)
+	var value float64
+	switch ip.Type() {
+	case pdata.MetricValueTypeInt:
+		value = float64(ip.IntVal())
+	case pdata.MetricValueTypeDouble:
+		value = ip.DoubleVal()
+	}
+	m, err := prometheus.NewConstMetric(desc, metricType, value, labels...)
 	if err != nil {
 		return nil, err
 	}

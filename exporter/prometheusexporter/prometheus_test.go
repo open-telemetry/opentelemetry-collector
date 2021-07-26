@@ -23,16 +23,14 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestPrometheusExporter(t *testing.T) {
@@ -128,12 +126,10 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
-	md := internaldata.OCToMetrics(nil, nil, metricBuilder(128, "metric_1_"))
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(nil, nil, metricBuilder(int64(delta), "metric_2_"))
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_")))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -206,12 +202,10 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	// Should accumulate multiple metrics
 
-	md := internaldata.OCToMetrics(nil, nil, metricBuilder(128, "metric_1_"))
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(nil, nil, metricBuilder(int64(delta), "metric_2_"))
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_")))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -284,7 +278,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	assert.NotNil(t, exp)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetricsOneSumMetric()
 	assert.NotNil(t, md)
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
@@ -313,71 +307,39 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 }
 
-func metricBuilder(delta int64, prefix string) []*metricspb.Metric {
-	return []*metricspb.Metric{
-		{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        prefix + "this/one/there(where)",
-				Description: "Extra ones",
-				Unit:        "1",
-				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				LabelKeys:   []*metricspb.LabelKey{{Key: "os"}, {Key: "arch"}},
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				{
-					StartTimestamp: &timestamppb.Timestamp{
-						Seconds: 1543160298 + delta,
-						Nanos:   100000090,
-					},
-					LabelValues: []*metricspb.LabelValue{
-						{Value: "windows", HasValue: true},
-						{Value: "x86", HasValue: true},
-					},
-					Points: []*metricspb.Point{
-						{
-							Timestamp: &timestamppb.Timestamp{
-								Seconds: 1543160298 + delta,
-								Nanos:   100000997,
-							},
-							Value: &metricspb.Point_Int64Value{
-								Int64Value: 99 + delta,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        prefix + "this/one/there(where)",
-				Description: "Extra ones",
-				Unit:        "1",
-				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				LabelKeys:   []*metricspb.LabelKey{{Key: "os"}, {Key: "arch"}},
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				{
-					StartTimestamp: &timestamppb.Timestamp{
-						Seconds: 1543160298,
-						Nanos:   100000090,
-					},
-					LabelValues: []*metricspb.LabelValue{
-						{Value: "linux", HasValue: true},
-						{Value: "x86", HasValue: true},
-					},
-					Points: []*metricspb.Point{
-						{
-							Timestamp: &timestamppb.Timestamp{
-								Seconds: 1543160298,
-								Nanos:   100000997,
-							},
-							Value: &metricspb.Point_Int64Value{
-								Int64Value: 100 + delta,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func metricBuilder(delta int64, prefix string) pdata.Metrics {
+	md := pdata.NewMetrics()
+	ms := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+
+	m1 := ms.AppendEmpty()
+	m1.SetName(prefix + "this/one/there(where)")
+	m1.SetDescription("Extra ones")
+	m1.SetUnit("1")
+	m1.SetDataType(pdata.MetricDataTypeSum)
+	d1 := m1.Sum()
+	d1.SetIsMonotonic(true)
+	d1.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dp1 := d1.DataPoints().AppendEmpty()
+	dp1.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(1543160298+delta, 100000090)))
+	dp1.SetTimestamp(pdata.TimestampFromTime(time.Unix(1543160298+delta, 100000997)))
+	dp1.LabelsMap().Upsert("os", "windows")
+	dp1.LabelsMap().Upsert("arch", "x86")
+	dp1.SetIntVal(99 + delta)
+
+	m2 := ms.AppendEmpty()
+	m2.SetName(prefix + "this/one/there(where)")
+	m2.SetDescription("Extra ones")
+	m2.SetUnit("1")
+	m2.SetDataType(pdata.MetricDataTypeSum)
+	d2 := m2.Sum()
+	d2.SetIsMonotonic(true)
+	d2.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dp2 := d2.DataPoints().AppendEmpty()
+	dp2.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(1543160298, 100000090)))
+	dp2.SetTimestamp(pdata.TimestampFromTime(time.Unix(1543160298, 100000997)))
+	dp2.LabelsMap().Upsert("os", "linux")
+	dp2.LabelsMap().Upsert("arch", "x86")
+	dp2.SetIntVal(100 + delta)
+
+	return md
 }
