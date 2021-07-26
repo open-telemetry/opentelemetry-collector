@@ -23,7 +23,7 @@ import (
 
 const fileSystemStatesLen = 3
 
-func appendFileSystemUsageStateDataPoints(idps pdata.IntDataPointSlice, now pdata.Timestamp, deviceUsage *deviceUsage) {
+func appendFileSystemUsageStateDataPoints(idps pdata.NumberDataPointSlice, now pdata.Timestamp, deviceUsage *deviceUsage) {
 	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Used, int64(deviceUsage.usage.Used))
 	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Free, int64(deviceUsage.usage.Free))
 	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Reserved, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free))
@@ -35,7 +35,7 @@ func appendSystemSpecificMetrics(metrics pdata.MetricSlice, now pdata.Timestamp,
 	metric := metrics.AppendEmpty()
 	metadata.Metrics.SystemFilesystemInodesUsage.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(deviceUsages))
 	for _, deviceUsage := range deviceUsages {
 		initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Used, int64(deviceUsage.usage.InodesUsed))

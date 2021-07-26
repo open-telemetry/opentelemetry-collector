@@ -76,7 +76,7 @@ func TestScrape(t *testing.T) {
 			if runtime.GOOS == "linux" {
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertIntSumMetricLabelHasValue(t, metrics.At(0), 2, metadata.Labels.MemState, metadata.LabelMemState.Inactive)
+				internal.AssertSumMetricHasLabelValue(t, metrics.At(0), 2, metadata.Labels.MemState, metadata.LabelMemState.Inactive)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -86,14 +86,14 @@ func TestScrape(t *testing.T) {
 
 func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
-	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, metadata.Labels.MemState, metadata.LabelMemState.Used)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, metadata.Labels.MemState, metadata.LabelMemState.Free)
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
+	internal.AssertSumMetricHasLabelValue(t, metric, 0, metadata.Labels.MemState, metadata.LabelMemState.Used)
+	internal.AssertSumMetricHasLabelValue(t, metric, 1, metadata.Labels.MemState, metadata.LabelMemState.Free)
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 2, metadata.Labels.MemState, metadata.LabelMemState.Buffered)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 3, metadata.Labels.MemState, metadata.LabelMemState.Cached)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 4, metadata.Labels.MemState, metadata.LabelMemState.SlabReclaimable)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 5, metadata.Labels.MemState, metadata.LabelMemState.SlabUnreclaimable)
+	internal.AssertSumMetricHasLabelValue(t, metric, 2, metadata.Labels.MemState, metadata.LabelMemState.Buffered)
+	internal.AssertSumMetricHasLabelValue(t, metric, 3, metadata.Labels.MemState, metadata.LabelMemState.Cached)
+	internal.AssertSumMetricHasLabelValue(t, metric, 4, metadata.Labels.MemState, metadata.LabelMemState.SlabReclaimable)
+	internal.AssertSumMetricHasLabelValue(t, metric, 5, metadata.Labels.MemState, metadata.LabelMemState.SlabUnreclaimable)
 }

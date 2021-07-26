@@ -245,37 +245,37 @@ func assertFileSystemUsageMetricValid(
 	expectedDeviceDataPoints int,
 	expectedDeviceLabelValues []map[string]string) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
-	for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
+	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
-			internal.AssertIntSumMetricLabelExists(t, metric, i, label)
+			internal.AssertSumMetricHasLabel(t, metric, i, label)
 		}
 	}
 
 	if expectedDeviceDataPoints > 0 {
-		assert.Equal(t, expectedDeviceDataPoints, metric.IntSum().DataPoints().Len())
+		assert.Equal(t, expectedDeviceDataPoints, metric.Sum().DataPoints().Len())
 
 		// Assert label values if specified.
 		if expectedDeviceLabelValues != nil {
 			dpsPerDevice := expectedDeviceDataPoints / len(expectedDeviceLabelValues)
 			deviceIdx := 0
-			for i := 0; i < metric.IntSum().DataPoints().Len(); i += dpsPerDevice {
+			for i := 0; i < metric.Sum().DataPoints().Len(); i += dpsPerDevice {
 				for j := i; j < i+dpsPerDevice; j++ {
 					for labelKey, labelValue := range expectedDeviceLabelValues[deviceIdx] {
-						internal.AssertIntSumMetricLabelHasValue(t, metric, j, labelKey, labelValue)
+						internal.AssertSumMetricHasLabelValue(t, metric, j, labelKey, labelValue)
 					}
 				}
 				deviceIdx++
 			}
 		}
 	} else {
-		assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), fileSystemStatesLen)
+		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "state", "used")
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "state", "free")
+	internal.AssertSumMetricHasLabelValue(t, metric, 0, "state", "used")
+	internal.AssertSumMetricHasLabelValue(t, metric, 1, "state", "free")
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 2, "state", "reserved")
+	internal.AssertSumMetricHasLabelValue(t, metric, 2, "state", "reserved")
 }
 
 func isUnix() bool {
