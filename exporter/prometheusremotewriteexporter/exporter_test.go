@@ -245,7 +245,7 @@ func Test_export(t *testing.T) {
 			t.Fatal(err)
 		}
 		require.NotNil(t, body)
-		// Receives the http requests and unzip, unmarshals, and extracts TimeSeries
+		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
