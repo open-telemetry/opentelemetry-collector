@@ -28,10 +28,6 @@ import (
 )
 
 func TestOCToMetrics(t *testing.T) {
-	// From OC we will generate Double Histogram always.
-	allTypesNoDataPoints := testdata.GenerateMetricsAllTypesNoDataPoints()
-	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
-
 	tests := []struct {
 		name     string
 		oc       *agentmetricspb.ExportMetricsServiceRequest
@@ -59,12 +55,6 @@ func TestOCToMetrics(t *testing.T) {
 		},
 
 		{
-			name:     "all-types-no-data-points",
-			oc:       generateOCTestDataNoPoints(),
-			internal: allTypesNoDataPoints,
-		},
-
-		{
 			name:     "one-metric-no-labels",
 			oc:       generateOCTestDataNoLabels(),
 			internal: testdata.GenerateMetricsOneMetricNoLabels(),
@@ -74,6 +64,12 @@ func TestOCToMetrics(t *testing.T) {
 			name:     "one-metric",
 			oc:       generateOCTestDataMetricsOneMetric(),
 			internal: testdata.GenerateMetricsOneMetric(),
+		},
+
+		{
+			name:     "all-types-no-data-points",
+			oc:       generateOCTestDataNoPoints(),
+			internal: testdata.GenerateMetricsAllTypesNoDataPoints(),
 		},
 
 		{
@@ -125,7 +121,7 @@ func TestOCToMetrics(t *testing.T) {
 					generateOCTestMetricDoubleSummary(),
 				},
 			},
-			internal: sampleMetricData,
+			internal: testdata.GeneratMetricsAllTypesWithSampleDatapoints(),
 		},
 	}
 
