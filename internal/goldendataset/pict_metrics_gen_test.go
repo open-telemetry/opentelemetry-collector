@@ -17,6 +17,7 @@ package goldendataset
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -45,7 +46,8 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     0,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: pdata.MetricDataTypeIntGauge,
+				MetricDescriptorType: pdata.MetricDataTypeGauge,
+				MetricValueType:      pdata.MetricValueTypeInt,
 				NumPtLabels:          0,
 			},
 		},
@@ -61,6 +63,7 @@ func TestPICTtoCfg(t *testing.T) {
 				NumResourceAttrs:     1,
 				NumPtsPerMetric:      1,
 				MetricDescriptorType: pdata.MetricDataTypeGauge,
+				MetricValueType:      pdata.MetricValueTypeDouble,
 				NumPtLabels:          1,
 			},
 		},
@@ -84,10 +87,11 @@ func TestPICTtoCfg(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actual := pictToCfg(test.inputs)
 			expected := test.cfg
-			require.Equal(t, expected.NumResourceAttrs, actual.NumResourceAttrs)
-			require.Equal(t, expected.NumPtsPerMetric, actual.NumPtsPerMetric)
-			require.Equal(t, expected.MetricDescriptorType, actual.MetricDescriptorType)
-			require.Equal(t, expected.NumPtLabels, actual.NumPtLabels)
+			assert.Equal(t, expected.NumResourceAttrs, actual.NumResourceAttrs)
+			assert.Equal(t, expected.NumPtsPerMetric, actual.NumPtsPerMetric)
+			assert.Equal(t, expected.MetricDescriptorType, actual.MetricDescriptorType)
+			assert.Equal(t, expected.MetricValueType, actual.MetricValueType)
+			assert.Equal(t, expected.NumPtLabels, actual.NumPtLabels)
 		})
 	}
 }

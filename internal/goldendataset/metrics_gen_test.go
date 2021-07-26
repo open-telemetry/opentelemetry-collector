@@ -43,8 +43,8 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, "my-md-description", pdm.Description())
 	require.Equal(t, "my-md-units", pdm.Unit())
 
-	require.Equal(t, pdata.MetricDataTypeIntGauge, pdm.DataType())
-	pts := pdm.IntGauge().DataPoints()
+	require.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
+	pts := pdm.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 
@@ -54,7 +54,7 @@ func TestGenDefault(t *testing.T) {
 
 	require.EqualValues(t, 940000000000000000, pt.StartTimestamp())
 	require.EqualValues(t, 940000000000000042, pt.Timestamp())
-	require.EqualValues(t, 1, pt.Value())
+	require.EqualValues(t, 1, pt.IntVal())
 }
 
 func TestDoubleHistogramFunctions(t *testing.T) {
@@ -99,7 +99,7 @@ func TestGenDoubleGauge(t *testing.T) {
 	pts := metric.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	require.EqualValues(t, 1, pt.DoubleVal())
+	require.EqualValues(t, float64(1), pt.IntVal())
 }
 
 func getMetric(md pdata.Metrics) pdata.Metric {
