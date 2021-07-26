@@ -36,8 +36,8 @@ var (
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		m.IntGauge().DataPoints().AppendEmpty().SetValue(0)
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.Gauge().DataPoints().AppendEmpty().SetIntVal(0)
 		return md
 	}()
 
@@ -48,8 +48,8 @@ var (
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		m.IntGauge().DataPoints().AppendEmpty().SetValue(0)
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.Gauge().DataPoints().AppendEmpty().SetIntVal(0)
 		return md
 	}()
 )
