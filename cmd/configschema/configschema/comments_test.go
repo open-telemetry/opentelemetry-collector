@@ -15,9 +15,11 @@
 package configschema
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,4 +28,11 @@ func TestFieldComments(t *testing.T) {
 	comments := commentsForStruct(v, testDR())
 	assert.Equal(t, "embedded, package qualified comment\n", comments["Duration"])
 	assert.Equal(t, "testStruct comment\n", comments["_struct"])
+}
+
+func TestExternalType(t *testing.T) {
+	u, _ := uuid.NewUUID()
+	v := reflect.ValueOf(u)
+	comments := commentsForStruct(v, testDR())
+	fmt.Printf("%v\n", comments)
 }

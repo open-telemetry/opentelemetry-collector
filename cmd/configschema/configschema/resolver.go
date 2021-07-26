@@ -15,6 +15,8 @@
 package configschema
 
 import (
+	"go/build"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -54,5 +56,66 @@ func NewDirResolver(srcRoot string, moduleName string) DirResolver {
 // PackageDir accepts a Type and returns its package dir.
 func (dr DirResolver) PackageDir(t reflect.Type) string {
 	pkg := strings.TrimPrefix(t.PkgPath(), dr.ModuleName+"/")
+	dir := localPackageDir(dr, pkg)
+	if _, err := os.ReadDir(dir); err != nil {
+		dir = externalPackageDir(dr, pkg)
+	}
+	return dir
+}
+
+// localPackageDir returns the path to a local package.
+func localPackageDir(dr DirResolver, pkg string) string {
 	return path.Join(dr.SrcRoot, pkg)
+}
+
+// externalPackageDir returns the path to an external package.
+func externalPackageDir(dr DirResolver, pkg string) string {
+	line := grepMod(path.Join(dr.SrcRoot, "go.mod"), pkg)
+	v := extractVersion(line)
+	goPath := os.Getenv("GOPATH")
+	if goPath == "" {
+		goPath = build.Default.GOPATH
+	}
+	pkgPath := buildExternalPath(goPath, pkg, v)
+	if _, err := os.ReadDir(pkgPath); err != nil {
+		panic(err)
+	}
+	return pkgPath
+}
+
+// grepMod returns the line within go.mod associated with the package
+// we are looking for.
+func grepMod(goModPath string, pkg string) string {
+	file, _ := os.ReadFile(goModPath)
+	goModFile := strings.Split(string(file), "\n")
+	var pkgPath string
+	for _, line := range goModFile {
+		switch {
+		case strings.Contains(line, pkg):
+			pkgPath = line
+		case strings.Contains(line, DefaultModule+" "):
+			pkgPath = line
+		case strings.Contains(line, "replace") && strings.Contains(line, pkg):
+			pkgPath = line
+		}
+	}
+	return pkgPath
+}
+
+// extractVersion gives us the version of the package from go.mod.
+func extractVersion(line string) string {
+	split := strings.Split(line, " ")
+	return split[len(split)-1]
+}
+
+// buildExternalPath builds a path to a package that is not local to directory.
+func buildExternalPath(goPath, pkg, v string) string {
+	switch {
+	case strings.HasPrefix(v, "./"):
+		return v
+	case strings.HasPrefix(v, "../"):
+		return path.Join(v, strings.TrimPrefix(pkg, DefaultModule))
+	default:
+		return path.Join(goPath, "pkg", "mod", pkg+"@"+v)
+	}
 }
