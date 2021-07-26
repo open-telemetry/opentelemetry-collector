@@ -83,7 +83,7 @@ func (l *Parser) AllKeys() []string {
 	return l.k.Keys()
 }
 
-// Unmarshal unmarshals the config into a struct.
+// Unmarshal unmarshalls the config into a struct.
 // Tags on the fields of the structure must be properly set.
 func (l *Parser) Unmarshal(rawVal interface{}) error {
 	decoder, err := mapstructure.NewDecoder(decoderConfig(rawVal))
@@ -93,7 +93,7 @@ func (l *Parser) Unmarshal(rawVal interface{}) error {
 	return decoder.Decode(l.ToStringMap())
 }
 
-// UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent.
+// UnmarshalExact unmarshalls the config into a struct, erroring if a field is nonexistent.
 func (l *Parser) UnmarshalExact(intoCfg interface{}) error {
 	dc := decoderConfig(intoCfg)
 	dc.ErrorUnused = true
