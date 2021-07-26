@@ -185,7 +185,7 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	point := dest.AppendEmpty()
 	point.SetStartTimestamp(startTsNanos)
 	point.SetTimestamp(tsNanos)
-	point.SetValue(mg.value)
+	point.SetDoubleVal(mg.value)
 	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
 
 	return true
@@ -203,7 +203,6 @@ var _ = (*metricFamilyPdata)(nil).updateLabelKeys
 
 func (mf *metricFamilyPdata) isCumulativeTypePdata() bool {
 	return mf.mtype == pdata.MetricDataTypeSum ||
-		mf.mtype == pdata.MetricDataTypeIntSum ||
 		mf.mtype == pdata.MetricDataTypeHistogram ||
 		mf.mtype == pdata.MetricDataTypeSummary
 }
