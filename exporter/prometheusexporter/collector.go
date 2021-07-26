@@ -59,7 +59,7 @@ var errUnknownMetricType = fmt.Errorf("unknown metric type")
 func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
-		return c.convertDoubleGauge(metric)
+		return c.convertGauge(metric)
 	case pdata.MetricDataTypeSum:
 		return c.convertSum(metric)
 	case pdata.MetricDataTypeHistogram:
@@ -96,7 +96,7 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, labels pdata.StringMa
 	), values
 }
 
-func (c *collector) convertDoubleGauge(metric pdata.Metric) (prometheus.Metric, error) {
+func (c *collector) convertGauge(metric pdata.Metric) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
 	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
