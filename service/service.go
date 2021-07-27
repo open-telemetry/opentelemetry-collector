@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -30,12 +30,13 @@ import (
 
 // service represents the implementation of a component.Host.
 type service struct {
-	factories         component.Factories
-	buildInfo         component.BuildInfo
-	config            *config.Config
-	logger            *zap.Logger
-	tracerProvider    trace.TracerProvider
-	asyncErrorChannel chan error
+	factories           component.Factories
+	buildInfo           component.BuildInfo
+	config              *config.Config
+	logger              *zap.Logger
+	tracerProvider      trace.TracerProvider
+	zPagesSpanProcessor *zpages.SpanProcessor
+	asyncErrorChannel   chan error
 
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers
@@ -45,13 +46,13 @@ type service struct {
 
 func newService(set *svcSettings) (*service, error) {
 	srv := &service{
-		factories: set.Factories,
-		buildInfo: set.BuildInfo,
-		config:    set.Config,
-		logger:    set.Logger,
-		// TODO: Configure the right tracer provider.
-		tracerProvider:    otel.GetTracerProvider(),
-		asyncErrorChannel: set.AsyncErrorChannel,
+		factories:           set.Factories,
+		buildInfo:           set.BuildInfo,
+		config:              set.Config,
+		logger:              set.Logger,
+		tracerProvider:      set.TracerProvider,
+		zPagesSpanProcessor: set.ZPagesSpanProcessor,
+		asyncErrorChannel:   set.AsyncErrorChannel,
 	}
 
 	if err := srv.config.Validate(); err != nil {
