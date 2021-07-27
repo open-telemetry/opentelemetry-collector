@@ -71,22 +71,12 @@ func extractLabelsFromResource(resource *pdata.Resource) pdata.StringMap {
 // addLabelsToMetric adds additional labels to the given metric
 func addLabelsToMetric(metric *pdata.Metric, labelMap pdata.StringMap) {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		addLabelsToIntDataPoints(metric.IntGauge().DataPoints(), labelMap)
 	case pdata.MetricDataTypeGauge:
 		addLabelsToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
-	case pdata.MetricDataTypeIntSum:
-		addLabelsToIntDataPoints(metric.IntSum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeSum:
 		addLabelsToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeHistogram:
 		addLabelsToDoubleHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
-	}
-}
-
-func addLabelsToIntDataPoints(ps pdata.IntDataPointSlice, newLabelMap pdata.StringMap) {
-	for i := 0; i < ps.Len(); i++ {
-		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
 	}
 }
 
