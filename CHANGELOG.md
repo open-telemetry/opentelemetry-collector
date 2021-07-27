@@ -11,7 +11,6 @@
   - Use [`ballast extension`](./extension/ballastextension/README.md) to set memory ballast instead.
 - Rename `DoubleDataPoint` to `NumberDataPoint` (#3633)
 - Remove `IntHistogram` (#3676)
-- Rename `NumberDataPointType` to `MetricValueType` (#3700)
 
 ## 💡 Enhancements 💡
 
