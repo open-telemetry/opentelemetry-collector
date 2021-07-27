@@ -91,18 +91,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 					if metric.Name() == filteredMetric {
 						dt := metric.DataType()
 						switch dt {
-						case pdata.MetricDataTypeIntGauge:
-							pts := metric.IntGauge().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
-							}
 						case pdata.MetricDataTypeGauge:
 							pts := metric.Gauge().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
-							}
-						case pdata.MetricDataTypeIntSum:
-							pts := metric.IntSum().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
