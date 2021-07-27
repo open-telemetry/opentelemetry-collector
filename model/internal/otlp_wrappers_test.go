@@ -212,6 +212,50 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 				},
 			}},
 		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_IntHistogram{
+					IntHistogram: &otlpmetrics.IntHistogram{ //nolint:staticcheck // SA1019 ignore this!
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+						DataPoints: []*otlpmetrics.IntHistogramDataPoint{ //nolint:staticcheck // SA1019 ignore this!
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "key2", Value: "value2"},
+								},
+								BucketCounts:      []uint64{10, 15, 1},
+								ExplicitBounds:    []float64{1, 2},
+								Sum:               10,
+								StartTimeUnixNano: 2,
+								TimeUnixNano:      3,
+								Count:             26,
+								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Histogram{
+					Histogram: &otlpmetrics.Histogram{
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+						DataPoints: []*otlpmetrics.HistogramDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "key2", Value: "value2"},
+								},
+								BucketCounts:      []uint64{10, 15, 1},
+								ExplicitBounds:    []float64{1, 2},
+								Sum:               10.0,
+								StartTimeUnixNano: 2,
+								TimeUnixNano:      3,
+								Count:             26,
+								Exemplars:         []otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
 	}
 
 	for _, test := range tests {
@@ -338,6 +382,8 @@ func TestDeprecatedIntSum(t *testing.T) {
 			inputMetrics: []*otlpmetrics.Metric{{
 				Data: &otlpmetrics.Metric_Sum{
 					Sum: &otlpmetrics.Sum{
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+						IsMonotonic:            true,
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
 								Labels: []otlpcommon.StringKeyValue{
@@ -355,6 +401,8 @@ func TestDeprecatedIntSum(t *testing.T) {
 			outputMetrics: []*otlpmetrics.Metric{{
 				Data: &otlpmetrics.Metric_Sum{
 					Sum: &otlpmetrics.Sum{
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+						IsMonotonic:            true,
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
 								Labels: []otlpcommon.StringKeyValue{
@@ -363,6 +411,86 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 20,
 								TimeUnixNano:      21,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
+								Exemplars:         []otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_IntSum{
+					IntSum: &otlpmetrics.IntSum{ //nolint:staticcheck // SA1019 ignore this!
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+						IsMonotonic:            true,
+						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntSumKey", Value: "IntSumValue"},
+								},
+								StartTimeUnixNano: 22,
+								TimeUnixNano:      23,
+								Value:             201,
+								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Sum{
+					Sum: &otlpmetrics.Sum{
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+						IsMonotonic:            true,
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntSumKey", Value: "IntSumValue"},
+								},
+								StartTimeUnixNano: 22,
+								TimeUnixNano:      23,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
+								Exemplars:         []otlpmetrics.Exemplar{},
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_IntSum{
+					IntSum: &otlpmetrics.IntSum{ //nolint:staticcheck // SA1019 ignore this!
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+						IsMonotonic:            false,
+						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntSumKey", Value: "IntSumValue"},
+								},
+								StartTimeUnixNano: 22,
+								TimeUnixNano:      23,
+								Value:             201,
+								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+							},
+						},
+					},
+				},
+			}},
+			outputMetrics: []*otlpmetrics.Metric{{
+				Data: &otlpmetrics.Metric_Sum{
+					Sum: &otlpmetrics.Sum{
+						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+						IsMonotonic:            false,
+						DataPoints: []*otlpmetrics.NumberDataPoint{
+							{
+								Labels: []otlpcommon.StringKeyValue{
+									{Key: "IntSumKey", Value: "IntSumValue"},
+								},
+								StartTimeUnixNano: 22,
+								TimeUnixNano:      23,
+								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
 								Exemplars:         []otlpmetrics.Exemplar{},
 							},
 						},

@@ -144,15 +144,15 @@ func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.
 }
 
 func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge {
-	datapoints := []*otlpmetrics.NumberDataPoint{}
-	for _, datapoint := range src.IntGauge.DataPoints {
-		datapoints = append(datapoints, &otlpmetrics.NumberDataPoint{
+	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntGauge.DataPoints))
+	for i, datapoint := range src.IntGauge.DataPoints {
+		datapoints[i] = &otlpmetrics.NumberDataPoint{
 			Labels:            datapoint.Labels,
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
 			Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: datapoint.Value},
-		})
+		}
 	}
 	return &otlpmetrics.Metric_Gauge{
 		Gauge: &otlpmetrics.Gauge{
@@ -162,19 +162,21 @@ func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge
 }
 
 func intSumToSum(src *otlpmetrics.Metric_IntSum) *otlpmetrics.Metric_Sum {
-	datapoints := []*otlpmetrics.NumberDataPoint{}
-	for _, datapoint := range src.IntSum.DataPoints {
-		datapoints = append(datapoints, &otlpmetrics.NumberDataPoint{
+	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntSum.DataPoints))
+	for i, datapoint := range src.IntSum.DataPoints {
+		datapoints[i] = &otlpmetrics.NumberDataPoint{
 			Labels:            datapoint.Labels,
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
 			Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: datapoint.Value},
-		})
+		}
 	}
 	return &otlpmetrics.Metric_Sum{
 		Sum: &otlpmetrics.Sum{
-			DataPoints: datapoints,
+			AggregationTemporality: src.IntSum.AggregationTemporality,
+			DataPoints:             datapoints,
+			IsMonotonic:            src.IntSum.IsMonotonic,
 		},
 	}
 }
