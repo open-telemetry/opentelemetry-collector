@@ -148,11 +148,11 @@ func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
-		im.SetDataType(pdata.MetricDataTypeIntSum)
-		idp := im.IntSum().DataPoints().AppendEmpty()
+		im.SetDataType(pdata.MetricDataTypeSum)
+		idp := im.Sum().DataPoints().AppendEmpty()
 		idp.SetStartTimestamp(startTime)
 		idp.SetTimestamp(endTime)
-		idp.SetValue(123)
+		idp.SetIntVal(123)
 	}
 	return md
 }
