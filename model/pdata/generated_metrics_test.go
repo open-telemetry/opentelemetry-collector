@@ -425,20 +425,6 @@ func TestMetric_Unit(t *testing.T) {
 	assert.EqualValues(t, testValUnit, ms.Unit())
 }
 
-func TestIntGauge_CopyTo(t *testing.T) {
-	ms := NewIntGauge()
-	generateTestIntGauge().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntGauge(), ms)
-}
-
-func TestIntGauge_DataPoints(t *testing.T) {
-	ms := NewIntGauge()
-	assert.EqualValues(t, NewIntDataPointSlice(), ms.DataPoints())
-	fillTestIntDataPointSlice(ms.DataPoints())
-	testValDataPoints := generateTestIntDataPointSlice()
-	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
-}
-
 func TestGauge_CopyTo(t *testing.T) {
 	ms := NewGauge()
 	generateTestGauge().CopyTo(ms)
@@ -450,36 +436,6 @@ func TestGauge_DataPoints(t *testing.T) {
 	assert.EqualValues(t, NewNumberDataPointSlice(), ms.DataPoints())
 	fillTestNumberDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestNumberDataPointSlice()
-	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
-}
-
-func TestIntSum_CopyTo(t *testing.T) {
-	ms := NewIntSum()
-	generateTestIntSum().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntSum(), ms)
-}
-
-func TestIntSum_AggregationTemporality(t *testing.T) {
-	ms := NewIntSum()
-	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporalityCumulative
-	ms.SetAggregationTemporality(testValAggregationTemporality)
-	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
-}
-
-func TestIntSum_IsMonotonic(t *testing.T) {
-	ms := NewIntSum()
-	assert.EqualValues(t, false, ms.IsMonotonic())
-	testValIsMonotonic := true
-	ms.SetIsMonotonic(testValIsMonotonic)
-	assert.EqualValues(t, testValIsMonotonic, ms.IsMonotonic())
-}
-
-func TestIntSum_DataPoints(t *testing.T) {
-	ms := NewIntSum()
-	assert.EqualValues(t, NewIntDataPointSlice(), ms.DataPoints())
-	fillTestIntDataPointSlice(ms.DataPoints())
-	testValDataPoints := generateTestIntDataPointSlice()
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
@@ -1552,16 +1508,6 @@ func fillTestMetric(tv Metric) {
 	fillTestIntGauge(tv.IntGauge())
 }
 
-func generateTestIntGauge() IntGauge {
-	tv := NewIntGauge()
-	fillTestIntGauge(tv)
-	return tv
-}
-
-func fillTestIntGauge(tv IntGauge) {
-	fillTestIntDataPointSlice(tv.DataPoints())
-}
-
 func generateTestGauge() Gauge {
 	tv := NewGauge()
 	fillTestGauge(tv)
@@ -1570,18 +1516,6 @@ func generateTestGauge() Gauge {
 
 func fillTestGauge(tv Gauge) {
 	fillTestNumberDataPointSlice(tv.DataPoints())
-}
-
-func generateTestIntSum() IntSum {
-	tv := NewIntSum()
-	fillTestIntSum(tv)
-	return tv
-}
-
-func fillTestIntSum(tv IntSum) {
-	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
-	tv.SetIsMonotonic(true)
-	fillTestIntDataPointSlice(tv.DataPoints())
 }
 
 func generateTestSum() Sum {

@@ -574,39 +574,6 @@ func (ms Metric) CopyTo(dest Metric) {
 	copyData(ms.orig, dest.orig)
 }
 
-// IntGauge represents the type of a int scalar metric that always exports the "current value" for every data point.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewIntGauge function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-// Deprecated: Use Gauge instead.
-type IntGauge struct {
-	orig *otlpmetrics.IntGauge
-}
-
-func newIntGauge(orig *otlpmetrics.IntGauge) IntGauge {
-	return IntGauge{orig: orig}
-}
-
-// NewIntGauge creates a new empty IntGauge.
-//
-// This must be used only in testing code since no "Set" method available.
-func NewIntGauge() IntGauge {
-	return newIntGauge(&otlpmetrics.IntGauge{})
-}
-
-// DataPoints returns the DataPoints associated with this IntGauge.
-func (ms IntGauge) DataPoints() IntDataPointSlice {
-	return newIntDataPointSlice(&(*ms.orig).DataPoints)
-}
-
-// CopyTo copies all properties from the current struct to the dest.
-func (ms IntGauge) CopyTo(dest IntGauge) {
-	ms.DataPoints().CopyTo(dest.DataPoints())
-}
-
 // Gauge represents the type of a double scalar metric that always exports the "current value" for every data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -637,61 +604,6 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Gauge) CopyTo(dest Gauge) {
-	ms.DataPoints().CopyTo(dest.DataPoints())
-}
-
-// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewIntSum function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-// Deprecated: Use Sum instead.
-type IntSum struct {
-	orig *otlpmetrics.IntSum
-}
-
-func newIntSum(orig *otlpmetrics.IntSum) IntSum {
-	return IntSum{orig: orig}
-}
-
-// NewIntSum creates a new empty IntSum.
-//
-// This must be used only in testing code since no "Set" method available.
-func NewIntSum() IntSum {
-	return newIntSum(&otlpmetrics.IntSum{})
-}
-
-// AggregationTemporality returns the aggregationtemporality associated with this IntSum.
-func (ms IntSum) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality((*ms.orig).AggregationTemporality)
-}
-
-// SetAggregationTemporality replaces the aggregationtemporality associated with this IntSum.
-func (ms IntSum) SetAggregationTemporality(v AggregationTemporality) {
-	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
-}
-
-// IsMonotonic returns the ismonotonic associated with this IntSum.
-func (ms IntSum) IsMonotonic() bool {
-	return (*ms.orig).IsMonotonic
-}
-
-// SetIsMonotonic replaces the ismonotonic associated with this IntSum.
-func (ms IntSum) SetIsMonotonic(v bool) {
-	(*ms.orig).IsMonotonic = v
-}
-
-// DataPoints returns the DataPoints associated with this IntSum.
-func (ms IntSum) DataPoints() IntDataPointSlice {
-	return newIntDataPointSlice(&(*ms.orig).DataPoints)
-}
-
-// CopyTo copies all properties from the current struct to the dest.
-func (ms IntSum) CopyTo(dest IntSum) {
-	dest.SetAggregationTemporality(ms.AggregationTemporality())
-	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 

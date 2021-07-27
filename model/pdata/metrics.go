@@ -105,12 +105,8 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
 				switch m.DataType() {
-				case MetricDataTypeIntGauge:
-					dataPointCount += m.IntGauge().DataPoints().Len()
 				case MetricDataTypeGauge:
 					dataPointCount += m.Gauge().DataPoints().Len()
-				case MetricDataTypeIntSum:
-					dataPointCount += m.IntSum().DataPoints().Len()
 				case MetricDataTypeSum:
 					dataPointCount += m.Sum().DataPoints().Len()
 				case MetricDataTypeHistogram:
@@ -129,9 +125,7 @@ type MetricDataType int32
 
 const (
 	MetricDataTypeNone MetricDataType = iota
-	MetricDataTypeIntGauge
 	MetricDataTypeGauge
-	MetricDataTypeIntSum
 	MetricDataTypeSum
 	MetricDataTypeHistogram
 	MetricDataTypeSummary
@@ -142,12 +136,8 @@ func (mdt MetricDataType) String() string {
 	switch mdt {
 	case MetricDataTypeNone:
 		return "None"
-	case MetricDataTypeIntGauge:
-		return "IntGauge"
 	case MetricDataTypeGauge:
 		return "Gauge"
-	case MetricDataTypeIntSum:
-		return "IntSum"
 	case MetricDataTypeSum:
 		return "Sum"
 	case MetricDataTypeHistogram:
@@ -162,12 +152,8 @@ func (mdt MetricDataType) String() string {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DataType() MetricDataType {
 	switch ms.orig.Data.(type) {
-	case *otlpmetrics.Metric_IntGauge:
-		return MetricDataTypeIntGauge
 	case *otlpmetrics.Metric_Gauge:
 		return MetricDataTypeGauge
-	case *otlpmetrics.Metric_IntSum:
-		return MetricDataTypeIntSum
 	case *otlpmetrics.Metric_Sum:
 		return MetricDataTypeSum
 	case *otlpmetrics.Metric_Histogram:
@@ -182,12 +168,8 @@ func (ms Metric) DataType() MetricDataType {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetDataType(ty MetricDataType) {
 	switch ty {
-	case MetricDataTypeIntGauge:
-		ms.orig.Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
 	case MetricDataTypeGauge:
 		ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-	case MetricDataTypeIntSum:
-		ms.orig.Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
 	case MetricDataTypeSum:
 		ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	case MetricDataTypeHistogram:
@@ -197,25 +179,11 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 	}
 }
 
-// IntGauge returns the data as IntGauge.
-// Calling this function when DataType() != MetricDataTypeIntGauge will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntGauge() IntGauge {
-	return newIntGauge(ms.orig.Data.(*otlpmetrics.Metric_IntGauge).IntGauge)
-}
-
 // Gauge returns the data as Gauge.
 // Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Gauge() Gauge {
 	return newGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
-}
-
-// IntSum returns the data as IntSum.
-// Calling this function when DataType() != MetricDataTypeIntSum  will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntSum() IntSum {
-	return newIntSum(ms.orig.Data.(*otlpmetrics.Metric_IntSum).IntSum)
 }
 
 // Sum returns the data as Sum.
@@ -241,17 +209,9 @@ func (ms Metric) Summary() Summary {
 
 func copyData(src, dest *otlpmetrics.Metric) {
 	switch srcData := (src).Data.(type) {
-	case *otlpmetrics.Metric_IntGauge:
-		data := &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
-		newIntGauge(srcData.IntGauge).CopyTo(newIntGauge(data.IntGauge))
-		dest.Data = data
 	case *otlpmetrics.Metric_Gauge:
 		data := &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
 		newGauge(srcData.Gauge).CopyTo(newGauge(data.Gauge))
-		dest.Data = data
-	case *otlpmetrics.Metric_IntSum:
-		data := &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
-		newIntSum(srcData.IntSum).CopyTo(newIntSum(data.IntSum))
 		dest.Data = data
 	case *otlpmetrics.Metric_Sum:
 		data := &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
