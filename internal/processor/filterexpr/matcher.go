@@ -44,12 +44,8 @@ func NewMatcher(expression string) (*Matcher, error) {
 func (m *Matcher) MatchMetric(metric pdata.Metric) (bool, error) {
 	metricName := metric.Name()
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		return m.matchIntGauge(metricName, metric.IntGauge())
 	case pdata.MetricDataTypeGauge:
 		return m.matchGauge(metricName, metric.Gauge())
-	case pdata.MetricDataTypeIntSum:
-		return m.matchIntSum(metricName, metric.IntSum())
 	case pdata.MetricDataTypeSum:
 		return m.matchSum(metricName, metric.Sum())
 	case pdata.MetricDataTypeHistogram:
@@ -57,20 +53,6 @@ func (m *Matcher) MatchMetric(metric pdata.Metric) (bool, error) {
 	default:
 		return false, nil
 	}
-}
-
-func (m *Matcher) matchIntGauge(metricName string, gauge pdata.IntGauge) (bool, error) {
-	pts := gauge.DataPoints()
-	for i := 0; i < pts.Len(); i++ {
-		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
-		if err != nil {
-			return false, err
-		}
-		if matched {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (m *Matcher) matchGauge(metricName string, gauge pdata.Gauge) (bool, error) {
@@ -88,20 +70,6 @@ func (m *Matcher) matchGauge(metricName string, gauge pdata.Gauge) (bool, error)
 }
 
 func (m *Matcher) matchSum(metricName string, sum pdata.Sum) (bool, error) {
-	pts := sum.DataPoints()
-	for i := 0; i < pts.Len(); i++ {
-		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
-		if err != nil {
-			return false, err
-		}
-		if matched {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (m *Matcher) matchIntSum(metricName string, sum pdata.IntSum) (bool, error) {
 	pts := sum.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())

@@ -27,6 +27,8 @@ import (
 type MetricsCfg struct {
 	// The type of metric to generate
 	MetricDescriptorType pdata.MetricDataType
+	// MetricValueType is the type of the numeric value: int or double.
+	MetricValueType pdata.MetricValueType
 	// If MetricDescriptorType is one of the Sum, this describes if the sum is monotonic or not.
 	IsMonotonicSum bool
 	// A prefix for every metric name
@@ -55,7 +57,8 @@ type MetricsCfg struct {
 // (but boring) metrics, and can be used as a starting point for making alterations.
 func DefaultCfg() MetricsCfg {
 	return MetricsCfg{
-		MetricDescriptorType: pdata.MetricDataTypeIntGauge,
+		MetricDescriptorType: pdata.MetricDataTypeGauge,
+		MetricValueType:      pdata.MetricValueTypeInt,
 		MetricNamePrefix:     "",
 		NumILMPerResource:    1,
 		NumMetricsPerILM:     1,
@@ -117,24 +120,15 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.Instrumentat
 		metric := metrics.AppendEmpty()
 		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
-		case pdata.MetricDataTypeIntGauge:
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			populateIntPoints(cfg, metric.IntGauge().DataPoints())
 		case pdata.MetricDataTypeGauge:
 			metric.SetDataType(pdata.MetricDataTypeGauge)
-			populateDoublePoints(cfg, metric.Gauge().DataPoints())
-		case pdata.MetricDataTypeIntSum:
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			sum := metric.IntSum()
-			sum.SetIsMonotonic(cfg.IsMonotonicSum)
-			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			populateIntPoints(cfg, sum.DataPoints())
+			populateNumberPoints(cfg, metric.Gauge().DataPoints())
 		case pdata.MetricDataTypeSum:
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			sum := metric.Sum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			populateDoublePoints(cfg, sum.DataPoints())
+			populateNumberPoints(cfg, sum.DataPoints())
 		case pdata.MetricDataTypeHistogram:
 			metric.SetDataType(pdata.MetricDataTypeHistogram)
 			histo := metric.Histogram()
@@ -151,24 +145,20 @@ func (g *metricGenerator) populateMetricDesc(cfg MetricsCfg, metric pdata.Metric
 	metric.SetUnit("my-md-units")
 }
 
-func populateIntPoints(cfg MetricsCfg, pts pdata.IntDataPointSlice) {
+func populateNumberPoints(cfg MetricsCfg, pts pdata.NumberDataPointSlice) {
 	pts.EnsureCapacity(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
-		pt.SetValue(int64(cfg.PtVal + i))
-		populatePtLabels(cfg, pt.LabelsMap())
-	}
-}
-
-func populateDoublePoints(cfg MetricsCfg, pts pdata.NumberDataPointSlice) {
-	pts.EnsureCapacity(cfg.NumPtsPerMetric)
-	for i := 0; i < cfg.NumPtsPerMetric; i++ {
-		pt := pts.AppendEmpty()
-		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
-		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
-		pt.SetDoubleVal(float64(cfg.PtVal + i))
+		switch cfg.MetricValueType {
+		case pdata.MetricValueTypeInt:
+			pt.SetIntVal(int64(cfg.PtVal + i))
+		case pdata.MetricValueTypeDouble:
+			pt.SetDoubleVal(float64(cfg.PtVal + i))
+		default:
+			panic("Should not happen")
+		}
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
 }

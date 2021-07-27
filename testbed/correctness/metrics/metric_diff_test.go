@@ -61,16 +61,16 @@ func TestDifferentNumPts(t *testing.T) {
 	assert.Len(t, diffs, 1)
 }
 
-func TestDifferentPtTypes(t *testing.T) {
+func TestDifferentPtValueTypes(t *testing.T) {
 	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricDataTypeGauge
+	cfg.MetricValueType = pdata.MetricValueTypeDouble
 	actual := goldendataset.MetricsFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 1)
 }
 
-func TestDoubleHistogram(t *testing.T) {
+func TestHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
 	cfg1.MetricDescriptorType = pdata.MetricDataTypeHistogram
 	expected := goldendataset.MetricsFromCfg(cfg1)
