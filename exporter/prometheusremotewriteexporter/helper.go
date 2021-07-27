@@ -53,12 +53,8 @@ func validateMetrics(metric pdata.Metric) bool {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
 		return metric.Gauge().DataPoints().Len() != 0
-	case pdata.MetricDataTypeIntGauge:
-		return metric.IntGauge().DataPoints().Len() != 0
 	case pdata.MetricDataTypeSum:
 		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
-	case pdata.MetricDataTypeIntSum:
-		return metric.IntSum().DataPoints().Len() != 0 && metric.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeHistogram:
 		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityCumulative
 	case pdata.MetricDataTypeSummary:
@@ -272,24 +268,14 @@ func addSingleNumberDataPoint(pt pdata.NumberDataPoint, resource pdata.Resource,
 	name := getPromMetricName(metric, namespace)
 	labels := createLabelSet(resource, pt.LabelsMap(), externalLabels, nameStr, name)
 	sample := &prompb.Sample{
-		Value: pt.DoubleVal(),
 		// convert ns to ms
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}
-	addSample(tsMap, sample, labels, metric)
-}
-
-// addSingleIntDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
-// to its corresponding time series in tsMap
-func addSingleIntDataPoint(pt pdata.IntDataPoint, resource pdata.Resource, metric pdata.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
-	// create parameters for addSample
-	name := getPromMetricName(metric, namespace)
-	labels := createLabelSet(resource, pt.LabelsMap(), externalLabels, nameStr, name)
-	sample := &prompb.Sample{
-		Value: float64(pt.Value()),
-		// convert ns to ms
-		Timestamp: convertTimeStamp(pt.Timestamp()),
+	switch pt.Type() {
+	case pdata.MetricValueTypeInt:
+		sample.Value = float64(pt.IntVal())
+	case pdata.MetricValueTypeDouble:
+		sample.Value = pt.DoubleVal()
 	}
 	addSample(tsMap, sample, labels, metric)
 }
