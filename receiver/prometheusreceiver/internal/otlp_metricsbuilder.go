@@ -89,7 +89,7 @@ type metricBuilderPdata struct {
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
-// scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
+// scraped page by calling its AddDataPoint function, and turn them into a pdata.Metrics object.
 // by calling its Build function
 func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger, stalenessStore *stalenessStore) *metricBuilderPdata {
 	var regex *regexp.Regexp
@@ -167,13 +167,34 @@ func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) 
 	b.hasData = true
 
 	if b.currentMf != nil && !b.currentMf.IsSameFamily(metricName) {
-		ts, dts := b.currentMf.ToMetricPdata(&b.metrics)
-		b.numTimeseries += ts
-		b.droppedTimeseries += dts
+		nTs, nDts := b.currentMf.ToMetricPdata(&b.metrics)
+		b.numTimeseries += nTs
+		b.droppedTimeseries += nDts
 		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.intervalStartTimeMs)
 	} else if b.currentMf == nil {
 		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.intervalStartTimeMs)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)
+}
+
+// Build an pdata.MetricSlice based on all added data complexValue.
+// The only error returned by this function is errNoDataToBuild.
+func (b *metricBuilderPdata) Build() (*pdata.MetricSlice, int, int, error) {
+	if !b.hasData {
+		if b.hasInternalMetric {
+			metricsL := pdata.NewMetricSlice()
+			return &metricsL, 0, 0, nil
+		}
+		return nil, 0, 0, errNoDataToBuild
+	}
+
+	if b.currentMf != nil {
+		ts, dts := b.currentMf.ToMetricPdata(&b.metrics)
+		b.numTimeseries += ts
+		b.droppedTimeseries += dts
+		b.currentMf = nil
+	}
+
+	return &b.metrics, b.numTimeseries, b.droppedTimeseries, nil
 }

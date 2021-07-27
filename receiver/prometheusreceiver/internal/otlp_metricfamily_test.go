@@ -96,7 +96,10 @@ func TestIsCumulativeEquivalence(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mf := newMetricFamily(tt.name, mc, zap.NewNop(), 1).(*metricFamily)
 			mfp := newMetricFamilyPdata(tt.name, mc, 1).(*metricFamilyPdata)
-			assert.Equal(t, mf.isCumulativeType(), mfp.isCumulativeTypePdata(), "mismatch in isCumulative")
+			msg := fmt.Sprintf("\n%q::mf.isCumulativeType()=%t\n%q::mp.isCumulativeType()=%t\n",
+				mf.mtype, mf.isCumulativeType(),
+				mfp.mtype, mfp.isCumulativeTypePdata())
+			assert.Equal(t, mf.isCumulativeType(), mfp.isCumulativeTypePdata(), "mismatch in isCumulative "+msg)
 			assert.Equal(t, mf.isCumulativeType(), tt.want, "isCumulative does not match for regular metricFamily")
 			assert.Equal(t, mfp.isCumulativeTypePdata(), tt.want, "isCumulative does not match for pdata metricFamily")
 		})

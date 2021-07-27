@@ -274,6 +274,9 @@ func (mf *metricFamilyPdata) getGroups() []*metricGroupPdata {
 
 func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int) {
 	metric := pdata.NewMetric()
+	metric.SetDataType(mf.mtype)
+	metric.SetName(mf.name)
+
 	pointCount := 0
 
 	switch mf.mtype {
@@ -307,7 +310,8 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 		}
 		pointCount = sdpL.Len()
 
-	default:
+	default: // Everything else should be set to a Gauge.
+		metric.SetDataType(pdata.MetricDataTypeGauge)
 		gauge := metric.Gauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.getGroups() {

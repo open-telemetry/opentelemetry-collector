@@ -198,8 +198,8 @@ func TestConvToPdataMetricType(t *testing.T) {
 		},
 		{
 			name:  "textparse.gauge",
-			mtype: textparse.MetricTypeCounter,
-			want:  pdata.MetricDataTypeSum,
+			mtype: textparse.MetricTypeGauge,
+			want:  pdata.MetricDataTypeGauge,
 		},
 		{
 			name:  "textparse.unknown",
@@ -232,7 +232,7 @@ func TestConvToPdataMetricType(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got := convToPdataMetricType(tt.mtype)
-			require.Equal(t, got, tt.want)
+			require.Equal(t, got.String(), tt.want.String())
 		})
 	}
 }
@@ -325,4 +325,312 @@ func TestIsUsefulLabelPdata(t *testing.T) {
 			}
 		})
 	}
+}
+
+type buildTestDataPdata struct {
+	name   string
+	inputs []*testScrapedPage
+	wants  func() []*pdata.MetricSlice
+}
+
+func Test_OTLPMetricBuilder_counters(t *testing.T) {
+	startTsNanos := pdata.Timestamp(startTs * 1e6)
+	tests := []buildTestDataPdata{
+		{
+			name: "single-item",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("counter_test", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetName("counter_test")
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				sum := m0.Sum()
+				pt0 := sum.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL}
+			},
+		},
+		{
+			name: "two-items",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("counter_test", 150, "foo", "bar"),
+						createDataPoint("counter_test", 25, "foo", "other"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetName("counter_test")
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				sum := m0.Sum()
+				pt0 := sum.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(150.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				pt1 := sum.DataPoints().AppendEmpty()
+				pt1.SetDoubleVal(25.0)
+				pt1.SetStartTimestamp(0)
+				pt1.SetTimestamp(startTsNanos)
+				pt1.LabelsMap().Insert("foo", "other")
+
+				return []*pdata.MetricSlice{&mL}
+			},
+		},
+		{
+			name: "two-metrics",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("counter_test", 150, "foo", "bar"),
+						createDataPoint("counter_test", 25, "foo", "other"),
+						createDataPoint("counter_test2", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("counter_test")
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				sum0 := m0.Sum()
+				pt0 := sum0.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(150.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				pt1 := sum0.DataPoints().AppendEmpty()
+				pt1.SetDoubleVal(25.0)
+				pt1.SetStartTimestamp(0)
+				pt1.SetTimestamp(startTsNanos)
+				pt1.LabelsMap().Insert("foo", "other")
+
+				m1 := mL0.AppendEmpty()
+				m1.SetName("counter_test2")
+				m1.SetDataType(pdata.MetricDataTypeSum)
+				sum1 := m1.Sum()
+				pt2 := sum1.DataPoints().AppendEmpty()
+				pt2.SetDoubleVal(100.0)
+				pt2.SetStartTimestamp(0)
+				pt2.SetTimestamp(startTsNanos)
+				pt2.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL0}
+			},
+		},
+		{
+			name: "metrics-with-poor-names",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("poor_name_count", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetName("poor_name_count")
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				sum := m0.Sum()
+				pt0 := sum.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL}
+			},
+		},
+	}
+
+	runBuilderTestsPdata(t, tests)
+}
+
+func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wants := tt.wants()
+			assert.EqualValues(t, len(wants), len(tt.inputs))
+			mc := newMockMetadataCache(testMetadata)
+			st := startTs
+			for i, page := range tt.inputs {
+				b := newMetricBuilderPdata(mc, true, "", testLogger, dummyStalenessStore())
+				b.startTime = defaultBuilderStartTime // set to a non-zero value
+				for _, pt := range page.pts {
+					// set ts for testing
+					pt.t = st
+					assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
+				}
+				metrics, _, _, err := b.Build()
+				assert.NoError(t, err)
+				assert.EqualValues(t, wants[i], metrics)
+				st += interval
+			}
+		})
+	}
+}
+
+func Test_OTLPMetricBuilder_gauges(t *testing.T) {
+	tests := []buildTestData{
+		{
+			name: "one-gauge",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("gauge_test", 100, "foo", "bar"),
+					},
+				},
+				{
+					pts: []*testDataPoint{
+						createDataPoint("gauge_test", 90, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "gauge_test",
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								LabelValues: []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
+								},
+							},
+						},
+					},
+				},
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "gauge_test",
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								LabelValues: []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs + interval), Value: &metricspb.Point_DoubleValue{DoubleValue: 90.0}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "gauge-with-different-tags",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("gauge_test", 100, "foo", "bar"),
+						createDataPoint("gauge_test", 200, "bar", "foo"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "gauge_test",
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								LabelValues: []*metricspb.LabelValue{{Value: "", HasValue: false}, {Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
+								},
+							},
+							{
+								LabelValues: []*metricspb.LabelValue{{Value: "foo", HasValue: true}, {Value: "", HasValue: false}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 200.0}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// TODO: A decision need to be made. If we want to have the behavior which can generate different tag key
+			//  sets because metrics come and go
+			name: "gauge-comes-and-go-with-different-tagset",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("gauge_test", 100, "foo", "bar"),
+						createDataPoint("gauge_test", 200, "bar", "foo"),
+					},
+				},
+				{
+					pts: []*testDataPoint{
+						createDataPoint("gauge_test", 20, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "gauge_test",
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								LabelValues: []*metricspb.LabelValue{{Value: "", HasValue: false}, {Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
+								},
+							},
+							{
+								LabelValues: []*metricspb.LabelValue{{Value: "foo", HasValue: true}, {Value: "", HasValue: false}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 200.0}},
+								},
+							},
+						},
+					},
+				},
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "gauge_test",
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								LabelValues: []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs + interval), Value: &metricspb.Point_DoubleValue{DoubleValue: 20.0}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runBuilderTests(t, tests)
 }

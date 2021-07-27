@@ -21,7 +21,7 @@ import (
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
-func createNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
+func createNodeAndResourcePdata(job, instance, scheme string) *pdata.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
@@ -35,5 +35,5 @@ func createNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
 	attrs.UpsertString(portAttr, port)
 	attrs.UpsertString(schemeAttr, scheme)
 
-	return resource
+	return &resource
 }

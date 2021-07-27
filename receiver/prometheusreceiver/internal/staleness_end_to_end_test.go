@@ -199,6 +199,7 @@ service:
 	// 6. Assert that we encounter the stale markers aka special NaNs for the various time series.
 	staleMarkerCount := 0
 	totalSamples := 0
+	require.True(t, len(wReqL) > 0, "Expecting at least one WriteRequest")
 	for i, wReq := range wReqL {
 		name := fmt.Sprintf("WriteRequest#%d", i)
 		require.True(t, len(wReq.Timeseries) > 0, "Expecting at least 1 timeSeries for:: "+name)

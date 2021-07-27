@@ -45,7 +45,7 @@ type OcaStore struct {
 	running              int32 // access atomically
 	sink                 consumer.Metrics
 	mc                   *metadataService
-	jobsMap              *JobsMap
+	jobsMap              *JobsMapPdata
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
@@ -60,7 +60,7 @@ func NewOcaStore(
 	ctx context.Context,
 	sink consumer.Metrics,
 	logger *zap.Logger,
-	jobsMap *JobsMap,
+	jobsMap *JobsMapPdata,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
@@ -93,17 +93,19 @@ func (o *OcaStore) Appender(context.Context) storage.Appender {
 		// Firstly prepare the stalenessStore for a new scrape cyle.
 		o.stalenessStore.refresh()
 
-		return newTransaction(
+		return newTransactionPdata(
 			o.ctx,
-			o.jobsMap,
-			o.useStartTimeMetric,
-			o.startTimeMetricRegex,
-			o.receiverID,
-			o.mc,
-			o.sink,
-			o.externalLabels,
-			o.logger,
-			o.stalenessStore,
+			&txConfig{
+				jobsMap:              o.jobsMap,
+				useStartTimeMetric:   o.useStartTimeMetric,
+				startTimeMetricRegex: o.startTimeMetricRegex,
+				receiverID:           o.receiverID,
+				ms:                   o.mc,
+				sink:                 o.sink,
+				externalLabels:       o.externalLabels,
+				logger:               o.logger,
+				stalenessStore:       o.stalenessStore,
+			},
 		)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
