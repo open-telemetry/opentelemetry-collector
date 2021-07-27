@@ -41,26 +41,10 @@ func TestCopyData(t *testing.T) {
 		src  *otlpmetrics.Metric
 	}{
 		{
-			name: "IntGauge",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_IntGauge{
-					IntGauge: &otlpmetrics.IntGauge{},
-				},
-			},
-		},
-		{
 			name: "Gauge",
 			src: &otlpmetrics.Metric{
 				Data: &otlpmetrics.Metric_Gauge{
 					Gauge: &otlpmetrics.Gauge{},
-				},
-			},
-		},
-		{
-			name: "IntSum",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_IntSum{
-					IntSum: &otlpmetrics.IntSum{},
 				},
 			},
 		},
@@ -96,12 +80,8 @@ func TestCopyData(t *testing.T) {
 func TestDataType(t *testing.T) {
 	m := NewMetric()
 	assert.Equal(t, MetricDataTypeNone, m.DataType())
-	m.SetDataType(MetricDataTypeIntGauge)
-	assert.Equal(t, MetricDataTypeIntGauge, m.DataType())
 	m.SetDataType(MetricDataTypeGauge)
 	assert.Equal(t, MetricDataTypeGauge, m.DataType())
-	m.SetDataType(MetricDataTypeIntSum)
-	assert.Equal(t, MetricDataTypeIntSum, m.DataType())
 	m.SetDataType(MetricDataTypeSum)
 	assert.Equal(t, MetricDataTypeSum, m.DataType())
 	m.SetDataType(MetricDataTypeHistogram)
@@ -208,12 +188,11 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	ilms.At(0).Metrics().AppendEmpty()
 	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
-	ilms.At(0).Metrics().At(0).SetDataType(MetricDataTypeIntSum)
-	intSum := ilms.At(0).Metrics().At(0).IntSum()
-	intSum.DataPoints().EnsureCapacity(3)
-	for i := 0; i < 3; i++ {
-		intSum.DataPoints().AppendEmpty()
-	}
+	ilms.At(0).Metrics().At(0).SetDataType(MetricDataTypeSum)
+	intSum := ilms.At(0).Metrics().At(0).Sum()
+	intSum.DataPoints().AppendEmpty()
+	intSum.DataPoints().AppendEmpty()
+	intSum.DataPoints().AppendEmpty()
 	assert.EqualValues(t, 3, md.DataPointCount())
 
 	md = NewMetrics()
@@ -244,14 +223,10 @@ func TestDataPointCountWithEmpty(t *testing.T) {
 func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	intGauge := ilm.Metrics().AppendEmpty()
-	intGauge.SetDataType(MetricDataTypeIntGauge)
 	doubleGauge := ilm.Metrics().AppendEmpty()
 	doubleGauge.SetDataType(MetricDataTypeGauge)
 	doubleHistogram := ilm.Metrics().AppendEmpty()
 	doubleHistogram.SetDataType(MetricDataTypeHistogram)
-	intSum := ilm.Metrics().AppendEmpty()
-	intSum.SetDataType(MetricDataTypeIntSum)
 	doubleSum := ilm.Metrics().AppendEmpty()
 	doubleSum.SetDataType(MetricDataTypeSum)
 	assert.EqualValues(t, 0, metrics.DataPointCount())
@@ -670,7 +645,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	}
 }
 
-func BenchmarkOtlpToFromInternal_IntGauge_MutateOneLabel(b *testing.B) {
+func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
@@ -688,7 +663,7 @@ func BenchmarkOtlpToFromInternal_IntGauge_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
+		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
 		newReq := internal.MetricsToOtlp(md.InternalRep())
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
