@@ -466,7 +466,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			},
 			want: func() pdata.NumberDataPoint {
 				point := pdata.NewNumberDataPoint()
-				point.SetValue(39.9)
+				point.SetDoubleVal(39.9)
 				point.SetTimestamp(38 * 1e6) // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(38 * 1e6)
 				labelsMap := point.LabelsMap()
@@ -539,7 +539,7 @@ func TestMetricGroupData_toNumberDataPointEquivalence(t *testing.T) {
 			// 1. Ensure that the startTimestamps are equal.
 			require.Equal(t, ocTimeseries.GetStartTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "The timestamp must be equal")
 			// 2. Ensure that the value is equal.
-			require.Equal(t, ocPoint.GetDoubleValue(), pdataPoint.Value(), "Count must be equal")
+			require.Equal(t, ocPoint.GetDoubleValue(), pdataPoint.DoubleVal(), "Count must be equal")
 			// 4. Ensure that the point's timestamp is equal to that from the OpenCensusProto data point.
 			require.Equal(t, ocPoint.GetTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "Point timestamps must be equal")
 			// 5. Ensure that the labels all match up.
