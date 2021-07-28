@@ -425,6 +425,6 @@ var aggregationTemporalityField = &primitiveTypedField{
 var oneofDataField = &oneofField{
 	copyFuncName:    "copyData",
 	originFieldName: "Data",
-	testVal:         "&otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}",
-	fillTestName:    "IntGauge",
+	testVal:         "&otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}",
+	fillTestName:    "Gauge",
 }
