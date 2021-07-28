@@ -39,8 +39,6 @@ var metricsFile = &File{
 		doubleSum,
 		histogram,
 		summary,
-		intDataPointSlice,
-		intDataPoint,
 		numberDataPointSlice,
 		numberDataPoint,
 		histogramDataPointSlice,
@@ -174,24 +172,6 @@ var summary = &messageValueStruct{
 			originFieldName: "DataPoints",
 			returnSlice:     summaryDataPointSlice,
 		},
-	},
-}
-
-var intDataPointSlice = &sliceOfPtrs{
-	structName: "IntDataPointSlice",
-	element:    intDataPoint,
-}
-
-var intDataPoint = &messageValueStruct{
-	structName:     "IntDataPoint",
-	description:    "// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.",
-	originFullName: "otlpmetrics.IntDataPoint",
-	deprecated:     "Deprecated: Use NumberDataPoint instead.",
-	fields: []baseField{
-		labelsField,
-		startTimeField,
-		timeField,
-		valueInt64Field,
 	},
 }
 
