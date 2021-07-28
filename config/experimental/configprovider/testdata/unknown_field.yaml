@@ -1,0 +1,3 @@
+config_sources:
+  tstcfgsrc:
+    unkwon_field: some_value

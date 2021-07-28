@@ -1,0 +1,5 @@
+config_sources:
+  tstcfgsrc:
+  tstcfgsrc/named:
+    # It is not valid to use a dynamic config source when defining other one.
+    endpoint: $tstcfgsrc:str_value

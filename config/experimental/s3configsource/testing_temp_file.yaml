@@ -1,0 +1,143 @@
+receivers:
+    awsecscontainermetrics:
+ 
+processors:
+    filter:
+        metrics:
+            include:
+                match_type: regexp
+                metric_names:
+                    - .*task.memory.reserved
+                    - .*task.memory.utilized
+                    - .*cpu.reserved
+                    - .*cpu.utilized
+                    - .*network.rate.rx
+                    - .*network.rate.tx
+                    - .*storage.read_bytes
+                    - .*storage.write_bytes
+                    
+    metricstransform:
+        transforms:
+            - include: ecs.task.*
+              match_type: regexp
+              action: update
+              operations:
+                - action: add_label
+                  new_label: Type
+                  new_value: "Pod"
+                - action: add_label
+                  new_label: pod_name
+                  new_value: "my-pod"
+                - action: add_label
+                  new_label: host
+                  new_value: "my-host-121.32.32.0"
+                - action: add_label
+                  new_label: namespace_name
+                  new_value: "my-namespace"
+                - action: add_label
+                  new_label: pod_id
+                  new_value: "my-pod-id123"
+                - action: add_label
+                  new_label: service_name
+                  new_value: "my-service-name"
+                - action: add_label
+                  new_label: silly_nest_1
+                  new_value: "silly_nest_value_1"
+                - action: add_label
+                  new_label: silly_nest_2
+                  new_value: "silly_nest_value_2"
+                - action: add_label
+                  new_label: kubernetes
+                  new_value: "dummy value to be replaced"
+            - include: container.*
+              match_type: regexp
+              action: update
+              operations:
+                - action: add_label
+                  new_label: Type
+                  new_value: Container
+            - include: .*memory.utilized
+              match_type: regexp
+              action: update
+              new_name: MemoryUtilized
+            - metric_name: ecs.task.memory.reserved
+              action: update
+              new_name: MemoryReserved
+            - metric_name: ecs.task.cpu.utilized
+              action: update
+              new_name: CpuUtilized
+            - metric_name: ecs.task.cpu.reserved
+              action: update
+              new_name: CpuReserved
+            - metric_name: ecs.task.network.rate.rx
+              action: update
+              new_name: NetworkRxBytes
+            - metric_name: ecs.task.network.rate.tx
+              action: update
+              new_name: NetworkTxBytes
+            - metric_name: ecs.task.storage.read_bytes
+              action: update
+              new_name: StorageReadBytes
+            - metric_name: ecs.task.storage.write_bytes
+              action: update
+ 
+    resource:
+        attributes:
+            - key: ClusterName
+              from_attribute: aws.ecs.cluster.name
+              action: insert
+            - key: aws.ecs.cluster.name
+              action: delete
+            - key: ServiceName
+              from_attribute: aws.ecs.service.name
+              action: insert
+            - key: aws.ecs.service.name
+              action: delete
+            - key: TaskId
+              from_attribute: aws.ecs.task.id
+              action: insert
+            - key: aws.ecs.task.id
+              action: delete
+            - key: TaskDefinitionFamily
+              from_attribute: aws.ecs.task.family
+              action: insert
+            - key: aws.ecs.task.family
+              action: delete
+            - key: ContainerName
+              from_attribute: container.name
+              action: insert
+            - key: container.name
+              action: delete                  
+exporters:
+    logging:
+        loglevel: debug
+    awsemf:
+        region: us-west-2
+        namespace: ECS/ContainerInsights/testFeb2604
+        log_group_name:  '/aws/ecs/containerinsights/{ClusterName}/performance/feb2604'
+        log_stream_name: '04'
+        resource_to_telemetry_conversion:
+            enabled: true
+        parse_json_encoded_attr_values: [kubernetes]
+        dimension_rollup_option: NoDimensionRollup
+        create_high_level_object: true
+        metric_declarations:
+            - dimensions: [[ClusterName], [ClusterName, TaskDefinitionFamily]]
+              metric_name_selectors: 
+                - MemoryUtilized 
+                - MemoryReserved 
+                - CpuUtilized
+                - CpuReserved
+                - NetworkRxBytes
+                - NetworkTxBytes
+                - StorageReadBytes
+                - StorageWriteBytes
+                - Type
+     
+service:
+    pipelines:
+        metrics:
+            receivers: [awsecscontainermetrics]
+            processors: [filter, metricstransform]
+            exporters: [logging,awsemf]
+        

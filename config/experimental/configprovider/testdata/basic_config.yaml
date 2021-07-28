@@ -1,0 +1,5 @@
+config_sources:
+  tstcfgsrc:
+    endpoint: some_endpoint
+    token: some_token
+  tstcfgsrc/named:

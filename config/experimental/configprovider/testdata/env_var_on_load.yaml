@@ -1,0 +1,6 @@
+config_sources:
+  tstcfgsrc:
+    endpoint: https://${ENV_VAR_ENDPOINT}:8200
+    token: $ENV_VAR_TOKEN
+ignored_by_parser:
+  some_field: $ENV_VAR_TOKEN
