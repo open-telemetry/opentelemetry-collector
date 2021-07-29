@@ -121,9 +121,27 @@ var L = Labels
 
 // LabelStatus are the possible values that the label "status" can have.
 var LabelStatus = struct {
-	Blocked string
-	Running string
+	Blocked  string
+	Daemon   string
+	Detached string
+	Orphan   string
+	Paging   string
+	Running  string
+	Sleeping string
+	Stopped  string
+	System   string
+	Unknown  string
+	Zombies  string
 }{
 	"blocked",
+	"daemon",
+	"detached",
+	"orphan",
+	"paging",
 	"running",
+	"sleeping",
+	"stopped",
+	"system",
+	"unknown",
+	"zombies",
 }

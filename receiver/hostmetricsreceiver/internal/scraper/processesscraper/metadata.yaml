@@ -3,7 +3,7 @@ name: processes
 labels:
   status:
     description: Breakdown status of the processes.
-    enum: [blocked, running]
+    enum: [blocked, daemon, detached, orphan, paging, running, sleeping, stopped, system, unknown, zombies]
 
 metrics:
   system.processes.created:

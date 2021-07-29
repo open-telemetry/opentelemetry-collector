@@ -12,49 +12,82 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build linux darwin freebsd openbsd
+// +build !windows
 
 package processesscraper
 
 import (
-	"time"
+	"runtime"
 
-	"github.com/shirou/gopsutil/load"
-
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-const (
-	standardUnixMetricsLen = 1
-	unixMetricsLen         = standardUnixMetricsLen + unixSystemSpecificMetricsLen
-)
+const enableProcessesCount = true
+const enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
 
-func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, miscFunc getMiscStats) error {
-	now := pdata.NewTimestampFromTime(time.Now())
-	misc, err := miscFunc()
+func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
+	processes, err := s.getProcesses()
 	if err != nil {
-		return scrapererror.NewPartialScrapeError(err, unixMetricsLen)
+		return processesMetadata{}, err
 	}
 
-	metrics.EnsureCapacity(unixMetricsLen)
-	initializeProcessesCountMetric(metrics.AppendEmpty(), startTime, now, misc)
-	return appendUnixSystemSpecificProcessesMetrics(metrics, startTime, now, misc)
+	countByStatus := map[string]int64{}
+	for _, process := range processes {
+		var status string
+		status, err = process.Status()
+		if err != nil {
+			// We expect an error in the case that a process has
+			// been terminated as we run this code.
+			continue
+		}
+		state, ok := charToState[status]
+		if !ok {
+			countByStatus[metadata.LabelStatus.Unknown]++
+			continue
+		}
+		countByStatus[state]++
+	}
+
+	// Processes are actively changing as we run this code, so this reason
+	// the above loop will tend to underestimate process counts.
+	// getMiscStats is a single read/syscall so it should be more accurate.
+	miscStat, err := s.getMiscStats()
+	if err != nil {
+		return processesMetadata{}, err
+	}
+
+	var procsCreated *int64
+	if enableProcessesCreated {
+		v := int64(miscStat.ProcsCreated)
+		procsCreated = &v
+	}
+
+	countByStatus[metadata.LabelStatus.Blocked] = int64(miscStat.ProcsBlocked)
+	countByStatus[metadata.LabelStatus.Running] = int64(miscStat.ProcsRunning)
+
+	totalKnown := int64(0)
+	for _, count := range countByStatus {
+		totalKnown += count
+	}
+	if int64(miscStat.ProcsTotal) > totalKnown {
+		countByStatus[metadata.LabelStatus.Unknown] = int64(miscStat.ProcsTotal) - totalKnown
+	}
+
+	return processesMetadata{
+		countByStatus:    countByStatus,
+		processesCreated: procsCreated,
+	}, nil
 }
 
-func initializeProcessesCountMetric(metric pdata.Metric, startTime pdata.Timestamp, now pdata.Timestamp, misc *load.MiscStat) {
-	metadata.Metrics.SystemProcessesCount.Init(metric)
-
-	ddps := metric.Sum().DataPoints()
-	ddps.EnsureCapacity(2)
-	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelStatus.Running, int64(misc.ProcsRunning))
-	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelStatus.Blocked, int64(misc.ProcsBlocked))
-}
-
-func initializeProcessesCountDataPoint(dataPoint pdata.NumberDataPoint, startTime pdata.Timestamp, now pdata.Timestamp, statusLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Status, statusLabel)
-	dataPoint.SetStartTimestamp(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
+var charToState = map[string]string{
+	"A": metadata.LabelStatus.Daemon,
+	"D": metadata.LabelStatus.Blocked,
+	"E": metadata.LabelStatus.Detached,
+	"O": metadata.LabelStatus.Orphan,
+	"R": metadata.LabelStatus.Running,
+	"S": metadata.LabelStatus.Sleeping,
+	"T": metadata.LabelStatus.Stopped,
+	"W": metadata.LabelStatus.Paging,
+	"Y": metadata.LabelStatus.System,
+	"Z": metadata.LabelStatus.Zombies,
 }
