@@ -18,6 +18,7 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
@@ -44,6 +45,7 @@ func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) Metr
 // - Convert IntHistogram to Histogram. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L170
 // - Convert IntGauge to Gauge. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
 // - Convert IntSum to Sum. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
+// - Converts Labels to Attributes. See https://github.com/open-telemetry/opentelemetry-proto/blob/8672494217bfc858e2a82a4e8c623d4a5530473a/opentelemetry/proto/metrics/v1/metrics.proto#L385
 func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceRequest) {
 	for _, rsm := range req.ResourceMetrics {
 		for _, ilm := range rsm.InstrumentationLibraryMetrics {
@@ -125,7 +127,7 @@ func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.
 	datapoints := []*otlpmetrics.HistogramDataPoint{}
 	for _, datapoint := range src.IntHistogram.DataPoints {
 		datapoints = append(datapoints, &otlpmetrics.HistogramDataPoint{
-			Labels:            datapoint.Labels,
+			Labels:            stringKeyValuePtrArrayToStringKeyValueArray(datapoint.Labels),
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			Count:             datapoint.Count,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
@@ -147,7 +149,7 @@ func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge
 	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntGauge.DataPoints))
 	for i, datapoint := range src.IntGauge.DataPoints {
 		datapoints[i] = &otlpmetrics.NumberDataPoint{
-			Labels:            datapoint.Labels,
+			Labels:            stringKeyValuePtrArrayToStringKeyValueArray(datapoint.Labels),
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
@@ -165,7 +167,7 @@ func intSumToSum(src *otlpmetrics.Metric_IntSum) *otlpmetrics.Metric_Sum {
 	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntSum.DataPoints))
 	for i, datapoint := range src.IntSum.DataPoints {
 		datapoints[i] = &otlpmetrics.NumberDataPoint{
-			Labels:            datapoint.Labels,
+			Labels:            stringKeyValuePtrArrayToStringKeyValueArray(datapoint.Labels),
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
@@ -185,7 +187,7 @@ func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar
 	exemplars := []otlpmetrics.Exemplar{}
 	for _, exemplar := range src {
 		exemplars = append(exemplars, otlpmetrics.Exemplar{
-			FilteredLabels: exemplar.FilteredLabels,
+			FilteredLabels: stringKeyValuePtrArrayToStringKeyValueArray(exemplar.FilteredLabels),
 			TimeUnixNano:   exemplar.TimeUnixNano,
 			Value: &otlpmetrics.Exemplar_AsInt{
 				AsInt: exemplar.Value,
@@ -195,4 +197,12 @@ func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar
 		})
 	}
 	return exemplars
+}
+
+func stringKeyValuePtrArrayToStringKeyValueArray(orig []*otlpcommon.StringKeyValue) []otlpcommon.StringKeyValue { //nolint:staticcheck // SA1019 ignore this!
+	dest := make([]otlpcommon.StringKeyValue, len(orig)) //nolint:staticcheck // SA1019 ignore this!
+	for i := range orig {
+		dest[i] = *orig[i]
+	}
+	return dest
 }
