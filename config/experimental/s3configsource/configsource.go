@@ -2,10 +2,7 @@ package s3configsource
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -14,7 +11,7 @@ import (
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/rawbytes"
 
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.uber.org/zap"
@@ -34,14 +31,7 @@ func (s *s3ConfigSource) NewSession(context.Context) (configsource.Session, erro
 func newConfigSource(logger *zap.Logger, cfg *Config) (*s3ConfigSource, error) {
 	cfg.InternalConfig = koanf.New(".")
 
-	tmpFile, err := ioutil.TempFile("", "*.yaml")
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer os.Remove(tmpFile.Name())
-	fmt.Println(tmpFile.Name())
+	buf := &aws.WriteAtBuffer{}
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(cfg.Region)},
@@ -54,13 +44,13 @@ func newConfigSource(logger *zap.Logger, cfg *Config) (*s3ConfigSource, error) {
 	downloader := s3manager.NewDownloader(sess)
 
 	if cfg.VersionId == "" {
-		_, err = downloader.Download(tmpFile,
+		_, err = downloader.Download(buf,
 			&s3.GetObjectInput{
 				Bucket: aws.String(cfg.Bucket),
 				Key:    aws.String(cfg.Key),
 			})
 	} else {
-		_, err = downloader.Download(tmpFile,
+		_, err = downloader.Download(buf,
 			&s3.GetObjectInput{
 				Bucket:    aws.String(cfg.Bucket),
 				Key:       aws.String(cfg.Key),
@@ -72,9 +62,8 @@ func newConfigSource(logger *zap.Logger, cfg *Config) (*s3ConfigSource, error) {
 		return nil, err
 	}
 
-	f := file.Provider(tmpFile.Name())
-	p := yaml.Parser()
-	err = cfg.InternalConfig.Load(f, p)
+	data := buf.Bytes()
+	err = cfg.InternalConfig.Load(rawbytes.Provider(data), yaml.Parser())
 
 	if err != nil {
 		log.Fatalf("error cloading config %v", err)
