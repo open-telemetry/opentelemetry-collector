@@ -26,7 +26,7 @@ func TestS3SessionForKVRetrieval(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
-	retreived, err := s.Retrieve(context.Background(), "exporters.logging.loglevel", nil)
+	retreived, err := s.Retrieve(context.Background(), "exporters::logging::loglevel", nil)
 	require.NoError(t, err)
 	require.Equal(t, "debug", retreived.Value().(string))
 

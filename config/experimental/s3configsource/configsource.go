@@ -1,6 +1,7 @@
 package s3configsource
 
 import (
+	"bytes"
 	"context"
 	"log"
 
@@ -9,17 +10,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
-
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.uber.org/zap"
 )
 
 type s3ConfigSource struct {
 	logger         *zap.Logger
-	internalConfig *koanf.Koanf
+	internalConfig *configparser.Parser
 }
 
 var _ configsource.ConfigSource = (*s3ConfigSource)(nil)
@@ -29,7 +27,6 @@ func (s *s3ConfigSource) NewSession(context.Context) (configsource.Session, erro
 }
 
 func newConfigSource(logger *zap.Logger, cfg *Config) (*s3ConfigSource, error) {
-	cfg.InternalConfig = koanf.New(".")
 
 	buf := &aws.WriteAtBuffer{}
 
@@ -63,7 +60,8 @@ func newConfigSource(logger *zap.Logger, cfg *Config) (*s3ConfigSource, error) {
 	}
 
 	data := buf.Bytes()
-	err = cfg.InternalConfig.Load(rawbytes.Provider(data), yaml.Parser())
+	ioReader := bytes.NewReader(data)
+	internalConfig, err := configparser.NewParserFromBuffer(ioReader)
 
 	if err != nil {
 		log.Fatalf("error cloading config %v", err)
@@ -71,7 +69,7 @@ func newConfigSource(logger *zap.Logger, cfg *Config) (*s3ConfigSource, error) {
 
 	return &s3ConfigSource{
 		logger:         logger,
-		internalConfig: cfg.InternalConfig,
+		internalConfig: internalConfig,
 	}, nil
 
 }
