@@ -355,8 +355,8 @@ genpdata:
 gensemconv:
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
 	@echo "Generating semantic convention constants from specification at ${SPECPATH}"
-	semconvgen -o translator/conventions -t translator/conventions/template.j2 -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource
-	semconvgen -o translator/conventions -t translator/conventions/template.j2 -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace
+	semconvgen -o translator/conventions -t internal/conventions/template.j2 -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource
+	semconvgen -o translator/conventions -t internal/conventions/template.j2 -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.
