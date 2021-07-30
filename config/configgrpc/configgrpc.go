@@ -325,6 +325,9 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 		}
 	}
 
+	uInterceptors := []grpc.UnaryServerInterceptor{}
+	sInterceptors := []grpc.StreamServerInterceptor{}
+
 	if gss.Auth != nil {
 		componentID, cperr := config.NewIDFromString(gss.Auth.AuthenticatorName)
 		if cperr != nil {
@@ -336,24 +339,22 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 			return nil, err
 		}
 
-		opts = append(opts,
-			grpc.UnaryInterceptor(authenticator.GRPCUnaryServerInterceptor),
-			grpc.StreamInterceptor(authenticator.GRPCStreamServerInterceptor),
-		)
+		uInterceptors = append(uInterceptors, authenticator.GRPCUnaryServerInterceptor)
+		sInterceptors = append(sInterceptors, authenticator.GRPCStreamServerInterceptor)
 	}
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Pass construct settings to have access to Tracer.
-	opts = append(opts, grpc.UnaryInterceptor(
-		otelgrpc.UnaryServerInterceptor(
-			otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
-			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		)))
-	opts = append(opts, grpc.StreamInterceptor(
-		otelgrpc.StreamServerInterceptor(
-			otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
-			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		)))
+	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(
+		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	))
+	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(
+		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	))
+
+	opts = append(opts, grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	return opts, nil
 }
