@@ -76,7 +76,7 @@ const (
 {% endif %}
 {% endfor -%}
 
-func GetResourceSemanticConventionAttributeNames() []string {
+func Get{{ conventionType | title }}SemanticConventionAttributeNames() []string {
     return []string{
         {% for semconv in semconvs -%}
         {%- for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
