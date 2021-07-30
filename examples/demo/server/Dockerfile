@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 FROM golang:1.16
-COPY . /usr/src/app/
-WORKDIR /usr/src/app/
+COPY . /usr/src/server/
+WORKDIR /usr/src/server/
 RUN go env -w GOPROXY=direct
 RUN go install ./main.go
 CMD ["/go/bin/main"]
