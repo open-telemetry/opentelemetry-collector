@@ -16,6 +16,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"math"
 	"sync/atomic"
 
@@ -23,12 +24,27 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/zap"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
-	"go.uber.org/zap"
 )
+
+const (
+	portAttr     = "port"
+	schemeAttr   = "scheme"
+	jobAttr      = "job"
+	instanceAttr = "instance"
+
+	transport  = "http"
+	dataformat = "prometheus"
+)
+
+var errMetricNameNotFound = errors.New("metricName not found from labels")
+var errTransactionAborted = errors.New("transaction aborted")
+var errNoJobInstance = errors.New("job or instance cannot be found from labels")
+var errNoStartTimeMetrics = errors.New("process_start_time_seconds metric is missing")
 
 type transactionPdata struct {
 	id                   int64

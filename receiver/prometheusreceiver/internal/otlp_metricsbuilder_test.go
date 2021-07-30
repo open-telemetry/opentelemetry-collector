@@ -334,7 +334,6 @@ type buildTestDataPdata struct {
 }
 
 func Test_OTLPMetricBuilder_counters(t *testing.T) {
-	startTsNanos := pdata.Timestamp(startTs * 1e6)
 	tests := []buildTestDataPdata{
 		{
 			name: "single-item",
@@ -486,8 +485,13 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 	}
 }
 
+var (
+	startTsNanos             = pdata.Timestamp(startTs * 1e6)
+	startTsPlusIntervalNanos = pdata.Timestamp((startTs + interval) * 1e6)
+)
+
 func Test_OTLPMetricBuilder_gauges(t *testing.T) {
-	tests := []buildTestData{
+	tests := []buildTestDataPdata{
 		{
 			name: "one-gauge",
 			inputs: []*testScrapedPage{
@@ -502,39 +506,30 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 					},
 				},
 			},
-			wants: [][]*metricspb.Metric{
-				{
-					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "gauge_test",
-							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
-							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								LabelValues: []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
-								},
-							},
-						},
-					},
-				},
-				{
-					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "gauge_test",
-							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
-							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								LabelValues: []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs + interval), Value: &metricspb.Point_DoubleValue{DoubleValue: 90.0}},
-								},
-							},
-						},
-					},
-				},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("gauge_test")
+				m0.SetDataType(pdata.MetricDataTypeGauge)
+				gauge0 := m0.Gauge()
+				pt0 := gauge0.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				mL1 := pdata.NewMetricSlice()
+				m1 := mL1.AppendEmpty()
+				m1.SetName("gauge_test")
+				m1.SetDataType(pdata.MetricDataTypeGauge)
+				gauge1 := m1.Gauge()
+				pt1 := gauge1.DataPoints().AppendEmpty()
+				pt1.SetDoubleVal(90.0)
+				pt1.SetStartTimestamp(0)
+				pt1.SetTimestamp(startTsPlusIntervalNanos)
+				pt1.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL0, &mL1}
 			},
 		},
 		{
@@ -547,29 +542,27 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 					},
 				},
 			},
-			wants: [][]*metricspb.Metric{
-				{
-					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "gauge_test",
-							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
-							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								LabelValues: []*metricspb.LabelValue{{Value: "", HasValue: false}, {Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
-								},
-							},
-							{
-								LabelValues: []*metricspb.LabelValue{{Value: "foo", HasValue: true}, {Value: "", HasValue: false}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 200.0}},
-								},
-							},
-						},
-					},
-				},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("gauge_test")
+				m0.SetDataType(pdata.MetricDataTypeGauge)
+				gauge0 := m0.Gauge()
+				pt0 := gauge0.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("bar", "")
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				pt1 := gauge0.DataPoints().AppendEmpty()
+				pt1.SetDoubleVal(200.0)
+				pt1.SetStartTimestamp(0)
+				pt1.SetTimestamp(startTsNanos)
+				pt1.LabelsMap().Insert("bar", "foo")
+				pt1.LabelsMap().Insert("foo", "")
+
+				return []*pdata.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -589,48 +582,531 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 					},
 				},
 			},
-			wants: [][]*metricspb.Metric{
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("gauge_test")
+				m0.SetDataType(pdata.MetricDataTypeGauge)
+				gauge0 := m0.Gauge()
+				pt0 := gauge0.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("bar", "")
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				pt1 := gauge0.DataPoints().AppendEmpty()
+				pt1.SetDoubleVal(200.0)
+				pt1.SetStartTimestamp(0)
+				pt1.SetTimestamp(startTsNanos)
+				pt1.LabelsMap().Insert("bar", "foo")
+				pt1.LabelsMap().Insert("foo", "")
+
+				mL1 := pdata.NewMetricSlice()
+				m1 := mL1.AppendEmpty()
+				m1.SetName("gauge_test")
+				m1.SetDataType(pdata.MetricDataTypeGauge)
+				gauge1 := m1.Gauge()
+				pt2 := gauge1.DataPoints().AppendEmpty()
+				pt2.SetDoubleVal(20.0)
+				pt2.SetStartTimestamp(0)
+				pt2.SetTimestamp(startTsPlusIntervalNanos)
+				pt2.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL0, &mL1}
+			},
+		},
+	}
+
+	runBuilderTestsPdata(t, tests)
+}
+
+func Test_OTLPMetricBuilder_untype(t *testing.T) {
+	tests := []buildTestDataPdata{
+		{
+			name: "one-unknown",
+			inputs: []*testScrapedPage{
 				{
+					pts: []*testDataPoint{
+						createDataPoint("unknown_test", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("unknown_test")
+				m0.SetDataType(pdata.MetricDataTypeGauge)
+				gauge0 := m0.Gauge()
+				pt0 := gauge0.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetStartTimestamp(0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL0}
+			},
+		},
+		{
+			name: "no-type-hint",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("something_not_exists", 100, "foo", "bar"),
+						createDataPoint("theother_not_exists", 200, "foo", "bar"),
+						createDataPoint("theother_not_exists", 300, "bar", "foo"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("something_not_exists")
+				m0.SetDataType(pdata.MetricDataTypeGauge)
+				gauge0 := m0.Gauge()
+				pt0 := gauge0.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				m1 := mL0.AppendEmpty()
+				m1.SetName("theother_not_exists")
+				m1.SetDataType(pdata.MetricDataTypeGauge)
+				gauge1 := m1.Gauge()
+				pt1 := gauge1.DataPoints().AppendEmpty()
+				pt1.SetDoubleVal(200.0)
+				pt1.SetTimestamp(startTsNanos)
+				pt1.LabelsMap().Insert("bar", "")
+				pt1.LabelsMap().Insert("foo", "bar")
+
+				pt2 := gauge1.DataPoints().AppendEmpty()
+				pt2.SetDoubleVal(300.0)
+				pt2.SetTimestamp(startTsNanos)
+				pt2.LabelsMap().Insert("bar", "foo")
+				pt2.LabelsMap().Insert("foo", "")
+
+				return []*pdata.MetricSlice{&mL0}
+			},
+		},
+		{
+			name: "untype-metric-poor-names",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("some_count", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("some_count")
+				m0.SetDataType(pdata.MetricDataTypeGauge)
+				gauge0 := m0.Gauge()
+				pt0 := gauge0.DataPoints().AppendEmpty()
+				pt0.SetDoubleVal(100.0)
+				pt0.SetTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL0}
+			},
+		},
+	}
+
+	runBuilderTestsPdata(t, tests)
+}
+
+func Test_OTLPMetricBuilder_histogram(t *testing.T) {
+	tests := []buildTestDataPdata{
+		{
+			name: "single item",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
+						createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
+						createDataPoint("hist_test", 10, "foo", "bar", "le", "+inf"),
+						createDataPoint("hist_test_sum", 99, "foo", "bar"),
+						createDataPoint("hist_test_count", 10, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				hist0 := m0.Histogram()
+				pt0 := hist0.DataPoints().AppendEmpty()
+				pt0.SetCount(10)
+				pt0.SetSum(99)
+				pt0.SetExplicitBounds([]float64{10, 20})
+				pt0.SetBucketCounts([]uint64{1, 1, 8})
+				pt0.SetTimestamp(startTsNanos)
+				pt0.SetStartTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+
+				return []*pdata.MetricSlice{&mL0}
+			},
+		},
+		{
+			name: "multi-groups",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
+						createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
+						createDataPoint("hist_test", 10, "foo", "bar", "le", "+inf"),
+						createDataPoint("hist_test_sum", 99, "foo", "bar"),
+						createDataPoint("hist_test_count", 10, "foo", "bar"),
+						createDataPoint("hist_test", 1, "key2", "v2", "le", "10"),
+						createDataPoint("hist_test", 2, "key2", "v2", "le", "20"),
+						createDataPoint("hist_test", 3, "key2", "v2", "le", "+inf"),
+						createDataPoint("hist_test_sum", 50, "key2", "v2"),
+						createDataPoint("hist_test_count", 3, "key2", "v2"),
+					},
+				},
+			},
+			wants: func() []*pdata.MetricSlice {
+				mL0 := pdata.NewMetricSlice()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				hist0 := m0.Histogram()
+				pt0 := hist0.DataPoints().AppendEmpty()
+				pt0.SetCount(10)
+				pt0.SetSum(99)
+				pt0.SetExplicitBounds([]float64{10, 20})
+				pt0.SetBucketCounts([]uint64{1, 1, 8})
+				pt0.SetTimestamp(startTsNanos)
+				pt0.SetStartTimestamp(startTsNanos)
+				pt0.LabelsMap().Insert("foo", "bar")
+				pt0.LabelsMap().Insert("key2", "")
+
+				pt1 := hist0.DataPoints().AppendEmpty()
+				pt1.SetCount(3)
+				pt1.SetSum(50)
+				pt1.SetExplicitBounds([]float64{10, 20})
+				pt1.SetBucketCounts([]uint64{1, 1, 1})
+				pt1.SetTimestamp(startTsNanos)
+				pt1.SetStartTimestamp(startTsNanos)
+				pt1.LabelsMap().Insert("foo", "")
+				pt1.LabelsMap().Insert("key2", "v2")
+
+				return []*pdata.MetricSlice{&mL0}
+			},
+		},
+		/*
+			{
+				name: "multi-groups-and-families",
+				inputs: []*testScrapedPage{
 					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "gauge_test",
-							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
-							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								LabelValues: []*metricspb.LabelValue{{Value: "", HasValue: false}, {Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
-								},
-							},
-							{
-								LabelValues: []*metricspb.LabelValue{{Value: "foo", HasValue: true}, {Value: "", HasValue: false}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 200.0}},
-								},
-							},
+						pts: []*testDataPoint{
+							createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test", 10, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_sum", 99, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, "foo", "bar"),
+							createDataPoint("hist_test", 1, "key2", "v2", "le", "10"),
+							createDataPoint("hist_test", 2, "key2", "v2", "le", "20"),
+							createDataPoint("hist_test", 3, "key2", "v2", "le", "+inf"),
+							createDataPoint("hist_test_sum", 50, "key2", "v2"),
+							createDataPoint("hist_test_count", 3, "key2", "v2"),
+							createDataPoint("hist_test2", 1, "le", "10"),
+							createDataPoint("hist_test2", 2, "le", "20"),
+							createDataPoint("hist_test2", 3, "le", "+inf"),
+							createDataPoint("hist_test2_sum", 50),
+							createDataPoint("hist_test2_count", 3),
 						},
 					},
 				},
-				{
+				wants: [][]*metricspb.Metric{
 					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "gauge_test",
-							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
-							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								LabelValues: []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs + interval), Value: &metricspb.Point_DoubleValue{DoubleValue: 20.0}},
+						{
+							MetricDescriptor: &metricspb.MetricDescriptor{
+								Name:      "hist_test",
+								Type:      metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+								LabelKeys: []*metricspb.LabelKey{{Key: "foo"}, {Key: "key2"}}},
+							Timeseries: []*metricspb.TimeSeries{
+								{
+									StartTimestamp: timestampFromMs(startTs),
+									LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}, {Value: "", HasValue: false}},
+									Points: []*metricspb.Point{
+										{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+											DistributionValue: &metricspb.DistributionValue{
+												BucketOptions: &metricspb.DistributionValue_BucketOptions{
+													Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+														Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+															Bounds: []float64{10, 20},
+														},
+													},
+												},
+												Count:   10,
+												Sum:     99.0,
+												Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 1}, {Count: 8}},
+											}}},
+									},
+								},
+								{
+									StartTimestamp: timestampFromMs(startTs),
+									LabelValues:    []*metricspb.LabelValue{{Value: "", HasValue: false}, {Value: "v2", HasValue: true}},
+									Points: []*metricspb.Point{
+										{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+											DistributionValue: &metricspb.DistributionValue{
+												BucketOptions: &metricspb.DistributionValue_BucketOptions{
+													Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+														Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+															Bounds: []float64{10, 20},
+														},
+													},
+												},
+												Count:   3,
+												Sum:     50.0,
+												Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 1}, {Count: 1}},
+											}}},
+									},
+								},
+							},
+						},
+						{
+							MetricDescriptor: &metricspb.MetricDescriptor{
+								Name:      "hist_test2",
+								Type:      metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+								LabelKeys: []*metricspb.LabelKey{}},
+							Timeseries: []*metricspb.TimeSeries{
+								{
+									StartTimestamp: timestampFromMs(startTs),
+									LabelValues:    []*metricspb.LabelValue{},
+									Points: []*metricspb.Point{
+										{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+											DistributionValue: &metricspb.DistributionValue{
+												BucketOptions: &metricspb.DistributionValue_BucketOptions{
+													Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+														Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+															Bounds: []float64{10, 20},
+														},
+													},
+												},
+												Count:   3,
+												Sum:     50.0,
+												Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 1}, {Count: 1}},
+											}}},
+									},
 								},
 							},
 						},
 					},
 				},
 			},
-		},
+			{
+				name: "unordered-buckets",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test", 10, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_sum", 99, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, "foo", "bar"),
+						},
+					},
+				},
+				wants: [][]*metricspb.Metric{
+					{
+						{
+							MetricDescriptor: &metricspb.MetricDescriptor{
+								Name:      "hist_test",
+								Type:      metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+								LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+							Timeseries: []*metricspb.TimeSeries{
+								{
+									StartTimestamp: timestampFromMs(startTs),
+									LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+									Points: []*metricspb.Point{
+										{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+											DistributionValue: &metricspb.DistributionValue{
+												BucketOptions: &metricspb.DistributionValue_BucketOptions{
+													Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+														Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+															Bounds: []float64{10, 20},
+														},
+													},
+												},
+												Count:   10,
+												Sum:     99.0,
+												Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 1}, {Count: 8}},
+											}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				// this won't likely happen in real env, as prometheus wont generate histogram with less than 3 buckets
+				name: "only-one-bucket",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test", 3, "le", "+inf"),
+							createDataPoint("hist_test_count", 3),
+							createDataPoint("hist_test_sum", 100),
+						},
+					},
+				},
+				wants: [][]*metricspb.Metric{
+					{
+						{
+							MetricDescriptor: &metricspb.MetricDescriptor{
+								Name:      "hist_test",
+								Type:      metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+								LabelKeys: []*metricspb.LabelKey{}},
+							Timeseries: []*metricspb.TimeSeries{
+								{
+									StartTimestamp: timestampFromMs(startTs),
+									LabelValues:    []*metricspb.LabelValue{},
+									Points: []*metricspb.Point{
+										{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+											DistributionValue: &metricspb.DistributionValue{
+												BucketOptions: &metricspb.DistributionValue_BucketOptions{
+													Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+														Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+															Bounds: []float64{},
+														},
+													},
+												},
+												Count:   3,
+												Sum:     100,
+												Buckets: []*metricspb.DistributionValue_Bucket{{Count: 3}},
+											}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				// this won't likely happen in real env, as prometheus wont generate histogram with less than 3 buckets
+				name: "only-one-bucket-noninf",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test", 3, "le", "20"),
+							createDataPoint("hist_test_count", 3),
+							createDataPoint("hist_test_sum", 100),
+						},
+					},
+				},
+				wants: [][]*metricspb.Metric{
+					{
+						{
+							MetricDescriptor: &metricspb.MetricDescriptor{
+								Name:      "hist_test",
+								Type:      metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+								LabelKeys: []*metricspb.LabelKey{}},
+							Timeseries: []*metricspb.TimeSeries{
+								{
+									StartTimestamp: timestampFromMs(startTs),
+									LabelValues:    []*metricspb.LabelValue{},
+									Points: []*metricspb.Point{
+										{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+											DistributionValue: &metricspb.DistributionValue{
+												BucketOptions: &metricspb.DistributionValue_BucketOptions{
+													Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+														Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+															Bounds: []float64{},
+														},
+													},
+												},
+												Count:   3,
+												Sum:     100,
+												Buckets: []*metricspb.DistributionValue_Bucket{{Count: 3}},
+											}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				name: "no-sum",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test", 3, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_count", 3, "foo", "bar"),
+						},
+					},
+				},
+				wants: [][]*metricspb.Metric{
+					{
+						{
+							MetricDescriptor: &metricspb.MetricDescriptor{
+								Name:      "hist_test",
+								Type:      metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+								LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+							Timeseries: []*metricspb.TimeSeries{
+								{
+									StartTimestamp: timestampFromMs(startTs),
+									LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+									Points: []*metricspb.Point{
+										{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DistributionValue{
+											DistributionValue: &metricspb.DistributionValue{
+												BucketOptions: &metricspb.DistributionValue_BucketOptions{
+													Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+														Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+															Bounds: []float64{10, 20},
+														},
+													},
+												},
+												Count:   3,
+												Sum:     0,
+												Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 1}, {Count: 1}},
+											}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				name: "corrupted-no-buckets",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_sum", 99),
+							createDataPoint("hist_test_count", 10),
+						},
+					},
+				},
+				wants: [][]*metricspb.Metric{
+					{},
+				},
+			},
+			{
+				name: "corrupted-no-count",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test", 1, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test", 2, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test", 3, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_sum", 99, "foo", "bar"),
+						},
+					},
+				},
+				wants: [][]*metricspb.Metric{
+					{},
+				},
+			},
+		*/
 	}
 
-	runBuilderTests(t, tests)
+	runBuilderTestsPdata(t, tests)
 }

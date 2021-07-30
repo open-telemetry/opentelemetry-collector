@@ -17,36 +17,10 @@ package internal
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
-
-// Parity test to ensure that createNodeAndResource produces identical results to createNodeAndResourcePdata.
-func TestCreateNodeAndResourceEquivalence(t *testing.T) {
-	job, instance, scheme := "converter", "ocmetrics", "http"
-	ocNode, ocResource := createNodeAndResource(job, instance, scheme)
-	mdFromOC := internaldata.OCToMetrics(ocNode, ocResource,
-		// We need to pass in a dummy set of metrics
-		// just to populate and allow for full conversion.
-		[]*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "m1",
-					Description: "d1",
-					Unit:        "By",
-				},
-			},
-		},
-	)
-
-	fromOCResource := mdFromOC.ResourceMetrics().At(0).Resource().Attributes().Sort()
-	byDirectOTLPResource := createNodeAndResourcePdata(job, instance, scheme).Attributes().Sort()
-
-	require.Equal(t, byDirectOTLPResource, fromOCResource)
-}
 
 type jobInstanceDefinition struct {
 	job, instance, host, scheme, port string
