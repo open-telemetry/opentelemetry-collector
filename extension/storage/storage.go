@@ -60,8 +60,10 @@ type Client interface {
 	Close(context.Context) error
 }
 
+type opType int
+
 const (
-	Get = iota
+	Get opType = iota
 	Set
 	Delete
 )
@@ -72,7 +74,7 @@ type operation struct {
 	// Value specifies value that is going to be set or holds result of get operation
 	Value []byte
 	// Type describes the operation type
-	Type int
+	Type opType
 }
 
 type Operation *operation
