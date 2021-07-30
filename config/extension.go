@@ -14,20 +14,23 @@
 
 package config
 
-// Extension is the configuration of a service extension. Specific extensions
-// must implement this interface and will typically embed ExtensionSettings
-// struct or a struct that extends it.
-// Embedded validatable will force each extension to implement Validate() function.
+// Extension is the configuration of a component.Extension. Specific extensions must implement
+// this interface and must embed ExtensionSettings struct or a struct that extends it.
 type Extension interface {
 	identifiable
 	validatable
+
+	privateConfigExtension()
 }
 
 // Extensions is a map of names to extensions.
 type Extensions map[ComponentID]Extension
 
-// ExtensionSettings defines common settings for an extension configuration.
+// ExtensionSettings defines common settings for a component.Extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
+//
+// It is highly recommended to "override" the Validate() function.
+//
 // When embedded in the extension config, it must be with `mapstructure:",squash"` tag.
 type ExtensionSettings struct {
 	id ComponentID `mapstructure:"-"`
@@ -54,3 +57,5 @@ func (rs *ExtensionSettings) SetIDName(idName string) {
 func (rs *ExtensionSettings) Validate() error {
 	return nil
 }
+
+func (rs *ExtensionSettings) privateConfigExtension() {}

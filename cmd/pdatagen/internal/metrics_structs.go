@@ -17,6 +17,8 @@ package internal
 var metricsFile = &File{
 	Name: "metrics",
 	imports: []string{
+		`"sort"`,
+		``,
 		`otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"`,
 	},
 	testImports: []string{
@@ -33,9 +35,7 @@ var metricsFile = &File{
 		instrumentationLibraryMetrics,
 		metricSlice,
 		metric,
-		intGauge,
 		doubleGauge,
-		intSum,
 		doubleSum,
 		histogram,
 		summary,
@@ -49,8 +49,6 @@ var metricsFile = &File{
 		summaryDataPoint,
 		quantileValuesSlice,
 		quantileValues,
-		intExemplarSlice,
-		intExemplar,
 		exemplarSlice,
 		exemplar,
 	},
@@ -124,19 +122,6 @@ var metric = &messageValueStruct{
 	},
 }
 
-var intGauge = &messageValueStruct{
-	structName:     "IntGauge",
-	description:    "// IntGauge represents the type of a int scalar metric that always exports the \"current value\" for every data point.",
-	originFullName: "otlpmetrics.IntGauge",
-	fields: []baseField{
-		&sliceField{
-			fieldName:       "DataPoints",
-			originFieldName: "DataPoints",
-			returnSlice:     intDataPointSlice,
-		},
-	},
-}
-
 var doubleGauge = &messageValueStruct{
 	structName:     "Gauge",
 	description:    "// Gauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
@@ -146,21 +131,6 @@ var doubleGauge = &messageValueStruct{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     numberDataPointSlice,
-		},
-	},
-}
-
-var intSum = &messageValueStruct{
-	structName:     "IntSum",
-	description:    "// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.",
-	originFullName: "otlpmetrics.IntSum",
-	fields: []baseField{
-		aggregationTemporalityField,
-		isMonotonicField,
-		&sliceField{
-			fieldName:       "DataPoints",
-			originFieldName: "DataPoints",
-			returnSlice:     intDataPointSlice,
 		},
 	},
 }
@@ -216,12 +186,12 @@ var intDataPoint = &messageValueStruct{
 	structName:     "IntDataPoint",
 	description:    "// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.",
 	originFullName: "otlpmetrics.IntDataPoint",
+	deprecated:     "Deprecated: Use NumberDataPoint instead.",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
 		timeField,
 		valueInt64Field,
-		intExemplarsField,
 	},
 }
 
@@ -232,19 +202,33 @@ var numberDataPointSlice = &sliceOfPtrs{
 
 var numberDataPoint = &messageValueStruct{
 	structName:     "NumberDataPoint",
-	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
+	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
 		timeField,
-		&primitiveAsDoubleField{
-			originFullName:  "otlpmetrics.NumberDataPoint",
-			fieldName:       "Value",
-			originFieldName: "Value",
-			returnType:      "float64",
-			defaultVal:      "float64(0.0)",
-			testVal:         "float64(17.13)",
+		&numberField{
+			fields: []*oneOfPrimitiveValue{
+				{
+					originFullName:  "otlpmetrics.NumberDataPoint",
+					name:            "DoubleVal",
+					originFieldName: "Value",
+					returnType:      "float64",
+					defaultVal:      "float64(0.0)",
+					testVal:         "float64(17.13)",
+					fieldType:       "Double",
+				},
+				{
+					originFullName:  "otlpmetrics.NumberDataPoint",
+					name:            "IntVal",
+					originFieldName: "Value",
+					returnType:      "int64",
+					defaultVal:      "int64(0)",
+					testVal:         "int64(17)",
+					fieldType:       "Int",
+				},
+			},
 		},
 		exemplarsField,
 	},
@@ -309,29 +293,6 @@ var quantileValues = &messageValueStruct{
 	},
 }
 
-var intExemplarSlice = &sliceOfValues{
-	structName: "IntExemplarSlice",
-	element:    intExemplar,
-}
-
-var intExemplar = &messageValueStruct{
-	structName: "IntExemplar",
-	description: "// IntExemplar is a sample input int measurement.\n//\n" +
-		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
-		"// for example the span and trace ID of the active span when the exemplar was recorded.",
-
-	originFullName: "otlpmetrics.IntExemplar",
-	fields: []baseField{
-		timeField,
-		valueInt64Field,
-		&sliceField{
-			fieldName:       "FilteredLabels",
-			originFieldName: "FilteredLabels",
-			returnSlice:     stringMap,
-		},
-	},
-}
-
 var exemplarSlice = &sliceOfValues{
 	structName: "ExemplarSlice",
 	element:    exemplar,
@@ -346,13 +307,27 @@ var exemplar = &messageValueStruct{
 	originFullName: "otlpmetrics.Exemplar",
 	fields: []baseField{
 		timeField,
-		&primitiveAsDoubleField{
-			originFullName:  "otlpmetrics.Exemplar",
-			fieldName:       "Value",
-			originFieldName: "Value",
-			returnType:      "float64",
-			defaultVal:      "float64(0.0)",
-			testVal:         "float64(17.13)",
+		&numberField{
+			fields: []*oneOfPrimitiveValue{
+				{
+					originFullName:  "otlpmetrics.Exemplar",
+					name:            "DoubleVal",
+					originFieldName: "Value",
+					returnType:      "float64",
+					defaultVal:      "float64(0.0)",
+					testVal:         "float64(17.13)",
+					fieldType:       "Double",
+				},
+				{
+					originFullName:  "otlpmetrics.Exemplar",
+					name:            "IntVal",
+					originFieldName: "Value",
+					returnType:      "int64",
+					defaultVal:      "int64(0)",
+					testVal:         "int64(17)",
+					fieldType:       "Int",
+				},
+			},
 		},
 		&sliceField{
 			fieldName:       "FilteredLabels",
@@ -366,12 +341,6 @@ var labelsField = &sliceField{
 	fieldName:       "LabelsMap",
 	originFieldName: "Labels",
 	returnSlice:     stringMap,
-}
-
-var intExemplarsField = &sliceField{
-	fieldName:       "Exemplars",
-	originFieldName: "Exemplars",
-	returnSlice:     intExemplarSlice,
 }
 
 var exemplarsField = &sliceField{
@@ -456,6 +425,6 @@ var aggregationTemporalityField = &primitiveTypedField{
 var oneofDataField = &oneofField{
 	copyFuncName:    "copyData",
 	originFieldName: "Data",
-	testVal:         "&otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}",
-	fillTestName:    "IntGauge",
+	testVal:         "&otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}",
+	fillTestName:    "Gauge",
 }

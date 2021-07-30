@@ -82,12 +82,8 @@ func metricSliceDataPointCount(ms pdata.MetricSlice) (dataPointCount int) {
 // metricDataPointCount calculates the total number of  data points.
 func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
 	switch ms.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		dataPointCount = ms.IntGauge().DataPoints().Len()
 	case pdata.MetricDataTypeGauge:
 		dataPointCount = ms.Gauge().DataPoints().Len()
-	case pdata.MetricDataTypeIntSum:
-		dataPointCount = ms.IntSum().DataPoints().Len()
 	case pdata.MetricDataTypeSum:
 		dataPointCount = ms.Sum().DataPoints().Len()
 	case pdata.MetricDataTypeHistogram:
@@ -115,16 +111,6 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 	dest.SetUnit(ms.Unit())
 
 	switch ms.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		src := ms.IntGauge().DataPoints()
-		dst := dest.IntGauge().DataPoints()
-		dst.EnsureCapacity(size)
-		for j := 0; j < size; j++ {
-			src.At(j).CopyTo(dst.AppendEmpty())
-		}
-		src.RemoveIf(func(_ pdata.IntDataPoint) bool {
-			return filterDataPoints()
-		})
 	case pdata.MetricDataTypeGauge:
 		src := ms.Gauge().DataPoints()
 		dst := dest.Gauge().DataPoints()
@@ -133,16 +119,6 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 			src.At(j).CopyTo(dst.AppendEmpty())
 		}
 		src.RemoveIf(func(_ pdata.NumberDataPoint) bool {
-			return filterDataPoints()
-		})
-	case pdata.MetricDataTypeIntSum:
-		src := ms.IntSum().DataPoints()
-		dst := dest.IntSum().DataPoints()
-		dst.EnsureCapacity(size)
-		for j := 0; j < size; j++ {
-			src.At(j).CopyTo(dst.AppendEmpty())
-		}
-		src.RemoveIf(func(_ pdata.IntDataPoint) bool {
 			return filterDataPoints()
 		})
 	case pdata.MetricDataTypeSum:

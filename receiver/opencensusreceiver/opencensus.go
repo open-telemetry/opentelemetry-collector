@@ -252,12 +252,12 @@ func (ocr *ocReceiver) startServer(host component.Host) error {
 		}
 	}()
 	go func() {
-		if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != http.ErrServerClosed {
+		if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != nil && errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
 	go func() {
-		if errServe := m.Serve(); errServe != nil {
+		if errServe := m.Serve(); errServe != nil && errServe != cmux.ErrServerClosed {
 			host.ReportFatalError(errServe)
 		}
 	}()

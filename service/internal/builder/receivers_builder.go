@@ -50,7 +50,7 @@ func (rcv *builtReceiver) Shutdown(ctx context.Context) error {
 }
 
 // Receivers is a map of receivers created from receiver configs.
-type Receivers map[config.Receiver]*builtReceiver
+type Receivers map[config.ComponentID]*builtReceiver
 
 // ShutdownAll stops all receivers.
 func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
@@ -80,8 +80,6 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 
 // receiversBuilder builds receivers from config.
 type receiversBuilder struct {
-	logger         *zap.Logger
-	buildInfo      component.BuildInfo
 	config         *config.Config
 	builtPipelines BuiltPipelines
 	factories      map[config.Type]component.ReceiverFactory
@@ -92,19 +90,20 @@ func BuildReceivers(
 	logger *zap.Logger,
 	tracerProvider trace.TracerProvider,
 	buildInfo component.BuildInfo,
-	config *config.Config,
+	cfg *config.Config,
 	builtPipelines BuiltPipelines,
 	factories map[config.Type]component.ReceiverFactory,
 ) (Receivers, error) {
-	rb := &receiversBuilder{logger.With(zap.String(zapKindKey, zapKindReceiver)), buildInfo, config, builtPipelines, factories}
+	rb := &receiversBuilder{cfg, builtPipelines, factories}
 
 	receivers := make(Receivers)
-	for _, recvCfg := range rb.config.Receivers {
+	for recvID, recvCfg := range cfg.Receivers {
 		set := component.ReceiverCreateSettings{
-			Logger:         rb.logger.With(zap.Stringer(zapNameKey, recvCfg.ID())),
+			Logger:         logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
 			TracerProvider: tracerProvider,
 			BuildInfo:      buildInfo,
 		}
+
 		rcv, err := rb.buildReceiver(context.Background(), set, recvCfg)
 		if err != nil {
 			if err == errUnusedReceiver {
@@ -113,7 +112,7 @@ func BuildReceivers(
 			}
 			return nil, err
 		}
-		receivers[recvCfg] = rcv
+		receivers[recvID] = rcv
 	}
 
 	return receivers, nil
@@ -199,13 +198,10 @@ func attachReceiverToPipelines(
 	if err != nil {
 		if err == componenterror.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
-				"receiver %v does not support %s but it was used in a "+
-					"%s pipeline",
-				cfg.ID(),
-				dataType,
-				dataType)
+				"receiver %v does not support %s but it was used in a %s pipeline",
+				cfg.ID(), dataType, dataType)
 		}
-		return fmt.Errorf("cannot create receiver %v: %s", cfg.ID(), err.Error())
+		return fmt.Errorf("cannot create receiver %v: %w", cfg.ID(), err)
 	}
 
 	// Check if the factory really created the receiver.

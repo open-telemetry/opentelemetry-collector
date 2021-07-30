@@ -19,12 +19,19 @@ import (
 	"path"
 	"sort"
 
+	otelzpages "go.opentelemetry.io/contrib/zpages"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
 const (
+	tracezPath     = "tracez"
+	servicezPath   = "servicez"
+	pipelinezPath  = "pipelinez"
+	extensionzPath = "extensionz"
+
 	zPipelineName  = "zpipelinename"
 	zComponentName = "zcomponentname"
 	zComponentKind = "zcomponentkind"
@@ -32,6 +39,7 @@ const (
 )
 
 func (srv *service) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	mux.Handle(path.Join(pathPrefix, tracezPath), otelzpages.NewTracezHandler(srv.zPagesSpanProcessor))
 	mux.HandleFunc(path.Join(pathPrefix, servicezPath), srv.handleServicezRequest)
 	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), srv.handlePipelinezRequest)
 	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), func(w http.ResponseWriter, r *http.Request) {

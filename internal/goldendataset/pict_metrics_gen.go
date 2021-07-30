@@ -65,25 +65,33 @@ func pictToCfg(inputs PICTMetricInputs) MetricsCfg {
 
 	switch inputs.MetricType {
 	case MetricTypeIntGauge:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeIntGauge
+		cfg.MetricDescriptorType = pdata.MetricDataTypeGauge
+		cfg.MetricValueType = pdata.MetricValueTypeInt
 	case MetricTypeMonotonicIntSum:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeIntSum
+		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
+		cfg.MetricValueType = pdata.MetricValueTypeInt
 		cfg.IsMonotonicSum = true
 	case MetricTypeNonMonotonicIntSum:
-		cfg.MetricDescriptorType = pdata.MetricDataTypeIntSum
+		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
+		cfg.MetricValueType = pdata.MetricValueTypeInt
 		cfg.IsMonotonicSum = false
 	case MetricTypeDoubleGauge:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeGauge
+		cfg.MetricValueType = pdata.MetricValueTypeDouble
 	case MetricTypeMonotonicDoubleSum:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
+		cfg.MetricValueType = pdata.MetricValueTypeDouble
 		cfg.IsMonotonicSum = true
 	case MetricTypeNonMonotonicDoubleSum:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeSum
+		cfg.MetricValueType = pdata.MetricValueTypeDouble
 		cfg.IsMonotonicSum = false
 	case MetricTypeDoubleExemplarsHistogram:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
+		cfg.MetricValueType = pdata.MetricValueTypeNone
 	case MetricTypeIntExemplarsHistogram:
 		cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
+		cfg.MetricValueType = pdata.MetricValueTypeNone
 	default:
 		panic("Should not happen, unsupported type " + string(inputs.MetricType))
 	}

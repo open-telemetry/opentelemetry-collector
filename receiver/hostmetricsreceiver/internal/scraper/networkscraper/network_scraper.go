@@ -125,7 +125,7 @@ func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice
 func initializeNetworkPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	metricIntf.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
 		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.PacketsSent))
@@ -136,7 +136,7 @@ func initializeNetworkPacketsMetric(metric pdata.Metric, metricIntf metadata.Met
 func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	metricIntf.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
 		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.Dropout))
@@ -147,7 +147,7 @@ func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricIntf metad
 func initializeNetworkErrorsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	metricIntf.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
 		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.Errout))
@@ -158,7 +158,7 @@ func initializeNetworkErrorsMetric(metric pdata.Metric, metricIntf metadata.Metr
 func initializeNetworkIOMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	metricIntf.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
 		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelNetworkDirection.Transmit, int64(ioCounters.BytesSent))
@@ -166,13 +166,13 @@ func initializeNetworkIOMetric(metric pdata.Metric, metricIntf metadata.MetricIn
 	}
 }
 
-func initializeNetworkDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, deviceLabel, directionLabel string, value int64) {
+func initializeNetworkDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.NetworkDevice, deviceLabel)
 	labelsMap.Insert(metadata.Labels.NetworkDirection, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 }
 
 func (s *scraper) scrapeAndAppendNetworkConnectionsMetric(metrics pdata.MetricSlice) error {
@@ -206,7 +206,7 @@ func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]i
 func initializeNetworkConnectionsMetric(metric pdata.Metric, now pdata.Timestamp, connectionStateCounts map[string]int64) {
 	metadata.Metrics.SystemNetworkConnections.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(len(connectionStateCounts))
 
 	for connectionState, count := range connectionStateCounts {
@@ -214,12 +214,12 @@ func initializeNetworkConnectionsMetric(metric pdata.Metric, now pdata.Timestamp
 	}
 }
 
-func initializeNetworkConnectionsDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, protocolLabel, stateLabel string, value int64) {
+func initializeNetworkConnectionsDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, protocolLabel, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.NetworkProtocol, protocolLabel)
 	labelsMap.Insert(metadata.Labels.NetworkState, stateLabel)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 }
 
 func (s *scraper) filterByInterface(ioCounters []net.IOCountersStat) []net.IOCountersStat {

@@ -38,15 +38,17 @@ const filteredLblKey = "pt-label-key-1"
 const filteredLblVal = "pt-label-val-1"
 
 func TestExprError(t *testing.T) {
-	for mdType := pdata.MetricDataTypeIntGauge; mdType <= pdata.MetricDataTypeHistogram; mdType++ {
-		testMatchError(t, mdType)
-	}
+	testMatchError(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeInt)
+	testMatchError(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeDouble)
+	testMatchError(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeInt)
+	testMatchError(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeDouble)
+	testMatchError(t, pdata.MetricDataTypeHistogram, pdata.MetricValueTypeNone)
 }
 
-func testMatchError(t *testing.T, mdType pdata.MetricDataType) {
+func testMatchError(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricValueType) {
 	// the "foo" expr expression will cause expr Run() to return an error
 	proc, next, logs := testProcessor(t, nil, []string{"foo"})
-	pdm := testData("", 1, mdType)
+	pdm := testData("", 1, mdType, mvType)
 	err := proc.ConsumeMetrics(context.Background(), pdm)
 	assert.NoError(t, err)
 	// assert that metrics not be filtered as a result
@@ -56,18 +58,18 @@ func testMatchError(t *testing.T, mdType pdata.MetricDataType) {
 }
 
 func TestExprProcessor(t *testing.T) {
-	testFilter(t, pdata.MetricDataTypeIntGauge)
-	testFilter(t, pdata.MetricDataTypeGauge)
-	testFilter(t, pdata.MetricDataTypeIntSum)
-	testFilter(t, pdata.MetricDataTypeSum)
-	testFilter(t, pdata.MetricDataTypeHistogram)
+	testFilter(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeInt)
+	testFilter(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeDouble)
+	testFilter(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeInt)
+	testFilter(t, pdata.MetricDataTypeSum, pdata.MetricValueTypeDouble)
+	testFilter(t, pdata.MetricDataTypeHistogram, pdata.MetricValueTypeNone)
 }
 
-func testFilter(t *testing.T, mdType pdata.MetricDataType) {
+func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricValueType) {
 	format := "MetricName == '%s' && Label('%s') == '%s'"
 	q := fmt.Sprintf(format, filteredMetric, filteredLblKey, filteredLblVal)
 
-	mds := testDataSlice(2, mdType)
+	mds := testDataSlice(2, mdType, mvType)
 	totMetricCount := 0
 	for _, md := range mds {
 		totMetricCount += md.MetricCount()
@@ -89,18 +91,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 					if metric.Name() == filteredMetric {
 						dt := metric.DataType()
 						switch dt {
-						case pdata.MetricDataTypeIntGauge:
-							pts := metric.IntGauge().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
-							}
 						case pdata.MetricDataTypeGauge:
 							pts := metric.Gauge().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
-							}
-						case pdata.MetricDataTypeIntSum:
-							pts := metric.IntSum().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
 								assertFiltered(t, pts.At(l).LabelsMap())
 							}
@@ -178,17 +170,18 @@ func exprConfig(factory component.ProcessorFactory, include []string, exclude []
 	return cfg
 }
 
-func testDataSlice(size int, mdType pdata.MetricDataType) []pdata.Metrics {
+func testDataSlice(size int, mdType pdata.MetricDataType, mvType pdata.MetricValueType) []pdata.Metrics {
 	var out []pdata.Metrics
 	for i := 0; i < 16; i++ {
-		out = append(out, testData(fmt.Sprintf("p%d_", i), size, mdType))
+		out = append(out, testData(fmt.Sprintf("p%d_", i), size, mdType, mvType))
 	}
 	return out
 }
 
-func testData(prefix string, size int, mdType pdata.MetricDataType) pdata.Metrics {
+func testData(prefix string, size int, mdType pdata.MetricDataType, mvType pdata.MetricValueType) pdata.Metrics {
 	c := goldendataset.MetricsCfg{
 		MetricDescriptorType: mdType,
+		MetricValueType:      mvType,
 		MetricNamePrefix:     prefix,
 		NumILMPerResource:    size,
 		NumMetricsPerILM:     size,

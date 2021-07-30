@@ -111,7 +111,7 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageFiles []*pageFileData) {
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(pageFiles))
 
 	for _, pageFile := range pageFiles {
@@ -120,12 +120,12 @@ func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Tim
 	}
 }
 
-func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, deviceLabel string, stateLabel string, value int64) {
+func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingDevice, deviceLabel)
 	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 }
 
 func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlice) error {
@@ -158,17 +158,17 @@ func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlic
 func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
 	metadata.Metrics.SystemPagingOperations.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2)
 	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelPagingDirection.PageIn, memoryCounterValues.Values[pageReadsPerSec])
 	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelPagingDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
 }
 
-func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, directionLabel string, value int64) {
+func initializePagingOperationsDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingType, metadata.LabelPagingType.Major)
 	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 }

@@ -200,7 +200,22 @@ func (es ${structName}) EnsureCapacity(newCap int) {
 func (es ${structName}) AppendEmpty() ${elementName} {
 	*es.orig = append(*es.orig, &${originName}{})
 	return es.At(es.Len() - 1)
-} `
+}
+
+// Sort sorts the ${elementName} elements within ${structName} given the
+// provided less function so that two instances of ${structName}
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b ${elementName}) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ${structName}) Sort(less func(a, b ${elementName}) bool) ${structName} {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
+}
+`
 
 const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
 	es := New${structName}()

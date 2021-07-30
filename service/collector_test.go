@@ -222,7 +222,8 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 func assertZPages(t *testing.T) {
 	paths := []string{
 		"/debug/tracez",
-		"/debug/rpcz",
+		// TODO: enable this when otel-metrics is used and this page is available.
+		// "/debug/rpcz",
 		"/debug/pipelinez",
 		"/debug/servicez",
 		"/debug/extensionz",

@@ -13,5 +13,5 @@ require (
 	github.com/tcnksm/ghr v0.14.0
 	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20210719212319-9a53888ee4d9
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
-	golang.org/x/tools v0.1.4
+	golang.org/x/tools v0.1.5
 )
