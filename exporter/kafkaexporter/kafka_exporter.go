@@ -112,6 +112,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
+	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {

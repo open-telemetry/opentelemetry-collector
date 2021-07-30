@@ -37,6 +37,8 @@ const (
 	defaultMetadataRetryBackoff = time.Millisecond * 250
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
+	// default max.message.bytes for the producer
+	defaultProducerMaxMessageBytes = 1000000
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -86,6 +88,9 @@ func createDefaultConfig() config.Exporter {
 				Max:     defaultMetadataRetryMax,
 				Backoff: defaultMetadataRetryBackoff,
 			},
+		},
+		Producer: Producer{
+			MaxMessageBytes: defaultProducerMaxMessageBytes,
 		},
 	}
 }
