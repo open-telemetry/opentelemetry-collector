@@ -25,7 +25,7 @@ receivers:
 
 The following settings are configurable:
 
-- `endpoint` (default = 0.0.0.0:4317 for grpc protocol, 0.0.0.0:55681 http protocol):
+- `endpoint` (default = 0.0.0.0:4317 for grpc protocol, 0.0.0.0:4318 http protocol):
   host:port to which the receiver is going to receive data. The valid syntax is
   described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
 
@@ -46,7 +46,7 @@ serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
 To write traces with HTTP/JSON, `POST` to `[address]/v1/traces` for traces,
 to `[address]/v1/metrics` for metrics, to `[address]/v1/logs` for logs. The default
-port is `55681`.
+port is `4318`.
 
 The HTTP/JSON endpoint can also optionally configure
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
@@ -58,7 +58,7 @@ receivers:
   otlp:
     protocols:
       http:
-        endpoint: "localhost:55681"
+        endpoint: "localhost:4318"
         cors_allowed_origins:
         - http://test.com
         # Origins can have wildcards with *, use * by itself to match any origin.
