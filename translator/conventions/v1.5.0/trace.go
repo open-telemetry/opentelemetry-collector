@@ -16,6 +16,20 @@
 
 package conventions
 
+// Span attributes used by AWS Lambda (in addition to general `faas` attributes).
+const (
+	// The full invoked ARN as provided on the Context passed to the function (Lambda-
+	// Runtime-Invoked-Function-ARN header on the /runtime/invocation/next
+	// applicable).
+	//
+	// Type: string
+	// Required: No
+	// Stability: stable
+	// Examples: 'arn:aws:lambda:us-east-1:123456:function:myfunction:myalias'
+	// Note: This may be different from faas.id if an alias is involved.
+	AttributeAWSLambdaInvokedARN = "aws.lambda.invoked_arn"
+)
+
 // This document defines the attributes used to perform database client calls.
 const (
 	// An identifier for the database management system (DBMS) product being used. See
@@ -517,7 +531,6 @@ const (
 	// Type: Enum
 	// Required: Always
 	// Stability: stable
-	// Examples: 'aws'
 	// Note: SHOULD be equal to the cloud.provider resource attribute of the invoked
 	// function.
 	AttributeFaaSInvokedProvider = "faas.invoked_provider"
@@ -553,7 +566,6 @@ const (
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Examples: 'ip_tcp'
 	AttributeNetTransport = "net.transport"
 	// Remote address of the peer (dotted decimal for IPv4 or RFC5952 for IPv6)
 	//
@@ -768,7 +780,6 @@ const (
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Examples: '1.0'
 	// Note: If net.transport is not specified, it can be assumed to be IP.TCP except
 	// if http.flavor is QUIC, in which case IP.UDP is assumed.
 	AttributeHTTPFlavor = "http.flavor"
@@ -1241,21 +1252,32 @@ const (
 	// Stability: stable
 	// Examples: 'grpc', 'java_rmi', 'wcf'
 	AttributeRPCSystem = "rpc.system"
-	// The full name of the service being called, including its package name, if
-	// applicable.
+	// The full (logical) name of the service being called, including its package
+	// name, if applicable.
 	//
 	// Type: string
 	// Required: No, but recommended
 	// Stability: stable
 	// Examples: 'myservice.EchoService'
+	// Note: This is the logical name of the service from the RPC interface
+	// perspective, which can be different from the name of any implementing class.
+	// The code.namespace attribute may be used to store the latter (despite the
+	// attribute name, it may include a class name; e.g., class with method actually
+	// executing the call on the server side, RPC client stub class on the client
+	// side).
 	AttributeRPCService = "rpc.service"
-	// The name of the method being called, must be equal to the $method part in the
-	// span name.
+	// The name of the (logical) method being called, must be equal to the $method
+	// part in the span name.
 	//
 	// Type: string
 	// Required: No, but recommended
 	// Stability: stable
 	// Examples: 'exampleMethod'
+	// Note: This is the logical name of the method from the RPC interface
+	// perspective, which can be different from the name of any implementing
+	// method/function. The code.function attribute may be used to store the latter
+	// (e.g., method actually executing the call on the server side, RPC client stub
+	// method on the client side).
 	AttributeRPCMethod = "rpc.method"
 )
 
@@ -1266,7 +1288,6 @@ const (
 	// Type: Enum
 	// Required: Always
 	// Stability: stable
-	// Examples: 0, 1, 16
 	AttributeRPCGRPCStatusCode = "rpc.grpc.status_code"
 )
 
@@ -1317,15 +1338,6 @@ const (
 	// Stability: stable
 	// Examples: '2.0', '1.0'
 	AttributeRPCJsonrpcVersion = "rpc.jsonrpc.version"
-	// method property from request. Unlike rpc.method, this may not relate to the
-	// actual method being called. Useful for client-side traces since client does not
-	// know what will be called on the server.
-	//
-	// Type: string
-	// Required: Always
-	// Stability: stable
-	// Examples: 'users.create', 'get_users'
-	AttributeRPCJsonrpcMethod = "rpc.jsonrpc.method"
 	// id property of request or response. Since protocol allows id to be int, string,
 	// null or missing (for notifications), value is expected to be cast to string for
 	// simplicity. Use empty string in case of null value. Omit entirely if this is a
@@ -1354,6 +1366,7 @@ const (
 
 func GetTraceSemanticConventionAttributeNames() []string {
 	return []string{
+		AttributeAWSLambdaInvokedARN,
 		AttributeDBSystem,
 		AttributeDBConnectionString,
 		AttributeDBUser,
@@ -1467,7 +1480,6 @@ func GetTraceSemanticConventionAttributeNames() []string {
 		AttributeRPCMethod,
 		AttributeRPCGRPCStatusCode,
 		AttributeRPCJsonrpcVersion,
-		AttributeRPCJsonrpcMethod,
 		AttributeRPCJsonrpcRequestID,
 		AttributeRPCJsonrpcErrorCode,
 		AttributeRPCJsonrpcErrorMessage,

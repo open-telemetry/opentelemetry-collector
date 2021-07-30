@@ -354,9 +354,10 @@ genpdata:
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
 gensemconv:
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
-	@echo "Generating semantic convention constants from specification at ${SPECPATH}"
-	semconvgen -o translator/conventions -t internal/conventions/template.j2 -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource
-	semconvgen -o translator/conventions -t internal/conventions/template.j2 -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace
+	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
+	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
+	semconvgen -o translator/conventions/${SPECTAG} -t internal/conventions/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource
+	semconvgen -o translator/conventions/${SPECTAG} -t internal/conventions/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.

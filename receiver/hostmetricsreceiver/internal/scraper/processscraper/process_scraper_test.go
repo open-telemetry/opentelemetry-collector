@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func skipTestOnUnsupportedOS(t *testing.T) {

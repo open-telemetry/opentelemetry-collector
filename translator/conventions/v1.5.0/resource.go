@@ -23,7 +23,6 @@ const (
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Examples: 'gcp'
 	AttributeCloudProvider = "cloud.provider"
 	// The cloud account ID the resource is assigned to.
 	//
@@ -56,7 +55,6 @@ const (
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Examples: 'aws_ec2', 'azure_vm', 'gcp_compute_engine'
 	// Note: The prefix of the service SHOULD match the one specified in
 	// cloud.provider.
 	AttributeCloudPlatform = "cloud.platform"
@@ -126,7 +124,6 @@ const (
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Examples: 'ec2', 'fargate'
 	AttributeAWSECSLaunchtype = "aws.ecs.launchtype"
 	// The ARN of an ECS task definition.
 	//
@@ -302,36 +299,65 @@ const (
 
 // A serverless instance.
 const (
-	// The name of the function being executed.
+	// The name of the single function that this runtime instance executes.
 	//
 	// Type: string
 	// Required: Always
 	// Stability: stable
 	// Examples: 'my-function'
+	// Note: This is the name of the function as configured/deployed on the FaaS
+	// platform and is usually different from the name of the callback function (which
+	// may be stored in the code.namespace/code.function span attributes).
 	AttributeFaaSName = "faas.name"
-	// The unique ID of the function being executed.
+	// The unique ID of the single function that this runtime instance executes.
 	//
 	// Type: string
-	// Required: Always
+	// Required: No
 	// Stability: stable
 	// Examples: 'arn:aws:lambda:us-west-2:123456789012:function:my-function'
-	// Note: For example, in AWS Lambda this field corresponds to the ARN value, in
-	// GCP to the URI of the resource, and in Azure to the FunctionDirectory field.
+	// Note: Depending on the cloud provider, use:<ul>
+	// <li>AWS Lambda: The function ARN.</li>
+	// </ul>
+	// Take care not to use the &quot;invoked ARN&quot; directly but replace any
+	// alias suffix with the resolved function version, as the same runtime instance
+	// may be invokable with multiple
+	// different aliases.<ul>
+	// <li>GCP: The URI of the resource</li>
+	// <li>Azure: The Fully Qualified Resource ID.</li>
+	// </ul>
+	// On some providers, it may not be possible to determine the full ID at startup,
+	// which is why this field cannot be made required. For example, on AWS the
+	// account ID
+	// part of the ARN is not available without calling another AWS API
+	// which may be deemed too slow for a short-running lambda function.
+	// As an alternative, consider setting faas.id as a span attribute instead.
 	AttributeFaaSID = "faas.id"
-	// The version string of the function being executed as defined in Version
-	// Attributes.
+	// The immutable version of the function being executed.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
-	// Examples: '2.0.0'
+	// Examples: '26', 'pinkfroid-00002'
+	// Note: Depending on the cloud provider and platform, use:<ul>
+	// <li>AWS Lambda: The function version
+	// (an integer represented as a decimal string).</li>
+	// <li>Google Cloud Run: The revision
+	// (i.e., the function name plus the revision suffix).</li>
+	// <li>Google Cloud Functions: The value of the
+	// K_REVISION environment variable.</li>
+	// <li>Azure Functions: Not applicable. Do not set this attribute.</li>
+	// </ul>
 	AttributeFaaSVersion = "faas.version"
-	// The execution environment ID as a string.
+	// The execution environment ID as a string, that will be potentially reused for
+	// other invocations to the same function/function version.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
-	// Examples: 'my-function:instance-0001'
+	// Examples: '2021/06/28/[$LATEST]2f399eb14537447da05ab2a2e39309de'
+	// Note: <ul>
+	// <li>AWS Lambda: Use the (full) log stream name.</li>
+	// </ul>
 	AttributeFaaSInstance = "faas.instance"
 	// The amount of memory available to the serverless function in MiB.
 	//

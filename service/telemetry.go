@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // collectorTelemetry is collector's own telemetry.

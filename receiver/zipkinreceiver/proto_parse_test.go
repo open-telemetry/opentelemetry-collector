@@ -25,7 +25,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )

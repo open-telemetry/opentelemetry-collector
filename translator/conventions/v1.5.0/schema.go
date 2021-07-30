@@ -17,4 +17,4 @@ package conventions
 // SchemaURL is the schema URL that matches the version of the semantic conventions
 // that this package defines. Conventions packages starting from v1.4.0 must declare
 // non-empty schema URL in the form https://opentelemetry.io/schemas/<version>
-const SchemaURL = "https://opentelemetry.io/schemas/v1.4.0"
+const SchemaURL = "https://opentelemetry.io/schemas/v1.5.0"

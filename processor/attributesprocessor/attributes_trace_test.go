@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // Common structure for all the Tests
