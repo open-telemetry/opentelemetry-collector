@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/otlptext"
@@ -38,7 +39,19 @@ type loggingExporter struct {
 }
 
 func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
-	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
+	fields := []zap.Field{
+		zap.Int("#spans", td.SpanCount()),
+	}
+
+	ac := configauth.ExtractPDataContext(td.ResourceSpans().At(0).PDataContext())
+	if ac != nil {
+		fields = append(fields, zap.String("sub", ac.Subject()))
+		fields = append(fields, zap.Strings("groups", ac.Groups()))
+	} else {
+		fields = append(fields, zap.String("auth", "none"))
+	}
+
+	s.logger.Info("TracesExporter", fields...)
 
 	if !s.debug {
 		return nil
