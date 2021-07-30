@@ -256,6 +256,9 @@ type ResourceSpans struct {
 	// to the data in the "instrumentation_library_spans" field which have their own
 	// schema_url field.
 	SchemaUrl string `protobuf:"bytes,3,opt,name=schema_url,json=schemaUrl,proto3" json:"schema_url,omitempty"`
+
+	// This is expected to be ignored by marshaling/unmarshaling. Double-check that this is true.
+	Context go_opentelemetry_io_collector_model_internal_data.PDataContext
 }
 
 func (m *ResourceSpans) Reset()         { *m = ResourceSpans{} }

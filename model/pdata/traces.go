@@ -152,3 +152,7 @@ func (ms SpanStatus) SetCode(v StatusCode) {
 		ms.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR
 	}
 }
+
+func (ms ResourceSpans) PDataContext() PDataContext {
+	return newPDataContext(&(*ms.orig).Context)
+}

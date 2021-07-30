@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service/internal/authcontext"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
@@ -182,6 +183,7 @@ func attachReceiverToPipelines(
 	switch dataType {
 	case config.TracesDataType:
 		junction := buildFanoutTraceConsumer(builtPipelines)
+		junction = authcontext.NewTracesInjector(junction)
 		createdReceiver, err = factory.CreateTracesReceiver(ctx, set, cfg, junction)
 
 	case config.MetricsDataType:
