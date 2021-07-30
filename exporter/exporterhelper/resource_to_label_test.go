@@ -22,7 +22,7 @@ import (
 )
 
 func TestConvertResourceToLabels(t *testing.T) {
-	md := testdata.GenerateMetricsOneSumMetric()
+	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
 	// Before converting resource to labels
