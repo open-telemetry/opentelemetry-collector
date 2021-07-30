@@ -345,14 +345,6 @@ var doubleSumField = &primitiveField{
 	testVal:         "float64(17.13)",
 }
 
-var valueInt64Field = &primitiveField{
-	fieldName:       "Value",
-	originFieldName: "Value",
-	returnType:      "int64",
-	defaultVal:      "int64(0)",
-	testVal:         "int64(-17)",
-}
-
 var valueFloat64Field = &primitiveField{
 	fieldName:       "Value",
 	originFieldName: "Value",
