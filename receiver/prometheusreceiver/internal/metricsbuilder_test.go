@@ -24,8 +24,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	"github.com/stretchr/testify/assert"
 )
 
 const startTs = int64(1555366610000)
@@ -64,12 +63,6 @@ type testScrapedPage struct {
 	pts []*testDataPoint
 }
 
-type buildTestData struct {
-	name   string
-	inputs []*testScrapedPage
-	wants  [][]*metricspb.Metric
-}
-
 func createLabels(mFamily string, tagPairs ...string) labels.Labels {
 	lm := make(map[string]string)
 	lm[model.MetricNameLabel] = mFamily
@@ -91,59 +84,32 @@ func createDataPoint(mname string, value float64, tagPairs ...string) *testDataP
 	}
 }
 
-func runBuilderTests(t *testing.T, tests []buildTestData) {
-	/*
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				assert.EqualValues(t, len(tt.wants), len(tt.inputs))
-				mc := newMockMetadataCache(testMetadata)
-				st := startTs
-				for i, page := range tt.inputs {
-					b := newMetricBuilder(mc, true, "", testLogger, dummyStalenessStore())
-					b.startTime = defaultBuilderStartTime // set to a non-zero value
-					for _, pt := range page.pts {
-						// set ts for testing
-						pt.t = st
-						assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
-					}
-					metrics, _, _, err := b.Build()
-					assert.NoError(t, err)
-					assert.EqualValues(t, tt.wants[i], metrics)
-					st += interval
-				}
-			})
-		}
-	*/
-}
-
-func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
+func runBuilderStartTimeTests(t *testing.T, tests []buildTestDataPdata,
 	startTimeMetricRegex string, expectedBuilderStartTime float64) {
-	/*
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				mc := newMockMetadataCache(testMetadata)
-				st := startTs
-				for _, page := range tt.inputs {
-					b := newMetricBuilder(mc, true, startTimeMetricRegex, testLogger, dummyStalenessStore())
-					b.startTime = defaultBuilderStartTime // set to a non-zero value
-					for _, pt := range page.pts {
-						// set ts for testing
-						pt.t = st
-						assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
-					}
-					_, _, _, err := b.Build()
-					assert.NoError(t, err)
-					assert.EqualValues(t, b.startTime, expectedBuilderStartTime)
-					st += interval
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mc := newMockMetadataCache(testMetadata)
+			st := startTs
+			for _, page := range tt.inputs {
+				b := newMetricBuilderPdata(mc, true, startTimeMetricRegex, testLogger, dummyStalenessStore())
+				b.startTime = defaultBuilderStartTime // set to a non-zero value
+				for _, pt := range page.pts {
+					// set ts for testing
+					pt.t = st
+					assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
 				}
-			})
-		}
-	*/
+				_, _, _, err := b.Build()
+				assert.NoError(t, err)
+				assert.EqualValues(t, b.startTime, expectedBuilderStartTime)
+				st += interval
+			}
+		})
+	}
 }
 
 func Test_startTimeMetricMatch(t *testing.T) {
 	matchBuilderStartTime := 123.456
-	matchTests := []buildTestData{
+	matchTests := []buildTestDataPdata{
 		{
 			name: "prefix_match",
 			inputs: []*testScrapedPage{
@@ -167,7 +133,7 @@ func Test_startTimeMetricMatch(t *testing.T) {
 			},
 		},
 	}
-	nomatchTests := []buildTestData{
+	nomatchTests := []buildTestDataPdata{
 		{
 			name: "nomatch1",
 			inputs: []*testScrapedPage{
@@ -194,231 +160,6 @@ func Test_startTimeMetricMatch(t *testing.T) {
 
 	runBuilderStartTimeTests(t, matchTests, "^(.+_)*process_start_time_seconds$", matchBuilderStartTime)
 	runBuilderStartTimeTests(t, nomatchTests, "^(.+_)*process_start_time_seconds$", defaultBuilderStartTime)
-}
-
-func Test_metricBuilder_summary(t *testing.T) {
-	tests := []buildTestData{
-		{
-			name: "no-sum-and-count",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 5, "foo", "bar", "quantile", "1"),
-					},
-				},
-			},
-			wants: [][]*metricspb.Metric{
-				{},
-			},
-		},
-		{
-			name: "no-count",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 1, "foo", "bar", "quantile", "0.5"),
-						createDataPoint("summary_test", 2, "foo", "bar", "quantile", "0.75"),
-						createDataPoint("summary_test", 5, "foo", "bar", "quantile", "1"),
-						createDataPoint("summary_test_sum", 500, "foo", "bar"),
-					},
-				},
-			},
-			wants: [][]*metricspb.Metric{
-				{},
-			},
-		},
-		{
-			name: "no-sum",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 1, "foo", "bar", "quantile", "0.5"),
-						createDataPoint("summary_test", 2, "foo", "bar", "quantile", "0.75"),
-						createDataPoint("summary_test", 5, "foo", "bar", "quantile", "1"),
-						createDataPoint("summary_test_count", 500, "foo", "bar"),
-					},
-				},
-			},
-			wants: [][]*metricspb.Metric{
-				{
-					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "summary_test",
-							Type:      metricspb.MetricDescriptor_SUMMARY,
-							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								StartTimestamp: timestampFromMs(startTs),
-								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_SummaryValue{
-										SummaryValue: &metricspb.SummaryValue{
-											Sum:   &wrapperspb.DoubleValue{Value: 0.0},
-											Count: &wrapperspb.Int64Value{Value: 500},
-											Snapshot: &metricspb.SummaryValue_Snapshot{
-												PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
-													{Percentile: 50.0, Value: 1},
-													{Percentile: 75.0, Value: 2},
-													{Percentile: 100.0, Value: 5},
-												},
-											}}}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "empty-quantiles",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test_sum", 100, "foo", "bar"),
-						createDataPoint("summary_test_count", 500, "foo", "bar"),
-					},
-				},
-			},
-			wants: [][]*metricspb.Metric{
-				{
-					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "summary_test",
-							Type:      metricspb.MetricDescriptor_SUMMARY,
-							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								StartTimestamp: timestampFromMs(startTs),
-								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{
-										Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_SummaryValue{
-											SummaryValue: &metricspb.SummaryValue{
-												Sum:   &wrapperspb.DoubleValue{Value: 100.0},
-												Count: &wrapperspb.Int64Value{Value: 500},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "regular-summary",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 1, "foo", "bar", "quantile", "0.5"),
-						createDataPoint("summary_test", 2, "foo", "bar", "quantile", "0.75"),
-						createDataPoint("summary_test", 5, "foo", "bar", "quantile", "1"),
-						createDataPoint("summary_test_sum", 100, "foo", "bar"),
-						createDataPoint("summary_test_count", 500, "foo", "bar"),
-					},
-				},
-			},
-			wants: [][]*metricspb.Metric{
-				{
-					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:      "summary_test",
-							Type:      metricspb.MetricDescriptor_SUMMARY,
-							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								StartTimestamp: timestampFromMs(startTs),
-								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
-								Points: []*metricspb.Point{
-									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_SummaryValue{
-										SummaryValue: &metricspb.SummaryValue{
-											Sum:   &wrapperspb.DoubleValue{Value: 100.0},
-											Count: &wrapperspb.Int64Value{Value: 500},
-											Snapshot: &metricspb.SummaryValue_Snapshot{
-												PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
-													{Percentile: 50.0, Value: 1},
-													{Percentile: 75.0, Value: 2},
-													{Percentile: 100.0, Value: 5},
-												},
-											}}}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	runBuilderTests(t, tests)
-}
-
-func Test_metricBuilder_baddata(t *testing.T) {
-	t.Run("empty-metric-name", func(t *testing.T) {
-		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", testLogger, dummyStalenessStore())
-		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
-			t.Error("expecting errMetricNameNotFound error, but get nil")
-			return
-		}
-
-		if _, _, _, err := b.Build(); err != errNoDataToBuild {
-			t.Error("expecting errNoDataToBuild error, but get nil")
-		}
-	})
-
-	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
-		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", testLogger, dummyStalenessStore())
-		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
-			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
-		}
-	})
-
-	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
-		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", testLogger, dummyStalenessStore())
-		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
-			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
-		}
-	})
-
-}
-
-func Test_isUsefulLabel(t *testing.T) {
-	type args struct {
-		mType    metricspb.MetricDescriptor_Type
-		labelKey string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{"metricName", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.MetricNameLabel}, false},
-		{"instance", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.InstanceLabel}, false},
-		{"scheme", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.SchemeLabel}, false},
-		{"metricPath", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.MetricsPathLabel}, false},
-		{"job", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.JobLabel}, false},
-		{"bucket", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.BucketLabel}, true},
-		{"bucketForGaugeDistribution", args{metricspb.MetricDescriptor_GAUGE_DISTRIBUTION, model.BucketLabel}, false},
-		{"bucketForCumulativeDistribution", args{metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, model.BucketLabel}, false},
-		{"Quantile", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.QuantileLabel}, true},
-		{"QuantileForSummay", args{metricspb.MetricDescriptor_SUMMARY, model.QuantileLabel}, false},
-		{"other", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, "other"}, true},
-		{"empty", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, ""}, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isUsefulLabel(tt.args.mType, tt.args.labelKey); got != tt.want {
-				t.Errorf("isUsefulLabel() = %v, want %v", got, tt.want)
-			}
-		})
-	}
 }
 
 func Benchmark_dpgSignature(b *testing.B) {
@@ -603,24 +344,4 @@ func Test_heuristicalMetricAndKnownUnits(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
-func TestMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
-	mc := newMockMetadataCache(testMetadata)
-	mb := newMetricBuilderPdata(mc, true, "", testLogger, dummyStalenessStore())
-
-	dupLabels := labels.Labels{
-		{Name: "__name__", Value: "test"},
-		{Name: "a", Value: "1"},
-		{Name: "a", Value: "1"},
-		{Name: "z", Value: "9"},
-		{Name: "z", Value: "1"},
-		{Name: "instance", Value: "0.0.0.0:8855"},
-		{Name: "job", Value: "test"},
-	}
-
-	err := mb.AddDataPoint(dupLabels, 1917, 1.0)
-	require.NotNil(t, err)
-	require.Contains(t, err.Error(), `invalid sample: non-unique label names: ["a" "z"]`)
 }

@@ -63,27 +63,6 @@ type metricBuilder struct {
 	stalenessStore       *stalenessStore
 }
 
-// newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
-// scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
-// by calling its Build function
-func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger, stalenessStore *stalenessStore, intervalStartTimeMs int64) *metricBuilder {
-	var regex *regexp.Regexp
-	if startTimeMetricRegex != "" {
-		regex, _ = regexp.Compile(startTimeMetricRegex)
-	}
-	return &metricBuilder{
-		mc:                   mc,
-		metrics:              make([]*metricspb.Metric, 0),
-		logger:               logger,
-		numTimeseries:        0,
-		droppedTimeseries:    0,
-		useStartTimeMetric:   useStartTimeMetric,
-		startTimeMetricRegex: regex,
-		stalenessStore:       stalenessStore,
-		intervalStartTimeMs:  intervalStartTimeMs,
-	}
-}
-
 func (b *metricBuilder) matchStartTimeMetric(metricName string) bool {
 	if b.startTimeMetricRegex != nil {
 		return b.startTimeMetricRegex.MatchString(metricName)
