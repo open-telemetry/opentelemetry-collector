@@ -549,7 +549,7 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 }
 
 // Upsert performs the Insert or Update action. The AttributeValue is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 //
 // Calling this function with a zero-initialized AttributeValue struct will cause a panic.
@@ -565,7 +565,7 @@ func (am AttributeMap) Upsert(k string, v AttributeValue) {
 }
 
 // UpsertString performs the Insert or Update action. The AttributeValue is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertString(k string, v string) {
 	if av, existing := am.Get(k); existing {
@@ -576,7 +576,7 @@ func (am AttributeMap) UpsertString(k string, v string) {
 }
 
 // UpsertInt performs the Insert or Update action. The int Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertInt(k string, v int64) {
 	if av, existing := am.Get(k); existing {
@@ -587,7 +587,7 @@ func (am AttributeMap) UpsertInt(k string, v int64) {
 }
 
 // UpsertDouble performs the Insert or Update action. The double Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertDouble(k string, v float64) {
 	if av, existing := am.Get(k); existing {
@@ -598,7 +598,7 @@ func (am AttributeMap) UpsertDouble(k string, v float64) {
 }
 
 // UpsertBool performs the Insert or Update action. The bool Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertBool(k string, v bool) {
 	if av, existing := am.Get(k); existing {
@@ -761,7 +761,7 @@ func (sm StringMap) Update(k, v string) {
 }
 
 // Upsert performs the Insert or Update action. The string value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (sm StringMap) Upsert(k, v string) {
 	if skv, existing := sm.get(k); existing {

@@ -65,7 +65,7 @@ type ActionKeyValue struct {
 	//           to attributes where the key does not exist.
 	//           Either Value or FromAttribute must be set.
 	// UPSERT -  Performs insert or update action depending on the attributes
-	//           containing the key. The key/value is insert to attributes
+	//           containing the key. The key/value is inserted to attributes
 	//           that did not originally have the key. The key/value is updated
 	//           for attributes where the key already existed.
 	//           Either Value or FromAttribute must be set.
@@ -94,7 +94,7 @@ const (
 	UPDATE Action = "update"
 
 	// UPSERT performs the INSERT or UPDATE action. The key/value is
-	// insert to attributes that did not originally have the key. The key/value is
+	// inserted to attributes that did not originally have the key. The key/value is
 	// updated for attributes where the key already existed.
 	UPSERT Action = "upsert"
 
