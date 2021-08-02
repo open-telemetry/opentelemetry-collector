@@ -20,11 +20,12 @@ import (
 	"math"
 	"sync/atomic"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.uber.org/zap"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/exemplar"

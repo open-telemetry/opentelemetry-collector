@@ -25,8 +25,9 @@ import (
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/pkg/value"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {

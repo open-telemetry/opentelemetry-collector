@@ -238,6 +238,9 @@ func (ma *MetricsAdjusterPdata) adjustMetricPoints(metric *pdata.Metric) int {
 	case pdata.MetricDataTypeSummary:
 		return ma.adjustMetricSummary(metric)
 
+        case pdata.MetricDataTypeSum:
+		return ma.adjustMetricSum(metric)
+
 	default:
 		// this shouldn't happen
 		ma.logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
@@ -337,6 +340,56 @@ func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (re
 		initialDist := initialPoints.At(i)
 		currentDist.SetStartTimestamp(initialDist.StartTimestamp())
 	}
+	return
+}
+
+func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets int) {
+	currentPoints := current.Sum().DataPoints()
+
+	for i := 0; i < currentPoints.Len(); i++ {
+		currentSummary := currentPoints.At(i)
+		tsi := ma.tsm.get(current, currentSummary.LabelsMap())
+		if tsi.initial == nil {
+			// initial || reset timeseries.
+			tsi.initial = current
+			resets++
+			continue
+		}
+		initialPoints := tsi.initial.Sum().DataPoints()
+		previousPoints := tsi.previous.Sum().DataPoints()
+		if i >= initialPoints.Len() || i >= previousPoints.Len() {
+			ma.logger.Info("Adjusting Points, all lengths should be equal",
+				zap.Int("len(current)", currentPoints.Len()),
+				zap.Int("len(initial)", initialPoints.Len()),
+				zap.Int("len(previous)", previousPoints.Len()))
+			tsi.initial = current
+			resets++
+			continue
+		}
+
+		previousSummary := previousPoints.At(i)
+                if currentSummary.DoubleVal() < previousSummary.DoubleVal() {
+                    // reset detected
+                    tsi.initial = current
+                    resets++
+                    continue
+                }
+		if (currentSummary.Count() != 0 &&
+			previousSummary.Count() != 0 &&
+			currentSummary.Count() < previousSummary.Count()) ||
+
+			(currentSummary.Sum() != 0 &&
+				previousSummary.Sum() != 0 &&
+				currentSummary.Sum() < previousSummary.Sum()) {
+			// reset detected
+			tsi.initial = current
+			resets++
+			continue
+		}
+		initialSummary := initialPoints.At(i)
+		currentSummary.SetStartTimestamp(initialSummary.StartTimestamp())
+	}
+
 	return
 }
 

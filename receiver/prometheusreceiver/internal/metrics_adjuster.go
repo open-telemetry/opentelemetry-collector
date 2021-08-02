@@ -122,68 +122,6 @@ func getTimeseriesSignature(name string, values []*metricspb.LabelValue) string 
 	return fmt.Sprintf("%s,%s", name, strings.Join(labelValues, ","))
 }
 
-// JobsMap maps from a job instance to a map of timeseries instances for the job.
-type JobsMap struct {
-	sync.RWMutex
-	gcInterval time.Duration
-	lastGC     time.Time
-	jobsMap    map[string]*timeseriesMap
-}
-
-// NewJobsMap creates a new (empty) JobsMap.
-func NewJobsMap(gcInterval time.Duration) *JobsMap {
-	return &JobsMap{gcInterval: gcInterval, lastGC: time.Now(), jobsMap: make(map[string]*timeseriesMap)}
-}
-
-// Remove jobs and timeseries that have aged out.
-func (jm *JobsMap) gc() {
-	jm.Lock()
-	defer jm.Unlock()
-	// once the structure is locked, confirm that gc() is still necessary
-	if time.Since(jm.lastGC) > jm.gcInterval {
-		for sig, tsm := range jm.jobsMap {
-			tsm.RLock()
-			tsmNotMarked := !tsm.mark
-			tsm.RUnlock()
-			if tsmNotMarked {
-				delete(jm.jobsMap, sig)
-			} else {
-				tsm.gc()
-			}
-		}
-		jm.lastGC = time.Now()
-	}
-}
-
-func (jm *JobsMap) maybeGC() {
-	// speculatively check if gc() is necessary, recheck once the structure is locked
-	jm.RLock()
-	defer jm.RUnlock()
-	if time.Since(jm.lastGC) > jm.gcInterval {
-		go jm.gc()
-	}
-}
-
-func (jm *JobsMap) get(job, instance string) *timeseriesMap {
-	sig := job + ":" + instance
-	jm.RLock()
-	tsm, ok := jm.jobsMap[sig]
-	jm.RUnlock()
-	defer jm.maybeGC()
-	if ok {
-		return tsm
-	}
-	jm.Lock()
-	defer jm.Unlock()
-	tsm2, ok2 := jm.jobsMap[sig]
-	if ok2 {
-		return tsm2
-	}
-	tsm2 = newTimeseriesMap()
-	jm.jobsMap[sig] = tsm2
-	return tsm2
-}
-
 // MetricsAdjuster takes a map from a metric instance to the initial point in the metrics instance
 // and provides AdjustMetrics, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
