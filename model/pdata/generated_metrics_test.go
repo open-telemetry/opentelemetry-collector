@@ -147,6 +147,14 @@ func TestResourceMetrics_Resource(t *testing.T) {
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
+func TestResourceMetrics_SchemaUrl(t *testing.T) {
+	ms := NewResourceMetrics()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
+}
+
 func TestResourceMetrics_InstrumentationLibraryMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(), ms.InstrumentationLibraryMetrics())
@@ -275,6 +283,14 @@ func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+}
+
+func TestInstrumentationLibraryMetrics_SchemaUrl(t *testing.T) {
+	ms := NewInstrumentationLibraryMetrics()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
 func TestInstrumentationLibraryMetrics_Metrics(t *testing.T) {
@@ -1304,6 +1320,7 @@ func generateTestResourceMetrics() ResourceMetrics {
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
 	fillTestResource(tv.Resource())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestInstrumentationLibraryMetricsSlice(tv.InstrumentationLibraryMetrics())
 }
 
@@ -1329,6 +1346,7 @@ func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 
 func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestMetricSlice(tv.Metrics())
 }
 

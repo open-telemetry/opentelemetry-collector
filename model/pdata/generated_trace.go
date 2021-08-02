@@ -188,6 +188,16 @@ func (ms ResourceSpans) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
+// SchemaUrl returns the schemaurl associated with this ResourceSpans.
+func (ms ResourceSpans) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
+func (ms ResourceSpans) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // InstrumentationLibrarySpans returns the InstrumentationLibrarySpans associated with this ResourceSpans.
 func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpansSlice {
 	return newInstrumentationLibrarySpansSlice(&(*ms.orig).InstrumentationLibrarySpans)
@@ -196,6 +206,7 @@ func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpan
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	ms.Resource().CopyTo(dest.Resource())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.InstrumentationLibrarySpans().CopyTo(dest.InstrumentationLibrarySpans())
 }
 
@@ -364,6 +375,16 @@ func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLi
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
+// SchemaUrl returns the schemaurl associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // Spans returns the Spans associated with this InstrumentationLibrarySpans.
 func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 	return newSpanSlice(&(*ms.orig).Spans)
@@ -372,6 +393,7 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibrarySpans) CopyTo(dest InstrumentationLibrarySpans) {
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Spans().CopyTo(dest.Spans())
 }
 
