@@ -37,18 +37,19 @@ type MetricFamily interface {
 }
 
 type metricFamily struct {
-	name              string
-	mtype             metricspb.MetricDescriptor_Type
-	mc                MetadataCache
-	droppedTimeseries int
-	labelKeys         map[string]bool
-	labelKeysOrdered  []string
-	metadata          *scrape.MetricMetadata
-	groupOrders       map[string]int
-	groups            map[string]*metricGroup
+	name                string
+	mtype               metricspb.MetricDescriptor_Type
+	mc                  MetadataCache
+	droppedTimeseries   int
+	labelKeys           map[string]bool
+	labelKeysOrdered    []string
+	metadata            *scrape.MetricMetadata
+	groupOrders         map[string]int
+	groups              map[string]*metricGroup
+	intervalStartTimeMs int64
 }
 
-func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) MetricFamily {
+func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger, intervalStartTimeMs int64) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -73,15 +74,16 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) Me
 	}
 
 	return &metricFamily{
-		name:              familyName,
-		mtype:             ocaMetricType,
-		mc:                mc,
-		droppedTimeseries: 0,
-		labelKeys:         make(map[string]bool),
-		labelKeysOrdered:  make([]string, 0),
-		metadata:          &metadata,
-		groupOrders:       make(map[string]int),
-		groups:            make(map[string]*metricGroup),
+		name:                familyName,
+		mtype:               ocaMetricType,
+		mc:                  mc,
+		droppedTimeseries:   0,
+		labelKeys:           make(map[string]bool),
+		labelKeysOrdered:    make([]string, 0),
+		metadata:            &metadata,
+		groupOrders:         make(map[string]int),
+		groups:              make(map[string]*metricGroup),
+		intervalStartTimeMs: intervalStartTimeMs,
 	}
 }
 
@@ -164,10 +166,11 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey string, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			family:       mf,
-			ts:           ts,
-			ls:           ls,
-			complexValue: make([]*dataPoint, 0),
+			family:              mf,
+			ts:                  ts,
+			ls:                  ls,
+			complexValue:        make([]*dataPoint, 0),
+			intervalStartTimeMs: mf.intervalStartTimeMs,
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
@@ -279,15 +282,16 @@ type dataPoint struct {
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
-	family       *metricFamily
-	ts           int64
-	ls           labels.Labels
-	count        float64
-	hasCount     bool
-	sum          float64
-	hasSum       bool
-	value        float64
-	complexValue []*dataPoint
+	family              *metricFamily
+	ts                  int64
+	ls                  labels.Labels
+	count               float64
+	hasCount            bool
+	sum                 float64
+	hasSum              bool
+	value               float64
+	complexValue        []*dataPoint
+	intervalStartTimeMs int64
 }
 
 func (mg *metricGroup) sortPoints() {
@@ -388,9 +392,7 @@ func (mg *metricGroup) toDoubleValueTimeSeries(orderedLabelKeys []string) *metri
 	var startTs *timestamppb.Timestamp
 	// gauge/undefined types has no start time
 	if mg.family.isCumulativeType() {
-		// TODO(@odeke-em): use the actual interval start time as reported in
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/3691
-		startTs = timestampFromMs(mg.ts)
+		startTs = timestampFromMs(mg.intervalStartTimeMs)
 	}
 
 	return &metricspb.TimeSeries{

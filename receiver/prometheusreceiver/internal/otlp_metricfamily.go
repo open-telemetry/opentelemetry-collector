@@ -44,7 +44,7 @@ type metricGroupPdata struct {
 	family *metricFamilyPdata
 }
 
-func newMetricFamilyPdata(metricName string, mc MetadataCache) MetricFamily {
+func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTimeMs int64) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -66,13 +66,14 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache) MetricFamily {
 		mtype:  convToPdataMetricType(metadata.Type),
 		groups: make(map[string]*metricGroupPdata),
 		metricFamily: metricFamily{
-			name:              familyName,
-			mc:                mc,
-			droppedTimeseries: 0,
-			labelKeys:         make(map[string]bool),
-			labelKeysOrdered:  make([]string, 0),
-			metadata:          &metadata,
-			groupOrders:       make(map[string]int),
+			name:                familyName,
+			mc:                  mc,
+			droppedTimeseries:   0,
+			labelKeys:           make(map[string]bool),
+			labelKeysOrdered:    make([]string, 0),
+			metadata:            &metadata,
+			groupOrders:         make(map[string]int),
+			intervalStartTimeMs: intervalStartTimeMs,
 		},
 	}
 }
@@ -177,9 +178,7 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	tsNanos := pdata.Timestamp(mg.ts * 1e6)
 	// gauge/undefined types have no start time.
 	if mg.family.isCumulativeTypePdata() {
-		// TODO(@odeke-em): use the actual interval start time as reported in
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/3691
-		startTsNanos = tsNanos
+		startTsNanos = pdata.Timestamp(mg.intervalStartTimeMs * 1e6)
 	}
 
 	point := dest.AppendEmpty()
@@ -213,9 +212,10 @@ func (mf *metricFamilyPdata) loadMetricGroupOrCreate(groupKey string, ls labels.
 		mg = &metricGroupPdata{
 			family: mf,
 			metricGroup: metricGroup{
-				ts:           ts,
-				ls:           ls,
-				complexValue: make([]*dataPoint, 0),
+				ts:                  ts,
+				ls:                  ls,
+				complexValue:        make([]*dataPoint, 0),
+				intervalStartTimeMs: mf.intervalStartTimeMs,
 			},
 		}
 		mf.groups[groupKey] = mg
