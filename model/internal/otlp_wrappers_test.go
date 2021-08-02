@@ -175,7 +175,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 						DataPoints: []*otlpmetrics.IntHistogramDataPoint{ //nolint:staticcheck // SA1019 ignore this!
 							{
-								Labels: []*otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 									{Key: "key2", Value: "value2"},
 								},
 								BucketCounts:      []uint64{10, 15, 1},
@@ -219,7 +219,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 						DataPoints: []*otlpmetrics.IntHistogramDataPoint{ //nolint:staticcheck // SA1019 ignore this!
 							{
-								Labels: []*otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 									{Key: "key2", Value: "value2"},
 								},
 								BucketCounts:      []uint64{10, 15, 1},
@@ -323,7 +323,7 @@ func TestDeprecatedIntGauge(t *testing.T) {
 					IntGauge: &otlpmetrics.IntGauge{ //nolint:staticcheck // SA1019 ignore this!
 						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
 							{
-								Labels: []*otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 									{Key: "IntGaugeKey", Value: "IntGaugeValue"},
 								},
 								StartTimeUnixNano: 12,
@@ -426,7 +426,7 @@ func TestDeprecatedIntSum(t *testing.T) {
 						IsMonotonic:            true,
 						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
 							{
-								Labels: []*otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 									{Key: "IntSumKey", Value: "IntSumValue"},
 								},
 								StartTimeUnixNano: 22,
@@ -466,7 +466,7 @@ func TestDeprecatedIntSum(t *testing.T) {
 						IsMonotonic:            false,
 						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
 							{
-								Labels: []*otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 									{Key: "IntSumKey", Value: "IntSumValue"},
 								},
 								StartTimeUnixNano: 22,
@@ -504,7 +504,7 @@ func TestDeprecatedIntSum(t *testing.T) {
 					IntSum: &otlpmetrics.IntSum{ //nolint:staticcheck // SA1019 ignore this!
 						DataPoints: []*otlpmetrics.IntDataPoint{ //nolint:staticcheck // SA1019 ignore this!
 							{
-								Labels: []*otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 									{Key: "IntSumKey", Value: "IntSumValue"},
 								},
 								StartTimeUnixNano: 22,
