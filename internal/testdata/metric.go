@@ -74,34 +74,11 @@ func GenerateMetricsOneMetric() pdata.Metrics {
 	return md
 }
 
-func GenerateMetricsOneSumMetric() pdata.Metrics {
-	// TODO: this is currently used in place of GenerateMetricsOneMetric
-	// because the OTLP receiver converts IntSum to Sum types and causes a
-	// failure in TestSendMetrics. Once Sum supports setting either Int
-	// or Double, this function can be removed.
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	initSumMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
 func GenerateMetricsTwoMetrics() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
-func GenerateMetricsTwoSumMetrics() pdata.Metrics {
-	// TODO: this is currently used in place of GenerateMetricsTwoMetrics
-	// because the OTLP receiver converts IntSum to Sum types and causes a
-	// failure in TestSendMetrics. Once Sum supports setting either Int
-	// or Double, this function can be removed.
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	initSumMetric(rm0ils0.Metrics().AppendEmpty())
-	initSumMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -180,22 +157,6 @@ func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	initDoubleSummaryMetric(ms.AppendEmpty())
 
 	return md
-}
-
-func initSumMetric(im pdata.Metric) {
-	initMetric(im, TestSumIntMetricName, pdata.MetricDataTypeSum)
-
-	idps := im.Sum().DataPoints()
-	idp0 := idps.AppendEmpty()
-	initMetricLabels1(idp0.LabelsMap())
-	idp0.SetStartTimestamp(TestMetricStartTimestamp)
-	idp0.SetTimestamp(TestMetricTimestamp)
-	idp0.SetDoubleVal(123)
-	idp1 := idps.AppendEmpty()
-	initMetricLabels2(idp1.LabelsMap())
-	idp1.SetStartTimestamp(TestMetricStartTimestamp)
-	idp1.SetTimestamp(TestMetricTimestamp)
-	idp1.SetDoubleVal(456)
 }
 
 func initGaugeIntMetric(im pdata.Metric) {
