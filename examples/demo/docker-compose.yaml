@@ -32,48 +32,26 @@ services:
       - jaeger-all-in-one
       - zipkin-all-in-one
 
-  # Agent
-  otel-agent:
-    image: ${OTELCOL_IMG}
-    command: ["--config=/etc/otel-agent-config.yaml", "${OTELCOL_ARGS}"]
-    volumes:
-      - ./otel-agent-config.yaml:/etc/otel-agent-config.yaml
+  demo-client:
+    build:
+      dockerfile: $PWD/client/Dockerfile
+      context: ./client
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
+    depends_on:
+      - demo-server
+
+  demo-server:
+    build:
+      dockerfile: $PWD/server/Dockerfile
+      context: ./server
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
     ports:
-      - "8887:8888"   # Prometheus metrics exposed by the agent
-      - "14250"       # Jaeger grpc receiver
-      - "14268"       # Jaeger http thrift receiver
-      - "55678"       # OpenCensus receiver
-      - "4317"        # OTLP gRPC receiver
-      - "9411"        # Zipkin receiver
-      - "1777:1777"   # pprof extension
-      - "55679:55679" # zpages extension
-      - "13133"       # health_check
+      - "7080"
     depends_on:
       - otel-collector
-
-  # Synthetic load generators
-  jaeger-emitter:
-    image: omnition/synthetic-load-generator:1.0.25
-    environment:
-      - JAEGER_COLLECTOR_URL=http://otel-agent:14268
-    depends_on:
-      - otel-agent
-
-  zipkin-emitter:
-    image: omnition/synthetic-load-generator:1.0.25
-    environment:
-      - ZIPKINV2_JSON_URL=http://otel-agent:9411/api/v2/spans
-    depends_on:
-      - otel-agent
-
-  metrics-load-generator:
-    build:
-      dockerfile: $PWD/app/Dockerfile
-      context: ./app
-    environment:
-      - OTEL_AGENT_ENDPOINT=otel-agent:4317
-    depends_on:
-      - otel-agent
 
   prometheus:
     container_name: prometheus

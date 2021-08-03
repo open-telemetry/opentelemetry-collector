@@ -46,7 +46,7 @@ func TestExport(t *testing.T) {
 
 	// when
 
-	req := testdata.GenerateMetricsOneSumMetric()
+	req := testdata.GenerateMetricsOneMetric()
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream

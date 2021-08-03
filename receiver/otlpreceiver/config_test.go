@@ -139,7 +139,7 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize: 512 * 1024,
 				},
 				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:55681",
+					Endpoint: "0.0.0.0:4318",
 					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "test.crt",
@@ -155,7 +155,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "cors")),
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint:    "0.0.0.0:55681",
+					Endpoint:    "0.0.0.0:4318",
 					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 				},
 			},
@@ -166,7 +166,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "corsheader")),
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint:    "0.0.0.0:55681",
+					Endpoint:    "0.0.0.0:4318",
 					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 					CorsHeaders: []string{"ExampleHeader"},
 				},

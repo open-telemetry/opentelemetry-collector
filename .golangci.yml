@@ -134,14 +134,6 @@ issues:
     - text: "or a comment on this block"
       linters:
         - revive
-    # disabling to suppress deprecation warnings when updating OTLP to v0.8.0
-    # in support of breaking up the work into more manageable PRs
-    - path: pdata/metrics.go
-      linters:
-        - staticcheck
-    - path: pdata/metrics_test.go
-      linters:
-        - staticcheck
 
   # The list of ids of default excludes to include or disable. By default it's empty.
   # See the list of default excludes here https://golangci-lint.run/usage/configuration.

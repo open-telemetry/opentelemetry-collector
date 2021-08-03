@@ -549,7 +549,7 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 }
 
 // Upsert performs the Insert or Update action. The AttributeValue is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 //
 // Calling this function with a zero-initialized AttributeValue struct will cause a panic.
@@ -565,7 +565,7 @@ func (am AttributeMap) Upsert(k string, v AttributeValue) {
 }
 
 // UpsertString performs the Insert or Update action. The AttributeValue is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertString(k string, v string) {
 	if av, existing := am.Get(k); existing {
@@ -576,7 +576,7 @@ func (am AttributeMap) UpsertString(k string, v string) {
 }
 
 // UpsertInt performs the Insert or Update action. The int Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertInt(k string, v int64) {
 	if av, existing := am.Get(k); existing {
@@ -587,7 +587,7 @@ func (am AttributeMap) UpsertInt(k string, v int64) {
 }
 
 // UpsertDouble performs the Insert or Update action. The double Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertDouble(k string, v float64) {
 	if av, existing := am.Get(k); existing {
@@ -598,7 +598,7 @@ func (am AttributeMap) UpsertDouble(k string, v float64) {
 }
 
 // UpsertBool performs the Insert or Update action. The bool Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertBool(k string, v bool) {
 	if av, existing := am.Get(k); existing {
@@ -671,16 +671,16 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 
 // StringMap stores a map of attribute keys to values.
 type StringMap struct {
-	orig *[]otlpcommon.StringKeyValue
+	orig *[]otlpcommon.StringKeyValue //nolint:staticcheck // SA1019 ignore this!
 }
 
 // NewStringMap creates a StringMap with 0 elements.
 func NewStringMap() StringMap {
-	orig := []otlpcommon.StringKeyValue(nil)
+	orig := []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
 	return StringMap{&orig}
 }
 
-func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
+func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap { //nolint:staticcheck // SA1019 ignore this!
 	return StringMap{orig}
 }
 
@@ -691,10 +691,10 @@ func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
 //   assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
 func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
-		*sm.orig = []otlpcommon.StringKeyValue(nil)
+		*sm.orig = []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
 		return sm
 	}
-	origs := make([]otlpcommon.StringKeyValue, len(attrMap))
+	origs := make([]otlpcommon.StringKeyValue, len(attrMap)) //nolint:staticcheck // SA1019 ignore this!
 	ix := 0
 	for k, v := range attrMap {
 		origs[ix].Key = k
@@ -717,7 +717,7 @@ func (sm StringMap) EnsureCapacity(capacity int) {
 		return
 	}
 	oldOrig := *sm.orig
-	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity)
+	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity) //nolint:staticcheck // SA1019 ignore this!
 	copy(*sm.orig, oldOrig)
 }
 
@@ -761,7 +761,7 @@ func (sm StringMap) Update(k, v string) {
 }
 
 // Upsert performs the Insert or Update action. The string value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (sm StringMap) Upsert(k, v string) {
 	if skv, existing := sm.get(k); existing {
@@ -802,7 +802,7 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	if newLen <= oldCap {
 		*dest.orig = (*dest.orig)[:newLen:oldCap]
 	} else {
-		*dest.orig = make([]otlpcommon.StringKeyValue, newLen)
+		*dest.orig = make([]otlpcommon.StringKeyValue, newLen) //nolint:staticcheck // SA1019 ignore this!
 	}
 
 	for i := range *sm.orig {
@@ -812,7 +812,7 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	}
 }
 
-func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) {
+func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) { //nolint:staticcheck // SA1019 ignore this!
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
 		if skv.Key == k {
@@ -833,6 +833,6 @@ func (sm StringMap) Sort() StringMap {
 	return sm
 }
 
-func newStringKeyValue(k, v string) otlpcommon.StringKeyValue {
-	return otlpcommon.StringKeyValue{Key: k, Value: v}
+func newStringKeyValue(k, v string) otlpcommon.StringKeyValue { //nolint:staticcheck // SA1019 ignore this!
+	return otlpcommon.StringKeyValue{Key: k, Value: v} //nolint:staticcheck // SA1019 ignore this!
 }

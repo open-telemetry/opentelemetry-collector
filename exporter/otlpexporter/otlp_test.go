@@ -368,7 +368,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// Send two metrics.
-	md = testdata.GenerateMetricsTwoSumMetrics()
+	md = testdata.GenerateMetricsTwoMetrics()
 
 	err = exp.ConsumeMetrics(context.Background(), md)
 	assert.NoError(t, err)

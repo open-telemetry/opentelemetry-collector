@@ -57,6 +57,7 @@ type metricBuilder struct {
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
 	startTime            float64
+	intervalStartTimeMs  int64
 	logger               *zap.Logger
 	currentMf            MetricFamily
 	stalenessStore       *stalenessStore
@@ -65,7 +66,7 @@ type metricBuilder struct {
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger, stalenessStore *stalenessStore) *metricBuilder {
+func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger, stalenessStore *stalenessStore, intervalStartTimeMs int64) *metricBuilder {
 	var regex *regexp.Regexp
 	if startTimeMetricRegex != "" {
 		regex, _ = regexp.Compile(startTimeMetricRegex)
@@ -79,6 +80,7 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetric
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: regex,
 		stalenessStore:       stalenessStore,
+		intervalStartTimeMs:  intervalStartTimeMs,
 	}
 }
 
@@ -153,9 +155,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) (rerr
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
-		b.currentMf = newMetricFamily(metricName, b.mc, b.logger)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.logger, b.intervalStartTimeMs)
 	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamily(metricName, b.mc, b.logger)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.logger, b.intervalStartTimeMs)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)
