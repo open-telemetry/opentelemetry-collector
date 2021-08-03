@@ -701,7 +701,7 @@ func TestNilStringMap(t *testing.T) {
 }
 
 func TestStringMapWithEmpty(t *testing.T) {
-	origWithNil := []otlpcommon.StringKeyValue{
+	origWithNil := []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 		{},
 		{
 			Key:   "test_key",
@@ -888,7 +888,7 @@ func TestStringMap_InitFromMap(t *testing.T) {
 	assert.EqualValues(t, NewStringMap(), sm)
 
 	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
-	rawOrig := []otlpcommon.StringKeyValue{
+	rawOrig := []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 		{
 			Key:   "k0",
 			Value: "v0",
@@ -980,9 +980,9 @@ func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
 
 func BenchmarkStringMap_Range(b *testing.B) {
 	const numElements = 20
-	rawOrig := make([]otlpcommon.StringKeyValue, numElements)
+	rawOrig := make([]otlpcommon.StringKeyValue, numElements) //nolint:staticcheck // SA1019 ignore this!
 	for i := 0; i < numElements; i++ {
-		rawOrig[i] = otlpcommon.StringKeyValue{
+		rawOrig[i] = otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 			Key:   "k" + strconv.Itoa(i),
 			Value: "v" + strconv.Itoa(i),
 		}

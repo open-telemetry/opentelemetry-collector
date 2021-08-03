@@ -671,16 +671,16 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 
 // StringMap stores a map of attribute keys to values.
 type StringMap struct {
-	orig *[]otlpcommon.StringKeyValue
+	orig *[]otlpcommon.StringKeyValue //nolint:staticcheck // SA1019 ignore this!
 }
 
 // NewStringMap creates a StringMap with 0 elements.
 func NewStringMap() StringMap {
-	orig := []otlpcommon.StringKeyValue(nil)
+	orig := []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
 	return StringMap{&orig}
 }
 
-func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
+func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap { //nolint:staticcheck // SA1019 ignore this!
 	return StringMap{orig}
 }
 
@@ -691,10 +691,10 @@ func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
 //   assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
 func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
-		*sm.orig = []otlpcommon.StringKeyValue(nil)
+		*sm.orig = []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
 		return sm
 	}
-	origs := make([]otlpcommon.StringKeyValue, len(attrMap))
+	origs := make([]otlpcommon.StringKeyValue, len(attrMap)) //nolint:staticcheck // SA1019 ignore this!
 	ix := 0
 	for k, v := range attrMap {
 		origs[ix].Key = k
@@ -717,7 +717,7 @@ func (sm StringMap) EnsureCapacity(capacity int) {
 		return
 	}
 	oldOrig := *sm.orig
-	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity)
+	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity) //nolint:staticcheck // SA1019 ignore this!
 	copy(*sm.orig, oldOrig)
 }
 
@@ -802,7 +802,7 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	if newLen <= oldCap {
 		*dest.orig = (*dest.orig)[:newLen:oldCap]
 	} else {
-		*dest.orig = make([]otlpcommon.StringKeyValue, newLen)
+		*dest.orig = make([]otlpcommon.StringKeyValue, newLen) //nolint:staticcheck // SA1019 ignore this!
 	}
 
 	for i := range *sm.orig {
@@ -812,7 +812,7 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	}
 }
 
-func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) {
+func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) { //nolint:staticcheck // SA1019 ignore this!
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
 		if skv.Key == k {
@@ -833,6 +833,6 @@ func (sm StringMap) Sort() StringMap {
 	return sm
 }
 
-func newStringKeyValue(k, v string) otlpcommon.StringKeyValue {
-	return otlpcommon.StringKeyValue{Key: k, Value: v}
+func newStringKeyValue(k, v string) otlpcommon.StringKeyValue { //nolint:staticcheck // SA1019 ignore this!
+	return otlpcommon.StringKeyValue{Key: k, Value: v} //nolint:staticcheck // SA1019 ignore this!
 }

@@ -409,7 +409,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 									Gauge: &otlpmetrics.Gauge{
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Labels: []otlpcommon.StringKeyValue{
+												Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 													{
 														Key:   "k",
 														Value: "v",
@@ -494,7 +494,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Labels: []otlpcommon.StringKeyValue{
+												Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 													{
 														Key:   "k",
 														Value: "v",
@@ -579,7 +579,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 										DataPoints: []*otlpmetrics.HistogramDataPoint{
 											{
-												Labels: []otlpcommon.StringKeyValue{
+												Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 													{
 														Key:   "k",
 														Value: "v",
@@ -750,7 +750,7 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 			Gauge: &otlpmetrics.Gauge{
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Labels: []otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -763,7 +763,7 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Labels: []otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -790,7 +790,7 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Labels: []otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -803,7 +803,7 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Labels: []otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -831,7 +831,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 				DataPoints: []*otlpmetrics.HistogramDataPoint{
 					{
-						Labels: []otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -843,7 +843,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 						ExplicitBounds:    []float64{1, 2},
 					},
 					{
-						Labels: []otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
 							{
 								Key:   "key1",
 								Value: "value1",
