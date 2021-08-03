@@ -186,6 +186,7 @@ var numberDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
 		labelsField,
+		attributes,
 		startTimeField,
 		timeField,
 		&numberField{
@@ -225,6 +226,7 @@ var histogramDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.HistogramDataPoint",
 	fields: []baseField{
 		labelsField,
+		attributes,
 		startTimeField,
 		timeField,
 		countField,
@@ -246,6 +248,7 @@ var summaryDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.SummaryDataPoint",
 	fields: []baseField{
 		labelsField,
+		attributes,
 		startTimeField,
 		timeField,
 		countField,
