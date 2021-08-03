@@ -144,10 +144,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 					"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
 				}
 			}
-			dataPoint.LabelsMap().InitFromMap(map[string]string{
-				"item_index":  "item_" + strconv.Itoa(j),
-				"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
-			})
+			dataPoint.LabelsMap().InitFromMap(labelsMap)
 		}
 	}
 	return md, false
