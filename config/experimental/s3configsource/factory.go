@@ -1,4 +1,4 @@
-package s3configsource
+package awss3configsource
 
 import (
 	"context"
