@@ -206,12 +206,12 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 
 func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, usage int64) {
 	metricIntf.Init(metric)
-	initializeMemoryUsageDataPoint(metric.IntSum().DataPoints().AppendEmpty(), now, usage)
+	initializeMemoryUsageDataPoint(metric.Sum().DataPoints().AppendEmpty(), now, usage)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, usage int64) {
+func initializeMemoryUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, usage int64) {
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(usage)
+	dataPoint.SetIntVal(usage)
 }
 
 func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
@@ -227,15 +227,15 @@ func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata
 func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp, io *process.IOCountersStat) {
 	metadata.Metrics.ProcessDiskIo.Init(metric)
 
-	idps := metric.IntSum().DataPoints()
+	idps := metric.Sum().DataPoints()
 	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.LabelProcessDirection.Read)
 	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.LabelProcessDirection.Write)
 }
 
-func initializeDiskIODataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
+func initializeDiskIODataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessDirection, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 }

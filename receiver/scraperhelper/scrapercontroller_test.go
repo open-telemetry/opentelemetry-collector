@@ -402,8 +402,8 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 func singleMetric() pdata.MetricSlice {
 	metrics := pdata.NewMetricSlice()
 	metric := metrics.AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	metric.IntGauge().DataPoints().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.Gauge().DataPoints().AppendEmpty()
 	return metrics
 }
 

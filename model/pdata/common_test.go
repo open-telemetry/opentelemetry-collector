@@ -201,15 +201,15 @@ func TestAttributeValueEqual(t *testing.T) {
 	av1 = NewAttributeValueDouble(123)
 	assert.True(t, av1.Equal(av2))
 
-	av2 = NewAttributeValueBool(true)
+	av2 = NewAttributeValueBool(false)
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av1 = NewAttributeValueBool(true)
-	assert.True(t, av1.Equal(av2))
+	assert.False(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueBool(false)
-	assert.False(t, av1.Equal(av2))
+	assert.True(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueArray()
 	av1.ArrayVal().AppendEmpty().SetIntVal(123)

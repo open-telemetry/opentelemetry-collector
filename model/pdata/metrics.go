@@ -285,3 +285,42 @@ const (
 func (at AggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
+
+// MetricValueType specifies the type of NumberDataPoint.
+type MetricValueType int32
+
+const (
+	MetricValueTypeNone MetricValueType = iota
+	MetricValueTypeInt
+	MetricValueTypeDouble
+)
+
+// Type returns the type of the value for this NumberDataPoint.
+// Calling this function on zero-initialized NumberDataPoint will cause a panic.
+func (ms NumberDataPoint) Type() MetricValueType {
+	if ms.orig.Value == nil {
+		return MetricValueTypeNone
+	}
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		return MetricValueTypeDouble
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		return MetricValueTypeInt
+	}
+	return MetricValueTypeNone
+}
+
+// Type returns the type of the value for this Exemplar.
+// Calling this function on zero-initialized Exemplar will cause a panic.
+func (ms Exemplar) Type() MetricValueType {
+	if ms.orig.Value == nil {
+		return MetricValueTypeNone
+	}
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		return MetricValueTypeDouble
+	case *otlpmetrics.Exemplar_AsInt:
+		return MetricValueTypeInt
+	}
+	return MetricValueTypeNone
+}

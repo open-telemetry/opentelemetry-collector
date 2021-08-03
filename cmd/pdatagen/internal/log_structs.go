@@ -17,6 +17,8 @@ package internal
 var logFile = &File{
 	Name: "log",
 	imports: []string{
+		`"sort"`,
+		``,
 		`otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"`,
 	},
 	testImports: []string{

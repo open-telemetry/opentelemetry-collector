@@ -237,7 +237,7 @@ func TestConvToPdataMetricType(t *testing.T) {
 	}
 }
 
-func TestIsusefulLabelPdata(t *testing.T) {
+func TestIsUsefulLabelPdata(t *testing.T) {
 	tests := []struct {
 		name      string
 		mtypes    []pdata.MetricDataType
@@ -254,10 +254,10 @@ func TestIsusefulLabelPdata(t *testing.T) {
 				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeSummary,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeIntGauge,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeGauge,
+				pdata.MetricDataTypeSum,
 			},
 			want: false,
 		},
@@ -267,10 +267,10 @@ func TestIsusefulLabelPdata(t *testing.T) {
 				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeSummary,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeIntGauge,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeGauge,
+				pdata.MetricDataTypeSum,
 			},
 			labelKeys: []string{model.BucketLabel},
 			want:      true,
@@ -290,10 +290,10 @@ func TestIsusefulLabelPdata(t *testing.T) {
 				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeHistogram,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeIntGauge,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeGauge,
+				pdata.MetricDataTypeSum,
 			},
 			want: true,
 		},
@@ -305,10 +305,10 @@ func TestIsusefulLabelPdata(t *testing.T) {
 				pdata.MetricDataTypeGauge,
 				pdata.MetricDataTypeHistogram,
 				pdata.MetricDataTypeSummary,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeSum,
 				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeIntGauge,
-				pdata.MetricDataTypeIntSum,
+				pdata.MetricDataTypeGauge,
+				pdata.MetricDataTypeSum,
 			},
 			want: true,
 		},

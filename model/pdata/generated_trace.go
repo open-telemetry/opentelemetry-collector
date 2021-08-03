@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"sort"
+
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -112,6 +114,20 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
+// provided less function so that two instances of ResourceSpansSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b ResourceSpans) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) ResourceSpansSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
@@ -151,6 +167,7 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 //
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type ResourceSpans struct {
 	orig *otlptrace.ResourceSpans
 }
@@ -273,6 +290,20 @@ func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibraryS
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the InstrumentationLibrarySpans elements within InstrumentationLibrarySpansSlice given the
+// provided less function so that two instances of InstrumentationLibrarySpansSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b InstrumentationLibrarySpans) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es InstrumentationLibrarySpansSlice) Sort(less func(a, b InstrumentationLibrarySpans) bool) InstrumentationLibrarySpansSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationLibrarySpansSlice) {
@@ -312,6 +343,7 @@ func (es InstrumentationLibrarySpansSlice) RemoveIf(f func(InstrumentationLibrar
 //
 // Must use NewInstrumentationLibrarySpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type InstrumentationLibrarySpans struct {
 	orig *otlptrace.InstrumentationLibrarySpans
 }
@@ -434,6 +466,20 @@ func (es SpanSlice) AppendEmpty() Span {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the Span elements within SpanSlice given the
+// provided less function so that two instances of SpanSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b Span) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanSlice) Sort(less func(a, b Span) bool) SpanSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
@@ -474,6 +520,7 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 //
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Span struct {
 	orig *otlptrace.Span
 }
@@ -729,6 +776,20 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the SpanEvent elements within SpanEventSlice given the
+// provided less function so that two instances of SpanEventSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b SpanEvent) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) SpanEventSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
@@ -769,6 +830,7 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 //
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type SpanEvent struct {
 	orig *otlptrace.Span_Event
 }
@@ -918,6 +980,20 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	return es.At(es.Len() - 1)
 }
 
+// Sort sorts the SpanLink elements within SpanLinkSlice given the
+// provided less function so that two instances of SpanLinkSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b SpanLink) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) SpanLinkSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
@@ -959,6 +1035,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 //
 // Must use NewSpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type SpanLink struct {
 	orig *otlptrace.Span_Link
 }
@@ -1036,6 +1113,7 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 //
 // Must use NewSpanStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type SpanStatus struct {
 	orig *otlptrace.Status
 }

@@ -697,14 +697,6 @@ func TestIntDataPoint_Value(t *testing.T) {
 	assert.EqualValues(t, testValValue, ms.Value())
 }
 
-func TestIntDataPoint_Exemplars(t *testing.T) {
-	ms := NewIntDataPoint()
-	assert.EqualValues(t, NewIntExemplarSlice(), ms.Exemplars())
-	fillTestIntExemplarSlice(ms.Exemplars())
-	testValExemplars := generateTestIntExemplarSlice()
-	assert.EqualValues(t, testValExemplars, ms.Exemplars())
-}
-
 func TestNumberDataPointSlice(t *testing.T) {
 	es := NewNumberDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -845,12 +837,19 @@ func TestNumberDataPoint_Timestamp(t *testing.T) {
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
 
-func TestNumberDataPoint_Value(t *testing.T) {
+func TestNumberDataPoint_DoubleVal(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.EqualValues(t, float64(0.0), ms.Value())
-	testValValue := float64(17.13)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
+	assert.EqualValues(t, float64(0.0), ms.DoubleVal())
+	testValDoubleVal := float64(17.13)
+	ms.SetDoubleVal(testValDoubleVal)
+	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+func TestNumberDataPoint_IntVal(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, int64(0), ms.IntVal())
+	testValIntVal := int64(17)
+	ms.SetIntVal(testValIntVal)
+	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
@@ -1337,137 +1336,6 @@ func TestValueAtQuantile_Value(t *testing.T) {
 	assert.EqualValues(t, testValValue, ms.Value())
 }
 
-func TestIntExemplarSlice(t *testing.T) {
-	es := NewIntExemplarSlice()
-	assert.EqualValues(t, 0, es.Len())
-	es = newIntExemplarSlice(&[]otlpmetrics.IntExemplar{})
-	assert.EqualValues(t, 0, es.Len())
-
-	es.EnsureCapacity(7)
-	emptyVal := newIntExemplar(&otlpmetrics.IntExemplar{})
-	testVal := generateTestIntExemplar()
-	assert.EqualValues(t, 7, cap(*es.orig))
-	for i := 0; i < es.Len(); i++ {
-		el := es.AppendEmpty()
-		assert.EqualValues(t, emptyVal, el)
-		fillTestIntExemplar(el)
-		assert.EqualValues(t, testVal, el)
-	}
-}
-
-func TestIntExemplarSlice_CopyTo(t *testing.T) {
-	dest := NewIntExemplarSlice()
-	// Test CopyTo to empty
-	NewIntExemplarSlice().CopyTo(dest)
-	assert.EqualValues(t, NewIntExemplarSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestIntExemplarSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestIntExemplarSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-}
-
-func TestIntExemplarSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestIntExemplarSlice()
-	// Test ensure smaller capacity.
-	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.IntExemplar]bool)
-	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, es.Len(), len(expectedEs))
-	es.EnsureCapacity(ensureSmallLen)
-	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.IntExemplar]bool, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
-
-	// Test ensure larger capacity
-	const ensureLargeLen = 9
-	oldLen := es.Len()
-	assert.Equal(t, oldLen, len(expectedEs))
-	es.EnsureCapacity(ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-}
-
-func TestIntExemplarSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestIntExemplarSlice()
-	dest := NewIntExemplarSlice()
-	src := generateTestIntExemplarSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestIntExemplarSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
-func TestIntExemplarSlice_RemoveIf(t *testing.T) {
-	// Test RemoveIf on empty slice
-	emptySlice := NewIntExemplarSlice()
-	emptySlice.RemoveIf(func(el IntExemplar) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test RemoveIf
-	filtered := generateTestIntExemplarSlice()
-	pos := 0
-	filtered.RemoveIf(func(el IntExemplar) bool {
-		pos++
-		return pos%3 == 0
-	})
-	assert.Equal(t, 5, filtered.Len())
-}
-
-func TestIntExemplar_CopyTo(t *testing.T) {
-	ms := NewIntExemplar()
-	generateTestIntExemplar().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntExemplar(), ms)
-}
-
-func TestIntExemplar_Timestamp(t *testing.T) {
-	ms := NewIntExemplar()
-	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
-	testValTimestamp := Timestamp(1234567890)
-	ms.SetTimestamp(testValTimestamp)
-	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
-}
-
-func TestIntExemplar_Value(t *testing.T) {
-	ms := NewIntExemplar()
-	assert.EqualValues(t, int64(0), ms.Value())
-	testValValue := int64(-17)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
-}
-
-func TestIntExemplar_FilteredLabels(t *testing.T) {
-	ms := NewIntExemplar()
-	assert.EqualValues(t, NewStringMap(), ms.FilteredLabels())
-	fillTestStringMap(ms.FilteredLabels())
-	testValFilteredLabels := generateTestStringMap()
-	assert.EqualValues(t, testValFilteredLabels, ms.FilteredLabels())
-}
-
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -1583,12 +1451,19 @@ func TestExemplar_Timestamp(t *testing.T) {
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
 
-func TestExemplar_Value(t *testing.T) {
+func TestExemplar_DoubleVal(t *testing.T) {
 	ms := NewExemplar()
-	assert.EqualValues(t, float64(0.0), ms.Value())
-	testValValue := float64(17.13)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
+	assert.EqualValues(t, float64(0.0), ms.DoubleVal())
+	testValDoubleVal := float64(17.13)
+	ms.SetDoubleVal(testValDoubleVal)
+	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+func TestExemplar_IntVal(t *testing.T) {
+	ms := NewExemplar()
+	assert.EqualValues(t, int64(0), ms.IntVal())
+	testValIntVal := int64(17)
+	ms.SetIntVal(testValIntVal)
+	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
 func TestExemplar_FilteredLabels(t *testing.T) {
@@ -1767,7 +1642,6 @@ func fillTestIntDataPoint(tv IntDataPoint) {
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetValue(int64(-17))
-	fillTestIntExemplarSlice(tv.Exemplars())
 }
 
 func generateTestNumberDataPointSlice() NumberDataPointSlice {
@@ -1794,7 +1668,8 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(float64(17.13))
+	tv.SetDoubleVal(float64(17.13))
+
 	fillTestExemplarSlice(tv.Exemplars())
 }
 
@@ -1883,32 +1758,6 @@ func fillTestValueAtQuantile(tv ValueAtQuantile) {
 	tv.SetValue(float64(17.13))
 }
 
-func generateTestIntExemplarSlice() IntExemplarSlice {
-	tv := NewIntExemplarSlice()
-	fillTestIntExemplarSlice(tv)
-	return tv
-}
-
-func fillTestIntExemplarSlice(tv IntExemplarSlice) {
-	l := 7
-	tv.EnsureCapacity(l)
-	for i := 0; i < l; i++ {
-		fillTestIntExemplar(tv.AppendEmpty())
-	}
-}
-
-func generateTestIntExemplar() IntExemplar {
-	tv := NewIntExemplar()
-	fillTestIntExemplar(tv)
-	return tv
-}
-
-func fillTestIntExemplar(tv IntExemplar) {
-	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(int64(-17))
-	fillTestStringMap(tv.FilteredLabels())
-}
-
 func generateTestExemplarSlice() ExemplarSlice {
 	tv := NewExemplarSlice()
 	fillTestExemplarSlice(tv)
@@ -1931,6 +1780,7 @@ func generateTestExemplar() Exemplar {
 
 func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(float64(17.13))
+	tv.SetDoubleVal(float64(17.13))
+
 	fillTestStringMap(tv.FilteredLabels())
 }

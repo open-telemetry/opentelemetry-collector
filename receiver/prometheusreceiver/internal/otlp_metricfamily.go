@@ -96,12 +96,113 @@ func (mf *metricFamilyPdata) updateLabelKeys(ls labels.Labels) {
 	}
 }
 
+func (mf *metricFamilyPdata) getGroupKey(ls labels.Labels) string {
+	mf.updateLabelKeys(ls)
+	return dpgSignature(mf.labelKeysOrdered, ls)
+}
+
+func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest *pdata.HistogramDataPointSlice) bool {
+	if !mg.hasCount || len(mg.complexValue) == 0 {
+		return false
+	}
+
+	mg.sortPoints()
+
+	// for OCAgent Proto, the bounds won't include +inf
+	// TODO: (@odeke-em) should we also check OpenTelemetry Pdata for bucket bounds?
+	bounds := make([]float64, len(mg.complexValue)-1)
+	bucketCounts := make([]uint64, len(mg.complexValue))
+
+	for i := 0; i < len(mg.complexValue); i++ {
+		if i != len(mg.complexValue)-1 {
+			// not need to add +inf as bound to oc proto
+			bounds[i] = mg.complexValue[i].boundary
+		}
+		adjustedCount := mg.complexValue[i].value
+		if i != 0 {
+			adjustedCount -= mg.complexValue[i-1].value
+		}
+		bucketCounts[i] = uint64(adjustedCount)
+	}
+
+	point := dest.AppendEmpty()
+	point.SetExplicitBounds(bounds)
+	point.SetCount(uint64(mg.count))
+	point.SetSum(mg.sum)
+	point.SetBucketCounts(bucketCounts)
+	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
+	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	point.SetStartTimestamp(tsNanos)
+	point.SetTimestamp(tsNanos)
+	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+
+	return true
+}
+
+func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdata.SummaryDataPointSlice) bool {
+	// expecting count to be provided, however, in the following two cases, they can be missed.
+	// 1. data is corrupted
+	// 2. ignored by startValue evaluation
+	if !mg.hasCount {
+		return false
+	}
+
+	mg.sortPoints()
+
+	point := dest.AppendEmpty()
+	quantileValues := point.QuantileValues()
+	for _, p := range mg.complexValue {
+		quantile := quantileValues.AppendEmpty()
+		quantile.SetValue(p.value)
+		quantile.SetQuantile(p.boundary * 100)
+	}
+
+	// Based on the summary description from https://prometheus.io/docs/concepts/metric_types/#summary
+	// the quantiles are calculated over a sliding time window, however, the count is the total count of
+	// observations and the corresponding sum is a sum of all observed values, thus the sum and count used
+	// at the global level of the metricspb.SummaryValue
+	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
+	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	point.SetStartTimestamp(tsNanos)
+	point.SetTimestamp(tsNanos)
+	point.SetSum(mg.sum)
+	point.SetCount(uint64(mg.count))
+	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+
+	return true
+}
+
+func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *pdata.NumberDataPointSlice) bool {
+	var startTsNanos pdata.Timestamp
+	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	// gauge/undefined types have no start time.
+	if mg.family.isCumulativeTypePdata() {
+		// TODO(@odeke-em): use the actual interval start time as reported in
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/3691
+		startTsNanos = tsNanos
+	}
+
+	point := dest.AppendEmpty()
+	point.SetStartTimestamp(startTsNanos)
+	point.SetTimestamp(tsNanos)
+	point.SetDoubleVal(mg.value)
+	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+
+	return true
+}
+
+func populateLabelValuesPdata(orderedKeys []string, ls labels.Labels, dest pdata.StringMap) {
+	src := ls.Map()
+	for _, key := range orderedKeys {
+		dest.Insert(key, src[key])
+	}
+}
+
 // Purposefully being referenced to avoid lint warnings about being "unused".
 var _ = (*metricFamilyPdata)(nil).updateLabelKeys
 
 func (mf *metricFamilyPdata) isCumulativeTypePdata() bool {
 	return mf.mtype == pdata.MetricDataTypeSum ||
-		mf.mtype == pdata.MetricDataTypeIntSum ||
 		mf.mtype == pdata.MetricDataTypeHistogram ||
 		mf.mtype == pdata.MetricDataTypeSummary
 }
@@ -112,8 +213,8 @@ func (mf *metricFamilyPdata) loadMetricGroupOrCreate(groupKey string, ls labels.
 		mg = &metricGroupPdata{
 			family: mf,
 			metricGroup: metricGroup{
-				ls:           ls,
 				ts:           ts,
+				ls:           ls,
 				complexValue: make([]*dataPoint, 0),
 			},
 		}

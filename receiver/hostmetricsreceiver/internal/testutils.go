@@ -35,39 +35,15 @@ func AssertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Met
 	assert.Equal(t, expected.DataType(), actual.DataType())
 }
 
-func AssertIntSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
-	val, ok := metric.IntSum().DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
-	assert.Equal(t, expectedVal, val)
-}
-
-func AssertIntGaugeMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
-	val, ok := metric.IntGauge().DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
-	assert.Equal(t, expectedVal, val)
-}
-
-func AssertSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
+func AssertSumMetricHasLabelValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
 	val, ok := metric.Sum().DataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 	assert.Equal(t, expectedVal, val)
 }
 
-func AssertIntSumMetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
-	_, ok := metric.IntSum().DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
-}
-
-func AssertSumMetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
+func AssertSumMetricHasLabel(t *testing.T, metric pdata.Metric, index int, labelName string) {
 	_, ok := metric.Sum().DataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
-}
-
-func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
-	idps := metric.IntSum().DataPoints()
-	for i := 0; i < idps.Len(); i++ {
-		require.Equal(t, startTime, idps.At(i).StartTimestamp(), "Start time %d not found in metric point: %q", startTime, idps.At(i))
-	}
 }
 
 func AssertSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
@@ -85,19 +61,7 @@ func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, star
 	var ts pdata.Timestamp
 	for i := startIdx; i < endIdx; i++ {
 		metric := metrics.At(i)
-
-		dt := metric.DataType()
-		if dt == pdata.MetricDataTypeIntSum {
-			idps := metric.IntSum().DataPoints()
-			for j := 0; j < idps.Len(); j++ {
-				if ts == 0 {
-					ts = idps.At(j).Timestamp()
-				}
-				require.Equalf(t, ts, idps.At(j).Timestamp(), "metrics contained different end timestamp values")
-			}
-		}
-
-		if dt == pdata.MetricDataTypeSum {
+		if metric.DataType() == pdata.MetricDataTypeSum {
 			ddps := metric.Sum().DataPoints()
 			for j := 0; j < ddps.Len(); j++ {
 				if ts == 0 {
