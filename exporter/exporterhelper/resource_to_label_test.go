@@ -21,52 +21,52 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestConvertResourceToLabels(t *testing.T) {
+func TestConvertResourceToAttributes(t *testing.T) {
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
 	// Before converting resource to labels
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertResourceToLabels(md)
+	cloneMd := convertResourceToAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
-	assert.Equal(t, 2, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 2, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
 }
 
-func TestConvertResourceToLabelsAllDataTypesEmptyDataPoint(t *testing.T) {
+func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	md := testdata.GenerateMetricsAllTypesEmptyDataPoint()
 	assert.NotNil(t, md)
 
 	// Before converting resource to labels
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertResourceToLabels(md)
+	cloneMd := convertResourceToAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
-	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
 
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).LabelsMap().Len())
-	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
 
 }

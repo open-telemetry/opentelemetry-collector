@@ -82,7 +82,7 @@ func TestMetricsToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-no-labels",
-			internal: testdata.GenerateMetricsOneMetricNoLabels(),
+			internal: testdata.GenerateMetricsOneMetricNoAttributes(),
 			oc:       generateOCTestDataNoLabels(),
 		},
 
