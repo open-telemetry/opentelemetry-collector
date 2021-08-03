@@ -2,15 +2,19 @@
 
 *IMPORTANT:* This is a pre-released version of the OpenTelemetry Collector.
 
+This demo contains a client and server applications that use the
+opentelemetry Go library for instrumentation and for sending telemetry data
+to the opentelemetry collector.
+
+The client periodically makes http calls to the server which
+create client spans, server spans and metrics that track information like
+number of http requests and latency.
+
 This demo presents the typical flow of observability data with multiple
 OpenTelemetry Collectors deployed:
 
-- Applications send data directly to a Collector configured to use fewer
- resources, aka the _agent_;
-- The agent then forwards the data to Collector(s) that receive data from
- multiple agents. Collectors on this layer typically are allowed to use more
- resources and queue more data;
-- The Collector then sends the data to the appropriate backend, in this demo
+- The client and server send data directly to the OTel Collector;
+- The OTel Collector then sends the data to the appropriate backend, in this demo
  Jaeger, Zipkin, and Prometheus;
 
 This demo uses `docker-compose` and by default runs against the 
