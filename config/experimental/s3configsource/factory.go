@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	typeStr = "s3"
+	typeStr = "aws_s3"
 )
 
 type (
