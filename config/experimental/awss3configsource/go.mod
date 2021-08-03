@@ -1,4 +1,4 @@
-module example.com/s3configsource
+module example.com/awss3configsource
 
 go 1.16
 
