@@ -90,12 +90,8 @@ func grepMod(goModPath string, pkg string) string {
 	goModFile := strings.Split(string(file), "\n")
 	var pkgPath string
 	for _, line := range goModFile {
-		switch {
-		case strings.Contains(line, pkg):
-			pkgPath = line
-		case strings.Contains(line, DefaultModule+" "):
-			pkgPath = line
-		case strings.Contains(line, "replace") && strings.Contains(line, pkg):
+		if strings.Contains(line, pkg) || strings.Contains(line, DefaultModule+" ") ||
+			strings.Contains(line, "replace") && strings.Contains(line, pkg) {
 			pkgPath = line
 		}
 	}

@@ -15,7 +15,6 @@
 package configschema
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -34,5 +33,5 @@ func TestExternalType(t *testing.T) {
 	u, _ := uuid.NewUUID()
 	v := reflect.ValueOf(u)
 	comments := commentsForStruct(v, testDR())
-	fmt.Printf("%v\n", comments)
+	assert.Equal(t, "A UUID is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC\n4122.\n", comments["_struct"])
 }
