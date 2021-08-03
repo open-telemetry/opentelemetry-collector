@@ -49,7 +49,6 @@ type PerfTestValidator struct {
 	ExtraItemsScrapedPerIntervalCount int
 }
 
-
 func (v *PerfTestValidator) Validate(tc *TestCase) {
 	expectedDataItemsReceived := tc.MockBackend.DataItemsReceived()
 
