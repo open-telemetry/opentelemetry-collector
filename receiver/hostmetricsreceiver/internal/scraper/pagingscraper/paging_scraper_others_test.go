@@ -32,7 +32,7 @@ import (
 func TestScrape_Errors(t *testing.T) {
 	type testCase struct {
 		name              string
-		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
+		virtualMemoryFunc func() ([]*pageFileStats, error)
 		swapMemoryFunc    func() (*mem.SwapMemoryStat, error)
 		expectedError     string
 		expectedErrCount  int
@@ -41,7 +41,7 @@ func TestScrape_Errors(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:              "virtualMemoryError",
-			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
+			virtualMemoryFunc: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			expectedError:     "err1",
 			expectedErrCount:  pagingUsageMetricsLen,
 		},
@@ -53,7 +53,7 @@ func TestScrape_Errors(t *testing.T) {
 		},
 		{
 			name:              "multipleErrors",
-			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
+			virtualMemoryFunc: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:     "[err1; err2]",
 			expectedErrCount:  pagingUsageMetricsLen + pagingMetricsLen,
@@ -64,7 +64,7 @@ func TestScrape_Errors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newPagingScraper(context.Background(), &Config{})
 			if test.virtualMemoryFunc != nil {
-				scraper.virtualMemory = test.virtualMemoryFunc
+				scraper.getPageFileStats = test.virtualMemoryFunc
 			}
 			if test.swapMemoryFunc != nil {
 				scraper.swapMemory = test.swapMemoryFunc

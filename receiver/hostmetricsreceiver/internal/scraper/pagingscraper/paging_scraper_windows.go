@@ -18,7 +18,6 @@ package pagingscraper
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/shirou/gopsutil/host"
@@ -45,25 +44,16 @@ type scraper struct {
 	config    *Config
 	startTime pdata.Timestamp
 
-	pageSize uint64
-
 	perfCounterScraper perfcounters.PerfCounterScraper
 
 	// for mocking
 	bootTime      func() (uint64, error)
-	pageFileStats func() ([]*pageFileData, error)
+	pageFileStats func() ([]*pageFileStats, error)
 }
-
-var (
-	once     sync.Once
-	pageSize uint64
-)
 
 // newPagingScraper creates a Paging Scraper
 func newPagingScraper(_ context.Context, cfg *Config) *scraper {
-	once.Do(func() { pageSize = getPageSize() })
-
-	return &scraper{config: cfg, pageSize: pageSize, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime, pageFileStats: getPageFileStats}
+	return &scraper{config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime, pageFileStats: getPageFileStats}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -108,15 +98,15 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 	return nil
 }
 
-func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageFiles []*pageFileData) {
+func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageFiles []*pageFileStats) {
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(pageFiles))
 
 	for _, pageFile := range pageFiles {
-		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.name, metadata.LabelState.Used, int64(pageFile.usedPages*s.pageSize))
-		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.name, metadata.LabelState.Free, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Used, int64(pageFile.usedBytes))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Free, int64((pageFile.freeBytes)))
 	}
 }
 

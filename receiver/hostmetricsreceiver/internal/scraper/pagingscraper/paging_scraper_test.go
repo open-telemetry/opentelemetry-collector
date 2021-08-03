@@ -100,19 +100,20 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	// expect at least used, free & cached datapoint
 	expectedDataPoints := 3
 	// windows does not return a cached datapoint
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
 		expectedDataPoints = 2
 	}
 
 	assert.GreaterOrEqual(t, hostPagingUsageMetric.Sum().DataPoints().Len(), expectedDataPoints)
 	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 0, "state", pdata.NewAttributeValueString(metadata.LabelState.Used))
 	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 1, "state", pdata.NewAttributeValueString(metadata.LabelState.Free))
-	// on non-windows, also expect a cached state label
-	if runtime.GOOS != "windows" {
+	// Windows and Linux do not support cached state label
+	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
 		internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 2, "state", pdata.NewAttributeValueString(metadata.LabelState.Cached))
 	}
-	// on windows, also expect the page file device name label
-	if runtime.GOOS == "windows" {
+
+	// on Windows and Linux, also expect the page file device name label
+	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
 		internal.AssertSumMetricHasAttribute(t, hostPagingUsageMetric, 0, "device")
 		internal.AssertSumMetricHasAttribute(t, hostPagingUsageMetric, 1, "device")
 	}

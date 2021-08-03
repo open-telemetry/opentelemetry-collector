@@ -40,14 +40,14 @@ type scraper struct {
 	startTime pdata.Timestamp
 
 	// for mocking
-	bootTime      func() (uint64, error)
-	virtualMemory func() (*mem.VirtualMemoryStat, error)
-	swapMemory    func() (*mem.SwapMemoryStat, error)
+	bootTime         func() (uint64, error)
+	getPageFileStats func() ([]*pageFileStats, error)
+	swapMemory       func() (*mem.SwapMemoryStat, error)
 }
 
 // newPagingScraper creates a Paging Scraper
 func newPagingScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, virtualMemory: mem.VirtualMemory, swapMemory: mem.SwapMemory}
+	return &scraper{config: cfg, bootTime: host.BootTime, getPageFileStats: getPageFileStats, swapMemory: mem.SwapMemory}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -80,28 +80,35 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 
 func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) error {
 	now := pdata.NewTimestampFromTime(time.Now())
-	vmem, err := s.virtualMemory()
+	pageFileStats, err := s.getPageFileStats()
 	if err != nil {
 		return err
 	}
 
 	idx := metrics.Len()
 	metrics.EnsureCapacity(idx + pagingUsageMetricsLen)
-	initializePagingUsageMetric(metrics.AppendEmpty(), now, vmem)
+	initializePagingUsageMetric(metrics.AppendEmpty(), now, pageFileStats)
 	return nil
 }
 
-func initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, vmem *mem.VirtualMemoryStat) {
+func initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageFileStats []*pageFileStats) {
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(3)
-	initializePagingUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Used, int64(vmem.SwapTotal-vmem.SwapFree-vmem.SwapCached))
-	initializePagingUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Free, int64(vmem.SwapFree))
-	initializePagingUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Cached, int64(vmem.SwapCached))
+	for _, pageFile := range pageFileStats {
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Used, int64(pageFile.usedBytes))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Free, int64(pageFile.freeBytes))
+		if pageFile.cachedBytes != nil {
+			initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Cached, int64(*pageFile.cachedBytes))
+		}
+	}
 }
 
-func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
+func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel, stateLabel string, value int64) {
+	if deviceLabel != "" {
+		dataPoint.Attributes().InsertString(metadata.Labels.Device, deviceLabel)
+	}
 	dataPoint.Attributes().InsertString(metadata.Labels.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

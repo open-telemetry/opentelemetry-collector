@@ -17,6 +17,7 @@
 package pagingscraper
 
 import (
+	"sync"
 	"syscall"
 	"unsafe"
 
@@ -29,6 +30,11 @@ var (
 
 	procGetNativeSystemInfo = modKernel32.NewProc("GetNativeSystemInfo")
 	procEnumPageFilesW      = modPsapi.NewProc("EnumPageFilesW")
+)
+
+var (
+	pageSize     uint64
+	pageSizeOnce sync.Once
 )
 
 type systemInfo struct {
@@ -51,12 +57,6 @@ func getPageSize() uint64 {
 	return uint64(sysInfo.dwPageSize)
 }
 
-type pageFileData struct {
-	name       string
-	usedPages  uint64
-	totalPages uint64
-}
-
 // system type as defined in https://docs.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-enum_page_file_information
 type enumPageFileInformation struct {
 	cb         uint32
@@ -66,10 +66,12 @@ type enumPageFileInformation struct {
 	peakUsage  uint64
 }
 
-func getPageFileStats() ([]*pageFileData, error) {
+func getPageFileStats() ([]*pageFileStats, error) {
+	pageSizeOnce.Do(func() { pageSize = getPageSize() })
+
 	// the following system call invokes the supplied callback function once for each page file before returning
 	// see https://docs.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-enumpagefilesw
-	var pageFiles []*pageFileData
+	var pageFiles []*pageFileStats
 	result, _, _ := procEnumPageFilesW.Call(windows.NewCallback(pEnumPageFileCallbackW), uintptr(unsafe.Pointer(&pageFiles)))
 	if result == 0 {
 		return nil, windows.GetLastError()
@@ -79,13 +81,13 @@ func getPageFileStats() ([]*pageFileData, error) {
 }
 
 // system callback as defined in https://docs.microsoft.com/en-us/windows/win32/api/psapi/nc-psapi-penum_page_file_callbackw
-func pEnumPageFileCallbackW(pageFiles *[]*pageFileData, enumPageFileInfo *enumPageFileInformation, lpFilenamePtr *[syscall.MAX_LONG_PATH]uint16) *bool {
+func pEnumPageFileCallbackW(pageFiles *[]*pageFileStats, enumPageFileInfo *enumPageFileInformation, lpFilenamePtr *[syscall.MAX_LONG_PATH]uint16) *bool {
 	pageFileName := syscall.UTF16ToString((*lpFilenamePtr)[:])
 
-	pfData := &pageFileData{
-		name:       pageFileName,
-		usedPages:  enumPageFileInfo.totalInUse,
-		totalPages: enumPageFileInfo.totalSize,
+	pfData := &pageFileStats{
+		deviceName: pageFileName,
+		usedBytes:  enumPageFileInfo.totalInUse * pageSize,
+		freeBytes:  (enumPageFileInfo.totalSize - enumPageFileInfo.totalInUse) * pageSize,
 	}
 
 	*pageFiles = append(*pageFiles, pfData)
