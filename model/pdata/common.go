@@ -121,6 +121,8 @@ func NewAttributeValueArray() AttributeValue {
 }
 
 // NewAttributeValueBytes creates a new AttributeValue with the given []byte value.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is discouraged.
 func NewAttributeValueBytes(v []byte) AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v}}}
 }
