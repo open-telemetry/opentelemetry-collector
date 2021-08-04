@@ -26,7 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -278,9 +278,9 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 	// Consider TimeEvent to be of MessageEvent type if all and only relevant attributes are set
 	ocMessageEventAttrs := []string{
 		conventions.AttributeMessageType,
-		conventions.AttributeMessageID,
-		conventions.AttributeMessageUncompressedSize,
-		conventions.AttributeMessageCompressedSize,
+		conventions.AttributeMessagingMessageID,
+		conventions.AttributeMessagingMessagePayloadSizeBytes,
+		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes,
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
 	if attrs.Len() == len(ocMessageEventAttrs) {
@@ -301,9 +301,9 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
-						Id:               uint64(ocMessageEventAttrValues[conventions.AttributeMessageID].IntVal()),
-						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.AttributeMessageUncompressedSize].IntVal()),
-						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.AttributeMessageCompressedSize].IntVal()),
+						Id:               uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessageID].IntVal()),
+						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadSizeBytes].IntVal()),
+						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadCompressedSizeBytes].IntVal()),
 					},
 				},
 			}

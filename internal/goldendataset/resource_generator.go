@@ -16,7 +16,7 @@ package goldendataset
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // GenerateResource generates a PData Resource object with representative attributes for the
@@ -51,7 +51,7 @@ func appendOnpremVMAttributes(attrMap pdata.AttributeMap) {
 	subMap.MapVal().InsertString("internal", "172.18.36.18")
 	attrMap.Upsert(conventions.AttributeHostName, subMap)
 	attrMap.UpsertString(conventions.AttributeHostImageID, "661ADFA6-E293-4870-9EFA-1AA052C49F18")
-	attrMap.UpsertString(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeSDKLangValueJava)
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageJava)
 	attrMap.UpsertString(conventions.AttributeTelemetrySDKName, "opentelemetry")
 	attrMap.UpsertString(conventions.AttributeTelemetrySDKVersion, "0.3.0")
 }
@@ -61,7 +61,7 @@ func appendCloudVMAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeServiceName, "customers")
 	attrMap.UpsertString(conventions.AttributeServiceNamespace, "production")
 	attrMap.UpsertString(conventions.AttributeServiceVersion, "semver:0.7.3")
-	attrMap.UpsertString(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeSDKLangValueJava)
+	attrMap.UpsertString(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageJava)
 	attrMap.UpsertString(conventions.AttributeTelemetrySDKName, "opentelemetry")
 	attrMap.UpsertString(conventions.AttributeTelemetrySDKVersion, "0.3.0")
 	attrMap.UpsertString(conventions.AttributeHostID, "57e8add1f79a454bae9fb1f7756a009a")
@@ -69,48 +69,48 @@ func appendCloudVMAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeHostImageID, "5.3.0-1020-azure")
 	attrMap.UpsertString(conventions.AttributeHostType, "B1ms")
 	attrMap.UpsertString(conventions.AttributeCloudProvider, "azure")
-	attrMap.UpsertString(conventions.AttributeCloudAccount, "2f5b8278-4b80-4930-a6bb-d86fc63a2534")
+	attrMap.UpsertString(conventions.AttributeCloudAccountID, "2f5b8278-4b80-4930-a6bb-d86fc63a2534")
 	attrMap.UpsertString(conventions.AttributeCloudRegion, "South Central US")
 }
 
 func appendOnpremK8sAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeContainerName, "cert-manager")
-	attrMap.UpsertString(conventions.AttributeContainerImage, "quay.io/jetstack/cert-manager-controller:v0.14.2")
-	attrMap.UpsertString(conventions.AttributeK8sCluster, "docker-desktop")
-	attrMap.UpsertString(conventions.AttributeK8sNamespace, "cert-manager")
-	attrMap.UpsertString(conventions.AttributeK8sDeployment, "cm-1-cert-manager")
-	attrMap.UpsertString(conventions.AttributeK8sPod, "cm-1-cert-manager-6448b4949b-t2jtd")
+	attrMap.UpsertString(conventions.AttributeContainerImageName, "quay.io/jetstack/cert-manager-controller:v0.14.2")
+	attrMap.UpsertString(conventions.AttributeK8SClusterName, "docker-desktop")
+	attrMap.UpsertString(conventions.AttributeK8SNamespaceName, "cert-manager")
+	attrMap.UpsertString(conventions.AttributeK8SDeploymentName, "cm-1-cert-manager")
+	attrMap.UpsertString(conventions.AttributeK8SPodName, "cm-1-cert-manager-6448b4949b-t2jtd")
 	attrMap.UpsertString(conventions.AttributeHostName, "docker-desktop")
 }
 
 func appendCloudK8sAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeContainerName, "otel-collector")
-	attrMap.UpsertString(conventions.AttributeContainerImage, "otel/opentelemetry-collector-contrib")
-	attrMap.UpsertString(conventions.AttributeContainerTag, "0.4.0")
-	attrMap.UpsertString(conventions.AttributeK8sCluster, "erp-dev")
-	attrMap.UpsertString(conventions.AttributeK8sNamespace, "monitoring")
-	attrMap.UpsertString(conventions.AttributeK8sDeployment, "otel-collector")
-	attrMap.UpsertString(conventions.AttributeK8sDeploymentUID, "4D614B27-EDAF-409B-B631-6963D8F6FCD4")
-	attrMap.UpsertString(conventions.AttributeK8sReplicaSet, "otel-collector-2983fd34")
-	attrMap.UpsertString(conventions.AttributeK8sReplicaSetUID, "EC7D59EF-D5B6-48B7-881E-DA6B7DD539B6")
-	attrMap.UpsertString(conventions.AttributeK8sPod, "otel-collector-6484db5844-c6f9m")
-	attrMap.UpsertString(conventions.AttributeK8sPodUID, "FDFD941E-2A7A-4945-B601-88DD486161A4")
+	attrMap.UpsertString(conventions.AttributeContainerImageName, "otel/opentelemetry-collector-contrib")
+	attrMap.UpsertString(conventions.AttributeContainerImageTag, "0.4.0")
+	attrMap.UpsertString(conventions.AttributeK8SClusterName, "erp-dev")
+	attrMap.UpsertString(conventions.AttributeK8SNamespaceName, "monitoring")
+	attrMap.UpsertString(conventions.AttributeK8SDeploymentName, "otel-collector")
+	attrMap.UpsertString(conventions.AttributeK8SDeploymentUID, "4D614B27-EDAF-409B-B631-6963D8F6FCD4")
+	attrMap.UpsertString(conventions.AttributeK8SReplicasetName, "otel-collector-2983fd34")
+	attrMap.UpsertString(conventions.AttributeK8SReplicasetUID, "EC7D59EF-D5B6-48B7-881E-DA6B7DD539B6")
+	attrMap.UpsertString(conventions.AttributeK8SPodName, "otel-collector-6484db5844-c6f9m")
+	attrMap.UpsertString(conventions.AttributeK8SPodUID, "FDFD941E-2A7A-4945-B601-88DD486161A4")
 	attrMap.UpsertString(conventions.AttributeHostID, "ec2e3fdaffa294348bdf355156b94cda")
 	attrMap.UpsertString(conventions.AttributeHostName, "10.99.118.157")
 	attrMap.UpsertString(conventions.AttributeHostImageID, "ami-011c865bf7da41a9d")
 	attrMap.UpsertString(conventions.AttributeHostType, "m5.xlarge")
 	attrMap.UpsertString(conventions.AttributeCloudProvider, "aws")
-	attrMap.UpsertString(conventions.AttributeCloudAccount, "12345678901")
+	attrMap.UpsertString(conventions.AttributeCloudAccountID, "12345678901")
 	attrMap.UpsertString(conventions.AttributeCloudRegion, "us-east-1")
 	attrMap.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
 }
 
 func appendFassAttributes(attrMap pdata.AttributeMap) {
-	attrMap.UpsertString(conventions.AttributeFaasID, "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print")
-	attrMap.UpsertString(conventions.AttributeFaasName, "env-vars-print")
-	attrMap.UpsertString(conventions.AttributeFaasVersion, "semver:1.0.0")
+	attrMap.UpsertString(conventions.AttributeFaaSID, "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print")
+	attrMap.UpsertString(conventions.AttributeFaaSName, "env-vars-print")
+	attrMap.UpsertString(conventions.AttributeFaaSVersion, "semver:1.0.0")
 	attrMap.UpsertString(conventions.AttributeCloudProvider, "gcp")
-	attrMap.UpsertString(conventions.AttributeCloudAccount, "opentelemetry")
+	attrMap.UpsertString(conventions.AttributeCloudAccountID, "opentelemetry")
 	attrMap.UpsertString(conventions.AttributeCloudRegion, "us-central1")
 	attrMap.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-central1-a")
 }
@@ -122,7 +122,7 @@ func appendExecAttributes(attrMap pdata.AttributeMap) {
 	parts.ArrayVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
 	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)
 	attrMap.UpsertString(conventions.AttributeProcessExecutablePath, "/usr/local/bin/otelcol")
-	attrMap.UpsertInt(conventions.AttributeProcessID, 2020)
+	attrMap.UpsertInt(conventions.AttributeProcessPID, 2020)
 	attrMap.UpsertString(conventions.AttributeProcessOwner, "otel")
 	attrMap.UpsertString(conventions.AttributeOSType, "LINUX")
 	attrMap.UpsertString(conventions.AttributeOSDescription,

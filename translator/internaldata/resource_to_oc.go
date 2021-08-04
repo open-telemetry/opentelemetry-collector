@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -46,7 +46,7 @@ var labelPresenceToResourceType = []ocInferredResourceType{
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#pod
-		labelKeyPresent: conventions.AttributeK8sPod,
+		labelKeyPresent: conventions.AttributeK8SPodName,
 		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
 		resourceType: resourcekeys.K8SType,
 	},
@@ -66,16 +66,16 @@ var langToOCLangCodeMap = getSDKLangToOCLangCodeMap()
 
 func getSDKLangToOCLangCodeMap() map[string]int32 {
 	mappings := make(map[string]int32)
-	mappings[conventions.AttributeSDKLangValueCPP] = 1
-	mappings[conventions.AttributeSDKLangValueDotNET] = 2
-	mappings[conventions.AttributeSDKLangValueErlang] = 3
-	mappings[conventions.AttributeSDKLangValueGo] = 4
-	mappings[conventions.AttributeSDKLangValueJava] = 5
-	mappings[conventions.AttributeSDKLangValueNodeJS] = 6
-	mappings[conventions.AttributeSDKLangValuePHP] = 7
-	mappings[conventions.AttributeSDKLangValuePython] = 8
-	mappings[conventions.AttributeSDKLangValueRuby] = 9
-	mappings[conventions.AttributeSDKLangValueWebJS] = 10
+	mappings[conventions.AttributeTelemetrySDKLanguageCPP] = 1
+	mappings[conventions.AttributeTelemetrySDKLanguageDotnet] = 2
+	mappings[conventions.AttributeTelemetrySDKLanguageErlang] = 3
+	mappings[conventions.AttributeTelemetrySDKLanguageGo] = 4
+	mappings[conventions.AttributeTelemetrySDKLanguageJava] = 5
+	mappings[conventions.AttributeTelemetrySDKLanguageNodejs] = 6
+	mappings[conventions.AttributeTelemetrySDKLanguagePHP] = 7
+	mappings[conventions.AttributeTelemetrySDKLanguagePython] = 8
+	mappings[conventions.AttributeTelemetrySDKLanguageRuby] = 9
+	mappings[conventions.AttributeTelemetrySDKLanguageWebjs] = 10
 	return mappings
 }
 
@@ -107,7 +107,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			getProcessIdentifier(ocNode).StartTimestamp = ts
 		case conventions.AttributeHostName:
 			getProcessIdentifier(ocNode).HostName = val
-		case conventions.AttributeProcessID:
+		case conventions.AttributeProcessPID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {
 				pid = defaultProcessID

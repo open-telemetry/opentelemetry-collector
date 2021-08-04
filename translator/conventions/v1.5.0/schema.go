@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,10 +14,7 @@
 
 package conventions
 
-// OpenTelemetry Semantic Convention values for standard exporters.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk_exporters/jaeger.md
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk_exporters/zipkin.md
-const (
-	InstrumentationLibraryName    = "otel.library.name"
-	InstrumentationLibraryVersion = "otel.library.version"
-)
+// SchemaURL is the schema URL that matches the version of the semantic conventions
+// that this package defines. Conventions packages starting from v1.4.0 must declare
+// non-empty schema URL in the form https://opentelemetry.io/schemas/<version>
+const SchemaURL = "https://opentelemetry.io/schemas/v1.5.0"
