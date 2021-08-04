@@ -396,7 +396,7 @@ func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
 	assert.NoError(t, manager.Close(ctx))
 }
 
-func TestManager_expandString(t *testing.T) {
+func TestManager_parseStringValue(t *testing.T) {
 	ctx := context.Background()
 	manager := newManager(map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
@@ -530,14 +530,14 @@ func TestManager_expandString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := manager.expandString(ctx, tt.input)
+			got, err := manager.parseStringValue(ctx, tt.input)
 			require.IsType(t, tt.wantErr, err)
 			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_parseCfgSrc(t *testing.T) {
+func Test_parseCfgSrcInvocation(t *testing.T) {
 	tests := []struct {
 		params     interface{}
 		name       string
@@ -610,7 +610,7 @@ func Test_parseCfgSrc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfgSrcName, selector, paramsConfigMap, err := parseCfgSrc(tt.str)
+			cfgSrcName, selector, paramsConfigMap, err := parseCfgSrcInvocation(tt.str)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

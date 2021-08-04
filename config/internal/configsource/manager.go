@@ -160,6 +160,8 @@ type (
 // the code will consider it to be the name of an environment variable to expand, or config source if followed by ':'. Do not use any of these
 // characters as the first char on the name of a config source or an environment variable (even if allowed by the system) to avoid unexpected
 // results.
+//
+// For an overview about the internals of the Manager refer to the package README.md.
 type Manager struct {
 	// configSources is map from ConfigSource names (as defined in the configuration)
 	// and the respective instances.
@@ -190,18 +192,21 @@ func NewManager(_ *configparser.ConfigMap) (*Manager, error) {
 }
 
 // Resolve inspects the given configparser.Parser and resolves all config sources referenced
-// in the configuration, returning a configparser.Parser fully resolved. This must be called only
-// once per lifetime of a Manager object.
+// in the configuration, returning a configparser.Parser in which all env vars and config sources on
+// the given input parser are resolved to actual literal values of the env vars or config sources.
+// This method must be called only once per lifetime of a Manager object.
 func (m *Manager) Resolve(ctx context.Context, parser *configparser.ConfigMap) (*configparser.ConfigMap, error) {
 	res := configparser.NewConfigMap()
 	allKeys := parser.AllKeys()
 	for _, k := range allKeys {
 		if strings.HasPrefix(k, configSourcesKey) {
-			// Remove everything under config_sources
+			// Remove everything under the config_sources section. The `config_sources` section
+			// is read when loading the config sources used in the configuration but it is not
+			// part of the resulting configuration returned via *configparser.Parser.
 			continue
 		}
 
-		value, err := m.expandStringValues(ctx, parser.Get(k))
+		value, err := m.parseConfigValue(ctx, parser.Get(k))
 		if err != nil {
 			return nil, err
 		}
@@ -281,14 +286,31 @@ func (m *Manager) Close(ctx context.Context) error {
 	return consumererror.Combine(errs)
 }
 
-func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (interface{}, error) {
+// parseConfigValue takes the value of a "config node" and process it recursively. The processing consists
+// in transforming invocations of config sources and/or environment variables into literal data that can be
+// used directly from a `configparser.Parser` object.
+func (m *Manager) parseConfigValue(ctx context.Context, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
-		return m.expandString(ctx, v)
+		// Only if the value of the node is a string it can contain an env var or config source
+		// invocation that requires transformation.
+		return m.parseStringValue(ctx, v)
 	case []interface{}:
+		// The value is of type []interface{} when an array is used in the configuration, YAML example:
+		//
+		//  array0:
+		//    - elem0
+		//    - elem1
+		//  array1:
+		//    - entry:
+		//        str: elem0
+		//	  - entry:
+		//        str: $tstcfgsrc:elem1
+		//
+		// Both "array0" and "array1" are going to be leaf config nodes hitting this case.
 		nslice := make([]interface{}, 0, len(v))
 		for _, vint := range v {
-			value, err := m.expandStringValues(ctx, vint)
+			value, err := m.parseConfigValue(ctx, vint)
 			if err != nil {
 				return nil, err
 			}
@@ -296,9 +318,12 @@ func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (in
 		}
 		return nslice, nil
 	case map[string]interface{}:
+		// The value is of type map[string]interface{} when an array in the configuration is populated with map
+		// elements. From the case above (for type []interface{}) each element of "array1" is going to hit the
+		// the current case block.
 		nmap := make(map[interface{}]interface{}, len(v))
 		for k, vint := range v {
-			value, err := m.expandStringValues(ctx, vint)
+			value, err := m.parseConfigValue(ctx, vint)
 			if err != nil {
 				return nil, err
 			}
@@ -306,32 +331,14 @@ func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (in
 		}
 		return nmap, nil
 	default:
+		// All other literals (int, boolean, etc) can't be further expanded so just return them as they are.
 		return v, nil
 	}
 }
 
-// expandConfigSource retrieve data from the specified config source and injects them into
-// the configuration. The Manager tracks sessions and watcher objects as needed.
-func (m *Manager) expandConfigSource(ctx context.Context, cfgSrc configsource.ConfigSource, s string) (interface{}, error) {
-	cfgSrcName, selector, paramsConfigMap, err := parseCfgSrc(s)
-	if err != nil {
-		return nil, err
-	}
-
-	retrieved, err := cfgSrc.Retrieve(ctx, selector, paramsConfigMap)
-	if err != nil {
-		return nil, fmt.Errorf("config source %q failed to retrieve value: %w", cfgSrcName, err)
-	}
-
-	if watcher, okWatcher := retrieved.(configsource.Watchable); okWatcher {
-		m.watchers = append(m.watchers, watcher)
-	}
-
-	return retrieved.Value(), nil
-}
-
-// expandString expands environment variables and config sources that are specified on the string.
-func (m *Manager) expandString(ctx context.Context, s string) (interface{}, error) {
+// parseStringValue transforms environment variables and config sources, if any are present, on
+// the given string in the configuration into an object to be inserted into the resulting configuration.
+func (m *Manager) parseStringValue(ctx context.Context, s string) (interface{}, error) {
 	// Code based on os.Expand function. All delimiters that are checked against are
 	// ASCII so bytes are fine for this operation.
 	var buf []byte
@@ -342,6 +349,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 	// w tracks the number of characters being consumed after a prefix identifying env vars or config sources.
 	i := 0
 	for j := 0; j < len(s); j++ {
+		// Skip chars until a candidate for expansion is found.
 		if s[j] == expandPrefixChar && j+1 < len(s) {
 			if buf == nil {
 				// Assuming that the length of the string will double after expansion of env vars and config sources.
@@ -389,6 +397,7 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 				}
 			}
 
+			// At this point expandableContent contains a string to be expanded, evaluate and expand it.
 			switch {
 			case cfgSrcName == "":
 				// Not a config source, expand as os.ExpandEnv
@@ -452,18 +461,47 @@ func (m *Manager) expandString(ctx context.Context, s string) (interface{}, erro
 	return string(buf) + s[i:], nil
 }
 
-func (m *Manager) retrieveConfigSourceData(ctx context.Context, name, cfgSrcInvoke string) (interface{}, error) {
-	cfgSrc, ok := m.configSources[name]
+// retrieveConfigSourceData retrieves data from the specified config source and injects them into
+// the configuration. The Manager tracks sessions and watcher objects as needed.
+func (m *Manager) retrieveConfigSourceData(ctx context.Context, cfgSrcName, cfgSrcInvocation string) (interface{}, error) {
+	cfgSrc, ok := m.configSources[cfgSrcName]
 	if !ok {
-		return nil, newErrUnknownConfigSource(name)
+		return nil, newErrUnknownConfigSource(cfgSrcName)
 	}
 
-	retrieved, err := m.expandConfigSource(ctx, cfgSrc, cfgSrcInvoke)
+	cfgSrcName, selector, paramsParser, err := parseCfgSrcInvocation(cfgSrcInvocation)
 	if err != nil {
 		return nil, err
 	}
 
-	return retrieved, nil
+	// Recursively expand the selector.
+	var expandedSelector interface{}
+	expandedSelector, err = m.parseStringValue(ctx, selector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process selector for config source %q selector %q: %w", cfgSrcName, selector, err)
+	}
+	if selector, ok = expandedSelector.(string); !ok {
+		return nil, fmt.Errorf("processed selector must be a string instead got a %T %v", expandedSelector, expandedSelector)
+	}
+
+	// Recursively resolve/parse any config source on the parameters.
+	if paramsParser != nil {
+		paramsParser, err = m.Resolve(ctx, paramsParser)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process parameters for config source %q invocation %q: %w", cfgSrcName, cfgSrcInvocation, err)
+		}
+	}
+
+	retrieved, err := cfgSrc.Retrieve(ctx, selector, paramsParser)
+	if err != nil {
+		return nil, fmt.Errorf("config source %q failed to retrieve value: %w", cfgSrcName, err)
+	}
+
+	if watcher, ok := retrieved.(configsource.Watchable); ok {
+		m.watchers = append(m.watchers, watcher)
+	}
+
+	return retrieved.Value(), nil
 }
 
 func newErrUnknownConfigSource(cfgSrcName string) error {
@@ -472,10 +510,10 @@ func newErrUnknownConfigSource(cfgSrcName string) error {
 	}
 }
 
-// parseCfgSrc extracts the reference to a config source from a string value.
+// parseCfgSrcInvocation extracts the reference to a config source from a string value.
 // The caller should check for error explicitly since it is possible for the
 // other values to have been partially set.
-func parseCfgSrc(s string) (cfgSrcName, selector string, paramsConfigMap *configparser.ConfigMap, err error) {
+func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigMap *configparser.ConfigMap, err error) {
 	parts := strings.SplitN(s, string(configSourceNameDelimChar), 2)
 	if len(parts) != 2 {
 		err = fmt.Errorf("invalid config source syntax at %q, it must have at least the config source name and a selector", s)
