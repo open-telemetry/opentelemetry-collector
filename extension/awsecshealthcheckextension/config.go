@@ -45,8 +45,10 @@ func (cfg *Config) Validate() error {
 	if err != nil {
 		return err
 	}
+
 	if cfg.ExporterErrorLimit < 0 {
-		return errors.New("math: error limit is a negative number")
+		return errors.New("error limit is a negative number")
 	}
+
 	return nil
 }
