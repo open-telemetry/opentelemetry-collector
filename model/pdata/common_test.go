@@ -59,6 +59,11 @@ func TestAttributeValue(t *testing.T) {
 	v.SetBoolVal(true)
 	assert.EqualValues(t, AttributeValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
+
+	bytesValue := []byte{1, 2, 3, 4}
+	v = NewAttributeValueBytes(bytesValue)
+	assert.EqualValues(t, AttributeValueTypeBytes, v.Type())
+	assert.EqualValues(t, bytesValue, v.BytesVal())
 }
 
 func TestAttributeValueType(t *testing.T) {
@@ -69,6 +74,7 @@ func TestAttributeValueType(t *testing.T) {
 	assert.EqualValues(t, "DOUBLE", AttributeValueTypeDouble.String())
 	assert.EqualValues(t, "MAP", AttributeValueTypeMap.String())
 	assert.EqualValues(t, "ARRAY", AttributeValueTypeArray.String())
+	assert.EqualValues(t, "BYTES", AttributeValueTypeBytes.String())
 }
 
 func TestAttributeValueMap(t *testing.T) {
@@ -164,6 +170,10 @@ func TestNilOrigSetAttributeValue(t *testing.T) {
 	av = NewAttributeValueNull()
 	av.SetDoubleVal(1.23)
 	assert.EqualValues(t, 1.23, av.DoubleVal())
+
+	av = NewAttributeValueNull()
+	av.SetBytesVal([]byte{1, 2, 3})
+	assert.Equal(t, []byte{1, 2, 3}, av.BytesVal())
 }
 
 func TestAttributeValueEqual(t *testing.T) {
@@ -209,6 +219,16 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.False(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueBool(false)
+	assert.True(t, av1.Equal(av2))
+
+	av2 = NewAttributeValueBytes([]byte{1, 2, 3})
+	assert.False(t, av1.Equal(av2))
+	assert.False(t, av2.Equal(av1))
+
+	av1 = NewAttributeValueBytes([]byte{1, 2, 4})
+	assert.False(t, av1.Equal(av2))
+
+	av1 = NewAttributeValueBytes([]byte{1, 2, 3})
 	assert.True(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueArray()
@@ -279,6 +299,10 @@ func TestNilAttributeMap(t *testing.T) {
 	insertMapBool.InsertBool("k", true)
 	assert.EqualValues(t, generateTestBoolAttributeMap(), insertMapBool)
 
+	insertMapBytes := NewAttributeMap()
+	insertMapBytes.InsertBytes("k", []byte{1, 2, 3, 4, 5})
+	assert.EqualValues(t, generateTestBytesAttributeMap(), insertMapBytes)
+
 	updateMap := NewAttributeMap()
 	updateMap.Update("k", NewAttributeValueString("v"))
 	assert.EqualValues(t, NewAttributeMap(), updateMap)
@@ -299,6 +323,10 @@ func TestNilAttributeMap(t *testing.T) {
 	updateMapBool.UpdateBool("k", true)
 	assert.EqualValues(t, NewAttributeMap(), updateMapBool)
 
+	updateMapBytes := NewAttributeMap()
+	updateMapBytes.UpdateBytes("k", []byte{1, 2, 3})
+	assert.EqualValues(t, NewAttributeMap(), updateMapBytes)
+
 	upsertMap := NewAttributeMap()
 	upsertMap.Upsert("k", NewAttributeValueString("v"))
 	assert.EqualValues(t, generateTestAttributeMap(), upsertMap)
@@ -318,6 +346,10 @@ func TestNilAttributeMap(t *testing.T) {
 	upsertMapBool := NewAttributeMap()
 	upsertMapBool.UpsertBool("k", true)
 	assert.EqualValues(t, generateTestBoolAttributeMap(), upsertMapBool)
+
+	upsertMapBytes := NewAttributeMap()
+	upsertMapBytes.UpsertBytes("k", []byte{1, 2, 3, 4, 5})
+	assert.EqualValues(t, generateTestBytesAttributeMap(), upsertMapBytes)
 
 	deleteMap := NewAttributeMap()
 	assert.False(t, deleteMap.Delete("k"))
@@ -382,6 +414,12 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
 	assert.True(t, val.BoolVal())
 
+	sm.InsertBytes("other_key_bytes", []byte{1, 2, 3})
+	val, exist = sm.Get("other_key_bytes")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
+	assert.EqualValues(t, []byte{1, 2, 3}, val.BytesVal())
+
 	sm.Update("other_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
@@ -411,6 +449,12 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
 	assert.False(t, val.BoolVal())
+
+	sm.UpdateBytes("other_key_bytes", []byte{4, 5, 6})
+	val, exist = sm.Get("other_key_bytes")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
+	assert.EqualValues(t, []byte{4, 5, 6}, val.BytesVal())
 
 	sm.Upsert("other_key", NewAttributeValueString("other_value"))
 	val, exist = sm.Get("other_key")
@@ -442,6 +486,12 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
 	assert.True(t, val.BoolVal())
 
+	sm.UpsertBytes("other_key_bytes", []byte{7, 8, 9})
+	val, exist = sm.Get("other_key_bytes")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
+	assert.EqualValues(t, []byte{7, 8, 9}, val.BytesVal())
+
 	sm.Upsert("yet_another_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("yet_another_key")
 	assert.True(t, exist)
@@ -472,16 +522,24 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
 	assert.False(t, val.BoolVal())
 
+	sm.UpsertBytes("yet_another_key_bytes", []byte{1})
+	val, exist = sm.Get("yet_another_key_bytes")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
+	assert.EqualValues(t, []byte{1}, val.BytesVal())
+
 	assert.True(t, sm.Delete("other_key"))
 	assert.True(t, sm.Delete("other_key_string"))
 	assert.True(t, sm.Delete("other_key_int"))
 	assert.True(t, sm.Delete("other_key_double"))
 	assert.True(t, sm.Delete("other_key_bool"))
+	assert.True(t, sm.Delete("other_key_bytes"))
 	assert.True(t, sm.Delete("yet_another_key"))
 	assert.True(t, sm.Delete("yet_another_key_string"))
 	assert.True(t, sm.Delete("yet_another_key_int"))
 	assert.True(t, sm.Delete("yet_another_key_double"))
 	assert.True(t, sm.Delete("yet_another_key_bool"))
+	assert.True(t, sm.Delete("yet_another_key_bytes"))
 	assert.False(t, sm.Delete("other_key"))
 	assert.False(t, sm.Delete("yet_another_key"))
 
@@ -518,9 +576,10 @@ func TestAttributeMap_Range(t *testing.T) {
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
 		"k_null":   NewAttributeValueNull(),
+		"k_bytes":  NewAttributeValueBytes([]byte{}),
 	}
 	am := NewAttributeMap().InitFromMap(rawMap)
-	assert.Equal(t, 5, am.Len())
+	assert.Equal(t, 6, am.Len())
 
 	calls := 0
 	am.Range(func(k string, v AttributeValue) bool {
@@ -547,6 +606,7 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
 		"k_null":   NewAttributeValueNull(),
+		"k_bytes":  NewAttributeValueBytes([]byte{1, 2, 3}),
 	}
 	rawOrig := []otlpcommon.KeyValue{
 		newAttributeKeyValueString("k_string", "123"),
@@ -554,6 +614,7 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		newAttributeKeyValueDouble("k_double", 1.23),
 		newAttributeKeyValueBool("k_bool", true),
 		newAttributeKeyValueNull("k_null"),
+		newAttributeKeyValueBytes("k_bytes", []byte{1, 2, 3}),
 	}
 	am = NewAttributeMap().InitFromMap(rawMap)
 	assert.EqualValues(t, AttributeMap{orig: &rawOrig}.Sort(), am.Sort())
@@ -1087,6 +1148,14 @@ func generateTestBoolAttributeMap() AttributeMap {
 	am := NewAttributeMap()
 	am.InitFromMap(map[string]AttributeValue{
 		"k": NewAttributeValueBool(true),
+	})
+	return am
+}
+
+func generateTestBytesAttributeMap() AttributeMap {
+	am := NewAttributeMap()
+	am.InitFromMap(map[string]AttributeValue{
+		"k": NewAttributeValueBytes([]byte{1, 2, 3, 4, 5}),
 	})
 	return am
 }
