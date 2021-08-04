@@ -27,7 +27,7 @@ type Extension interface {
 
 	// GetClient will create a client for use by the specified component.
 	// The component can use the client to manage state
-	GetClient(context.Context, component.Kind, config.ComponentID, string) (Client, error)
+	GetClient(ctx context.Context, kind component.Kind, id config.ComponentID, signalName string) (Client, error)
 }
 
 // Client is the interface that storage clients must implement
@@ -44,20 +44,20 @@ type Client interface {
 
 	// Get will retrieve data from storage that corresponds to the
 	// specified key. It should return (nil, nil) if not found
-	Get(context.Context, string) ([]byte, error)
+	Get(ctx context.Context, key string) ([]byte, error)
 
 	// Set will store data. The data can be retrieved by the same
 	// component after a process restart, using the same key
-	Set(context.Context, string, []byte) error
+	Set(ctx context.Context, key string, value []byte) error
 
 	// Delete will delete data associated with the specified key
-	Delete(context.Context, string) error
+	Delete(ctx context.Context, key string) error
 
 	// Batch handles specified operations in batch. Get operation results are put in-place
-	Batch(context.Context, ...Operation) error
+	Batch(ctx context.Context, ops ...Operation) error
 
 	// Close will release any resources held by the client
-	Close(context.Context) error
+	Close(ctx context.Context) error
 }
 
 type opType int
