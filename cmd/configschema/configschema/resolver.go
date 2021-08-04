@@ -15,11 +15,14 @@
 package configschema
 
 import (
+	"fmt"
 	"go/build"
 	"os"
 	"path"
 	"reflect"
 	"strings"
+
+	"golang.org/x/mod/modfile"
 )
 
 // DefaultSrcRoot is the default root of the collector repo, relative to the
@@ -54,11 +57,16 @@ func NewDirResolver(srcRoot string, moduleName string) DirResolver {
 }
 
 // PackageDir accepts a Type and returns its package dir.
+// If package is not found locally, it is searched for through users' GOPATH.
 func (dr DirResolver) PackageDir(t reflect.Type) string {
 	pkg := strings.TrimPrefix(t.PkgPath(), dr.ModuleName+"/")
 	dir := localPackageDir(dr, pkg)
-	if _, err := os.ReadDir(dir); err != nil {
-		dir = externalPackageDir(dr, pkg)
+	_, err := os.ReadDir(dir)
+	if err != nil {
+		dir, err = externalPackageDir(dr, pkg)
+	}
+	if err != nil {
+		panic(fmt.Sprintf("Cannot locate package %s", pkg))
 	}
 	return dir
 }
@@ -69,48 +77,56 @@ func localPackageDir(dr DirResolver, pkg string) string {
 }
 
 // externalPackageDir returns the path to an external package.
-func externalPackageDir(dr DirResolver, pkg string) string {
-	line := grepMod(path.Join(dr.SrcRoot, "go.mod"), pkg)
-	v := extractVersion(line)
+func externalPackageDir(dr DirResolver, pkg string) (string, error) {
+	line, version, err := grepMod(path.Join(dr.SrcRoot, "go.mod"), pkg)
+	if err != nil {
+		return "", err
+	}
 	goPath := os.Getenv("GOPATH")
 	if goPath == "" {
 		goPath = build.Default.GOPATH
 	}
-	pkgPath := buildExternalPath(goPath, pkg, v)
-	if _, err := os.ReadDir(pkgPath); err != nil {
-		panic(err)
+	pkgPath := buildExternalPath(goPath, pkg, line, version)
+	if _, err = os.ReadDir(pkgPath); err != nil {
+		return "", err
 	}
-	return pkgPath
+	return pkgPath, nil
 }
 
 // grepMod returns the line within go.mod associated with the package
 // we are looking for.
-func grepMod(goModPath string, pkg string) string {
-	file, _ := os.ReadFile(goModPath)
-	goModFile := strings.Split(string(file), "\n")
-	var pkgPath string
-	for _, line := range goModFile {
-		if strings.Contains(line, pkg) || strings.Contains(line, DefaultModule+" ") ||
-			strings.Contains(line, "replace") && strings.Contains(line, pkg) {
-			pkgPath = line
+func grepMod(goModPath string, pkg string) (string, string, error) {
+	isDefaultModPkg := strings.Contains(pkg, DefaultModule)
+	file, err := os.ReadFile(goModPath)
+	if err != nil {
+		return "", "", err
+	}
+	modContents, err := modfile.Parse(goModPath, file, nil)
+	if err != nil {
+		return "", "", err
+	}
+	for _, line := range modContents.Replace {
+		if strings.Contains(line.Old.Path, pkg) ||
+			(isDefaultModPkg && strings.Contains(line.Old.Path, DefaultModule)) {
+			return line.New.Path, line.New.Version, nil
 		}
 	}
-	return pkgPath
-}
-
-// extractVersion gives us the version of the package from go.mod.
-func extractVersion(line string) string {
-	split := strings.Split(line, " ")
-	return split[len(split)-1]
+	for _, line := range modContents.Require {
+		if strings.Contains(line.Mod.Path, pkg) ||
+			(isDefaultModPkg && strings.Contains(line.Mod.Path, DefaultModule)) {
+			return line.Mod.Path, line.Mod.Version, nil
+		}
+	}
+	return "", "", nil
 }
 
 // buildExternalPath builds a path to a package that is not local to directory.
-func buildExternalPath(goPath, pkg, v string) string {
+func buildExternalPath(goPath, pkg, line, v string) string {
 	switch {
-	case strings.HasPrefix(v, "./"):
-		return v
-	case strings.HasPrefix(v, "../"):
-		return path.Join(v, strings.TrimPrefix(pkg, DefaultModule))
+	case strings.HasPrefix(line, "./"):
+		return line
+	case strings.HasPrefix(line, "../"):
+		return path.Join(line, strings.TrimPrefix(pkg, DefaultModule))
 	default:
 		return path.Join(goPath, "pkg", "mod", pkg+"@"+v)
 	}
