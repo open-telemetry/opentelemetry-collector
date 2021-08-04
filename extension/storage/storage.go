@@ -43,7 +43,7 @@ type Extension interface {
 type Client interface {
 
 	// Get will retrieve data from storage that corresponds to the
-	// specified key. It should return nil, nil if not found
+	// specified key. It should return (nil, nil) if not found
 	Get(context.Context, string) ([]byte, error)
 
 	// Set will store data. The data can be retrieved by the same
