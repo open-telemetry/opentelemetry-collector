@@ -26,24 +26,9 @@ import (
 )
 
 var (
-	g1       = "gauge1"
-	gd1      = "gaugedist1"
-	c1       = "cumulative1"
-	cd1      = "cumulativedist1"
-	s1       = "summary1"
-	k1       = []string{"k1"}
-	k1k2     = []string{"k1", "k2"}
-	k1k2k3   = []string{"k1", "k2", "k3"}
-	v1v2     = []string{"v1", "v2"}
-	v10v20   = []string{"v10", "v20"}
-	v100v200 = []string{"v100", "v200"}
-	bounds0  = []float64{1, 2, 4}
-	percent0 = []float64{10, 50, 90}
-	t1Ms     = pdata.Timestamp(time.Unix(0, 1000000).UnixNano())
-	t2Ms     = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
-	t3Ms     = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
-	t4Ms     = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
-	t5Ms     = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
+	t1Ms = pdata.Timestamp(time.Unix(0, 1000000).UnixNano())
+	t2Ms = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
+	t3Ms = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
 )
 
 func Test_gauge(t *testing.T) {
@@ -208,6 +193,26 @@ func Test_cumulative(t *testing.T) {
 }
 
 /*
+var (
+	gd1      = "gaugedist1"
+	c1       = "cumulative1"
+	cd1      = "cumulativedist1"
+	s1       = "summary1"
+	k1       = []string{"k1"}
+	k1k2     = []string{"k1", "k2"}
+	k1k2k3   = []string{"k1", "k2", "k3"}
+	v1v2     = []string{"v1", "v2"}
+	v10v20   = []string{"v10", "v20"}
+	v100v200 = []string{"v100", "v200"}
+	bounds0  = []float64{1, 2, 4}
+	percent0 = []float64{10, 50, 90}
+	t1Ms     = pdata.Timestamp(time.Unix(0, 1000000).UnixNano())
+	t2Ms     = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
+	t3Ms     = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
+	t4Ms     = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
+	t5Ms     = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
+)
+
 func Test_gaugeDistribution(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"GaugeDist: round 1 - gauge distribution not adjusted",
@@ -310,6 +315,7 @@ func Test_summary(t *testing.T) {
 }
 
 func Test_multiMetrics(t *testing.T) {
+    g1       := "gauge1"
 	script := []*metricsAdjusterTest{{
 		"MultiMetrics: round 1 - combined round 1 of individual metrics",
 		[]*metricspb.Metric{

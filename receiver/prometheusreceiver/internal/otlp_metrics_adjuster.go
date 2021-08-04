@@ -238,7 +238,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricPoints(metric *pdata.Metric) int {
 	case pdata.MetricDataTypeSummary:
 		return ma.adjustMetricSummary(metric)
 
-        case pdata.MetricDataTypeSum:
+	case pdata.MetricDataTypeSum:
 		return ma.adjustMetricSum(metric)
 
 	default:
@@ -347,8 +347,8 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 	currentPoints := current.Sum().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {
-		currentSummary := currentPoints.At(i)
-		tsi := ma.tsm.get(current, currentSummary.LabelsMap())
+		currentSum := currentPoints.At(i)
+		tsi := ma.tsm.get(current, currentSum.LabelsMap())
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
@@ -367,27 +367,16 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 			continue
 		}
 
-		previousSummary := previousPoints.At(i)
-                if currentSummary.DoubleVal() < previousSummary.DoubleVal() {
-                    // reset detected
-                    tsi.initial = current
-                    resets++
-                    continue
-                }
-		if (currentSummary.Count() != 0 &&
-			previousSummary.Count() != 0 &&
-			currentSummary.Count() < previousSummary.Count()) ||
-
-			(currentSummary.Sum() != 0 &&
-				previousSummary.Sum() != 0 &&
-				currentSummary.Sum() < previousSummary.Sum()) {
+		previousSum := previousPoints.At(i)
+		if currentSum.DoubleVal() < previousSum.DoubleVal() {
 			// reset detected
 			tsi.initial = current
 			resets++
 			continue
 		}
-		initialSummary := initialPoints.At(i)
-		currentSummary.SetStartTimestamp(initialSummary.StartTimestamp())
+
+		initialSum := initialPoints.At(i)
+		currentSum.SetStartTimestamp(initialSum.StartTimestamp())
 	}
 
 	return
