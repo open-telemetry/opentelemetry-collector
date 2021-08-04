@@ -122,7 +122,7 @@ func NewAttributeValueArray() AttributeValue {
 
 // NewAttributeValueBytes creates a new AttributeValue with the given []byte value.
 // The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is discouraged.
+// across multiple attributes is forbidden.
 func NewAttributeValueBytes(v []byte) AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v}}}
 }
@@ -209,6 +209,7 @@ func (a AttributeValue) ArrayVal() AnyValueArray {
 // BytesVal returns the []byte value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeBytes then returns false.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Modifying the returned []byte in-place is strongly discouraged.
 func (a AttributeValue) BytesVal() []byte {
 	return a.orig.GetBytesValue()
 }
@@ -244,6 +245,8 @@ func (a AttributeValue) SetBoolVal(v bool) {
 // SetBytesVal replaces the []byte value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeBytes.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
 func (a AttributeValue) SetBytesVal(v []byte) {
 	a.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: v}
 }
