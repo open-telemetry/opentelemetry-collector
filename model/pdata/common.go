@@ -209,7 +209,7 @@ func (a AttributeValue) ArrayVal() AnyValueArray {
 // BytesVal returns the []byte value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeBytes then returns false.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-// Modifying the returned []byte in-place is strongly discouraged.
+// Modifying the returned []byte in-place is forbidden.
 func (a AttributeValue) BytesVal() []byte {
 	return a.orig.GetBytesValue()
 }
@@ -544,6 +544,8 @@ func (am AttributeMap) InsertBool(k string, v bool) {
 
 // InsertBytes adds the []byte Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
 func (am AttributeMap) InsertBytes(k string, v []byte) {
 	if _, existing := am.Get(k); !existing {
 		*am.orig = append(*am.orig, newAttributeKeyValueBytes(k, v))
@@ -597,6 +599,8 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 
 // UpdateBytes updates an existing []byte Value with a value.
 // No action is applied to the map where the key does not exist.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
 func (am AttributeMap) UpdateBytes(k string, v []byte) {
 	if av, existing := am.Get(k); existing {
 		av.SetBytesVal(v)
@@ -666,6 +670,8 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 // UpsertBytes performs the Insert or Update action. The []byte Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
 func (am AttributeMap) UpsertBytes(k string, v []byte) {
 	if av, existing := am.Get(k); existing {
 		av.SetBytesVal(v)
