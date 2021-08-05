@@ -181,7 +181,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 	cfg, err := configtest.LoadConfigAndValidate("testdata/pipelines_builder.yaml", factories)
-	// Load the config
+	// Unmarshal the config
 	require.Nil(t, err)
 
 	// BuildProcessors the pipeline

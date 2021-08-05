@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configloader
+package configunmarshaler
 
 import (
 	"fmt"
@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/configparser"
 )
 
-// These are errors that can be returned by Load(). Note that error codes are not part
-// of Load()'s public API, they are for internal unit testing only.
+// These are errors that can be returned by Unmarshal(). Note that error codes are not part
+// of Unmarshal()'s public API, they are for internal unit testing only.
 type configErrorCode int
 
 const (
@@ -89,12 +89,20 @@ type pipelineSettings struct {
 	Exporters  []string `mapstructure:"exporters"`
 }
 
-// Load loads a Config from Parser.
-// After loading the config, `Validate()` must be called to validate.
-func Load(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
+type defaultUnmarshaler struct{}
+
+// NewDefault returns a default ConfigUnmarshaler that unmarshalls every configuration
+// using the custom unmarshaler if present or default to strict
+func NewDefault() ConfigUnmarshaler {
+	return &defaultUnmarshaler{}
+}
+
+// Unmarshal the Config from a Parser.
+// After the config is unmarshalled, `Validate()` must be called to validate.
+func (*defaultUnmarshaler) Unmarshal(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
-	// Load the config.
+	// Unmarshal the config.
 
 	// Struct to validate top level sections.
 	var rawCfg configSettings
@@ -111,34 +119,34 @@ func Load(v *configparser.Parser, factories component.Factories) (*config.Config
 
 	// Start with the service extensions.
 
-	extensions, err := loadExtensions(cast.ToStringMap(v.Get(extensionsKeyName)), factories.Extensions)
+	extensions, err := unmarshalExtensions(cast.ToStringMap(v.Get(extensionsKeyName)), factories.Extensions)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Extensions = extensions
 
-	// Load data components (receivers, exporters, and processors).
+	// Unmarshal data components (receivers, exporters, and processors).
 
-	receivers, err := loadReceivers(cast.ToStringMap(v.Get(receiversKeyName)), factories.Receivers)
+	receivers, err := unmarshalReceivers(cast.ToStringMap(v.Get(receiversKeyName)), factories.Receivers)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Receivers = receivers
 
-	exporters, err := loadExporters(cast.ToStringMap(v.Get(exportersKeyName)), factories.Exporters)
+	exporters, err := unmarshalExporters(cast.ToStringMap(v.Get(exportersKeyName)), factories.Exporters)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Exporters = exporters
 
-	processors, err := loadProcessors(cast.ToStringMap(v.Get(processorsKeyName)), factories.Processors)
+	processors, err := unmarshalProcessors(cast.ToStringMap(v.Get(processorsKeyName)), factories.Processors)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Processors = processors
 
-	// Load the service and its data pipelines.
-	service, err := loadService(rawCfg.Service)
+	// Unmarshal the service and its data pipelines.
+	service, err := unmarshalService(rawCfg.Service)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +183,7 @@ func errorDuplicateName(component string, id config.ComponentID) error {
 	}
 }
 
-func loadExtensions(exts map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (config.Extensions, error) {
+func unmarshalExtensions(exts map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (config.Extensions, error) {
 	// Prepare resulting map.
 	extensions := make(config.Extensions)
 
@@ -217,7 +225,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 	return extensions, nil
 }
 
-func loadService(rawService serviceSettings) (config.Service, error) {
+func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	var ret config.Service
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))
 	for _, extIDStr := range rawService.Extensions {
@@ -230,7 +238,7 @@ func loadService(rawService serviceSettings) (config.Service, error) {
 
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.
-	pipelines, err := loadPipelines(rawService.Pipelines)
+	pipelines, err := unmarshalPipelines(rawService.Pipelines)
 	ret.Pipelines = pipelines
 
 	return ret, err
@@ -252,7 +260,7 @@ func LoadReceiver(componentConfig *configparser.Parser, id config.ComponentID, f
 	return receiverCfg, nil
 }
 
-func loadReceivers(recvs map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (config.Receivers, error) {
+func unmarshalReceivers(recvs map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (config.Receivers, error) {
 	// Prepare resulting map.
 	receivers := make(config.Receivers)
 
@@ -289,7 +297,7 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 	return receivers, nil
 }
 
-func loadExporters(exps map[string]interface{}, factories map[config.Type]component.ExporterFactory) (config.Exporters, error) {
+func unmarshalExporters(exps map[string]interface{}, factories map[config.Type]component.ExporterFactory) (config.Exporters, error) {
 	// Prepare resulting map.
 	exporters := make(config.Exporters)
 
@@ -331,7 +339,7 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 	return exporters, nil
 }
 
-func loadProcessors(procs map[string]interface{}, factories map[config.Type]component.ProcessorFactory) (config.Processors, error) {
+func unmarshalProcessors(procs map[string]interface{}, factories map[config.Type]component.ProcessorFactory) (config.Processors, error) {
 	// Prepare resulting map.
 	processors := make(config.Processors)
 
@@ -373,7 +381,7 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 	return processors, nil
 }
 
-func loadPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipelines, error) {
+func unmarshalPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipelines, error) {
 	// Prepare resulting map.
 	pipelines := make(config.Pipelines)
 
