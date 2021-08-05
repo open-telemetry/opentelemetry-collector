@@ -29,6 +29,7 @@ var (
 	t1Ms = pdata.Timestamp(time.Unix(0, 1000000).UnixNano())
 	t2Ms = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
 	t3Ms = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
+	t4Ms = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
 )
 
 func Test_gauge(t *testing.T) {
@@ -170,24 +171,108 @@ func Test_cumulative(t *testing.T) {
 			}(),
 			1,
 		},
-		/*
-			        {
-					"Cumulative: round 2 - instance adjusted based on round 1",
-					[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66)))},
-					[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t2Ms, 66)))},
-					0,
-				}, {
-					"Cumulative: round 3 - instance reset (value less than previous value), start time is reset",
-					[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
-					[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
-					1,
-				}, {
-					"Cumulative: round 4 - instance adjusted based on round 3",
-					[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 72)))},
-					[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t4Ms, 72)))},
-					0,
-				},
-		*/
+		{
+			"Cumulative: round 2 - instance adjusted based on round 1",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(t2Ms)
+				pt0.LabelsMap().Insert("k1", "v1")
+				pt0.LabelsMap().Insert("k2", "v2")
+				pt0.SetTimestamp(t2Ms)
+				pt0.SetDoubleVal(66.0)
+
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(t1Ms)
+				pt0.LabelsMap().Insert("k1", "v1")
+				pt0.LabelsMap().Insert("k2", "v2")
+				pt0.SetTimestamp(t2Ms)
+				pt0.SetDoubleVal(66.0)
+
+				return &mL
+			}(),
+			0,
+		},
+		{
+			"Cumulative: round 3 - instance reset (value less than previous value), start time is reset",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(t3Ms)
+				pt0.LabelsMap().Insert("k1", "v1")
+				pt0.LabelsMap().Insert("k2", "v2")
+				pt0.SetTimestamp(t3Ms)
+				pt0.SetDoubleVal(55.0)
+
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(t3Ms)
+				pt0.LabelsMap().Insert("k1", "v1")
+				pt0.LabelsMap().Insert("k2", "v2")
+				pt0.SetTimestamp(t3Ms)
+				pt0.SetDoubleVal(55.0)
+
+				return &mL
+			}(),
+			1,
+		},
+		{
+			"Cumulative: round 4 - instance adjusted based on round 3",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(t4Ms)
+				pt0.LabelsMap().Insert("k1", "v1")
+				pt0.LabelsMap().Insert("k2", "v2")
+				pt0.SetTimestamp(t4Ms)
+				pt0.SetDoubleVal(72.0)
+
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(t3Ms)
+				pt0.LabelsMap().Insert("k1", "v1")
+				pt0.LabelsMap().Insert("k2", "v2")
+				pt0.SetTimestamp(t4Ms)
+				pt0.SetDoubleVal(72.0)
+
+				return &mL
+			}(),
+			0,
+		},
 	}
 	runScript(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
@@ -209,7 +294,6 @@ var (
 	t1Ms     = pdata.Timestamp(time.Unix(0, 1000000).UnixNano())
 	t2Ms     = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
 	t3Ms     = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
-	t4Ms     = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
 	t5Ms     = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
 )
 

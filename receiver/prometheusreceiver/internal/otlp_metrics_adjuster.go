@@ -246,23 +246,6 @@ func (ma *MetricsAdjusterPdata) adjustMetricPoints(metric *pdata.Metric) int {
 		ma.logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
 		return 0
 	}
-
-	/*
-		resets := 0
-		filtered := make([]*metricspb.TimeSeries, 0, len(metric.GetTimeseries()))
-		for _, current := range metric.GetTimeseries() {
-			tsi := ma.tsm.get(metric, current.GetLabelValues())
-			if tsi.initial == nil || !ma.adjustTimeseries(metric.MetricDescriptor.Type, current, tsi.initial, tsi.previous) {
-				// initial || reset timeseries
-				tsi.initial = current
-				resets++
-			}
-			tsi.previous = current
-			filtered = append(filtered, current)
-		}
-		metric.Timeseries = filtered
-		return resets
-	*/
 }
 
 // Returns true if 'current' was adjusted and false if 'current' is an the initial occurrence or a
@@ -273,13 +256,15 @@ func (ma *MetricsAdjusterPdata) adjustMetricGauge(current *pdata.Metric) (resets
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentGauge := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentGauge.LabelsMap())
+		previous := tsi.previous
+		tsi.previous = current
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
 			resets++
 		}
 		initialPoints := tsi.initial.Gauge().DataPoints()
-		previousPoints := tsi.previous.Gauge().DataPoints()
+		previousPoints := previous.Gauge().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
 			ma.logger.Info("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
@@ -311,6 +296,8 @@ func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (re
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentDist.LabelsMap())
+		previous := tsi.previous
+		tsi.previous = current
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
@@ -318,7 +305,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (re
 			continue
 		}
 		initialPoints := tsi.initial.Histogram().DataPoints()
-		previousPoints := tsi.previous.Histogram().DataPoints()
+		previousPoints := previous.Histogram().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
 			ma.logger.Info("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
@@ -349,6 +336,8 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentSum.LabelsMap())
+		previous := tsi.previous
+		tsi.previous = current
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
@@ -356,7 +345,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 			continue
 		}
 		initialPoints := tsi.initial.Sum().DataPoints()
-		previousPoints := tsi.previous.Sum().DataPoints()
+		previousPoints := previous.Sum().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
 			ma.logger.Info("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
@@ -374,7 +363,6 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 			resets++
 			continue
 		}
-
 		initialSum := initialPoints.At(i)
 		currentSum.SetStartTimestamp(initialSum.StartTimestamp())
 	}
@@ -388,6 +376,8 @@ func (ma *MetricsAdjusterPdata) adjustMetricSummary(current *pdata.Metric) (rese
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSummary := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentSummary.LabelsMap())
+		previous := tsi.previous
+		tsi.previous = current
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
@@ -395,7 +385,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricSummary(current *pdata.Metric) (rese
 			continue
 		}
 		initialPoints := tsi.initial.Summary().DataPoints()
-		previousPoints := tsi.previous.Summary().DataPoints()
+		previousPoints := previous.Summary().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
 			ma.logger.Info("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
