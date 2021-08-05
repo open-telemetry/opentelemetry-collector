@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-var _ config.CustomUnmarshable = (*ExampleExporter)(nil)
+var _ config.Unmarshallable = (*ExampleExporter)(nil)
 
 // ExampleExporter is for testing purposes. We are defining an example config and factory
 // for "exampleexporter" exporter type.

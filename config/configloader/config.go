@@ -526,7 +526,7 @@ func expandEnv(s string) string {
 }
 
 func unmarshal(componentSection *configparser.Parser, intoCfg interface{}) error {
-	if cu, ok := intoCfg.(config.CustomUnmarshable); ok {
+	if cu, ok := intoCfg.(config.Unmarshallable); ok {
 		return cu.Unmarshal(componentSection)
 	}
 
