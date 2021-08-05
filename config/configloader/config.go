@@ -15,13 +15,11 @@
 package configloader
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
 
 	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -205,8 +203,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, extensionCfg); err != nil {
+		if err = unmarshal(componentConfig, extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
@@ -248,8 +245,7 @@ func LoadReceiver(componentConfig *configparser.Parser, id config.ComponentID, f
 
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
-	unm := unmarshaler(factory)
-	if err := unm(componentConfig, receiverCfg); err != nil {
+	if err := unmarshal(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, id, err)
 	}
 
@@ -321,8 +317,7 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, exporterCfg); err != nil {
+		if err = unmarshal(componentConfig, exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, id, err)
 		}
 
@@ -364,8 +359,7 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, processorCfg); err != nil {
+		if err = unmarshal(componentConfig, processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, id, err)
 		}
 
@@ -531,32 +525,10 @@ func expandEnv(s string) string {
 	})
 }
 
-// deprecatedUnmarshaler interface is a deprecated optional interface that if implemented by a Factory,
-// the configuration loading system will use to unmarshal the config.
-// Implement config.CustomUnmarshable on the configuration struct instead.
-type deprecatedUnmarshaler interface {
-	// Unmarshal is a function that un-marshals a viper data into a config struct in a custom way.
-	// componentViperSection *viper.Viper
-	//   The config for this specific component. May be nil or empty if no config available.
-	// intoCfg interface{}
-	//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-	Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error
-}
-
 func unmarshal(componentSection *configparser.Parser, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.CustomUnmarshable); ok {
 		return cu.Unmarshal(componentSection)
 	}
 
 	return componentSection.UnmarshalExact(intoCfg)
-}
-
-// unmarshaler returns an unmarshaling function. It should be removed when deprecatedUnmarshaler is removed.
-func unmarshaler(factory component.Factory) func(componentViperSection *configparser.Parser, intoCfg interface{}) error {
-	if _, ok := factory.(deprecatedUnmarshaler); ok {
-		return func(componentParser *configparser.Parser, intoCfg interface{}) error {
-			return errors.New("deprecated way to specify custom unmarshaler no longer supported")
-		}
-	}
-	return unmarshal
 }
