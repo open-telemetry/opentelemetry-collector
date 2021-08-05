@@ -88,6 +88,14 @@ func allViews() *ObsMetrics {
 	tagKeys = []tag.Key{obsmetrics.TagKeyExporter}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
+	errorNumberView := &view.View{
+		Name:        "ExporterFailedNumber",
+		Description: "number of errors in exporters over span",
+		Measure:     obsmetrics.ExporterFailedToSendSpans,
+		Aggregation: view.Count(),
+	}
+	views = append(views, errorNumberView)
+
 	// Processor views.
 	measures = []*stats.Int64Measure{
 		obsmetrics.ProcessorAcceptedSpans,
