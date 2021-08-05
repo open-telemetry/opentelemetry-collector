@@ -30,6 +30,9 @@ var (
 	t2Ms = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
 	t3Ms = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
 	t4Ms = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
+
+	bounds0  = []float64{1, 2, 4}
+	percent0 = []float64{10, 50, 90}
 )
 
 func Test_gauge(t *testing.T) {
@@ -277,6 +280,342 @@ func Test_cumulative(t *testing.T) {
 	runScript(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
+func populateHistogram(hdp *pdata.HistogramDataPoint, timestamp pdata.Timestamp, bounds []float64, counts []uint64) {
+	count := uint64(0)
+	sum := float64(0)
+	for i, counti := range counts {
+		if i > 0 {
+			sum += float64(counti) * bounds[i-1]
+		}
+		count += counti
+	}
+	hdp.SetBucketCounts(counts)
+	hdp.SetSum(sum)
+	hdp.SetCount(count)
+	hdp.SetTimestamp(timestamp)
+	hdp.SetExplicitBounds(bounds)
+}
+
+func Test_gaugeDistribution(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			"GaugeDist: round 1 - gauge distribution not adjusted",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetName("gaugedist1")
+				g0 := m0.Histogram()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateHistogram(&pt0, t1Ms, bounds0, []uint64{4, 2, 3, 7})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetName("gaugedist1")
+				g0 := m0.Histogram()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateHistogram(&pt0, t1Ms, bounds0, []uint64{4, 2, 3, 7})
+				return &mL
+			}(),
+			0,
+		},
+		{
+			"GaugeDist: round 2 - gauge distribution not adjusted",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetName("gaugedist1")
+				g0 := m0.Histogram()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateHistogram(&pt0, t2Ms, bounds0, []uint64{6, 5, 8, 11})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetName("gaugedist1")
+				g0 := m0.Histogram()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateHistogram(&pt0, t2Ms, bounds0, []uint64{6, 5, 8, 11})
+				return &mL
+			}(),
+			0,
+		},
+		{
+			"GaugeDist: round 3 - count/sum less than previous - gauge distribution not adjusted",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetName("gaugedist1")
+				g0 := m0.Histogram()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateHistogram(&pt0, t3Ms, bounds0, []uint64{2, 0, 1, 5})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetName("gaugedist1")
+				g0 := m0.Histogram()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateHistogram(&pt0, t3Ms, bounds0, []uint64{2, 0, 1, 5})
+				return &mL
+			}(),
+			0,
+		},
+	}
+	runScript(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
+func populateSummary(sdp *pdata.SummaryDataPoint, timestamp pdata.Timestamp, count uint64, sum float64, quantilePercents, quantileValues []float64) {
+	quantiles := sdp.QuantileValues()
+	for i := range quantilePercents {
+		qv := quantiles.AppendEmpty()
+		qv.SetQuantile(quantilePercents[i])
+		qv.SetValue(quantileValues[i])
+	}
+	sdp.SetCount(count)
+	sdp.SetTimestamp(timestamp)
+	sdp.SetSum(sum)
+}
+
+func Test_summary_no_count(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			"Summary No Count: round 1 - initial instance, start time is established",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t1Ms, 10, 40, percent0, []float64{1, 5, 8})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t1Ms, 10, 40, percent0, []float64{1, 5, 8})
+				return &mL
+			}(),
+			1,
+		},
+		{
+			"Summary No Count: round 2 - instance adjusted based on round 1",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t2Ms, 15, 70, percent0, []float64{7, 44, 9})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t2Ms, 15, 70, percent0, []float64{7, 44, 9})
+				return &mL
+			}(),
+			0,
+		},
+		{
+			"Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t3Ms, 12, 66, percent0, []float64{3, 22, 5})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t3Ms, 12, 66, percent0, []float64{3, 22, 5})
+				return &mL
+			}(),
+			1,
+		},
+		{
+			"Summary No Count: round 4 - instance adjusted based on round 3",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t4Ms, 14, 96, percent0, []float64{9, 47, 8})
+				pt0.SetStartTimestamp(t4Ms)
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t4Ms, 14, 96, percent0, []float64{9, 47, 8})
+				return &mL
+			}(),
+			0,
+		},
+	}
+
+	runScript(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
+func Test_summary(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			"Summary: round 1 - initial instance, start time is established",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t1Ms, 10, 40, percent0, []float64{1, 5, 8})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t1Ms, 10, 40, percent0, []float64{1, 5, 8})
+				return &mL
+			}(),
+			1,
+		},
+		{
+			"Summary: round 2 - instance adjusted based on round 1",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t2Ms, 15, 70, percent0, []float64{7, 44, 9})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t2Ms, 15, 70, percent0, []float64{7, 44, 9})
+				return &mL
+			}(),
+			0,
+		},
+		{
+			"Summary: round 3 - instance reset (count less than previous), start time is reset",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t3Ms, 12, 66, percent0, []float64{3, 22, 5})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t3Ms, 12, 66, percent0, []float64{3, 22, 5})
+				return &mL
+			}(),
+			1,
+		},
+		{
+			"Summary: round 4 - instance adjusted based on round 3",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t4Ms, 14, 96, percent0, []float64{9, 47, 8})
+				pt0.SetStartTimestamp(t4Ms)
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.LabelsMap().Insert("v1", "v2")
+				populateSummary(&pt0, t4Ms, 14, 96, percent0, []float64{9, 47, 8})
+				return &mL
+			}(),
+			0,
+		},
+	}
+
+	runScript(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
 /*
 var (
 	gd1      = "gaugedist1"
@@ -289,33 +628,11 @@ var (
 	v1v2     = []string{"v1", "v2"}
 	v10v20   = []string{"v10", "v20"}
 	v100v200 = []string{"v100", "v200"}
-	bounds0  = []float64{1, 2, 4}
-	percent0 = []float64{10, 50, 90}
 	t1Ms     = pdata.Timestamp(time.Unix(0, 1000000).UnixNano())
 	t2Ms     = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
 	t3Ms     = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
 	t5Ms     = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
 )
-
-func Test_gaugeDistribution(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"GaugeDist: round 1 - gauge distribution not adjusted",
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		0,
-	}, {
-		"GaugeDist: round 2 - gauge distribution not adjusted",
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
-		0,
-	}, {
-		"GaugeDist: round 3 - count/sum less than previous - gauge distribution not adjusted",
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
-}
 
 func Test_cumulativeDistribution(t *testing.T) {
 	script := []*metricsAdjusterTest{{
@@ -337,62 +654,6 @@ func Test_cumulativeDistribution(t *testing.T) {
 		"CumulativeDist: round 4 - instance adjusted based on round 3",
 		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
 		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
-}
-
-func Test_summary_no_count(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"Summary No Count: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		1,
-	}, {
-		"Summary No Count: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		0,
-	}, {
-		"Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		1,
-	}, {
-		"Summary No Count: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		0,
-	}}
-
-	for _, test := range script {
-		test.metrics[0].GetTimeseries()[0].Points[0].GetSummaryValue().Count = nil
-		test.adjusted[0].GetTimeseries()[0].Points[0].GetSummaryValue().Count = nil
-	}
-
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
-}
-
-func Test_summary(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"Summary: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		1,
-	}, {
-		"Summary: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		0,
-	}, {
-		"Summary: round 3 - instance reset (count less than previous), start time is reset",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		1,
-	}, {
-		"Summary: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)

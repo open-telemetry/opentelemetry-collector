@@ -233,7 +233,10 @@ func (ma *MetricsAdjusterPdata) adjustMetricPoints(metric *pdata.Metric) int {
 		return ma.adjustMetricGauge(metric)
 
 	case pdata.MetricDataTypeHistogram:
-		return ma.adjustMetricHistogram(metric)
+		// No need to adjust Gauge-Histograms.
+		// TODO(@odeke-em): examine and see if perhaps the AggregationTemporality
+		// changes whether we need to adjust the metric. Currently the prior tests
+		return 0
 
 	case pdata.MetricDataTypeSummary:
 		return ma.adjustMetricSummary(metric)
@@ -288,6 +291,10 @@ func (ma *MetricsAdjusterPdata) adjustMetricGauge(current *pdata.Metric) (resets
 	}
 	return
 }
+
+// Adding this here to preserve the code, given that golangc-lint is so pedantic.
+// We'll need the code in this method when we deal with cumulative vs gauge distributions.
+var _ = (*MetricsAdjusterPdata)(nil).adjustMetricHistogram
 
 func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (resets int) {
 	// note: sum of squared deviation not currently supported
