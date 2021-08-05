@@ -49,7 +49,7 @@ require (
 	go.opentelemetry.io/collector/model v0.31.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.22.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0
-	go.opentelemetry.io/contrib/zpages v0.0.0-20210722161726-7668016acb73
+	go.opentelemetry.io/contrib/zpages v0.22.0
 	go.opentelemetry.io/otel v1.0.0-RC2
 	go.opentelemetry.io/otel/oteltest v1.0.0-RC2
 	go.opentelemetry.io/otel/sdk v1.0.0-RC2
