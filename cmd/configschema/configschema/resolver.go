@@ -105,17 +105,29 @@ func grepMod(goModPath string, pkg string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+	var defModPath, defModVers string
 	for _, line := range modContents.Replace {
-		if strings.Contains(line.Old.Path, pkg) ||
-			(isDefaultModPkg && strings.Contains(line.Old.Path, DefaultModule)) {
+		switch {
+		case strings.Compare(line.Old.Path, DefaultModule) == 0:
+			defModPath, defModVers = line.New.Path, line.New.Version
+		case strings.Contains(line.Old.Path, pkg):
 			return line.New.Path, line.New.Version, nil
+
 		}
 	}
+	if isDefaultModPkg && defModPath != "" {
+		return defModPath, defModVers, nil
+	}
 	for _, line := range modContents.Require {
-		if strings.Contains(line.Mod.Path, pkg) ||
-			(isDefaultModPkg && strings.Contains(line.Mod.Path, DefaultModule)) {
+		switch {
+		case strings.Compare(line.Mod.Path, DefaultModule) == 0:
+			defModPath, defModVers = line.Mod.Path, line.Mod.Version
+		case strings.Contains(line.Mod.Path, pkg):
 			return line.Mod.Path, line.Mod.Version, nil
 		}
+	}
+	if isDefaultModPkg && defModPath != "" {
+		return defModPath, defModVers, nil
 	}
 	return "", "", nil
 }
