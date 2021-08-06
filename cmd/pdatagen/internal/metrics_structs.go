@@ -63,6 +63,7 @@ var resourceMetrics = &messageValueStruct{
 	originFullName: "otlpmetrics.ResourceMetrics",
 	fields: []baseField{
 		resourceField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "InstrumentationLibraryMetrics",
 			originFieldName: "InstrumentationLibraryMetrics",
@@ -82,6 +83,7 @@ var instrumentationLibraryMetrics = &messageValueStruct{
 	originFullName: "otlpmetrics.InstrumentationLibraryMetrics",
 	fields: []baseField{
 		instrumentationLibraryField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "Metrics",
 			originFieldName: "Metrics",

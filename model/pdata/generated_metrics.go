@@ -188,6 +188,16 @@ func (ms ResourceMetrics) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
+// SchemaUrl returns the schemaurl associated with this ResourceMetrics.
+func (ms ResourceMetrics) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
+func (ms ResourceMetrics) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // InstrumentationLibraryMetrics returns the InstrumentationLibraryMetrics associated with this ResourceMetrics.
 func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibraryMetricsSlice {
 	return newInstrumentationLibraryMetricsSlice(&(*ms.orig).InstrumentationLibraryMetrics)
@@ -196,6 +206,7 @@ func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibrary
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	ms.Resource().CopyTo(dest.Resource())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.InstrumentationLibraryMetrics().CopyTo(dest.InstrumentationLibraryMetrics())
 }
 
@@ -364,6 +375,16 @@ func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() Instrumentation
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
+// SchemaUrl returns the schemaurl associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // Metrics returns the Metrics associated with this InstrumentationLibraryMetrics.
 func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 	return newMetricSlice(&(*ms.orig).Metrics)
@@ -372,6 +393,7 @@ func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetrics) {
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Metrics().CopyTo(dest.Metrics())
 }
 

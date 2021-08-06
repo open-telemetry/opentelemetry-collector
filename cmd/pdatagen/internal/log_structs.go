@@ -49,6 +49,7 @@ var resourceLogs = &messageValueStruct{
 	originFullName: "otlplogs.ResourceLogs",
 	fields: []baseField{
 		resourceField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "InstrumentationLibraryLogs",
 			originFieldName: "InstrumentationLibraryLogs",
@@ -68,6 +69,7 @@ var instrumentationLibraryLogs = &messageValueStruct{
 	originFullName: "otlplogs.InstrumentationLibraryLogs",
 	fields: []baseField{
 		instrumentationLibraryField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "Logs",
 			originFieldName: "Logs",
