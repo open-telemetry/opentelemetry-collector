@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/oteltest"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -38,7 +37,7 @@ var (
 )
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(&defaultExporterCfg, zap.NewNop(), fromOptions())
+	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -47,7 +46,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be := newBaseExporter(
 		&defaultExporterCfg,
-		zap.NewNop(),
+		componenttest.NewNopExporterCreateSettings(),
 		fromOptions(
 			WithStart(func(ctx context.Context, host component.Host) error { return want }),
 			WithShutdown(func(ctx context.Context) error { return want }),
