@@ -645,6 +645,14 @@ func TestNumberDataPoint_LabelsMap(t *testing.T) {
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
+func TestNumberDataPoint_Attributes(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
+}
+
 func TestNumberDataPoint_StartTimestamp(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
@@ -806,6 +814,14 @@ func TestHistogramDataPoint_LabelsMap(t *testing.T) {
 	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+}
+
+func TestHistogramDataPoint_Attributes(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
 func TestHistogramDataPoint_StartTimestamp(t *testing.T) {
@@ -986,6 +1002,14 @@ func TestSummaryDataPoint_LabelsMap(t *testing.T) {
 	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+}
+
+func TestSummaryDataPoint_Attributes(t *testing.T) {
+	ms := NewSummaryDataPoint()
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
 func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
@@ -1443,6 +1467,7 @@ func generateTestNumberDataPoint() NumberDataPoint {
 
 func fillTestNumberDataPoint(tv NumberDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
@@ -1472,6 +1497,7 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -1503,6 +1529,7 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))

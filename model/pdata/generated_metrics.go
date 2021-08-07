@@ -926,6 +926,11 @@ func (ms NumberDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
+// Attributes returns the Attributes associated with this NumberDataPoint.
+func (ms NumberDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
+}
+
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
@@ -978,6 +983,7 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.Type() {
@@ -1155,6 +1161,11 @@ func (ms HistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
+// Attributes returns the Attributes associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
+}
+
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
@@ -1223,6 +1234,7 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
@@ -1397,6 +1409,11 @@ func (ms SummaryDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
+// Attributes returns the Attributes associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
+}
+
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
@@ -1445,6 +1462,7 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
