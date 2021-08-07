@@ -48,6 +48,10 @@ Example:
 exporters:
   prometheusremotewrite:
     endpoint: "https://my-cortex:7900/api/v1/push"
+    wal: # Enabling the Write-Ahead-Log for the exporter.
+        directory: ./prom_rw # The directory to store the WAL in
+        buffer_size: 100 # Optional count of elements to be read from the WAL before truncating; default of 300
+        truncate_frequency: 45s # Optional frequency for how often the WAL should be truncated. It is a time.ParseDuration; default of 1m
 ```
 
 ## Advanced Configuration

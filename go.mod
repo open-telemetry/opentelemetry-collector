@@ -22,6 +22,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jaegertracing/jaeger v1.25.0
 	github.com/knadh/koanf v1.2.1
 	github.com/leoluk/perflib_exporter v0.1.0

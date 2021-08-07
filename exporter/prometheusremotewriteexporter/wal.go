@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
 )
@@ -39,6 +41,34 @@ type prweWAL struct {
 	stopChan  chan struct{}
 	rWALIndex uint64
 	wWALIndex uint64
+}
+
+const (
+	defaultWALBufferSize        = 300
+	defaultWALTruncateFrequency = 1 * time.Minute
+)
+
+type walConfig struct {
+	// Note: These variable names are meant to closely mirror what Prometheus' WAL uses for field names per
+	// https://docs.google.com/document/d/1cCcoFgjDFwU2n823tKuMvrIhzHty4UDyn0IcfUHiyyI/edit#heading=h.mlf37ibqjgov
+	// but also we are using underscores "_" instead of dashes "-".
+	Directory         string        `mapstructure:"directory"`
+	BufferSize        int           `mapstructure:"buffer_size"`
+	TruncateFrequency time.Duration `mapstructure:"truncate_frequency"`
+}
+
+func (wc *walConfig) bufferSize() int {
+	if wc.BufferSize > 0 {
+		return wc.BufferSize
+	}
+	return defaultWALBufferSize
+}
+
+func (wc *walConfig) truncateFrequency() time.Duration {
+	if wc.TruncateFrequency > 0 {
+		return wc.TruncateFrequency
+	}
+	return defaultWALTruncateFrequency
 }
 
 func newWAL(walConfig *walConfig, exportSink func(context.Context, []*prompb.WriteRequest) []error) (*prweWAL, error) {
@@ -58,7 +88,7 @@ func newWAL(walConfig *walConfig, exportSink func(context.Context, []*prompb.Wri
 func (wc *walConfig) createWAL() (*wal.Log, string, error) {
 	walPath := filepath.Join(wc.Directory, "prom_remotewrite")
 	wal, err := wal.Open(walPath, &wal.Options{
-		SegmentCacheSize: wc.nBeforeTruncation(),
+		SegmentCacheSize: wc.bufferSize(),
 		NoCopy:           true,
 	})
 	if err != nil {
@@ -67,24 +97,9 @@ func (wc *walConfig) createWAL() (*wal.Log, string, error) {
 	return wal, walPath, nil
 }
 
-type walConfig struct {
-	// Note: These variable names are meant to closely mirror what Prometheus' WAL uses for field names per
-	// https://docs.google.com/document/d/1cCcoFgjDFwU2n823tKuMvrIhzHty4UDyn0IcfUHiyyI/edit#heading=h.mlf37ibqjgov
-	// but also we are using underscores "_" instead of dashes "-".
-	Directory         string        `mapstructure:"directory"`
-	NBeforeTruncation int           `mapstructure:"n_before_truncation"`
-	TruncateFrequency time.Duration `mapstructure:"truncate_frequency"`
-}
-
-func (wc *walConfig) nBeforeTruncation() int {
-	if wc.NBeforeTruncation <= 0 {
-		return 300
-	}
-	return wc.NBeforeTruncation
-}
-
 var (
 	errAlreadyClosed = errors.New("already closed")
+	errNilWAL        = errors.New("wal is nil")
 	errNilConfig     = errors.New("expecting a non-nil configuration")
 )
 
@@ -98,6 +113,7 @@ func (prwe *prweWAL) retrieveWALIndices(context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+
 	prwe.wal = wal
 	prwe.walPath = walPath
 
@@ -116,6 +132,9 @@ func (prwe *prweWAL) retrieveWALIndices(context.Context) (err error) {
 func (prwe *prweWAL) stop() error {
 	err := errAlreadyClosed
 	prwe.stopOnce.Do(func() {
+		prwe.mu.Lock()
+		defer prwe.mu.Unlock()
+
 		close(prwe.stopChan)
 		prwe.closeWAL()
 		err = nil
@@ -139,11 +158,135 @@ func (prwe *prweWAL) start(ctx context.Context) error {
 	return nil
 }
 
+func (prwe *prweWAL) run(ctx context.Context) (err error) {
+	if err := prwe.start(ctx); err != nil {
+		return err
+	}
+
+	// Start the process of exporting but wait until the exporting has started.
+	waitUntilStartedCh := make(chan bool)
+	go func() {
+		prwe.continuallyPopWALThenExport(ctx, func() { close(waitUntilStartedCh) })
+	}()
+	<-waitUntilStartedCh
+	return nil
+}
+
+// continuallyPopWALThenExport reads a prompb.WriteRequest proto encoded blob from the WAL, and moves
+// the WAL's front index forward until either the read buffer period expires or the maximum
+// buffer size is exceeded. When either of the two conditions are matched, it then exports
+// the requests to the Remote-Write endpoint, and then truncates the head of the WAL to where
+// it last read from.
+func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStart func()) (err error) {
+	var reqL []*prompb.WriteRequest
+	defer func() {
+		// Keeping it within a closure to ensure that the later
+		// updated value of reqL is always flushed to disk.
+		if errL := prwe.exportSink(ctx, reqL); len(errL) != 0 && err == nil {
+			err = multierror.Append(nil, errL...)
+		}
+	}()
+
+	freshTimer := func() *time.Timer {
+		return time.NewTimer(prwe.walConfig.truncateFrequency())
+	}
+
+	timer := freshTimer()
+	defer func() {
+		// Added in a closure to ensure we capture the later
+		// updated value of timer when changed in the loop below.
+		timer.Stop()
+	}()
+
+	signalStart()
+
+	maxCountPerUpload := prwe.walConfig.bufferSize()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-prwe.stopChan:
+			return nil
+		default:
+		}
+
+		req, err := prwe.readPrompbFromWAL(ctx, atomic.LoadUint64(&prwe.rWALIndex))
+		if err != nil {
+			return err
+		}
+		reqL = append(reqL, req)
+
+		// Now increment the WAL's read index.
+		atomic.AddUint64(&prwe.rWALIndex, 1)
+
+		shouldExport := false
+		select {
+		case <-timer.C:
+			shouldExport = true
+			timer.Stop()
+			timer = freshTimer()
+		default:
+			shouldExport = len(reqL) >= maxCountPerUpload
+		}
+
+		if !shouldExport {
+			continue
+		}
+
+		// Otherwise, it is time to export, flush and then truncate the WAL, but also to kill the timer!
+		timer.Stop()
+		if err := prwe.exportThenFrontTruncateWAL(ctx, reqL); err != nil {
+			return err
+		}
+		// Reset but reuse the write requests slice.
+		reqL = reqL[:0]
+		timer = freshTimer()
+	}
+}
+
 func (prwe *prweWAL) closeWAL() {
 	if prwe.wal != nil {
 		prwe.wal.Close()
 		prwe.wal = nil
 	}
+}
+
+func (prwe *prweWAL) syncAndTruncateFront() error {
+	prwe.mu.Lock()
+	defer prwe.mu.Unlock()
+
+	if prwe.wal == nil {
+		return errNilWAL
+	}
+
+	// Save all the entries that aren't yet committed, to the tail of the WAL.
+	if err := prwe.wal.Sync(); err != nil {
+		return err
+	}
+	// Truncate the WAL from the front for the entries that we already
+	// read from the WAL and had already exported.
+	if err := prwe.wal.TruncateFront(atomic.LoadUint64(&prwe.rWALIndex)); err != nil && err != wal.ErrOutOfRange {
+		return err
+	}
+	return nil
+}
+
+func (prwe *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*prompb.WriteRequest) error {
+	if len(reqL) == 0 {
+		return nil
+	}
+	if cErr := ctx.Err(); cErr != nil {
+		return nil
+	}
+
+	if errL := prwe.exportSink(ctx, reqL); len(errL) != 0 {
+		return multierror.Append(nil, errL...)
+	}
+	if err := prwe.syncAndTruncateFront(); err != nil {
+		return err
+	}
+	// Reset by retrieving the respective read and write WAL indices.
+	return prwe.retrieveWALIndices(ctx)
 }
 
 // persistToWAL is the routine that'll be hooked into the exporter's receiving side and it'll
@@ -157,8 +300,8 @@ func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 		if err != nil {
 			return err
 		}
-		prwe.wWALIndex++
-		batch.Write(prwe.wWALIndex, protoBlob)
+		wIndex := atomic.AddUint64(&prwe.wWALIndex, 1)
+		batch.Write(wIndex, protoBlob)
 	}
 
 	prwe.mu.Lock()
@@ -167,12 +310,23 @@ func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 	return prwe.wal.WriteBatch(batch)
 }
 
-func (prwe *prweWAL) readPrompbFromWAL(_ context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {
+func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {
+	prwe.mu.Lock()
+	defer prwe.mu.Unlock()
+
 	var protoBlob []byte
 	for i := 0; i < 12; i++ {
+		// Firstly check if we've been terminated, then exit if so.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
 		if index <= 0 {
 			index = 1
 		}
+
 		protoBlob, err = prwe.wal.Read(index)
 		if errors.Is(err, wal.ErrNotFound) {
 			time.Sleep(time.Duration(1<<i) * time.Millisecond)

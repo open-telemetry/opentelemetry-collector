@@ -75,6 +75,13 @@ func orderByLabelValue(wreq *prompb.WriteRequest) {
 			timeSeries.Samples[i] = *bMsgs[i].sample
 		}
 	}
+
+	// Now finally sort stably by timeseries value for
+	// which just .String() is good enough for comparison.
+	sort.Slice(wreq.Timeseries, func(i, j int) bool {
+		ti, tj := wreq.Timeseries[i], wreq.Timeseries[j]
+		return ti.String() < tj.String()
+	})
 }
 
 func TestWALStopManyTimes(t *testing.T) {
@@ -82,7 +89,7 @@ func TestWALStopManyTimes(t *testing.T) {
 	config := &walConfig{
 		Directory:         tempDir,
 		TruncateFrequency: 60 * time.Microsecond,
-		NBeforeTruncation: 1,
+		BufferSize:        1,
 	}
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.Nil(t, err)

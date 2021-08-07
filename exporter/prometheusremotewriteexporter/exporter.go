@@ -50,6 +50,8 @@ type PRWExporter struct {
 	concurrency     int
 	userAgentHeader string
 	clientSettings  *confighttp.HTTPClientSettings
+
+	wal *prweWAL
 }
 
 // NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
@@ -66,7 +68,7 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
-	return &PRWExporter{
+	prwe := &PRWExporter{
 		namespace:       cfg.Namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
@@ -75,19 +77,44 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 		userAgentHeader: userAgentHeader,
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
-	}, nil
+	}
+	if cfg.WAL == nil {
+		return prwe, nil
+	}
+
+	prweWAL, err := newWAL(cfg.WAL, prwe.export)
+	if err != nil {
+		return nil, err
+	}
+	prwe.wal = prweWAL
+	return prwe, nil
 }
 
 // Start creates the prometheus client
-func (prwe *PRWExporter) Start(_ context.Context, host component.Host) (err error) {
+func (prwe *PRWExporter) Start(ctx context.Context, host component.Host) (err error) {
 	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions())
-	return err
+	if err != nil {
+		return err
+	}
+	return prwe.turnOnWALIfEnabled(ctx)
+}
+
+func (prwe *PRWExporter) shutdownWALIfEnabled() error {
+	if !prwe.walEnabled() {
+		return nil
+	}
+	return prwe.wal.stop()
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
 func (prwe *PRWExporter) Shutdown(context.Context) error {
-	close(prwe.closeChan)
+	select {
+	case <-prwe.closeChan:
+	default:
+		close(prwe.closeChan)
+	}
+	prwe.shutdownWALIfEnabled()
 	prwe.wg.Wait()
 	return nil
 }
@@ -167,7 +194,7 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 			}
 		}
 
-		if exportErrors := prwe.export(ctx, tsMap); len(exportErrors) != 0 {
+		if exportErrors := prwe.handleExport(ctx, tsMap); len(exportErrors) != 0 {
 			dropped = md.MetricCount()
 			errs = append(errs, exportErrors...)
 		}
@@ -209,8 +236,7 @@ func (prwe *PRWExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPoin
 	return nil
 }
 
-// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *PRWExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
+func (prwe *PRWExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
 	var errs []error
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
@@ -218,7 +244,21 @@ func (prwe *PRWExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 		errs = append(errs, consumererror.Permanent(err))
 		return errs
 	}
+	if !prwe.walEnabled() {
+		// Perform a direct export otherwise.
+		return prwe.export(ctx, requests)
+	}
 
+	// Otherwise the WAL is enabled, and just persist the requests to the WAL
+	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
+	if err := prwe.wal.persistToWAL(requests); err != nil {
+		errs = append(errs, consumererror.Permanent(err))
+	}
+	return errs
+}
+
+// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
+func (prwe *PRWExporter) export(ctx context.Context, requests []*prompb.WriteRequest) (errs []error) {
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -237,12 +277,21 @@ func (prwe *PRWExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 		go func() {
 			defer wg.Done()
 
-			for request := range input {
-				err := prwe.execute(ctx, request)
-				if err != nil {
-					mu.Lock()
-					errs = append(errs, err)
-					mu.Unlock()
+			for {
+				select {
+				case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
+					return
+
+				case request, ok := <-input:
+					if !ok {
+						return
+					}
+
+					if err := prwe.execute(ctx, request); err != nil {
+						mu.Lock()
+						errs = append(errs, err)
+						mu.Unlock()
+					}
 				}
 			}
 		}()
@@ -293,4 +342,18 @@ func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return rerr
 	}
 	return consumererror.Permanent(rerr)
+}
+
+func (prwe *PRWExporter) walEnabled() bool { return prwe.wal != nil }
+
+func (prwe *PRWExporter) turnOnWALIfEnabled(ctx context.Context) error {
+	if !prwe.walEnabled() {
+		return nil
+	}
+	cancelCtx, cancel := context.WithCancel(ctx)
+	go func() {
+		<-prwe.closeChan
+		cancel()
+	}()
+	return prwe.wal.run(cancelCtx)
 }
