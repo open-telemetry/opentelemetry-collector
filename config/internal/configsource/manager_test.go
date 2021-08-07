@@ -92,15 +92,6 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 			},
 		},
 		{
-			name: "error_on_new_session",
-			config: map[string]interface{}{
-				"cfgsrc": "$tstcfgsrc:selector",
-			},
-			configSourceMap: map[string]configsource.ConfigSource{
-				"tstcfgsrc": &testConfigSource{ErrOnNewSession: testErr},
-			},
-		},
-		{
 			name: "error_on_retrieve",
 			config: map[string]interface{}{
 				"cfgsrc": "$tstcfgsrc:selector",
@@ -563,7 +554,6 @@ func Test_parseCfgSrc(t *testing.T) {
 type testConfigSource struct {
 	ValueMap map[string]valueEntry
 
-	ErrOnNewSession  error
 	ErrOnRetrieve    error
 	ErrOnRetrieveEnd error
 	ErrOnClose       error
@@ -577,14 +567,6 @@ type valueEntry struct {
 }
 
 var _ configsource.ConfigSource = (*testConfigSource)(nil)
-var _ configsource.Session = (*testConfigSource)(nil)
-
-func (t *testConfigSource) NewSession(context.Context) (configsource.Session, error) {
-	if t.ErrOnNewSession != nil {
-		return nil, t.ErrOnNewSession
-	}
-	return t, nil
-}
 
 func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params interface{}) (configsource.Retrieved, error) {
 	if t.OnRetrieve != nil {

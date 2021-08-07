@@ -33,25 +33,18 @@ var ErrValueUpdated = errors.New("configuration must retrieve the updated value"
 
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
+//
+// ConfigSource object will be used to retrieve full configuration or data to be
+// injected into a configuration.
+//
+// The ConfigSource object should use its creation according to the source needs:
+// lock resources, open connections, etc. An implementation, for instance,
+// can use the creation time to prevent torn configurations, by acquiring a lock
+// (or some other mechanism) that prevents concurrent changes to the configuration
+// during time that data is being retrieved from the source.
+//
+// The code managing the ConfigSource instance must guarantee that the object is not used concurrently.
 type ConfigSource interface {
-	// NewSession must create a Session object that will be used to retrieve data to
-	// be injected into a configuration.
-	//
-	// The Session object should use its creation according to their ConfigSource needs:
-	// lock resources, open connections, etc. An implementation, for instance,
-	// can use the creation of the Session object to prevent torn configurations,
-	// by acquiring a lock (or some other mechanism) that prevents concurrent changes to the
-	// configuration during time that data is being retrieved from the source.
-	//
-	// The code managing the returned Session object must guarantee that the object is not used
-	// concurrently and that a single ConfigSource only have one Session open at any time.
-	NewSession(ctx context.Context) (Session, error)
-}
-
-// Session is the interface used to retrieve configuration data from a ConfigSource. A Session
-// object is created from a ConfigSource. The code using Session objects must guarantee that
-// methods of a single instance are not called concurrently.
-type Session interface {
 	// Retrieve goes to the configuration source and retrieves the selected data which
 	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value. The retrieved value is selected
