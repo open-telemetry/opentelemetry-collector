@@ -169,9 +169,9 @@ type validatable interface {
 	Validate() error
 }
 
-// CustomUnmarshable defines an optional interface for custom configuration unmarshaling.
+// Unmarshallable defines an optional interface for custom configuration unmarshaling.
 // A configuration struct can implement this interface to override the default unmarshaling.
-type CustomUnmarshable interface {
+type Unmarshallable interface {
 	// Unmarshal is a function that un-marshals a Parser into the unmarshable struct in a custom way.
 	// componentSection *Parser
 	//   The config for this specific component. May be nil or empty if no config available.
