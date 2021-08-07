@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	stableconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/experimental/config"
-	"go.opentelemetry.io/collector/config/experimental/configsource"
 )
 
 // ConfigSourceCreateSettings is passed to ConfigSourceFactory.CreateConfigSource function.
@@ -53,7 +52,7 @@ type ConfigSourceFactory interface {
 		ctx context.Context,
 		set ConfigSourceCreateSettings,
 		cfg config.Source,
-	) (configsource.ConfigSource, error)
+	) (ConfigSource, error)
 }
 
 // ConfigSourceFactories maps the type of a ConfigSource to the respective factory object.

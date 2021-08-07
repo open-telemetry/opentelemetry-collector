@@ -33,10 +33,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	experimentalcomponent "go.opentelemetry.io/collector/component/experimental/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
@@ -276,7 +276,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			err := watchable.WatchForUpdate()
 			switch {
 			// TODO: Move configsource.ErrSessionClosed to providerparser package to avoid depending on configsource.
-			case errors.Is(err, configsource.ErrSessionClosed):
+			case errors.Is(err, experimentalcomponent.ErrSessionClosed):
 				// This is the case of shutdown of the whole collector server, nothing to do.
 				col.logger.Info("Config WatchForUpdate closed", zap.Error(err))
 				return

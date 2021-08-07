@@ -26,8 +26,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"go.opentelemetry.io/collector/component/experimental/component"
 	"go.opentelemetry.io/collector/config/configparser"
-	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -156,10 +156,10 @@ type (
 type Manager struct {
 	// configSources is map from ConfigSource names (as defined in the configuration)
 	// and the respective instances.
-	configSources map[string]configsource.ConfigSource
+	configSources map[string]component.ConfigSource
 	// sessions track all the Session objects used to retrieve values to be injected
 	// into the configuration.
-	sessions map[string]configsource.Session
+	sessions map[string]component.Session
 	// watchers keeps track of all WatchForUpdate functions for retrieved values.
 	watchers []func() error
 	// watchersWG is used to ensure that Close waits for all WatchForUpdate calls
@@ -181,7 +181,7 @@ func NewManager(_ *configparser.Parser) (*Manager, error) {
 
 	return &Manager{
 		// TODO: Temporarily tests should set their config sources per their needs.
-		sessions:   make(map[string]configsource.Session),
+		sessions:   make(map[string]component.Session),
 		watchingCh: make(chan struct{}),
 		closeCh:    make(chan struct{}),
 	}, nil
@@ -228,11 +228,11 @@ func (m *Manager) WatchForUpdate() error {
 
 			err := watcherFn()
 			switch {
-			case errors.Is(err, configsource.ErrWatcherNotSupported):
+			case errors.Is(err, component.ErrWatcherNotSupported):
 				// The watcher for the retrieved value is not supported, nothing to
 				// do, just exit from the goroutine.
 				return
-			case errors.Is(err, configsource.ErrSessionClosed):
+			case errors.Is(err, component.ErrSessionClosed):
 				// The Session from which this watcher was retrieved is being closed.
 				// There is no error to report, just exit from the goroutine.
 				return
@@ -259,7 +259,7 @@ func (m *Manager) WatchForUpdate() error {
 		return err
 	case <-m.closeCh:
 		// This covers the case that all watchers returned ErrWatcherNotSupported.
-		return configsource.ErrSessionClosed
+		return component.ErrSessionClosed
 	}
 }
 
@@ -336,7 +336,7 @@ func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (in
 
 // expandConfigSource retrieve data from the specified config source and injects them into
 // the configuration. The Manager tracks sessions and watcher objects as needed.
-func (m *Manager) expandConfigSource(ctx context.Context, cfgSrc configsource.ConfigSource, s string) (interface{}, error) {
+func (m *Manager) expandConfigSource(ctx context.Context, cfgSrc component.ConfigSource, s string) (interface{}, error) {
 	cfgSrcName, selector, params, err := parseCfgSrc(s)
 	if err != nil {
 		return nil, err

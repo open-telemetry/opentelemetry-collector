@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package component under config/experimental contains types and interfaces
+// Package component under component/experimental contains types and interfaces
 // that typically live under the "go.opentelemetry.io/collector/component"
 // package but aren't stable yet to be published there.
 // ATTENTION: the package is still experimental and subject to changes without advanced notice.
