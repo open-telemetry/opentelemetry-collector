@@ -24,7 +24,7 @@ import (
 
 func TestFieldComments(t *testing.T) {
 	v := reflect.ValueOf(testStruct{})
-	comments := commentsForStruct(v, testDR())
+	comments, _ := commentsForStruct(v, testDR())
 	assert.Equal(t, "embedded, package qualified comment\n", comments["Duration"])
 	assert.Equal(t, "testStruct comment\n", comments["_struct"])
 }
@@ -32,6 +32,6 @@ func TestFieldComments(t *testing.T) {
 func TestExternalType(t *testing.T) {
 	u, _ := uuid.NewUUID()
 	v := reflect.ValueOf(u)
-	comments := commentsForStruct(v, testDR())
+	comments, _ := commentsForStruct(v, testDR())
 	assert.Equal(t, "A UUID is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC\n4122.\n", comments["_struct"])
 }

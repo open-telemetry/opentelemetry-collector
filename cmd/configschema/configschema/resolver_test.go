@@ -44,6 +44,6 @@ func TestLocalPkg(t *testing.T) {
 	pkg := pdata.NewSum()
 	pkgValue := reflect.ValueOf(pkg)
 	dr := testDR()
-	output := dr.PackageDir(pkgValue.Type())
+	output, _ := dr.PackageDir(pkgValue.Type())
 	assert.Equal(t, "../../../model/pdata", output)
 }

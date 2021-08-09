@@ -59,16 +59,16 @@ func NewDirResolver(srcRoot string, moduleName string) DirResolver {
 // PackageDir accepts a Type and returns its package dir.
 // If package is not found locally, searches for package location through go.mod.
 // Attempts to search through an absolute path or GOPATH
-func (dr DirResolver) PackageDir(t reflect.Type) string {
+func (dr DirResolver) PackageDir(t reflect.Type) (string, error) {
 	pkg := strings.TrimPrefix(t.PkgPath(), dr.ModuleName+"/")
 	dir := localPackageDir(dr, pkg)
 	_, err := os.ReadDir(dir)
 	if err != nil {
 		if dir, err = externalPackageDir(dr, pkg); err != nil {
-			panic(fmt.Sprintf("Could not find the pkg: %s", pkg))
+			return "", fmt.Errorf("could not find the pkg: %s", pkg)
 		}
 	}
-	return dir
+	return dir, nil
 }
 
 // localPackageDir returns the path to a local package.
