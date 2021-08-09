@@ -19,8 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/providers/confmap"
+	"github.com/knadh/koanf/maps"
 	"github.com/magiconair/properties"
 
 	"go.opentelemetry.io/collector/config/configparser"
@@ -63,23 +62,16 @@ func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
 
 	// Create a map manually instead of using props.Map() to allow env var expansion
 	// as used by original Viper-based configparser.Parser.
-	parsed := map[string]interface{}{}
+	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
 		parsed[key] = value
 	}
-
-	propertyKoanf := koanf.New(".")
-	if err = propertyKoanf.Load(confmap.Provider(parsed, "."), nil); err != nil {
-		return nil, fmt.Errorf("failed to read set flag config: %v", err)
-	}
+	prop := maps.Unflatten(parsed, ".")
 
 	var cp *configparser.Parser
 	if cp, err = sfl.base.Get(); err != nil {
 		return nil, err
 	}
-
-	cp.MergeStringMap(propertyKoanf.Raw())
-
-	return cp, nil
+	return cp, cp.MergeStringMap(prop)
 }
