@@ -37,20 +37,6 @@ func (p protobufUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	return p.toTranslator.ToTraces(spans)
 }
 
-type protobufMarshaler struct {
-	serializer     zipkin_proto3.SpanSerializer
-	fromTranslator FromTranslator
-}
-
-// MarshalTraces to protobuf bytes.
-func (p protobufMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
-	spans, err := p.fromTranslator.FromTraces(td)
-	if err != nil {
-		return nil, err
-	}
-	return p.serializer.Serialize(spans)
-}
-
 // NewProtobufTracesUnmarshaler returns an pdata.TracesUnmarshaler of protobuf bytes.
 func NewProtobufTracesUnmarshaler(debugWasSet, parseStringTags bool) pdata.TracesUnmarshaler {
 	return protobufUnmarshaler{
@@ -61,5 +47,7 @@ func NewProtobufTracesUnmarshaler(debugWasSet, parseStringTags bool) pdata.Trace
 
 // NewProtobufTracesMarshaler returns a new pdata.TracesMarshaler to protobuf bytes.
 func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
-	return protobufMarshaler{}
+	return marshaler{
+		serializer: zipkin_proto3.SpanSerializer{},
+	}
 }
