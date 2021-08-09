@@ -228,6 +228,9 @@ func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar
 
 func numberDataPointsLabelsToAttributes(dps []*otlpmetrics.NumberDataPoint) {
 	for i := range dps {
+		if dps[i].Labels != nil && dps[i].Attributes != nil {
+			continue
+		}
 		if dps[i].Labels != nil {
 			dps[i].Attributes = labelsToAttributes(dps[i].Labels)
 		}
@@ -236,6 +239,9 @@ func numberDataPointsLabelsToAttributes(dps []*otlpmetrics.NumberDataPoint) {
 
 func summaryDataPointsLabelsToAttributes(dps []*otlpmetrics.SummaryDataPoint) {
 	for i := range dps {
+		if dps[i].Labels != nil && dps[i].Attributes != nil {
+			continue
+		}
 		if dps[i].Labels != nil {
 			dps[i].Attributes = labelsToAttributes(dps[i].Labels)
 		}
@@ -244,6 +250,9 @@ func summaryDataPointsLabelsToAttributes(dps []*otlpmetrics.SummaryDataPoint) {
 
 func histogramDataPointsLabelsToAttributes(dps []*otlpmetrics.HistogramDataPoint) {
 	for i := range dps {
+		if dps[i].Labels != nil && dps[i].Attributes != nil {
+			continue
+		}
 		if dps[i].Labels != nil {
 			dps[i].Attributes = labelsToAttributes(dps[i].Labels)
 		}

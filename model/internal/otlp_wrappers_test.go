@@ -580,3 +580,142 @@ func TestDeprecatedIntSum(t *testing.T) {
 		})
 	}
 }
+
+func TestAttributesAndLabels(t *testing.T) {
+	tests := []struct {
+		inputMetrics  []*otlpmetrics.Metric
+		outputMetrics []*otlpmetrics.Metric
+	}{
+		{
+			inputMetrics: []*otlpmetrics.Metric{
+				{
+					// only Labels are set
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key", Value: "value"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputMetrics: []*otlpmetrics.Metric{
+				{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key", Value: "value"},
+									},
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{
+				{
+					// only Attributes are set
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputMetrics: []*otlpmetrics.Metric{
+				{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{
+				{
+					// both Attributes and Labels are set
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key1", Value: "value1"},
+									},
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputMetrics: []*otlpmetrics.Metric{
+				{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key1", Value: "value1"},
+									},
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
+			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+					{
+						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+							{
+								Metrics: test.inputMetrics,
+							},
+						}},
+				},
+			}
+			MetricsCompatibilityChanges(req)
+			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
+		})
+	}
+}
