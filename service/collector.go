@@ -312,11 +312,8 @@ func (col *Collector) execute(ctx context.Context) error {
 		return err
 	}
 
-	// Get ballastSizeBytes if ballast extension is enabled
-	ballastSizeBytes := col.getBallastSize()
-
-	// Setup Telemetry.
-	err = col.setupTelemetry(ballastSizeBytes)
+	// Get ballastSizeBytes if ballast extension is enabled and setup Telemetry.
+	err = col.setupTelemetry(col.getBallastSize())
 	if err != nil {
 		return err
 	}
