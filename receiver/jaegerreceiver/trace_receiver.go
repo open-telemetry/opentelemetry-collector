@@ -341,7 +341,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	}
 
 	if jr.agentHTTPEnabled() {
-		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPAddr(), jr, metrics.NullFactory)
+		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPAddr(), jr, metrics.NullFactory, jr.logger)
 
 		jr.goroutines.Add(1)
 		go func() {
