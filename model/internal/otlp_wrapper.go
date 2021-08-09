@@ -161,7 +161,6 @@ func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.
 	datapoints := []*otlpmetrics.HistogramDataPoint{}
 	for _, datapoint := range src.IntHistogram.DataPoints {
 		datapoints = append(datapoints, &otlpmetrics.HistogramDataPoint{
-			Labels:            datapoint.Labels,
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			Count:             datapoint.Count,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
@@ -184,7 +183,6 @@ func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge
 	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntGauge.DataPoints))
 	for i, datapoint := range src.IntGauge.DataPoints {
 		datapoints[i] = &otlpmetrics.NumberDataPoint{
-			Labels:            datapoint.Labels,
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
@@ -203,7 +201,6 @@ func intSumToSum(src *otlpmetrics.Metric_IntSum) *otlpmetrics.Metric_Sum {
 	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntSum.DataPoints))
 	for i, datapoint := range src.IntSum.DataPoints {
 		datapoints[i] = &otlpmetrics.NumberDataPoint{
-			Labels:            datapoint.Labels,
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
@@ -224,7 +221,6 @@ func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar
 	exemplars := []otlpmetrics.Exemplar{}
 	for _, exemplar := range src {
 		exemplars = append(exemplars, otlpmetrics.Exemplar{
-			FilteredLabels:     exemplar.FilteredLabels,
 			FilteredAttributes: labelsToAttributes(exemplar.FilteredLabels),
 			TimeUnixNano:       exemplar.TimeUnixNano,
 			Value: &otlpmetrics.Exemplar_AsInt{

@@ -152,9 +152,6 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 						DataPoints: []*otlpmetrics.HistogramDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "key", Value: "value"},
-								},
 								BucketCounts:      []uint64{11, 16, 2},
 								ExplicitBounds:    []float64{3, 4},
 								Sum:               10.1,
@@ -199,9 +196,6 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 						DataPoints: []*otlpmetrics.HistogramDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "key2", Value: "value2"},
-								},
 								BucketCounts:      []uint64{10, 15, 1},
 								ExplicitBounds:    []float64{1, 2},
 								Sum:               10.0,
@@ -246,9 +240,6 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 						AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 						DataPoints: []*otlpmetrics.HistogramDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "key2", Value: "value2"},
-								},
 								BucketCounts:      []uint64{10, 15, 1},
 								ExplicitBounds:    []float64{1, 2},
 								Sum:               10.0,
@@ -313,9 +304,6 @@ func TestDeprecatedIntGauge(t *testing.T) {
 					Gauge: &otlpmetrics.Gauge{
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "GaugeKey", Value: "GaugeValue"},
-								},
 								StartTimeUnixNano: 10,
 								TimeUnixNano:      11,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 100},
@@ -352,9 +340,6 @@ func TestDeprecatedIntGauge(t *testing.T) {
 					Gauge: &otlpmetrics.Gauge{
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "IntGaugeKey", Value: "IntGaugeValue"},
-								},
 								StartTimeUnixNano: 12,
 								TimeUnixNano:      13,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 101},
@@ -426,9 +411,6 @@ func TestDeprecatedIntSum(t *testing.T) {
 						IsMonotonic:            true,
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "SumKey", Value: "SumValue"},
-								},
 								StartTimeUnixNano: 20,
 								TimeUnixNano:      21,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
@@ -478,9 +460,6 @@ func TestDeprecatedIntSum(t *testing.T) {
 						IsMonotonic:            true,
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "IntSumKey", Value: "IntSumValue"},
-								},
 								StartTimeUnixNano: 22,
 								TimeUnixNano:      23,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
@@ -521,9 +500,6 @@ func TestDeprecatedIntSum(t *testing.T) {
 						IsMonotonic:            false,
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "IntSumKey", Value: "IntSumValue"},
-								},
 								StartTimeUnixNano: 22,
 								TimeUnixNano:      23,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
@@ -566,9 +542,6 @@ func TestDeprecatedIntSum(t *testing.T) {
 					Sum: &otlpmetrics.Sum{
 						DataPoints: []*otlpmetrics.NumberDataPoint{
 							{
-								Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
-									{Key: "IntSumKey", Value: "IntSumValue"},
-								},
 								StartTimeUnixNano: 22,
 								TimeUnixNano:      23,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
