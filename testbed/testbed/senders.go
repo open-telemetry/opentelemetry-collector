@@ -20,6 +20,7 @@ import (
 	"log"
 	"net"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -582,5 +583,9 @@ func (pds *prometheusDataSender) ProtocolName() string {
 }
 
 func defaultExporterParams() component.ExporterCreateSettings {
-	return component.ExporterCreateSettings{Logger: zap.L()}
+	return component.ExporterCreateSettings{
+		Logger:         zap.L(),
+		TracerProvider: trace.NewNoopTracerProvider(),
+		BuildInfo:      component.DefaultBuildInfo(),
+	}
 }

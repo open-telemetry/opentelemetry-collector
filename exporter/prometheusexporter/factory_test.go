@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
@@ -50,11 +49,11 @@ func TestCreateMetricsExporterExportHelperError(t *testing.T) {
 
 	cfg.Endpoint = "http://localhost:8889"
 
+	set := componenttest.NewNopExporterCreateSettings()
+	set.Logger = nil
+
 	// Should give us an exporterhelper.errNilLogger
-	exp, err := createMetricsExporter(
-		context.Background(),
-		component.ExporterCreateSettings{Logger: nil},
-		cfg)
+	exp, err := createMetricsExporter(context.Background(), set, cfg)
 
 	assert.Nil(t, exp)
 	assert.Error(t, err)

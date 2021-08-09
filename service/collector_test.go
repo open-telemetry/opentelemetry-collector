@@ -30,6 +30,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -329,6 +330,7 @@ func TestCollector_reloadService(t *testing.T) {
 
 			col := Collector{
 				logger:         zap.NewNop(),
+				tracerProvider: trace.NewNoopTracerProvider(),
 				parserProvider: tt.parserProvider,
 				factories:      factories,
 				service:        tt.service,

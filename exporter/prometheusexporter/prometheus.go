@@ -23,7 +23,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -43,18 +42,19 @@ type prometheusExporter struct {
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
-func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExporter, error) {
+func newPrometheusExporter(config *Config, set component.ExporterCreateSettings) (*prometheusExporter, error) {
 	addr := strings.TrimSpace(config.Endpoint)
 	if strings.TrimSpace(config.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
 	}
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:      configtelemetry.GetMetricsLevelFlagValue(),
-		ExporterID: config.ID(),
+		Level:                  configtelemetry.GetMetricsLevelFlagValue(),
+		ExporterID:             config.ID(),
+		ExporterCreateSettings: set,
 	})
 
-	collector := newCollector(config, logger)
+	collector := newCollector(config, set.Logger)
 	registry := prometheus.NewRegistry()
 	_ = registry.Register(collector)
 

@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -72,7 +73,7 @@ type Collector struct {
 	rootCmd *cobra.Command
 	logger  *zap.Logger
 
-	tracerProvider      *sdktrace.TracerProvider
+	tracerProvider      trace.TracerProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service      *service
