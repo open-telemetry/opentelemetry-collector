@@ -76,8 +76,8 @@ receivers:
     protocols:
       http:
         cors_allowed_origins:
-        - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
-        - https://test.com # Fully qualified domain name. Allows https://test.com only.
+          - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
+          - https://test.com # Fully qualified domain name. Allows https://test.com only.
   # The following entry demonstrates how to use CORS Header configuration.
   otlp/corsheader:
     protocols:
@@ -87,6 +87,14 @@ receivers:
           - https://test.com # Fully qualified domain name. Allows https://test.com only.
         cors_allowed_headers:
           - ExampleHeader
+  # The following demonstrates the experimental server which can serve both gRPC and HTTP from the same endpoint
+  otlp/experimental:
+    experimental_server:
+      cors_allowed_origins:
+        - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
+        - https://test.com # Fully qualified domain name. Allows https://test.com only.
+      cors_allowed_headers:
+        - ExampleHeader
 processors:
   nop:
 

@@ -54,7 +54,8 @@ var _ config.Unmarshallable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GRPC == nil &&
+	if cfg.ExperimentalServer == nil &&
+		cfg.GRPC == nil &&
 		cfg.HTTP == nil {
 		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
 	}
@@ -74,6 +75,13 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 
 	// If the experimental field is loaded, zero out the config for any other protocol fields
 	if componentParser.IsSet(experimentalField) {
+		if cfg.ExperimentalServer == nil {
+			cfg.ExperimentalServer = &confighttp.HTTPServerSettings{
+				Endpoint: defaultCombinedEndpoint,
+			}
+		} else if cfg.ExperimentalServer.Endpoint == "" {
+			cfg.ExperimentalServer.Endpoint = defaultCombinedEndpoint
+		}
 		cfg.GRPC = nil
 		cfg.HTTP = nil
 		return nil

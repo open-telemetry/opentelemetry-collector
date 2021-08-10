@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 10)
+	assert.Equal(t, len(cfg.Receivers), 11)
 
 	assert.Equal(t, cfg.Receivers[config.NewID(typeStr)], factory.CreateDefaultConfig())
 
@@ -188,6 +188,20 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint: "/tmp/http_otlp.sock",
 					// Transport: "unix",
 				},
+			},
+		})
+
+	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "experimental")],
+		&Config{
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "experimental")),
+			Protocols: Protocols{
+				GRPC: nil,
+				HTTP: nil,
+			},
+			ExperimentalServer: &confighttp.HTTPServerSettings{
+				Endpoint:    "0.0.0.0:4317",
+				CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+				CorsHeaders: []string{"ExampleHeader"},
 			},
 		})
 }
