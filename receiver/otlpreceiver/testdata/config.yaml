@@ -89,12 +89,15 @@ receivers:
           - ExampleHeader
   # The following demonstrates the experimental server which can serve both gRPC and HTTP from the same endpoint
   otlp/experimental:
-    experimental_server:
-      cors_allowed_origins:
-        - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
-        - https://test.com # Fully qualified domain name. Allows https://test.com only.
-      cors_allowed_headers:
-        - ExampleHeader
+    experimental_server_enabled: true
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4317
+        cors_allowed_origins:
+          - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
+          - https://test.com # Fully qualified domain name. Allows https://test.com only.
+        cors_allowed_headers:
+          - ExampleHeader
 processors:
   nop:
 

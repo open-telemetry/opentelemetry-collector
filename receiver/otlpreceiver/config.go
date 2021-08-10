@@ -43,10 +43,9 @@ type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
 
-	// Experimental overrides all the protocols fields and instead
-	// configures a single HTTP server to serve all protocols.
+	// ExperimentalServerEnabled enables the HTTP server to serve all the protocols.
 	// Currently: gRPC and HTTP (Proto and JSON).
-	ExperimentalServer *confighttp.HTTPServerSettings `mapstructure:"experimental_server"`
+	ExperimentalServerEnabled bool `mapstructure:"experimental_server_enabled"`
 }
 
 var _ config.Receiver = (*Config)(nil)
@@ -54,8 +53,7 @@ var _ config.Unmarshallable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.ExperimentalServer == nil &&
-		cfg.GRPC == nil &&
+	if cfg.GRPC == nil &&
 		cfg.HTTP == nil {
 		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
 	}
@@ -73,20 +71,6 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 		return err
 	}
 
-	// If the experimental field is loaded, zero out the config for any other protocol fields
-	if componentParser.IsSet(experimentalField) {
-		if cfg.ExperimentalServer == nil {
-			cfg.ExperimentalServer = &confighttp.HTTPServerSettings{
-				Endpoint: defaultCombinedEndpoint,
-			}
-		} else if cfg.ExperimentalServer.Endpoint == "" {
-			cfg.ExperimentalServer.Endpoint = defaultCombinedEndpoint
-		}
-		cfg.GRPC = nil
-		cfg.HTTP = nil
-		return nil
-	}
-
 	// next manually search for protocols in the configparser.Parser, if a protocol is not present it means it is disable.
 	protocols, err := componentParser.Sub(protocolsFieldName)
 	if err != nil {
@@ -99,6 +83,11 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 
 	if !protocols.IsSet(protoHTTP) {
 		cfg.HTTP = nil
+	}
+
+	// If the experimental field is loaded, zero out the config for the gRPC protocol
+	if cfg.ExperimentalServerEnabled {
+		cfg.GRPC = nil
 	}
 
 	return nil

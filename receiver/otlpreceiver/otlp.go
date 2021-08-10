@@ -65,7 +65,7 @@ func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
 		cfg:    cfg,
 		logger: logger,
 	}
-	if cfg.HTTP != nil || cfg.ExperimentalServer != nil {
+	if cfg.HTTP != nil {
 		r.httpMux = mux.NewRouter()
 	}
 
@@ -147,24 +147,20 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			}
 		}
 	}
-	httpCfg := r.cfg.HTTP
-	if r.cfg.ExperimentalServer != nil {
-		httpCfg = r.cfg.ExperimentalServer
-	}
-	if httpCfg != nil {
-		r.serverHTTP = httpCfg.ToServer(
+	if r.cfg.HTTP != nil {
+		r.serverHTTP = r.cfg.HTTP.ToServer(
 			r.httpMux,
 			confighttp.WithErrorHandler(errorHandler),
 		)
-		err = r.startHTTPServer(httpCfg, host)
+		err = r.startHTTPServer(r.cfg.HTTP, host)
 		if err != nil {
 			return err
 		}
-		if httpCfg.Endpoint == defaultHTTPEndpoint {
+		if r.cfg.HTTP.Endpoint == defaultHTTPEndpoint {
 			r.logger.Info("Setting up a second HTTP listener on legacy endpoint " + legacyHTTPEndpoint)
 
 			// Copy the config.
-			cfgLegacyHTTP := httpCfg
+			cfgLegacyHTTP := r.cfg.HTTP
 			// And use the legacy endpoint.
 			cfgLegacyHTTP.Endpoint = legacyHTTPEndpoint
 			err = r.startHTTPServer(cfgLegacyHTTP, host)
@@ -207,7 +203,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.traceReceiver = trace.New(r.cfg.ID(), tc)
-	if r.cfg.ExperimentalServer != nil {
+	if r.cfg.ExperimentalServerEnabled {
 		r.httpMux.HandleFunc("/opentelemetry.proto.collector.trace.v1.TraceService/Export", func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, grpcContentType, r.traceReceiver, tracesPbUnmarshaler)
 		}).Methods(http.MethodPost).Headers("Content-Type", grpcContentType)
@@ -239,7 +235,7 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.metricsReceiver = metrics.New(r.cfg.ID(), mc)
-	if r.cfg.ExperimentalServer != nil {
+	if r.cfg.ExperimentalServerEnabled {
 		r.httpMux.HandleFunc("/opentelemetry.proto.collector.metrics.v1.MetricsService/Export", func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, grpcContentType, r.metricsReceiver, metricsPbUnmarshaler)
 		}).Methods(http.MethodPost).Headers("Content-Type", grpcContentType)
@@ -263,7 +259,7 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.logReceiver = logs.New(r.cfg.ID(), lc)
-	if r.cfg.ExperimentalServer != nil {
+	if r.cfg.ExperimentalServerEnabled {
 		r.httpMux.HandleFunc("/opentelemetry.proto.collector.logs.v1.LogsService/Export", func(w http.ResponseWriter, req *http.Request) {
 			handleLogs(w, req, grpcContentType, r.logReceiver, logsPbUnmarshaler)
 		}).Methods(http.MethodPost).Headers("Content-Type", grpcContentType)

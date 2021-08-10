@@ -196,13 +196,13 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "experimental")),
 			Protocols: Protocols{
 				GRPC: nil,
-				HTTP: nil,
+				HTTP: &confighttp.HTTPServerSettings{
+					Endpoint:    "0.0.0.0:4317",
+					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+					CorsHeaders: []string{"ExampleHeader"},
+				},
 			},
-			ExperimentalServer: &confighttp.HTTPServerSettings{
-				Endpoint:    "0.0.0.0:4317",
-				CorsOrigins: []string{"https://*.test.com", "https://test.com"},
-				CorsHeaders: []string{"ExampleHeader"},
-			},
+			ExperimentalServerEnabled: true,
 		})
 }
 
