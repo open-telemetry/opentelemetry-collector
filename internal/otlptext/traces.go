@@ -32,6 +32,7 @@ func (textTracesMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 	for i := 0; i < rss.Len(); i++ {
 		buf.logEntry("ResourceSpans #%d", i)
 		rs := rss.At(i)
+		buf.logPDataContext("Pipeline Data Context", rs.PDataContext())
 		buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {

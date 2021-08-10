@@ -36,6 +36,13 @@ func (b *dataBuffer) logAttr(label string, value string) {
 	b.logEntry("    %-15s: %s", label, value)
 }
 
+func (b *dataBuffer) logPDataContext(label string, am pdata.PDataContext) {
+	b.logEntry("%s:", label)
+	am.Range(func(_ interface{}, value interface{}) {
+		b.logEntry("     -> %v", value) // the context key is likely an empty struct
+	})
+}
+
 func (b *dataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	if am.Len() == 0 {
 		return

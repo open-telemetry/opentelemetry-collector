@@ -16,48 +16,87 @@ package configauth
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"reflect"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type ctxKey struct{}
 
-type AuthContext struct {
-	sub   string
-	raw   string
-	group []string
+type AuthContext interface {
+	Equal(other interface{}) bool
+	GetAttribute(attrName string) interface{}
 }
 
-func InjectAuthContext(ctx context.Context, sub, raw string, group []string) context.Context {
-	return context.WithValue(ctx, ctxKey{}, &AuthContext{
-		sub:   sub,
-		raw:   raw,
-		group: group,
-	})
+func InjectAuthContext(ctx context.Context, attrs map[interface{}]interface{}) context.Context {
+	ac := &authC{delegate: attrs}
+	return context.WithValue(ctx, ctxKey{}, ac)
 }
 
-func ExtractAuthContext(ctx context.Context) (*AuthContext, bool) {
-	ac, ok := ctx.Value(ctxKey{}).(*AuthContext)
+func ExtractAuthContext(ctx context.Context) (AuthContext, bool) {
+	ac, ok := ctx.Value(ctxKey{}).(*authC)
 	if !ok {
 		return nil, false
 	}
 	return ac, true
 }
 
-func InjectPDataContext(pda pdata.PDataContext, ac *AuthContext) {
+func InjectPDataContext(pda pdata.PDataContext, ac AuthContext) {
 	pda.Set(ctxKey{}, ac)
 }
 
-func ExtractPDataContext(pda pdata.PDataContext) *AuthContext {
-	return pda.Get(ctxKey{}).(*AuthContext)
+func ExtractPDataContext(pda pdata.PDataContext) AuthContext {
+	return pda.Get(ctxKey{}).(AuthContext)
 }
 
-func (ac *AuthContext) Subject() string {
-	return ac.sub
+type authC struct {
+	delegate map[interface{}]interface{}
 }
-func (ac *AuthContext) Raw() string {
-	return ac.raw
+
+func (ac authC) Equal(other interface{}) bool {
+	if other == nil {
+		return false
+	}
+	otherAuthC, ok := other.(*authC)
+	if !ok {
+		return false
+	}
+	return reflect.DeepEqual(ac.delegate, otherAuthC.delegate)
 }
-func (ac *AuthContext) Groups() []string {
-	return ac.group
+
+func (ac authC) GetAttribute(attrName string) interface{} {
+	return ac.delegate[attrName]
+}
+
+func (ac authC) String() string {
+	return fmt.Sprintf("Auth Context: %v", ac.delegate)
+}
+
+// MarshalJSON serializes our context into a JSON blob. Note that interface{} is converted to string or []string.
+func (ac *authC) MarshalJSON() ([]byte, error) {
+	strmap := make(map[string]interface{})
+	for k, v := range ac.delegate {
+		strmap[fmt.Sprintf("%v", k)] = v
+	}
+	return json.Marshal(strmap)
+}
+
+// UnmarshalJSON deserializes our context from a JSON blob. Note that we cannot infer the original type before the serialization,
+// so all entries are either string or []string.
+func (ac *authC) UnmarshalJSON(data []byte) error {
+	strmap := make(map[string]interface{})
+	if err := json.Unmarshal(data, &strmap); err != nil {
+		return err
+	}
+
+	// converts the map[string]interface{} to map[interface{}]interface{}
+	delegate := make(map[interface{}]interface{})
+	for k, v := range strmap {
+		delegate[k] = v
+	}
+	ac.delegate = delegate
+
+	return nil
 }

@@ -38,3 +38,9 @@ func (pdc PDataContext) Get(key interface{}) interface{} {
 	}
 	return nil
 }
+
+func (pdc PDataContext) Range(f func(k interface{}, v interface{})) {
+	for _, kv := range pdc.orig.List {
+		f(kv.Key, kv.Value)
+	}
+}
