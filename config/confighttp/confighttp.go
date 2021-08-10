@@ -24,6 +24,8 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -198,6 +200,21 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOp
 		o(serverOpts)
 	}
 
+	// Declare an HTTP/1 server which:
+	// Handles only HTTP/1 traffic over TLS or non-TLS
+	h1Server := &http.Server{
+		Addr: hss.Endpoint,
+	}
+
+	// Declare an HTTP/2 server which will handle any H2 protocol traffic
+	h2Server := &http2.Server{
+		NewWriteScheduler: func() http2.WriteScheduler { return http2.NewPriorityWriteScheduler(nil) },
+	}
+
+	// Configure the HTTP/1 server to serve TLS ALPN=h2 traffic onto the H2 server
+	// The handler specified on the HTTP/1 server will be via H2 transport
+	http2.ConfigureServer(h1Server, h2Server)
+
 	handler = middleware.HTTPContentDecompressor(
 		handler,
 		middleware.WithErrorHandler(serverOpts.errorHandler),
@@ -225,7 +242,17 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOp
 		}),
 	)
 
-	return &http.Server{
-		Handler: handler,
+	// Enable the H2C handler if and only if there are no TLS settings in
+	// accordance with rfc7540 section-3.4
+	if hss.TLSSetting == nil {
+		// Configure the H1 server to intercept HTTP/2 with prior
+		// knowledge and handle that with the H2 server.
+		// This allows H2 upgrade via the HTTP/1 server path
+		handler = h2c.NewHandler(handler, h2Server)
 	}
+
+	// Set the handler on the HTTP1 server
+	h1Server.Handler = handler
+
+	return h1Server
 }
