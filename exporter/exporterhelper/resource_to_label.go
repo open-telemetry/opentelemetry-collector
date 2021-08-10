@@ -59,7 +59,7 @@ func addAttributesToMetric(metric *pdata.Metric, labelMap pdata.AttributeMap) {
 	case pdata.MetricDataTypeSum:
 		addAttributesToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeHistogram:
-		addAttributesToDoubleHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
+		addAttributesToHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
 	}
 }
 
@@ -69,7 +69,7 @@ func addAttributesToNumberDataPoints(ps pdata.NumberDataPointSlice, newAttribute
 	}
 }
 
-func addAttributesToDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice, newAttributeMap pdata.AttributeMap) {
+func addAttributesToHistogramDataPoints(ps pdata.HistogramDataPointSlice, newAttributeMap pdata.AttributeMap) {
 	for i := 0; i < ps.Len(); i++ {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
