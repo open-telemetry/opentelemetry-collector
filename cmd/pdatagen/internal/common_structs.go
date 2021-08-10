@@ -122,3 +122,11 @@ var anyValueArray = &sliceOfValues{
 	structName: "AnyValueArray",
 	element:    anyValue,
 }
+
+var schemaURLField = &primitiveField{
+	fieldName:       "SchemaUrl",
+	originFieldName: "SchemaUrl",
+	returnType:      "string",
+	defaultVal:      `""`,
+	testVal:         `"https://opentelemetry.io/schemas/1.5.0"`,
+}

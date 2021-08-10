@@ -188,6 +188,16 @@ func (ms ResourceMetrics) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
+// SchemaUrl returns the schemaurl associated with this ResourceMetrics.
+func (ms ResourceMetrics) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
+func (ms ResourceMetrics) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // InstrumentationLibraryMetrics returns the InstrumentationLibraryMetrics associated with this ResourceMetrics.
 func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibraryMetricsSlice {
 	return newInstrumentationLibraryMetricsSlice(&(*ms.orig).InstrumentationLibraryMetrics)
@@ -196,6 +206,7 @@ func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibrary
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	ms.Resource().CopyTo(dest.Resource())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.InstrumentationLibraryMetrics().CopyTo(dest.InstrumentationLibraryMetrics())
 }
 
@@ -364,6 +375,16 @@ func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() Instrumentation
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
+// SchemaUrl returns the schemaurl associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // Metrics returns the Metrics associated with this InstrumentationLibraryMetrics.
 func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 	return newMetricSlice(&(*ms.orig).Metrics)
@@ -372,6 +393,7 @@ func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetrics) {
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Metrics().CopyTo(dest.Metrics())
 }
 
@@ -574,39 +596,6 @@ func (ms Metric) CopyTo(dest Metric) {
 	copyData(ms.orig, dest.orig)
 }
 
-// IntGauge represents the type of a int scalar metric that always exports the "current value" for every data point.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewIntGauge function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-// Deprecated: Use Gauge instead.
-type IntGauge struct {
-	orig *otlpmetrics.IntGauge
-}
-
-func newIntGauge(orig *otlpmetrics.IntGauge) IntGauge {
-	return IntGauge{orig: orig}
-}
-
-// NewIntGauge creates a new empty IntGauge.
-//
-// This must be used only in testing code since no "Set" method available.
-func NewIntGauge() IntGauge {
-	return newIntGauge(&otlpmetrics.IntGauge{})
-}
-
-// DataPoints returns the DataPoints associated with this IntGauge.
-func (ms IntGauge) DataPoints() IntDataPointSlice {
-	return newIntDataPointSlice(&(*ms.orig).DataPoints)
-}
-
-// CopyTo copies all properties from the current struct to the dest.
-func (ms IntGauge) CopyTo(dest IntGauge) {
-	ms.DataPoints().CopyTo(dest.DataPoints())
-}
-
 // Gauge represents the type of a double scalar metric that always exports the "current value" for every data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -637,61 +626,6 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Gauge) CopyTo(dest Gauge) {
-	ms.DataPoints().CopyTo(dest.DataPoints())
-}
-
-// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewIntSum function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-// Deprecated: Use Sum instead.
-type IntSum struct {
-	orig *otlpmetrics.IntSum
-}
-
-func newIntSum(orig *otlpmetrics.IntSum) IntSum {
-	return IntSum{orig: orig}
-}
-
-// NewIntSum creates a new empty IntSum.
-//
-// This must be used only in testing code since no "Set" method available.
-func NewIntSum() IntSum {
-	return newIntSum(&otlpmetrics.IntSum{})
-}
-
-// AggregationTemporality returns the aggregationtemporality associated with this IntSum.
-func (ms IntSum) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality((*ms.orig).AggregationTemporality)
-}
-
-// SetAggregationTemporality replaces the aggregationtemporality associated with this IntSum.
-func (ms IntSum) SetAggregationTemporality(v AggregationTemporality) {
-	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
-}
-
-// IsMonotonic returns the ismonotonic associated with this IntSum.
-func (ms IntSum) IsMonotonic() bool {
-	return (*ms.orig).IsMonotonic
-}
-
-// SetIsMonotonic replaces the ismonotonic associated with this IntSum.
-func (ms IntSum) SetIsMonotonic(v bool) {
-	(*ms.orig).IsMonotonic = v
-}
-
-// DataPoints returns the DataPoints associated with this IntSum.
-func (ms IntSum) DataPoints() IntDataPointSlice {
-	return newIntDataPointSlice(&(*ms.orig).DataPoints)
-}
-
-// CopyTo copies all properties from the current struct to the dest.
-func (ms IntSum) CopyTo(dest IntSum) {
-	dest.SetAggregationTemporality(ms.AggregationTemporality())
-	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
@@ -825,209 +759,6 @@ func (ms Summary) DataPoints() SummaryDataPointSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Summary) CopyTo(dest Summary) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
-}
-
-// IntDataPointSlice logically represents a slice of IntDataPoint.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use NewIntDataPointSlice function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type IntDataPointSlice struct {
-	// orig points to the slice otlpmetrics.IntDataPoint field contained somewhere else.
-	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
-	orig *[]*otlpmetrics.IntDataPoint
-}
-
-func newIntDataPointSlice(orig *[]*otlpmetrics.IntDataPoint) IntDataPointSlice {
-	return IntDataPointSlice{orig}
-}
-
-// NewIntDataPointSlice creates a IntDataPointSlice with 0 elements.
-// Can use "EnsureCapacity" to initialize with a given capacity.
-func NewIntDataPointSlice() IntDataPointSlice {
-	orig := []*otlpmetrics.IntDataPoint(nil)
-	return IntDataPointSlice{&orig}
-}
-
-// Len returns the number of elements in the slice.
-//
-// Returns "0" for a newly instance created with "NewIntDataPointSlice()".
-func (es IntDataPointSlice) Len() int {
-	return len(*es.orig)
-}
-
-// At returns the element at the given index.
-//
-// This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
-func (es IntDataPointSlice) At(ix int) IntDataPoint {
-	return newIntDataPoint((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice to the dest.
-func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newIntDataPoint((*es.orig)[i]).CopyTo(newIntDataPoint((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.IntDataPoint, srcLen)
-	wrappers := make([]*otlpmetrics.IntDataPoint, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newIntDataPoint((*es.orig)[i]).CopyTo(newIntDataPoint(wrappers[i]))
-	}
-	*dest.orig = wrappers
-}
-
-// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
-// 1. If the newCap <= cap then no change in capacity.
-// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
-//
-// Here is how a new IntDataPointSlice can be initialized:
-//   es := NewIntDataPointSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
-func (es IntDataPointSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
-	if newCap <= oldCap {
-		return
-	}
-
-	newOrig := make([]*otlpmetrics.IntDataPoint, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
-}
-
-// AppendEmpty will append to the end of the slice an empty IntDataPoint.
-// It returns the newly added IntDataPoint.
-func (es IntDataPointSlice) AppendEmpty() IntDataPoint {
-	*es.orig = append(*es.orig, &otlpmetrics.IntDataPoint{})
-	return es.At(es.Len() - 1)
-}
-
-// Sort sorts the IntDataPoint elements within IntDataPointSlice given the
-// provided less function so that two instances of IntDataPointSlice
-// can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b IntDataPoint) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es IntDataPointSlice) Sort(less func(a, b IntDataPoint) bool) IntDataPointSlice {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
-}
-
-// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
-// The current slice will be cleared.
-func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
-	if *dest.orig == nil {
-		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
-	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
-	}
-	*es.orig = nil
-}
-
-// RemoveIf calls f sequentially for each element present in the slice.
-// If f returns true, the element is removed from the slice.
-func (es IntDataPointSlice) RemoveIf(f func(IntDataPoint) bool) {
-	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
-		if f(es.At(i)) {
-			continue
-		}
-		if newLen == i {
-			// Nothing to move, element is at the right place.
-			newLen++
-			continue
-		}
-		(*es.orig)[newLen] = (*es.orig)[i]
-		newLen++
-	}
-	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
-}
-
-// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewIntDataPoint function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-// Deprecated: Use NumberDataPoint instead.
-type IntDataPoint struct {
-	orig *otlpmetrics.IntDataPoint
-}
-
-func newIntDataPoint(orig *otlpmetrics.IntDataPoint) IntDataPoint {
-	return IntDataPoint{orig: orig}
-}
-
-// NewIntDataPoint creates a new empty IntDataPoint.
-//
-// This must be used only in testing code since no "Set" method available.
-func NewIntDataPoint() IntDataPoint {
-	return newIntDataPoint(&otlpmetrics.IntDataPoint{})
-}
-
-// LabelsMap returns the Labels associated with this IntDataPoint.
-func (ms IntDataPoint) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
-}
-
-// StartTimestamp returns the starttimestamp associated with this IntDataPoint.
-func (ms IntDataPoint) StartTimestamp() Timestamp {
-	return Timestamp((*ms.orig).StartTimeUnixNano)
-}
-
-// SetStartTimestamp replaces the starttimestamp associated with this IntDataPoint.
-func (ms IntDataPoint) SetStartTimestamp(v Timestamp) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
-}
-
-// Timestamp returns the timestamp associated with this IntDataPoint.
-func (ms IntDataPoint) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
-}
-
-// SetTimestamp replaces the timestamp associated with this IntDataPoint.
-func (ms IntDataPoint) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
-}
-
-// Value returns the value associated with this IntDataPoint.
-func (ms IntDataPoint) Value() int64 {
-	return (*ms.orig).Value
-}
-
-// SetValue replaces the value associated with this IntDataPoint.
-func (ms IntDataPoint) SetValue(v int64) {
-	(*ms.orig).Value = v
-}
-
-// CopyTo copies all properties from the current struct to the dest.
-func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetValue(ms.Value())
 }
 
 // NumberDataPointSlice logically represents a slice of NumberDataPoint.
@@ -1195,6 +926,11 @@ func (ms NumberDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
+// Attributes returns the Attributes associated with this NumberDataPoint.
+func (ms NumberDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
+}
+
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
@@ -1247,6 +983,7 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.Type() {
@@ -1424,6 +1161,11 @@ func (ms HistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
+// Attributes returns the Attributes associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
+}
+
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
@@ -1492,6 +1234,7 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
@@ -1666,6 +1409,11 @@ func (ms SummaryDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
+// Attributes returns the Attributes associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
+}
+
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
@@ -1714,6 +1462,7 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())

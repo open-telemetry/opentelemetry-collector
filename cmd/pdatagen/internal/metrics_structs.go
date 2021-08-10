@@ -35,14 +35,10 @@ var metricsFile = &File{
 		instrumentationLibraryMetrics,
 		metricSlice,
 		metric,
-		intGauge,
 		doubleGauge,
-		intSum,
 		doubleSum,
 		histogram,
 		summary,
-		intDataPointSlice,
-		intDataPoint,
 		numberDataPointSlice,
 		numberDataPoint,
 		histogramDataPointSlice,
@@ -67,6 +63,7 @@ var resourceMetrics = &messageValueStruct{
 	originFullName: "otlpmetrics.ResourceMetrics",
 	fields: []baseField{
 		resourceField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "InstrumentationLibraryMetrics",
 			originFieldName: "InstrumentationLibraryMetrics",
@@ -86,6 +83,7 @@ var instrumentationLibraryMetrics = &messageValueStruct{
 	originFullName: "otlpmetrics.InstrumentationLibraryMetrics",
 	fields: []baseField{
 		instrumentationLibraryField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "Metrics",
 			originFieldName: "Metrics",
@@ -124,20 +122,6 @@ var metric = &messageValueStruct{
 	},
 }
 
-var intGauge = &messageValueStruct{
-	structName:     "IntGauge",
-	description:    "// IntGauge represents the type of a int scalar metric that always exports the \"current value\" for every data point.",
-	originFullName: "otlpmetrics.IntGauge",
-	deprecated:     "Deprecated: Use Gauge instead.",
-	fields: []baseField{
-		&sliceField{
-			fieldName:       "DataPoints",
-			originFieldName: "DataPoints",
-			returnSlice:     intDataPointSlice,
-		},
-	},
-}
-
 var doubleGauge = &messageValueStruct{
 	structName:     "Gauge",
 	description:    "// Gauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
@@ -147,22 +131,6 @@ var doubleGauge = &messageValueStruct{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     numberDataPointSlice,
-		},
-	},
-}
-
-var intSum = &messageValueStruct{
-	structName:     "IntSum",
-	description:    "// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.",
-	originFullName: "otlpmetrics.IntSum",
-	deprecated:     "Deprecated: Use Sum instead.",
-	fields: []baseField{
-		aggregationTemporalityField,
-		isMonotonicField,
-		&sliceField{
-			fieldName:       "DataPoints",
-			originFieldName: "DataPoints",
-			returnSlice:     intDataPointSlice,
 		},
 	},
 }
@@ -209,24 +177,6 @@ var summary = &messageValueStruct{
 	},
 }
 
-var intDataPointSlice = &sliceOfPtrs{
-	structName: "IntDataPointSlice",
-	element:    intDataPoint,
-}
-
-var intDataPoint = &messageValueStruct{
-	structName:     "IntDataPoint",
-	description:    "// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.",
-	originFullName: "otlpmetrics.IntDataPoint",
-	deprecated:     "Deprecated: Use NumberDataPoint instead.",
-	fields: []baseField{
-		labelsField,
-		startTimeField,
-		timeField,
-		valueInt64Field,
-	},
-}
-
 var numberDataPointSlice = &sliceOfPtrs{
 	structName: "NumberDataPointSlice",
 	element:    numberDataPoint,
@@ -238,6 +188,7 @@ var numberDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
 		labelsField,
+		attributes,
 		startTimeField,
 		timeField,
 		&numberField{
@@ -277,6 +228,7 @@ var histogramDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.HistogramDataPoint",
 	fields: []baseField{
 		labelsField,
+		attributes,
 		startTimeField,
 		timeField,
 		countField,
@@ -298,6 +250,7 @@ var summaryDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.SummaryDataPoint",
 	fields: []baseField{
 		labelsField,
+		attributes,
 		startTimeField,
 		timeField,
 		countField,
@@ -397,14 +350,6 @@ var doubleSumField = &primitiveField{
 	testVal:         "float64(17.13)",
 }
 
-var valueInt64Field = &primitiveField{
-	fieldName:       "Value",
-	originFieldName: "Value",
-	returnType:      "int64",
-	defaultVal:      "int64(0)",
-	testVal:         "int64(-17)",
-}
-
 var valueFloat64Field = &primitiveField{
 	fieldName:       "Value",
 	originFieldName: "Value",
@@ -457,6 +402,6 @@ var aggregationTemporalityField = &primitiveTypedField{
 var oneofDataField = &oneofField{
 	copyFuncName:    "copyData",
 	originFieldName: "Data",
-	testVal:         "&otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}",
-	fillTestName:    "IntGauge",
+	testVal:         "&otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}",
+	fillTestName:    "Gauge",
 }

@@ -26,8 +26,12 @@ s+repeated KeyValue \(.*\);+repeated KeyValue \1\
 
 s+AnyValue \(.*\);+AnyValue \1\
   [ (gogoproto.nullable) = false ];+g
+  
+# this line matches StringKeyValue that are deprecated
+s+repeated opentelemetry.proto.common.v1.StringKeyValue \(.*\)\];+repeated opentelemetry.proto.common.v1.StringKeyValue \1\, (gogoproto.nullable) = false ];+g
 
-s+repeated opentelemetry.proto.common.v1.StringKeyValue \(.*\);+repeated opentelemetry.proto.common.v1.StringKeyValue \1\
+# this line matches StringKeyValue that are not deprecated
+s+repeated opentelemetry.proto.common.v1.StringKeyValue \([^]]*\);+repeated opentelemetry.proto.common.v1.StringKeyValue \1\
   [ (gogoproto.nullable) = false ];+g
 
 s+opentelemetry.proto.resource.v1.Resource resource = \(.*\);+opentelemetry.proto.resource.v1.Resource resource = \1\

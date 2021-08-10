@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -353,9 +353,9 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	}
 
 	dest.UpsertString(conventions.AttributeMessageType, msgEvent.Type.String())
-	dest.UpsertInt(conventions.AttributeMessageID, int64(msgEvent.Id))
-	dest.UpsertInt(conventions.AttributeMessageUncompressedSize, int64(msgEvent.UncompressedSize))
-	dest.UpsertInt(conventions.AttributeMessageCompressedSize, int64(msgEvent.CompressedSize))
+	dest.UpsertInt(conventions.AttributeMessagingMessageID, int64(msgEvent.Id))
+	dest.UpsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(msgEvent.UncompressedSize))
+	dest.UpsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(msgEvent.CompressedSize))
 }
 
 func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata.Span) {

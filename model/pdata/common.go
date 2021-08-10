@@ -18,6 +18,7 @@ package pdata
 // such as timestamps, attributes, etc.
 
 import (
+	"bytes"
 	"sort"
 
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
@@ -34,6 +35,7 @@ const (
 	AttributeValueTypeBool
 	AttributeValueTypeMap
 	AttributeValueTypeArray
+	AttributeValueTypeBytes
 )
 
 // String returns the string representation of the AttributeValueType.
@@ -53,6 +55,8 @@ func (avt AttributeValueType) String() string {
 		return "MAP"
 	case AttributeValueTypeArray:
 		return "ARRAY"
+	case AttributeValueTypeBytes:
+		return "BYTES"
 	}
 	return ""
 }
@@ -116,6 +120,13 @@ func NewAttributeValueArray() AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
 }
 
+// NewAttributeValueBytes creates a new AttributeValue with the given []byte value.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
+func NewAttributeValueBytes(v []byte) AttributeValue {
+	return AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v}}}
+}
+
 // Type returns the type of the value for this AttributeValue.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) Type() AttributeValueType {
@@ -135,6 +146,8 @@ func (a AttributeValue) Type() AttributeValueType {
 		return AttributeValueTypeMap
 	case *otlpcommon.AnyValue_ArrayValue:
 		return AttributeValueTypeArray
+	case *otlpcommon.AnyValue_BytesValue:
+		return AttributeValueTypeBytes
 	}
 	return AttributeValueTypeNull
 }
@@ -193,6 +206,14 @@ func (a AttributeValue) ArrayVal() AnyValueArray {
 	return newAnyValueArray(&arr.Values)
 }
 
+// BytesVal returns the []byte value associated with this AttributeValue.
+// If the Type() is not AttributeValueTypeBytes then returns false.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Modifying the returned []byte in-place is forbidden.
+func (a AttributeValue) BytesVal() []byte {
+	return a.orig.GetBytesValue()
+}
+
 // SetStringVal replaces the string value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeString.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
@@ -219,6 +240,15 @@ func (a AttributeValue) SetDoubleVal(v float64) {
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) SetBoolVal(v bool) {
 	a.orig.Value = &otlpcommon.AnyValue_BoolValue{BoolValue: v}
+}
+
+// SetBytesVal replaces the []byte value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeBytes.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
+func (a AttributeValue) SetBytesVal(v []byte) {
+	a.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: v}
 }
 
 // copyTo copies the value to AnyValue. Will panic if dest is nil.
@@ -323,6 +353,8 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 			}
 		}
 		return true
+	case *otlpcommon.AnyValue_BytesValue:
+		return bytes.Equal(v.BytesValue, av.orig.GetBytesValue())
 	}
 
 	return false
@@ -364,6 +396,13 @@ func newAttributeKeyValueNull(k string) otlpcommon.KeyValue {
 func newAttributeKeyValue(k string, av AttributeValue) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	av.copyTo(&orig.Value)
+	return orig
+}
+
+func newAttributeKeyValueBytes(k string, v []byte) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k}
+	akv := AttributeValue{&orig.Value}
+	akv.SetBytesVal(v)
 	return orig
 }
 
@@ -503,6 +542,16 @@ func (am AttributeMap) InsertBool(k string, v bool) {
 	}
 }
 
+// InsertBytes adds the []byte Value to the map when the key does not exist.
+// No action is applied to the map where the key already exists.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
+func (am AttributeMap) InsertBytes(k string, v []byte) {
+	if _, existing := am.Get(k); !existing {
+		*am.orig = append(*am.orig, newAttributeKeyValueBytes(k, v))
+	}
+}
+
 // Update updates an existing AttributeValue with a value.
 // No action is applied to the map where the key does not exist.
 //
@@ -548,8 +597,18 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 	}
 }
 
+// UpdateBytes updates an existing []byte Value with a value.
+// No action is applied to the map where the key does not exist.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
+func (am AttributeMap) UpdateBytes(k string, v []byte) {
+	if av, existing := am.Get(k); existing {
+		av.SetBytesVal(v)
+	}
+}
+
 // Upsert performs the Insert or Update action. The AttributeValue is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 //
 // Calling this function with a zero-initialized AttributeValue struct will cause a panic.
@@ -565,7 +624,7 @@ func (am AttributeMap) Upsert(k string, v AttributeValue) {
 }
 
 // UpsertString performs the Insert or Update action. The AttributeValue is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertString(k string, v string) {
 	if av, existing := am.Get(k); existing {
@@ -576,7 +635,7 @@ func (am AttributeMap) UpsertString(k string, v string) {
 }
 
 // UpsertInt performs the Insert or Update action. The int Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertInt(k string, v int64) {
 	if av, existing := am.Get(k); existing {
@@ -587,7 +646,7 @@ func (am AttributeMap) UpsertInt(k string, v int64) {
 }
 
 // UpsertDouble performs the Insert or Update action. The double Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertDouble(k string, v float64) {
 	if av, existing := am.Get(k); existing {
@@ -598,13 +657,26 @@ func (am AttributeMap) UpsertDouble(k string, v float64) {
 }
 
 // UpsertBool performs the Insert or Update action. The bool Value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertBool(k string, v bool) {
 	if av, existing := am.Get(k); existing {
 		av.SetBoolVal(v)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValueBool(k, v))
+	}
+}
+
+// UpsertBytes performs the Insert or Update action. The []byte Value is
+// inserted to the map that did not originally have the key. The key/value is
+// updated to the map where the key already existed.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
+func (am AttributeMap) UpsertBytes(k string, v []byte) {
+	if av, existing := am.Get(k); existing {
+		av.SetBytesVal(v)
+	} else {
+		*am.orig = append(*am.orig, newAttributeKeyValueBytes(k, v))
 	}
 }
 
@@ -671,16 +743,16 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 
 // StringMap stores a map of attribute keys to values.
 type StringMap struct {
-	orig *[]otlpcommon.StringKeyValue
+	orig *[]otlpcommon.StringKeyValue //nolint:staticcheck // SA1019 ignore this!
 }
 
 // NewStringMap creates a StringMap with 0 elements.
 func NewStringMap() StringMap {
-	orig := []otlpcommon.StringKeyValue(nil)
+	orig := []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
 	return StringMap{&orig}
 }
 
-func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
+func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap { //nolint:staticcheck // SA1019 ignore this!
 	return StringMap{orig}
 }
 
@@ -691,10 +763,10 @@ func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
 //   assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
 func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
-		*sm.orig = []otlpcommon.StringKeyValue(nil)
+		*sm.orig = []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
 		return sm
 	}
-	origs := make([]otlpcommon.StringKeyValue, len(attrMap))
+	origs := make([]otlpcommon.StringKeyValue, len(attrMap)) //nolint:staticcheck // SA1019 ignore this!
 	ix := 0
 	for k, v := range attrMap {
 		origs[ix].Key = k
@@ -717,7 +789,7 @@ func (sm StringMap) EnsureCapacity(capacity int) {
 		return
 	}
 	oldOrig := *sm.orig
-	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity)
+	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity) //nolint:staticcheck // SA1019 ignore this!
 	copy(*sm.orig, oldOrig)
 }
 
@@ -761,7 +833,7 @@ func (sm StringMap) Update(k, v string) {
 }
 
 // Upsert performs the Insert or Update action. The string value is
-// insert to the map that did not originally have the key. The key/value is
+// inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (sm StringMap) Upsert(k, v string) {
 	if skv, existing := sm.get(k); existing {
@@ -802,7 +874,7 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	if newLen <= oldCap {
 		*dest.orig = (*dest.orig)[:newLen:oldCap]
 	} else {
-		*dest.orig = make([]otlpcommon.StringKeyValue, newLen)
+		*dest.orig = make([]otlpcommon.StringKeyValue, newLen) //nolint:staticcheck // SA1019 ignore this!
 	}
 
 	for i := range *sm.orig {
@@ -812,7 +884,7 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	}
 }
 
-func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) {
+func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) { //nolint:staticcheck // SA1019 ignore this!
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
 		if skv.Key == k {
@@ -833,6 +905,6 @@ func (sm StringMap) Sort() StringMap {
 	return sm
 }
 
-func newStringKeyValue(k, v string) otlpcommon.StringKeyValue {
-	return otlpcommon.StringKeyValue{Key: k, Value: v}
+func newStringKeyValue(k, v string) otlpcommon.StringKeyValue { //nolint:staticcheck // SA1019 ignore this!
+	return otlpcommon.StringKeyValue{Key: k, Value: v} //nolint:staticcheck // SA1019 ignore this!
 }

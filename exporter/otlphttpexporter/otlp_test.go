@@ -227,7 +227,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 			startMetricsReceiver(t, addr, sink)
 			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
 
-			md := testdata.GenerateMetricsOneSumMetric()
+			md := testdata.GenerateMetricsOneMetric()
 			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 			require.Eventually(t, func() bool {
 				return sink.DataPointCount() > 0

@@ -16,7 +16,7 @@ package service
 
 import (
 	"go.opentelemetry.io/contrib/zpages"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,7 +39,7 @@ type svcSettings struct {
 	Logger *zap.Logger
 
 	// TracerProvider represents the TracerProvider used for all the components.
-	TracerProvider *sdktrace.TracerProvider
+	TracerProvider trace.TracerProvider
 
 	// ZPagesSpanProcessor represents the SpanProcessor for tracez page.
 	ZPagesSpanProcessor *zpages.SpanProcessor

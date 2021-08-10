@@ -23,23 +23,23 @@ import (
 
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 var ocLangCodeToLangMap = getOCLangCodeToLangMap()
 
 func getOCLangCodeToLangMap() map[occommon.LibraryInfo_Language]string {
 	mappings := make(map[occommon.LibraryInfo_Language]string)
-	mappings[1] = conventions.AttributeSDKLangValueCPP
-	mappings[2] = conventions.AttributeSDKLangValueDotNET
-	mappings[3] = conventions.AttributeSDKLangValueErlang
-	mappings[4] = conventions.AttributeSDKLangValueGo
-	mappings[5] = conventions.AttributeSDKLangValueJava
-	mappings[6] = conventions.AttributeSDKLangValueNodeJS
-	mappings[7] = conventions.AttributeSDKLangValuePHP
-	mappings[8] = conventions.AttributeSDKLangValuePython
-	mappings[9] = conventions.AttributeSDKLangValueRuby
-	mappings[10] = conventions.AttributeSDKLangValueWebJS
+	mappings[1] = conventions.AttributeTelemetrySDKLanguageCPP
+	mappings[2] = conventions.AttributeTelemetrySDKLanguageDotnet
+	mappings[3] = conventions.AttributeTelemetrySDKLanguageErlang
+	mappings[4] = conventions.AttributeTelemetrySDKLanguageGo
+	mappings[5] = conventions.AttributeTelemetrySDKLanguageJava
+	mappings[6] = conventions.AttributeTelemetrySDKLanguageNodejs
+	mappings[7] = conventions.AttributeTelemetrySDKLanguagePHP
+	mappings[8] = conventions.AttributeTelemetrySDKLanguagePython
+	mappings[9] = conventions.AttributeTelemetrySDKLanguageRuby
+	mappings[10] = conventions.AttributeTelemetrySDKLanguageWebjs
 	return mappings
 }
 
@@ -104,7 +104,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 				attrs.UpsertString(conventions.AttributeHostName, ocNode.Identifier.HostName)
 			}
 			if ocNode.Identifier.Pid != 0 {
-				attrs.UpsertInt(conventions.AttributeProcessID, int64(ocNode.Identifier.Pid))
+				attrs.UpsertInt(conventions.AttributeProcessPID, int64(ocNode.Identifier.Pid))
 			}
 		}
 		if ocNode.LibraryInfo != nil {

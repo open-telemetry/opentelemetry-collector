@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
@@ -97,7 +97,7 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
 	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
 	attrs[occonventions.AttributeExporterVersion] = struct{}{}
-	attrs[conventions.AttributeProcessID] = struct{}{}
+	attrs[conventions.AttributeProcessPID] = struct{}{}
 	attrs[occonventions.AttributeResourceType] = struct{}{}
 	return attrs
 }()

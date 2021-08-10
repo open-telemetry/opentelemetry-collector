@@ -16,6 +16,7 @@ package obsreport
 
 import (
 	"context"
+	"strings"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -29,7 +30,14 @@ import (
 // the standards used in the Collector. The configType should be the same
 // value used to identify the type on the config.
 func BuildProcessorCustomMetricName(configType, metric string) string {
-	return buildComponentPrefix(obsmetrics.ProcessorPrefix, configType) + metric
+	componentPrefix := obsmetrics.ProcessorPrefix
+	if !strings.HasSuffix(componentPrefix, obsmetrics.NameSep) {
+		componentPrefix += obsmetrics.NameSep
+	}
+	if configType == "" {
+		return componentPrefix
+	}
+	return componentPrefix + configType + obsmetrics.NameSep + metric
 }
 
 // Processor is a helper to add observability to a component.Processor.

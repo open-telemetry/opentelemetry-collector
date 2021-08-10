@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -226,28 +226,28 @@ func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 			attrCount:      0,
 			attrSizeByte:   0,
 			expectedMaxCPU: 30,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      100,
 			attrSizeByte:   50,
 			expectedMaxCPU: 80,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      10,
 			attrSizeByte:   1000,
 			expectedMaxCPU: 80,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      20,
 			attrSizeByte:   5000,
 			expectedMaxCPU: 120,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 	}, nil, map[string]string{"memory_ballast": ballastExtCfg})

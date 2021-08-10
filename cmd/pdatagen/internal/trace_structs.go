@@ -54,6 +54,7 @@ var resourceSpans = &messageValueStruct{
 	originFullName: "otlptrace.ResourceSpans",
 	fields: []baseField{
 		resourceField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "InstrumentationLibrarySpans",
 			originFieldName: "InstrumentationLibrarySpans",
@@ -73,6 +74,7 @@ var instrumentationLibrarySpans = &messageValueStruct{
 	originFullName: "otlptrace.InstrumentationLibrarySpans",
 	fields: []baseField{
 		instrumentationLibraryField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "Spans",
 			originFieldName: "Spans",

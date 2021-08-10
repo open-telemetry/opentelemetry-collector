@@ -278,7 +278,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	assert.NotNil(t, exp)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
-	md := testdata.GenerateMetricsOneSumMetric()
+	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))

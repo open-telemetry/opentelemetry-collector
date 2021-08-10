@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func generateOCTestDataNoMetrics() *agentmetricspb.ExportMetricsServiceRequest {
@@ -618,7 +618,7 @@ func generateResourceWithOcNodeAndResource() pdata.Resource {
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		occonventions.AttributeProcessStartTime:   pdata.NewAttributeValueString("2020-02-11T20:26:00Z"),
 		conventions.AttributeHostName:             pdata.NewAttributeValueString("host1"),
-		conventions.AttributeProcessID:            pdata.NewAttributeValueInt(123),
+		conventions.AttributeProcessPID:           pdata.NewAttributeValueInt(123),
 		conventions.AttributeTelemetrySDKVersion:  pdata.NewAttributeValueString("v2.0.1"),
 		occonventions.AttributeExporterVersion:    pdata.NewAttributeValueString("v1.2.0"),
 		conventions.AttributeTelemetrySDKLanguage: pdata.NewAttributeValueString("cpp"),

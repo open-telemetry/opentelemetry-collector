@@ -15,23 +15,9 @@
 package obsreport
 
 import (
-	"strings"
-
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
-
-func buildComponentPrefix(componentPrefix, configType string) string {
-	if !strings.HasSuffix(componentPrefix, obsmetrics.NameSep) {
-		componentPrefix += obsmetrics.NameSep
-	}
-	if configType == "" {
-		return componentPrefix
-	}
-	return componentPrefix + configType + obsmetrics.NameSep
-}
 
 func recordError(span trace.Span, err error) {
 	if err != nil {

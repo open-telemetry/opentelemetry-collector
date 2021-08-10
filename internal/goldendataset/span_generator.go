@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 var statusCodeMap = map[PICTInputStatus]pdata.StatusCode{
@@ -226,7 +226,7 @@ func appendDatabaseNoSQLAttributes(attrMap pdata.AttributeMap) {
 }
 
 func appendFaaSDatasourceAttributes(attrMap pdata.AttributeMap) {
-	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.FaaSTriggerDataSource)
+	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerDatasource)
 	attrMap.UpsertString(conventions.AttributeFaaSExecution, "DB85AF51-5E13-473D-8454-1E2D59415EAB")
 	attrMap.UpsertString(conventions.AttributeFaaSDocumentCollection, "faa-flight-delay-information-incoming")
 	attrMap.UpsertString(conventions.AttributeFaaSDocumentOperation, "insert")
@@ -236,7 +236,7 @@ func appendFaaSDatasourceAttributes(attrMap pdata.AttributeMap) {
 }
 
 func appendFaaSHTTPAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
-	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.FaaSTriggerHTTP)
+	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerHTTP)
 	attrMap.UpsertString(conventions.AttributeHTTPMethod, "POST")
 	attrMap.UpsertString(conventions.AttributeHTTPScheme, "https")
 	attrMap.UpsertString(conventions.AttributeHTTPHost, "api.opentelemetry.io")
@@ -251,7 +251,7 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 }
 
 func appendFaaSPubSubAttributes(attrMap pdata.AttributeMap) {
-	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.FaaSTriggerPubSub)
+	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerPubsub)
 	attrMap.UpsertString(conventions.AttributeMessagingSystem, "sqs")
 	attrMap.UpsertString(conventions.AttributeMessagingDestination, "video-views-au")
 	attrMap.UpsertString(conventions.AttributeMessagingOperation, "process")
@@ -259,7 +259,7 @@ func appendFaaSPubSubAttributes(attrMap pdata.AttributeMap) {
 }
 
 func appendFaaSTimerAttributes(attrMap pdata.AttributeMap) {
-	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.FaaSTriggerTimer)
+	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerTimer)
 	attrMap.UpsertString(conventions.AttributeFaaSExecution, "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
 	attrMap.UpsertString(conventions.AttributeFaaSTime, "2020-05-09T20:00:08Z")
 	attrMap.UpsertString(conventions.AttributeFaaSCron, "0/15 * * * *")
@@ -267,7 +267,7 @@ func appendFaaSTimerAttributes(attrMap pdata.AttributeMap) {
 }
 
 func appendFaaSOtherAttributes(attrMap pdata.AttributeMap) {
-	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.FaaSTriggerOther)
+	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerOther)
 	attrMap.UpsertInt("processed.count", 256)
 	attrMap.UpsertDouble("processed.data", 14.46)
 	attrMap.UpsertBool("processed.errors", false)
@@ -425,9 +425,9 @@ func appendSpanEvent(index int, spanEvents pdata.SpanEventSlice) {
 		} else {
 			attrMap.UpsertString(conventions.AttributeMessageType, "RECEIVED")
 		}
-		attrMap.UpsertInt(conventions.AttributeMessageID, int64(index/4))
-		attrMap.UpsertInt(conventions.AttributeMessageCompressedSize, int64(17*index))
-		attrMap.UpsertInt(conventions.AttributeMessageUncompressedSize, int64(24*index))
+		attrMap.UpsertInt(conventions.AttributeMessagingMessageID, int64(index/4))
+		attrMap.UpsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(17*index))
+		attrMap.UpsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(24*index))
 	case 1:
 		spanEvent.SetName("custom")
 		attrMap := spanEvent.Attributes()

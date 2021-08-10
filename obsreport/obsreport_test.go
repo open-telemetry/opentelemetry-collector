@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/otel/oteltest"
 	"go.opentelemetry.io/otel/trace"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -49,7 +50,7 @@ var (
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
 )
 
-type receiveTestParams struct {
+type testParams struct {
 	items int
 	err   error
 }
@@ -67,7 +68,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	params := []receiveTestParams{
+	params := []testParams{
 		{items: 13, err: errFake},
 		{items: 42, err: nil},
 	}
@@ -116,7 +117,7 @@ func TestReceiveLogsOp(t *testing.T) {
 	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	params := []receiveTestParams{
+	params := []testParams{
 		{items: 13, err: errFake},
 		{items: 42, err: nil},
 	}
@@ -165,7 +166,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	params := []receiveTestParams{
+	params := []testParams{
 		{items: 23, err: errFake},
 		{items: 29, err: nil},
 	}
@@ -216,7 +217,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	defer parentSpan.End()
 
 	receiverCtx := ScraperContext(parentCtx, receiver, scraper)
-	params := []receiveTestParams{
+	params := []testParams{
 		{items: 23, err: partialErrFake},
 		{items: 29, err: errFake},
 		{items: 15, err: nil},
@@ -268,17 +269,20 @@ func TestExportTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	set := componenttest.NewNopExporterCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	obsrep := NewExporter(ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
+	obsrep := NewExporter(ExporterSettings{
+		Level:                  configtelemetry.LevelNormal,
+		ExporterID:             exporter,
+		ExporterCreateSettings: set,
+	})
 
-	params := []receiveTestParams{
+	params := []testParams{
 		{items: 22, err: nil},
 		{items: 14, err: errFake},
 	}
@@ -319,17 +323,20 @@ func TestExportMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	set := componenttest.NewNopExporterCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	obsrep := NewExporter(ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
+	obsrep := NewExporter(ExporterSettings{
+		Level:                  configtelemetry.LevelNormal,
+		ExporterID:             exporter,
+		ExporterCreateSettings: set,
+	})
 
-	params := []receiveTestParams{
+	params := []testParams{
 		{items: 17, err: nil},
 		{items: 23, err: errFake},
 	}
@@ -371,16 +378,20 @@ func TestExportLogsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	set := componenttest.NewNopExporterCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	obsrep := NewExporter(ExporterSettings{Level: configtelemetry.LevelNormal, ExporterID: exporter})
-	params := []receiveTestParams{
+	obsrep := NewExporter(ExporterSettings{
+		Level:                  configtelemetry.LevelNormal,
+		ExporterID:             exporter,
+		ExporterCreateSettings: set,
+	})
+
+	params := []testParams{
 		{items: 17, err: nil},
 		{items: 23, err: errFake},
 	}
@@ -426,7 +437,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	longLivedCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	params := []receiveTestParams{
+	params := []testParams{
 		{items: 17, err: nil},
 		{items: 23, err: errFake},
 	}

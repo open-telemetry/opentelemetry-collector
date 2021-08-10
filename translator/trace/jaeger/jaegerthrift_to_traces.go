@@ -23,9 +23,11 @@ import (
 
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
+
+var blankJaegerThriftSpan = new(jaeger.Span)
 
 // ThriftBatchToInternalTraces transforms a Thrift trace batch into pdata.Traces.
 func ThriftBatchToInternalTraces(batch *jaeger.Batch) pdata.Traces {
@@ -82,7 +84,7 @@ func jThriftSpansToInternal(spans []*jaeger.Span, dest pdata.SpanSlice) {
 
 	dest.EnsureCapacity(len(spans))
 	for _, span := range spans {
-		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
+		if span == nil || reflect.DeepEqual(span, blankJaegerThriftSpan) {
 			continue
 		}
 		jThriftSpanToInternal(span, dest.AppendEmpty())

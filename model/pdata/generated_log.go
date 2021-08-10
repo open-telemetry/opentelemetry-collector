@@ -188,6 +188,16 @@ func (ms ResourceLogs) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
+// SchemaUrl returns the schemaurl associated with this ResourceLogs.
+func (ms ResourceLogs) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this ResourceLogs.
+func (ms ResourceLogs) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // InstrumentationLibraryLogs returns the InstrumentationLibraryLogs associated with this ResourceLogs.
 func (ms ResourceLogs) InstrumentationLibraryLogs() InstrumentationLibraryLogsSlice {
 	return newInstrumentationLibraryLogsSlice(&(*ms.orig).InstrumentationLibraryLogs)
@@ -196,6 +206,7 @@ func (ms ResourceLogs) InstrumentationLibraryLogs() InstrumentationLibraryLogsSl
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	ms.Resource().CopyTo(dest.Resource())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.InstrumentationLibraryLogs().CopyTo(dest.InstrumentationLibraryLogs())
 }
 
@@ -364,6 +375,16 @@ func (ms InstrumentationLibraryLogs) InstrumentationLibrary() InstrumentationLib
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
+// SchemaUrl returns the schemaurl associated with this InstrumentationLibraryLogs.
+func (ms InstrumentationLibraryLogs) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibraryLogs.
+func (ms InstrumentationLibraryLogs) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // Logs returns the Logs associated with this InstrumentationLibraryLogs.
 func (ms InstrumentationLibraryLogs) Logs() LogSlice {
 	return newLogSlice(&(*ms.orig).Logs)
@@ -372,6 +393,7 @@ func (ms InstrumentationLibraryLogs) Logs() LogSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibraryLogs) CopyTo(dest InstrumentationLibraryLogs) {
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Logs().CopyTo(dest.Logs())
 }
 
