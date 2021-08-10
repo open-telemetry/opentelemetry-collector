@@ -109,7 +109,7 @@ func HTTPContentDecompressor(h http.Handler, opts ...DecompressorOption) http.Ha
 
 func (d *decompressor) wrap(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		newBody, err := newBodyReader(r)
+		newBody, err := NewBodyDecompressor(r.Body, r.Header.Get("Content-Encoding"))
 		if err != nil {
 			d.errorHandler(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -128,16 +128,19 @@ func (d *decompressor) wrap(h http.Handler) http.Handler {
 	})
 }
 
-func newBodyReader(r *http.Request) (io.ReadCloser, error) {
-	switch r.Header.Get("Content-Encoding") {
+// NewBodyDecompressor takes a content encoding string and an io.ReadCloser and
+// returns a new reader that, when read, contains the decompressed content.
+// It supports gzip and deflate/zlib compression.
+func NewBodyDecompressor(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
+	switch contentEncoding {
 	case "gzip":
-		gr, err := gzip.NewReader(r.Body)
+		gr, err := gzip.NewReader(body)
 		if err != nil {
 			return nil, err
 		}
 		return gr, nil
 	case "deflate", "zlib":
-		zr, err := zlib.NewReader(r.Body)
+		zr, err := zlib.NewReader(body)
 		if err != nil {
 			return nil, err
 		}
