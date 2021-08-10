@@ -34,8 +34,9 @@ import (
 )
 
 const filteredMetric = "p0_metric_1"
-const filteredLblKey = "pt-label-key-1"
-const filteredLblVal = "pt-label-val-1"
+const filteredAttrKey = "pt-label-key-1"
+
+var filteredAttrVal = pdata.NewAttributeValueString("pt-label-val-1")
 
 func TestExprError(t *testing.T) {
 	testMatchError(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeInt)
@@ -67,7 +68,7 @@ func TestExprProcessor(t *testing.T) {
 
 func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricValueType) {
 	format := "MetricName == '%s' && Label('%s') == '%s'"
-	q := fmt.Sprintf(format, filteredMetric, filteredLblKey, filteredLblVal)
+	q := fmt.Sprintf(format, filteredMetric, filteredAttrKey, filteredAttrVal.StringVal())
 
 	mds := testDataSlice(2, mdType, mvType)
 	totMetricCount := 0
@@ -94,17 +95,17 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 						case pdata.MetricDataTypeGauge:
 							pts := metric.Gauge().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
+								assertFiltered(t, pts.At(l).Attributes())
 							}
 						case pdata.MetricDataTypeSum:
 							pts := metric.Sum().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
+								assertFiltered(t, pts.At(l).Attributes())
 							}
 						case pdata.MetricDataTypeHistogram:
 							pts := metric.Histogram().DataPoints()
 							for l := 0; l < pts.Len(); l++ {
-								assertFiltered(t, pts.At(l).LabelsMap())
+								assertFiltered(t, pts.At(l).Attributes())
 							}
 						}
 					}
@@ -115,9 +116,9 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 	assert.Equal(t, expectedMetricCount, filteredMetricCount)
 }
 
-func assertFiltered(t *testing.T, lm pdata.StringMap) {
-	lm.Range(func(k string, v string) bool {
-		if k == filteredLblKey && v == filteredLblVal {
+func assertFiltered(t *testing.T, lm pdata.AttributeMap) {
+	lm.Range(func(k string, v pdata.AttributeValue) bool {
+		if k == filteredAttrKey && v.Equal(filteredAttrVal) {
 			assert.Fail(t, "found metric that should have been filtered out")
 			return false
 		}

@@ -394,12 +394,8 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 											{
 												Attributes: []otlpcommon.KeyValue{
 													{
-														Key: "k",
-														Value: otlpcommon.AnyValue{
-															Value: &otlpcommon.AnyValue_StringValue{
-																StringValue: "v",
-															},
-														},
+														Key:   "k",
+														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -483,12 +479,8 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 											{
 												Attributes: []otlpcommon.KeyValue{
 													{
-														Key: "k",
-														Value: otlpcommon.AnyValue{
-															Value: &otlpcommon.AnyValue_StringValue{
-																StringValue: "v",
-															},
-														},
+														Key:   "k",
+														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -572,12 +564,8 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 											{
 												Attributes: []otlpcommon.KeyValue{
 													{
-														Key: "k",
-														Value: otlpcommon.AnyValue{
-															Value: &otlpcommon.AnyValue_StringValue{
-																StringValue: "v",
-															},
-														},
+														Key:   "k",
+														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -658,7 +646,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
+		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
 		newReq := internal.MetricsToOtlp(md.InternalRep())
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -684,7 +672,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
+		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
 		newReq := internal.MetricsToOtlp(md.InternalRep())
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -710,7 +698,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
+		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
 		newReq := internal.MetricsToOtlp(md.InternalRep())
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -747,12 +735,8 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 					{
 						Attributes: []otlpcommon.KeyValue{
 							{
-								Key: "key0",
-								Value: otlpcommon.AnyValue{
-									Value: &otlpcommon.AnyValue_StringValue{
-										StringValue: "value0",
-									},
-								},
+								Key:   "key0",
+								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -764,12 +748,8 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 					{
 						Attributes: []otlpcommon.KeyValue{
 							{
-								Key: "key1",
-								Value: otlpcommon.AnyValue{
-									Value: &otlpcommon.AnyValue_StringValue{
-										StringValue: "value1",
-									},
-								},
+								Key:   "key1",
+								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -795,12 +775,8 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 					{
 						Attributes: []otlpcommon.KeyValue{
 							{
-								Key: "key0",
-								Value: otlpcommon.AnyValue{
-									Value: &otlpcommon.AnyValue_StringValue{
-										StringValue: "value0",
-									},
-								},
+								Key:   "key0",
+								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -812,12 +788,8 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 					{
 						Attributes: []otlpcommon.KeyValue{
 							{
-								Key: "key1",
-								Value: otlpcommon.AnyValue{
-									Value: &otlpcommon.AnyValue_StringValue{
-										StringValue: "value1",
-									},
-								},
+								Key:   "key1",
+								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -844,12 +816,8 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 					{
 						Attributes: []otlpcommon.KeyValue{
 							{
-								Key: "key0",
-								Value: otlpcommon.AnyValue{
-									Value: &otlpcommon.AnyValue_StringValue{
-										StringValue: "value0",
-									},
-								},
+								Key:   "key0",
+								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -860,12 +828,8 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 					{
 						Attributes: []otlpcommon.KeyValue{
 							{
-								Key: "key1",
-								Value: otlpcommon.AnyValue{
-									Value: &otlpcommon.AnyValue_StringValue{
-										StringValue: "value1",
-									},
-								},
+								Key:   "key1",
+								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
