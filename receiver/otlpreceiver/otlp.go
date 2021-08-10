@@ -207,6 +207,11 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.traceReceiver = trace.New(r.cfg.ID(), tc)
+	if r.cfg.ExperimentalServer != nil {
+		r.httpMux.HandleFunc("/opentelemetry.proto.collector.trace.v1.TraceService/Export", func(resp http.ResponseWriter, req *http.Request) {
+			handleTraces(resp, req, grpcContentType, r.traceReceiver, tracesPbUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", grpcContentType)
+	}
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, pbContentType, r.traceReceiver, tracesPbUnmarshaler)
@@ -234,6 +239,11 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.metricsReceiver = metrics.New(r.cfg.ID(), mc)
+	if r.cfg.ExperimentalServer != nil {
+		r.httpMux.HandleFunc("/opentelemetry.proto.collector.metrics.v1.MetricsService/Export", func(resp http.ResponseWriter, req *http.Request) {
+			handleMetrics(resp, req, grpcContentType, r.metricsReceiver, metricsPbUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", grpcContentType)
+	}
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, pbContentType, r.metricsReceiver, metricsPbUnmarshaler)
@@ -253,6 +263,11 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.logReceiver = logs.New(r.cfg.ID(), lc)
+	if r.cfg.ExperimentalServer != nil {
+		r.httpMux.HandleFunc("/opentelemetry.proto.collector.logs.v1.LogsService/Export", func(w http.ResponseWriter, req *http.Request) {
+			handleLogs(w, req, grpcContentType, r.logReceiver, logsPbUnmarshaler)
+		}).Methods(http.MethodPost).Headers("Content-Type", grpcContentType)
+	}
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
 			handleLogs(w, req, pbContentType, r.logReceiver, logsPbUnmarshaler)
