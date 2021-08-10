@@ -16,15 +16,18 @@ package otlpreceiver
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
@@ -32,6 +35,33 @@ import (
 )
 
 var jsonMarshaler = &jsonpb.Marshaler{}
+var errUnsupportedProtocol = errors.New("gRPC requires HTTP/2")
+var emptyMessage = &types.Empty{}
+
+func newGrpcResponseWriter(resp http.ResponseWriter, req *http.Request) (http.ResponseWriter, error) {
+	grpcRw := &grpcResponseWriter{innerRw: resp}
+
+	if req.ProtoMajor != 2 {
+		writeError(resp, grpcContentType, errUnsupportedProtocol, http.StatusBadRequest)
+		return nil, errUnsupportedProtocol
+	}
+
+	grpcRw.WriteHeader(int(codes.Internal))
+	compressed, err := unwrapProtoFromGrpc(req.Body)
+	if err != nil {
+		writeError(grpcRw, grpcContentType, err, http.StatusBadRequest)
+		return nil, err
+	}
+	if compressed {
+		newBody, err := middleware.NewBodyDecompressor(req.Body, req.Header.Get("grpc-encoding"))
+		if err != nil {
+			writeError(grpcRw, grpcContentType, err, http.StatusBadRequest)
+			return nil, err
+		}
+		req.Body = newBody
+	}
+	return grpcRw, nil
+}
 
 func handleTraces(
 	resp http.ResponseWriter,
@@ -39,6 +69,15 @@ func handleTraces(
 	contentType string,
 	tracesReceiver *trace.Receiver,
 	tracesUnmarshaler pdata.TracesUnmarshaler) {
+
+	if contentType == grpcContentType {
+		var err error
+		resp, err = newGrpcResponseWriter(resp, req)
+		if err != nil {
+			return
+		}
+	}
+
 	body, ok := readAndCloseBody(resp, req, contentType)
 	if !ok {
 		return
@@ -57,7 +96,7 @@ func handleTraces(
 	}
 
 	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
-	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
+	writeResponse(resp, contentType, http.StatusOK, emptyMessage)
 }
 
 func handleMetrics(
@@ -66,6 +105,14 @@ func handleMetrics(
 	contentType string,
 	metricsReceiver *metrics.Receiver,
 	metricsUnmarshaler pdata.MetricsUnmarshaler) {
+	if contentType == grpcContentType {
+		var err error
+		resp, err = newGrpcResponseWriter(resp, req)
+		if err != nil {
+			return
+		}
+	}
+
 	body, ok := readAndCloseBody(resp, req, contentType)
 	if !ok {
 		return
@@ -84,7 +131,7 @@ func handleMetrics(
 	}
 
 	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
-	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
+	writeResponse(resp, contentType, http.StatusOK, emptyMessage)
 }
 
 func handleLogs(
@@ -93,6 +140,14 @@ func handleLogs(
 	contentType string,
 	logsReceiver *logs.Receiver,
 	logsUnmarshaler pdata.LogsUnmarshaler) {
+	if contentType == grpcContentType {
+		var err error
+		resp, err = newGrpcResponseWriter(resp, req)
+		if err != nil {
+			return
+		}
+	}
+
 	body, ok := readAndCloseBody(resp, req, contentType)
 	if !ok {
 		return
@@ -111,7 +166,7 @@ func handleLogs(
 	}
 
 	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
-	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
+	writeResponse(resp, contentType, http.StatusOK, emptyMessage)
 }
 
 func readAndCloseBody(resp http.ResponseWriter, req *http.Request, contentType string) ([]byte, bool) {
@@ -159,11 +214,23 @@ func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusC
 // Pre-computed status with code=Internal to be used in case of a marshaling error.
 var fallbackMsg = []byte(`{"code": 13, "message": "failed to marshal error message"}`)
 
+const fallbackGrpcMessage = "failed to marshal error message"
+
 const fallbackContentType = "application/json"
 
 func writeResponse(w http.ResponseWriter, contentType string, statusCode int, rsp proto.Message) {
 	var err error
 	var msg []byte
+	if contentType == grpcContentType {
+		if s, ok := rsp.(*spb.Status); ok {
+			statusCode = int(s.Code)
+			w.Header().Set(grpcMessage, s.Message)
+			rsp = emptyMessage
+		} else {
+			statusCode = int(codes.OK)
+		}
+	}
+
 	if contentType == "application/json" {
 		buf := new(bytes.Buffer)
 		err = jsonMarshaler.Marshal(buf, rsp)
@@ -173,6 +240,10 @@ func writeResponse(w http.ResponseWriter, contentType string, statusCode int, rs
 	}
 
 	if err != nil {
+		if contentType == grpcContentType {
+			w.Header().Set(grpcMessage, fallbackGrpcMessage)
+			return
+		}
 		msg = fallbackMsg
 		contentType = fallbackContentType
 		statusCode = http.StatusInternalServerError

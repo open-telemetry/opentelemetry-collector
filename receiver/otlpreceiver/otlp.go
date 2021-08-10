@@ -37,6 +37,7 @@ import (
 )
 
 const (
+	grpcContentType = "application/grpc"
 	pbContentType   = "application/x-protobuf"
 	jsonContentType = "application/json"
 )
