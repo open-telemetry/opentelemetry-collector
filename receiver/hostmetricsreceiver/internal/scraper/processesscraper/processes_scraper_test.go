@@ -123,5 +123,5 @@ func assertProcessesCreatedMetricValid(t *testing.T, metric pdata.Metric, startT
 	}
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCreated.New(), metric)
 	assert.Equal(t, 1, metric.Sum().DataPoints().Len())
-	assert.Equal(t, 0, metric.Sum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, metric.Sum().DataPoints().At(0).Attributes().Len())
 }

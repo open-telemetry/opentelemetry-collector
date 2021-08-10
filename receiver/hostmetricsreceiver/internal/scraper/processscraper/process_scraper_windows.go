@@ -34,8 +34,7 @@ func appendCPUTimeStateDataPoints(ddps pdata.NumberDataPointSlice, startTime, no
 }
 
 func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.ProcessState, stateLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.ProcessState, stateLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetDoubleVal(value)
