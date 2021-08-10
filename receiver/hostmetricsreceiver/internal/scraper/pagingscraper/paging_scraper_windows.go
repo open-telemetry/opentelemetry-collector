@@ -121,9 +121,9 @@ func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Tim
 }
 
 func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel string, stateLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.PagingDevice, deviceLabel)
-	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.PagingDevice, deviceLabel)
+	attributes.InsertString(metadata.Labels.PagingState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
@@ -165,9 +165,9 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, directionLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.PagingType, metadata.LabelPagingType.Major)
-	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.PagingType, metadata.LabelPagingType.Major)
+	attributes.InsertString(metadata.Labels.PagingDirection, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

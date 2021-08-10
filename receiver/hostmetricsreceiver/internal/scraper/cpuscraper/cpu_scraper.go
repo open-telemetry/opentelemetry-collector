@@ -80,12 +80,12 @@ func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp
 const gopsCPUTotal string = "cpu-total"
 
 func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, cpuLabel string, stateLabel string, value float64) {
-	labelsMap := dataPoint.LabelsMap()
-	// ignore cpu label if reporting "total" cpu usage
+	attributes := dataPoint.Attributes()
+	// ignore cpu attribute if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {
-		labelsMap.Insert(metadata.Labels.Cpu, cpuLabel)
+		attributes.InsertString(metadata.Labels.Cpu, cpuLabel)
 	}
-	labelsMap.Insert(metadata.Labels.CPUState, stateLabel)
+	attributes.InsertString(metadata.Labels.CPUState, stateLabel)
 
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)

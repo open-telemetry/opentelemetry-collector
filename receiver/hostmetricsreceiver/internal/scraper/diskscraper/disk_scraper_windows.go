@@ -185,8 +185,7 @@ func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timest
 }
 
 func initializeDiskPendingDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.DiskDevice, deviceLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

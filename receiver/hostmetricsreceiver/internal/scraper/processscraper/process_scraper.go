@@ -233,8 +233,7 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 }
 
 func initializeDiskIODataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.ProcessDirection, directionLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.ProcessDirection, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

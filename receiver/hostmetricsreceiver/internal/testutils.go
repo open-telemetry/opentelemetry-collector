@@ -36,14 +36,14 @@ func AssertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Met
 }
 
 func AssertSumMetricHasLabelValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
-	val, ok := metric.Sum().DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
-	assert.Equal(t, expectedVal, val)
+	val, ok := metric.Sum().DataPoints().At(index).Attributes().Get(labelName)
+	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
+	assert.Equal(t, expectedVal, val.StringVal())
 }
 
 func AssertSumMetricHasLabel(t *testing.T, metric pdata.Metric, index int, labelName string) {
-	_, ok := metric.Sum().DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
+	_, ok := metric.Sum().DataPoints().At(index).Attributes().Get(labelName)
+	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
 }
 
 func AssertSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
