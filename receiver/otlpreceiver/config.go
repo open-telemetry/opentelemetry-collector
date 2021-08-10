@@ -28,6 +28,7 @@ const (
 	protoGRPC          = "grpc"
 	protoHTTP          = "http"
 	protocolsFieldName = "protocols"
+	experimentalField  = "experimental_server"
 )
 
 // Protocols is the configuration for the supported protocols.
@@ -41,6 +42,11 @@ type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
+
+	// Experimental overrides all the protocols fields and instead
+	// configures a single HTTP server to serve all protocols.
+	// Currently: gRPC and HTTP (Proto and JSON).
+	ExperimentalServer *confighttp.HTTPServerSettings `mapstructure:"experimental_server"`
 }
 
 var _ config.Receiver = (*Config)(nil)
@@ -64,6 +70,13 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 	err := componentParser.UnmarshalExact(cfg)
 	if err != nil {
 		return err
+	}
+
+	// If the experimental field is loaded, zero out the config for any other protocol fields
+	if componentParser.IsSet(experimentalField) {
+		cfg.GRPC = nil
+		cfg.HTTP = nil
+		return nil
 	}
 
 	// next manually search for protocols in the configparser.Parser, if a protocol is not present it means it is disable.
