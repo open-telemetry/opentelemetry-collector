@@ -64,7 +64,7 @@ func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
 		cfg:    cfg,
 		logger: logger,
 	}
-	if cfg.HTTP != nil {
+	if cfg.HTTP != nil || cfg.ExperimentalServer != nil {
 		r.httpMux = mux.NewRouter()
 	}
 
@@ -146,20 +146,24 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			}
 		}
 	}
-	if r.cfg.HTTP != nil {
-		r.serverHTTP = r.cfg.HTTP.ToServer(
+	httpCfg := r.cfg.HTTP
+	if r.cfg.ExperimentalServer != nil {
+		httpCfg = r.cfg.ExperimentalServer
+	}
+	if httpCfg != nil {
+		r.serverHTTP = httpCfg.ToServer(
 			r.httpMux,
 			confighttp.WithErrorHandler(errorHandler),
 		)
-		err = r.startHTTPServer(r.cfg.HTTP, host)
+		err = r.startHTTPServer(httpCfg, host)
 		if err != nil {
 			return err
 		}
-		if r.cfg.HTTP.Endpoint == defaultHTTPEndpoint {
+		if httpCfg.Endpoint == defaultHTTPEndpoint {
 			r.logger.Info("Setting up a second HTTP listener on legacy endpoint " + legacyHTTPEndpoint)
 
 			// Copy the config.
-			cfgLegacyHTTP := r.cfg.HTTP
+			cfgLegacyHTTP := httpCfg
 			// And use the legacy endpoint.
 			cfgLegacyHTTP.Endpoint = legacyHTTPEndpoint
 			err = r.startHTTPServer(cfgLegacyHTTP, host)
