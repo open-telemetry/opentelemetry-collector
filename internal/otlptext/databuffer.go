@@ -101,7 +101,7 @@ func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("NumberDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -118,7 +118,7 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -145,7 +145,7 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("SummaryDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -160,8 +160,8 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	}
 }
 
-func (b *dataBuffer) logDataPointLabels(labels pdata.StringMap) {
-	b.logStringMap("Data point labels", labels)
+func (b *dataBuffer) logDataPointAttributes(labels pdata.AttributeMap) {
+	b.logAttributeMap("Data point attributes", labels)
 }
 
 func (b *dataBuffer) logLogRecord(lr pdata.LogRecord) {
