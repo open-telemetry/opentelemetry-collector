@@ -143,7 +143,7 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	tsNanos := pdata.Timestamp(mg.ts * 1e6)
 	point.SetStartTimestamp(tsNanos)
 	point.SetTimestamp(tsNanos)
-	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
 
 	return true
 }
@@ -176,7 +176,7 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	point.SetTimestamp(tsNanos)
 	point.SetSum(mg.sum)
 	point.SetCount(uint64(mg.count))
-	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
 
 	return true
 }
@@ -193,15 +193,15 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	point.SetStartTimestamp(startTsNanos)
 	point.SetTimestamp(tsNanos)
 	point.SetDoubleVal(mg.value)
-	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
+	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
 
 	return true
 }
 
-func populateLabelValuesPdata(orderedKeys []string, ls labels.Labels, dest pdata.StringMap) {
+func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.AttributeMap) {
 	src := ls.Map()
 	for _, key := range orderedKeys {
-		dest.Insert(key, src[key])
+		dest.InsertString(key, src[key])
 	}
 }
 
