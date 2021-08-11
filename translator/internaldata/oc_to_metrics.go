@@ -203,7 +203,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric, valType pdat
 	}
 }
 
-func fillLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, labelsMap pdata.StringMap) {
+func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, attributesMap pdata.AttributeMap) {
 	if len(ocLabelsKeys) == 0 || len(ocLabelValues) == 0 {
 		return
 	}
@@ -215,13 +215,13 @@ func fillLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetric
 		lablesCount = len(ocLabelValues)
 	}
 
-	labelsMap.Clear()
-	labelsMap.EnsureCapacity(lablesCount)
+	attributesMap.Clear()
+	attributesMap.EnsureCapacity(lablesCount)
 	for i := 0; i < lablesCount; i++ {
 		if !ocLabelValues[i].GetHasValue() {
 			continue
 		}
-		labelsMap.Insert(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
+		attributesMap.InsertString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
 	}
 }
 
@@ -243,7 +243,7 @@ func fillNumberDataPoint(ocMetric *ocmetrics.Metric, dps pdata.NumberDataPointSl
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			switch valType {
 			case pdata.MetricValueTypeInt:
 				dp.SetIntVal(point.GetInt64Value())
@@ -272,7 +272,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.Histogra
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			distributionValue := point.GetDistributionValue()
 			dp.SetSum(distributionValue.GetSum())
 			dp.SetCount(uint64(distributionValue.GetCount()))
@@ -300,7 +300,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			summaryValue := point.GetSummaryValue()
 			dp.SetSum(summaryValue.GetSum().GetValue())
 			dp.SetCount(uint64(summaryValue.GetCount().GetValue()))

@@ -180,7 +180,7 @@ func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
 		resource       pdata.Resource
-		orig           pdata.StringMap
+		orig           pdata.AttributeMap
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
@@ -220,7 +220,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"no_original_case",
 			getResource(),
-			pdata.NewStringMap(),
+			pdata.NewAttributeMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
@@ -261,7 +261,7 @@ func Test_createLabelSet(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createLabelSet(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
 		})
 	}
 }

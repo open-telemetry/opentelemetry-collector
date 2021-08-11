@@ -140,7 +140,7 @@ func collectLabelKeysAndValueType(metric pdata.Metric) *labelKeysAndType {
 func collectLabelKeysNumberDataPoints(dps pdata.NumberDataPointSlice, keySet map[string]struct{}) bool {
 	allInt := true
 	for i := 0; i < dps.Len(); i++ {
-		addLabelKeys(keySet, dps.At(i).LabelsMap())
+		addLabelKeys(keySet, dps.At(i).Attributes())
 		if dps.At(i).Type() != pdata.MetricValueTypeInt {
 			allInt = false
 		}
@@ -150,18 +150,18 @@ func collectLabelKeysNumberDataPoints(dps pdata.NumberDataPointSlice, keySet map
 
 func collectLabelKeysHistogramDataPoints(dhdp pdata.HistogramDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
-		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
+		addLabelKeys(keySet, dhdp.At(i).Attributes())
 	}
 }
 
 func collectLabelKeysSummaryDataPoints(dhdp pdata.SummaryDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
-		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
+		addLabelKeys(keySet, dhdp.At(i).Attributes())
 	}
 }
 
-func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
-	labels.Range(func(k string, v string) bool {
+func addLabelKeys(keySet map[string]struct{}, attributes pdata.AttributeMap) {
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		keySet[k] = struct{}{}
 		return true
 	})
@@ -240,7 +240,7 @@ func numberDataPointsToOC(dps pdata.NumberDataPointSlice, labelKeys *labelKeysAn
 		}
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
+			LabelValues:    attributeValuesToOC(dp.Attributes(), labelKeys),
 			Points:         []*ocmetrics.Point{point},
 		}
 		timeseries = append(timeseries, ts)
@@ -260,7 +260,7 @@ func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labe
 
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
+			LabelValues:    attributeValuesToOC(dp.Attributes(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
 					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
@@ -320,7 +320,7 @@ func doubleSummaryPointToOC(dps pdata.SummaryDataPointSlice, labelKeys *labelKey
 
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
+			LabelValues:    attributeValuesToOC(dp.Attributes(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
 					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
@@ -399,7 +399,7 @@ func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata
 	}
 }
 
-func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeysAndType) []*ocmetrics.LabelValue {
+func attributeValuesToOC(labels pdata.AttributeMap, labelKeys *labelKeysAndType) []*ocmetrics.LabelValue {
 	if len(labelKeys.keys) == 0 {
 		return nil
 	}
@@ -413,13 +413,13 @@ func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeysAndType) []*ocm
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	labels.Range(func(k string, v string) bool {
+	labels.Range(func(k string, v pdata.AttributeValue) bool {
 		// Find the appropriate label value that we need to update
 		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = v
+		labelValue.Value = v.StringVal()
 		labelValue.HasValue = true
 		return true
 	})

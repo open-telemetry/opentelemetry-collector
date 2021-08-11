@@ -78,13 +78,13 @@ func metricName(namespace string, metric pdata.Metric) string {
 	return sanitize(metric.Name())
 }
 
-func (c *collector) getMetricMetadata(metric pdata.Metric, labels pdata.StringMap) (*prometheus.Desc, []string) {
-	keys := make([]string, 0, labels.Len())
-	values := make([]string, 0, labels.Len())
+func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.AttributeMap) (*prometheus.Desc, []string) {
+	keys := make([]string, 0, attributes.Len())
+	values := make([]string, 0, attributes.Len())
 
-	labels.Range(func(k string, v string) bool {
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		keys = append(keys, sanitize(k))
-		values = append(values, v)
+		values = append(values, v.StringVal())
 		return true
 	})
 
@@ -99,7 +99,7 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, labels pdata.StringMa
 func (c *collector) convertGauge(metric pdata.Metric) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
-	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
+	desc, attributes := c.getMetricMetadata(metric, ip.Attributes())
 	var value float64
 	switch ip.Type() {
 	case pdata.MetricValueTypeInt:
@@ -107,7 +107,7 @@ func (c *collector) convertGauge(metric pdata.Metric) (prometheus.Metric, error)
 	case pdata.MetricValueTypeDouble:
 		value = ip.DoubleVal()
 	}
-	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, labels...)
+	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, attributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (c *collector) convertSum(metric pdata.Metric) (prometheus.Metric, error) {
 		metricType = prometheus.CounterValue
 	}
 
-	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
+	desc, attributes := c.getMetricMetadata(metric, ip.Attributes())
 	var value float64
 	switch ip.Type() {
 	case pdata.MetricValueTypeInt:
@@ -134,7 +134,7 @@ func (c *collector) convertSum(metric pdata.Metric) (prometheus.Metric, error) {
 	case pdata.MetricValueTypeDouble:
 		value = ip.DoubleVal()
 	}
-	m, err := prometheus.NewConstMetric(desc, metricType, value, labels...)
+	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +158,8 @@ func (c *collector) convertSummary(metric pdata.Metric) (prometheus.Metric, erro
 		quantiles[qvj.Quantile()] = qvj.Value()
 	}
 
-	desc, labelValues := c.getMetricMetadata(metric, point.LabelsMap())
-	m, err := prometheus.NewConstSummary(desc, point.Count(), point.Sum(), quantiles, labelValues...)
+	desc, attributes := c.getMetricMetadata(metric, point.Attributes())
+	m, err := prometheus.NewConstSummary(desc, point.Count(), point.Sum(), quantiles, attributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (c *collector) convertSummary(metric pdata.Metric) (prometheus.Metric, erro
 
 func (c *collector) convertDoubleHistogram(metric pdata.Metric) (prometheus.Metric, error) {
 	ip := metric.Histogram().DataPoints().At(0)
-	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
+	desc, attributes := c.getMetricMetadata(metric, ip.Attributes())
 
 	indicesMap := make(map[float64]int)
 	buckets := make([]float64, 0, len(ip.BucketCounts()))
@@ -196,7 +196,7 @@ func (c *collector) convertDoubleHistogram(metric pdata.Metric) (prometheus.Metr
 		points[bucket] = cumCount
 	}
 
-	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, labels...)
+	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	if err != nil {
 		return nil, err
 	}

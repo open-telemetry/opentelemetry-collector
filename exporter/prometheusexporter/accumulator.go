@@ -105,7 +105,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pdata.Metric, il pdata.I
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.LabelsMap())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
 
 		v, ok := a.registeredMetrics.Load(signature)
 		stalePoint := ok &&
@@ -130,7 +130,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.Ins
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.LabelsMap())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
@@ -167,7 +167,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.LabelsMap())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
@@ -208,7 +208,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.LabelsMap())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
@@ -256,13 +256,13 @@ func (a *lastValueAccumulator) Collect() []pdata.Metric {
 	return res
 }
 
-func timeseriesSignature(ilmName string, metric pdata.Metric, labels pdata.StringMap) string {
+func timeseriesSignature(ilmName string, metric pdata.Metric, attributes pdata.AttributeMap) string {
 	var b strings.Builder
 	b.WriteString(metric.DataType().String())
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
-	labels.Sort().Range(func(k string, v string) bool {
-		b.WriteString("*" + k + "*" + v)
+	attributes.Sort().Range(func(k string, v pdata.AttributeValue) bool {
+		b.WriteString("*" + k + "*" + v.StringVal())
 		return true
 	})
 	return b.String()

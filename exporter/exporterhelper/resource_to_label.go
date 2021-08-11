@@ -16,7 +16,6 @@ package exporterhelper
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
@@ -32,14 +31,12 @@ func defaultResourceToTelemetrySettings() ResourceToTelemetrySettings {
 	}
 }
 
-// convertResourceToLabels converts all resource attributes to metric labels
-func convertResourceToLabels(md pdata.Metrics) pdata.Metrics {
+// convertResourceToAttributes converts all resource attributes to metric labels
+func convertResourceToAttributes(md pdata.Metrics) pdata.Metrics {
 	cloneMd := md.Clone()
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
-
-		labelMap := extractLabelsFromResource(&resource)
 
 		ilms := rms.At(i).InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
@@ -47,53 +44,39 @@ func convertResourceToLabels(md pdata.Metrics) pdata.Metrics {
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
-				addLabelsToMetric(&metric, labelMap)
+				addAttributesToMetric(&metric, resource.Attributes())
 			}
 		}
 	}
 	return cloneMd
 }
 
-// extractAttributesFromResource extracts the attributes from a given resource and
-// returns them as a StringMap.
-func extractLabelsFromResource(resource *pdata.Resource) pdata.StringMap {
-	labelMap := pdata.NewStringMap()
-
-	attrMap := resource.Attributes()
-	attrMap.Range(func(k string, av pdata.AttributeValue) bool {
-		stringLabel := tracetranslator.AttributeValueToString(av)
-		labelMap.Upsert(k, stringLabel)
-		return true
-	})
-	return labelMap
-}
-
-// addLabelsToMetric adds additional labels to the given metric
-func addLabelsToMetric(metric *pdata.Metric, labelMap pdata.StringMap) {
+// addAttributesToMetric adds additional labels to the given metric
+func addAttributesToMetric(metric *pdata.Metric, labelMap pdata.AttributeMap) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
-		addLabelsToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
+		addAttributesToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
 	case pdata.MetricDataTypeSum:
-		addLabelsToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
+		addAttributesToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeHistogram:
-		addLabelsToDoubleHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
+		addAttributesToHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
 	}
 }
 
-func addLabelsToNumberDataPoints(ps pdata.NumberDataPointSlice, newLabelMap pdata.StringMap) {
+func addAttributesToNumberDataPoints(ps pdata.NumberDataPointSlice, newAttributeMap pdata.AttributeMap) {
 	for i := 0; i < ps.Len(); i++ {
-		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
+		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func addLabelsToDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice, newLabelMap pdata.StringMap) {
+func addAttributesToHistogramDataPoints(ps pdata.HistogramDataPointSlice, newAttributeMap pdata.AttributeMap) {
 	for i := 0; i < ps.Len(); i++ {
-		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
+		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func joinStringMaps(from, to pdata.StringMap) {
-	from.Range(func(k, v string) bool {
+func joinAttributeMaps(from, to pdata.AttributeMap) {
+	from.Range(func(k string, v pdata.AttributeValue) bool {
 		to.Upsert(k, v)
 		return true
 	})
