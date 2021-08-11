@@ -510,12 +510,13 @@ func getTestMetricName(requestNum, index int) string {
 	return fmt.Sprintf("test-metric-int-%d-%d", requestNum, index)
 }
 
-// func BenchmarkTraceSizeBytes(b *testing.B) {
-// 	td := testdata.GenerateTracesManySpansSameResource(8192)
-// 	for n := 0; n < b.N; n++ {
-// 		fmt.Println(td.OtlpProtoSize())
-// 	}
-// }
+func BenchmarkTraceSizeBytes(b *testing.B) {
+	sizer := otlp.NewProtobufTracesSizer()
+	td := testdata.GenerateTracesManySpansSameResource(8192)
+	for n := 0; n < b.N; n++ {
+		fmt.Println(sizer.TracesSize(td))
+	}
+}
 
 func BenchmarkTraceSizeSpanCount(b *testing.B) {
 	td := testdata.GenerateTracesManySpansSameResource(8192)
