@@ -77,12 +77,6 @@ func (td Traces) SpanCount() int {
 	return spanCount
 }
 
-// OtlpProtoSize returns the size in bytes of this Traces encoded as OTLP Collector
-// ExportTraceServiceRequest ProtoBuf bytes.
-func (td Traces) OtlpProtoSize() int {
-	return td.orig.Size()
-}
-
 // ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&td.orig.ResourceSpans)

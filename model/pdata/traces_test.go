@@ -19,7 +19,6 @@ import (
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -28,46 +27,46 @@ import (
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
-func TestSpanCount(t *testing.T) {
-	md := NewTraces()
-	assert.EqualValues(t, 0, md.SpanCount())
+// func TestSpanCount(t *testing.T) {
+// 	md := NewTraces()
+// 	assert.EqualValues(t, 0, md.SpanCount())
 
-	rs := md.ResourceSpans().AppendEmpty()
-	assert.EqualValues(t, 0, md.SpanCount())
+// 	rs := md.ResourceSpans().AppendEmpty()
+// 	assert.EqualValues(t, 0, md.SpanCount())
 
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	assert.EqualValues(t, 0, md.SpanCount())
+// 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+// 	assert.EqualValues(t, 0, md.SpanCount())
 
-	ils.Spans().AppendEmpty()
-	assert.EqualValues(t, 1, md.SpanCount())
+// 	ils.Spans().AppendEmpty()
+// 	assert.EqualValues(t, 1, md.SpanCount())
 
-	rms := md.ResourceSpans()
-	rms.EnsureCapacity(3)
-	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
-	ilss := rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
-	for i := 0; i < 5; i++ {
-		ilss.AppendEmpty()
-	}
-	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, md.SpanCount())
-}
+// 	rms := md.ResourceSpans()
+// 	rms.EnsureCapacity(3)
+// 	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+// 	ilss := rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+// 	for i := 0; i < 5; i++ {
+// 		ilss.AppendEmpty()
+// 	}
+// 	// 5 + 1 (from rms.At(0) initialized first)
+// 	assert.EqualValues(t, 6, md.SpanCount())
+// }
 
-func TestTracesSize(t *testing.T) {
-	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
-	td := NewTraces()
-	rms := td.ResourceSpans()
-	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
-	orig := td.orig
-	size := orig.Size()
-	bytes, err := orig.Marshal()
-	require.NoError(t, err)
-	assert.Equal(t, size, td.OtlpProtoSize())
-	assert.Equal(t, len(bytes), td.OtlpProtoSize())
-}
+// func TestTracesSize(t *testing.T) {
+// 	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
+// 	td := NewTraces()
+// 	rms := td.ResourceSpans()
+// 	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
+// 	orig := td.orig
+// 	size := orig.Size()
+// 	bytes, err := orig.Marshal()
+// 	require.NoError(t, err)
+// 	assert.Equal(t, size, td.OtlpProtoSize())
+// 	assert.Equal(t, len(bytes), td.OtlpProtoSize())
+// }
 
-func TestTracesSizeWithNil(t *testing.T) {
-	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
-}
+// func TestTracesSizeWithNil(t *testing.T) {
+// 	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
+// }
 
 func TestSpanCountWithEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{

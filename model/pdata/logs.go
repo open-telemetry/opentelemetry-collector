@@ -85,12 +85,6 @@ func (ld Logs) LogRecordCount() int {
 	return logCount
 }
 
-// OtlpProtoSize returns the size in bytes of this Logs encoded as OTLP Collector
-// ExportLogsServiceRequest ProtoBuf bytes.
-func (ld Logs) OtlpProtoSize() int {
-	return ld.orig.Size()
-}
-
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)

@@ -15,6 +15,8 @@
 package otlp
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/model/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -34,6 +36,10 @@ func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
 	return newPbMarshaler()
 }
 
+func NewProtobufSizer() pdata.Sizer {
+	return newPbMarshaler()
+}
+
 type pbMarshaler struct{}
 
 func newPbMarshaler() *pbMarshaler {
@@ -50,4 +56,25 @@ func (e *pbMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
 
 func (e *pbMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 	return internal.TracesToOtlp(td.InternalRep()).Marshal()
+}
+
+// Size returns the size in bytes of a pdata.Traces, pdata.Metrics or pdata.Logs.
+// If the type is not known, an error will be returned.
+func (e *pbMarshaler) Size(v interface{}) (int, error) {
+	switch conv := v.(type) {
+	case pdata.Traces:
+		return internal.TracesToOtlp(conv.InternalRep()).Size(), nil
+	case *pdata.Traces:
+		return internal.TracesToOtlp(conv.InternalRep()).Size(), nil
+	case pdata.Metrics:
+		return internal.MetricsToOtlp(conv.InternalRep()).Size(), nil
+	case *pdata.Metrics:
+		return internal.MetricsToOtlp(conv.InternalRep()).Size(), nil
+	case pdata.Logs:
+		return internal.LogsToOtlp(conv.InternalRep()).Size(), nil
+	case *pdata.Logs:
+		return internal.LogsToOtlp(conv.InternalRep()).Size(), nil
+	default:
+		return 0, fmt.Errorf("unknown type: %T", v)
+	}
 }

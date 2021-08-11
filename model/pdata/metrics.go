@@ -87,12 +87,6 @@ func (md Metrics) MetricCount() int {
 	return metricCount
 }
 
-// OtlpProtoSize returns the size in bytes of this Metrics encoded as OTLP Collector
-// ExportMetricsServiceRequest ProtoBuf bytes.
-func (md Metrics) OtlpProtoSize() int {
-	return md.orig.Size()
-}
-
 // DataPointCount calculates the total number of data points.
 func (md Metrics) DataPointCount() (dataPointCount int) {
 	rms := md.ResourceMetrics()
