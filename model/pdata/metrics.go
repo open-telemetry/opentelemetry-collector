@@ -24,7 +24,7 @@ import (
 type MetricsMarshaler interface {
 	// MarshalMetrics the given pdata.Metrics into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
-	MarshalMetrics(td Metrics) ([]byte, error)
+	MarshalMetrics(md Metrics) ([]byte, error)
 }
 
 // MetricsUnmarshaler unmarshalls bytes into pdata.Metrics.
@@ -37,7 +37,7 @@ type MetricsUnmarshaler interface {
 // MetricsSizer returns the size of a Metrics.
 type MetricsSizer interface {
 	// LogsSize returns the size in bytes of a Metrics.
-	MetricsSize(td Metrics) int
+	MetricsSize(md Metrics) int
 }
 
 // Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitates the

@@ -72,10 +72,10 @@ func (e *pbMarshaler) TracesSize(td pdata.Traces) int {
 	return internal.TracesToOtlp(td.InternalRep()).Size()
 }
 
-func (e *pbMarshaler) MetricsSize(td pdata.Metrics) int {
-	return internal.MetricsToOtlp(td.InternalRep()).Size()
+func (e *pbMarshaler) MetricsSize(md pdata.Metrics) int {
+	return internal.MetricsToOtlp(md.InternalRep()).Size()
 }
 
-func (e *pbMarshaler) LogsSize(td pdata.Logs) int {
-	return internal.LogsToOtlp(td.InternalRep()).Size()
+func (e *pbMarshaler) LogsSize(ld pdata.Logs) int {
+	return internal.LogsToOtlp(ld.InternalRep()).Size()
 }

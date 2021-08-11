@@ -51,23 +51,6 @@ func TestSpanCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.SpanCount())
 }
 
-// func TestTracesSize(t *testing.T) {
-// 	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
-// 	td := NewTraces()
-// 	rms := td.ResourceSpans()
-// 	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
-// 	orig := td.orig
-// 	size := orig.Size()
-// 	bytes, err := orig.Marshal()
-// 	require.NoError(t, err)
-// 	assert.Equal(t, size, td.OtlpProtoSize())
-// 	assert.Equal(t, len(bytes), td.OtlpProtoSize())
-// }
-
-// func TestTracesSizeWithNil(t *testing.T) {
-// 	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
-// }
-
 func TestSpanCountWithEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{{}},

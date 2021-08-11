@@ -147,22 +147,6 @@ func TestMetricCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.MetricCount())
 }
 
-// func TestMetricsSize(t *testing.T) {
-// 	assert.Equal(t, 0, NewMetrics().OtlpProtoSize())
-
-// 	md := generateMetricsEmptyDataPoints()
-// 	orig := md.orig
-// 	size := orig.Size()
-// 	bytes, err := orig.Marshal()
-// 	require.NoError(t, err)
-// 	assert.Equal(t, size, md.OtlpProtoSize())
-// 	assert.Equal(t, len(bytes), md.OtlpProtoSize())
-// }
-
-// func TestMetricsSizeWithNil(t *testing.T) {
-// 	assert.Equal(t, 0, NewMetrics().OtlpProtoSize())
-// }
-
 func TestMetricCountWithEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, generateMetricsEmptyResource().MetricCount())
 	assert.EqualValues(t, 0, generateMetricsEmptyInstrumentation().MetricCount())
