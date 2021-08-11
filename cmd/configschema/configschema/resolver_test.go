@@ -15,8 +15,10 @@
 package configschema
 
 import (
+	"fmt"
 	"go/build"
 	"os"
+	"path"
 	"reflect"
 	"testing"
 
@@ -25,25 +27,44 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestExternalPkgDir(t *testing.T) {
-	pkgPath, _ := externalPackageDir(testDR(), "grpc-ecosystem/grpc-gateway")
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		goPath = build.Default.GOPATH
-	}
-	assert.Equal(t, goPath+"/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0", pkgPath)
-}
-
-func TestExternalPkgDirReplace(t *testing.T) {
-	pkg := DefaultModule + "/model"
-	pkgPath, _ := externalPackageDir(testDR(), pkg)
-	assert.Equal(t, "../../../model", pkgPath)
-}
-
-func TestLocalPkg(t *testing.T) {
+func TestPackageDirLocal(t *testing.T) {
 	pkg := pdata.NewSum()
 	pkgValue := reflect.ValueOf(pkg)
 	dr := testDR()
 	output, _ := dr.PackageDir(pkgValue.Type())
 	assert.Equal(t, "../../../model/pdata", output)
+}
+
+func TestPackageDirError(t *testing.T) {
+	pkg := pdata.NewSum()
+	pkgType := reflect.ValueOf(pkg).Type()
+	dr := NewDirResolver("test/fail", DefaultModule)
+	output, err := dr.PackageDir(pkgType)
+	assert.NotEqual(t, nil, err)
+	assert.Equal(t, "", output)
+}
+
+func TestExternalPkgDirErr(t *testing.T) {
+	pkgPath, err := testDR().externalPackageDir("random/test")
+	assert.NotEqual(t, err, nil)
+	assert.Equal(t, pkgPath, "")
+}
+
+func TestExternalPkgDir(t *testing.T) {
+	dr := testDR()
+	testPkg := "grpc-ecosystem/grpc-gateway"
+	pkgPath, _ := dr.externalPackageDir(testPkg)
+	goPath := os.Getenv("GOPATH")
+	if goPath == "" {
+		goPath = build.Default.GOPATH
+	}
+	testLine, testVers, _ := grepMod(path.Join(dr.SrcRoot, "go.mod"), testPkg)
+	expected := fmt.Sprint(path.Join(goPath, "pkg", "mod", testLine+"@"+testVers))
+	assert.Equal(t, expected, pkgPath)
+}
+
+func TestExternalPkgDirReplace(t *testing.T) {
+	pkg := DefaultModule + "/model"
+	pkgPath, _ := testDR().externalPackageDir(pkg)
+	assert.Equal(t, "../../../model", pkgPath)
 }
