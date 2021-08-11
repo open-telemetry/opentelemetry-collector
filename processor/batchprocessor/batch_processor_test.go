@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats/view"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -30,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -117,67 +119,68 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
 }
 
-// func TestBatchProcessorSentBySize(t *testing.T) {
-// 	views := MetricViews()
-// 	require.NoError(t, view.Register(views...))
-// 	defer view.Unregister(views...)
+func TestBatchProcessorSentBySize(t *testing.T) {
+	sizer := otlp.NewProtobufTracesSizer()
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
+	defer view.Unregister(views...)
 
-// 	sink := new(consumertest.TracesSink)
-// 	cfg := createDefaultConfig().(*Config)
-// 	sendBatchSize := 20
-// 	cfg.SendBatchSize = uint32(sendBatchSize)
-// 	cfg.Timeout = 500 * time.Millisecond
-// 	creationSet := componenttest.NewNopProcessorCreateSettings()
-// 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
-// 	require.NoError(t, err)
-// 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	sendBatchSize := 20
+	cfg.SendBatchSize = uint32(sendBatchSize)
+	cfg.Timeout = 500 * time.Millisecond
+	creationSet := componenttest.NewNopProcessorCreateSettings()
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-// 	requestCount := 100
-// 	spansPerRequest := 5
+	requestCount := 100
+	spansPerRequest := 5
 
-// 	start := time.Now()
-// 	sizeSum := 0
-// 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-// 		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
-// 		sizeSum += td.OtlpProtoSize()
-// 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
-// 	}
+	start := time.Now()
+	sizeSum := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
+		sizeSum += sizer.TracesSize(td)
+		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+	}
 
-// 	require.NoError(t, batcher.Shutdown(context.Background()))
+	require.NoError(t, batcher.Shutdown(context.Background()))
 
-// 	elapsed := time.Since(start)
-// 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
-// 	expectedBatchesNum := requestCount * spansPerRequest / sendBatchSize
-// 	expectedBatchingFactor := sendBatchSize / spansPerRequest
+	expectedBatchesNum := requestCount * spansPerRequest / sendBatchSize
+	expectedBatchingFactor := sendBatchSize / spansPerRequest
 
-// 	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
-// 	receivedTraces := sink.AllTraces()
-// 	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
-// 	for _, td := range receivedTraces {
-// 		rss := td.ResourceSpans()
-// 		require.Equal(t, expectedBatchingFactor, rss.Len())
-// 		for i := 0; i < expectedBatchingFactor; i++ {
-// 			require.Equal(t, spansPerRequest, rss.At(i).InstrumentationLibrarySpans().At(0).Spans().Len())
-// 		}
-// 	}
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
+	receivedTraces := sink.AllTraces()
+	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
+	for _, td := range receivedTraces {
+		rss := td.ResourceSpans()
+		require.Equal(t, expectedBatchingFactor, rss.Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, spansPerRequest, rss.At(i).InstrumentationLibrarySpans().At(0).Spans().Len())
+		}
+	}
 
-// 	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
-// 	require.NoError(t, err)
-// 	assert.Equal(t, 1, len(viewData))
-// 	distData := viewData[0].Data.(*view.DistributionData)
-// 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-// 	assert.Equal(t, sink.SpanCount(), int(distData.Sum()))
-// 	assert.Equal(t, sendBatchSize, int(distData.Min))
-// 	assert.Equal(t, sendBatchSize, int(distData.Max))
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sink.SpanCount(), int(distData.Sum()))
+	assert.Equal(t, sendBatchSize, int(distData.Min))
+	assert.Equal(t, sendBatchSize, int(distData.Max))
 
-// 	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
-// 	require.NoError(t, err)
-// 	assert.Equal(t, 1, len(viewData))
-// 	distData = viewData[0].Data.(*view.DistributionData)
-// 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-// 	assert.Equal(t, sizeSum, int(distData.Sum()))
-// }
+	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData = viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sizeSum, int(distData.Sum()))
+}
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
 	sink := new(consumertest.TracesSink)
@@ -304,71 +307,72 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	}
 }
 
-// func TestBatchMetricProcessor_BatchSize(t *testing.T) {
-// 	views := MetricViews()
-// 	require.NoError(t, view.Register(views...))
-// 	defer view.Unregister(views...)
+func TestBatchMetricProcessor_BatchSize(t *testing.T) {
+	sizer := otlp.NewProtobufMetricsSizer()
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
+	defer view.Unregister(views...)
 
-// 	// Instantiate the batch processor with low config values to test data
-// 	// gets sent through the processor.
-// 	cfg := Config{
-// 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-// 		Timeout:           100 * time.Millisecond,
-// 		SendBatchSize:     50,
-// 	}
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     50,
+	}
 
-// 	requestCount := 100
-// 	metricsPerRequest := 5
-// 	dataPointsPerMetric := 2 // Since the int counter uses two datapoints.
-// 	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
-// 	sink := new(consumertest.MetricsSink)
+	requestCount := 100
+	metricsPerRequest := 5
+	dataPointsPerMetric := 2 // Since the int counter uses two datapoints.
+	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
+	sink := new(consumertest.MetricsSink)
 
-// 	creationSet := componenttest.NewNopProcessorCreateSettings()
-// 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
-// 	require.NoError(t, err)
-// 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	creationSet := componenttest.NewNopProcessorCreateSettings()
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-// 	start := time.Now()
-// 	size := 0
-// 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-// 		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
-// 		size += md.OtlpProtoSize()
-// 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
-// 	}
-// 	require.NoError(t, batcher.Shutdown(context.Background()))
+	start := time.Now()
+	size := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
+		size += sizer.MetricsSize(md)
+		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
+	}
+	require.NoError(t, batcher.Shutdown(context.Background()))
 
-// 	elapsed := time.Since(start)
-// 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
-// 	expectedBatchesNum := requestCount * dataPointsPerRequest / int(cfg.SendBatchSize)
-// 	expectedBatchingFactor := int(cfg.SendBatchSize) / dataPointsPerRequest
+	expectedBatchesNum := requestCount * dataPointsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchingFactor := int(cfg.SendBatchSize) / dataPointsPerRequest
 
-// 	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
-// 	receivedMds := sink.AllMetrics()
-// 	require.Equal(t, expectedBatchesNum, len(receivedMds))
-// 	for _, md := range receivedMds {
-// 		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
-// 		for i := 0; i < expectedBatchingFactor; i++ {
-// 			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-// 		}
-// 	}
+	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
+	receivedMds := sink.AllMetrics()
+	require.Equal(t, expectedBatchesNum, len(receivedMds))
+	for _, md := range receivedMds {
+		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+		}
+	}
 
-// 	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
-// 	require.NoError(t, err)
-// 	assert.Equal(t, 1, len(viewData))
-// 	distData := viewData[0].Data.(*view.DistributionData)
-// 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-// 	assert.Equal(t, sink.DataPointCount(), int(distData.Sum()))
-// 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
-// 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sink.DataPointCount(), int(distData.Sum()))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 
-// 	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
-// 	require.NoError(t, err)
-// 	assert.Equal(t, 1, len(viewData))
-// 	distData = viewData[0].Data.(*view.DistributionData)
-// 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-// 	assert.Equal(t, size, int(distData.Sum()))
-// }
+	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData = viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, size, int(distData.Sum()))
+}
 
 func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 	ctx := context.Background()
@@ -618,69 +622,70 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	}
 }
 
-// func TestBatchLogProcessor_BatchSize(t *testing.T) {
-// 	views := MetricViews()
-// 	require.NoError(t, view.Register(views...))
-// 	defer view.Unregister(views...)
+func TestBatchLogProcessor_BatchSize(t *testing.T) {
+	sizer := otlp.NewProtobufLogsSizer()
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
+	defer view.Unregister(views...)
 
-// 	// Instantiate the batch processor with low config values to test data
-// 	// gets sent through the processor.
-// 	cfg := Config{
-// 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-// 		Timeout:           100 * time.Millisecond,
-// 		SendBatchSize:     50,
-// 	}
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		Timeout:           100 * time.Millisecond,
+		SendBatchSize:     50,
+	}
 
-// 	requestCount := 100
-// 	logsPerRequest := 5
-// 	sink := new(consumertest.LogsSink)
+	requestCount := 100
+	logsPerRequest := 5
+	sink := new(consumertest.LogsSink)
 
-// 	creationSet := componenttest.NewNopProcessorCreateSettings()
-// 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
-// 	require.NoError(t, err)
-// 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	creationSet := componenttest.NewNopProcessorCreateSettings()
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-// 	start := time.Now()
-// 	size := 0
-// 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-// 		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
-// 		size += ld.OtlpProtoSize()
-// 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
-// 	}
-// 	require.NoError(t, batcher.Shutdown(context.Background()))
+	start := time.Now()
+	size := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
+		size += sizer.LogsSize(ld)
+		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+	}
+	require.NoError(t, batcher.Shutdown(context.Background()))
 
-// 	elapsed := time.Since(start)
-// 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
-// 	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
-// 	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
+	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
 
-// 	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
-// 	receivedMds := sink.AllLogs()
-// 	require.Equal(t, expectedBatchesNum, len(receivedMds))
-// 	for _, ld := range receivedMds {
-// 		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
-// 		for i := 0; i < expectedBatchingFactor; i++ {
-// 			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).Logs().Len())
-// 		}
-// 	}
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
+	receivedMds := sink.AllLogs()
+	require.Equal(t, expectedBatchesNum, len(receivedMds))
+	for _, ld := range receivedMds {
+		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).Logs().Len())
+		}
+	}
 
-// 	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
-// 	require.NoError(t, err)
-// 	assert.Equal(t, 1, len(viewData))
-// 	distData := viewData[0].Data.(*view.DistributionData)
-// 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-// 	assert.Equal(t, sink.LogRecordCount(), int(distData.Sum()))
-// 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
-// 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sink.LogRecordCount(), int(distData.Sum()))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 
-// 	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
-// 	require.NoError(t, err)
-// 	assert.Equal(t, 1, len(viewData))
-// 	distData = viewData[0].Data.(*view.DistributionData)
-// 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-// 	assert.Equal(t, size, int(distData.Sum()))
-// }
+	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData = viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, size, int(distData.Sum()))
+}
 
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
