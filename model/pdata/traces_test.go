@@ -27,29 +27,29 @@ import (
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
-// func TestSpanCount(t *testing.T) {
-// 	md := NewTraces()
-// 	assert.EqualValues(t, 0, md.SpanCount())
+func TestSpanCount(t *testing.T) {
+	md := NewTraces()
+	assert.EqualValues(t, 0, md.SpanCount())
 
-// 	rs := md.ResourceSpans().AppendEmpty()
-// 	assert.EqualValues(t, 0, md.SpanCount())
+	rs := md.ResourceSpans().AppendEmpty()
+	assert.EqualValues(t, 0, md.SpanCount())
 
-// 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-// 	assert.EqualValues(t, 0, md.SpanCount())
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	assert.EqualValues(t, 0, md.SpanCount())
 
-// 	ils.Spans().AppendEmpty()
-// 	assert.EqualValues(t, 1, md.SpanCount())
+	ils.Spans().AppendEmpty()
+	assert.EqualValues(t, 1, md.SpanCount())
 
-// 	rms := md.ResourceSpans()
-// 	rms.EnsureCapacity(3)
-// 	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
-// 	ilss := rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
-// 	for i := 0; i < 5; i++ {
-// 		ilss.AppendEmpty()
-// 	}
-// 	// 5 + 1 (from rms.At(0) initialized first)
-// 	assert.EqualValues(t, 6, md.SpanCount())
-// }
+	rms := md.ResourceSpans()
+	rms.EnsureCapacity(3)
+	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+	ilss := rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+	for i := 0; i < 5; i++ {
+		ilss.AppendEmpty()
+	}
+	// 5 + 1 (from rms.At(0) initialized first)
+	assert.EqualValues(t, 6, md.SpanCount())
+}
 
 // func TestTracesSize(t *testing.T) {
 // 	assert.Equal(t, 0, NewTraces().OtlpProtoSize())

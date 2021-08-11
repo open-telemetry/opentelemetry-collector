@@ -15,8 +15,6 @@
 package otlp
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/model/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -36,7 +34,15 @@ func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
 	return newPbMarshaler()
 }
 
-func NewProtobufSizer() pdata.Sizer {
+func NewProtobufTracesSizer() pdata.TracesSizer {
+	return newPbMarshaler()
+}
+
+func NewProtobufMetricsSizer() pdata.MetricsSizer {
+	return newPbMarshaler()
+}
+
+func NewProtobufLogsSizer() pdata.LogsSizer {
 	return newPbMarshaler()
 }
 
@@ -45,6 +51,10 @@ type pbMarshaler struct{}
 func newPbMarshaler() *pbMarshaler {
 	return &pbMarshaler{}
 }
+
+var _ pdata.TracesSizer = (*pbMarshaler)(nil)
+var _ pdata.MetricsSizer = (*pbMarshaler)(nil)
+var _ pdata.LogsSizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 	return internal.LogsToOtlp(ld.InternalRep()).Marshal()
@@ -58,23 +68,14 @@ func (e *pbMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 	return internal.TracesToOtlp(td.InternalRep()).Marshal()
 }
 
-// Size returns the size in bytes of a pdata.Traces, pdata.Metrics or pdata.Logs.
-// If the type is not known, an error will be returned.
-func (e *pbMarshaler) Size(v interface{}) (int, error) {
-	switch conv := v.(type) {
-	case pdata.Traces:
-		return internal.TracesToOtlp(conv.InternalRep()).Size(), nil
-	case *pdata.Traces:
-		return internal.TracesToOtlp(conv.InternalRep()).Size(), nil
-	case pdata.Metrics:
-		return internal.MetricsToOtlp(conv.InternalRep()).Size(), nil
-	case *pdata.Metrics:
-		return internal.MetricsToOtlp(conv.InternalRep()).Size(), nil
-	case pdata.Logs:
-		return internal.LogsToOtlp(conv.InternalRep()).Size(), nil
-	case *pdata.Logs:
-		return internal.LogsToOtlp(conv.InternalRep()).Size(), nil
-	default:
-		return 0, fmt.Errorf("unknown type: %T", v)
-	}
+func (e *pbMarshaler) TracesSize(td pdata.Traces) int {
+	return internal.TracesToOtlp(td.InternalRep()).Size()
+}
+
+func (e *pbMarshaler) MetricsSize(td pdata.Metrics) int {
+	return internal.MetricsToOtlp(td.InternalRep()).Size()
+}
+
+func (e *pbMarshaler) LogsSize(td pdata.Logs) int {
+	return internal.LogsToOtlp(td.InternalRep()).Size()
 }

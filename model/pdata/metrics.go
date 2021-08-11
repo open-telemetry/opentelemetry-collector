@@ -34,6 +34,12 @@ type MetricsUnmarshaler interface {
 	UnmarshalMetrics(buf []byte) (Metrics, error)
 }
 
+// MetricsSizer returns the size of a Metrics.
+type MetricsSizer interface {
+	// LogsSize returns the size in bytes of a Metrics.
+	MetricsSize(td Metrics) int
+}
+
 // Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitates the
 // transition to the new components, especially for traces.
 //

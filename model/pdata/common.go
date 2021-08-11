@@ -908,10 +908,3 @@ func (sm StringMap) Sort() StringMap {
 func newStringKeyValue(k, v string) otlpcommon.StringKeyValue { //nolint:staticcheck // SA1019 ignore this!
 	return otlpcommon.StringKeyValue{Key: k, Value: v} //nolint:staticcheck // SA1019 ignore this!
 }
-
-// Sizer returns the size of a Traces, Metrics, or Logs.
-type Sizer interface {
-	// Size returns the size in bytes of a Traces, Metrics or Logs.
-	// If the type is not known, an error will be returned.
-	Size(v interface{}) (int, error)
-}

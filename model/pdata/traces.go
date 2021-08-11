@@ -34,6 +34,12 @@ type TracesUnmarshaler interface {
 	UnmarshalTraces(buf []byte) (Traces, error)
 }
 
+// TracesSizer returns the size of a Traces.
+type TracesSizer interface {
+	// TracesSize returns the size in bytes of a Traces.
+	TracesSize(td Traces) int
+}
+
 // Traces is the top-level struct that is propagated through the traces pipeline.
 type Traces struct {
 	orig *otlpcollectortrace.ExportTraceServiceRequest

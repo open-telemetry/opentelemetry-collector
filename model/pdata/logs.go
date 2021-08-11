@@ -34,6 +34,12 @@ type LogsUnmarshaler interface {
 	UnmarshalLogs(buf []byte) (Logs, error)
 }
 
+// LogsSizer returns the size of a Logs.
+type LogsSizer interface {
+	// LogsSize returns the size in bytes of a Logs.
+	LogsSize(td Logs) int
+}
+
 // Logs is the top-level struct that is propagated through the logs pipeline.
 //
 // This is a reference type (like builtin map).

@@ -64,7 +64,7 @@ type batch interface {
 	itemCount() int
 
 	// size returns the size in bytes of the current batch
-	size() (int, error)
+	size() int
 
 	// add item to the current batch
 	add(item interface{})
@@ -178,8 +178,7 @@ func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
 	stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
 
 	if bp.telemetryLevel == configtelemetry.LevelDetailed {
-		protoSize, _ := bp.batch.size()
-		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(protoSize)))
+		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bp.batch.size())))
 	}
 
 	if err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize); err != nil {
@@ -225,11 +224,11 @@ type batchTraces struct {
 	nextConsumer consumer.Traces
 	traceData    pdata.Traces
 	spanCount    int
-	sizer        pdata.Sizer
+	sizer        pdata.TracesSizer
 }
 
 func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
-	return &batchTraces{nextConsumer: nextConsumer, traceData: pdata.NewTraces(), sizer: otlp.NewProtobufSizer()}
+	return &batchTraces{nextConsumer: nextConsumer, traceData: pdata.NewTraces(), sizer: otlp.NewProtobufTracesSizer()}
 }
 
 // add updates current batchTraces by adding new TraceData object
@@ -261,19 +260,19 @@ func (bt *batchTraces) itemCount() int {
 	return bt.spanCount
 }
 
-func (bt *batchTraces) size() (int, error) {
-	return bt.sizer.Size(bt.traceData)
+func (bt *batchTraces) size() int {
+	return bt.sizer.TracesSize(bt.traceData)
 }
 
 type batchMetrics struct {
 	nextConsumer   consumer.Metrics
 	metricData     pdata.Metrics
 	dataPointCount int
-	sizer          pdata.Sizer
+	sizer          pdata.MetricsSizer
 }
 
 func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
-	return &batchMetrics{nextConsumer: nextConsumer, metricData: pdata.NewMetrics(), sizer: otlp.NewProtobufSizer()}
+	return &batchMetrics{nextConsumer: nextConsumer, metricData: pdata.NewMetrics(), sizer: otlp.NewProtobufMetricsSizer()}
 }
 
 func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int) error {
@@ -293,8 +292,8 @@ func (bm *batchMetrics) itemCount() int {
 	return bm.dataPointCount
 }
 
-func (bm *batchMetrics) size() (int, error) {
-	return bm.sizer.Size(bm.metricData)
+func (bm *batchMetrics) size() int {
+	return bm.sizer.MetricsSize(bm.metricData)
 }
 
 func (bm *batchMetrics) add(item interface{}) {
@@ -312,11 +311,11 @@ type batchLogs struct {
 	nextConsumer consumer.Logs
 	logData      pdata.Logs
 	logCount     int
-	sizer        pdata.Sizer
+	sizer        pdata.LogsSizer
 }
 
 func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
-	return &batchLogs{nextConsumer: nextConsumer, logData: pdata.NewLogs(), sizer: otlp.NewProtobufSizer()}
+	return &batchLogs{nextConsumer: nextConsumer, logData: pdata.NewLogs(), sizer: otlp.NewProtobufLogsSizer()}
 }
 
 func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int) error {
@@ -336,8 +335,8 @@ func (bl *batchLogs) itemCount() int {
 	return bl.logCount
 }
 
-func (bl *batchLogs) size() (int, error) {
-	return bl.sizer.Size(bl.logData)
+func (bl *batchLogs) size() int {
+	return bl.sizer.LogsSize(bl.logData)
 }
 
 func (bl *batchLogs) add(item interface{}) {
