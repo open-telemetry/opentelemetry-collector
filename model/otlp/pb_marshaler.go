@@ -19,29 +19,32 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// NewProtobufTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
+// NewProtobufTracesMarshaler returns a pdata.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
 func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
 	return newPbMarshaler()
 }
 
-// NewProtobufMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
+// NewProtobufMetricsMarshaler returns a pdata.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
 func NewProtobufMetricsMarshaler() pdata.MetricsMarshaler {
 	return newPbMarshaler()
 }
 
-// NewProtobufLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
+// NewProtobufLogsMarshaler returns a pdata.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
 func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
 	return newPbMarshaler()
 }
 
+// NewProtobufTracesSizer returns a pdata.TracesSizer. Returns the size of the a pdata.Traces when converted to a binary protobuf.
 func NewProtobufTracesSizer() pdata.TracesSizer {
 	return newPbMarshaler()
 }
 
+// NewProtobufMetricsSizer returns a pdata.MetricsSizer. Returns the size of the a pdata.Metrics when converted to a binary protobuf.
 func NewProtobufMetricsSizer() pdata.MetricsSizer {
 	return newPbMarshaler()
 }
 
+// NewProtobufLogsSizer returns a pdata.LogsSizer. Returns the size of the a pdata.Logs when converted to a binary protobuf.
 func NewProtobufLogsSizer() pdata.LogsSizer {
 	return newPbMarshaler()
 }
