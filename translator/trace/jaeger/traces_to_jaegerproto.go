@@ -157,7 +157,7 @@ func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyV
 		tag.VFloat64 = attr.DoubleVal()
 	case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
 		tag.VType = model.ValueType_STRING
-		tag.VStr = tracetranslator.AttributeValueToString(attr)
+		tag.VStr = pdata.AttributeValueToString(attr)
 	}
 	return tag
 }

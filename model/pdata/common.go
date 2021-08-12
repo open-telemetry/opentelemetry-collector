@@ -19,7 +19,10 @@ package pdata
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"sort"
+	"strconv"
 
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 )
@@ -903,6 +906,85 @@ func (sm StringMap) Sort() StringMap {
 		return (*sm.orig)[i].Key < (*sm.orig)[j].Key
 	})
 	return sm
+}
+
+// AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
+func AttributeValueToString(attr AttributeValue) string {
+	switch attr.Type() {
+	case AttributeValueTypeNull:
+		return ""
+
+	case AttributeValueTypeString:
+		return attr.StringVal()
+
+	case AttributeValueTypeBool:
+		return strconv.FormatBool(attr.BoolVal())
+
+	case AttributeValueTypeDouble:
+		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
+
+	case AttributeValueTypeInt:
+		return strconv.FormatInt(attr.IntVal(), 10)
+
+	case AttributeValueTypeMap:
+		jsonStr, _ := json.Marshal(AttributeMapToMap(attr.MapVal()))
+		return string(jsonStr)
+
+	case AttributeValueTypeArray:
+		jsonStr, _ := json.Marshal(attributeArrayToSlice(attr.ArrayVal()))
+		return string(jsonStr)
+
+	default:
+		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
+	}
+}
+
+// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
+func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
+	rawMap := make(map[string]interface{})
+	attrMap.Range(func(k string, v AttributeValue) bool {
+		switch v.Type() {
+		case AttributeValueTypeString:
+			rawMap[k] = v.StringVal()
+		case AttributeValueTypeInt:
+			rawMap[k] = v.IntVal()
+		case AttributeValueTypeDouble:
+			rawMap[k] = v.DoubleVal()
+		case AttributeValueTypeBool:
+			rawMap[k] = v.BoolVal()
+		case AttributeValueTypeNull:
+			rawMap[k] = nil
+		case AttributeValueTypeMap:
+			rawMap[k] = AttributeMapToMap(v.MapVal())
+		case AttributeValueTypeArray:
+			rawMap[k] = attributeArrayToSlice(v.ArrayVal())
+		}
+		return true
+	})
+	return rawMap
+}
+
+// attributeArrayToSlice creates a slice out of a AnyValueArray.
+func attributeArrayToSlice(attrArray AnyValueArray) []interface{} {
+	rawSlice := make([]interface{}, 0, attrArray.Len())
+	for i := 0; i < attrArray.Len(); i++ {
+		v := attrArray.At(i)
+		switch v.Type() {
+		case AttributeValueTypeString:
+			rawSlice = append(rawSlice, v.StringVal())
+		case AttributeValueTypeInt:
+			rawSlice = append(rawSlice, v.IntVal())
+		case AttributeValueTypeDouble:
+			rawSlice = append(rawSlice, v.DoubleVal())
+		case AttributeValueTypeBool:
+			rawSlice = append(rawSlice, v.BoolVal())
+		case AttributeValueTypeNull:
+			rawSlice = append(rawSlice, nil)
+		default:
+			rawSlice = append(rawSlice, "<Invalid array value>")
+		}
+	}
+	return rawSlice
 }
 
 func newStringKeyValue(k, v string) otlpcommon.StringKeyValue { //nolint:staticcheck // SA1019 ignore this!
