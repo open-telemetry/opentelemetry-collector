@@ -202,12 +202,21 @@ func adjustStartTimestampPdata(startTime float64, metricsL *pdata.MetricSlice) {
 		case pdata.MetricDataTypeGauge, pdata.MetricDataTypeHistogram:
 			continue
 
-		default:
+		case pdata.MetricDataTypeSum:
+			dataPoints := metric.Sum().DataPoints()
+			for i := 0; i < dataPoints.Len(); i++ {
+				dataPoint := dataPoints.At(i)
+				dataPoint.SetStartTimestamp(pdata.Timestamp(startTime))
+			}
+
+		case pdata.MetricDataTypeSummary:
 			dataPoints := metric.Summary().DataPoints()
 			for i := 0; i < dataPoints.Len(); i++ {
 				dataPoint := dataPoints.At(i)
 				dataPoint.SetStartTimestamp(pdata.Timestamp(startTime))
 			}
+
+		default:
 		}
 	}
 }
