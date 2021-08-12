@@ -23,6 +23,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type labelKeysAndType struct {
@@ -378,16 +379,16 @@ func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bu
 			}
 			break
 		}
-		ocBuckets[pos].Exemplar = exemplarToOC(exemplar.FilteredLabels(), val, exemplar.Timestamp())
+		ocBuckets[pos].Exemplar = exemplarToOC(exemplar.FilteredAttributes(), val, exemplar.Timestamp())
 	}
 }
 
-func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata.Timestamp) *ocmetrics.DistributionValue_Exemplar {
+func exemplarToOC(filteredLabels pdata.AttributeMap, value float64, timestamp pdata.Timestamp) *ocmetrics.DistributionValue_Exemplar {
 	var labels map[string]string
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())
-		filteredLabels.Range(func(k string, v string) bool {
-			labels[k] = v
+		filteredLabels.Range(func(k string, v pdata.AttributeValue) bool {
+			labels[k] = tracetranslator.AttributeValueToString(v)
 			return true
 		})
 	}

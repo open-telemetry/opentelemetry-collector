@@ -244,7 +244,7 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
 	exemplar.SetDoubleVal(15)
-	initMetricAttachment(exemplar.FilteredLabels())
+	initMetricAttachment(exemplar.FilteredAttributes())
 	hdp1.SetExplicitBounds([]float64{1})
 }
 
