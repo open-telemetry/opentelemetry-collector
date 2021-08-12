@@ -70,12 +70,20 @@ func TestScrape(t *testing.T) {
 	}
 
 	require.Greater(t, resourceMetrics.Len(), 1)
+	assertSchemaIsSet(t, resourceMetrics)
 	assertProcessResourceAttributesExist(t, resourceMetrics)
 	assertCPUTimeMetricValid(t, resourceMetrics, expectedStartTime)
 	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryPhysicalUsage.New(), resourceMetrics)
 	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryVirtualUsage.New(), resourceMetrics)
 	assertDiskIOMetricValid(t, resourceMetrics, expectedStartTime)
 	assertSameTimeStampForAllMetricsWithinResource(t, resourceMetrics)
+}
+
+func assertSchemaIsSet(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		rm := resourceMetrics.At(0)
+		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl())
+	}
 }
 
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {

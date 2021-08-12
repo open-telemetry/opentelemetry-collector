@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 const (
@@ -101,6 +102,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 	rms.EnsureCapacity(len(metadata))
 	for _, md := range metadata {
 		rm := rms.AppendEmpty()
+		rm.SetSchemaUrl(conventions.SchemaURL)
 		md.initializeResource(rm.Resource())
 		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
