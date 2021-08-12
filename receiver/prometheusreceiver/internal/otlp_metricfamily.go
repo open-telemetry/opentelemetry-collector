@@ -15,14 +15,22 @@
 package internal
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
+	"github.com/prometheus/prometheus/scrape"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
+
+type dataPoint struct {
+	value    float64
+	boundary float64
+}
 
 // MetricFamilyPdata is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
 // a single scrape.
@@ -33,26 +41,35 @@ type MetricFamilyPdata interface {
 }
 
 type metricFamilyPdata struct {
-	// We are composing the already present metricFamily to
-	// make for a scalable migration, so that we only edit target
-	// fields progressively, when we are ready to make changes.
-	metricFamily
-	mtype  pdata.MetricDataType
-	groups map[string]*metricGroupPdata
+	mtype               pdata.MetricDataType
+	groups              map[string]*metricGroupPdata
+	name                string
+	mc                  MetadataCache
+	droppedTimeseries   int
+	labelKeys           map[string]bool
+	labelKeysOrdered    []string
+	metadata            *scrape.MetricMetadata
+	groupOrders         map[string]int
+	intervalStartTimeMs int64
 }
 
 // metricGroupPdata, represents a single metric of a metric family. for example a histogram metric is usually represent by
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroupPdata struct {
-	// We are composing the already present metricGroup to
-	// make for a scalable migration, so that we only edit target
-	// fields progressively, when we are ready to make changes.
-	metricGroup
-	family *metricFamilyPdata
+	family              *metricFamilyPdata
+	ts                  int64
+	ls                  labels.Labels
+	count               float64
+	hasCount            bool
+	sum                 float64
+	hasSum              bool
+	value               float64
+	complexValue        []*dataPoint
+	intervalStartTimeMs int64
 }
 
-func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTimeMs int64) MetricFamilyPdata {
+func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger, intervalStartTimeMs int64) MetricFamilyPdata {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -68,22 +85,33 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTime
 			metadata.Metric = familyName
 			metadata.Type = textparse.MetricTypeUnknown
 		}
+	} else if !ok && isInternalMetric(metricName) {
+		metadata = defineInternalMetric(metricName, metadata, logger)
+	}
+
+	mtype := convToPdataMetricType(metadata.Type)
+	if mtype == pdata.MetricDataTypeNone {
+		logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
 	}
 
 	return &metricFamilyPdata{
-		mtype:  convToPdataMetricType(metadata.Type),
-		groups: make(map[string]*metricGroupPdata),
-		metricFamily: metricFamily{
-			name:                familyName,
-			mc:                  mc,
-			droppedTimeseries:   0,
-			labelKeys:           make(map[string]bool),
-			labelKeysOrdered:    make([]string, 0),
-			metadata:            &metadata,
-			groupOrders:         make(map[string]int),
-			intervalStartTimeMs: intervalStartTimeMs,
-		},
+		mtype:               mtype,
+		groups:              make(map[string]*metricGroupPdata),
+		name:                familyName,
+		mc:                  mc,
+		droppedTimeseries:   0,
+		labelKeys:           make(map[string]bool),
+		labelKeysOrdered:    make([]string, 0),
+		metadata:            &metadata,
+		groupOrders:         make(map[string]int),
+		intervalStartTimeMs: intervalStartTimeMs,
 	}
+}
+
+func (mf *metricFamilyPdata) IsSameFamily(metricName string) bool {
+	// trim known suffix if necessary
+	familyName := normalizeMetricName(metricName)
+	return mf.name == familyName || familyName != metricName && mf.name == metricName
 }
 
 // updateLabelKeys is used to store all the label keys of a same metric family in observed order. since prometheus
@@ -108,6 +136,12 @@ func (mf *metricFamilyPdata) updateLabelKeys(ls labels.Labels) {
 func (mf *metricFamilyPdata) getGroupKey(ls labels.Labels) string {
 	mf.updateLabelKeys(ls)
 	return dpgSignature(mf.labelKeysOrdered, ls)
+}
+
+func (mg *metricGroupPdata) sortPoints() {
+	sort.Slice(mg.complexValue, func(i, j int) bool {
+		return mg.complexValue[i].boundary < mg.complexValue[j].boundary
+	})
 }
 
 func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest *pdata.HistogramDataPointSlice) bool {
@@ -218,13 +252,11 @@ func (mf *metricFamilyPdata) loadMetricGroupOrCreate(groupKey string, ls labels.
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroupPdata{
-			family: mf,
-			metricGroup: metricGroup{
-				ts:                  ts,
-				ls:                  ls,
-				complexValue:        make([]*dataPoint, 0),
-				intervalStartTimeMs: mf.intervalStartTimeMs,
-			},
+			family:              mf,
+			ts:                  ts,
+			ls:                  ls,
+			complexValue:        make([]*dataPoint, 0),
+			intervalStartTimeMs: mf.intervalStartTimeMs,
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
@@ -330,4 +362,33 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 
 	// note: the total number of points is the number of points+droppedTimeseries.
 	return pointCount + mf.droppedTimeseries, mf.droppedTimeseries
+}
+
+// Define manually the metadata of prometheus scrapper internal metrics
+func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, logger *zap.Logger) scrape.MetricMetadata {
+	if metadata.Metric != "" && metadata.Type != "" && metadata.Help != "" {
+		logger.Debug("Internal metric seems already fully defined")
+		return metadata
+	}
+	metadata.Metric = metricName
+
+	switch metricName {
+	case scrapeUpMetricName:
+		metadata.Type = textparse.MetricTypeGauge
+		metadata.Help = "The scraping was successful"
+	case "scrape_duration_seconds":
+		metadata.Unit = "seconds"
+		metadata.Type = textparse.MetricTypeGauge
+		metadata.Help = "Duration of the scrape"
+	case "scrape_samples_scraped":
+		metadata.Type = textparse.MetricTypeGauge
+		metadata.Help = "The number of samples the target exposed"
+	case "scrape_series_added":
+		metadata.Type = textparse.MetricTypeGauge
+		metadata.Help = "The approximate number of new series in this scrape"
+	case "scrape_samples_post_metric_relabeling":
+		metadata.Type = textparse.MetricTypeGauge
+		metadata.Help = "The number of samples remaining after metric relabeling was applied"
+	}
+	return metadata
 }
