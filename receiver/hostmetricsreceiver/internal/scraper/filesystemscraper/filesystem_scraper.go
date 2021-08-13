@@ -108,12 +108,12 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, d
 }
 
 func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.FilesystemDevice, partition.Device)
-	labelsMap.Insert(metadata.Labels.FilesystemType, partition.Fstype)
-	labelsMap.Insert(metadata.Labels.FilesystemMode, getMountMode(partition.Opts))
-	labelsMap.Insert(metadata.Labels.FilesystemMountpoint, partition.Mountpoint)
-	labelsMap.Insert(metadata.Labels.FilesystemState, stateLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.FilesystemDevice, partition.Device)
+	attributes.InsertString(metadata.Labels.FilesystemType, partition.Fstype)
+	attributes.InsertString(metadata.Labels.FilesystemMode, getMountMode(partition.Opts))
+	attributes.InsertString(metadata.Labels.FilesystemMountpoint, partition.Mountpoint)
+	attributes.InsertString(metadata.Labels.FilesystemState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

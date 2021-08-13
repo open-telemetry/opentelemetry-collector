@@ -167,9 +167,9 @@ func initializeNetworkIOMetric(metric pdata.Metric, metricIntf metadata.MetricIn
 }
 
 func initializeNetworkDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel, directionLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.NetworkDevice, deviceLabel)
-	labelsMap.Insert(metadata.Labels.NetworkDirection, directionLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.NetworkDevice, deviceLabel)
+	attributes.InsertString(metadata.Labels.NetworkDirection, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
@@ -215,9 +215,9 @@ func initializeNetworkConnectionsMetric(metric pdata.Metric, now pdata.Timestamp
 }
 
 func initializeNetworkConnectionsDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, protocolLabel, stateLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.NetworkProtocol, protocolLabel)
-	labelsMap.Insert(metadata.Labels.NetworkState, stateLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.NetworkProtocol, protocolLabel)
+	attributes.InsertString(metadata.Labels.NetworkState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

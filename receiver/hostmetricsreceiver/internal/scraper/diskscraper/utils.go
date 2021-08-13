@@ -20,10 +20,10 @@ import (
 )
 
 func initializeNumberDataPointAsInt(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel string, directionLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.DiskDevice, deviceLabel)
 	if directionLabel != "" {
-		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
+		attributes.InsertString(metadata.Labels.DiskDirection, directionLabel)
 	}
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
@@ -31,10 +31,10 @@ func initializeNumberDataPointAsInt(dataPoint pdata.NumberDataPoint, startTime, 
 }
 
 func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel string, directionLabel string, value float64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.DiskDevice, deviceLabel)
 	if directionLabel != "" {
-		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
+		attributes.InsertString(metadata.Labels.DiskDirection, directionLabel)
 	}
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
