@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type dataBuffer struct {
@@ -260,7 +259,7 @@ func attributeMapToString(av pdata.AttributeMap) string {
 	b.WriteString("{\n")
 
 	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
-		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), tracetranslator.AttributeValueToString(v))
+		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), pdata.AttributeValueToString(v))
 		return true
 	})
 	b.WriteByte('}')
