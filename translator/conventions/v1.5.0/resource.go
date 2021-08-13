@@ -521,14 +521,14 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	AttributeK8SReplicasetUID = "k8s.replicaset.uid"
+	AttributeK8SReplicaSetUID = "k8s.replicaset.uid"
 	// The name of the ReplicaSet.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	AttributeK8SReplicasetName = "k8s.replicaset.name"
+	AttributeK8SReplicaSetName = "k8s.replicaset.name"
 )
 
 // A Kubernetes Deployment object.
@@ -557,14 +557,14 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	AttributeK8SStatefulsetUID = "k8s.statefulset.uid"
+	AttributeK8SStatefulSetUID = "k8s.statefulset.uid"
 	// The name of the StatefulSet.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	AttributeK8SStatefulsetName = "k8s.statefulset.name"
+	AttributeK8SStatefulSetName = "k8s.statefulset.name"
 )
 
 // A Kubernetes DaemonSet object.
@@ -575,14 +575,14 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	AttributeK8SDaemonsetUID = "k8s.daemonset.uid"
+	AttributeK8SDaemonSetUID = "k8s.daemonset.uid"
 	// The name of the DaemonSet.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	AttributeK8SDaemonsetName = "k8s.daemonset.name"
+	AttributeK8SDaemonSetName = "k8s.daemonset.name"
 )
 
 // A Kubernetes Job object.
@@ -954,14 +954,14 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeK8SPodUID,
 		AttributeK8SPodName,
 		AttributeK8SContainerName,
-		AttributeK8SReplicasetUID,
-		AttributeK8SReplicasetName,
+		AttributeK8SReplicaSetUID,
+		AttributeK8SReplicaSetName,
 		AttributeK8SDeploymentUID,
 		AttributeK8SDeploymentName,
-		AttributeK8SStatefulsetUID,
-		AttributeK8SStatefulsetName,
-		AttributeK8SDaemonsetUID,
-		AttributeK8SDaemonsetName,
+		AttributeK8SStatefulSetUID,
+		AttributeK8SStatefulSetName,
+		AttributeK8SDaemonSetUID,
+		AttributeK8SDaemonSetName,
 		AttributeK8SJobUID,
 		AttributeK8SJobName,
 		AttributeK8SCronJobUID,
