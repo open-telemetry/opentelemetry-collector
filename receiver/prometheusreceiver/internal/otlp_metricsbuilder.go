@@ -166,13 +166,13 @@ func getBoundaryPdata(metricType pdata.MetricDataType, labels labels.Labels) (fl
 
 func convToPdataMetricType(metricType textparse.MetricType) pdata.MetricDataType {
 	switch metricType {
-	case textparse.MetricTypeCounter:
+	case textparse.MetricTypeCounter: // metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
 		// always use float64, as it's the internal data type used in prometheus
 		return pdata.MetricDataTypeSum
 	// textparse.MetricTypeUnknown is converted to gauge by default to fix Prometheus untyped metrics from being dropped
-	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
+	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown: // metricspb.MetricDescriptor_GAUGE_DOUBLE
 		return pdata.MetricDataTypeGauge
-	case textparse.MetricTypeHistogram:
+	case textparse.MetricTypeHistogram: // metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		return pdata.MetricDataTypeHistogram
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
