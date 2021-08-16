@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
@@ -50,7 +50,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, cp)
 		var cfg *config.Config
-		cfg, err = configloader.Load(cp, factories)
+		cfg, err = configunmarshaler.NewDefault().Unmarshal(cp, factories)
 		require.Error(t, err)
 		require.Nil(t, cfg)
 
@@ -70,7 +70,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, cp)
 		var cfg *config.Config
-		cfg, err = configloader.Load(cp, factories)
+		cfg, err = configunmarshaler.NewDefault().Unmarshal(cp, factories)
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -106,7 +106,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, cp)
 		var cfg *config.Config
-		cfg, err = configloader.Load(cp, factories)
+		cfg, err = configunmarshaler.NewDefault().Unmarshal(cp, factories)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -146,7 +146,7 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 	cp, err := pl.Get()
 	require.NoError(t, err)
 	require.NotNil(t, cp)
-	cfg, err := configloader.Load(cp, factories)
+	cfg, err := configunmarshaler.NewDefault().Unmarshal(cp, factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }

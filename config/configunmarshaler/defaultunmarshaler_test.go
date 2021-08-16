@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configloader
+package configunmarshaler
 
 import (
 	"os"
@@ -33,7 +33,7 @@ func TestDecodeConfig(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	// Load the config
+	// Unmarshal the config
 	cfg, err := loadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
@@ -186,7 +186,7 @@ func TestSimpleConfig(t *testing.T) {
 			factories, err := testcomponents.ExampleComponents()
 			assert.NoError(t, err)
 
-			// Load the config
+			// Unmarshal the config
 			cfg, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
 			require.NoError(t, err, "Unable to load config")
 
@@ -276,7 +276,7 @@ func TestEscapedEnvVars(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	// Load the config
+	// Unmarshal the config
 	cfg, err := loadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
@@ -459,8 +459,8 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 	v, err := configparser.NewParserFromFile(fileName)
 	require.NoError(t, err)
 
-	// Load the config from the configparser.Parser using the given factories.
-	return Load(v, factories)
+	// Unmarshal the config from the configparser.Parser using the given factories.
+	return NewDefault().Unmarshal(v, factories)
 }
 
 type nestedConfig struct {

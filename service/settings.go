@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
@@ -67,6 +68,10 @@ type CollectorSettings struct {
 	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
 	ParserProvider parserprovider.ParserProvider
+
+	// ConfigUnmarshaler unmarshalls the configuration's Parser into the service configuration.
+	// If it is not provided a default unmarshaler is used.
+	ConfigUnmarshaler configunmarshaler.ConfigUnmarshaler
 
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
