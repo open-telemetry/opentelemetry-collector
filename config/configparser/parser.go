@@ -21,6 +21,7 @@ import (
 	"reflect"
 
 	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
@@ -152,7 +153,7 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 
 // ToStringMap creates a map[string]interface{} from a Parser.
 func (l *Parser) ToStringMap() map[string]interface{} {
-	return l.k.Raw()
+	return maps.Unflatten(l.k.All(), KeyDelimiter)
 }
 
 // decoderConfig returns a default mapstructure.DecoderConfig capable of parsing time.Duration
