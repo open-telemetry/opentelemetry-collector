@@ -59,7 +59,7 @@ func TestLogsRequest(t *testing.T) {
 }
 
 func TestLogsExporter_InvalidName(t *testing.T) {
-	le, err := NewLogsExporter(nil, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
+	le, err := NewLogsExporter(nil, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilConfig, err)
 }
@@ -71,14 +71,14 @@ func TestLogsExporter_NilLogger(t *testing.T) {
 }
 
 func TestLogsExporter_NilPushLogsData(t *testing.T) {
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), nil)
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), nil)
 	require.Nil(t, le)
 	require.Equal(t, errNilPushLogsData, err)
 }
 
 func TestLogsExporter_Default(t *testing.T) {
 	ld := pdata.NewLogs()
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(nil))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -90,7 +90,7 @@ func TestLogsExporter_Default(t *testing.T) {
 
 func TestLogsExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil), WithCapabilities(capabilities))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(nil), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -100,14 +100,14 @@ func TestLogsExporter_WithCapabilities(t *testing.T) {
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	ld := pdata.NewLogs()
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -116,7 +116,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
@@ -133,7 +133,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -148,7 +148,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	sr := new(oteltest.SpanRecorder)
 	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -161,7 +161,7 @@ func TestLogsExporter_WithSpan(t *testing.T) {
 }
 
 func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	sr := new(oteltest.SpanRecorder)
 	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -178,7 +178,7 @@ func TestLogsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil), WithShutdown(shutdown))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(nil), WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -190,7 +190,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil), WithShutdown(shutdownErr))
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewTestExporterCreateSettings(t), newPushLogsData(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 

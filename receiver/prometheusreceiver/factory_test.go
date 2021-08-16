@@ -37,7 +37,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
-	creationSet := componenttest.NewNopReceiverCreateSettings()
+	creationSet := componenttest.NewTestReceiverCreateSettings(t)
 	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mReceiver)
 }

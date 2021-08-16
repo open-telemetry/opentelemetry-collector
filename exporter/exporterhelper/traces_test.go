@@ -54,7 +54,7 @@ func TestTracesRequest(t *testing.T) {
 }
 
 func TestTracesExporter_InvalidName(t *testing.T) {
-	te, err := NewTracesExporter(nil, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(nil, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilConfig, err)
 }
@@ -66,14 +66,14 @@ func TestTracesExporter_NilLogger(t *testing.T) {
 }
 
 func TestTracesExporter_NilPushTraceData(t *testing.T) {
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), nil)
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), nil)
 	require.Nil(t, te)
 	require.Equal(t, errNilPushTraceData, err)
 }
 
 func TestTracesExporter_Default(t *testing.T) {
 	td := pdata.NewTraces()
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(nil))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -85,7 +85,7 @@ func TestTracesExporter_Default(t *testing.T) {
 
 func TestTracesExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil), WithCapabilities(capabilities))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(nil), WithCapabilities(capabilities))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -95,7 +95,7 @@ func TestTracesExporter_WithCapabilities(t *testing.T) {
 func TestTracesExporter_Default_ReturnError(t *testing.T) {
 	td := pdata.NewTraces()
 	want := errors.New("my_error")
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -104,7 +104,7 @@ func TestTracesExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestTracesExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(nil))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -113,7 +113,7 @@ func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 
 func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -130,7 +130,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -145,7 +145,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 }
 
 func TestTracesExporter_WithSpan(t *testing.T) {
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	sr := new(oteltest.SpanRecorder)
 	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -159,7 +159,7 @@ func TestTracesExporter_WithSpan(t *testing.T) {
 }
 
 func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	sr := new(oteltest.SpanRecorder)
 	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -177,7 +177,7 @@ func TestTracesExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil), WithShutdown(shutdown))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -190,7 +190,7 @@ func TestTracesExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil), WithShutdown(shutdownErr))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewTestExporterCreateSettings(t), newTraceDataPusher(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 

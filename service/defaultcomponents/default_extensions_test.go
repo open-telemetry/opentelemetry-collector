@@ -111,7 +111,7 @@ type getExtensionConfigFn func() config.Extension
 func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	extCreateSet := componenttest.NewNopExtensionCreateSettings()
+	extCreateSet := componenttest.NewTestExtensionCreateSettings(t)
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig

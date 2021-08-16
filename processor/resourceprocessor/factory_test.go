@@ -43,11 +43,11 @@ func TestCreateProcessor(t *testing.T) {
 		},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 }
@@ -56,10 +56,10 @@ func TestInvalidEmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
 
@@ -72,9 +72,9 @@ func TestInvalidAttributeActions(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), cfg, nil)
 	assert.Error(t, err)
 }

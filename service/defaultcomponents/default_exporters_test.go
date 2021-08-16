@@ -163,7 +163,7 @@ type getExporterConfigFn func() config.Exporter
 func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateSettings := componenttest.NewNopExporterCreateSettings()
+	expCreateSettings := componenttest.NewTestExporterCreateSettings(t)
 
 	cfg := factory.CreateDefaultConfig()
 	if getConfigFn != nil {

@@ -417,7 +417,7 @@ func TestBallastSizeMiB(t *testing.T) {
 	ballastExtFactory := ballastextension.NewFactory()
 	ballastExtCfg := ballastExtFactory.CreateDefaultConfig().(*ballastextension.Config)
 	ballastExtCfg.SizeMiB = 100
-	extCreateSet := componenttest.NewNopExtensionCreateSettings()
+	extCreateSet := componenttest.NewTestExtensionCreateSettings(t)
 
 	tests := []struct {
 		name                          string

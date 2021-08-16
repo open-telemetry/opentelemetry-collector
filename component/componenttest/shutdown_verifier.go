@@ -31,12 +31,7 @@ import (
 func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory component.ProcessorFactory, cfg config.Processor) {
 	// Create a processor and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
-	processor, err := factory.CreateTracesProcessor(
-		context.Background(),
-		NewNopProcessorCreateSettings(),
-		cfg,
-		nextSink,
-	)
+	processor, err := factory.CreateTracesProcessor(context.Background(), NewTestProcessorCreateSettings(t), cfg, nextSink)
 	if err != nil {
 		if err == componenterror.ErrDataTypeIsNotSupported {
 			return

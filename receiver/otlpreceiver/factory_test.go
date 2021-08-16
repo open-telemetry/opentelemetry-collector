@@ -45,12 +45,11 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationSet := componenttest.NewNopReceiverCreateSettings()
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewTestReceiverCreateSettings(t), cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), componenttest.NewTestReceiverCreateSettings(t), cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
@@ -113,7 +112,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := componenttest.NewNopReceiverCreateSettings()
+	creationSet := componenttest.NewTestReceiverCreateSettings(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
@@ -189,7 +188,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := componenttest.NewNopReceiverCreateSettings()
+	creationSet := componenttest.NewTestReceiverCreateSettings(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
@@ -292,10 +291,9 @@ func TestCreateLogReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := componenttest.NewNopReceiverCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mr, err := factory.CreateLogsReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			mr, err := factory.CreateLogsReceiver(ctx, componenttest.NewTestReceiverCreateSettings(t), tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

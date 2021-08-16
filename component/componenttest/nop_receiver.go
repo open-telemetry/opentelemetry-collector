@@ -16,9 +16,11 @@ package componenttest
 
 import (
 	"context"
+	"testing"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
@@ -26,10 +28,20 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// NewNopReceiverCreateSettings returns a new nop settings for Create*Receiver functions.
+// NewNopReceiverCreateSettings returns a new nop component.ReceiverCreateSettings.
 func NewNopReceiverCreateSettings() component.ReceiverCreateSettings {
 	return component.ReceiverCreateSettings{
 		Logger:         zap.NewNop(),
+		TracerProvider: trace.NewNoopTracerProvider(),
+		BuildInfo:      component.DefaultBuildInfo(),
+	}
+}
+
+// NewTestReceiverCreateSettings returns a new test component.ReceiverCreateSettings.
+func NewTestReceiverCreateSettings(t *testing.T) component.ReceiverCreateSettings {
+	return component.ReceiverCreateSettings{
+		Logger: zaptest.NewLogger(t),
+		// TODO: Create TracerProvider with exporter to testing.T.
 		TracerProvider: trace.NewNoopTracerProvider(),
 		BuildInfo:      component.DefaultBuildInfo(),
 	}

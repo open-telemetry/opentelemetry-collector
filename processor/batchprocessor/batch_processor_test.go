@@ -38,7 +38,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -80,7 +80,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 130
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelBasic)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -128,7 +128,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 500 * time.Millisecond
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -186,7 +186,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	sendBatchSize := 100
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 100 * time.Millisecond
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 
 	requestCount := 5
 	spansPerRequest := 10
@@ -238,7 +238,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -269,7 +269,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	metricsPerRequest := 5
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -324,7 +324,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -398,7 +398,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	metricsPerRequest := 10
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -447,7 +447,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	metricsPerRequest := 10
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -583,7 +583,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	logsPerRequest := 5
 	sink := new(consumertest.LogsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -636,7 +636,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	logsPerRequest := 5
 	sink := new(consumertest.LogsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -693,7 +693,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -742,7 +742,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet := componenttest.NewTestProcessorCreateSettings(t)
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))

@@ -36,7 +36,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	_, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.Error(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
@@ -48,7 +48,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "\"jaeger\" config requires a non-empty \"endpoint\"", err.Error())

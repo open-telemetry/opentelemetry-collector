@@ -101,7 +101,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := new(consumertest.TracesSink)
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, ttn)
+			rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -116,7 +116,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tmn)
+			rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), tt.config, tmn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -131,7 +131,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tln)
+			rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -155,17 +155,17 @@ func TestResourceProcessorError(t *testing.T) {
 
 	// Test traces consumer
 	factory := NewFactory()
-	rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
+	rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), badCfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, rtp)
 
 	// Test metrics consumer
-	rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
+	rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), badCfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, rmp)
 
 	// Test logs consumer
-	rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
+	rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewTestProcessorCreateSettings(t), badCfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, rlp)
 }

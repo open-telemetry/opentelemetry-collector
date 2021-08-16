@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	te, err := factory.CreateTracesExporter(context.Background(), set, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)

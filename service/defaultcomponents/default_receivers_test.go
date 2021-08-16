@@ -105,7 +105,7 @@ type getReceiverConfigFn func() config.Receiver
 func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
+	receiverCreateSet := componenttest.NewTestReceiverCreateSettings(t)
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig

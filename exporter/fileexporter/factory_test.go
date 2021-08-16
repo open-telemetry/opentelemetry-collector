@@ -32,31 +32,19 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	cfg := createDefaultConfig()
-	exp, err := createMetricsExporter(
-		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
-		cfg)
+	exp, err := createMetricsExporter(context.Background(), componenttest.NewTestExporterCreateSettings(t), createDefaultConfig())
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }
 
 func TestCreateTracesExporter(t *testing.T) {
-	cfg := createDefaultConfig()
-	exp, err := createTracesExporter(
-		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
-		cfg)
+	exp, err := createTracesExporter(context.Background(), componenttest.NewTestExporterCreateSettings(t), createDefaultConfig())
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }
 
 func TestCreateLogsExporter(t *testing.T) {
-	cfg := createDefaultConfig()
-	exp, err := createLogsExporter(
-		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
-		cfg)
+	exp, err := createLogsExporter(context.Background(), componenttest.NewTestExporterCreateSettings(t), createDefaultConfig())
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }

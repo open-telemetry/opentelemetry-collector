@@ -28,8 +28,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-var creationSet = componenttest.NewNopReceiverCreateSettings()
-
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -41,15 +39,15 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewTestReceiverCreateSettings(t), cfg, consumertest.NewNop())
 	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), componenttest.NewTestReceiverCreateSettings(t), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
 
-	tLogs, err := factory.CreateLogsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	tLogs, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewTestReceiverCreateSettings(t), cfg, consumertest.NewNop())
 	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tLogs)
 }
@@ -60,6 +58,6 @@ func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{Scrapers: map[string]internal.Config{errorKey: &mockConfig{}}}
 
-	_, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	_, err := factory.CreateMetricsReceiver(context.Background(), componenttest.NewTestReceiverCreateSettings(t), cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Sprintf("host metrics scraper factory not found for key: %q", errorKey))
 }

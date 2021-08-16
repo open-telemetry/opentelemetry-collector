@@ -68,7 +68,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -110,7 +110,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -186,7 +186,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -265,7 +265,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 

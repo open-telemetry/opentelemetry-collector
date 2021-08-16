@@ -308,7 +308,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				componenttest.NewNopProcessorCreateSettings(),
+				componenttest.NewTestProcessorCreateSettings(t),
 				cfg,
 				next,
 			)
@@ -475,7 +475,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		componenttest.NewNopProcessorCreateSettings(),
+		componenttest.NewTestProcessorCreateSettings(t),
 		cfg,
 		consumertest.NewNop(),
 	)

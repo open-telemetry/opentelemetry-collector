@@ -117,7 +117,7 @@ type getProcessorConfigFn func() config.Processor
 func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, getConfigFn getProcessorConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	processorCreationSet := componenttest.NewNopProcessorCreateSettings()
+	set := componenttest.NewTestProcessorCreateSettings(t)
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -130,7 +130,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 	}
 
 	for _, createFn := range createFns {
-		firstExp, err := createFn(ctx, processorCreationSet, getConfigFn())
+		firstExp, err := createFn(ctx, set, getConfigFn())
 		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			continue
 		}
@@ -138,7 +138,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 		require.NoError(t, firstExp.Start(ctx, host))
 		require.NoError(t, firstExp.Shutdown(ctx))
 
-		secondExp, err := createFn(ctx, processorCreationSet, getConfigFn())
+		secondExp, err := createFn(ctx, set, getConfigFn())
 		require.NoError(t, err)
 		require.NoError(t, secondExp.Start(ctx, host))
 		require.NoError(t, secondExp.Shutdown(ctx))

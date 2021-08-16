@@ -37,7 +37,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	oCfg.Endpoint = ""
 	exp, err := createMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		componenttest.NewTestExporterCreateSettings(t),
 		cfg)
 	require.Equal(t, errBlankPrometheusAddress, err)
 	require.Nil(t, exp)
@@ -49,7 +49,7 @@ func TestCreateMetricsExporterExportHelperError(t *testing.T) {
 
 	cfg.Endpoint = "http://localhost:8889"
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewTestExporterCreateSettings(t)
 	set.Logger = nil
 
 	// Should give us an exporterhelper.errNilLogger
