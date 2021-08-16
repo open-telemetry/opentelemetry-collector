@@ -268,12 +268,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123.1, gaugeDataPoints.At(0).DoubleVal())
-	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), gaugeDataPoints.At(0).LabelsMap())
+	assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{"key0": NewAttributeValueString("value0")}), gaugeDataPoints.At(0).Attributes())
 	// Second point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456.1, gaugeDataPoints.At(1).DoubleVal())
-	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), gaugeDataPoints.At(1).LabelsMap())
+	assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{"key1": NewAttributeValueString("value1")}), gaugeDataPoints.At(1).Attributes())
 
 	// Check double metric
 	metricDouble := metrics.At(1)
@@ -289,12 +289,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, sumDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123.1, sumDataPoints.At(0).DoubleVal())
-	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), sumDataPoints.At(0).LabelsMap())
+	assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{"key0": NewAttributeValueString("value0")}), sumDataPoints.At(0).Attributes())
 	// Second point
 	assert.EqualValues(t, startTime, sumDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456.1, sumDataPoints.At(1).DoubleVal())
-	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), sumDataPoints.At(1).LabelsMap())
+	assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{"key1": NewAttributeValueString("value1")}), sumDataPoints.At(1).Attributes())
 
 	// Check histogram metric
 	metricHistogram := metrics.At(2)
@@ -310,13 +310,13 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).ExplicitBounds())
-	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), histogramDataPoints.At(0).LabelsMap())
+	assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{"key0": NewAttributeValueString("value0")}), histogramDataPoints.At(0).Attributes())
 	assert.EqualValues(t, []uint64{10, 15, 1}, histogramDataPoints.At(0).BucketCounts())
 	// Second point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).ExplicitBounds())
-	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), histogramDataPoints.At(1).LabelsMap())
+	assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{"key1": NewAttributeValueString("value1")}), histogramDataPoints.At(1).Attributes())
 	assert.EqualValues(t, []uint64{10, 1}, histogramDataPoints.At(1).BucketCounts())
 }
 
@@ -351,7 +351,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
-	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
+	newAttributes := NewAttributeMap().InitFromMap(map[string]AttributeValue{"k": NewAttributeValueString("v")})
 
 	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -388,9 +388,9 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	assert.EqualValues(t, endTime+1, gaugeDataPoints.At(0).Timestamp())
 	gaugeDataPoints.At(0).SetDoubleVal(124.1)
 	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleVal())
-	gaugeDataPoints.At(0).LabelsMap().Delete("key0")
-	gaugeDataPoints.At(0).LabelsMap().Upsert("k", "v")
-	assert.EqualValues(t, newLabels, gaugeDataPoints.At(0).LabelsMap())
+	gaugeDataPoints.At(0).Attributes().Delete("key0")
+	gaugeDataPoints.At(0).Attributes().UpsertString("k", "v")
+	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes())
 
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
@@ -409,10 +409,14 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 									Gauge: &otlpmetrics.Gauge{
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+												Attributes: []otlpcommon.KeyValue{
 													{
-														Key:   "k",
-														Value: "v",
+														Key: "k",
+														Value: otlpcommon.AnyValue{
+															Value: &otlpcommon.AnyValue_StringValue{
+																StringValue: "v",
+															},
+														},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -434,7 +438,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalSumMutating(t *testing.T) {
-	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
+	newAttributes := NewAttributeMap().InitFromMap(map[string]AttributeValue{"k": NewAttributeValueString("v")})
 
 	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -472,9 +476,9 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
 	doubleDataPoints.At(0).SetDoubleVal(124.1)
 	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleVal())
-	doubleDataPoints.At(0).LabelsMap().Delete("key0")
-	doubleDataPoints.At(0).LabelsMap().Upsert("k", "v")
-	assert.EqualValues(t, newLabels, doubleDataPoints.At(0).LabelsMap())
+	doubleDataPoints.At(0).Attributes().Delete("key0")
+	doubleDataPoints.At(0).Attributes().UpsertString("k", "v")
+	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes())
 
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
@@ -494,10 +498,14 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+												Attributes: []otlpcommon.KeyValue{
 													{
-														Key:   "k",
-														Value: "v",
+														Key: "k",
+														Value: otlpcommon.AnyValue{
+															Value: &otlpcommon.AnyValue_StringValue{
+																StringValue: "v",
+															},
+														},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -519,7 +527,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
-	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
+	newAttributes := NewAttributeMap().InitFromMap(map[string]AttributeValue{"k": NewAttributeValueString("v")})
 
 	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -555,9 +563,9 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTimestamp())
 	histogramDataPoints.At(0).SetTimestamp(Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
-	histogramDataPoints.At(0).LabelsMap().Delete("key0")
-	histogramDataPoints.At(0).LabelsMap().Upsert("k", "v")
-	assert.EqualValues(t, newLabels, histogramDataPoints.At(0).LabelsMap())
+	histogramDataPoints.At(0).Attributes().Delete("key0")
+	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
+	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
 	histogramDataPoints.At(0).SetExplicitBounds([]float64{1})
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds())
 	histogramDataPoints.At(0).SetBucketCounts([]uint64{21, 32})
@@ -579,10 +587,14 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 										DataPoints: []*otlpmetrics.HistogramDataPoint{
 											{
-												Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+												Attributes: []otlpcommon.KeyValue{
 													{
-														Key:   "k",
-														Value: "v",
+														Key: "k",
+														Value: otlpcommon.AnyValue{
+															Value: &otlpcommon.AnyValue_StringValue{
+																StringValue: "v",
+															},
+														},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -750,10 +762,14 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 			Gauge: &otlpmetrics.Gauge{
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+						Attributes: []otlpcommon.KeyValue{
 							{
-								Key:   "key0",
-								Value: "value0",
+								Key: "key0",
+								Value: otlpcommon.AnyValue{
+									Value: &otlpcommon.AnyValue_StringValue{
+										StringValue: "value0",
+									},
+								},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -763,10 +779,14 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+						Attributes: []otlpcommon.KeyValue{
 							{
-								Key:   "key1",
-								Value: "value1",
+								Key: "key1",
+								Value: otlpcommon.AnyValue{
+									Value: &otlpcommon.AnyValue_StringValue{
+										StringValue: "value1",
+									},
+								},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -790,10 +810,14 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+						Attributes: []otlpcommon.KeyValue{
 							{
-								Key:   "key0",
-								Value: "value0",
+								Key: "key0",
+								Value: otlpcommon.AnyValue{
+									Value: &otlpcommon.AnyValue_StringValue{
+										StringValue: "value0",
+									},
+								},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -803,10 +827,14 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+						Attributes: []otlpcommon.KeyValue{
 							{
-								Key:   "key1",
-								Value: "value1",
+								Key: "key1",
+								Value: otlpcommon.AnyValue{
+									Value: &otlpcommon.AnyValue_StringValue{
+										StringValue: "value1",
+									},
+								},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -831,10 +859,14 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 				DataPoints: []*otlpmetrics.HistogramDataPoint{
 					{
-						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+						Attributes: []otlpcommon.KeyValue{
 							{
-								Key:   "key0",
-								Value: "value0",
+								Key: "key0",
+								Value: otlpcommon.AnyValue{
+									Value: &otlpcommon.AnyValue_StringValue{
+										StringValue: "value0",
+									},
+								},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -843,10 +875,14 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 						ExplicitBounds:    []float64{1, 2},
 					},
 					{
-						Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+						Attributes: []otlpcommon.KeyValue{
 							{
-								Key:   "key1",
-								Value: "value1",
+								Key: "key1",
+								Value: otlpcommon.AnyValue{
+									Value: &otlpcommon.AnyValue_StringValue{
+										StringValue: "value1",
+									},
+								},
 							},
 						},
 						StartTimeUnixNano: startTime,
