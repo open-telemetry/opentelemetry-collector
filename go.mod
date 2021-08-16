@@ -5,7 +5,7 @@ go 1.16
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.3.0
 	github.com/Shopify/sarama v1.29.1
-	github.com/antonmedv/expr v1.8.9
+	github.com/antonmedv/expr v1.9.0
 	github.com/apache/thrift v0.14.2
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/census-instrumentation/opencensus-proto v0.3.0
