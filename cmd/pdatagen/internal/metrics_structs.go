@@ -38,11 +38,15 @@ var metricsFile = &File{
 		doubleGauge,
 		doubleSum,
 		histogram,
+		exponentialHistogram,
 		summary,
 		numberDataPointSlice,
 		numberDataPoint,
 		histogramDataPointSlice,
 		histogramDataPoint,
+		exponentialHistogramDataPointSlice,
+		exponentialHistogramDataPoint,
+		exponentialHistogramBuckets,
 		summaryDataPointSlice,
 		summaryDataPoint,
 		quantileValuesSlice,
@@ -164,6 +168,20 @@ var histogram = &messageValueStruct{
 	},
 }
 
+var exponentialHistogram = &messageValueStruct{
+	structName:     "ExponentialHistogram",
+	description:    "// ExponentialHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval using exponential boundaries.",
+	originFullName: "otlpmetrics.ExponentialHistogram",
+	fields: []baseField{
+		aggregationTemporalityField,
+		&sliceField{
+			fieldName:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     exponentialHistogramDataPointSlice,
+		},
+	},
+}
+
 var summary = &messageValueStruct{
 	structName:     "Summary",
 	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
@@ -236,6 +254,39 @@ var histogramDataPoint = &messageValueStruct{
 		bucketCountsField,
 		explicitBoundsField,
 		exemplarsField,
+	},
+}
+
+var exponentialHistogramDataPointSlice = &sliceOfPtrs{
+	structName: "ExponentialHistogramDataPointSlice",
+	element:    exponentialHistogramDataPoint,
+}
+
+var exponentialHistogramDataPoint = &messageValueStruct{
+	structName:     "ExponentialHistogramDataPoint",
+	description:    "// ExponentialHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a ExponentialHistogram of values.",
+	originFullName: "otlpmetrics.ExponentialHistogramDataPoint",
+	fields: []baseField{
+		attributes,
+		startTimeField,
+		timeField,
+		countField,
+		doubleSumField,
+		scaleField,
+		zeroCountField,
+		positiveBucketsField,
+		negativeBucketsField,
+		exemplarsField,
+	},
+}
+
+var exponentialHistogramBuckets = &messageValueStruct{
+	structName:     "Buckets",
+	description:    "// Buckets is a dense range of exponential histogram buckets.",
+	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
+	fields: []baseField{
+		offsetField,
+		bucketCountsField,
 	},
 }
 
@@ -404,4 +455,40 @@ var oneofDataField = &oneofField{
 	originFieldName: "Data",
 	testVal:         "&otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}",
 	fillTestName:    "Gauge",
+}
+
+var scaleField = &primitiveField{
+	fieldName:       "Scale",
+	originFieldName: "Scale",
+	returnType:      "int32",
+	defaultVal:      `0`,
+	testVal:         `3`,
+}
+
+var zeroCountField = &primitiveField{
+	fieldName:       "ZeroCount",
+	originFieldName: "ZeroCount",
+	returnType:      "uint64",
+	defaultVal:      "uint64(0)",
+	testVal:         "uint64(17)",
+}
+
+var offsetField = &primitiveField{
+	fieldName:       "Offset",
+	originFieldName: "Offset",
+	returnType:      "int64",
+	defaultVal:      `0`,
+	testVal:         `-3`,
+}
+
+var positiveBucketsField = &messageValueField{
+	fieldName:       "Positive",
+	originFieldName: "Positive",
+	returnMessage:   exponentialHistogramBuckets,
+}
+
+var negativeBucketsField = &messageValueField{
+	fieldName:       "Negative",
+	originFieldName: "Negative",
+	returnMessage:   exponentialHistogramBuckets,
 }
