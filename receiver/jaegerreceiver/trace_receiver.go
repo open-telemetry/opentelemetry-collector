@@ -230,8 +230,6 @@ var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 
 type agentHandler struct {
-	id           config.ComponentID
-	transport    string
 	nextConsumer consumer.Traces
 	obsrecv      *obsreport.Receiver
 }
@@ -290,8 +288,6 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	if jr.agentBinaryThriftEnabled() {
 		h := &agentHandler{
-			id:           jr.id,
-			transport:    agentTransportBinary,
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportBinary}),
 		}
@@ -304,8 +300,6 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	if jr.agentCompactThriftEnabled() {
 		h := &agentHandler{
-			id:           jr.id,
-			transport:    agentTransportCompact,
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportCompact}),
 		}
