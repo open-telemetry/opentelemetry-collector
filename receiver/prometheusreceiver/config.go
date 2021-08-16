@@ -20,7 +20,6 @@ import (
 	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
-	"github.com/spf13/cast"
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
@@ -84,11 +83,11 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 	}
 
 	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
-	promCfgMap := cast.ToStringMap(componentParser.Get(prometheusConfigKey))
-	if len(promCfgMap) == 0 {
-		return nil
+	promCfg, err := componentParser.Sub(prometheusConfigKey)
+	if err != nil || len(promCfg.ToStringMap()) == 0 {
+		return err
 	}
-	out, err := yaml.Marshal(promCfgMap)
+	out, err := yaml.Marshal(promCfg.ToStringMap())
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
 	}
