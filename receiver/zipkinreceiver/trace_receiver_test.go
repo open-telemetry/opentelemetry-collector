@@ -86,7 +86,7 @@ func TestNew(t *testing.T) {
 					Endpoint: tt.args.address,
 				},
 			}
-			got, err := New(cfg, tt.args.nextConsumer)
+			got, err := newReceiver(cfg, tt.args.nextConsumer)
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -109,7 +109,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := New(cfg, consumertest.NewNop())
+	traceReceiver, err := newReceiver(cfg, consumertest.NewNop())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -295,7 +295,7 @@ func TestStartTraceReception(t *testing.T) {
 					Endpoint: "localhost:0",
 				},
 			}
-			zr, err := New(cfg, sink)
+			zr, err := newReceiver(cfg, sink)
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
@@ -389,7 +389,7 @@ func TestReceiverContentTypes(t *testing.T) {
 					Endpoint: "",
 				},
 			}
-			zr, err := New(cfg, next)
+			zr, err := newReceiver(cfg, next)
 			require.NoError(t, err)
 
 			req := httptest.NewRecorder()
@@ -417,7 +417,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 			Endpoint: "",
 		},
 	}
-	zr, err := New(cfg, consumertest.NewNop())
+	zr, err := newReceiver(cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -440,7 +440,7 @@ func TestReceiverConsumerError(t *testing.T) {
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := New(cfg, consumertest.NewErr(errors.New("consumer error")))
+	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")))
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -530,7 +530,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		},
 		ParseStringTags: true,
 	}
-	zr, err := New(cfg, next)
+	zr, err := newReceiver(cfg, next)
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -574,7 +574,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 		},
 		ParseStringTags: true,
 	}
-	zi, err := New(cfg, consumertest.NewNop())
+	zi, err := newReceiver(cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	hdr := make(http.Header)
