@@ -34,21 +34,7 @@ func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
 	return newPbMarshaler()
 }
 
-// NewProtobufTracesSizer returns a pdata.TracesSizer. Returns the size of the a pdata.Traces when converted to a binary protobuf.
-func NewProtobufTracesSizer() pdata.TracesSizer {
-	return newPbMarshaler()
-}
-
-// NewProtobufMetricsSizer returns a pdata.MetricsSizer. Returns the size of the a pdata.Metrics when converted to a binary protobuf.
-func NewProtobufMetricsSizer() pdata.MetricsSizer {
-	return newPbMarshaler()
-}
-
-// NewProtobufLogsSizer returns a pdata.LogsSizer. Returns the size of the a pdata.Logs when converted to a binary protobuf.
-func NewProtobufLogsSizer() pdata.LogsSizer {
-	return newPbMarshaler()
-}
-
+// TODO(#3842): Figure out how we want to represent/return *Sizers.
 type pbMarshaler struct{}
 
 func newPbMarshaler() *pbMarshaler {

@@ -43,7 +43,7 @@ func TestProtobufTracesUnmarshaler_error(t *testing.T) {
 }
 
 func TestProtobufTracesSizer(t *testing.T) {
-	sizer := NewProtobufTracesSizer()
+	sizer := NewProtobufTracesMarshaler().(pdata.TracesSizer)
 	marshaler := NewProtobufTracesMarshaler()
 	td := pdata.NewTraces()
 	rms := td.ResourceSpans()
@@ -57,13 +57,13 @@ func TestProtobufTracesSizer(t *testing.T) {
 }
 
 func TestProtobufTracesSizer_withNil(t *testing.T) {
-	sizer := NewProtobufTracesSizer()
+	sizer := NewProtobufTracesMarshaler().(pdata.TracesSizer)
 
 	assert.Equal(t, 0, sizer.TracesSize(pdata.NewTraces()))
 }
 
 func TestProtobufMetricsSizer(t *testing.T) {
-	sizer := NewProtobufMetricsSizer()
+	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
 	marshaler := NewProtobufMetricsMarshaler()
 	md := pdata.NewMetrics()
 	md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
@@ -76,13 +76,13 @@ func TestProtobufMetricsSizer(t *testing.T) {
 }
 
 func TestProtobufMetricsSizer_withNil(t *testing.T) {
-	sizer := NewProtobufMetricsSizer()
+	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
 
 	assert.Equal(t, 0, sizer.MetricsSize(pdata.NewMetrics()))
 }
 
 func TestProtobufLogsSizer(t *testing.T) {
-	sizer := NewProtobufLogsSizer()
+	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
 	marshaler := NewProtobufLogsMarshaler()
 	ld := pdata.NewLogs()
 	ld.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty().SetName("foo")
@@ -96,7 +96,7 @@ func TestProtobufLogsSizer(t *testing.T) {
 }
 
 func TestProtobufLogsSizer_withNil(t *testing.T) {
-	sizer := NewProtobufLogsSizer()
+	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
 
 	assert.Equal(t, 0, sizer.LogsSize(pdata.NewLogs()))
 }

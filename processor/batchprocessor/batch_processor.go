@@ -228,7 +228,7 @@ type batchTraces struct {
 }
 
 func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
-	return &batchTraces{nextConsumer: nextConsumer, traceData: pdata.NewTraces(), sizer: otlp.NewProtobufTracesSizer()}
+	return &batchTraces{nextConsumer: nextConsumer, traceData: pdata.NewTraces(), sizer: otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)}
 }
 
 // add updates current batchTraces by adding new TraceData object
@@ -272,7 +272,7 @@ type batchMetrics struct {
 }
 
 func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
-	return &batchMetrics{nextConsumer: nextConsumer, metricData: pdata.NewMetrics(), sizer: otlp.NewProtobufMetricsSizer()}
+	return &batchMetrics{nextConsumer: nextConsumer, metricData: pdata.NewMetrics(), sizer: otlp.NewProtobufMetricsMarshaler().(pdata.MetricsSizer)}
 }
 
 func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int) error {
@@ -315,7 +315,7 @@ type batchLogs struct {
 }
 
 func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
-	return &batchLogs{nextConsumer: nextConsumer, logData: pdata.NewLogs(), sizer: otlp.NewProtobufLogsSizer()}
+	return &batchLogs{nextConsumer: nextConsumer, logData: pdata.NewLogs(), sizer: otlp.NewProtobufLogsMarshaler().(pdata.LogsSizer)}
 }
 
 func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int) error {
