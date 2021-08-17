@@ -135,7 +135,7 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	attributes.Range(func(key string, value pdata.AttributeValue) bool {
 		l[key] = prompb.Label{
 			Name:  sanitize(key),
-			Value: value.StringVal(),
+			Value: pdata.AttributeValueToString(value),
 		}
 
 		return true

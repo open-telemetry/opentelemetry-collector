@@ -419,7 +419,7 @@ func attributeValuesToOC(labels pdata.AttributeMap, labelKeys *labelKeysAndType)
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = v.StringVal()
+		labelValue.Value = pdata.AttributeValueToString(v)
 		labelValue.HasValue = true
 		return true
 	})

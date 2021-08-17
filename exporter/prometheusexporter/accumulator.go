@@ -262,7 +262,7 @@ func timeseriesSignature(ilmName string, metric pdata.Metric, attributes pdata.A
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
 	attributes.Sort().Range(func(k string, v pdata.AttributeValue) bool {
-		b.WriteString("*" + k + "*" + v.StringVal())
+		b.WriteString("*" + k + "*" + pdata.AttributeValueToString(v))
 		return true
 	})
 	return b.String()
