@@ -96,10 +96,10 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetric
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertSumMetricHasLabelValue(t, cpuTimeMetric, 0, "state", "user")
-	internal.AssertSumMetricHasLabelValue(t, cpuTimeMetric, 1, "state", "system")
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewAttributeValueString(metadata.LabelProcessState.User))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewAttributeValueString(metadata.LabelProcessState.System))
 	if runtime.GOOS == "linux" {
-		internal.AssertSumMetricHasLabelValue(t, cpuTimeMetric, 2, "state", "wait")
+		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewAttributeValueString(metadata.LabelProcessState.Wait))
 	}
 }
 
@@ -114,8 +114,8 @@ func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetrics
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertSumMetricHasLabelValue(t, diskIOMetric, 0, "direction", "read")
-	internal.AssertSumMetricHasLabelValue(t, diskIOMetric, 1, "direction", "write")
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelProcessDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelProcessDirection.Write))
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {

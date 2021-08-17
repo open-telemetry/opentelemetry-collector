@@ -35,13 +35,13 @@ func AssertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Met
 	assert.Equal(t, expected.DataType(), actual.DataType())
 }
 
-func AssertSumMetricHasLabelValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
+func AssertSumMetricHasAttributeValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal pdata.AttributeValue) {
 	val, ok := metric.Sum().DataPoints().At(index).Attributes().Get(labelName)
 	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
-	assert.Equal(t, expectedVal, val.StringVal())
+	assert.Equal(t, expectedVal, val)
 }
 
-func AssertSumMetricHasLabel(t *testing.T, metric pdata.Metric, index int, labelName string) {
+func AssertSumMetricHasAttribute(t *testing.T, metric pdata.Metric, index int, labelName string) {
 	_, ok := metric.Sum().DataPoints().At(index).Attributes().Get(labelName)
 	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
 }
