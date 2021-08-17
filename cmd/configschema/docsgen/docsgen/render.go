@@ -20,7 +20,7 @@ import (
 	"strings"
 	"text/template"
 
-	"go.opentelemetry.io/collector/cmd/configschema/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema"
 )
 
 func renderHeader(typ, group, doc string) []byte {

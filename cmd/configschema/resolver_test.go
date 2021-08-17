@@ -32,7 +32,7 @@ func TestPackageDirLocal(t *testing.T) {
 	pkgValue := reflect.ValueOf(pkg)
 	dr := testDR()
 	output, _ := dr.PackageDir(pkgValue.Type())
-	assert.Equal(t, "../../../model/pdata", output)
+	assert.Equal(t, "../../model/pdata", output)
 }
 
 func TestPackageDirError(t *testing.T) {
@@ -66,5 +66,5 @@ func TestExternalPkgDir(t *testing.T) {
 func TestExternalPkgDirReplace(t *testing.T) {
 	pkg := DefaultModule + "/model"
 	pkgPath, _ := testDR().externalPackageDir(pkg)
-	assert.Equal(t, "../../../model", pkgPath)
+	assert.Equal(t, "../../model", pkgPath)
 }

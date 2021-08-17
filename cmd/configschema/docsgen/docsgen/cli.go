@@ -24,7 +24,7 @@ import (
 	"strings"
 	"text/template"
 
-	"go.opentelemetry.io/collector/cmd/configschema/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema"
 	"go.opentelemetry.io/collector/component"
 )
 
