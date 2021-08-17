@@ -921,11 +921,6 @@ func NewNumberDataPoint() NumberDataPoint {
 	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this NumberDataPoint.
-func (ms NumberDataPoint) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
-}
-
 // Attributes returns the Attributes associated with this NumberDataPoint.
 func (ms NumberDataPoint) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
@@ -982,7 +977,6 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1156,11 +1150,6 @@ func NewHistogramDataPoint() HistogramDataPoint {
 	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
-}
-
 // Attributes returns the Attributes associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
@@ -1233,7 +1222,6 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1404,11 +1392,6 @@ func NewSummaryDataPoint() SummaryDataPoint {
 	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
-}
-
 // Attributes returns the Attributes associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
@@ -1461,7 +1444,6 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1834,11 +1816,6 @@ func (ms Exemplar) SetIntVal(v int64) {
 	}
 }
 
-// FilteredLabels returns the FilteredLabels associated with this Exemplar.
-func (ms Exemplar) FilteredLabels() StringMap {
-	return newStringMap(&(*ms.orig).FilteredLabels)
-}
-
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
 func (ms Exemplar) FilteredAttributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).FilteredAttributes)
@@ -1854,6 +1831,5 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 		dest.SetIntVal(ms.IntVal())
 	}
 
-	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
 }
