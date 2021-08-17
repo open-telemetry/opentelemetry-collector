@@ -43,6 +43,13 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) e
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
+		switch value := err.(type) {
+		case sarama.ProducerErrors:
+			for i := 0; i < len(value); i++ {
+				e.logger.Error("failed to export trace msg to kafka. ", zap.Error(value[i].Err))
+			}
+		default:
+		}
 		return err
 	}
 	return nil
@@ -67,6 +74,13 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Met
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
+		switch value := err.(type) {
+		case sarama.ProducerErrors:
+			for i := 0; i < len(value); i++ {
+				e.logger.Error("failed to export metric msg to kafka. ", zap.Error(value[i].Err))
+			}
+		default:
+		}
 		return err
 	}
 	return nil
@@ -91,6 +105,13 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) err
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
+		switch value := err.(type) {
+		case sarama.ProducerErrors:
+			for i := 0; i < len(value); i++ {
+				e.logger.Error("failed to export log msg to kafka. ", zap.Error(value[i].Err))
+			}
+		default:
+		}
 		return err
 	}
 	return nil
