@@ -347,11 +347,11 @@ func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempla
 	}
 	ocAttachments := ocExemplar.GetAttachments()
 	exemplar.SetDoubleVal(ocExemplar.GetValue())
-	filteredLabels := exemplar.FilteredLabels()
-	filteredLabels.Clear()
-	filteredLabels.EnsureCapacity(len(ocAttachments))
+	filteredAttributes := exemplar.FilteredAttributes()
+	filteredAttributes.Clear()
+	filteredAttributes.EnsureCapacity(len(ocAttachments))
 	for k, v := range ocAttachments {
-		filteredLabels.Upsert(k, v)
+		filteredAttributes.UpsertString(k, v)
 	}
 }
 

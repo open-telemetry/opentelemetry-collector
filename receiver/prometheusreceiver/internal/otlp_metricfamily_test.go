@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type byLookupMetadataCache map[string]scrape.MetricMetadata
@@ -234,8 +235,8 @@ func TestMetricGroupData_toDistributionPointEquivalence(t *testing.T) {
 				require.Equal(t, ocExemplar.Timestamp.AsTime(), pdataExemplar.Timestamp().AsTime(), msgPrefix+"timestamp mismatch")
 				require.Equal(t, ocExemplar.Value, pdataExemplar.DoubleVal(), msgPrefix+"value mismatch")
 				pdataExemplarAttachments := make(map[string]string)
-				pdataExemplar.FilteredLabels().Range(func(key, value string) bool {
-					pdataExemplarAttachments[key] = value
+				pdataExemplar.FilteredAttributes().Range(func(key string, value pdata.AttributeValue) bool {
+					pdataExemplarAttachments[key] = tracetranslator.AttributeValueToString(value)
 					return true
 				})
 				require.Equal(t, ocExemplar.Attachments, pdataExemplarAttachments, msgPrefix+"attachments mismatch")

@@ -407,7 +407,13 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 20,
 								TimeUnixNano:      21,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
-								Exemplars:         []otlpmetrics.Exemplar{},
+								Exemplars: []otlpmetrics.Exemplar{
+									{
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -426,7 +432,16 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 20,
 								TimeUnixNano:      21,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
-								Exemplars:         []otlpmetrics.Exemplar{},
+								Exemplars: []otlpmetrics.Exemplar{
+									{
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+										FilteredAttributes: []otlpcommon.KeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "FilteredLabelValue"}}},
+										},
+									},
+								},
 								Attributes: []otlpcommon.KeyValue{
 									{Key: "SumKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "SumValue"}}},
 								},
@@ -534,7 +549,13 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 22,
 								TimeUnixNano:      23,
 								Value:             201,
-								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+								Exemplars: []otlpmetrics.IntExemplar{ //nolint:staticcheck // SA1019 ignore this!
+									{
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -551,7 +572,19 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 22,
 								TimeUnixNano:      23,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
-								Exemplars:         []otlpmetrics.Exemplar{},
+								Exemplars: []otlpmetrics.Exemplar{
+									{
+										Value: &otlpmetrics.Exemplar_AsInt{
+											AsInt: 0,
+										},
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+										FilteredAttributes: []otlpcommon.KeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "FilteredLabelValue"}}},
+										},
+									},
+								},
 								Attributes: []otlpcommon.KeyValue{
 									{Key: "IntSumKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "IntSumValue"}}},
 								},

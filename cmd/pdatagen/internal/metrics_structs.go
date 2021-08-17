@@ -319,6 +319,11 @@ var exemplar = &messageValueStruct{
 			originFieldName: "FilteredLabels",
 			returnSlice:     stringMap,
 		},
+		&sliceField{
+			fieldName:       "FilteredAttributes",
+			originFieldName: "FilteredAttributes",
+			returnSlice:     attributeMap,
+		},
 	},
 }
 

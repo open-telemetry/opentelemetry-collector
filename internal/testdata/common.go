@@ -57,8 +57,8 @@ func initSpanLinkAttributes(dest pdata.AttributeMap) {
 	dest.InitFromMap(spanLinkAttributes)
 }
 
-func initMetricAttachment(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestAttachmentKey: TestAttachmentValue})
+func initMetricAttachment(dest pdata.AttributeMap) {
+	dest.InitFromMap(map[string]pdata.AttributeValue{TestAttachmentKey: pdata.NewAttributeValueString(TestAttachmentValue)})
 }
 
 func initMetricAttributes1(dest pdata.AttributeMap) {

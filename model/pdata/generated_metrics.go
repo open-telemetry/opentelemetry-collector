@@ -1839,6 +1839,11 @@ func (ms Exemplar) FilteredLabels() StringMap {
 	return newStringMap(&(*ms.orig).FilteredLabels)
 }
 
+// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
+func (ms Exemplar) FilteredAttributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).FilteredAttributes)
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
@@ -1850,4 +1855,5 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	}
 
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
+	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
 }
