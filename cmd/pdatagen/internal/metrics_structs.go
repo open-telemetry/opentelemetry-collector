@@ -461,8 +461,8 @@ var scaleField = &primitiveField{
 	fieldName:       "Scale",
 	originFieldName: "Scale",
 	returnType:      "int32",
-	defaultVal:      `0`,
-	testVal:         `3`,
+	defaultVal:      `int32(0)`,
+	testVal:         `int32(3)`,
 }
 
 var zeroCountField = &primitiveField{
@@ -477,8 +477,8 @@ var offsetField = &primitiveField{
 	fieldName:       "Offset",
 	originFieldName: "Offset",
 	returnType:      "int64",
-	defaultVal:      `0`,
-	testVal:         `-3`,
+	defaultVal:      `int64(0)`,
+	testVal:         `int64(-3)`,
 }
 
 var positiveBucketsField = &messageValueField{
