@@ -210,7 +210,7 @@ func assertUp(t *testing.T, expected float64, mL *pdata.MetricSlice) {
 		assert.Equal(t, pdata.MetricDataTypeGauge, m.DataType())
 		points := m.Gauge().DataPoints()
 		assert.True(t, points.Len() > 0, "expecting at least one point")
-		assert.Equal(t, expected, points.At(i).DoubleVal())
+		assert.Equal(t, expected, points.At(0).DoubleVal())
 	}
 	t.Error("No 'up' metric found")
 }
@@ -272,6 +272,7 @@ func assertMetricPresent(name string, descriptorExpectations []descriptorCompara
 				return false
 			}
 
+			// TODO: Translate me.
 			/*
 				for i, se := range seriesExpectations {
 					for _, sc := range se.series {
@@ -355,6 +356,150 @@ func compareStartTimestamp(ts pdata.Timestamp) seriesComparator {
 	}
 }
 
+func compareMetricType(want pdata.MetricDataType) descriptorComparator {
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		return assert.Equal(t, want, metric.DataType())
+	}
+}
+
+func ensureMatchingKeys(t *testing.T, lookup map[string]bool, sm pdata.StringMap) bool {
+	if !assert.Equal(t, len(lookup), sm.Len()) {
+		return false
+	}
+	ok := true
+	sm.Range(func(key, _ string) bool {
+		if _, match := lookup[key]; !match {
+			ok = false
+		}
+		return ok
+	})
+	return ok
+}
+
+func ensureMatchingValues(t *testing.T, lookup map[string]bool, sm pdata.StringMap) bool {
+	if !assert.Equal(t, len(lookup), sm.Len()) {
+		return false
+	}
+	ok := true
+	sm.Range(func(_, value string) bool {
+		if _, match := lookup[value]; !match {
+			ok = false
+		}
+		return ok
+	})
+	return ok
+}
+
+func compareMetricLabelKeys(keys []string) descriptorComparator {
+	lookup := make(map[string]bool)
+	for _, key := range keys {
+		lookup[key] = true
+	}
+
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		switch dataType := metric.DataType(); dataType {
+		case pdata.MetricDataTypeGauge:
+			dataPoints := metric.Gauge().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingKeys(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeHistogram:
+			dataPoints := metric.Histogram().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingKeys(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeSummary:
+			dataPoints := metric.Summary().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingKeys(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeSum:
+			dataPoints := metric.Sum().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingKeys(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		default:
+			t.Fatalf("Unhandled data type: %s", dataType)
+			return false
+		}
+	}
+}
+
+func compareSeriesLabelValues(values []string) seriesComparator {
+	lookup := make(map[string]bool)
+	for _, value := range values {
+		lookup[value] = true
+	}
+
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		switch dataType := metric.DataType(); dataType {
+		case pdata.MetricDataTypeGauge:
+			dataPoints := metric.Gauge().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingValues(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeHistogram:
+			dataPoints := metric.Histogram().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingValues(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeSummary:
+			dataPoints := metric.Summary().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingValues(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeSum:
+			dataPoints := metric.Sum().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !ensureMatchingValues(t, lookup, point.LabelsMap()) {
+					return false
+				}
+			}
+			return true
+
+		default:
+			t.Fatalf("Unhandled data type: %s", dataType)
+			return false
+		}
+	}
+}
+
 /*
 func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetricsServiceRequest, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
@@ -366,53 +511,6 @@ func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetric
 			assert.True(t, e(t, got.Metrics))
 		}
 	})
-}
-
-func countScrapeMetrics(in *agentmetricspb.ExportMetricsServiceRequest) int {
-	n := 0
-	for _, m := range in.Metrics {
-		switch m.MetricDescriptor.Name {
-		case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
-			n++
-		default:
-		}
-	}
-	return n
-}
-
-
-func compareMetricType(typ metricspb.MetricDescriptor_Type) descriptorComparator {
-	return func(t *testing.T, descriptor *metricspb.MetricDescriptor) bool {
-		return assert.Equal(t, typ, descriptor.Type)
-	}
-}
-
-func compareMetricLabelKeys(keys []string) descriptorComparator {
-	return func(t *testing.T, descriptor *metricspb.MetricDescriptor) bool {
-		if !assert.Equal(t, len(keys), len(descriptor.LabelKeys)) {
-			return false
-		}
-		for i, k := range keys {
-			if !assert.Equal(t, k, descriptor.LabelKeys[i].Key) {
-				return false
-			}
-		}
-		return true
-	}
-}
-
-func compareSeriesLabelValues(values []string) seriesComparator {
-	return func(t *testing.T, series *metricspb.TimeSeries) bool {
-		if !assert.Equal(t, len(values), len(series.LabelValues)) {
-			return false
-		}
-		for i, v := range values {
-			if !assert.Equal(t, v, series.LabelValues[i].Value) {
-				return false
-			}
-		}
-		return true
-	}
 }
 
 func comparePointTimestamp(ts *timestamppb.Timestamp) pointComparator {
