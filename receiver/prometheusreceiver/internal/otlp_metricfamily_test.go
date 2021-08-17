@@ -135,9 +135,9 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetBucketCounts([]uint64{33})
 				point.SetExplicitBounds([]float64{})
 				point.SetStartTimestamp(11 * 1e6)
-				labelsMap := point.LabelsMap()
-				labelsMap.Insert("a", "A")
-				labelsMap.Insert("b", "B")
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
 				return point
 			},
 		},
@@ -243,11 +243,11 @@ func TestMetricGroupData_toDistributionPointEquivalence(t *testing.T) {
 			// 7. Ensure that bucket bounds are the same.
 			require.Equal(t, ocBucketCounts, pdataPoint.BucketCounts(), "Bucket counts must be equal")
 			// 8. Ensure that the labels all match up.
-			ocStringMap := pdata.NewStringMap()
+			ocStringMap := pdata.NewAttributeMap()
 			for i, labelValue := range ocTimeseries.LabelValues {
-				ocStringMap.Insert(mf.labelKeysOrdered[i], labelValue.Value)
+				ocStringMap.InsertString(mf.labelKeysOrdered[i], labelValue.Value)
 			}
-			require.Equal(t, ocStringMap.Sort(), pdataPoint.LabelsMap().Sort())
+			require.Equal(t, ocStringMap.Sort(), pdataPoint.Attributes().Sort())
 		})
 	}
 }
@@ -344,9 +344,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99.SetValue(82)
 				point.SetTimestamp(14 * 1e6) // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(14 * 1e6)
-				labelsMap := point.LabelsMap()
-				labelsMap.Insert("a", "A")
-				labelsMap.Insert("b", "B")
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
 				return point
 			},
 		},
@@ -433,11 +433,11 @@ func TestMetricGroupData_toSummaryPointEquivalence(t *testing.T) {
 			// 4. Ensure that the point's timestamp is equal to that from the OpenCensusProto data point.
 			require.Equal(t, ocPoint.GetTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "Point timestamps must be equal")
 			// 5. Ensure that the labels all match up.
-			ocStringMap := pdata.NewStringMap()
+			ocStringMap := pdata.NewAttributeMap()
 			for i, labelValue := range ocTimeseries.LabelValues {
-				ocStringMap.Insert(mf.labelKeysOrdered[i], labelValue.Value)
+				ocStringMap.InsertString(mf.labelKeysOrdered[i], labelValue.Value)
 			}
-			require.Equal(t, ocStringMap.Sort(), pdataPoint.LabelsMap().Sort())
+			require.Equal(t, ocStringMap.Sort(), pdataPoint.Attributes().Sort())
 			// 6. Ensure that the quantile values all match up.
 			ocQuantiles := ocSummary.GetSnapshot().GetPercentileValues()
 			pdataQuantiles := pdataPoint.QuantileValues()
@@ -478,9 +478,9 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetDoubleVal(33.7)
 				point.SetTimestamp(13 * 1e6) // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(11 * 1e6)
-				labelsMap := point.LabelsMap()
-				labelsMap.Insert("a", "A")
-				labelsMap.Insert("b", "B")
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
 				return point
 			},
 		},
@@ -497,9 +497,9 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetDoubleVal(99.9)
 				point.SetTimestamp(28 * 1e6) // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(0)
-				labelsMap := point.LabelsMap()
-				labelsMap.Insert("a", "A")
-				labelsMap.Insert("b", "B")
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
 				return point
 			},
 		},
@@ -576,11 +576,11 @@ func TestMetricGroupData_toNumberDataPointEquivalence(t *testing.T) {
 			// 4. Ensure that the point's timestamp is equal to that from the OpenCensusProto data point.
 			require.Equal(t, ocPoint.GetTimestamp().AsTime(), pdataPoint.Timestamp().AsTime(), "Point timestamps must be equal")
 			// 5. Ensure that the labels all match up.
-			ocStringMap := pdata.NewStringMap()
+			ocStringMap := pdata.NewAttributeMap()
 			for i, labelValue := range ocTimeseries.LabelValues {
-				ocStringMap.Insert(mf.labelKeysOrdered[i], labelValue.Value)
+				ocStringMap.InsertString(mf.labelKeysOrdered[i], labelValue.Value)
 			}
-			require.Equal(t, ocStringMap.Sort(), pdataPoint.LabelsMap().Sort())
+			require.Equal(t, ocStringMap.Sort(), pdataPoint.Attributes().Sort())
 		})
 	}
 }
