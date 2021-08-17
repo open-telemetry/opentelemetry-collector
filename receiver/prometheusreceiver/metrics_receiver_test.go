@@ -500,60 +500,144 @@ func compareSeriesLabelValues(values []string) seriesComparator {
 	}
 }
 
-/*
-func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetricsServiceRequest, expectations []testExpectation) {
+func doCompare(name string, t *testing.T, want, got *pdata.Metrics, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
-		numScrapeMetrics := countScrapeMetrics(got)
-		assert.Equal(t, expectedScrapeMetricCount, numScrapeMetrics)
-		assert.EqualValues(t, want.Node, got.Node)
-		assert.EqualValues(t, want.Resource, got.Resource)
-		for _, e := range expectations {
-			assert.True(t, e(t, got.Metrics))
+		wantRMI, gotRMI := want.ResourceMetrics(), got.ResourceMetrics()
+		require.Equal(t, wantRMI, gotRMI, "The ResourceMetrics do not match")
+		require.Equal(t, wantRMI.Len(), gotRMI.Len(), "The lengths do not match")
+		for k := 0; k < wantRMI.Len(); k++ {
+			gotRM := gotRMI.At(k)
+			wantRM := wantRMI.At(k)
+			require.Equal(t, gotRM.Resource().Attributes().Sort(), wantRM.Resource().Attributes().Sort(), "The resource attributes don't match")
+			gotILML := gotRM.InstrumentationLibraryMetrics()
+			wantILML := wantRM.InstrumentationLibraryMetrics()
+			for i := 0; i < gotILML.Len(); i++ {
+				gotMetricL := gotILML.At(i).Metrics()
+				wantMetricL := wantILML.At(i).Metrics()
+				gotNumScrapeMetrics := countScrapeMetrics(&gotMetricL)
+				wantNumScrapeMetrics := countScrapeMetrics(&wantMetricL)
+				assert.Equal(t, expectedScrapeMetricCount, gotNumScrapeMetrics)
+				assert.Equal(t, gotNumScrapeMetrics, wantNumScrapeMetrics)
+				for _, e := range expectations {
+					assert.True(t, e(t, &gotMetricL))
+				}
+			}
 		}
 	})
 }
 
-func comparePointTimestamp(ts *timestamppb.Timestamp) pointComparator {
-	return func(t *testing.T, point *metricspb.Point) bool {
-		return assert.Equal(t, ts.String(), point.Timestamp.String())
-	}
-}
-
-func compareDoubleVal(cmp float64) pointComparator {
-	return func(t *testing.T, pt *metricspb.Point) bool {
-		return assert.Equal(t, cmp, pt.GetDoubleValue())
-	}
-}
-
-func compareHistogram(count int64, sum float64, buckets []int64) pointComparator {
-	return func(t *testing.T, pt *metricspb.Point) bool {
-		ret := assert.Equal(t, count, pt.GetDistributionValue().Count)
-		ret = ret && assert.Equal(t, sum, pt.GetDistributionValue().Sum)
-
-		if ret {
-			for i, b := range buckets {
-				ret = ret && assert.Equal(t, b, pt.GetDistributionValue().Buckets[i].Count)
+func comparePointTimestamp(ts pdata.Timestamp) pointComparator {
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		switch dataType := metric.DataType(); dataType {
+		case pdata.MetricDataTypeGauge:
+			dataPoints := metric.Gauge().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts, point.Timestamp()) {
+					return false
+				}
 			}
+			return true
+
+		case pdata.MetricDataTypeHistogram:
+			dataPoints := metric.Histogram().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts, point.Timestamp()) {
+					return false
+				}
+
+			}
+			return true
+
+		case pdata.MetricDataTypeSummary:
+			dataPoints := metric.Summary().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts, point.Timestamp()) {
+					return false
+				}
+
+			}
+			return true
+
+		case pdata.MetricDataTypeSum:
+			dataPoints := metric.Sum().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts, point.Timestamp()) {
+					return false
+				}
+			}
+			return true
+
+		default:
+			t.Fatalf("Unhandled data type: %s", dataType)
+			return false
 		}
-		return ret
 	}
 }
 
 func compareSummary(count int64, sum float64, quantiles map[float64]float64) pointComparator {
-	return func(t *testing.T, pt *metricspb.Point) bool {
-		ret := assert.Equal(t, count, pt.GetSummaryValue().Count.Value)
-		ret = ret && assert.Equal(t, sum, pt.GetSummaryValue().Sum.Value)
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		require.Equal(t, pdata.MetricDataTypeSummary, metric.DataType(), "Expected Summary as a DataType")
+		points := metric.Summary().DataPoints()
+		require.Equal(t, 1, points.Len(), "Expecting exactly 1 data point")
+		pt := points.At(0)
+		if !assert.Equal(t, count, pt.Count()) {
+			return false
+		}
+		if !assert.Equal(t, sum, pt.Sum()) {
+			return false
+		}
 
-		if ret {
-			assert.Equal(t, len(quantiles), len(pt.GetSummaryValue().Snapshot.PercentileValues))
-			for _, q := range pt.GetSummaryValue().Snapshot.PercentileValues {
-				assert.Equal(t, quantiles[q.Percentile], q.Value)
+		ptQuantiles := pt.QuantileValues()
+		assert.Equal(t, len(quantiles), ptQuantiles.Len())
+		for i := 0; i < ptQuantiles.Len(); i++ {
+			qvi := ptQuantiles.At(i)
+			if !assert.Equal(t, quantiles[qvi.Quantile()], qvi.Value()) {
+				return false
 			}
 		}
-		return ret
+		return true
 	}
 }
-*/
+
+func compareDoubleVal(cmp float64) pointComparator {
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		var points pdata.NumberDataPointSlice
+		switch dataType := metric.DataType(); dataType {
+		case pdata.MetricDataTypeSum:
+			points = metric.Sum().DataPoints()
+		case pdata.MetricDataTypeGauge:
+			points = metric.Gauge().DataPoints()
+		default:
+			t.Fatalf("DoubleVal unavailable for dataType: %q", dataType)
+			return false
+		}
+
+		require.Equal(t, 1, points.Len(), "Expecting exactly 1 data point")
+		pt := points.At(0)
+		require.Equal(t, cmp, pt.DoubleVal())
+		return true
+	}
+}
+
+func compareHistogram(count int64, sum float64, buckets []int64) pointComparator {
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		require.Equal(t, pdata.MetricDataTypeHistogram, metric.DataType(), "Expected Histogram as a DataType")
+		points := metric.Histogram().DataPoints()
+		require.Equal(t, 1, points.Len(), "Expecting exactly 1 data point")
+		pt := points.At(0)
+		if !assert.Equal(t, count, pt.Count()) {
+			return false
+		}
+		if !assert.Equal(t, sum, pt.Sum()) {
+			return false
+		}
+		return assert.Equal(t, buckets, pt.ExplicitBounds())
+	}
+}
 
 // Test data and validation functions for EndToEnd test
 // Make sure every page has a gauge, we are relying on it to figure out the start time if needed
@@ -617,9 +701,9 @@ rpc_duration_seconds_count 1001
 `
 
 func verifyTarget1(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
+	verifyNumScrapeResults(t, td, mds)
 	// TODO: Translate me.
 	/*
-		verifyNumScrapeResults(t, td, mds)
 		if len(mds) < 1 {
 			t.Fatal("At least one metric request should be present")
 		}
