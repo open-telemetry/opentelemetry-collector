@@ -544,7 +544,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "something_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -558,7 +558,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "theother_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
