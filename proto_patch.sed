@@ -48,3 +48,10 @@ s+repeated IntExemplar exemplars = \(.*\);+repeated IntExemplar exemplars = \1\
 
 s+repeated Exemplar exemplars = \(.*\);+repeated Exemplar exemplars = \1\
   [ (gogoproto.nullable) = false ];+g
+
+s+Buckets positive = \(.*\);+Buckets positive = \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+Buckets negative = \(.*\);+Buckets negative = \1\
+  [ (gogoproto.nullable) = false ];+g
+
