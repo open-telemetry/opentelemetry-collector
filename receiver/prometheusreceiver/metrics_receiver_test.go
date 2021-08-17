@@ -28,8 +28,6 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	gokitlog "github.com/go-kit/kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
@@ -111,8 +109,7 @@ func (mp *mockPrometheus) Close() {
 // -------------------------
 
 var (
-	srvPlaceHolder            = "__SERVER_ADDRESS__"
-	expectedScrapeMetricCount = 5
+	srvPlaceHolder = "__SERVER_ADDRESS__"
 )
 
 type testData struct {
@@ -178,6 +175,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
+/*
 func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	want := 0
 	for _, p := range td.pages {
@@ -189,6 +187,8 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.Ex
 		t.Fatalf("want %d, but got %d\n", want, l)
 	}
 }
+
+const  expectedScrapeMetricCount = 5
 
 func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetricsServiceRequest, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
@@ -375,6 +375,7 @@ func compareSummary(count int64, sum float64, quantiles map[float64]float64) poi
 		return ret
 	}
 }
+*/
 
 // Test data and validation functions for EndToEnd test
 // Make sure every page has a gauge, we are relying on it to figure out the start time if needed
@@ -1157,150 +1158,150 @@ rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
 func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
-        // TODO: Translate me.
-        /*
-	verifyNumScrapeResults(t, td, mds)
-	m1 := mds[0]
-	// m1 has 3 metrics + 5 internal scraper metrics
-	if l := len(m1.Metrics); l != 8 {
-		t.Errorf("want 8, but got %v\n", l)
-	}
+	// TODO: Translate me.
+	/*
+		verifyNumScrapeResults(t, td, mds)
+		m1 := mds[0]
+		// m1 has 3 metrics + 5 internal scraper metrics
+		if l := len(m1.Metrics); l != 8 {
+			t.Errorf("want 8, but got %v\n", l)
+		}
 
-	ts1 := m1.Metrics[1].Timeseries[0].Points[0].Timestamp
-	want1 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
+		ts1 := m1.Metrics[1].Timeseries[0].Points[0].Timestamp
+		want1 := &agentmetricspb.ExportMetricsServiceRequest{
+			Node:     td.node,
+			Resource: td.resource,
+		}
 
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(18),
-					},
+		e1 := []testExpectation{
+			assertMetricPresent("go_threads",
+				[]descriptorComparator{
+					compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
 				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
+				[]seriesExpectation{
+					{
+						points: []pointComparator{
+							comparePointTimestamp(ts1),
+							compareDoubleVal(18),
+						},
 					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareHistogram(13003, 50000, []int64{10000, 1000, 1001, 1002}),
-					},
+				}),
+			assertMetricPresent("http_request_duration_seconds",
+				[]descriptorComparator{
+					compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
 				},
-			}),
-		assertMetricAbsent("corrupted_hist"),
-		assertMetricPresent("rpc_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
-				compareMetricLabelKeys([]string{"foo"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"bar"}),
+				[]seriesExpectation{
+					{
+						series: []seriesComparator{
+							compareSeriesTimestamp(ts1),
+						},
+						points: []pointComparator{
+							comparePointTimestamp(ts1),
+							compareHistogram(13003, 50000, []int64{10000, 1000, 1001, 1002}),
+						},
 					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareSummary(900, 8000, map[float64]float64{1: 31, 5: 35, 50: 47, 90: 70, 99: 76}),
-					},
+				}),
+			assertMetricAbsent("corrupted_hist"),
+			assertMetricPresent("rpc_duration_seconds",
+				[]descriptorComparator{
+					compareMetricType(metricspb.MetricDescriptor_SUMMARY),
+					compareMetricLabelKeys([]string{"foo"}),
 				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"no_quantile"}),
+				[]seriesExpectation{
+					{
+						series: []seriesComparator{
+							compareSeriesTimestamp(ts1),
+							compareSeriesLabelValues([]string{"bar"}),
+						},
+						points: []pointComparator{
+							comparePointTimestamp(ts1),
+							compareSummary(900, 8000, map[float64]float64{1: 31, 5: 35, 50: 47, 90: 70, 99: 76}),
+						},
 					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareSummary(50, 100, map[float64]float64{}),
+					{
+						series: []seriesComparator{
+							compareSeriesTimestamp(ts1),
+							compareSeriesLabelValues([]string{"no_quantile"}),
+						},
+						points: []pointComparator{
+							comparePointTimestamp(ts1),
+							compareSummary(50, 100, map[float64]float64{}),
+						},
 					},
-				},
-			}),
-	}
+				}),
+		}
 
-	doCompare("scrape1", t, want1, m1, e1)
+		doCompare("scrape1", t, want1, m1, e1)
 
-	// verify the 2nd metricData
-	m2 := mds[1]
-	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
+		// verify the 2nd metricData
+		m2 := mds[1]
+		ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want2 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
+		want2 := &agentmetricspb.ExportMetricsServiceRequest{
+			Node:     td.node,
+			Resource: td.resource,
+		}
 
-	e2 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(16),
-					},
+		e2 := []testExpectation{
+			assertMetricPresent("go_threads",
+				[]descriptorComparator{
+					compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
 				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
+				[]seriesExpectation{
+					{
+						points: []pointComparator{
+							comparePointTimestamp(ts2),
+							compareDoubleVal(16),
+						},
 					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareHistogram(14003, 50100, []int64{11000, 1000, 1001, 1002}),
-					},
+				}),
+			assertMetricPresent("http_request_duration_seconds",
+				[]descriptorComparator{
+					compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
 				},
-			}),
-		assertMetricAbsent("corrupted_hist"),
-		assertMetricPresent("rpc_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
-				compareMetricLabelKeys([]string{"foo"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"bar"}),
+				[]seriesExpectation{
+					{
+						series: []seriesComparator{
+							compareSeriesTimestamp(ts1),
+						},
+						points: []pointComparator{
+							comparePointTimestamp(ts2),
+							compareHistogram(14003, 50100, []int64{11000, 1000, 1001, 1002}),
+						},
 					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareSummary(950, 8100, map[float64]float64{1: 32, 5: 35, 50: 47, 90: 70, 99: 77}),
-					},
+				}),
+			assertMetricAbsent("corrupted_hist"),
+			assertMetricPresent("rpc_duration_seconds",
+				[]descriptorComparator{
+					compareMetricType(metricspb.MetricDescriptor_SUMMARY),
+					compareMetricLabelKeys([]string{"foo"}),
 				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"no_quantile"}),
+				[]seriesExpectation{
+					{
+						series: []seriesComparator{
+							compareSeriesTimestamp(ts1),
+							compareSeriesLabelValues([]string{"bar"}),
+						},
+						points: []pointComparator{
+							comparePointTimestamp(ts2),
+							compareSummary(950, 8100, map[float64]float64{1: 32, 5: 35, 50: 47, 90: 70, 99: 77}),
+						},
 					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareSummary(55, 101, map[float64]float64{}),
+					{
+						series: []seriesComparator{
+							compareSeriesTimestamp(ts1),
+							compareSeriesLabelValues([]string{"no_quantile"}),
+						},
+						points: []pointComparator{
+							comparePointTimestamp(ts2),
+							compareSummary(55, 101, map[float64]float64{}),
+						},
 					},
-				},
-			}),
-	}
+				}),
+		}
 
-	doCompare("scrape2", t, want2, m2, e2)
-        */
+		doCompare("scrape2", t, want2, m2, e2)
+	*/
 }
 
 // TestEndToEnd  end to end test executor
@@ -1372,8 +1373,21 @@ process_start_time_seconds 400.8
 
 var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 971, Nanos: 800000000}
 
-// 6 metrics + 5 internal metrics
-const numStartTimeMetricPageTimeseries = 11
+// 5 scraped metrics + 5 internal metrics where:
+// 5 scraped metrics:
+//   * go_threads
+//   * http_requests_total
+//   * http_request_duration_seconds
+//   * rpc_duration_seconds
+//   * process_start_time
+//
+// 5 internal metrics:
+//   * scrape_duration_seconds
+//   * scrape_samples_post_metric_relabeling
+//   * scrape_samples_scraped
+//   * scrape_series_added
+//   * up
+const numStartTimeMetricPageTimeseries = 10
 
 // TestStartTimeMetric validates that timeseries have start time set to 'process_start_time_seconds'
 func TestStartTimeMetric(t *testing.T) {
@@ -1522,7 +1536,6 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, rmL []*pdata.ResourceM
 			metrics := ilm.Metrics()
 			for j := 0; j < metrics.Len(); j++ {
 				metric := metrics.At(j)
-                                t.Logf("METRIC: %q :: %q", metric.Name(), metric.DataType())
 				timestamp := startTimeMetricPageStartTimestamp
 				numMetrics++
 				switch dataType := metric.DataType(); dataType {
@@ -1531,7 +1544,7 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, rmL []*pdata.ResourceM
 					dataPoints := metric.Gauge().DataPoints()
 					for k := 0; k < dataPoints.Len(); k++ {
 						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name())
+						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
 					}
 
 				case pdata.MetricDataTypeHistogram:
@@ -1539,14 +1552,14 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, rmL []*pdata.ResourceM
 					dataPoints := metric.Histogram().DataPoints()
 					for k := 0; k < dataPoints.Len(); k++ {
 						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name())
+						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
 					}
 
 				case pdata.MetricDataTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					for k := 0; k < dataPoints.Len(); k++ {
 						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name())
+						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
 					}
 
 				case pdata.MetricDataTypeSum:
@@ -1554,7 +1567,7 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, rmL []*pdata.ResourceM
 					dataPoints := metric.Sum().DataPoints()
 					for k := 0; k < dataPoints.Len(); k++ {
 						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name())
+						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
 					}
 
 				default:

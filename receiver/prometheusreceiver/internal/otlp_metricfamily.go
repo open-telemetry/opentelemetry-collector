@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
@@ -174,12 +175,17 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	point.SetSum(mg.sum)
 	point.SetBucketCounts(bucketCounts)
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
-	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	tsNanos := timestampFromMs(mg.ts)
 	point.SetStartTimestamp(tsNanos)
 	point.SetTimestamp(tsNanos)
 	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
 
 	return true
+}
+
+func timestampFromMs(timeAtMs int64) pdata.Timestamp {
+	secs, ns := timeAtMs/1e3, (timeAtMs%1e3)*1e6
+	return pdata.TimestampFromTime(time.Unix(secs, ns))
 }
 
 func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdata.SummaryDataPointSlice) bool {
@@ -205,7 +211,7 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	// observations and the corresponding sum is a sum of all observed values, thus the sum and count used
 	// at the global level of the metricspb.SummaryValue
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
-	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	tsNanos := timestampFromMs(mg.ts)
 	point.SetStartTimestamp(tsNanos)
 	point.SetTimestamp(tsNanos)
 	point.SetSum(mg.sum)
@@ -217,10 +223,10 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 
 func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *pdata.NumberDataPointSlice) bool {
 	var startTsNanos pdata.Timestamp
-	tsNanos := pdata.Timestamp(mg.ts * 1e6)
+	tsNanos := timestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
 	if mg.family.isCumulativeTypePdata() {
-		startTsNanos = pdata.Timestamp(mg.intervalStartTimeMs * 1e6)
+		startTsNanos = timestampFromMs(mg.intervalStartTimeMs)
 	}
 
 	point := dest.AppendEmpty()

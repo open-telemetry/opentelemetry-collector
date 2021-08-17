@@ -19,6 +19,7 @@ import (
 	"errors"
 	"math"
 	"sync/atomic"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -159,6 +160,7 @@ func (t *transactionPdata) Commit() error {
 	for _, sEntry := range staleLabels {
 		t.metricBuilder.AddDataPoint(sEntry.labels, sEntry.seenAtMs, stalenessSpecialValue)
 	}
+
 	t.startTimeMs = -1
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
@@ -195,28 +197,43 @@ func (t *transactionPdata) Rollback() error {
 	return nil
 }
 
+func timestampFromFloat64(ts float64) pdata.Timestamp {
+	secs := int64(ts)
+	nanos := int64((ts - float64(secs)) * 1e9)
+	return pdata.TimestampFromTime(time.Unix(secs, nanos))
+}
+
 func adjustStartTimestampPdata(startTime float64, metricsL *pdata.MetricSlice) {
+	startTimeTs := timestampFromFloat64(startTime)
 	for i := 0; i < metricsL.Len(); i++ {
 		metric := metricsL.At(i)
 		switch metric.DataType() {
-		case pdata.MetricDataTypeGauge, pdata.MetricDataTypeHistogram:
+		case pdata.MetricDataTypeGauge:
 			continue
 
 		case pdata.MetricDataTypeSum:
 			dataPoints := metric.Sum().DataPoints()
 			for i := 0; i < dataPoints.Len(); i++ {
 				dataPoint := dataPoints.At(i)
-				dataPoint.SetStartTimestamp(pdata.Timestamp(startTime))
+				dataPoint.SetStartTimestamp(startTimeTs)
 			}
 
 		case pdata.MetricDataTypeSummary:
 			dataPoints := metric.Summary().DataPoints()
 			for i := 0; i < dataPoints.Len(); i++ {
 				dataPoint := dataPoints.At(i)
-				dataPoint.SetStartTimestamp(pdata.Timestamp(startTime))
+				dataPoint.SetStartTimestamp(startTimeTs)
+			}
+
+		case pdata.MetricDataTypeHistogram:
+		dataPoints := metric.Histogram().DataPoints()
+			for i := 0; i < dataPoints.Len(); i++ {
+				dataPoint := dataPoints.At(i)
+				dataPoint.SetStartTimestamp(startTimeTs)
 			}
 
 		default:
+			panic("Unknown type:: " + metric.DataType().String())
 		}
 	}
 }
