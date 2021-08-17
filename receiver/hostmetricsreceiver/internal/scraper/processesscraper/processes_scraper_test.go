@@ -113,8 +113,8 @@ func assertProcessesCountMetricValid(t *testing.T, metric pdata.Metric, startTim
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.Equal(t, 2, metric.Sum().DataPoints().Len())
-	internal.AssertSumMetricHasLabelValue(t, metric, 0, "status", "running")
-	internal.AssertSumMetricHasLabelValue(t, metric, 1, "status", "blocked")
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "status", pdata.NewAttributeValueString(metadata.LabelProcessesStatus.Running))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "status", pdata.NewAttributeValueString(metadata.LabelProcessesStatus.Blocked))
 }
 
 func assertProcessesCreatedMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {

@@ -129,9 +129,9 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 
-	internal.AssertSumMetricHasLabel(t, metric, 0, "device")
-	internal.AssertSumMetricHasLabelValue(t, metric, 0, "direction", "read")
-	internal.AssertSumMetricHasLabelValue(t, metric, 1, "direction", "write")
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Write))
 }
 
 func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
@@ -146,15 +146,15 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDesc
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), minExpectedPoints)
 
-	internal.AssertSumMetricHasLabel(t, metric, 0, "device")
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertSumMetricHasLabelValue(t, metric, 0, "direction", "read")
-		internal.AssertSumMetricHasLabelValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", "write")
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Read))
+		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Write))
 	}
 }
 
 func assertDiskPendingOperationsMetricValid(t *testing.T, metric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemDiskPendingOperations.New(), metric)
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
-	internal.AssertSumMetricHasLabel(t, metric, 0, "device")
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 }
