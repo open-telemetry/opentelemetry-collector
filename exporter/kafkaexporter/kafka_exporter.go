@@ -110,7 +110,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	// Because sarama does not accept a Context for every message, set the Timeout here.
 	c.Producer.Timeout = config.Timeout
 	// If the message's size is bigger than the max message bytes, it will be sent to the queue again.
-	c.Producer.MaxMessageBytes = int(config.MessageMaxSize)
+	c.Producer.MaxMessageBytes = int(config.MessageMaxSizeMb) * 1024 * 1024
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff

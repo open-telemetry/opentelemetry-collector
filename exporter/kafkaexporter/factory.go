@@ -38,7 +38,7 @@ const (
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
 	// default message max size can be sent by sarama
-	defaultMessageMaxSize = 1024 * 1024
+	defaultMessageMaxSizeMb = 1
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -80,9 +80,9 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		Brokers:          []string{defaultBroker},
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:          "",
-		Encoding:       defaultEncoding,
-		MessageMaxSize: defaultMessageMaxSize,
+		Topic:            "",
+		Encoding:         defaultEncoding,
+		MessageMaxSizeMb: defaultMessageMaxSizeMb,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
