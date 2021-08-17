@@ -48,18 +48,6 @@ func (b *dataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	})
 }
 
-func (b *dataBuffer) logStringMap(description string, sm pdata.StringMap) {
-	if sm.Len() == 0 {
-		return
-	}
-
-	b.logEntry("%s:", description)
-	sm.Range(func(k string, v string) bool {
-		b.logEntry("     -> %s: %s", k, v)
-		return true
-	})
-}
-
 func (b *dataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrary) {
 	b.logEntry(
 		"InstrumentationLibrary %s %s",
@@ -100,7 +88,7 @@ func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("NumberDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -117,7 +105,7 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -144,7 +132,7 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("SummaryDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -159,8 +147,8 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	}
 }
 
-func (b *dataBuffer) logDataPointLabels(labels pdata.StringMap) {
-	b.logStringMap("Data point labels", labels)
+func (b *dataBuffer) logDataPointAttributes(labels pdata.AttributeMap) {
+	b.logAttributeMap("Data point attributes", labels)
 }
 
 func (b *dataBuffer) logLogRecord(lr pdata.LogRecord) {
