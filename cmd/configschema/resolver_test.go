@@ -31,40 +31,53 @@ func TestPackageDirLocal(t *testing.T) {
 	pkg := pdata.NewSum()
 	pkgValue := reflect.ValueOf(pkg)
 	dr := testDR()
-	output, _ := dr.PackageDir(pkgValue.Type())
+	output, err := dr.PackageDir(pkgValue.Type())
+	assert.NoError(t, err)
 	assert.Equal(t, "../../model/pdata", output)
 }
 
 func TestPackageDirError(t *testing.T) {
 	pkg := pdata.NewSum()
 	pkgType := reflect.ValueOf(pkg).Type()
-	dr := NewDirResolver("test/fail", DefaultModule)
+	srcRoot := "test/fail"
+	dr := NewDirResolver(srcRoot, DefaultModule)
 	output, err := dr.PackageDir(pkgType)
-	assert.NotEqual(t, nil, err)
+	if assert.Error(t, err) {
+		expected := fmt.Sprint("could not find the pkg \"model/pdata\": ")
+		expected += fmt.Sprintf("open %s/go.mod: no such file or directory", srcRoot)
+		assert.EqualError(t, err, expected, "")
+	}
 	assert.Equal(t, "", output)
 }
 
 func TestExternalPkgDirErr(t *testing.T) {
-	pkgPath, err := testDR().externalPackageDir("random/test")
-	assert.NotEqual(t, err, nil)
+	pkg := "random/test"
+	pkgPath, err := testDR().externalPackageDir(pkg)
+	if assert.Error(t, err) {
+		expected := fmt.Sprintf("could not find package: \"%s\"", pkg)
+		assert.EqualErrorf(t, err, expected, "")
+	}
 	assert.Equal(t, pkgPath, "")
 }
 
 func TestExternalPkgDir(t *testing.T) {
 	dr := testDR()
 	testPkg := "grpc-ecosystem/grpc-gateway"
-	pkgPath, _ := dr.externalPackageDir(testPkg)
+	pkgPath, err := dr.externalPackageDir(testPkg)
+	assert.NoError(t, err)
 	goPath := os.Getenv("GOPATH")
 	if goPath == "" {
 		goPath = build.Default.GOPATH
 	}
-	testLine, testVers, _ := grepMod(path.Join(dr.SrcRoot, "go.mod"), testPkg)
+	testLine, testVers, err := grepMod(path.Join(dr.SrcRoot, "go.mod"), testPkg)
+	assert.NoError(t, err)
 	expected := fmt.Sprint(path.Join(goPath, "pkg", "mod", testLine+"@"+testVers))
 	assert.Equal(t, expected, pkgPath)
 }
 
 func TestExternalPkgDirReplace(t *testing.T) {
 	pkg := DefaultModule + "/model"
-	pkgPath, _ := testDR().externalPackageDir(pkg)
+	pkgPath, err := testDR().externalPackageDir(pkg)
+	assert.NoError(t, err)
 	assert.Equal(t, "../../model", pkgPath)
 }
