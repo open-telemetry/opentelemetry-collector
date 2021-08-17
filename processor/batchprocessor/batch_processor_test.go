@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -119,6 +120,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
+	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -140,7 +142,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
-		sizeSum += td.OtlpProtoSize()
+		sizeSum += sizer.TracesSize(td)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -306,6 +308,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
+	sizer := otlp.NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -333,7 +336,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
-		size += md.OtlpProtoSize()
+		size += sizer.MetricsSize(md)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -508,9 +511,10 @@ func getTestMetricName(requestNum, index int) string {
 }
 
 func BenchmarkTraceSizeBytes(b *testing.B) {
+	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
 	td := testdata.GenerateTracesManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
-		fmt.Println(td.OtlpProtoSize())
+		fmt.Println(sizer.TracesSize(td))
 	}
 }
 
@@ -620,6 +624,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
+	sizer := otlp.NewProtobufLogsMarshaler().(pdata.LogsSizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -645,7 +650,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
-		size += ld.OtlpProtoSize()
+		size += sizer.LogsSize(ld)
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
