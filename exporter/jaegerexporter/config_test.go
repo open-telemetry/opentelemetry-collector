@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			ExporterSettings: config.NewExporterSettings(),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
 			},
@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(config.NewIDWithName(typeStr, "2"))
 	te, err := factory.CreateTracesExporter(context.Background(), set, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)

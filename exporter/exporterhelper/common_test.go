@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	defaultExporterCfg  = config.NewExporterSettings(config.NewID(typeStr))
+	exporterID          = config.NewID(typeStr)
 	exporterTag, _      = tag.NewKey("exporter")
 	defaultExporterTags = []tag.Tag{
 		{Key: exporterTag, Value: "test"},
@@ -37,7 +37,7 @@ var (
 )
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions())
+	be := newBaseExporter(componenttest.NewNopExporterCreateSettings(exporterID), fromOptions())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -45,8 +45,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be := newBaseExporter(
-		&defaultExporterCfg,
-		componenttest.NewNopExporterCreateSettings(),
+		componenttest.NewNopExporterCreateSettings(exporterID),
 		fromOptions(
 			WithStart(func(ctx context.Context, host component.Host) error { return want }),
 			WithShutdown(func(ctx context.Context) error { return want }),

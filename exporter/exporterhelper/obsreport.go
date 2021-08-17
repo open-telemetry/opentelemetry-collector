@@ -38,7 +38,7 @@ type obsExporter struct {
 func newObsExporter(cfg obsreport.ExporterSettings) *obsExporter {
 	return &obsExporter{
 		obsreport.NewExporter(cfg),
-		[]tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
+		[]tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterCreateSettings.ID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }
 

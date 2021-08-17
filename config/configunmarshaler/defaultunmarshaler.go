@@ -320,7 +320,6 @@ func unmarshalExporters(exps map[string]interface{}, factories map[config.Type]c
 
 		// Create the default config for this exporter.
 		exporterCfg := factory.CreateDefaultConfig()
-		exporterCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(exporterCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it

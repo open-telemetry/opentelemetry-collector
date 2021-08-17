@@ -269,7 +269,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(exporter)
 	sr := new(oteltest.SpanRecorder)
 	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
@@ -278,7 +278,6 @@ func TestExportTraceDataOp(t *testing.T) {
 
 	obsrep := NewExporter(ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
-		ExporterID:             exporter,
 		ExporterCreateSettings: set,
 	})
 
@@ -323,7 +322,7 @@ func TestExportMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(exporter)
 	sr := new(oteltest.SpanRecorder)
 	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
@@ -332,7 +331,6 @@ func TestExportMetricsOp(t *testing.T) {
 
 	obsrep := NewExporter(ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
-		ExporterID:             exporter,
 		ExporterCreateSettings: set,
 	})
 
@@ -378,7 +376,7 @@ func TestExportLogsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(exporter)
 	sr := new(oteltest.SpanRecorder)
 	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
@@ -387,7 +385,6 @@ func TestExportLogsOp(t *testing.T) {
 
 	obsrep := NewExporter(ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
-		ExporterID:             exporter,
 		ExporterCreateSettings: set,
 	})
 

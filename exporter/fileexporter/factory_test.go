@@ -22,8 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
+
+var defaultID = config.NewID(typeStr)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
@@ -35,7 +38,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		componenttest.NewNopExporterCreateSettings(defaultID),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -45,7 +48,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createTracesExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		componenttest.NewNopExporterCreateSettings(defaultID),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -55,7 +58,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		componenttest.NewNopExporterCreateSettings(defaultID),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)

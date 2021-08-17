@@ -81,7 +81,7 @@ func newBadExporterFactory() component.ExporterFactory {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ExporterSettings: config.NewExporterSettings(config.NewID("bf")),
+			ExporterSettings: config.NewExporterSettings(),
 		}
 	})
 }

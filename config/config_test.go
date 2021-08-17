@@ -40,13 +40,11 @@ func (nc *nopRecvConfig) Validate() error {
 
 type nopExpConfig struct {
 	ExporterSettings
+	err error
 }
 
 func (nc *nopExpConfig) Validate() error {
-	if nc.ID() != NewID("nop") {
-		return errInvalidExpConfig
-	}
-	return nil
+	return nc.err
 }
 
 type nopProcConfig struct {
@@ -184,7 +182,7 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Exporters[NewID("nop")] = &nopExpConfig{
-					ExporterSettings: NewExporterSettings(NewID("invalid_rec_type")),
+					err: errInvalidExpConfig,
 				}
 				return cfg
 			},
@@ -231,7 +229,7 @@ func generateConfig() *Config {
 		},
 		Exporters: map[ComponentID]Exporter{
 			NewID("nop"): &nopExpConfig{
-				ExporterSettings: NewExporterSettings(NewID("nop")),
+				ExporterSettings: NewExporterSettings(),
 			},
 		},
 		Processors: map[ComponentID]Processor{

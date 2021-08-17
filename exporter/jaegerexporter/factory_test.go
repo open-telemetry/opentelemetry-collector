@@ -22,8 +22,11 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
+
+var defaultID = config.NewID(typeStr)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -36,7 +39,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(defaultID)
 	_, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.Error(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
@@ -48,7 +51,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(defaultID)
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "\"jaeger\" config requires a non-empty \"endpoint\"", err.Error())

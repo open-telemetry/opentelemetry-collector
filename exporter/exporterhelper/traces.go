@@ -63,16 +63,11 @@ type traceExporter struct {
 
 // NewTracesExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
 func NewTracesExporter(
-	cfg config.Exporter,
+	_ config.Exporter,
 	set component.ExporterCreateSettings,
 	pusher consumerhelper.ConsumeTracesFunc,
 	options ...Option,
 ) (component.TracesExporter, error) {
-
-	if cfg == nil {
-		return nil, errNilConfig
-	}
-
 	if set.Logger == nil {
 		return nil, errNilLogger
 	}
@@ -82,7 +77,7 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set, bs)
+	be := newBaseExporter(set, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep:     be.obsrep,

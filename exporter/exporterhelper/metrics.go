@@ -63,15 +63,11 @@ type metricsExporter struct {
 
 // NewMetricsExporter creates an MetricsExporter that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
-	cfg config.Exporter,
+	_ config.Exporter,
 	set component.ExporterCreateSettings,
 	pusher consumerhelper.ConsumeMetricsFunc,
 	options ...Option,
 ) (component.MetricsExporter, error) {
-	if cfg == nil {
-		return nil, errNilConfig
-	}
-
 	if set.Logger == nil {
 		return nil, errNilLogger
 	}
@@ -81,7 +77,7 @@ func NewMetricsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set, bs)
+	be := newBaseExporter(set, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
 			obsrep:     be.obsrep,

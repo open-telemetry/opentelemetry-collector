@@ -76,7 +76,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
+			ExporterSettings: config.NewExporterSettings(),
 			ExtraSetting:     "some export string",
 		},
 		cfg.Exporters[config.NewID("exampleexporter")],
@@ -84,7 +84,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName("exampleexporter", "myexporter")),
+			ExporterSettings: config.NewExporterSettings(),
 			ExtraSetting:     "some export string 2",
 		},
 		cfg.Exporters[config.NewIDWithName("exampleexporter", "myexporter")],
@@ -227,7 +227,7 @@ func TestSimpleConfig(t *testing.T) {
 
 			assert.Equalf(t,
 				&testcomponents.ExampleExporter{
-					ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
+					ExporterSettings: config.NewExporterSettings(),
 					ExtraInt:         65,
 					ExtraSetting:     exporterExtra,
 					ExtraMapSetting:  map[string]string{"exp_1": exporterExtraMapValue + "_1", "exp_2": exporterExtraMapValue + "_2"},
@@ -332,7 +332,7 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
+			ExporterSettings: config.NewExporterSettings(),
 			ExtraSetting:     "${EXPORTERS_EXAMPLEEXPORTER_EXTRA}",
 			ExtraMapSetting:  map[string]string{"exp_1": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1}", "exp_2": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2}"},
 			ExtraListSetting: []string{"${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1}", "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2}"},
@@ -492,7 +492,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -511,7 +511,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	replacedTestString := "replaced_ptr_value"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
@@ -540,7 +540,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	testString := "$$ESCAPED_PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -559,7 +559,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	replacedTestString := "$ESCAPED_PTR_VALUE"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
@@ -584,7 +584,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -603,7 +603,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	replacedTestString := ""
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,

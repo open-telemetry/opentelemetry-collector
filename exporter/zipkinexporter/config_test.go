@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 
 	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 10 * time.Second,
@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 		Format:             "proto",
 		DefaultServiceName: "test_name",
 	}, e1)
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(config.NewIDWithName(typeStr, "2"))
 	_, err = factory.CreateTracesExporter(context.Background(), set, e1)
 	require.NoError(t, err)
 }

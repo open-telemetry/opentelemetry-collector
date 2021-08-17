@@ -50,7 +50,7 @@ func TestInvalidConfig(t *testing.T) {
 		},
 	}
 	f := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(defaultID)
 	_, err := f.CreateTracesExporter(context.Background(), set, config)
 	require.Error(t, err)
 	_, err = f.CreateMetricsExporter(context.Background(), set, config)
@@ -164,7 +164,7 @@ func TestCompressionOptions(t *testing.T) {
 			factory := NewFactory()
 			cfg := createExporterConfig(test.baseURL, factory.CreateDefaultConfig())
 			cfg.Compression = test.compression
-			exp, _ := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			exp, _ := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 			err := exp.Start(context.Background(), componenttest.NewNopHost())
 			t.Cleanup(func() {
 				require.NoError(t, exp.Shutdown(context.Background()))
@@ -296,7 +296,7 @@ func startTracesExporter(t *testing.T, baseURL string, overrideURL string) compo
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -306,7 +306,7 @@ func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) comp
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
-	exp, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -316,7 +316,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) compone
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL
-	exp, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -444,12 +444,12 @@ func TestErrorResponses(t *testing.T) {
 			}()
 
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(),
 				TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			exp, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 			require.NoError(t, err)
 
 			// start the exporter

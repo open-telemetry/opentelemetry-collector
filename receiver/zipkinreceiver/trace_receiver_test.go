@@ -227,10 +227,10 @@ func TestConversionRoundtrip(t *testing.T) {
 	defer backend.Close()
 
 	factory := zipkinexporter.NewFactory()
-	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
-	config.Endpoint = backend.URL
-	set := componenttest.NewNopExporterCreateSettings()
-	ze, err := factory.CreateTracesExporter(context.Background(), set, config)
+	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
+	cfg.Endpoint = backend.URL
+	set := componenttest.NewNopExporterCreateSettings(config.NewID("zipkin"))
+	ze, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
 	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))

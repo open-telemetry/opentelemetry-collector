@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -40,7 +39,6 @@ type Exporter struct {
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
 	Level                  configtelemetry.Level
-	ExporterID             config.ComponentID
 	ExporterCreateSettings component.ExporterCreateSettings
 }
 
@@ -48,9 +46,9 @@ type ExporterSettings struct {
 func NewExporter(cfg ExporterSettings) *Exporter {
 	return &Exporter{
 		level:          cfg.Level,
-		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
-		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
-		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
+		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterCreateSettings.ID.String(),
+		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterCreateSettings.ID.String(), tag.WithTTL(tag.TTLNoPropagation))},
+		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterCreateSettings.ID.String()),
 	}
 }
 

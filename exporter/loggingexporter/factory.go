@@ -44,7 +44,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings:   config.NewExporterSettings(),
 		LogLevel:           "info",
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,

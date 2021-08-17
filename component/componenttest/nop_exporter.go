@@ -27,8 +27,9 @@ import (
 )
 
 // NewNopExporterCreateSettings returns a new nop settings for Create*Exporter functions.
-func NewNopExporterCreateSettings() component.ExporterCreateSettings {
+func NewNopExporterCreateSettings(id config.ComponentID) component.ExporterCreateSettings {
 	return component.ExporterCreateSettings{
+		ID:             id,
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
 		BuildInfo:      component.DefaultBuildInfo(),
@@ -57,7 +58,7 @@ func (f *nopExporterFactory) Type() config.Type {
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func (f *nopExporterFactory) CreateDefaultConfig() config.Exporter {
 	return &nopExporterConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("nop")),
+		ExporterSettings: config.NewExporterSettings(),
 	}
 }
 

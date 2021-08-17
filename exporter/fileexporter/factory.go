@@ -23,10 +23,8 @@ import (
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "file"
-)
+// The value of "type" key in configuration.
+const typeStr = "file"
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() component.ExporterFactory {
@@ -40,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(),
 	}
 }
 

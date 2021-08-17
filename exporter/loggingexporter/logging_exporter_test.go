@@ -29,7 +29,7 @@ import (
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
-	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lte, err := newTracesExporter(&config.ExporterSettings{}, "Debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings(defaultID))
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -40,7 +40,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lme, err := newMetricsExporter(&config.ExporterSettings{}, "DEBUG", zap.NewNop(), componenttest.NewNopExporterCreateSettings(defaultID))
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -53,7 +53,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lle, err := newLogsExporter(&config.ExporterSettings{}, "debug", zap.NewNop(), componenttest.NewNopExporterCreateSettings(defaultID))
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 

@@ -23,9 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/model/pdata"
 )
+
+var defaultID = config.NewID(typeStr)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
@@ -42,7 +45,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
 	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers()}
-	r, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	r, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -54,7 +57,7 @@ func TestCreateMetricsExport(t *testing.T) {
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
 	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers()}
-	mr, err := mf.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	mr, err := mf.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, mr)
 }
@@ -66,7 +69,7 @@ func TestCreateLogsExport(t *testing.T) {
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
 	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers()}
-	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, mr)
 }
@@ -76,7 +79,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers()}
-	r, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	r, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
@@ -87,7 +90,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	mf := kafkaExporterFactory{metricsMarshalers: metricsMarshalers()}
-	mr, err := mf.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	mr, err := mf.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
 }
@@ -97,7 +100,7 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	mf := kafkaExporterFactory{logsMarshalers: logsMarshalers()}
-	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
 }
@@ -111,13 +114,13 @@ func TestWithMarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = cm.Encoding()
-		exporter, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+		exporter, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		exporter, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+		exporter, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(defaultID), cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})

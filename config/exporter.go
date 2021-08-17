@@ -17,7 +17,6 @@ package config
 // Exporter is the configuration of a component.Exporter. Specific extensions must implement
 // this interface and must embed ExporterSettings struct or a struct that extends it.
 type Exporter interface {
-	identifiable
 	validatable
 
 	privateConfigExporter()
@@ -32,25 +31,13 @@ type Exporters map[ComponentID]Exporter
 // It is highly recommended to "override" the Validate() function.
 //
 // When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
-type ExporterSettings struct {
-	id ComponentID `mapstructure:"-"`
-}
-
-// NewExporterSettings return a new ExporterSettings with the given ComponentID.
-func NewExporterSettings(id ComponentID) ExporterSettings {
-	return ExporterSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
-}
+type ExporterSettings struct{}
 
 var _ Exporter = (*ExporterSettings)(nil)
 
-// ID returns the receiver ComponentID.
-func (rs *ExporterSettings) ID() ComponentID {
-	return rs.id
-}
-
-// SetIDName sets the receiver name.
-func (rs *ExporterSettings) SetIDName(idName string) {
-	rs.id.nameVal = idName
+// NewExporterSettings return a new ExporterSettings with the given ComponentID.
+func NewExporterSettings() ExporterSettings {
+	return ExporterSettings{}
 }
 
 func (rs *ExporterSettings) Validate() error {

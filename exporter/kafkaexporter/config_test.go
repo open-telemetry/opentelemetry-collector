@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 
 	c := cfg.Exporters[config.NewID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},

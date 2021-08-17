@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
@@ -169,17 +168,16 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings) *baseExporter {
+func newBaseExporter(set component.ExporterCreateSettings, bs *baseSettings) *baseExporter {
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}
 
 	be.obsrep = newObsExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.GetMetricsLevelFlagValue(),
-		ExporterID:             cfg.ID(),
 		ExporterCreateSettings: set,
 	})
-	be.qrSender = newQueuedRetrySender(cfg.ID().String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(set.ID.String(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 
 	return be

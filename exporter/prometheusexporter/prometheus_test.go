@@ -41,7 +41,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(),
 				Namespace:        "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
@@ -54,21 +54,21 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(),
 				Endpoint:         ":88999",
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(),
 			},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(defaultID)
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -99,7 +99,7 @@ func TestPrometheusExporter(t *testing.T) {
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
@@ -110,7 +110,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(defaultID)
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -174,7 +174,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
@@ -186,7 +186,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(defaultID)
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -250,7 +250,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
@@ -265,7 +265,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := componenttest.NewNopExporterCreateSettings(defaultID)
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 

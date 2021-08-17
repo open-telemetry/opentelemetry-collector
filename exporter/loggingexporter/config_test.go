@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings:   config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			ExporterSettings:   config.NewExporterSettings(),
 			LogLevel:           "debug",
 			SamplingInitial:    10,
 			SamplingThereafter: 50,

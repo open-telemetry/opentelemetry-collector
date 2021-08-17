@@ -24,10 +24,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "opencensus"
-)
+// The value of "type" key in configuration.
+const typeStr = "opencensus"
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() component.ExporterFactory {
@@ -40,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

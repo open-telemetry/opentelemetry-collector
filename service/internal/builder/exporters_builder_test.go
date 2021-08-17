@@ -42,7 +42,7 @@ func TestBuildExporters(t *testing.T) {
 	cfg := &config.Config{
 		Exporters: map[config.ComponentID]config.Exporter{
 			config.NewID("opencensus"): &opencensusexporter.Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID("opencensus")),
+				ExporterSettings: config.NewExporterSettings(),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "0.0.0.0:12345",
 				},
@@ -113,7 +113,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	cfg := &config.Config{
 		Exporters: map[config.ComponentID]config.Exporter{
 			config.NewID("exampleexporter"): &testcomponents.ExampleExporter{
-				ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
+				ExporterSettings: config.NewExporterSettings(),
 			},
 		},
 

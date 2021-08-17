@@ -49,6 +49,9 @@ type LogsExporter interface {
 
 // ExporterCreateSettings configures Exporter creators.
 type ExporterCreateSettings struct {
+	// ID is the id of the exporter component to be created.
+	ID config.ComponentID
+
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger

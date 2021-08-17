@@ -31,7 +31,6 @@ import (
 )
 
 type prometheusExporter struct {
-	name         string
 	endpoint     string
 	shutdownFunc func() error
 	handler      http.Handler
@@ -50,7 +49,6 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.GetMetricsLevelFlagValue(),
-		ExporterID:             config.ID(),
 		ExporterCreateSettings: set,
 	})
 
@@ -59,7 +57,6 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 	_ = registry.Register(collector)
 
 	return &prometheusExporter{
-		name:         config.ID().String(),
 		endpoint:     addr,
 		collector:    collector,
 		registry:     registry,
