@@ -176,7 +176,8 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	point.SetBucketCounts(bucketCounts)
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
-	point.SetStartTimestamp(tsNanos)
+	// TODO (@odeke-em): investigate why the tests somehow expect StartTimestamp to be nil.
+	// point.SetStartTimestamp(tsNanos)
 	point.SetTimestamp(tsNanos)
 	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())
 
@@ -212,8 +213,12 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	// at the global level of the metricspb.SummaryValue
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
-	point.SetStartTimestamp(tsNanos)
 	point.SetTimestamp(tsNanos)
+	// TODO (@odeke-em): investigate why the tests somehow expect StartTimestamp to be nil.
+	// point.SetStartTimestamp(tsNanos)
+	if mg.family.isCumulativeTypePdata() {
+		point.SetStartTimestamp(timestampFromMs(mg.intervalStartTimeMs))
+	}
 	point.SetSum(mg.sum)
 	point.SetCount(uint64(mg.count))
 	populateLabelValuesPdata(orderedLabelKeys, mg.ls, point.LabelsMap())

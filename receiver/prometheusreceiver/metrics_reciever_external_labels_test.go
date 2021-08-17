@@ -61,7 +61,8 @@ func TestExternalLabels(t *testing.T) {
 	mp.wg.Wait()
 	metrics := cms.AllMetrics()
 
-	results := make(map[string][]*pdata.ResourceMetrics)
+	// split and store results by target name
+	results := make(map[string][]*pdata.MetricSlice)
 	for _, md := range metrics {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
@@ -69,7 +70,12 @@ func TestExternalLabels(t *testing.T) {
 			serviceNameAttr, ok := rmi.Resource().Attributes().Get("service.name")
 			assert.True(t, ok, `expected "service.name" as a known attribute`)
 			serviceName := serviceNameAttr.StringVal()
-			results[serviceName] = append(results[serviceName], &rmi)
+			ilmL := rmi.InstrumentationLibraryMetrics()
+			for j := 0; j < ilmL.Len(); j++ {
+				ilm := ilmL.At(j)
+				metricL := ilm.Metrics()
+				results[serviceName] = append(results[serviceName], &metricL)
+			}
 		}
 	}
 	for _, target := range targets {
@@ -77,10 +83,10 @@ func TestExternalLabels(t *testing.T) {
 	}
 }
 
-func verifyExternalLabels(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
+func verifyExternalLabels(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
+	verifyNumScrapeResults(t, td, mds)
 	// TODO: Translate me.
 	/*
-		verifyNumScrapeResults(t, td, mds)
 
 		want := &agentmetricspb.ExportMetricsServiceRequest{
 			Node:     td.node,

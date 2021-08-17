@@ -27,8 +27,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	gokitlog "github.com/go-kit/kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
@@ -42,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 var logger = zap.NewNop()
@@ -115,9 +114,8 @@ var (
 type testData struct {
 	name         string
 	pages        []mockPrometheusResponse
-	node         *commonpb.Node
-	resource     *resourcepb.Resource
-	validateFunc func(t *testing.T, td *testData, result []*pdata.ResourceMetrics)
+	resource     *pdata.Resource
+	validateFunc func(t *testing.T, td *testData, result []*pdata.MetricSlice)
 }
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
@@ -152,22 +150,15 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 
 	// update node value (will use for validation)
 	for _, t := range tds {
-		t.node = &commonpb.Node{
-			Identifier: &commonpb.ProcessIdentifier{
-				HostName: host,
-			},
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: t.name,
-			},
-		}
-		t.resource = &resourcepb.Resource{
-			Labels: map[string]string{
-				"instance": u.Host,
-				"job":      t.name,
-				"scheme":   "http",
-				"port":     port,
-			},
-		}
+		rs := pdata.NewResource()
+		attrs := rs.Attributes()
+		attrs.UpsertString(conventions.AttributeHostName, host)
+		attrs.UpsertString(conventions.AttributeServiceName, t.name)
+		attrs.UpsertString("job", t.name)
+		attrs.UpsertString("instance", u.Host)
+		attrs.UpsertString("scheme", "http")
+		attrs.UpsertString("port", port)
+		t.resource = &rs
 	}
 
 	cfgStr := strings.ReplaceAll(string(cfg), srvPlaceHolder, u.Host)
@@ -175,8 +166,56 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
-/*
-func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
+const expectedScrapeMetricCount = 5
+
+func getValidScrapes(t *testing.T, rmL []*pdata.ResourceMetrics) (out []*pdata.MetricSlice) {
+	for _, rm := range rmL {
+		ilmL := rm.InstrumentationLibraryMetrics()
+		for i := 0; i < ilmL.Len(); i++ {
+			ilm := ilmL.At(i)
+			iM := ilm.Metrics()
+			metricL := &iM
+			// mds will include scrapes that received no metrics but have internal scrape metrics, filter those out
+			if expectedScrapeMetricCount < metricL.Len() && countScrapeMetrics(metricL) == expectedScrapeMetricCount {
+				assertUp(t, 1, metricL)
+				out = append(out, metricL)
+			} else {
+				assertUp(t, 1, metricL)
+			}
+		}
+	}
+	return out
+}
+
+func countScrapeMetrics(metricL *pdata.MetricSlice) int {
+	n := 0
+	for i := 0; i < metricL.Len(); i++ {
+		metric := metricL.At(i)
+		switch metric.Name() {
+		case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+			n++
+		default:
+		}
+	}
+	return n
+}
+
+func assertUp(t *testing.T, expected float64, mL *pdata.MetricSlice) {
+	for i := 0; i < mL.Len(); i++ {
+		m := mL.At(i)
+		if m.Name() != "up" {
+			continue
+		}
+
+		assert.Equal(t, pdata.MetricDataTypeGauge, m.DataType())
+		points := m.Gauge().DataPoints()
+		assert.True(t, points.Len() > 0, "expecting at least one point")
+		assert.Equal(t, expected, points.At(i).DoubleVal())
+	}
+	t.Error("No 'up' metric found")
+}
+
+func verifyNumScrapeResults(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
 	want := 0
 	for _, p := range td.pages {
 		if p.code == 200 {
@@ -188,8 +227,135 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.Ex
 	}
 }
 
-const  expectedScrapeMetricCount = 5
+type seriesExpectation struct {
+	series []seriesComparator
+	points []pointComparator
+}
 
+type pointComparator func(*testing.T, *pdata.Metric) bool
+type seriesComparator func(*testing.T, *pdata.Metric) bool
+type descriptorComparator func(*testing.T, *pdata.Metric) bool
+
+type testExpectation func(*testing.T, *pdata.MetricSlice) bool
+
+func pointCount(t *testing.T, m *pdata.Metric) int {
+	switch dataType := m.DataType(); dataType {
+	case pdata.MetricDataTypeSummary:
+		return m.Summary().DataPoints().Len()
+	case pdata.MetricDataTypeHistogram:
+		return m.Histogram().DataPoints().Len()
+	case pdata.MetricDataTypeGauge:
+		return m.Gauge().DataPoints().Len()
+	case pdata.MetricDataTypeSum:
+		return m.Sum().DataPoints().Len()
+	default:
+		t.Fatalf("Unknown point kind: %s", dataType)
+		return 0
+	}
+}
+
+func assertMetricPresent(name string, descriptorExpectations []descriptorComparator, seriesExpectations []seriesExpectation) testExpectation {
+	return func(t *testing.T, metricL *pdata.MetricSlice) bool {
+		for i := 0; i < metricL.Len(); i++ {
+			m := metricL.At(i)
+			if name != m.Name() {
+				continue
+			}
+
+			for _, de := range descriptorExpectations {
+				if !de(t, &m) {
+					return false
+				}
+			}
+
+			if !assert.Equal(t, len(seriesExpectations), pointCount(t, &m)) {
+				return false
+			}
+
+			/*
+				for i, se := range seriesExpectations {
+					for _, sc := range se.series {
+						if !sc(t, m.Timeseries[i]) {
+							return false
+						}
+					}
+					for _, pc := range se.points {
+						if !pc(t, m.Timeseries[i].Points[0]) {
+							return false
+						}
+					}
+				}
+			*/
+			return true
+		}
+		assert.Failf(t, "Unable to match metric expectation", name)
+		return false
+	}
+}
+
+func assertMetricAbsent(name string) testExpectation {
+	return func(t *testing.T, metricL *pdata.MetricSlice) bool {
+		for i := 0; i < metricL.Len(); i++ {
+			m := metricL.At(i)
+			if assert.Equal(t, name, m.Name()) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func compareStartTimestamp(ts pdata.Timestamp) seriesComparator {
+	return func(t *testing.T, metric *pdata.Metric) bool {
+		switch dataType := metric.DataType(); dataType {
+		case pdata.MetricDataTypeGauge:
+			dataPoints := metric.Gauge().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts.AsTime(), point.StartTimestamp().AsTime()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeHistogram:
+			dataPoints := metric.Histogram().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts.AsTime(), point.StartTimestamp().AsTime()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeSummary:
+			dataPoints := metric.Summary().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts.AsTime(), point.StartTimestamp().AsTime()) {
+					return false
+				}
+			}
+			return true
+
+		case pdata.MetricDataTypeSum:
+			dataPoints := metric.Sum().DataPoints()
+			for k := 0; k < dataPoints.Len(); k++ {
+				point := dataPoints.At(k)
+				if !assert.Equal(t, ts.AsTime(), point.StartTimestamp().AsTime()) {
+					return false
+				}
+			}
+			return true
+
+		default:
+			t.Fatalf("Unhandled data type: %s", dataType)
+			return false
+		}
+	}
+}
+
+/*
 func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetricsServiceRequest, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
 		numScrapeMetrics := countScrapeMetrics(got)
@@ -200,30 +366,6 @@ func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetric
 			assert.True(t, e(t, got.Metrics))
 		}
 	})
-}
-
-func getValidScrapes(t *testing.T, mds []*agentmetricspb.ExportMetricsServiceRequest) []*agentmetricspb.ExportMetricsServiceRequest {
-	out := make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
-	for _, md := range mds {
-		// mds will include scrapes that received no metrics but have internal scrape metrics, filter those out
-		if expectedScrapeMetricCount < len(md.Metrics) && countScrapeMetrics(md) == expectedScrapeMetricCount {
-			assertUp(t, 1, md)
-			out = append(out, md)
-		} else {
-			assertUp(t, 0, md)
-		}
-	}
-	return out
-}
-
-func assertUp(t *testing.T, expected float64, md *agentmetricspb.ExportMetricsServiceRequest) {
-	for _, m := range md.Metrics {
-		if m.GetMetricDescriptor().Name == "up" {
-			assert.Equal(t, expected, m.Timeseries[0].Points[0].GetDoubleValue())
-			return
-		}
-	}
-	t.Error("No 'up' metric found")
 }
 
 func countScrapeMetrics(in *agentmetricspb.ExportMetricsServiceRequest) int {
@@ -238,62 +380,6 @@ func countScrapeMetrics(in *agentmetricspb.ExportMetricsServiceRequest) int {
 	return n
 }
 
-type pointComparator func(*testing.T, *metricspb.Point) bool
-type seriesComparator func(*testing.T, *metricspb.TimeSeries) bool
-type descriptorComparator func(*testing.T, *metricspb.MetricDescriptor) bool
-
-type seriesExpectation struct {
-	series []seriesComparator
-	points []pointComparator
-}
-
-type testExpectation func(*testing.T, []*metricspb.Metric) bool
-
-func assertMetricPresent(name string, descriptorExpectations []descriptorComparator, seriesExpectations []seriesExpectation) testExpectation {
-	return func(t *testing.T, metrics []*metricspb.Metric) bool {
-		for _, m := range metrics {
-			if name != m.MetricDescriptor.Name {
-				continue
-			}
-
-			for _, de := range descriptorExpectations {
-				if !de(t, m.MetricDescriptor) {
-					return false
-				}
-			}
-
-			if !assert.Equal(t, len(seriesExpectations), len(m.Timeseries)) {
-				return false
-			}
-			for i, se := range seriesExpectations {
-				for _, sc := range se.series {
-					if !sc(t, m.Timeseries[i]) {
-						return false
-					}
-				}
-				for _, pc := range se.points {
-					if !pc(t, m.Timeseries[i].Points[0]) {
-						return false
-					}
-				}
-			}
-			return true
-		}
-		assert.Failf(t, "Unable to match metric expectation", name)
-		return false
-	}
-}
-
-func assertMetricAbsent(name string) testExpectation {
-	return func(t *testing.T, metrics []*metricspb.Metric) bool {
-		for _, m := range metrics {
-			if !assert.NotEqual(t, name, m.MetricDescriptor.Name) {
-				return false
-			}
-		}
-		return true
-	}
-}
 
 func compareMetricType(typ metricspb.MetricDescriptor_Type) descriptorComparator {
 	return func(t *testing.T, descriptor *metricspb.MetricDescriptor) bool {
@@ -326,12 +412,6 @@ func compareSeriesLabelValues(values []string) seriesComparator {
 			}
 		}
 		return true
-	}
-}
-
-func compareSeriesTimestamp(ts *timestamppb.Timestamp) seriesComparator {
-	return func(t *testing.T, series *metricspb.TimeSeries) bool {
-		return assert.Equal(t, ts.String(), series.StartTimestamp.String())
 	}
 }
 
@@ -438,7 +518,7 @@ rpc_duration_seconds_sum 5002
 rpc_duration_seconds_count 1001
 `
 
-func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
+func verifyTarget1(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
 	// TODO: Translate me.
 	/*
 		verifyNumScrapeResults(t, td, mds)
@@ -473,7 +553,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"200", "post"}),
 						},
 						points: []pointComparator{
@@ -483,7 +563,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"400", "post"}),
 						},
 						points: []pointComparator{
@@ -499,7 +579,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 						},
 						points: []pointComparator{
 							comparePointTimestamp(ts1),
@@ -514,7 +594,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 						},
 						points: []pointComparator{
 							comparePointTimestamp(ts1),
@@ -561,7 +641,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"200", "post"}),
 						},
 						points: []pointComparator{
@@ -571,7 +651,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"400", "post"}),
 						},
 						points: []pointComparator{
@@ -587,7 +667,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 						},
 						points: []pointComparator{
 							comparePointTimestamp(ts2),
@@ -602,7 +682,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 						},
 						points: []pointComparator{
 							comparePointTimestamp(ts2),
@@ -678,7 +758,7 @@ http_requests_total{method="post",code="400"} 59
 http_requests_total{method="post",code="500"} 5
 `
 
-func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
+func verifyTarget2(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
 	// TODO: Translate me.
 	/*
 		verifyNumScrapeResults(t, td, mds)
@@ -715,7 +795,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"200", "post"}),
 						},
 						points: []pointComparator{
@@ -725,7 +805,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"400", "post"}),
 						},
 						points: []pointComparator{
@@ -767,7 +847,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"200", "post"}),
 						},
 						points: []pointComparator{
@@ -777,7 +857,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"400", "post"}),
 						},
 						points: []pointComparator{
@@ -787,7 +867,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts2),
+							compareStartTimestamp(ts2),
 							compareSeriesLabelValues([]string{"500", "post"}),
 						},
 						points: []pointComparator{
@@ -831,7 +911,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"200", "post"}),
 						},
 						points: []pointComparator{
@@ -841,7 +921,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"400", "post"}),
 						},
 						points: []pointComparator{
@@ -851,7 +931,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts2),
+							compareStartTimestamp(ts2),
 							compareSeriesLabelValues([]string{"500", "post"}),
 						},
 						points: []pointComparator{
@@ -986,7 +1066,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts4),
+							compareStartTimestamp(ts4),
 							compareSeriesLabelValues([]string{"200", "post"}),
 						},
 						points: []pointComparator{
@@ -996,7 +1076,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts4),
+							compareStartTimestamp(ts4),
 							compareSeriesLabelValues([]string{"400", "post"}),
 						},
 						points: []pointComparator{
@@ -1006,7 +1086,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts4),
+							compareStartTimestamp(ts4),
 							compareSeriesLabelValues([]string{"500", "post"}),
 						},
 						points: []pointComparator{
@@ -1050,7 +1130,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts4),
+							compareStartTimestamp(ts4),
 							compareSeriesLabelValues([]string{"200", "post"}),
 						},
 						points: []pointComparator{
@@ -1060,7 +1140,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts4),
+							compareStartTimestamp(ts4),
 							compareSeriesLabelValues([]string{"400", "post"}),
 						},
 						points: []pointComparator{
@@ -1070,7 +1150,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts4),
+							compareStartTimestamp(ts4),
 							compareSeriesLabelValues([]string{"500", "post"}),
 						},
 						points: []pointComparator{
@@ -1157,7 +1237,7 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
-func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
+func verifyTarget3(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
 	// TODO: Translate me.
 	/*
 		verifyNumScrapeResults(t, td, mds)
@@ -1193,7 +1273,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 						},
 						points: []pointComparator{
 							comparePointTimestamp(ts1),
@@ -1210,7 +1290,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"bar"}),
 						},
 						points: []pointComparator{
@@ -1220,7 +1300,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"no_quantile"}),
 						},
 						points: []pointComparator{
@@ -1262,7 +1342,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 						},
 						points: []pointComparator{
 							comparePointTimestamp(ts2),
@@ -1279,7 +1359,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 				[]seriesExpectation{
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"bar"}),
 						},
 						points: []pointComparator{
@@ -1289,7 +1369,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
 					},
 					{
 						series: []seriesComparator{
-							compareSeriesTimestamp(ts1),
+							compareStartTimestamp(ts1),
 							compareSeriesLabelValues([]string{"no_quantile"}),
 						},
 						points: []pointComparator{
@@ -1445,20 +1525,18 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 
 	// Skipping the validate loop below, because it falsely assumed that
 	// staleness markers would not be returned, yet the tests are a bit rigid.
-	if true {
+	if false {
 		t.Log(`Skipping the "up" metric checks as they seem to be spuriously failing after staleness marker insertions`)
 		return
 	}
 
-	/*
-		// loop to validate outputs for each targets
-		for _, target := range targets {
-			t.Run(target.name, func(t *testing.T) {
-				mds := getValidScrapes(t, results[target.name])
-				target.validateFunc(t, target, mds)
-			})
-		}
-	*/
+	// loop to validate outputs for each targets
+	for _, target := range targets {
+		t.Run(target.name, func(t *testing.T) {
+			mds := getValidScrapes(t, results[target.name])
+			target.validateFunc(t, target, mds)
+		})
+	}
 }
 
 // flattenTargets takes a map of jobs to target and flattens to a list of targets
@@ -1527,52 +1605,47 @@ func TestStartTimeMetricRegex(t *testing.T) {
 	}
 }
 
-func verifyStartTimeMetricPage(t *testing.T, _ *testData, rmL []*pdata.ResourceMetrics) {
+func verifyStartTimeMetricPage(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
 	numMetrics := 0
-	for _, rms := range rmL {
-		ilmL := rms.InstrumentationLibraryMetrics()
-		for i := 0; i < ilmL.Len(); i++ {
-			ilm := ilmL.At(i)
-			metrics := ilm.Metrics()
-			for j := 0; j < metrics.Len(); j++ {
-				metric := metrics.At(j)
-				timestamp := startTimeMetricPageStartTimestamp
-				numMetrics++
-				switch dataType := metric.DataType(); dataType {
-				case pdata.MetricDataTypeGauge:
-					timestamp = nil
-					dataPoints := metric.Gauge().DataPoints()
-					for k := 0; k < dataPoints.Len(); k++ {
-						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
-					}
-
-				case pdata.MetricDataTypeHistogram:
-					timestamp = nil
-					dataPoints := metric.Histogram().DataPoints()
-					for k := 0; k < dataPoints.Len(); k++ {
-						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
-					}
-
-				case pdata.MetricDataTypeSummary:
-					dataPoints := metric.Summary().DataPoints()
-					for k := 0; k < dataPoints.Len(); k++ {
-						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
-					}
-
-				case pdata.MetricDataTypeSum:
-					timestamp = nil
-					dataPoints := metric.Sum().DataPoints()
-					for k := 0; k < dataPoints.Len(); k++ {
-						point := dataPoints.At(k)
-						assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
-					}
-
-				default:
-					t.Errorf("Unhandled data type: %s", dataType)
+	for _, metrics := range mds {
+		for i := 0; i < metrics.Len(); i++ {
+			metric := metrics.At(i)
+			timestamp := startTimeMetricPageStartTimestamp
+			numMetrics++
+			switch dataType := metric.DataType(); dataType {
+			case pdata.MetricDataTypeGauge:
+				timestamp = nil
+				dataPoints := metric.Gauge().DataPoints()
+				for k := 0; k < dataPoints.Len(); k++ {
+					point := dataPoints.At(k)
+					assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
 				}
+
+			case pdata.MetricDataTypeHistogram:
+				timestamp = nil
+				dataPoints := metric.Histogram().DataPoints()
+				for k := 0; k < dataPoints.Len(); k++ {
+					point := dataPoints.At(k)
+					assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
+				}
+
+			case pdata.MetricDataTypeSummary:
+				dataPoints := metric.Summary().DataPoints()
+				for k := 0; k < dataPoints.Len(); k++ {
+					point := dataPoints.At(k)
+					assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
+				}
+
+			case pdata.MetricDataTypeSum:
+				timestamp = nil
+				dataPoints := metric.Sum().DataPoints()
+				for k := 0; k < dataPoints.Len(); k++ {
+					point := dataPoints.At(k)
+					assert.Equal(t, timestamp.AsTime(), point.StartTimestamp().AsTime(), metric.Name()+" :: "+metric.DataType().String())
+				}
+
+			default:
+				t.Errorf("Unhandled data type: %s", dataType)
 			}
 		}
 	}
@@ -1600,7 +1673,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	results := make(map[string][]*pdata.ResourceMetrics)
+	results := make(map[string][]*pdata.MetricSlice)
 	for _, md := range metrics {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
@@ -1608,7 +1681,12 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 			serviceNameAttr, ok := rmi.Resource().Attributes().Get("service.name")
 			assert.True(t, ok, `expected "service.name" as a known attribute`)
 			serviceName := serviceNameAttr.StringVal()
-			results[serviceName] = append(results[serviceName], &rmi)
+			ilmL := rmi.InstrumentationLibraryMetrics()
+			for j := 0; j < ilmL.Len(); j++ {
+				ilm := ilmL.At(j)
+				metricL := ilm.Metrics()
+				results[serviceName] = append(results[serviceName], &metricL)
+			}
 		}
 	}
 

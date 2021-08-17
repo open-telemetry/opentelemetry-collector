@@ -226,7 +226,7 @@ func adjustStartTimestampPdata(startTime float64, metricsL *pdata.MetricSlice) {
 			}
 
 		case pdata.MetricDataTypeHistogram:
-		dataPoints := metric.Histogram().DataPoints()
+			dataPoints := metric.Histogram().DataPoints()
 			for i := 0; i < dataPoints.Len(); i++ {
 				dataPoint := dataPoints.At(i)
 				dataPoint.SetStartTimestamp(startTimeTs)
