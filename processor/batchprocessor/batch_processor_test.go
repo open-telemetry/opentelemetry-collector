@@ -120,7 +120,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
-	sizer := otlp.NewProtobufTracesSizer()
+	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -308,7 +308,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
-	sizer := otlp.NewProtobufMetricsSizer()
+	sizer := otlp.NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -511,7 +511,7 @@ func getTestMetricName(requestNum, index int) string {
 }
 
 func BenchmarkTraceSizeBytes(b *testing.B) {
-	sizer := otlp.NewProtobufTracesSizer()
+	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
 	td := testdata.GenerateTracesManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
 		fmt.Println(sizer.TracesSize(td))
@@ -624,7 +624,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	sizer := otlp.NewProtobufLogsSizer()
+	sizer := otlp.NewProtobufLogsMarshaler().(pdata.LogsSizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
