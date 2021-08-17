@@ -146,6 +146,17 @@ func labelsToAttributes(labels []otlpcommon.StringKeyValue) []otlpcommon.KeyValu
 	return attrs
 }
 
+func addFilteredAttributesToExemplars(exemplars []otlpmetrics.Exemplar) {
+	for i := range exemplars {
+		if exemplars[i].FilteredLabels != nil && exemplars[i].FilteredAttributes != nil {
+			continue
+		}
+		if exemplars[i].FilteredLabels != nil {
+			exemplars[i].FilteredAttributes = labelsToAttributes(exemplars[i].FilteredLabels)
+		}
+	}
+}
+
 func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.Metric_Histogram {
 	datapoints := []*otlpmetrics.HistogramDataPoint{}
 	for _, datapoint := range src.IntHistogram.DataPoints {
@@ -228,6 +239,7 @@ func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar
 
 func numberDataPointsLabelsToAttributes(dps []*otlpmetrics.NumberDataPoint) {
 	for i := range dps {
+		addFilteredAttributesToExemplars(dps[i].Exemplars)
 		if dps[i].Labels != nil && dps[i].Attributes != nil {
 			continue
 		}
@@ -250,6 +262,7 @@ func summaryDataPointsLabelsToAttributes(dps []*otlpmetrics.SummaryDataPoint) {
 
 func histogramDataPointsLabelsToAttributes(dps []*otlpmetrics.HistogramDataPoint) {
 	for i := range dps {
+		addFilteredAttributesToExemplars(dps[i].Exemplars)
 		if dps[i].Labels != nil && dps[i].Attributes != nil {
 			continue
 		}
