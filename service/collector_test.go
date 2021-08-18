@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -256,8 +255,11 @@ receivers:
   otlp:
     protocols:
       grpc:
+
 exporters:
-  logging:
+  otlp:
+    endpoint: "localhost:4317"
+
 processors:
   batch:
 
@@ -269,7 +271,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging]
+      exporters: [otlp]
 `
 	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
 }
@@ -292,7 +294,6 @@ func TestCollector_reloadService(t *testing.T) {
 		name           string
 		parserProvider parserprovider.ParserProvider
 		service        *service
-		skip           bool
 	}{
 		{
 			name:           "first_load_err",
@@ -319,16 +320,10 @@ func TestCollector_reloadService(t *testing.T) {
 				builtReceivers:  builder.Receivers{},
 				builtExtensions: builder.Extensions{},
 			},
-			skip: runtime.GOOS == "darwin",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.skip {
-				t.Log("Skipping test", tt.name)
-				return
-			}
-
 			col := Collector{
 				logger:            zap.NewNop(),
 				tracerProvider:    trace.NewNoopTracerProvider(),
