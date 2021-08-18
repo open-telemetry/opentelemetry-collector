@@ -36,6 +36,15 @@ type kafkaTracesProducer struct {
 	logger    *zap.Logger
 }
 
+type kafkaErrors struct {
+	count int
+	err   string
+}
+
+func (ke kafkaErrors) Error() string {
+	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
+}
+
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) error {
 	messages, err := e.marshaler.Marshal(td, e.topic)
 	if err != nil {
@@ -44,9 +53,7 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) e
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		if value, ok := err.(sarama.ProducerErrors); ok {
-			for i := 0; i < len(value); i++ {
-				e.logger.Error("failed to export trace msg to kafka. ", zap.Error(value[i].Err))
-			}
+			return kafkaErrors{len(value), value[0].Err.Error()}
 		}
 		return err
 	}
@@ -73,9 +80,7 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Met
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		if value, ok := err.(sarama.ProducerErrors); ok {
-			for i := 0; i < len(value); i++ {
-				e.logger.Error("failed to export metric msg to kafka. ", zap.Error(value[i].Err))
-			}
+			return kafkaErrors{len(value), value[0].Err.Error()}
 		}
 		return err
 	}
@@ -102,9 +107,7 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) err
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		if value, ok := err.(sarama.ProducerErrors); ok {
-			for i := 0; i < len(value); i++ {
-				e.logger.Error("failed to export log msg to kafka. ", zap.Error(value[i].Err))
-			}
+			return kafkaErrors{len(value), value[0].Err.Error()}
 		}
 		return err
 	}
