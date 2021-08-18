@@ -2,7 +2,23 @@
 
 ## Unreleased
 
+## v0.33.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Rename `configloader` interface to `configunmarshaler` (#3774)
+- Remove `LabelsMap` from all the metrics points (#3706)
+- Update generated K8S attribute labels to fix capitalization (#3823) 
+
+## 💡 Enhancements 💡
+
+- Collector has now full support for metrics proto v0.9.0.
+
 ## v0.32.0 Beta
+
+This release is marked as "bad" since the metrics pipelines will produce bad data.
+
+- See https://github.com/open-telemetry/opentelemetry-collector/issues/3824
 
 ## 🛑 Breaking changes 🛑
 
