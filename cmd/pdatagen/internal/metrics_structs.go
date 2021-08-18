@@ -187,7 +187,6 @@ var numberDataPoint = &messageValueStruct{
 	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []baseField{
-		labelsField,
 		attributes,
 		startTimeField,
 		timeField,
@@ -227,7 +226,6 @@ var histogramDataPoint = &messageValueStruct{
 	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
 	originFullName: "otlpmetrics.HistogramDataPoint",
 	fields: []baseField{
-		labelsField,
 		attributes,
 		startTimeField,
 		timeField,
@@ -249,7 +247,6 @@ var summaryDataPoint = &messageValueStruct{
 	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.SummaryDataPoint",
 	fields: []baseField{
-		labelsField,
 		attributes,
 		startTimeField,
 		timeField,
@@ -315,22 +312,11 @@ var exemplar = &messageValueStruct{
 			},
 		},
 		&sliceField{
-			fieldName:       "FilteredLabels",
-			originFieldName: "FilteredLabels",
-			returnSlice:     stringMap,
-		},
-		&sliceField{
 			fieldName:       "FilteredAttributes",
 			originFieldName: "FilteredAttributes",
 			returnSlice:     attributeMap,
 		},
 	},
-}
-
-var labelsField = &sliceField{
-	fieldName:       "LabelsMap",
-	originFieldName: "Labels",
-	returnSlice:     stringMap,
 }
 
 var exemplarsField = &sliceField{

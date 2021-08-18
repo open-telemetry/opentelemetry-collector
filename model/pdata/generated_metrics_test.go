@@ -637,14 +637,6 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestNumberDataPoint(), ms)
 }
 
-func TestNumberDataPoint_LabelsMap(t *testing.T) {
-	ms := NewNumberDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
-}
-
 func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
@@ -806,14 +798,6 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	generateTestHistogramDataPoint().CopyTo(ms)
 	assert.EqualValues(t, generateTestHistogramDataPoint(), ms)
-}
-
-func TestHistogramDataPoint_LabelsMap(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
@@ -994,14 +978,6 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	generateTestSummaryDataPoint().CopyTo(ms)
 	assert.EqualValues(t, generateTestSummaryDataPoint(), ms)
-}
-
-func TestSummaryDataPoint_LabelsMap(t *testing.T) {
-	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
@@ -1314,14 +1290,6 @@ func TestExemplar_IntVal(t *testing.T) {
 	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
-func TestExemplar_FilteredLabels(t *testing.T) {
-	ms := NewExemplar()
-	assert.EqualValues(t, NewStringMap(), ms.FilteredLabels())
-	fillTestStringMap(ms.FilteredLabels())
-	testValFilteredLabels := generateTestStringMap()
-	assert.EqualValues(t, testValFilteredLabels, ms.FilteredLabels())
-}
-
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
 	assert.EqualValues(t, NewAttributeMap(), ms.FilteredAttributes())
@@ -1474,7 +1442,6 @@ func generateTestNumberDataPoint() NumberDataPoint {
 }
 
 func fillTestNumberDataPoint(tv NumberDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
@@ -1504,7 +1471,6 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 }
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
@@ -1536,7 +1502,6 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 }
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
@@ -1594,6 +1559,5 @@ func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
 
-	fillTestStringMap(tv.FilteredLabels())
 	fillTestAttributeMap(tv.FilteredAttributes())
 }
