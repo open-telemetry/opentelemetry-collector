@@ -322,8 +322,8 @@ func metricBuilder(delta int64, prefix string) pdata.Metrics {
 	dp1 := d1.DataPoints().AppendEmpty()
 	dp1.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(1543160298+delta, 100000090)))
 	dp1.SetTimestamp(pdata.TimestampFromTime(time.Unix(1543160298+delta, 100000997)))
-	dp1.LabelsMap().Upsert("os", "windows")
-	dp1.LabelsMap().Upsert("arch", "x86")
+	dp1.Attributes().UpsertString("os", "windows")
+	dp1.Attributes().UpsertString("arch", "x86")
 	dp1.SetIntVal(99 + delta)
 
 	m2 := ms.AppendEmpty()
@@ -337,8 +337,8 @@ func metricBuilder(delta int64, prefix string) pdata.Metrics {
 	dp2 := d2.DataPoints().AppendEmpty()
 	dp2.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(1543160298, 100000090)))
 	dp2.SetTimestamp(pdata.TimestampFromTime(time.Unix(1543160298, 100000997)))
-	dp2.LabelsMap().Upsert("os", "linux")
-	dp2.LabelsMap().Upsert("arch", "x86")
+	dp2.Attributes().UpsertString("os", "linux")
+	dp2.Attributes().UpsertString("arch", "x86")
 	dp2.SetIntVal(100 + delta)
 
 	return md

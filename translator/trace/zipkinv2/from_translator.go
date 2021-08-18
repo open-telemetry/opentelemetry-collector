@@ -201,7 +201,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					Value:     event.Name(),
 				}
 			} else {
-				jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(event.Attributes()))
+				jsonStr, err := json.Marshal(pdata.AttributeMapToMap(event.Attributes()))
 				if err != nil {
 					return err
 				}
@@ -221,7 +221,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		key := fmt.Sprintf("otlp.link.%d", i)
-		jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(link.Attributes()))
+		jsonStr, err := json.Marshal(pdata.AttributeMapToMap(link.Attributes()))
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		rawMap[k] = tracetranslator.AttributeValueToString(v)
+		rawMap[k] = pdata.AttributeValueToString(v)
 		return true
 	})
 	return rawMap
@@ -258,7 +258,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		zTags[k] = tracetranslator.AttributeValueToString(v)
+		zTags[k] = pdata.AttributeValueToString(v)
 		return true
 	})
 

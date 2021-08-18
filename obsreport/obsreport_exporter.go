@@ -19,10 +19,10 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -39,8 +39,9 @@ type Exporter struct {
 
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
-	Level      configtelemetry.Level
-	ExporterID config.ComponentID
+	Level                  configtelemetry.Level
+	ExporterID             config.ComponentID
+	ExporterCreateSettings component.ExporterCreateSettings
 }
 
 // NewExporter creates a new Exporter.
@@ -49,7 +50,7 @@ func NewExporter(cfg ExporterSettings) *Exporter {
 		level:          cfg.Level,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
-		tracer:         otel.GetTracerProvider().Tracer(cfg.ExporterID.String()),
+		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
 	}
 }
 
@@ -57,7 +58,7 @@ func NewExporter(cfg ExporterSettings) *Exporter {
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
 func (exp *Exporter) StartTracesOp(ctx context.Context) context.Context {
-	return exp.startSpan(ctx, obsmetrics.ExportTraceDataOperationSuffix)
+	return exp.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
 }
 
 // EndTracesOp completes the export operation that was started with StartTracesOp.
@@ -71,7 +72,7 @@ func (exp *Exporter) EndTracesOp(ctx context.Context, numSpans int, err error) {
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
 func (exp *Exporter) StartMetricsOp(ctx context.Context) context.Context {
-	return exp.startSpan(ctx, obsmetrics.ExportMetricsOperationSuffix)
+	return exp.startOp(ctx, obsmetrics.ExportMetricsOperationSuffix)
 }
 
 // EndMetricsOp completes the export operation that was started with
@@ -86,7 +87,7 @@ func (exp *Exporter) EndMetricsOp(ctx context.Context, numMetricPoints int, err 
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
 func (exp *Exporter) StartLogsOp(ctx context.Context) context.Context {
-	return exp.startSpan(ctx, obsmetrics.ExportLogsOperationSuffix)
+	return exp.startOp(ctx, obsmetrics.ExportLogsOperationSuffix)
 }
 
 // EndLogsOp completes the export operation that was started with StartLogsOp.
@@ -96,9 +97,9 @@ func (exp *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
-// startSpan creates the span used to trace the operation. Returning
+// startOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
-func (exp *Exporter) startSpan(ctx context.Context, operationSuffix string) context.Context {
+func (exp *Exporter) startOp(ctx context.Context, operationSuffix string) context.Context {
 	spanName := exp.spanNamePrefix + operationSuffix
 	ctx, _ = exp.tracer.Start(ctx, spanName)
 	return ctx
@@ -109,11 +110,7 @@ func (exp *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend
 		return
 	}
 	// Ignore the error for now. This should not happen.
-	_ = stats.RecordWithTags(
-		ctx,
-		exp.mutators,
-		sentMeasure.M(numSent),
-		failedToSendMeasure.M(numFailedToSend))
+	_ = stats.RecordWithTags(ctx, exp.mutators, sentMeasure.M(numSent), failedToSendMeasure.M(numFailedToSend))
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {

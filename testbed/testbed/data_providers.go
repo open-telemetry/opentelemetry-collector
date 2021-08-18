@@ -130,9 +130,9 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetIntVal(int64(value))
-			dataPoint.LabelsMap().InitFromMap(map[string]string{
-				"item_index":  "item_" + strconv.Itoa(j),
-				"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
+			dataPoint.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+				"item_index":  pdata.NewAttributeValueString("item_" + strconv.Itoa(j)),
+				"batch_index": pdata.NewAttributeValueString("batch_" + strconv.Itoa(int(batchIndex))),
 			})
 		}
 	}

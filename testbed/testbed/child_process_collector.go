@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -52,9 +51,6 @@ type childProcessCollector struct {
 
 	// Command to execute
 	cmd *exec.Cmd
-
-	// WaitGroup for copying process output
-	outputWG sync.WaitGroup
 
 	// Various starting/stopping flags
 	isStarted  bool
@@ -206,14 +202,8 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	cp.cmd = exec.Command(exePath, args...)
 
 	// Capture standard output and standard error.
-	stdoutIn, err := cp.cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("cannot capture stdout of %s: %s", exePath, err.Error())
-	}
-	stderrIn, err := cp.cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("cannot capture stderr of %s: %s", exePath, err.Error())
-	}
+	cp.cmd.Stdout = logFile
+	cp.cmd.Stderr = logFile
 
 	// Start the process.
 	if err = cp.cmd.Start(); err != nil {
@@ -224,19 +214,6 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	cp.isStarted = true
 
 	log.Printf("%s running, pid=%d", cp.name, cp.cmd.Process.Pid)
-
-	// Create a WaitGroup that waits for both outputs to be finished copying.
-	cp.outputWG.Add(2)
-
-	// Begin copying outputs.
-	go func() {
-		_, _ = io.Copy(logFile, stdoutIn)
-		cp.outputWG.Done()
-	}()
-	go func() {
-		_, _ = io.Copy(logFile, stderrIn)
-		cp.outputWG.Done()
-	}()
 
 	return err
 }
@@ -283,9 +260,6 @@ func (cp *childProcessCollector) Stop() (stopped bool, err error) {
 				// Process is successfully finished.
 			}
 		}()
-
-		// Wait for output to be fully copied.
-		cp.outputWG.Wait()
 
 		// Wait for process to terminate
 		err = cp.cmd.Wait()

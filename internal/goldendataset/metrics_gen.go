@@ -159,7 +159,7 @@ func populateNumberPoints(cfg MetricsCfg, pts pdata.NumberDataPointSlice) {
 		default:
 			panic("Should not happen")
 		}
-		populatePtLabels(cfg, pt.LabelsMap())
+		populatePtAttributes(cfg, pt.Attributes())
 	}
 }
 
@@ -171,7 +171,7 @@ func populateDoubleHistogram(cfg MetricsCfg, dh pdata.Histogram) {
 		pt.SetStartTimestamp(pdata.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
 		pt.SetTimestamp(ts)
-		populatePtLabels(cfg, pt.LabelsMap())
+		populatePtAttributes(cfg, pt.Attributes())
 		setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 		addDoubleHistogramVal(pt, 1)
 		for i := 0; i < cfg.PtVal; i++ {
@@ -200,11 +200,11 @@ func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 	}
 }
 
-func populatePtLabels(cfg MetricsCfg, lm pdata.StringMap) {
+func populatePtAttributes(cfg MetricsCfg, lm pdata.AttributeMap) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)
-		lm.Insert(k, v)
+		lm.InsertString(k, v)
 	}
 }
 

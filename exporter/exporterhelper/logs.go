@@ -81,7 +81,7 @@ func NewLogsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set.Logger, bs)
+	be := newBaseExporter(cfg, set, bs)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
 			obsrep:     be.obsrep,

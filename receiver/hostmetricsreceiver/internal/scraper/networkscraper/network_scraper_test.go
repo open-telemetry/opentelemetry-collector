@@ -160,14 +160,14 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pd
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
-	internal.AssertSumMetricHasLabel(t, metric, 0, "device")
-	internal.AssertSumMetricHasLabelValue(t, metric, 0, "direction", "transmit")
-	internal.AssertSumMetricHasLabelValue(t, metric, 1, "direction", "receive")
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelNetworkDirection.Transmit))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelNetworkDirection.Receive))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
-	internal.AssertSumMetricHasLabelValue(t, metric, 0, "protocol", "tcp")
-	internal.AssertSumMetricHasLabel(t, metric, 0, "state")
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.LabelNetworkProtocol.Tcp))
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

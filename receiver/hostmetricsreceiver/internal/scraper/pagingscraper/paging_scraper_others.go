@@ -102,8 +102,7 @@ func initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, vmem 
 }
 
 func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.PagingState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
@@ -134,9 +133,9 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, typeLabel string, directionLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.PagingType, typeLabel)
-	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
+	attributes := dataPoint.Attributes()
+	attributes.InsertString(metadata.Labels.PagingType, typeLabel)
+	attributes.InsertString(metadata.Labels.PagingDirection, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
@@ -152,7 +151,7 @@ func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.Timest
 }
 
 func initializePageFaultDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, typeLabel string, value int64) {
-	dataPoint.LabelsMap().Insert(metadata.Labels.PagingType, typeLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.PagingType, typeLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

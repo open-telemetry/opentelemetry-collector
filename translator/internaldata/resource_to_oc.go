@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type ocInferredResourceType struct {
@@ -89,7 +88,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	ocResource := &ocresource.Resource{}
 	labels := make(map[string]string, attrs.Len())
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		val := tracetranslator.AttributeValueToString(v)
+		val := pdata.AttributeValueToString(v)
 
 		switch k {
 		case conventions.AttributeCloudAvailabilityZone:

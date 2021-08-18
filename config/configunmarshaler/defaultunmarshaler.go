@@ -12,24 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configloader
+package configunmarshaler
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
-
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 )
 
-// These are errors that can be returned by Load(). Note that error codes are not part
-// of Load()'s public API, they are for internal unit testing only.
+// These are errors that can be returned by Unmarshal(). Note that error codes are not part
+// of Unmarshal()'s public API, they are for internal unit testing only.
 type configErrorCode int
 
 const (
@@ -91,12 +87,20 @@ type pipelineSettings struct {
 	Exporters  []string `mapstructure:"exporters"`
 }
 
-// Load loads a Config from Parser.
-// After loading the config, `Validate()` must be called to validate.
-func Load(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
+type defaultUnmarshaler struct{}
+
+// NewDefault returns a default ConfigUnmarshaler that unmarshalls every configuration
+// using the custom unmarshaler if present or default to strict
+func NewDefault() ConfigUnmarshaler {
+	return &defaultUnmarshaler{}
+}
+
+// Unmarshal the Config from a Parser.
+// After the config is unmarshalled, `Validate()` must be called to validate.
+func (*defaultUnmarshaler) Unmarshal(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
-	// Load the config.
+	// Unmarshal the config.
 
 	// Struct to validate top level sections.
 	var rawCfg configSettings
@@ -107,40 +111,36 @@ func Load(v *configparser.Parser, factories component.Factories) (*config.Config
 		}
 	}
 
-	// In the following section use v.GetStringMap(xyzKeyName) instead of rawCfg.Xyz, because
-	// UnmarshalExact will not unmarshal entries in the map[string]interface{} with nil values.
-	// GetStringMap does the correct thing.
-
 	// Start with the service extensions.
 
-	extensions, err := loadExtensions(cast.ToStringMap(v.Get(extensionsKeyName)), factories.Extensions)
+	extensions, err := unmarshalExtensions(rawCfg.Extensions, factories.Extensions)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Extensions = extensions
 
-	// Load data components (receivers, exporters, and processors).
+	// Unmarshal data components (receivers, exporters, and processors).
 
-	receivers, err := loadReceivers(cast.ToStringMap(v.Get(receiversKeyName)), factories.Receivers)
+	receivers, err := unmarshalReceivers(rawCfg.Receivers, factories.Receivers)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Receivers = receivers
 
-	exporters, err := loadExporters(cast.ToStringMap(v.Get(exportersKeyName)), factories.Exporters)
+	exporters, err := unmarshalExporters(rawCfg.Exporters, factories.Exporters)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Exporters = exporters
 
-	processors, err := loadProcessors(cast.ToStringMap(v.Get(processorsKeyName)), factories.Processors)
+	processors, err := unmarshalProcessors(rawCfg.Processors, factories.Processors)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Processors = processors
 
-	// Load the service and its data pipelines.
-	service, err := loadService(rawCfg.Service)
+	// Unmarshal the service and its data pipelines.
+	service, err := unmarshalService(rawCfg.Service)
 	if err != nil {
 		return nil, err
 	}
@@ -177,13 +177,13 @@ func errorDuplicateName(component string, id config.ComponentID) error {
 	}
 }
 
-func loadExtensions(exts map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (config.Extensions, error) {
+func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (config.Extensions, error) {
 	// Prepare resulting map.
 	extensions := make(config.Extensions)
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
-		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -203,10 +203,9 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 		extensionCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(extensionCfg)
 
-		// Now that the default config struct is created we can Unmarshal into it
+		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, extensionCfg); err != nil {
+		if err = unmarshal(componentConfig, extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
@@ -220,7 +219,7 @@ func loadExtensions(exts map[string]interface{}, factories map[config.Type]compo
 	return extensions, nil
 }
 
-func loadService(rawService serviceSettings) (config.Service, error) {
+func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	var ret config.Service
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))
 	for _, extIDStr := range rawService.Extensions {
@@ -233,7 +232,7 @@ func loadService(rawService serviceSettings) (config.Service, error) {
 
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.
-	pipelines, err := loadPipelines(rawService.Pipelines)
+	pipelines, err := unmarshalPipelines(rawService.Pipelines)
 	ret.Pipelines = pipelines
 
 	return ret, err
@@ -246,23 +245,22 @@ func LoadReceiver(componentConfig *configparser.Parser, id config.ComponentID, f
 	receiverCfg.SetIDName(id.Name())
 	expandEnvLoadedConfig(receiverCfg)
 
-	// Now that the default config struct is created we can Unmarshal into it
+	// Now that the default config struct is created we can Unmarshal into it,
 	// and it will apply user-defined config on top of the default.
-	unm := unmarshaler(factory)
-	if err := unm(componentConfig, receiverCfg); err != nil {
+	if err := unmarshal(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, id, err)
 	}
 
 	return receiverCfg, nil
 }
 
-func loadReceivers(recvs map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (config.Receivers, error) {
+func unmarshalReceivers(recvs map[string]map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (config.Receivers, error) {
 	// Prepare resulting map.
 	receivers := make(config.Receivers)
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
-		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -293,13 +291,13 @@ func loadReceivers(recvs map[string]interface{}, factories map[config.Type]compo
 	return receivers, nil
 }
 
-func loadExporters(exps map[string]interface{}, factories map[config.Type]component.ExporterFactory) (config.Exporters, error) {
+func unmarshalExporters(exps map[string]map[string]interface{}, factories map[config.Type]component.ExporterFactory) (config.Exporters, error) {
 	// Prepare resulting map.
 	exporters := make(config.Exporters)
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
-		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -319,10 +317,9 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 		exporterCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(exporterCfg)
 
-		// Now that the default config struct is created we can Unmarshal into it
+		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, exporterCfg); err != nil {
+		if err = unmarshal(componentConfig, exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, id, err)
 		}
 
@@ -336,13 +333,13 @@ func loadExporters(exps map[string]interface{}, factories map[config.Type]compon
 	return exporters, nil
 }
 
-func loadProcessors(procs map[string]interface{}, factories map[config.Type]component.ProcessorFactory) (config.Processors, error) {
+func unmarshalProcessors(procs map[string]map[string]interface{}, factories map[config.Type]component.ProcessorFactory) (config.Processors, error) {
 	// Prepare resulting map.
 	processors := make(config.Processors)
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
-		componentConfig := configparser.NewParserFromStringMap(cast.ToStringMap(value))
+		componentConfig := configparser.NewParserFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -362,10 +359,9 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 		processorCfg.SetIDName(id.Name())
 		expandEnvLoadedConfig(processorCfg)
 
-		// Now that the default config struct is created we can Unmarshal into it
+		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		unm := unmarshaler(factory)
-		if err := unm(componentConfig, processorCfg); err != nil {
+		if err = unmarshal(componentConfig, processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, id, err)
 		}
 
@@ -379,7 +375,7 @@ func loadProcessors(procs map[string]interface{}, factories map[config.Type]comp
 	return processors, nil
 }
 
-func loadPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipelines, error) {
+func unmarshalPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pipelines, error) {
 	// Prepare resulting map.
 	pipelines := make(config.Pipelines)
 
@@ -531,32 +527,10 @@ func expandEnv(s string) string {
 	})
 }
 
-// deprecatedUnmarshaler interface is a deprecated optional interface that if implemented by a Factory,
-// the configuration loading system will use to unmarshal the config.
-// Implement config.CustomUnmarshable on the configuration struct instead.
-type deprecatedUnmarshaler interface {
-	// Unmarshal is a function that un-marshals a viper data into a config struct in a custom way.
-	// componentViperSection *viper.Viper
-	//   The config for this specific component. May be nil or empty if no config available.
-	// intoCfg interface{}
-	//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-	Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error
-}
-
 func unmarshal(componentSection *configparser.Parser, intoCfg interface{}) error {
-	if cu, ok := intoCfg.(config.CustomUnmarshable); ok {
+	if cu, ok := intoCfg.(config.Unmarshallable); ok {
 		return cu.Unmarshal(componentSection)
 	}
 
 	return componentSection.UnmarshalExact(intoCfg)
-}
-
-// unmarshaler returns an unmarshaling function. It should be removed when deprecatedUnmarshaler is removed.
-func unmarshaler(factory component.Factory) func(componentViperSection *configparser.Parser, intoCfg interface{}) error {
-	if _, ok := factory.(deprecatedUnmarshaler); ok {
-		return func(componentParser *configparser.Parser, intoCfg interface{}) error {
-			return errors.New("deprecated way to specify custom unmarshaler no longer supported")
-		}
-	}
-	return unmarshal
 }

@@ -57,22 +57,22 @@ func initSpanLinkAttributes(dest pdata.AttributeMap) {
 	dest.InitFromMap(spanLinkAttributes)
 }
 
-func initMetricLabels1(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestLabelKey1: TestLabelValue1})
+func initMetricAttachment(dest pdata.AttributeMap) {
+	dest.InitFromMap(map[string]pdata.AttributeValue{TestAttachmentKey: pdata.NewAttributeValueString(TestAttachmentValue)})
 }
 
-func initMetricLabels12(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestLabelKey1: TestLabelValue1, TestLabelKey2: TestLabelValue2}).Sort()
+func initMetricAttributes1(dest pdata.AttributeMap) {
+	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1)})
 }
 
-func initMetricLabels13(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestLabelKey1: TestLabelValue1, TestLabelKey3: TestLabelValue3}).Sort()
+func initMetricAttributes12(dest pdata.AttributeMap) {
+	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1), TestLabelKey2: pdata.NewAttributeValueString(TestLabelValue2)}).Sort()
 }
 
-func initMetricLabels2(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestLabelKey2: TestLabelValue2})
+func initMetricAttributes13(dest pdata.AttributeMap) {
+	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1), TestLabelKey3: pdata.NewAttributeValueString(TestLabelValue3)}).Sort()
 }
 
-func initMetricAttachment(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestAttachmentKey: TestAttachmentValue})
+func initMetricAttributes2(dest pdata.AttributeMap) {
+	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey2: pdata.NewAttributeValueString(TestLabelValue2)})
 }

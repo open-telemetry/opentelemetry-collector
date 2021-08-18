@@ -147,6 +147,14 @@ func TestResourceMetrics_Resource(t *testing.T) {
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
+func TestResourceMetrics_SchemaUrl(t *testing.T) {
+	ms := NewResourceMetrics()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
+}
+
 func TestResourceMetrics_InstrumentationLibraryMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(), ms.InstrumentationLibraryMetrics())
@@ -275,6 +283,14 @@ func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+}
+
+func TestInstrumentationLibraryMetrics_SchemaUrl(t *testing.T) {
+	ms := NewInstrumentationLibraryMetrics()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
 func TestInstrumentationLibraryMetrics_Metrics(t *testing.T) {
@@ -621,12 +637,12 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestNumberDataPoint(), ms)
 }
 
-func TestNumberDataPoint_LabelsMap(t *testing.T) {
+func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
 func TestNumberDataPoint_StartTimestamp(t *testing.T) {
@@ -784,12 +800,12 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestHistogramDataPoint(), ms)
 }
 
-func TestHistogramDataPoint_LabelsMap(t *testing.T) {
+func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
 func TestHistogramDataPoint_StartTimestamp(t *testing.T) {
@@ -964,12 +980,12 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestSummaryDataPoint(), ms)
 }
 
-func TestSummaryDataPoint_LabelsMap(t *testing.T) {
+func TestSummaryDataPoint_Attributes(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
 func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
@@ -1274,12 +1290,12 @@ func TestExemplar_IntVal(t *testing.T) {
 	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
-func TestExemplar_FilteredLabels(t *testing.T) {
+func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
-	assert.EqualValues(t, NewStringMap(), ms.FilteredLabels())
-	fillTestStringMap(ms.FilteredLabels())
-	testValFilteredLabels := generateTestStringMap()
-	assert.EqualValues(t, testValFilteredLabels, ms.FilteredLabels())
+	assert.EqualValues(t, NewAttributeMap(), ms.FilteredAttributes())
+	fillTestAttributeMap(ms.FilteredAttributes())
+	testValFilteredAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValFilteredAttributes, ms.FilteredAttributes())
 }
 
 func generateTestResourceMetricsSlice() ResourceMetricsSlice {
@@ -1304,6 +1320,7 @@ func generateTestResourceMetrics() ResourceMetrics {
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
 	fillTestResource(tv.Resource())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestInstrumentationLibraryMetricsSlice(tv.InstrumentationLibraryMetrics())
 }
 
@@ -1329,6 +1346,7 @@ func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 
 func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestMetricSlice(tv.Metrics())
 }
 
@@ -1424,7 +1442,7 @@ func generateTestNumberDataPoint() NumberDataPoint {
 }
 
 func fillTestNumberDataPoint(tv NumberDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
@@ -1453,7 +1471,7 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 }
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -1484,7 +1502,7 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 }
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -1541,5 +1559,5 @@ func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
 
-	fillTestStringMap(tv.FilteredLabels())
+	fillTestAttributeMap(tv.FilteredAttributes())
 }

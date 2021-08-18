@@ -19,7 +19,10 @@ package pdata
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"sort"
+	"strconv"
 
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 )
@@ -741,170 +744,81 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	*dest.orig = origs
 }
 
-// StringMap stores a map of attribute keys to values.
-type StringMap struct {
-	orig *[]otlpcommon.StringKeyValue //nolint:staticcheck // SA1019 ignore this!
-}
+// AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
+func AttributeValueToString(attr AttributeValue) string {
+	switch attr.Type() {
+	case AttributeValueTypeNull:
+		return ""
 
-// NewStringMap creates a StringMap with 0 elements.
-func NewStringMap() StringMap {
-	orig := []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
-	return StringMap{&orig}
-}
+	case AttributeValueTypeString:
+		return attr.StringVal()
 
-func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap { //nolint:staticcheck // SA1019 ignore this!
-	return StringMap{orig}
-}
+	case AttributeValueTypeBool:
+		return strconv.FormatBool(attr.BoolVal())
 
-// InitFromMap overwrites the entire StringMap and reconstructs the StringMap
-// with values from the given map[string]string.
-//
-// Returns the same instance to allow nicer code like:
-//   assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
-func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
-	if len(attrMap) == 0 {
-		*sm.orig = []otlpcommon.StringKeyValue(nil) //nolint:staticcheck // SA1019 ignore this!
-		return sm
+	case AttributeValueTypeDouble:
+		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
+
+	case AttributeValueTypeInt:
+		return strconv.FormatInt(attr.IntVal(), 10)
+
+	case AttributeValueTypeMap:
+		jsonStr, _ := json.Marshal(AttributeMapToMap(attr.MapVal()))
+		return string(jsonStr)
+
+	case AttributeValueTypeArray:
+		jsonStr, _ := json.Marshal(attributeArrayToSlice(attr.ArrayVal()))
+		return string(jsonStr)
+
+	default:
+		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
 	}
-	origs := make([]otlpcommon.StringKeyValue, len(attrMap)) //nolint:staticcheck // SA1019 ignore this!
-	ix := 0
-	for k, v := range attrMap {
-		origs[ix].Key = k
-		origs[ix].Value = v
-		ix++
-	}
-	*sm.orig = origs
-	return sm
 }
 
-// Clear erases any existing entries in this StringMap instance.
-func (sm StringMap) Clear() {
-	*sm.orig = nil
-}
-
-// EnsureCapacity increases the capacity of this StringMap instance, if necessary,
-// to ensure that it can hold at least the number of elements specified by the capacity argument.
-func (sm StringMap) EnsureCapacity(capacity int) {
-	if capacity <= cap(*sm.orig) {
-		return
-	}
-	oldOrig := *sm.orig
-	*sm.orig = make([]otlpcommon.StringKeyValue, 0, capacity) //nolint:staticcheck // SA1019 ignore this!
-	copy(*sm.orig, oldOrig)
-}
-
-// Get returns the StringValue associated with the key and true,
-// otherwise an invalid instance of the StringKeyValue and false.
-// Calling any functions on the returned invalid instance will cause a panic.
-func (sm StringMap) Get(k string) (string, bool) {
-	skv, found := sm.get(k)
-	// GetValue handles the case where skv is nil.
-	return skv.GetValue(), found
-}
-
-// Delete deletes the entry associated with the key and returns true if the key
-// was present in the map, otherwise returns false.
-func (sm StringMap) Delete(k string) bool {
-	for i := range *sm.orig {
-		skv := &(*sm.orig)[i]
-		if skv.Key == k {
-			(*sm.orig)[i] = (*sm.orig)[len(*sm.orig)-1]
-			*sm.orig = (*sm.orig)[:len(*sm.orig)-1]
-			return true
+// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
+func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
+	rawMap := make(map[string]interface{})
+	attrMap.Range(func(k string, v AttributeValue) bool {
+		switch v.Type() {
+		case AttributeValueTypeString:
+			rawMap[k] = v.StringVal()
+		case AttributeValueTypeInt:
+			rawMap[k] = v.IntVal()
+		case AttributeValueTypeDouble:
+			rawMap[k] = v.DoubleVal()
+		case AttributeValueTypeBool:
+			rawMap[k] = v.BoolVal()
+		case AttributeValueTypeNull:
+			rawMap[k] = nil
+		case AttributeValueTypeMap:
+			rawMap[k] = AttributeMapToMap(v.MapVal())
+		case AttributeValueTypeArray:
+			rawMap[k] = attributeArrayToSlice(v.ArrayVal())
 		}
-	}
-	return false
-}
-
-// Insert adds the string value to the map when the key does not exist.
-// No action is applied to the map where the key already exists.
-func (sm StringMap) Insert(k, v string) {
-	if _, existing := sm.Get(k); !existing {
-		*sm.orig = append(*sm.orig, newStringKeyValue(k, v))
-	}
-}
-
-// Update updates an existing string value with a value.
-// No action is applied to the map where the key does not exist.
-func (sm StringMap) Update(k, v string) {
-	if skv, existing := sm.get(k); existing {
-		skv.Value = v
-	}
-}
-
-// Upsert performs the Insert or Update action. The string value is
-// inserted to the map that did not originally have the key. The key/value is
-// updated to the map where the key already existed.
-func (sm StringMap) Upsert(k, v string) {
-	if skv, existing := sm.get(k); existing {
-		skv.Value = v
-	} else {
-		*sm.orig = append(*sm.orig, newStringKeyValue(k, v))
-	}
-}
-
-// Len returns the length of this map.
-//
-// Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
-// it is possible that when iterating using "Range" to get access to fewer elements because nil elements are skipped.
-func (sm StringMap) Len() int {
-	return len(*sm.orig)
-}
-
-// Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
-//
-// Example:
-//
-//   sm.Range(func(k string, v StringValue) bool {
-//       ...
-//   })
-func (sm StringMap) Range(f func(k string, v string) bool) {
-	for i := range *sm.orig {
-		skv := &(*sm.orig)[i]
-		if !f(skv.Key, skv.Value) {
-			break
-		}
-	}
-}
-
-// CopyTo copies all elements from the current map to the dest.
-func (sm StringMap) CopyTo(dest StringMap) {
-	newLen := len(*sm.orig)
-	oldCap := cap(*dest.orig)
-	if newLen <= oldCap {
-		*dest.orig = (*dest.orig)[:newLen:oldCap]
-	} else {
-		*dest.orig = make([]otlpcommon.StringKeyValue, newLen) //nolint:staticcheck // SA1019 ignore this!
-	}
-
-	for i := range *sm.orig {
-		skv := &(*sm.orig)[i]
-		(*dest.orig)[i].Key = skv.Key
-		(*dest.orig)[i].Value = skv.Value
-	}
-}
-
-func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) { //nolint:staticcheck // SA1019 ignore this!
-	for i := range *sm.orig {
-		skv := &(*sm.orig)[i]
-		if skv.Key == k {
-			return skv, true
-		}
-	}
-	return nil, false
-}
-
-// Sort sorts the entries in the StringMap so two instances can be compared.
-// Returns the same instance to allow nicer code like:
-//   assert.EqualValues(t, expected.Sort(), actual.Sort())
-func (sm StringMap) Sort() StringMap {
-	sort.SliceStable(*sm.orig, func(i, j int) bool {
-		// Intention is to move the nil values at the end.
-		return (*sm.orig)[i].Key < (*sm.orig)[j].Key
+		return true
 	})
-	return sm
+	return rawMap
 }
 
-func newStringKeyValue(k, v string) otlpcommon.StringKeyValue { //nolint:staticcheck // SA1019 ignore this!
-	return otlpcommon.StringKeyValue{Key: k, Value: v} //nolint:staticcheck // SA1019 ignore this!
+// attributeArrayToSlice creates a slice out of a AnyValueArray.
+func attributeArrayToSlice(attrArray AnyValueArray) []interface{} {
+	rawSlice := make([]interface{}, 0, attrArray.Len())
+	for i := 0; i < attrArray.Len(); i++ {
+		v := attrArray.At(i)
+		switch v.Type() {
+		case AttributeValueTypeString:
+			rawSlice = append(rawSlice, v.StringVal())
+		case AttributeValueTypeInt:
+			rawSlice = append(rawSlice, v.IntVal())
+		case AttributeValueTypeDouble:
+			rawSlice = append(rawSlice, v.DoubleVal())
+		case AttributeValueTypeBool:
+			rawSlice = append(rawSlice, v.BoolVal())
+		case AttributeValueTypeNull:
+			rawSlice = append(rawSlice, nil)
+		default:
+			rawSlice = append(rawSlice, "<Invalid array value>")
+		}
+	}
+	return rawSlice
 }

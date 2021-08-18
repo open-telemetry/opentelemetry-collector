@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // TestCaseValidator defines the interface for validating and reporting test results.
@@ -444,15 +443,15 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue,
 	fmtStr string, attrKey string) {
 	if !sentVal.Equal(recdVal) {
-		sentStr := tracetranslator.AttributeValueToString(sentVal)
-		recdStr := tracetranslator.AttributeValueToString(recdVal)
+		sentStr := pdata.AttributeValueToString(sentVal)
+		recdStr := pdata.AttributeValueToString(recdVal)
 		if !strings.EqualFold(sentStr, recdStr) {
 			af := &TraceAssertionFailure{
 				typeName:      "Span",
 				dataComboName: spanName,
 				fieldPath:     fmt.Sprintf(fmtStr, attrKey),
-				expectedValue: tracetranslator.AttributeValueToString(sentVal),
-				actualValue:   tracetranslator.AttributeValueToString(recdVal),
+				expectedValue: pdata.AttributeValueToString(sentVal),
+				actualValue:   pdata.AttributeValueToString(recdVal),
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
 		}

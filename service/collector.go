@@ -30,12 +30,13 @@ import (
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension/ballastextension"
@@ -72,7 +73,7 @@ type Collector struct {
 	rootCmd *cobra.Command
 	logger  *zap.Logger
 
-	tracerProvider      *sdktrace.TracerProvider
+	tracerProvider      trace.TracerProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service      *service
@@ -80,7 +81,8 @@ type Collector struct {
 
 	factories component.Factories
 
-	parserProvider parserprovider.ParserProvider
+	parserProvider    parserprovider.ParserProvider
+	configUnmarshaler configunmarshaler.ConfigUnmarshaler
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -101,12 +103,24 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	col := &Collector{
-		info:         set.BuildInfo,
-		factories:    set.Factories,
-		stateChannel: make(chan State, Closed+1),
+		info:              set.BuildInfo,
+		factories:         set.Factories,
+		stateChannel:      make(chan State, Closed+1),
+		parserProvider:    set.ParserProvider,
+		configUnmarshaler: set.ConfigUnmarshaler,
 		// We use a negative in the settings not to break the existing
 		// behavior. Internally, allowGracefulShutodwn is more readable.
 		allowGracefulShutodwn: !set.DisableGracefulShutdown,
+	}
+
+	if col.parserProvider == nil {
+		// use default provider.
+		col.parserProvider = parserprovider.Default()
+	}
+
+	if col.configUnmarshaler == nil {
+		// use default provider.
+		col.configUnmarshaler = configunmarshaler.NewDefault()
 	}
 
 	rootCmd := &cobra.Command{
@@ -145,13 +159,6 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	col.rootCmd = rootCmd
-
-	parserProvider := set.ParserProvider
-	if parserProvider == nil {
-		// use default provider.
-		parserProvider = parserprovider.Default()
-	}
-	col.parserProvider = parserProvider
 
 	return col, nil
 }
@@ -239,7 +246,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
 
-	cfg, err := configloader.Load(cp, col.factories)
+	cfg, err := col.configUnmarshaler.Unmarshal(cp, col.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
@@ -312,11 +319,8 @@ func (col *Collector) execute(ctx context.Context) error {
 		return err
 	}
 
-	// Get ballastSizeBytes if ballast extension is enabled
-	ballastSizeBytes := col.getBallastSize()
-
-	// Setup Telemetry.
-	err = col.setupTelemetry(ballastSizeBytes)
+	// Get ballastSizeBytes if ballast extension is enabled and setup Telemetry.
+	err = col.setupTelemetry(col.getBallastSize())
 	if err != nil {
 		return err
 	}

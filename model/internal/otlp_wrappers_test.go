@@ -162,6 +162,9 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 								TimeUnixNano:      1,
 								Count:             29,
 								Exemplars:         []otlpmetrics.Exemplar{},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}},
+								},
 							},
 						},
 					},
@@ -206,6 +209,9 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 								TimeUnixNano:      3,
 								Count:             26,
 								Exemplars:         []otlpmetrics.Exemplar{},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+								},
 							},
 						},
 					},
@@ -250,6 +256,9 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 								TimeUnixNano:      3,
 								Count:             26,
 								Exemplars:         []otlpmetrics.Exemplar{},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+								},
 							},
 						},
 					},
@@ -311,6 +320,9 @@ func TestDeprecatedIntGauge(t *testing.T) {
 								TimeUnixNano:      11,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 100},
 								Exemplars:         []otlpmetrics.Exemplar{},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "GaugeKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "GaugeValue"}}},
+								},
 							},
 						},
 					},
@@ -347,6 +359,9 @@ func TestDeprecatedIntGauge(t *testing.T) {
 								TimeUnixNano:      13,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 101},
 								Exemplars:         []otlpmetrics.Exemplar{},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "IntGaugeKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "IntGaugeValue"}}},
+								},
 							},
 						},
 					},
@@ -392,7 +407,13 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 20,
 								TimeUnixNano:      21,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
-								Exemplars:         []otlpmetrics.Exemplar{},
+								Exemplars: []otlpmetrics.Exemplar{
+									{
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -411,7 +432,19 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 20,
 								TimeUnixNano:      21,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 200},
-								Exemplars:         []otlpmetrics.Exemplar{},
+								Exemplars: []otlpmetrics.Exemplar{
+									{
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+										FilteredAttributes: []otlpcommon.KeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "FilteredLabelValue"}}},
+										},
+									},
+								},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "SumKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "SumValue"}}},
+								},
 							},
 						},
 					},
@@ -452,6 +485,9 @@ func TestDeprecatedIntSum(t *testing.T) {
 								TimeUnixNano:      23,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
 								Exemplars:         []otlpmetrics.Exemplar{},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "IntSumKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "IntSumValue"}}},
+								},
 							},
 						},
 					},
@@ -492,6 +528,9 @@ func TestDeprecatedIntSum(t *testing.T) {
 								TimeUnixNano:      23,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
 								Exemplars:         []otlpmetrics.Exemplar{},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "IntSumKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "IntSumValue"}}},
+								},
 							},
 						},
 					},
@@ -510,7 +549,13 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 22,
 								TimeUnixNano:      23,
 								Value:             201,
-								Exemplars:         []otlpmetrics.IntExemplar{}, //nolint:staticcheck // SA1019 ignore this!
+								Exemplars: []otlpmetrics.IntExemplar{ //nolint:staticcheck // SA1019 ignore this!
+									{
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -527,12 +572,166 @@ func TestDeprecatedIntSum(t *testing.T) {
 								StartTimeUnixNano: 22,
 								TimeUnixNano:      23,
 								Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: 201},
-								Exemplars:         []otlpmetrics.Exemplar{},
+								Exemplars: []otlpmetrics.Exemplar{
+									{
+										Value: &otlpmetrics.Exemplar_AsInt{
+											AsInt: 0,
+										},
+										FilteredLabels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: "FilteredLabelValue"},
+										},
+										FilteredAttributes: []otlpcommon.KeyValue{ //nolint:staticcheck // SA1019 ignore this!
+											{Key: "FilteredLabelKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "FilteredLabelValue"}}},
+										},
+									},
+								},
+								Attributes: []otlpcommon.KeyValue{
+									{Key: "IntSumKey", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "IntSumValue"}}},
+								},
 							},
 						},
 					},
 				},
 			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
+			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+					{
+						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+							{
+								Metrics: test.inputMetrics,
+							},
+						}},
+				},
+			}
+			MetricsCompatibilityChanges(req)
+			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
+		})
+	}
+}
+
+func TestAttributesAndLabels(t *testing.T) {
+	tests := []struct {
+		inputMetrics  []*otlpmetrics.Metric
+		outputMetrics []*otlpmetrics.Metric
+	}{
+		{
+			inputMetrics: []*otlpmetrics.Metric{
+				{
+					// only Labels are set
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key", Value: "value"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputMetrics: []*otlpmetrics.Metric{
+				{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key", Value: "value"},
+									},
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{
+				{
+					// only Attributes are set
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputMetrics: []*otlpmetrics.Metric{
+				{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			inputMetrics: []*otlpmetrics.Metric{
+				{
+					// both Attributes and Labels are set
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key1", Value: "value1"},
+									},
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			outputMetrics: []*otlpmetrics.Metric{
+				{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{
+							AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+							DataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Labels: []otlpcommon.StringKeyValue{ //nolint:staticcheck // SA1019 ignore this!
+										{Key: "key1", Value: "value1"},
+									},
+									Attributes: []otlpcommon.KeyValue{
+										{Key: "key2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 

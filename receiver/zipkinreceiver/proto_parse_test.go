@@ -164,9 +164,9 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	}
 }
 
-func newTestZipkinReceiver() *ZipkinReceiver {
+func newTestZipkinReceiver() *zipkinReceiver {
 	cfg := createDefaultConfig().(*Config)
-	return &ZipkinReceiver{
+	return &zipkinReceiver{
 		config:                   cfg,
 		jsonUnmarshaler:          zipkinv2.NewJSONTracesUnmarshaler(cfg.ParseStringTags),
 		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, cfg.ParseStringTags),

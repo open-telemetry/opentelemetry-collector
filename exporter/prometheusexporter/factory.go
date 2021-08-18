@@ -53,7 +53,7 @@ func createMetricsExporter(
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
-	prometheus, err := newPrometheusExporter(pcfg, set.Logger)
+	prometheus, err := newPrometheusExporter(pcfg, set)
 	if err != nil {
 		return nil, err
 	}

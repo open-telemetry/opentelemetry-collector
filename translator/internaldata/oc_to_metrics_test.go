@@ -57,7 +57,7 @@ func TestOCToMetrics(t *testing.T) {
 		{
 			name:     "one-metric-no-labels",
 			oc:       generateOCTestDataNoLabels(),
-			internal: testdata.GenerateMetricsOneMetricNoLabels(),
+			internal: testdata.GenerateMetricsOneMetricNoAttributes(),
 		},
 
 		{

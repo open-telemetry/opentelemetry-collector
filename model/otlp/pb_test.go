@@ -42,6 +42,65 @@ func TestProtobufTracesUnmarshaler_error(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestProtobufTracesSizer(t *testing.T) {
+	sizer := NewProtobufTracesMarshaler().(pdata.TracesSizer)
+	marshaler := NewProtobufTracesMarshaler()
+	td := pdata.NewTraces()
+	rms := td.ResourceSpans()
+	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
+
+	size := sizer.TracesSize(td)
+
+	bytes, err := marshaler.MarshalTraces(td)
+	require.NoError(t, err)
+	assert.Equal(t, len(bytes), size)
+}
+
+func TestProtobufTracesSizer_withNil(t *testing.T) {
+	sizer := NewProtobufTracesMarshaler().(pdata.TracesSizer)
+
+	assert.Equal(t, 0, sizer.TracesSize(pdata.NewTraces()))
+}
+
+func TestProtobufMetricsSizer(t *testing.T) {
+	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
+	marshaler := NewProtobufMetricsMarshaler()
+	md := pdata.NewMetrics()
+	md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
+
+	size := sizer.MetricsSize(md)
+
+	bytes, err := marshaler.MarshalMetrics(md)
+	require.NoError(t, err)
+	assert.Equal(t, len(bytes), size)
+}
+
+func TestProtobufMetricsSizer_withNil(t *testing.T) {
+	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
+
+	assert.Equal(t, 0, sizer.MetricsSize(pdata.NewMetrics()))
+}
+
+func TestProtobufLogsSizer(t *testing.T) {
+	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
+	marshaler := NewProtobufLogsMarshaler()
+	ld := pdata.NewLogs()
+	ld.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty().SetName("foo")
+
+	size := sizer.LogsSize(ld)
+
+	bytes, err := marshaler.MarshalLogs(ld)
+	require.NoError(t, err)
+	assert.Equal(t, len(bytes), size)
+
+}
+
+func TestProtobufLogsSizer_withNil(t *testing.T) {
+	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
+
+	assert.Equal(t, 0, sizer.LogsSize(pdata.NewLogs()))
+}
+
 func BenchmarkLogsToProtobuf(b *testing.B) {
 	marshaler := NewProtobufLogsMarshaler()
 	logs := generateBenchmarkLogs(128)

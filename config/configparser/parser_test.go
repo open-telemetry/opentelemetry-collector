@@ -21,6 +21,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestToStringMap_WithSet(t *testing.T) {
+	parser := NewParser()
+	parser.Set("key::embedded", int64(123))
+	assert.Equal(t, map[string]interface{}{"key": map[string]interface{}{"embedded": int64(123)}}, parser.ToStringMap())
+}
+
 func TestToStringMap(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -72,7 +78,21 @@ func TestToStringMap(t *testing.T) {
 					"integer.example":        1234,
 					"bool.example":           false,
 					"string.example":         "this is a string",
+					"nil.example":            nil,
 				},
+			},
+		},
+		{
+			name:     "Embedded keys",
+			fileName: "testdata/embedded_keys.yaml",
+			stringMap: map[string]interface{}{
+				"typed": map[string]interface{}{"options": map[string]interface{}{
+					"floating": map[string]interface{}{"point": map[string]interface{}{"example": 3.14}},
+					"integer":  map[string]interface{}{"example": 1234},
+					"bool":     map[string]interface{}{"example": false},
+					"string":   map[string]interface{}{"example": "this is a string"},
+					"nil":      map[string]interface{}{"example": nil},
+				}},
 			},
 		},
 	}

@@ -63,8 +63,7 @@ func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.Timestamp, memIn
 }
 
 func initializeMemoryUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(metadata.Labels.MemState, stateLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.MemState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
