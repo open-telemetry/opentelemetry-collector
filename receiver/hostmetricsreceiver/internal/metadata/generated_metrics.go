@@ -154,39 +154,6 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
-	return map[string]func(pdata.Metric){
-		Metrics.ProcessCPUTime.Name():              Metrics.ProcessCPUTime.Init,
-		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.Init,
-		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.Init,
-		Metrics.ProcessMemoryVirtualUsage.Name():   Metrics.ProcessMemoryVirtualUsage.Init,
-		Metrics.SystemCPULoadAverage15m.Name():     Metrics.SystemCPULoadAverage15m.Init,
-		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.Init,
-		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.Init,
-		Metrics.SystemCPUTime.Name():               Metrics.SystemCPUTime.Init,
-		Metrics.SystemDiskIo.Name():                Metrics.SystemDiskIo.Init,
-		Metrics.SystemDiskIoTime.Name():            Metrics.SystemDiskIoTime.Init,
-		Metrics.SystemDiskMerged.Name():            Metrics.SystemDiskMerged.Init,
-		Metrics.SystemDiskOperationTime.Name():     Metrics.SystemDiskOperationTime.Init,
-		Metrics.SystemDiskOperations.Name():        Metrics.SystemDiskOperations.Init,
-		Metrics.SystemDiskPendingOperations.Name(): Metrics.SystemDiskPendingOperations.Init,
-		Metrics.SystemDiskWeightedIoTime.Name():    Metrics.SystemDiskWeightedIoTime.Init,
-		Metrics.SystemFilesystemInodesUsage.Name(): Metrics.SystemFilesystemInodesUsage.Init,
-		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.Init,
-		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.Init,
-		Metrics.SystemNetworkConnections.Name():    Metrics.SystemNetworkConnections.Init,
-		Metrics.SystemNetworkDropped.Name():        Metrics.SystemNetworkDropped.Init,
-		Metrics.SystemNetworkErrors.Name():         Metrics.SystemNetworkErrors.Init,
-		Metrics.SystemNetworkIo.Name():             Metrics.SystemNetworkIo.Init,
-		Metrics.SystemNetworkPackets.Name():        Metrics.SystemNetworkPackets.Init,
-		Metrics.SystemPagingFaults.Name():          Metrics.SystemPagingFaults.Init,
-		Metrics.SystemPagingOperations.Name():      Metrics.SystemPagingOperations.Init,
-		Metrics.SystemPagingUsage.Name():           Metrics.SystemPagingUsage.Init,
-		Metrics.SystemProcessesCount.Name():        Metrics.SystemProcessesCount.Init,
-		Metrics.SystemProcessesCreated.Name():      Metrics.SystemProcessesCreated.Init,
-	}
-}
-
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
