@@ -42,7 +42,7 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/xdg-go/scram v1.0.2
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/model v0.32.0
+	go.opentelemetry.io/collector/model v0.33.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.22.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0
 	go.opentelemetry.io/contrib/zpages v0.22.0
@@ -61,3 +61,5 @@ require (
 )
 
 replace go.opentelemetry.io/collector/model => ./model
+
+retract v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
