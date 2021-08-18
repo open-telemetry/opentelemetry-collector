@@ -20,7 +20,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,15 +42,7 @@ func TestPackageDirError(t *testing.T) {
 	srcRoot := "test/fail"
 	dr := NewDirResolver(srcRoot, DefaultModule)
 	output, err := dr.PackageDir(pkgType)
-	if assert.Error(t, err) {
-		expected := fmt.Sprintf("could not find the pkg \"model/pdata\": open %s/go.mod: ", srcRoot)
-		if runtime.GOOS == "windows" {
-			expected += "The system cannot find the path specified."
-		} else {
-			expected += "no such file or directory"
-		}
-		assert.EqualError(t, err, expected, "")
-	}
+	assert.Error(t, err)
 	assert.Equal(t, "", output)
 }
 
