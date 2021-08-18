@@ -18,8 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/spf13/cast"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -37,7 +35,7 @@ type Config struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
-var _ config.CustomUnmarshable = (*Config)(nil)
+var _ config.Unmarshallable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
@@ -69,7 +67,7 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 		return err
 	}
 
-	for key := range cast.ToStringMap(componentParser.Get(scrapersKey)) {
+	for key := range scrapersSection.ToStringMap() {
 		factory, ok := getScraperFactory(key)
 		if !ok {
 			return fmt.Errorf("invalid scraper key: %s", key)

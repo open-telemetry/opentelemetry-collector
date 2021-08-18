@@ -112,16 +112,16 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertSumMetricHasLabel(t, metric, 0, metadata.Labels.Cpu)
-	internal.AssertSumMetricHasLabelValue(t, metric, 0, metadata.Labels.CPUState, metadata.LabelCPUState.User)
-	internal.AssertSumMetricHasLabelValue(t, metric, 1, metadata.Labels.CPUState, metadata.LabelCPUState.System)
-	internal.AssertSumMetricHasLabelValue(t, metric, 2, metadata.Labels.CPUState, metadata.LabelCPUState.Idle)
-	internal.AssertSumMetricHasLabelValue(t, metric, 3, metadata.Labels.CPUState, metadata.LabelCPUState.Interrupt)
+	internal.AssertSumMetricHasAttribute(t, metric, 0, metadata.Labels.Cpu)
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.User))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.System))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Idle))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Interrupt))
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasLabelValue(t, metric, 4, metadata.Labels.CPUState, metadata.LabelCPUState.Nice)
-	internal.AssertSumMetricHasLabelValue(t, metric, 5, metadata.Labels.CPUState, metadata.LabelCPUState.Softirq)
-	internal.AssertSumMetricHasLabelValue(t, metric, 6, metadata.Labels.CPUState, metadata.LabelCPUState.Steal)
-	internal.AssertSumMetricHasLabelValue(t, metric, 7, metadata.Labels.CPUState, metadata.LabelCPUState.Wait)
+	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Nice))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Softirq))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Steal))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Wait))
 }

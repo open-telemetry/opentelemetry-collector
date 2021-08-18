@@ -188,6 +188,16 @@ func (ms ResourceMetrics) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
+// SchemaUrl returns the schemaurl associated with this ResourceMetrics.
+func (ms ResourceMetrics) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
+func (ms ResourceMetrics) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // InstrumentationLibraryMetrics returns the InstrumentationLibraryMetrics associated with this ResourceMetrics.
 func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibraryMetricsSlice {
 	return newInstrumentationLibraryMetricsSlice(&(*ms.orig).InstrumentationLibraryMetrics)
@@ -196,6 +206,7 @@ func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibrary
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	ms.Resource().CopyTo(dest.Resource())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.InstrumentationLibraryMetrics().CopyTo(dest.InstrumentationLibraryMetrics())
 }
 
@@ -364,6 +375,16 @@ func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() Instrumentation
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
+// SchemaUrl returns the schemaurl associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // Metrics returns the Metrics associated with this InstrumentationLibraryMetrics.
 func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 	return newMetricSlice(&(*ms.orig).Metrics)
@@ -372,6 +393,7 @@ func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetrics) {
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Metrics().CopyTo(dest.Metrics())
 }
 
@@ -899,9 +921,9 @@ func NewNumberDataPoint() NumberDataPoint {
 	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this NumberDataPoint.
-func (ms NumberDataPoint) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
+// Attributes returns the Attributes associated with this NumberDataPoint.
+func (ms NumberDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
@@ -955,7 +977,7 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.Type() {
@@ -1128,9 +1150,9 @@ func NewHistogramDataPoint() HistogramDataPoint {
 	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
+// Attributes returns the Attributes associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
@@ -1200,7 +1222,7 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
@@ -1370,9 +1392,9 @@ func NewSummaryDataPoint() SummaryDataPoint {
 	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
+// Attributes returns the Attributes associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Attributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
@@ -1422,7 +1444,7 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
@@ -1794,9 +1816,9 @@ func (ms Exemplar) SetIntVal(v int64) {
 	}
 }
 
-// FilteredLabels returns the FilteredLabels associated with this Exemplar.
-func (ms Exemplar) FilteredLabels() StringMap {
-	return newStringMap(&(*ms.orig).FilteredLabels)
+// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
+func (ms Exemplar) FilteredAttributes() AttributeMap {
+	return newAttributeMap(&(*ms.orig).FilteredAttributes)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1809,5 +1831,5 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 		dest.SetIntVal(ms.IntVal())
 	}
 
-	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
+	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
 }

@@ -12,15 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreport
-
-import (
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
-)
-
-func recordError(span trace.Span, err error) {
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-	}
-}
+// Package configunmarshaler implements configuration unmarshalling from a config.Parser.
+// The implementation relies on registered factories that allow creating
+// default configuration for each type of receiver/exporter/processor.
+package configunmarshaler

@@ -54,9 +54,9 @@ var (
 	floatVal2       = 2.0
 	floatVal3       = 3.0
 
-	lbs1      = getLabels(label11, value11, label12, value12)
-	lbs2      = getLabels(label21, value21, label22, value22)
-	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
+	lbs1      = getAttributes(label11, value11, label12, value12)
+	lbs2      = getAttributes(label21, value21, label22, value22)
+	lbs1Dirty = getAttributes(label11+dirty1, value11, dirty2+label12, value12)
 
 	exlbs1 = map[string]string{label41: value41}
 	exlbs2 = map[string]string{label11: value41}
@@ -116,7 +116,7 @@ var (
 		validHistogram:           getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
 		validSummary:             getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 		validIntGaugeDirty:       getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
-		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pdata.NewStringMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
+		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pdata.NewAttributeMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
 	}
 
 	empty = "empty"
@@ -144,13 +144,13 @@ var (
 )
 
 // OTLP metrics
-// labels must come in pairs
-func getLabels(labels ...string) pdata.StringMap {
-	stringMap := pdata.NewStringMap()
+// attributes must come in pairs
+func getAttributes(labels ...string) pdata.AttributeMap {
+	attributeMap := pdata.NewAttributeMap()
 	for i := 0; i < len(labels); i += 2 {
-		stringMap.Upsert(labels[i], labels[i+1])
+		attributeMap.UpsertString(labels[i], labels[i+1])
 	}
-	return stringMap
+	return attributeMap
 }
 
 // Prometheus TimeSeries
@@ -213,26 +213,26 @@ func getEmptyGaugeMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getIntGaugeMetric(name string, labels pdata.StringMap, value int64, ts uint64) pdata.Metric {
+func getIntGaugeMetric(name string, attributes pdata.AttributeMap, value int64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
 	dp.SetIntVal(value)
-	labels.CopyTo(dp.LabelsMap())
+	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
 	dp.SetTimestamp(pdata.Timestamp(ts))
 	return metric
 }
 
-func getDoubleGaugeMetric(name string, labels pdata.StringMap, value float64, ts uint64) pdata.Metric {
+func getDoubleGaugeMetric(name string, attributes pdata.AttributeMap, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(value)
-	labels.CopyTo(dp.LabelsMap())
+	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
 	dp.SetTimestamp(pdata.Timestamp(ts))
@@ -246,14 +246,14 @@ func getEmptySumMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getIntSumMetric(name string, labels pdata.StringMap, value int64, ts uint64) pdata.Metric {
+func getIntSumMetric(name string, attributes pdata.AttributeMap, value int64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(value)
-	labels.CopyTo(dp.LabelsMap())
+	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
 	dp.SetTimestamp(pdata.Timestamp(ts))
@@ -268,14 +268,14 @@ func getEmptyCumulativeSumMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getSumMetric(name string, labels pdata.StringMap, value float64, ts uint64) pdata.Metric {
+func getSumMetric(name string, attributes pdata.AttributeMap, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(value)
-	labels.CopyTo(dp.LabelsMap())
+	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
 	dp.SetTimestamp(pdata.Timestamp(ts))
@@ -297,7 +297,7 @@ func getEmptyCumulativeHistogramMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getHistogramMetric(name string, labels pdata.StringMap, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) pdata.Metric {
+func getHistogramMetric(name string, attributes pdata.AttributeMap, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
@@ -307,7 +307,7 @@ func getHistogramMetric(name string, labels pdata.StringMap, ts uint64, sum floa
 	dp.SetSum(sum)
 	dp.SetBucketCounts(buckets)
 	dp.SetExplicitBounds(bounds)
-	labels.CopyTo(dp.LabelsMap())
+	attributes.CopyTo(dp.Attributes())
 
 	dp.SetTimestamp(pdata.Timestamp(ts))
 	return metric
@@ -320,7 +320,7 @@ func getEmptySummaryMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getSummaryMetric(name string, labels pdata.StringMap, ts uint64, sum float64, count uint64, quantiles pdata.ValueAtQuantileSlice) pdata.Metric {
+func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum float64, count uint64, quantiles pdata.ValueAtQuantileSlice) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSummary)
@@ -328,8 +328,8 @@ func getSummaryMetric(name string, labels pdata.StringMap, ts uint64, sum float6
 	dp.SetCount(count)
 	dp.SetSum(sum)
 
-	labels.Range(func(k string, v string) bool {
-		dp.LabelsMap().Upsert(k, v)
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+		dp.Attributes().Upsert(k, v)
 		return true
 	})
 

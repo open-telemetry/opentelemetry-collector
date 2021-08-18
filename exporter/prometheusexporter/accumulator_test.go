@@ -46,8 +46,8 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -59,8 +59,8 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -76,8 +76,8 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -94,7 +94,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			n := a.Accumulate(resourceMetrics)
 			require.Equal(t, 0, n)
 
-			signature := timeseriesSignature(ilm.InstrumentationLibrary().Name(), ilm.Metrics().At(0), pdata.NewStringMap())
+			signature := timeseriesSignature(ilm.InstrumentationLibrary().Name(), ilm.Metrics().At(0), pdata.NewAttributeMap())
 			v, ok := a.registeredMetrics.Load(signature)
 			require.False(t, ok)
 			require.Nil(t, v)
@@ -116,8 +116,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -130,8 +130,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -146,8 +146,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -162,8 +162,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -178,8 +178,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -194,8 +194,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -212,8 +212,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(v)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 			},
 		},
@@ -249,7 +249,7 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			require.Equal(t, v.instrumentationLibrary.Name(), "test")
 			require.Equal(t, v.value.DataType(), ilm2.Metrics().At(0).DataType())
-			vLabels.Range(func(k, v string) bool {
+			vLabels.Range(func(k string, v pdata.AttributeValue) bool {
 				r, _ := m2Labels.Get(k)
 				require.Equal(t, r, v)
 				return true
@@ -286,7 +286,7 @@ func TestAccumulateMetrics(t *testing.T) {
 }
 
 func getMetricProperties(metric pdata.Metric) (
-	labels pdata.StringMap,
+	attributes pdata.AttributeMap,
 	ts time.Time,
 	value float64,
 	temporality pdata.AggregationTemporality,
@@ -294,7 +294,7 @@ func getMetricProperties(metric pdata.Metric) (
 ) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
-		labels = metric.Gauge().DataPoints().At(0).LabelsMap()
+		attributes = metric.Gauge().DataPoints().At(0).Attributes()
 		ts = metric.Gauge().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Gauge().DataPoints().At(0)
 		switch dp.Type() {
@@ -306,7 +306,7 @@ func getMetricProperties(metric pdata.Metric) (
 		temporality = pdata.AggregationTemporalityUnspecified
 		isMonotonic = false
 	case pdata.MetricDataTypeSum:
-		labels = metric.Sum().DataPoints().At(0).LabelsMap()
+		attributes = metric.Sum().DataPoints().At(0).Attributes()
 		ts = metric.Sum().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Sum().DataPoints().At(0)
 		switch dp.Type() {
@@ -318,7 +318,7 @@ func getMetricProperties(metric pdata.Metric) (
 		temporality = metric.Sum().AggregationTemporality()
 		isMonotonic = metric.Sum().IsMonotonic()
 	case pdata.MetricDataTypeHistogram:
-		labels = metric.Histogram().DataPoints().At(0).LabelsMap()
+		attributes = metric.Histogram().DataPoints().At(0).Attributes()
 		ts = metric.Histogram().DataPoints().At(0).Timestamp().AsTime()
 		value = metric.Histogram().DataPoints().At(0).Sum()
 		temporality = metric.Histogram().AggregationTemporality()

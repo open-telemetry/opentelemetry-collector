@@ -46,8 +46,8 @@ const (
 
 var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
 
-// ZipkinReceiver type is used to handle spans received in the Zipkin format.
-type ZipkinReceiver struct {
+// zipkinReceiver type is used to handle spans received in the Zipkin format.
+type zipkinReceiver struct {
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
 	nextConsumer consumer.Traces
@@ -64,15 +64,15 @@ type ZipkinReceiver struct {
 	protobufDebugUnmarshaler pdata.TracesUnmarshaler
 }
 
-var _ http.Handler = (*ZipkinReceiver)(nil)
+var _ http.Handler = (*zipkinReceiver)(nil)
 
-// New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) {
+// newReceiver creates a new zipkinreceiver.zipkinReceiver reference.
+func newReceiver(config *Config, nextConsumer consumer.Traces) (*zipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	zr := &ZipkinReceiver{
+	zr := &zipkinReceiver{
 		nextConsumer:             nextConsumer,
 		id:                       config.ID(),
 		config:                   config,
@@ -86,7 +86,7 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
+func (zr *zipkinReceiver) Start(_ context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
@@ -111,7 +111,7 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
+func (zr *zipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
 		return zr.v1ThriftUnmarshaler.UnmarshalTraces(blob)
 	}
@@ -119,7 +119,7 @@ func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
+func (zr *zipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	// This flag's reference is from:
 	//      https://github.com/openzipkin/zipkin-go/blob/3793c981d4f621c0e3eb1457acffa2c1cc591384/proto/v2/zipkin.proto#L154
 	debugWasSet := hdr.Get("X-B3-Flags") == "1"
@@ -143,7 +143,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
-func (zr *ZipkinReceiver) Shutdown(context.Context) error {
+func (zr *zipkinReceiver) Shutdown(context.Context) error {
 	err := zr.server.Close()
 	zr.shutdownWG.Wait()
 	return err
@@ -190,9 +190,9 @@ const (
 	zipkinV2TagValue = "zipkinV2"
 )
 
-// The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
+// The zipkinReceiver receives spans from endpoint /api/v2 as JSON,
 // unmarshalls them and sends them along to the nextConsumer.
-func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if c, ok := client.FromHTTP(r); ok {
 		ctx = client.NewContext(ctx, c)

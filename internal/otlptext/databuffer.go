@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type dataBuffer struct {
@@ -45,18 +44,6 @@ func (b *dataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	b.logEntry("%s:", label)
 	am.Range(func(k string, v pdata.AttributeValue) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
-		return true
-	})
-}
-
-func (b *dataBuffer) logStringMap(description string, sm pdata.StringMap) {
-	if sm.Len() == 0 {
-		return
-	}
-
-	b.logEntry("%s:", description)
-	sm.Range(func(k string, v string) bool {
-		b.logEntry("     -> %s: %s", k, v)
 		return true
 	})
 }
@@ -101,7 +88,7 @@ func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("NumberDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -118,7 +105,7 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -145,7 +132,7 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("SummaryDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
+		b.logDataPointAttributes(p.Attributes())
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -160,8 +147,8 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	}
 }
 
-func (b *dataBuffer) logDataPointLabels(labels pdata.StringMap) {
-	b.logStringMap("Data point labels", labels)
+func (b *dataBuffer) logDataPointAttributes(labels pdata.AttributeMap) {
+	b.logAttributeMap("Data point attributes", labels)
 }
 
 func (b *dataBuffer) logLogRecord(lr pdata.LogRecord) {
@@ -260,7 +247,7 @@ func attributeMapToString(av pdata.AttributeMap) string {
 	b.WriteString("{\n")
 
 	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
-		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), tracetranslator.AttributeValueToString(v))
+		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), pdata.AttributeValueToString(v))
 		return true
 	})
 	b.WriteByte('}')

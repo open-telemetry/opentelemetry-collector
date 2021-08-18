@@ -115,8 +115,8 @@ func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	dps := m.Gauge().DataPoints()
 
-	dps.AppendEmpty().LabelsMap().Insert("foo", "bar")
-	dps.AppendEmpty().LabelsMap().Insert("baz", "glarch")
+	dps.AppendEmpty().Attributes().InsertString("foo", "bar")
+	dps.AppendEmpty().Attributes().InsertString("baz", "glarch")
 
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
@@ -140,20 +140,20 @@ func TestNonMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 
 func TestMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 	expression := `MetricName == 'my.metric' && HasLabel("foo")`
-	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]string{"foo": ""}))
+	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
 }
 
 func TestMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]string{"foo": ""}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
 }
 
 func TestNonMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]string{"foo": ""}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
 }
 
-func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]string) bool {
+func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]pdata.AttributeValue) bool {
 	matcher, err := NewMatcher(expression)
 	require.NoError(t, err)
 	m := pdata.NewMetric()
@@ -162,7 +162,7 @@ func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string
 	dps := m.Gauge().DataPoints()
 	pt := dps.AppendEmpty()
 	if lbls != nil {
-		pt.LabelsMap().InitFromMap(lbls)
+		pt.Attributes().InitFromMap(lbls)
 	}
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
@@ -86,8 +87,9 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:      configtelemetry.LevelNormal,
-		ExporterID: exporter,
+		Level:                  configtelemetry.LevelNormal,
+		ExporterID:             exporter,
+		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings(),
 	})
 	ctx := obsrep.StartTracesOp(context.Background())
 	assert.NotNil(t, ctx)
@@ -103,8 +105,9 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:      configtelemetry.LevelNormal,
-		ExporterID: exporter,
+		Level:                  configtelemetry.LevelNormal,
+		ExporterID:             exporter,
+		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings(),
 	})
 	ctx := obsrep.StartMetricsOp(context.Background())
 	assert.NotNil(t, ctx)
@@ -120,8 +123,9 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:      configtelemetry.LevelNormal,
-		ExporterID: exporter,
+		Level:                  configtelemetry.LevelNormal,
+		ExporterID:             exporter,
+		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings(),
 	})
 	ctx := obsrep.StartLogsOp(context.Background())
 	assert.NotNil(t, ctx)

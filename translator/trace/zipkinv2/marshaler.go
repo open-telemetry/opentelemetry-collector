@@ -12,15 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreport
+package zipkinv2
 
 import (
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
+
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func recordError(span trace.Span, err error) {
+type marshaler struct {
+	serializer     zipkinreporter.SpanSerializer
+	fromTranslator FromTranslator
+}
+
+// MarshalTraces to JSON bytes.
+func (j marshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
+	spans, err := j.fromTranslator.FromTraces(td)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
+		return nil, err
 	}
+	return j.serializer.Serialize(spans)
 }

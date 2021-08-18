@@ -116,8 +116,8 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	metric.SetDescription("test description")
 	dp := metric.Gauge().DataPoints().AppendEmpty()
 	dp.SetIntVal(42)
-	dp.LabelsMap().Insert("label.1", "1")
-	dp.LabelsMap().Insert("label/2", "2")
+	dp.Attributes().InsertString("label.1", "1")
+	dp.Attributes().InsertString("label/2", "2")
 	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 
 	loggerCore := errorCheckCore{}
@@ -170,8 +170,8 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -188,8 +188,8 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -208,8 +208,8 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -228,8 +228,8 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -248,8 +248,8 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -268,8 +268,8 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -368,8 +368,8 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 				return
 			},
@@ -466,8 +466,8 @@ func TestAccumulateSummary(t *testing.T) {
 				sp.SetCount(10)
 				sp.SetSum(0.012)
 				sp.SetCount(10)
-				sp.LabelsMap().Insert("label_1", "1")
-				sp.LabelsMap().Insert("label_2", "2")
+				sp.Attributes().InsertString("label_1", "1")
+				sp.Attributes().InsertString("label_2", "2")
 				sp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				fillQuantileValue(0.50, 190, sp.QuantileValues().AppendEmpty())

@@ -68,7 +68,6 @@ type transaction struct {
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
-	receiverID           config.ComponentID
 	ms                   *metadataService
 	node                 *commonpb.Node
 	resource             *resourcepb.Resource
@@ -98,7 +97,6 @@ func newTransaction(
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverID:           receiverID,
 		ms:                   ms,
 		externalLabels:       externalLabels,
 		logger:               logger,

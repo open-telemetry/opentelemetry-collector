@@ -147,6 +147,14 @@ func TestResourceSpans_Resource(t *testing.T) {
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
+func TestResourceSpans_SchemaUrl(t *testing.T) {
+	ms := NewResourceSpans()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
+}
+
 func TestResourceSpans_InstrumentationLibrarySpans(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(), ms.InstrumentationLibrarySpans())
@@ -275,6 +283,14 @@ func TestInstrumentationLibrarySpans_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+}
+
+func TestInstrumentationLibrarySpans_SchemaUrl(t *testing.T) {
+	ms := NewInstrumentationLibrarySpans()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
 func TestInstrumentationLibrarySpans_Spans(t *testing.T) {
@@ -867,6 +883,7 @@ func generateTestResourceSpans() ResourceSpans {
 
 func fillTestResourceSpans(tv ResourceSpans) {
 	fillTestResource(tv.Resource())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestInstrumentationLibrarySpansSlice(tv.InstrumentationLibrarySpans())
 }
 
@@ -892,6 +909,7 @@ func generateTestInstrumentationLibrarySpans() InstrumentationLibrarySpans {
 
 func fillTestInstrumentationLibrarySpans(tv InstrumentationLibrarySpans) {
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestSpanSlice(tv.Spans())
 }
 

@@ -12,7 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configloader implements configuration loading from a config.Parser.
-// The implementation relies on registered factories that allow creating
-// default configuration for each type of receiver/exporter/processor.
-package configloader
+package configunmarshaler
+
+import (
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
+)
+
+// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the configparser.Parser.
+type ConfigUnmarshaler interface {
+	// Unmarshal the configuration from the given parser and factories.
+	Unmarshal(v *configparser.Parser, factories component.Factories) (*config.Config, error)
+}

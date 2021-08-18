@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -30,11 +29,13 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -254,8 +255,11 @@ receivers:
   otlp:
     protocols:
       grpc:
+
 exporters:
-  logging:
+  otlp:
+    endpoint: "localhost:4317"
+
 processors:
   batch:
 
@@ -267,7 +271,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging]
+      exporters: [otlp]
 `
 	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
 }
@@ -290,7 +294,6 @@ func TestCollector_reloadService(t *testing.T) {
 		name           string
 		parserProvider parserprovider.ParserProvider
 		service        *service
-		skip           bool
 	}{
 		{
 			name:           "first_load_err",
@@ -317,21 +320,17 @@ func TestCollector_reloadService(t *testing.T) {
 				builtReceivers:  builder.Receivers{},
 				builtExtensions: builder.Extensions{},
 			},
-			skip: runtime.GOOS == "darwin",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.skip {
-				t.Log("Skipping test", tt.name)
-				return
-			}
-
 			col := Collector{
-				logger:         zap.NewNop(),
-				parserProvider: tt.parserProvider,
-				factories:      factories,
-				service:        tt.service,
+				logger:            zap.NewNop(),
+				tracerProvider:    trace.NewNoopTracerProvider(),
+				parserProvider:    tt.parserProvider,
+				configUnmarshaler: configunmarshaler.NewDefault(),
+				factories:         factories,
+				service:           tt.service,
 			}
 
 			err := col.reloadService(ctx)
