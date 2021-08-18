@@ -61,3 +61,5 @@ require (
 )
 
 replace go.opentelemetry.io/collector/model => ./model
+
+replace github.com/shirou/gopsutil => github.com/shirou/gopsutil v3.21.6+incompatible
