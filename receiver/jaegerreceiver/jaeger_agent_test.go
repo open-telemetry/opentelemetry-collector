@@ -130,11 +130,16 @@ func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server
 type mockSamplingHandler struct {
 }
 
+var mockSamplingRate = 0.000001
+
 func (*mockSamplingHandler) GetSamplingStrategy(context.Context, *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
-	return &api_v2.SamplingStrategyResponse{StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC}, nil
+	return &api_v2.SamplingStrategyResponse{StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC,
+		ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
+			SamplingRate: mockSamplingRate,
+		}}, nil
 }
 
-func TestJaegerHTTP(t *testing.T) {
+func TestRemoteSamplingHTTP(t *testing.T) {
 	s, addr := initializeGRPCTestServer(t, func(s *grpc.Server) {
 		api_v2.RegisterSamplingManagerServer(s, &mockSamplingHandler{})
 	})
@@ -185,6 +190,45 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 }
 
+func TestRemoteSamplingGRPC(t *testing.T) {
+	s, addr := initializeGRPCTestServer(t, func(s *grpc.Server) {
+		api_v2.RegisterSamplingManagerServer(s, &mockSamplingHandler{})
+	})
+	defer s.GracefulStop()
+
+	grpcPort := testutil.GetAvailablePort(t)
+	httpPort := testutil.GetAvailablePort(t)
+
+	config := &configuration{
+		CollectorGRPCPort: int(grpcPort),
+		AgentHTTPPort:     int(httpPort),
+		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: addr.String(),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
+		},
+	}
+
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
+	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
+
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+
+	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", grpcPort), grpc.WithInsecure())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	cl := api_v2.NewSamplingManagerClient(conn)
+
+	response, err := cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
+		ServiceName: "nothing",
+	})
+	assert.Equal(t, mockSamplingRate, response.ProbabilisticSampling.SamplingRate)
+	assert.NoError(t, err, "should not have failed to get remote sampling stragegy")
+}
+
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
@@ -192,7 +236,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
 	// 2. Then send spans to the Jaeger receiver.
 	jexp, err := newClientUDP(agentEndpoint, jr.agentBinaryThriftEnabled())
