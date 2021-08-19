@@ -34,9 +34,10 @@ type LogsUnmarshaler interface {
 	UnmarshalLogs(buf []byte) (Logs, error)
 }
 
-// LogsSizer returns the size of a Logs.
+// LogsSizer is an optional interface implemented by the LogsMarshaler,
+// that calculates the size of a marshaled Logs.
 type LogsSizer interface {
-	// LogsSize returns the size in bytes of a Logs.
+	// LogsSize returns the size in bytes of a marshaled Logs.
 	LogsSize(ld Logs) int
 }
 
