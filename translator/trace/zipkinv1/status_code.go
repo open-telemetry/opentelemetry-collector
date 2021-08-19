@@ -101,14 +101,14 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 		m.fromCensus.message = attrib.GetStringValue().GetValue()
 		return true
 
-	case tracetranslator.TagStatusCode:
+	case conventions.OtelStatusCode:
 		code, err := attribToStatusCode(attrib)
 		if err == nil {
 			m.fromStatus.codePtr = &code
 		}
 		return true
 
-	case tracetranslator.TagStatusMsg:
+	case conventions.OtelStatusDescription:
 		m.fromStatus.message = attrib.GetStringValue().GetValue()
 		return true
 

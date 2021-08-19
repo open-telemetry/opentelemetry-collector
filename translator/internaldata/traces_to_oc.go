@@ -78,7 +78,7 @@ func spanToOC(span pdata.Span) *octrace.Span {
 				DroppedAttributesCount: 0,
 			}
 		}
-		attributes.AttributeMap[tracetranslator.TagStatusCode] = statusAttr
+		attributes.AttributeMap[conventions.OtelStatusCode] = statusAttr
 	}
 
 	return &octrace.Span{

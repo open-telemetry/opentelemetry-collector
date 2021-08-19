@@ -158,9 +158,9 @@ func spanToZipkinSpan(
 	removeRedundentTags(redundantKeys, tags)
 
 	status := span.Status()
-	tags[tracetranslator.TagStatusCode] = status.Code().String()
+	tags[conventions.OtelStatusCode] = status.Code().String()
 	if status.Message() != "" {
-		tags[tracetranslator.TagStatusMsg] = status.Message()
+		tags[conventions.OtelStatusDescription] = status.Message()
 		if int32(status.Code()) > 0 {
 			zs.Err = fmt.Errorf("%s", status.Message())
 		}

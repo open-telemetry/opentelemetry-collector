@@ -382,7 +382,7 @@ func getTagFromSpanKind(spanKind pdata.SpanKind) (model.KeyValue, bool) {
 
 func getTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
 	return model.KeyValue{
-		Key:    tracetranslator.TagStatusCode,
+		Key:    conventions.OtelStatusCode,
 		VInt64: int64(statusCode),
 		VType:  model.ValueType_INT64,
 	}, true
@@ -405,7 +405,7 @@ func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
 		return model.KeyValue{}, false
 	}
 	return model.KeyValue{
-		Key:   tracetranslator.TagStatusMsg,
+		Key:   conventions.OtelStatusDescription,
 		VStr:  statusMsg,
 		VType: model.ValueType_STRING,
 	}, true

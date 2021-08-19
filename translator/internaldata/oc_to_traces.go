@@ -175,11 +175,11 @@ func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attribut
 	}
 
 	if ocAttrs != nil {
-		// tracetranslator.TagStatusCode is set it must override the status code value.
+		// If conventions.OtelStatusCode is set, it must override the status code value.
 		// See the reverse translation in traces_to_oc.go:statusToOC().
-		if attr, ok := ocAttrs.AttributeMap[tracetranslator.TagStatusCode]; ok {
+		if attr, ok := ocAttrs.AttributeMap[conventions.OtelStatusCode]; ok {
 			code = pdata.StatusCode(attr.GetIntValue())
-			delete(ocAttrs.AttributeMap, tracetranslator.TagStatusCode)
+			delete(ocAttrs.AttributeMap, conventions.OtelStatusCode)
 		}
 	}
 

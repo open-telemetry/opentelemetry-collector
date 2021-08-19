@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Change semantic conventions for status (code, msg) as per specifications (#3872)
+
 ## v0.33.0 Beta
 
 ## 🛑 Breaking changes 🛑
