@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -228,12 +228,12 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 	metadata.Metrics.ProcessDiskIo.Init(metric)
 
 	idps := metric.Sum().DataPoints()
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.LabelProcessDirection.Read)
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.LabelProcessDirection.Write)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.LabelDirection.Read)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.LabelDirection.Write)
 }
 
 func initializeDiskIODataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
-	dataPoint.Attributes().InsertString(metadata.Labels.ProcessDirection, directionLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.Direction, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

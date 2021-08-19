@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -136,8 +136,8 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(logicalDiskCounterValues))
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDiskDirection.Read, logicalDiskCounter.Values[readBytesPerSec])
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDiskDirection.Write, logicalDiskCounter.Values[writeBytesPerSec])
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Read, logicalDiskCounter.Values[readBytesPerSec])
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Write, logicalDiskCounter.Values[writeBytesPerSec])
 	}
 }
 
@@ -147,8 +147,8 @@ func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Ti
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(logicalDiskCounterValues))
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDiskDirection.Read, logicalDiskCounter.Values[readsPerSec])
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDiskDirection.Write, logicalDiskCounter.Values[writesPerSec])
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Read, logicalDiskCounter.Values[readsPerSec])
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Write, logicalDiskCounter.Values[writesPerSec])
 	}
 }
 
@@ -169,8 +169,8 @@ func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata
 	ddps := metric.Sum().DataPoints()
 	ddps.EnsureCapacity(2 * len(logicalDiskCounterValues))
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDiskDirection.Read, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7)
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDiskDirection.Write, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7)
+		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Read, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7)
+		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Write, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7)
 	}
 }
 
@@ -185,7 +185,7 @@ func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timest
 }
 
 func initializeDiskPendingDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.DiskDevice, deviceLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.Device, deviceLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

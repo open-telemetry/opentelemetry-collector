@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -270,12 +270,12 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.LabelFilesystemState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.LabelFilesystemState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.LabelState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.LabelState.Free))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.LabelFilesystemState.Reserved))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.LabelState.Reserved))
 }
 
 func isUnix() bool {

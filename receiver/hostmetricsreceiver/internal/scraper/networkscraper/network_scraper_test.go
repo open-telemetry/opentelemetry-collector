@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -161,13 +161,13 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pd
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelNetworkDirection.Transmit))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelNetworkDirection.Receive))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Transmit))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Receive))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.LabelNetworkProtocol.Tcp))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.LabelProtocol.Tcp))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

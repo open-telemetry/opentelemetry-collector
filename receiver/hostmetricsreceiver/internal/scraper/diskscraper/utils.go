@@ -16,14 +16,14 @@ package diskscraper
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
 func initializeNumberDataPointAsInt(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel string, directionLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.DiskDevice, deviceLabel)
+	attributes.InsertString(metadata.Labels.Device, deviceLabel)
 	if directionLabel != "" {
-		attributes.InsertString(metadata.Labels.DiskDirection, directionLabel)
+		attributes.InsertString(metadata.Labels.Direction, directionLabel)
 	}
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
@@ -32,9 +32,9 @@ func initializeNumberDataPointAsInt(dataPoint pdata.NumberDataPoint, startTime, 
 
 func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel string, directionLabel string, value float64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.DiskDevice, deviceLabel)
+	attributes.InsertString(metadata.Labels.Device, deviceLabel)
 	if directionLabel != "" {
-		attributes.InsertString(metadata.Labels.DiskDirection, directionLabel)
+		attributes.InsertString(metadata.Labels.Direction, directionLabel)
 	}
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)

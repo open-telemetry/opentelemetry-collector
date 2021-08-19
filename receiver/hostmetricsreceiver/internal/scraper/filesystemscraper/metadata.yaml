@@ -1,0 +1,37 @@
+name: filesystem
+
+labels:
+  device:
+    description: Identifier of the filesystem.
+
+  mode:
+    description: Mountpoint mode such "ro", "rw", etc.
+
+  mountpoint:
+    description: Mountpoint path.
+
+  state:
+    description: Breakdown of filesystem usage by type.
+    enum: [free, reserved, used]
+
+  type:
+    description: Filesystem type, such as, "ext4", "tmpfs", etc.
+
+metrics:
+  system.filesystem.usage:
+    description: Filesystem bytes used.
+    unit: By
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: false
+    labels: [device, mode, mountpoint, type, state]
+
+  system.filesystem.inodes.usage:
+    description: FileSystem inodes used.
+    unit: "{inodes}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: false
+    labels: [device, mode, mountpoint, type, state]

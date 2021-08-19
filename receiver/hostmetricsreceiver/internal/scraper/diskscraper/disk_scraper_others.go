@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -113,8 +113,8 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 	idps.EnsureCapacity(2 * len(ioCounters))
 
 	for device, ioCounter := range ioCounters {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.ReadBytes))
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.WriteBytes))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Read, int64(ioCounter.ReadBytes))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Write, int64(ioCounter.WriteBytes))
 	}
 }
 
@@ -125,8 +125,8 @@ func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Ti
 	idps.EnsureCapacity(2 * len(ioCounters))
 
 	for device, ioCounter := range ioCounters {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.ReadCount))
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.WriteCount))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Read, int64(ioCounter.ReadCount))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Write, int64(ioCounter.WriteCount))
 	}
 }
 
@@ -148,8 +148,8 @@ func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata
 	ddps.EnsureCapacity(2 * len(ioCounters))
 
 	for device, ioCounter := range ioCounters {
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, float64(ioCounter.ReadTime)/1e3)
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, float64(ioCounter.WriteTime)/1e3)
+		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Read, float64(ioCounter.ReadTime)/1e3)
+		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Write, float64(ioCounter.WriteTime)/1e3)
 	}
 }
 
@@ -165,7 +165,7 @@ func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timest
 }
 
 func initializeDiskPendingDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.DiskDevice, deviceLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.Device, deviceLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
