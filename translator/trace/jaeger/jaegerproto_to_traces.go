@@ -221,15 +221,15 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 		}
 	}
 
-	if codeAttr, ok := attrs.Get(tracetranslator.TagStatusCode); ok {
+	if codeAttr, ok := attrs.Get(conventions.OtelStatusCode); ok {
 		statusExists = true
 		if code, err := getStatusCodeValFromAttr(codeAttr); err == nil {
 			statusCode = pdata.StatusCode(code)
-			attrs.Delete(tracetranslator.TagStatusCode)
+			attrs.Delete(conventions.OtelStatusCode)
 		}
-		if msgAttr, ok := attrs.Get(tracetranslator.TagStatusMsg); ok {
+		if msgAttr, ok := attrs.Get(conventions.OtelStatusDescription); ok {
 			statusMessage = msgAttr.StringVal()
-			attrs.Delete(tracetranslator.TagStatusMsg)
+			attrs.Delete(conventions.OtelStatusDescription)
 		}
 	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); ok {
 		statusExists = true

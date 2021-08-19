@@ -365,7 +365,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code is set as int",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagStatusCode: pdata.NewAttributeValueInt(1),
+				conventions.OtelStatusCode: pdata.NewAttributeValueInt(1),
 			}),
 			status:           okStatus,
 			attrsModifiedLen: 0,
@@ -373,9 +373,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code, status.message and error tags are set",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:      pdata.NewAttributeValueBool(true),
-				tracetranslator.TagStatusCode: pdata.NewAttributeValueInt(int64(pdata.StatusCodeError)),
-				tracetranslator.TagStatusMsg:  pdata.NewAttributeValueString("Error: Invalid argument"),
+				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
+				conventions.OtelStatusCode:        pdata.NewAttributeValueInt(int64(pdata.StatusCodeError)),
+				conventions.OtelStatusDescription: pdata.NewAttributeValueString("Error: Invalid argument"),
 			}),
 			status:           errorStatusWithMessage,
 			attrsModifiedLen: 0,
@@ -401,7 +401,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code has precedence over http.status_code.",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagStatusCode:       pdata.NewAttributeValueInt(1),
+				conventions.OtelStatusCode:          pdata.NewAttributeValueInt(1),
 				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(500),
 				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("Server Error"),
 			}),
@@ -606,7 +606,7 @@ func generateProtoSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:    tracetranslator.TagStatusCode,
+				Key:    conventions.OtelStatusCode,
 				VType:  model.ValueType_INT64,
 				VInt64: int64(pdata.StatusCodeError),
 			},
@@ -616,7 +616,7 @@ func generateProtoSpan() *model.Span {
 				VType: model.ValueType_BOOL,
 			},
 			{
-				Key:   tracetranslator.TagStatusMsg,
+				Key:   conventions.OtelStatusDescription,
 				VType: model.ValueType_STRING,
 				VStr:  "status-cancelled",
 			},
@@ -684,7 +684,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:    tracetranslator.TagStatusCode,
+				Key:    conventions.OtelStatusCode,
 				VType:  model.ValueType_INT64,
 				VInt64: int64(pdata.StatusCodeError),
 			},
@@ -694,7 +694,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 				VType: model.ValueType_BOOL,
 			},
 			{
-				Key:   tracetranslator.TagStatusMsg,
+				Key:   conventions.OtelStatusDescription,
 				VType: model.ValueType_STRING,
 				VStr:  "status-cancelled",
 			},
@@ -797,12 +797,12 @@ func generateProtoFollowerSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
 			},
 			{
-				Key:    tracetranslator.TagStatusCode,
+				Key:    conventions.OtelStatusCode,
 				VType:  model.ValueType_INT64,
 				VInt64: int64(pdata.StatusCodeOk),
 			},
 			{
-				Key:   tracetranslator.TagStatusMsg,
+				Key:   conventions.OtelStatusDescription,
 				VType: model.ValueType_STRING,
 				VStr:  "status-ok",
 			},

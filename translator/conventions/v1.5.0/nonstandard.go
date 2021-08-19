@@ -20,6 +20,11 @@ const (
 )
 
 const (
+	OtelStatusCode        = "otel.status_code"
+	OtelStatusDescription = "otel.status_description"
+)
+
+const (
 	AttributeMessageType    = "message.type"
 	AttributeHTTPStatusText = "http.status_text"
 )

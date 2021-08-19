@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
@@ -167,9 +168,9 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 			},
 		},
 		Tags: map[string]string{
-			"resource-attr":  "resource-attr-val-1",
-			"status.code":    "STATUS_CODE_ERROR",
-			"status.message": "status-cancelled",
+			"resource-attr":                   "resource-attr-val-1",
+			conventions.OtelStatusCode:        "STATUS_CODE_ERROR",
+			conventions.OtelStatusDescription: "status-cancelled",
 		},
 		Name:      "operationA",
 		Timestamp: testdata.TestSpanStartTime,
