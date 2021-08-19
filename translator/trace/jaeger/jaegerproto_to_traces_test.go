@@ -35,11 +35,11 @@ import (
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation
 var (
 	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321000, time.UTC)
-	testSpanStartTimestamp = pdata.TimestampFromTime(testSpanStartTime)
+	testSpanStartTimestamp = pdata.NewTimestampFromTime(testSpanStartTime)
 	testSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123000, time.UTC)
-	testSpanEventTimestamp = pdata.TimestampFromTime(testSpanEventTime)
+	testSpanEventTimestamp = pdata.NewTimestampFromTime(testSpanEventTime)
 	testSpanEndTime        = time.Date(2020, 2, 11, 20, 26, 13, 789000, time.UTC)
-	testSpanEndTimestamp   = pdata.TimestampFromTime(testSpanEndTime)
+	testSpanEndTimestamp   = pdata.NewTimestampFromTime(testSpanEndTime)
 )
 
 func TestGetStatusCodeValFromAttr(t *testing.T) {

@@ -118,7 +118,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	dp.SetIntVal(42)
 	dp.Attributes().InsertString("label.1", "1")
 	dp.Attributes().InsertString("label/2", "2")
-	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 
 	loggerCore := errorCheckCore{}
 	c := collector{
@@ -172,7 +172,7 @@ func TestCollectMetrics(t *testing.T) {
 				dp.SetIntVal(42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 
 				return
 			},
@@ -190,7 +190,7 @@ func TestCollectMetrics(t *testing.T) {
 				dp.SetDoubleVal(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 
 				return
 			},
@@ -210,7 +210,7 @@ func TestCollectMetrics(t *testing.T) {
 				dp.SetIntVal(42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 
 				return
 			},
@@ -230,7 +230,7 @@ func TestCollectMetrics(t *testing.T) {
 				dp.SetDoubleVal(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 
 				return
 			},
@@ -250,7 +250,7 @@ func TestCollectMetrics(t *testing.T) {
 				dp.SetIntVal(42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 
 				return
 			},
@@ -270,7 +270,7 @@ func TestCollectMetrics(t *testing.T) {
 				dp.SetDoubleVal(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 
 				return
 			},
@@ -370,7 +370,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.SetSum(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 				return
 			},
 		},
@@ -468,7 +468,7 @@ func TestAccumulateSummary(t *testing.T) {
 				sp.SetCount(10)
 				sp.Attributes().InsertString("label_1", "1")
 				sp.Attributes().InsertString("label_2", "2")
-				sp.SetTimestamp(pdata.TimestampFromTime(ts))
+				sp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 
 				fillQuantileValue(0.50, 190, sp.QuantileValues().AppendEmpty())
 				fillQuantileValue(0.99, 817, sp.QuantileValues().AppendEmpty())

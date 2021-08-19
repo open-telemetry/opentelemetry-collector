@@ -233,7 +233,7 @@ func fillNumberDataPoint(ocMetric *ocmetrics.Metric, dps pdata.NumberDataPointSl
 		if timeseries == nil {
 			continue
 		}
-		startTimestamp := pdata.TimestampFromTime(timeseries.GetStartTimestamp().AsTime())
+		startTimestamp := pdata.NewTimestampFromTime(timeseries.GetStartTimestamp().AsTime())
 
 		for _, point := range timeseries.GetPoints() {
 			if point == nil {
@@ -242,7 +242,7 @@ func fillNumberDataPoint(ocMetric *ocmetrics.Metric, dps pdata.NumberDataPointSl
 
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
-			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
+			dp.SetTimestamp(pdata.NewTimestampFromTime(point.GetTimestamp().AsTime()))
 			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			switch valType {
 			case pdata.MetricValueTypeInt:
@@ -262,7 +262,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.Histogra
 		if timeseries == nil {
 			continue
 		}
-		startTimestamp := pdata.TimestampFromTime(timeseries.GetStartTimestamp().AsTime())
+		startTimestamp := pdata.NewTimestampFromTime(timeseries.GetStartTimestamp().AsTime())
 
 		for _, point := range timeseries.GetPoints() {
 			if point == nil {
@@ -271,7 +271,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.Histogra
 
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
-			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
+			dp.SetTimestamp(pdata.NewTimestampFromTime(point.GetTimestamp().AsTime()))
 			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			distributionValue := point.GetDistributionValue()
 			dp.SetSum(distributionValue.GetSum())
@@ -290,7 +290,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 		if timeseries == nil {
 			continue
 		}
-		startTimestamp := pdata.TimestampFromTime(timeseries.GetStartTimestamp().AsTime())
+		startTimestamp := pdata.NewTimestampFromTime(timeseries.GetStartTimestamp().AsTime())
 
 		for _, point := range timeseries.GetPoints() {
 			if point == nil {
@@ -299,7 +299,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
-			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
+			dp.SetTimestamp(pdata.NewTimestampFromTime(point.GetTimestamp().AsTime()))
 			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			summaryValue := point.GetSummaryValue()
 			dp.SetSum(summaryValue.GetSum().GetValue())
@@ -343,7 +343,7 @@ func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snaps
 
 func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar pdata.Exemplar) {
 	if ocExemplar.GetTimestamp() != nil {
-		exemplar.SetTimestamp(pdata.TimestampFromTime(ocExemplar.GetTimestamp().AsTime()))
+		exemplar.SetTimestamp(pdata.NewTimestampFromTime(ocExemplar.GetTimestamp().AsTime()))
 	}
 	ocAttachments := ocExemplar.GetAttachments()
 	exemplar.SetDoubleVal(ocExemplar.GetValue())

@@ -43,7 +43,7 @@ func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
 func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
 		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)

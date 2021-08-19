@@ -22,13 +22,13 @@ import (
 
 var (
 	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pdata.TimestampFromTime(TestSpanStartTime)
+	TestSpanStartTimestamp = pdata.NewTimestampFromTime(TestSpanStartTime)
 
 	TestSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestSpanEventTimestamp = pdata.TimestampFromTime(TestSpanEventTime)
+	TestSpanEventTimestamp = pdata.NewTimestampFromTime(TestSpanEventTime)
 
 	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pdata.TimestampFromTime(TestSpanEndTime)
+	TestSpanEndTimestamp = pdata.NewTimestampFromTime(TestSpanEndTime)
 )
 
 func GenerateTracesOneEmptyResourceSpans() pdata.Traces {

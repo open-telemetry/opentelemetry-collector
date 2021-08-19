@@ -32,7 +32,7 @@ const (
 )
 
 func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, miscFunc getMiscStats) error {
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	misc, err := miscFunc()
 	if err != nil {
 		return scrapererror.NewPartialScrapeError(err, unixMetricsLen)

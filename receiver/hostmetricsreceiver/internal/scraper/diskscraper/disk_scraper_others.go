@@ -84,7 +84,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	ioCounters, err := s.ioCounters()
 	if err != nil {
 		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
