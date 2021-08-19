@@ -161,8 +161,8 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 	dest.SetTraceID(idutils.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
-	dest.SetStartTimestamp(pdata.TimestampFromTime(span.StartTime))
-	dest.SetEndTimestamp(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
+	dest.SetStartTimestamp(pdata.NewTimestampFromTime(span.StartTime))
+	dest.SetEndTimestamp(pdata.NewTimestampFromTime(span.StartTime.Add(span.Duration)))
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
@@ -312,7 +312,7 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 			event = dest.AppendEmpty()
 		}
 
-		event.SetTimestamp(pdata.TimestampFromTime(log.Timestamp))
+		event.SetTimestamp(pdata.NewTimestampFromTime(log.Timestamp))
 		if len(log.Fields) == 0 {
 			continue
 		}

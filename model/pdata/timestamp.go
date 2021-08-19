@@ -22,7 +22,13 @@ import (
 // 00:00:00 UTC on 1 January 1970.
 type Timestamp uint64
 
+// NewTimestampFromTime constructs a new Timestamp from the provided time.Time.
+func NewTimestampFromTime(t time.Time) Timestamp {
+	return Timestamp(uint64(t.UnixNano()))
+}
+
 // TimestampFromTime constructs a new Timestamp from the provided time.Time.
+// Deprecated: use NewTimestampFromTime instead.
 func TimestampFromTime(t time.Time) Timestamp {
 	return Timestamp(uint64(t.UnixNano()))
 }

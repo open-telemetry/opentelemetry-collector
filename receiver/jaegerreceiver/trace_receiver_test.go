@@ -313,8 +313,8 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetParentSpanID(parentSpanID)
 	span0.SetTraceID(traceID)
 	span0.SetName("DBSearch")
-	span0.SetStartTimestamp(pdata.TimestampFromTime(t1))
-	span0.SetEndTimestamp(pdata.TimestampFromTime(t2))
+	span0.SetStartTimestamp(pdata.NewTimestampFromTime(t1))
+	span0.SetEndTimestamp(pdata.NewTimestampFromTime(t2))
 	span0.Status().SetCode(pdata.StatusCodeError)
 	span0.Status().SetMessage("Stale indices")
 
@@ -322,8 +322,8 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetSpanID(parentSpanID)
 	span1.SetTraceID(traceID)
 	span1.SetName("ProxyFetch")
-	span1.SetStartTimestamp(pdata.TimestampFromTime(t2))
-	span1.SetEndTimestamp(pdata.TimestampFromTime(t3))
+	span1.SetStartTimestamp(pdata.NewTimestampFromTime(t2))
+	span1.SetEndTimestamp(pdata.NewTimestampFromTime(t3))
 	span1.Status().SetCode(pdata.StatusCodeError)
 	span1.Status().SetMessage("Frontend crash")
 

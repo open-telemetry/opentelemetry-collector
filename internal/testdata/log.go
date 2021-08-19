@@ -22,7 +22,7 @@ import (
 
 var (
 	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestLogTimestamp = pdata.TimestampFromTime(TestLogTime)
+	TestLogTimestamp = pdata.NewTimestampFromTime(TestLogTime)
 )
 
 func GenerateLogsOneEmptyResourceLogs() pdata.Logs {

@@ -256,7 +256,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlic
 	events.EnsureCapacity(len(zspan.Annotations))
 	for _, anno := range zspan.Annotations {
 		event := events.AppendEmpty()
-		event.SetTimestamp(pdata.TimestampFromTime(anno.Timestamp))
+		event.SetTimestamp(pdata.NewTimestampFromTime(anno.Timestamp))
 
 		parts := strings.Split(anno.Value, "|")
 		partCnt := len(parts)
@@ -436,15 +436,15 @@ func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pd
 	// conversion from this internal format back to zipkin format in zipkin exporter fails.
 	// Instead, set to *unix* time zero, and convert back in traces_to_zipkinv2.go
 	if zspan.Timestamp.IsZero() {
-		unixTimeZero := pdata.TimestampFromTime(time.Unix(0, 0))
-		zeroPlusDuration := pdata.TimestampFromTime(time.Unix(0, 0).Add(zspan.Duration))
+		unixTimeZero := pdata.NewTimestampFromTime(time.Unix(0, 0))
+		zeroPlusDuration := pdata.NewTimestampFromTime(time.Unix(0, 0).Add(zspan.Duration))
 		dest.SetStartTimestamp(unixTimeZero)
 		dest.SetEndTimestamp(zeroPlusDuration)
 
 		destAttrs.InsertBool(zipkin.StartTimeAbsent, true)
 	} else {
-		dest.SetStartTimestamp(pdata.TimestampFromTime(zspan.Timestamp))
-		dest.SetEndTimestamp(pdata.TimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
+		dest.SetStartTimestamp(pdata.NewTimestampFromTime(zspan.Timestamp))
+		dest.SetEndTimestamp(pdata.NewTimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))
 	}
 }
 

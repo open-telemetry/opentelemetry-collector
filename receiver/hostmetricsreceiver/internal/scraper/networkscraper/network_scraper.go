@@ -99,7 +99,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 }
 
 func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp) error {
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
@@ -176,7 +176,7 @@ func initializeNetworkDataPoint(dataPoint pdata.NumberDataPoint, startTime, now 
 }
 
 func (s *scraper) scrapeAndAppendNetworkConnectionsMetric(metrics pdata.MetricSlice) error {
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 
 	connections, err := s.connections("tcp")
 	if err != nil {

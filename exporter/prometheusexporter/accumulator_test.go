@@ -48,7 +48,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetIntVal(42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -61,7 +61,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetDoubleVal(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetSum(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 	}
@@ -118,7 +118,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetIntVal(int64(v))
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -132,7 +132,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetDoubleVal(v)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -148,7 +148,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetIntVal(int64(v))
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -164,7 +164,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetDoubleVal(v)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetIntVal(int64(v))
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -196,7 +196,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetDoubleVal(v)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 		{
@@ -214,7 +214,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetSum(v)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
 	}

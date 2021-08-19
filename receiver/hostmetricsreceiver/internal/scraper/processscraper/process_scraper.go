@@ -104,7 +104,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		md.initializeResource(rm.Resource())
 		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
-		now := pdata.TimestampFromTime(time.Now())
+		now := pdata.NewTimestampFromTime(time.Now())
 
 		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))

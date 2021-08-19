@@ -96,7 +96,7 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 }
 
 func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) error {
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	pageFiles, err := s.pageFileStats()
 	if err != nil {
 		return err
@@ -129,7 +129,7 @@ func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.T
 }
 
 func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlice) error {
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
