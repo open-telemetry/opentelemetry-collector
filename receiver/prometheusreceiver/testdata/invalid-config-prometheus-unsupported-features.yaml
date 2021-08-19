@@ -1,0 +1,43 @@
+receivers:
+  prometheus:
+    buffer_period: 234
+    buffer_count: 45
+    use_start_time_metric: true
+    start_time_metric_regex: '^(.+_)*process_start_time_seconds$'
+    config:
+      scrape_configs:
+        - job_name: 'demo'
+          scrape_interval: 5s
+      remote_write:
+        - url: "https://example.org/write"
+
+      remote_read:
+        - url: "https://example.org/read"
+
+      rule_files: ["a", "b"]
+
+      alerting:
+        alert_relabel_configs:
+          - separator: ","
+            target_label: "fix"
+
+          - separator: "|"
+            target_label: "gotham"
+
+        alertmanagers:
+          - scheme: "http"
+            path_prefix: "/prefix1"
+            timeout: 1s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [prometheus]
+      processors: [nop]
+      exporters: [nop]
