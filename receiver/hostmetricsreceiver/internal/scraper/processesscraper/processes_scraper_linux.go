@@ -20,7 +20,7 @@ import (
 	"github.com/shirou/gopsutil/load"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
 const unixSystemSpecificMetricsLen = 1

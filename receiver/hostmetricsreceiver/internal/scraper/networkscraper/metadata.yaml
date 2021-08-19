@@ -1,0 +1,62 @@
+name: network
+
+labels:
+  device:
+    description: Name of the network interface.
+
+  direction:
+    description: Direction of flow of bytes/opertations (receive or transmit).
+    enum: [receive, transmit]
+
+  protocol:
+    description: Network protocol, e.g. TCP or UDP.
+    enum: [tcp]
+
+  state:
+    description: State of the network connection.
+
+metrics:
+  system.network.packets:
+    description: The number of packets transferred.
+    unit: "{packets}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]
+
+  system.network.dropped:
+    description: The number of packets dropped.
+    unit: "{packets}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]
+
+  system.network.errors:
+    description: The number of errors encountered.
+    unit: "{errors}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]
+
+  system.network.io:
+    description: The number of bytes transmitted and received.
+    unit: "By"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]
+
+  system.network.connections:
+    description: The number of connections.
+    unit: "{connections}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: false
+    labels: [protocol, state]

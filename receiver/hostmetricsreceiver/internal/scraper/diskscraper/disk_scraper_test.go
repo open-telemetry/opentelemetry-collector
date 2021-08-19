@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
@@ -130,8 +130,8 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Write))
 }
 
 func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
@@ -148,8 +148,8 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDesc
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Read))
-		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pdata.NewAttributeValueString(metadata.LabelDiskDirection.Write))
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Read))
+		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Write))
 	}
 }
 

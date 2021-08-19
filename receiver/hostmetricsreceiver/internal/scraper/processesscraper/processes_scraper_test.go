@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -113,8 +113,8 @@ func assertProcessesCountMetricValid(t *testing.T, metric pdata.Metric, startTim
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.Equal(t, 2, metric.Sum().DataPoints().Len())
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "status", pdata.NewAttributeValueString(metadata.LabelProcessesStatus.Running))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "status", pdata.NewAttributeValueString(metadata.LabelProcessesStatus.Blocked))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "status", pdata.NewAttributeValueString(metadata.LabelStatus.Running))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "status", pdata.NewAttributeValueString(metadata.LabelStatus.Blocked))
 }
 
 func assertProcessesCreatedMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {

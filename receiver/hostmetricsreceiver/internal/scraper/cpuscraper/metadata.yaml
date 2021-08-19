@@ -1,0 +1,19 @@
+name: cpu
+
+labels:
+  cpu:
+    description: CPU number starting at 0.
+
+  state:
+    description: Breakdown of CPU usage by type.
+    enum: [idle, interrupt, nice, softirq, steal, system, user, wait]
+
+metrics:
+  system.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [state]

@@ -22,7 +22,7 @@ import (
 	"github.com/shirou/gopsutil/load"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -48,12 +48,12 @@ func initializeProcessesCountMetric(metric pdata.Metric, startTime pdata.Timesta
 
 	ddps := metric.Sum().DataPoints()
 	ddps.EnsureCapacity(2)
-	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelProcessesStatus.Running, int64(misc.ProcsRunning))
-	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelProcessesStatus.Blocked, int64(misc.ProcsBlocked))
+	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelStatus.Running, int64(misc.ProcsRunning))
+	initializeProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, metadata.LabelStatus.Blocked, int64(misc.ProcsBlocked))
 }
 
 func initializeProcessesCountDataPoint(dataPoint pdata.NumberDataPoint, startTime pdata.Timestamp, now pdata.Timestamp, statusLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.ProcessesStatus, statusLabel)
+	dataPoint.Attributes().InsertString(metadata.Labels.Status, statusLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

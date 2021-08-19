@@ -22,7 +22,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -109,11 +109,11 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, d
 
 func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.FilesystemDevice, partition.Device)
-	attributes.InsertString(metadata.Labels.FilesystemType, partition.Fstype)
-	attributes.InsertString(metadata.Labels.FilesystemMode, getMountMode(partition.Opts))
-	attributes.InsertString(metadata.Labels.FilesystemMountpoint, partition.Mountpoint)
-	attributes.InsertString(metadata.Labels.FilesystemState, stateLabel)
+	attributes.InsertString(metadata.Labels.Device, partition.Device)
+	attributes.InsertString(metadata.Labels.Type, partition.Fstype)
+	attributes.InsertString(metadata.Labels.Mode, getMountMode(partition.Opts))
+	attributes.InsertString(metadata.Labels.Mountpoint, partition.Mountpoint)
+	attributes.InsertString(metadata.Labels.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

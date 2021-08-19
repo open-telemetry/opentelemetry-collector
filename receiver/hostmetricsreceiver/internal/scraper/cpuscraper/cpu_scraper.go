@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -85,7 +85,7 @@ func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now 
 	if cpuLabel != gopsCPUTotal {
 		attributes.InsertString(metadata.Labels.Cpu, cpuLabel)
 	}
-	attributes.InsertString(metadata.Labels.CPUState, stateLabel)
+	attributes.InsertString(metadata.Labels.State, stateLabel)
 
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
