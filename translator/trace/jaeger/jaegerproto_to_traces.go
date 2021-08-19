@@ -170,7 +170,6 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	attrs.EnsureCapacity(len(span.Tags))
 	jTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
@@ -183,7 +182,7 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 
 	// drop the attributes slice if all of them were replaced during translation
 	if attrs.Len() == 0 {
-		attrs.InitFromMap(nil)
+		attrs.Clear()
 	}
 
 	jLogsToSpanEvents(span.Logs, dest.Events())
@@ -210,7 +209,6 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 }
 
 func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
-
 	statusCode := pdata.StatusCodeUnset
 	statusMessage := ""
 	statusExists := false
