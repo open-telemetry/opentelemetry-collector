@@ -43,6 +43,8 @@ func run(ymlPath string) error {
 		return errors.New("argument must be metadata.yaml file")
 	}
 
+	ymlDir := path.Dir(ymlPath)
+
 	ymlData, err := ioutil.ReadFile(filepath.Clean(ymlPath))
 	if err != nil {
 		return fmt.Errorf("unable to read file %v: %v", ymlPath, err)
@@ -57,8 +59,15 @@ func run(ymlPath string) error {
 	if !ok {
 		return errors.New("unable to determine filename")
 	}
-
 	thisDir := path.Dir(filename)
+
+	if err = generateMetrics(ymlDir, thisDir, md); err != nil {
+		return err
+	}
+	return generateDocumentation(ymlDir, thisDir, md)
+}
+
+func generateMetrics(ymlDir string, thisDir string, md metadata) error {
 	tmpl := template.Must(
 		template.
 			New("metrics.tmpl").
@@ -68,12 +77,10 @@ func run(ymlPath string) error {
 					return formatIdentifier(s, true)
 				},
 			}).ParseFiles(path.Join(thisDir, "metrics.tmpl")))
+
 	buf := bytes.Buffer{}
 
-	if err = tmpl.Execute(&buf, templateContext{
-		metadata: md,
-		Package:  "metadata",
-	}); err != nil {
+	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
 		return fmt.Errorf("failed executing template: %v", err)
 	}
 
@@ -88,13 +95,37 @@ func run(ymlPath string) error {
 		return errors.New(errstr.String())
 	}
 
-	metadir := path.Dir(ymlPath)
-	outputDir := path.Join(metadir, "internal", "metadata")
+	outputDir := path.Join(ymlDir, "internal", "metadata")
 	outputFile := path.Join(outputDir, "generated_metrics.go")
 	if err := os.MkdirAll(outputDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %v", outputDir, err)
 	}
 	if err := ioutil.WriteFile(outputFile, formatted, 0600); err != nil {
+		return fmt.Errorf("failed writing %q: %v", outputFile, err)
+	}
+
+	return nil
+}
+
+func generateDocumentation(ymlDir string, thisDir string, md metadata) error {
+	tmpl := template.Must(
+		template.
+			New("documentation.tmpl").
+			Option("missingkey=error").
+			Funcs(map[string]interface{}{
+				"publicVar": func(s string) (string, error) {
+					return formatIdentifier(s, true)
+				},
+			}).ParseFiles(path.Join(thisDir, "documentation.tmpl")))
+
+	buf := bytes.Buffer{}
+
+	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
+		return fmt.Errorf("failed executing template: %v", err)
+	}
+
+	outputFile := path.Join(ymlDir, "documentation.md")
+	if err := ioutil.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %v", outputFile, err)
 	}
 
