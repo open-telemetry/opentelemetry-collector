@@ -18,6 +18,18 @@ and please don't use it if the following limitations is a concern:
   if they want to manually shard the scraping.
 * The Prometheus receiver is a stateful component.
 
+## Unsupported features
+The Prometheus receiver is meant to minimally be a drop-in replacement for Prometheus. However,
+there are advanced features of Prometheus that we don't support and thus explicitly will return
+an error for if the receiver's configuration YAML/code contains any of the following
+
+- [x] alert_config.alertmanagers
+- [x] alert_config.relabel_configs
+- [x] remote_read
+- [x] remote_write
+- [x] rule_files
+
+
 ## Getting Started
 
 This receiver is a drop-in replacement for getting Prometheus to scrape your

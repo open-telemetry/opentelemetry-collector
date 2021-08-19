@@ -17,6 +17,8 @@ package prometheusreceiver
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
@@ -51,11 +53,38 @@ var _ config.Unmarshallable = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
-	if cfg.PrometheusConfig == nil {
+	promConfig := cfg.PrometheusConfig
+	if promConfig == nil {
 		return nil // noop receiver
 	}
-	if len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
+	if len(promConfig.ScrapeConfigs) == 0 {
 		return errors.New("no Prometheus scrape_configs")
+	}
+
+	// Reject features that Prometheus supports but that the receiver doesn't support:
+	// See:
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3863
+	// * https://github.com/open-telemetry/wg-prometheus/issues/3
+	unsupportedFeatures := make([]string, 0, 4)
+	if len(promConfig.RemoteWriteConfigs) != 0 {
+		unsupportedFeatures = append(unsupportedFeatures, "remote_write")
+	}
+	if len(promConfig.RemoteReadConfigs) != 0 {
+		unsupportedFeatures = append(unsupportedFeatures, "remote_read")
+	}
+	if len(promConfig.RuleFiles) != 0 {
+		unsupportedFeatures = append(unsupportedFeatures, "rule_files")
+	}
+	if len(promConfig.AlertingConfig.AlertRelabelConfigs) != 0 {
+		unsupportedFeatures = append(unsupportedFeatures, "alert_config.relabel_configs")
+	}
+	if len(promConfig.AlertingConfig.AlertmanagerConfigs) != 0 {
+		unsupportedFeatures = append(unsupportedFeatures, "alert_config.alertmanagers")
+	}
+	if len(unsupportedFeatures) != 0 {
+		// Sort the values for deterministic error messages.
+		sort.Strings(unsupportedFeatures)
+		return fmt.Errorf("unsupported features:\n\t%s", strings.Join(unsupportedFeatures, "\n\t"))
 	}
 
 	for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
