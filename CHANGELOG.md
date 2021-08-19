@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove deprecated `tracetranslator.AttributeValueToString` and `tracetranslator.AttributeMapToMap` (#3873)
 - Change semantic conventions for status (code, msg) as per specifications (#3872)
 
 ## v0.33.0 Beta

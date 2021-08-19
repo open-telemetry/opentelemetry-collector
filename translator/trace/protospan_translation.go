@@ -67,15 +67,3 @@ func StatusCodeFromHTTP(httpStatusCode int) pdata.StatusCode {
 	}
 	return pdata.StatusCodeError
 }
-
-// AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
-// Deprecated: use pdata.AttributeValueToString instead.
-func AttributeValueToString(attr pdata.AttributeValue) string {
-	return pdata.AttributeValueToString(attr)
-}
-
-// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
-// Deprecated: use pdata.AttributeMapToMap instead.
-func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
-	return pdata.AttributeMapToMap(attrMap)
-}

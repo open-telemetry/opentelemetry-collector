@@ -23,7 +23,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type labelKeysAndType struct {
@@ -388,7 +387,7 @@ func exemplarToOC(filteredLabels pdata.AttributeMap, value float64, timestamp pd
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())
 		filteredLabels.Range(func(k string, v pdata.AttributeValue) bool {
-			labels[k] = tracetranslator.AttributeValueToString(v)
+			labels[k] = pdata.AttributeValueToString(v)
 			return true
 		})
 	}
