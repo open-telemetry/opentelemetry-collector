@@ -125,6 +125,8 @@ func (tid *TraceID) Unmarshal(data []byte) error {
 	}
 
 	if len(data) != traceIDSize {
+		tid.useIdSlice = true
+		tid.idSlice = make([]byte, len(data))
 		copy(tid.idSlice, data)
 	} else {
 		copy(tid.id[:], data)
@@ -147,8 +149,10 @@ func (tid TraceID) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
 // Called by Protobuf JSON deserialization.
 func (tid *TraceID) UnmarshalJSON(data []byte) error {
-	if tid.useIdSlice {
-		return unmarshalJSON(tid.idSlice, data)
+	if len(data) != traceIDSize {
+		tid.useIdSlice = true
+		tid.idSlice = make([]byte, len(data))
+		return unmarshalJSON(tid.idSlice[:], data)
 	} else {
 		tid.id = [16]byte{}
 		return unmarshalJSON(tid.id[:], data)
