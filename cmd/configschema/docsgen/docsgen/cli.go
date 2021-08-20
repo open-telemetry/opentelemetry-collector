@@ -24,7 +24,7 @@ import (
 	"strings"
 	"text/template"
 
-	"go.opentelemetry.io/collector/cmd/configschema/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -106,7 +106,10 @@ func writeConfigDoc(
 	writeFile writeFileFunc,
 ) {
 	v := reflect.ValueOf(ci.CfgInstance)
-	f := configschema.ReadFields(v, dr)
+	f, err := configschema.ReadFields(v, dr)
+	if err != nil {
+		panic(err)
+	}
 
 	f.Type = stripPrefix(f.Type)
 
@@ -121,7 +124,10 @@ func writeConfigDoc(
 		mdBytes = append(mdBytes, durationBlock...)
 	}
 
-	dir := dr.PackageDir(v.Type().Elem())
+	dir, err := dr.PackageDir(v.Type().Elem())
+	if err != nil {
+		panic(err)
+	}
 	err = writeFile(path.Join(dir, mdFileName), mdBytes, 0644)
 	if err != nil {
 		panic(err)

@@ -36,23 +36,29 @@ type Field struct {
 // ReadFields accepts both a config struct's Value, as well as a DirResolver,
 // and returns a Field pointer for the top level struct as well as all of its
 // recursive subfields.
-func ReadFields(v reflect.Value, dr DirResolver) *Field {
+func ReadFields(v reflect.Value, dr DirResolver) (*Field, error) {
 	cfgType := v.Type()
 	field := &Field{
 		Type: cfgType.String(),
 	}
-	refl(field, v, dr)
-	return field
+	err := refl(field, v, dr)
+	return field, err
 }
 
-func refl(f *Field, v reflect.Value, dr DirResolver) {
+func refl(f *Field, v reflect.Value, dr DirResolver) error {
 	if v.Kind() == reflect.Ptr {
-		refl(f, v.Elem(), dr)
+		err := refl(f, v.Elem(), dr)
+		if err != nil {
+			return err
+		}
 	}
 	if v.Kind() != reflect.Struct {
-		return
+		return nil
 	}
-	comments := commentsForStruct(v, dr)
+	comments, err := commentsForStruct(v, dr)
+	if err != nil {
+		return err
+	}
 
 	// we also check if f.Doc hasn't already been written, thus preventing a
 	// squashed type with struct comments from overwriting the containing struct's
@@ -91,26 +97,30 @@ func refl(f *Field, v reflect.Value, dr DirResolver) {
 			}
 			f.Fields = append(f.Fields, next)
 		}
-		handleKind(fv, next, dr)
+		err = handleKind(fv, next, dr)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func handleKind(v reflect.Value, f *Field, dr DirResolver) {
+func handleKind(v reflect.Value, f *Field, dr DirResolver) (err error) {
 	switch v.Kind() {
 	case reflect.Struct:
-		refl(f, v, dr)
+		err = refl(f, v, dr)
 	case reflect.Ptr:
 		if v.IsNil() {
-			refl(f, reflect.New(v.Type().Elem()), dr)
+			err = refl(f, reflect.New(v.Type().Elem()), dr)
 		} else {
-			refl(f, v.Elem(), dr)
+			err = refl(f, v.Elem(), dr)
 		}
 	case reflect.Slice:
 		e := v.Type().Elem()
 		if e.Kind() == reflect.Struct {
-			refl(f, reflect.New(e), dr)
+			err = refl(f, reflect.New(e), dr)
 		} else if e.Kind() == reflect.Ptr {
-			refl(f, reflect.New(e.Elem()), dr)
+			err = refl(f, reflect.New(e.Elem()), dr)
 		}
 	case reflect.String:
 		if v.String() != "" {
@@ -133,6 +143,7 @@ func handleKind(v reflect.Value, f *Field, dr DirResolver) {
 			f.Default = v.Uint()
 		}
 	}
+	return
 }
 
 func mapstructure(st reflect.StructTag) (string, []string, error) {

@@ -38,7 +38,7 @@ type testStruct struct {
 
 func testDR() DirResolver {
 	return DirResolver{
-		SrcRoot:    "../../..",
+		SrcRoot:    "../..",
 		ModuleName: DefaultModule,
 	}
 }
