@@ -71,5 +71,8 @@ func TestLoadConfig(t *testing.T) {
 				Backoff: defaultMetadataRetryBackoff,
 			},
 		},
+		Producer: Producer{
+			MaxMessageBytes: 10000000,
+		},
 	}, c)
 }
