@@ -29,7 +29,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
 
 commands:
   verify_dist_files_exist:
@@ -309,7 +309,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -325,7 +325,7 @@ jobs:
 
   publish-stable:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - attach_to_workspace
       - verify_dist_files_exist
@@ -346,7 +346,7 @@ jobs:
 
   publish-dev:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - attach_to_workspace
       - verify_dist_files_exist

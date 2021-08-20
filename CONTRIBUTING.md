@@ -107,7 +107,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.16 and up)
+2. [go](https://golang.org/) (version 1.17 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -152,7 +152,7 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.16.* and CircleCI.
+This project uses Go 1.17.* and CircleCI.
 
 CircleCI uses the Makefile with the `ci` target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
