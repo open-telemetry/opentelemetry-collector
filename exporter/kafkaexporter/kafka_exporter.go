@@ -53,7 +53,9 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) e
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		if value, ok := err.(sarama.ProducerErrors); ok {
-			return kafkaErrors{len(value), value[0].Err.Error()}
+			if len(value) > 0 {
+				return kafkaErrors{len(value), value[0].Err.Error()}
+			}
 		}
 		return err
 	}
@@ -80,7 +82,9 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Met
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		if value, ok := err.(sarama.ProducerErrors); ok {
-			return kafkaErrors{len(value), value[0].Err.Error()}
+			if len(value) > 0 {
+				return kafkaErrors{len(value), value[0].Err.Error()}
+			}
 		}
 		return err
 	}
@@ -107,7 +111,9 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) err
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		if value, ok := err.(sarama.ProducerErrors); ok {
-			return kafkaErrors{len(value), value[0].Err.Error()}
+			if len(value) > 0 {
+				return kafkaErrors{len(value), value[0].Err.Error()}
+			}
 		}
 		return err
 	}
