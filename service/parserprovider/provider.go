@@ -34,7 +34,7 @@ type Watchable interface {
 	// It blocks until configuration updates are received and can
 	// return an error if anything fails. WatchForUpdate is used once during the
 	// first evaluation of the configuration and is not used to watch configuration
-	// changes continously.
+	// changes continuously.
 	WatchForUpdate() error
 }
 
