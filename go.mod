@@ -6,13 +6,13 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.3.0
 	github.com/Shopify/sarama v1.29.1
 	github.com/StackExchange/wmi v1.2.1 // indirect
-	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/antonmedv/expr v1.9.0
 	github.com/apache/thrift v0.14.2
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/fatih/structtag v1.2.0
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-kit/kit v0.11.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
@@ -29,6 +29,7 @@ require (
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/openzipkin/zipkin-go v0.2.5
+	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.30.0
