@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build darwin || freebsd
-// +build darwin freebsd
 
 package processesscraper
 
