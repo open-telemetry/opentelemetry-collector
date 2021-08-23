@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build linux || openbsd
-// +build linux openbsd
 
 package processesscraper
 

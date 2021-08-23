@@ -16,9 +16,6 @@ require (
 	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211 // indirect
 	google.golang.org/genproto v0.0.0-20200527145253-8367513e4ece // indirect
 	google.golang.org/grpc v1.39.0
-)
-
-require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

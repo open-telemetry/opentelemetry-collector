@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build linux || darwin || freebsd || openbsd || solaris
-// +build linux darwin freebsd openbsd solaris
 
 package filesystemscraper
 
