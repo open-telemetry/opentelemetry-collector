@@ -14,9 +14,6 @@ require (
 	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20210813222030-0139980e9794
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
 	golang.org/x/tools v0.1.5
-)
-
-require (
 	4d63.com/gochecknoglobals v0.0.0-20201008074935-acfc0b28355a // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
