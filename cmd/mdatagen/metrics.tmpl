@@ -79,15 +79,6 @@ func (m *metricStruct) ByName(n string) MetricIntf {
     return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
-    return map[string]func(pdata.Metric) {
-    {{- range $name, $metric := .Metrics }}
-      Metrics.{{ $name.Render }}.Name(): Metrics.{{ $name.Render }}.Init,
-    {{- end }}
-    }
-}
-
-
 {{- /* Renders metric descriptors. */}}
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.

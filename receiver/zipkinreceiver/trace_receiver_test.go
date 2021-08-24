@@ -170,7 +170,7 @@ func TestConversionRoundtrip(t *testing.T) {
   "tags": {
     "http.path": "/api",
     "clnt/finagle.version": "6.45.0",
-	"status.code": "STATUS_CODE_UNSET"
+	"otel.status_code": "STATUS_CODE_UNSET"
   }
 },
 {
@@ -203,7 +203,7 @@ func TestConversionRoundtrip(t *testing.T) {
   "tags": {
     "http.path": "/api",
     "clnt/finagle.version": "6.45.0",
-	"status.code": "STATUS_CODE_UNSET"
+	"otel.status_code": "STATUS_CODE_UNSET"
   }
 }]`)
 

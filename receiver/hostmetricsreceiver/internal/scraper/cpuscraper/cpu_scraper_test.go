@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -113,15 +113,15 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 4*runtime.NumCPU())
 	internal.AssertSumMetricHasAttribute(t, metric, 0, metadata.Labels.Cpu)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.User))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.System))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Idle))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Interrupt))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.User))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.System))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Idle))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Interrupt))
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Nice))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Softirq))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Steal))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Labels.CPUState, pdata.NewAttributeValueString(metadata.LabelCPUState.Wait))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Nice))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Softirq))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Steal))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Wait))
 }

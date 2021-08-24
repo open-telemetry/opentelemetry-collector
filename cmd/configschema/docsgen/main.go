@@ -15,7 +15,7 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/cmd/configschema/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema"
 	"go.opentelemetry.io/collector/cmd/configschema/docsgen/docsgen"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )

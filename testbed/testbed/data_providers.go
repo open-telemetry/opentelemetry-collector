@@ -91,8 +91,8 @@ func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
-		span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
-		span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
+		span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+		span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
 	}
 	return traceData, false
 }
@@ -127,7 +127,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := dps.AppendEmpty()
-			dataPoint.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
+			dataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetIntVal(int64(value))
 			dataPoint.Attributes().InitFromMap(map[string]pdata.AttributeValue{
@@ -152,7 +152,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
 	logRecords.EnsureCapacity(dp.options.ItemsPerBatch)
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 
 	batchIndex := dp.traceIDSequence.Inc()
 

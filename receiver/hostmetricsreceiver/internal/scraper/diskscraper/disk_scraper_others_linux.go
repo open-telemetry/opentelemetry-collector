@@ -20,7 +20,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
 const systemSpecificMetricsLen = 2
@@ -48,7 +48,7 @@ func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.Timest
 	idps.EnsureCapacity(2 * len(ioCounters))
 
 	for device, ioCounter := range ioCounters {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.MergedReadCount))
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.MergedWriteCount))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Read, int64(ioCounter.MergedReadCount))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Write, int64(ioCounter.MergedWriteCount))
 	}
 }

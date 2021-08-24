@@ -22,13 +22,13 @@ import (
 
 var (
 	TestMetricStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestMetricStartTimestamp = pdata.TimestampFromTime(TestMetricStartTime)
+	TestMetricStartTimestamp = pdata.NewTimestampFromTime(TestMetricStartTime)
 
 	TestMetricExemplarTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestMetricExemplarTimestamp = pdata.TimestampFromTime(TestMetricExemplarTime)
+	TestMetricExemplarTimestamp = pdata.NewTimestampFromTime(TestMetricExemplarTime)
 
 	TestMetricTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestMetricTimestamp = pdata.TimestampFromTime(TestMetricTime)
+	TestMetricTimestamp = pdata.NewTimestampFromTime(TestMetricTime)
 )
 
 const (

@@ -1,0 +1,73 @@
+name: disk
+
+labels:
+  device:
+    description: Name of the disk.
+
+  direction:
+    description: Direction of flow of bytes/opertations (read or write).
+    enum: [read, write]
+
+metrics:
+  system.disk.io:
+    description: Disk bytes transferred.
+    unit: By
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]
+
+  system.disk.operations:
+    description: Disk operations count.
+    unit: "{operations}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]
+
+  system.disk.io_time:
+    description: Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.
+    unit: s
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device]
+
+  system.disk.operation_time:
+    description: Time spent in disk operations.
+    unit: s
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]
+
+  system.disk.weighted_io_time:
+    description: Time disk spent activated multiplied by the queue length.
+    unit: s
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device]
+
+  system.disk.pending_operations:
+    description: The queue size of pending I/O operations.
+    unit: "{operations}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: false
+    labels: [device]
+
+  system.disk.merged:
+    description: The number of disk reads merged into single physical disk access operations.
+    unit: "{operations}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [device, direction]

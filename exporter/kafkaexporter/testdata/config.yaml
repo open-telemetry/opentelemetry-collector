@@ -8,6 +8,8 @@ exporters:
       full: false
       retry:
         max: 15
+    producer:
+      max_message_bytes: 10000000
     timeout: 10s
     auth:
       plain_text:

@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/cmd/configschema/configschema"
+	"go.opentelemetry.io/collector/cmd/configschema"
 )
 
 func TestTableTemplate(t *testing.T) {
