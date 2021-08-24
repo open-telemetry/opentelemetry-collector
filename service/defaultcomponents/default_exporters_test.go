@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -112,17 +111,6 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
-		},
-		{
-			exporter: "prometheus",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["prometheus"].CreateDefaultConfig().(*prometheusexporter.Config)
-				cfg.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "prometheusremotewrite",
 		},
 		{
 			exporter: "zipkin",
