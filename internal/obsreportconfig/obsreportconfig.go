@@ -89,8 +89,8 @@ func allViews() *ObsMetrics {
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	errorNumberView := &view.View{
-		Name:        "exporter/send_failed_requests",
-		Description: "number of errors in exporters failed to send over span",
+		Name:        obsmetrics.ExporterPrefix + "send_failed_requests",
+		Description: "number of times exporters failed to send requests to the destination",
 		Measure:     obsmetrics.ExporterFailedToSendSpans,
 		Aggregation: view.Count(),
 	}
