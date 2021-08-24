@@ -507,6 +507,28 @@ func TestHistogram_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
+func TestExponentialHistogram_CopyTo(t *testing.T) {
+	ms := NewExponentialHistogram()
+	generateTestExponentialHistogram().CopyTo(ms)
+	assert.EqualValues(t, generateTestExponentialHistogram(), ms)
+}
+
+func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
+	ms := NewExponentialHistogram()
+	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporalityCumulative
+	ms.SetAggregationTemporality(testValAggregationTemporality)
+	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
+}
+
+func TestExponentialHistogram_DataPoints(t *testing.T) {
+	ms := NewExponentialHistogram()
+	assert.EqualValues(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
+	fillTestExponentialHistogramDataPointSlice(ms.DataPoints())
+	testValDataPoints := generateTestExponentialHistogramDataPointSlice()
+	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
+}
+
 func TestSummary_CopyTo(t *testing.T) {
 	ms := NewSummary()
 	generateTestSummary().CopyTo(ms)
@@ -878,6 +900,220 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	fillTestExemplarSlice(ms.Exemplars())
 	testValExemplars := generateTestExemplarSlice()
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
+}
+
+func TestExponentialHistogramDataPointSlice(t *testing.T) {
+	es := NewExponentialHistogramDataPointSlice()
+	assert.EqualValues(t, 0, es.Len())
+	es = newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{})
+	assert.EqualValues(t, 0, es.Len())
+
+	es.EnsureCapacity(7)
+	emptyVal := newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{})
+	testVal := generateTestExponentialHistogramDataPoint()
+	assert.EqualValues(t, 7, cap(*es.orig))
+	for i := 0; i < es.Len(); i++ {
+		el := es.AppendEmpty()
+		assert.EqualValues(t, emptyVal, el)
+		fillTestExponentialHistogramDataPoint(el)
+		assert.EqualValues(t, testVal, el)
+	}
+}
+
+func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
+	dest := NewExponentialHistogramDataPointSlice()
+	// Test CopyTo to empty
+	NewExponentialHistogramDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, NewExponentialHistogramDataPointSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestExponentialHistogramDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestExponentialHistogramDataPointSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestExponentialHistogramDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestExponentialHistogramDataPointSlice(), dest)
+}
+
+func TestExponentialHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestExponentialHistogramDataPointSlice()
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	expectedEs := make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool)
+	for i := 0; i < es.Len(); i++ {
+		expectedEs[es.At(i).orig] = true
+	}
+	assert.Equal(t, es.Len(), len(expectedEs))
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	foundEs := make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool, es.Len())
+	for i := 0; i < es.Len(); i++ {
+		foundEs[es.At(i).orig] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+
+	// Test ensure larger capacity
+	const ensureLargeLen = 9
+	oldLen := es.Len()
+	expectedEs = make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		expectedEs[es.At(i).orig] = true
+	}
+	assert.Equal(t, oldLen, len(expectedEs))
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	foundEs = make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		foundEs[es.At(i).orig] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+}
+
+func TestExponentialHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestExponentialHistogramDataPointSlice()
+	dest := NewExponentialHistogramDataPointSlice()
+	src := generateTestExponentialHistogramDataPointSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestExponentialHistogramDataPointSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestExponentialHistogramDataPointSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestExponentialHistogramDataPointSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
+func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
+	// Test RemoveIf on empty slice
+	emptySlice := NewExponentialHistogramDataPointSlice()
+	emptySlice.RemoveIf(func(el ExponentialHistogramDataPoint) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test RemoveIf
+	filtered := generateTestExponentialHistogramDataPointSlice()
+	pos := 0
+	filtered.RemoveIf(func(el ExponentialHistogramDataPoint) bool {
+		pos++
+		return pos%3 == 0
+	})
+	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	generateTestExponentialHistogramDataPoint().CopyTo(ms)
+	assert.EqualValues(t, generateTestExponentialHistogramDataPoint(), ms)
+}
+
+func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
+}
+
+func TestExponentialHistogramDataPoint_StartTimestamp(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
+	testValStartTimestamp := Timestamp(1234567890)
+	ms.SetStartTimestamp(testValStartTimestamp)
+	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
+}
+
+func TestExponentialHistogramDataPoint_Timestamp(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
+	testValTimestamp := Timestamp(1234567890)
+	ms.SetTimestamp(testValTimestamp)
+	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
+}
+
+func TestExponentialHistogramDataPoint_Count(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, uint64(0), ms.Count())
+	testValCount := uint64(17)
+	ms.SetCount(testValCount)
+	assert.EqualValues(t, testValCount, ms.Count())
+}
+
+func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Sum())
+	testValSum := float64(17.13)
+	ms.SetSum(testValSum)
+	assert.EqualValues(t, testValSum, ms.Sum())
+}
+
+func TestExponentialHistogramDataPoint_Scale(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, int32(0), ms.Scale())
+	testValScale := int32(3)
+	ms.SetScale(testValScale)
+	assert.EqualValues(t, testValScale, ms.Scale())
+}
+
+func TestExponentialHistogramDataPoint_ZeroCount(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, uint64(0), ms.ZeroCount())
+	testValZeroCount := uint64(17)
+	ms.SetZeroCount(testValZeroCount)
+	assert.EqualValues(t, testValZeroCount, ms.ZeroCount())
+}
+
+func TestExponentialHistogramDataPoint_Positive(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	fillTestBuckets(ms.Positive())
+	assert.EqualValues(t, generateTestBuckets(), ms.Positive())
+}
+
+func TestExponentialHistogramDataPoint_Negative(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	fillTestBuckets(ms.Negative())
+	assert.EqualValues(t, generateTestBuckets(), ms.Negative())
+}
+
+func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, NewExemplarSlice(), ms.Exemplars())
+	fillTestExemplarSlice(ms.Exemplars())
+	testValExemplars := generateTestExemplarSlice()
+	assert.EqualValues(t, testValExemplars, ms.Exemplars())
+}
+
+func TestBuckets_CopyTo(t *testing.T) {
+	ms := NewBuckets()
+	generateTestBuckets().CopyTo(ms)
+	assert.EqualValues(t, generateTestBuckets(), ms)
+}
+
+func TestBuckets_Offset(t *testing.T) {
+	ms := NewBuckets()
+	assert.EqualValues(t, int64(0), ms.Offset())
+	testValOffset := int64(-3)
+	ms.SetOffset(testValOffset)
+	assert.EqualValues(t, testValOffset, ms.Offset())
+}
+
+func TestBuckets_BucketCounts(t *testing.T) {
+	ms := NewBuckets()
+	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
+	testValBucketCounts := []uint64{1, 2, 3}
+	ms.SetBucketCounts(testValBucketCounts)
+	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
 }
 
 func TestSummaryDataPointSlice(t *testing.T) {
@@ -1435,6 +1671,17 @@ func fillTestHistogram(tv Histogram) {
 	fillTestHistogramDataPointSlice(tv.DataPoints())
 }
 
+func generateTestExponentialHistogram() ExponentialHistogram {
+	tv := NewExponentialHistogram()
+	fillTestExponentialHistogram(tv)
+	return tv
+}
+
+func fillTestExponentialHistogram(tv ExponentialHistogram) {
+	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
+	fillTestExponentialHistogramDataPointSlice(tv.DataPoints())
+}
+
 func generateTestSummary() Summary {
 	tv := NewSummary()
 	fillTestSummary(tv)
@@ -1505,6 +1752,50 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetBucketCounts([]uint64{1, 2, 3})
 	tv.SetExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
+}
+
+func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
+	tv := NewExponentialHistogramDataPointSlice()
+	fillTestExponentialHistogramDataPointSlice(tv)
+	return tv
+}
+
+func fillTestExponentialHistogramDataPointSlice(tv ExponentialHistogramDataPointSlice) {
+	l := 7
+	tv.EnsureCapacity(l)
+	for i := 0; i < l; i++ {
+		fillTestExponentialHistogramDataPoint(tv.AppendEmpty())
+	}
+}
+
+func generateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
+	tv := NewExponentialHistogramDataPoint()
+	fillTestExponentialHistogramDataPoint(tv)
+	return tv
+}
+
+func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
+	fillTestAttributeMap(tv.Attributes())
+	tv.SetStartTimestamp(Timestamp(1234567890))
+	tv.SetTimestamp(Timestamp(1234567890))
+	tv.SetCount(uint64(17))
+	tv.SetSum(float64(17.13))
+	tv.SetScale(int32(3))
+	tv.SetZeroCount(uint64(17))
+	fillTestBuckets(tv.Positive())
+	fillTestBuckets(tv.Negative())
+	fillTestExemplarSlice(tv.Exemplars())
+}
+
+func generateTestBuckets() Buckets {
+	tv := NewBuckets()
+	fillTestBuckets(tv)
+	return tv
+}
+
+func fillTestBuckets(tv Buckets) {
+	tv.SetOffset(int64(-3))
+	tv.SetBucketCounts([]uint64{1, 2, 3})
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {

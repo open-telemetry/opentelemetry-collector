@@ -334,7 +334,7 @@ genproto_sub:
 	@echo Modify them in the intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
 
-	@echo Generate Go code from .proto files in intermediate directory.
+		@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,$(PROTOC) $(PROTO_INCLUDES) --gogofaster_out=plugins=grpc:./ $(file)))
 
 	@echo Move generated code to target directory.
@@ -342,8 +342,8 @@ genproto_sub:
 	cp -R $(PROTO_INTERMEDIATE_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
 	rm -rf $(PROTO_INTERMEDIATE_DIR)/go.opentelemetry.io
 
-	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
-	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
+#	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
+#	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
 
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
