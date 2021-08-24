@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -136,4 +137,28 @@ func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid-config-prometheus-relabel.yaml"), factories)
 	assert.Error(t, err)
 	assert.NotNil(t, cfg)
+}
+
+func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-unsupported-features.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: unsupported features:
+        alert_config.alertmanagers
+        alert_config.relabel_configs
+        remote_read
+        remote_write
+        rule_files`
+
+	gotErrMsg := strings.ReplaceAll(err.Error(), "\t", strings.Repeat(" ", 8))
+	require.Equal(t, wantErrMsg, gotErrMsg)
+
 }

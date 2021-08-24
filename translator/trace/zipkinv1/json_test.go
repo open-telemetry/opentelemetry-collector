@@ -231,9 +231,9 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 
 	cases := []test{
 		{
-			name: "only status.code tag",
+			name: "only otel.status_code tag",
 			haveTags: []*binaryAnnotation{{
-				Key:   "status.code",
+				Key:   conventions.OtelStatusCode,
 				Value: "13",
 			}},
 			wantAttributes: nil,
@@ -243,9 +243,9 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 		},
 
 		{
-			name: "only status.message tag",
+			name: "only otel.status_description tag",
 			haveTags: []*binaryAnnotation{{
-				Key:   "status.message",
+				Key:   conventions.OtelStatusDescription,
 				Value: "Forbidden",
 			}},
 			wantAttributes: nil,
@@ -253,14 +253,14 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 		},
 
 		{
-			name: "both status.code and status.message",
+			name: "both otel.status_code and otel.status_description",
 			haveTags: []*binaryAnnotation{
 				{
-					Key:   "status.code",
+					Key:   conventions.OtelStatusCode,
 					Value: "13",
 				},
 				{
-					Key:   "status.message",
+					Key:   conventions.OtelStatusDescription,
 					Value: "Forbidden",
 				},
 			},
@@ -272,7 +272,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 		},
 
 		{
-			name: "http status.code",
+			name: "http otel.status_code",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "http.status_code",
@@ -315,11 +315,11 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   "status.code",
+					Key:   conventions.OtelStatusCode,
 					Value: "13",
 				},
 				{
-					Key:   "status.message",
+					Key:   conventions.OtelStatusDescription,
 					Value: "Forbidden",
 				},
 			},
@@ -355,7 +355,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   "status.code",
+					Key:   conventions.OtelStatusCode,
 					Value: "14",
 				},
 			},
@@ -390,7 +390,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   "status.message",
+					Key:   conventions.OtelStatusDescription,
 					Value: "Forbidden",
 				},
 			},
@@ -453,11 +453,11 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   "status.message",
+					Key:   conventions.OtelStatusDescription,
 					Value: "Forbidden",
 				},
 				{
-					Key:   "status.code",
+					Key:   conventions.OtelStatusCode,
 					Value: "7",
 				},
 			},

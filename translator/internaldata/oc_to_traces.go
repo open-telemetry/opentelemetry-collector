@@ -132,8 +132,8 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
-	dest.SetStartTimestamp(pdata.TimestampFromTime(src.StartTime.AsTime()))
-	dest.SetEndTimestamp(pdata.TimestampFromTime(src.EndTime.AsTime()))
+	dest.SetStartTimestamp(pdata.NewTimestampFromTime(src.StartTime.AsTime()))
+	dest.SetEndTimestamp(pdata.NewTimestampFromTime(src.EndTime.AsTime()))
 
 	ocStatusToInternal(src.Status, src.Attributes, dest.Status())
 
@@ -175,11 +175,11 @@ func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attribut
 	}
 
 	if ocAttrs != nil {
-		// tracetranslator.TagStatusCode is set it must override the status code value.
+		// If conventions.OtelStatusCode is set, it must override the status code value.
 		// See the reverse translation in traces_to_oc.go:statusToOC().
-		if attr, ok := ocAttrs.AttributeMap[tracetranslator.TagStatusCode]; ok {
+		if attr, ok := ocAttrs.AttributeMap[conventions.OtelStatusCode]; ok {
 			code = pdata.StatusCode(attr.GetIntValue())
-			delete(ocAttrs.AttributeMap, tracetranslator.TagStatusCode)
+			delete(ocAttrs.AttributeMap, conventions.OtelStatusCode)
 		}
 	}
 
@@ -297,7 +297,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 		}
 
 		event := events.AppendEmpty()
-		event.SetTimestamp(pdata.TimestampFromTime(ocEvent.Time.AsTime()))
+		event.SetTimestamp(pdata.NewTimestampFromTime(ocEvent.Time.AsTime()))
 
 		switch teValue := ocEvent.Value.(type) {
 		case *octrace.Span_TimeEvent_Annotation_:

@@ -183,7 +183,7 @@ func BenchmarkTracesFromProtobuf(b *testing.B) {
 }
 
 func generateBenchmarkLogs(logsCount int) pdata.Logs {
-	endTime := pdata.TimestampFromTime(time.Now())
+	endTime := pdata.NewTimestampFromTime(time.Now())
 
 	md := pdata.NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
@@ -198,8 +198,8 @@ func generateBenchmarkLogs(logsCount int) pdata.Logs {
 
 func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 	now := time.Now()
-	startTime := pdata.TimestampFromTime(now.Add(-10 * time.Second))
-	endTime := pdata.TimestampFromTime(now)
+	startTime := pdata.NewTimestampFromTime(now.Add(-10 * time.Second))
+	endTime := pdata.NewTimestampFromTime(now)
 
 	md := pdata.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
@@ -218,8 +218,8 @@ func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 
 func generateBenchmarkTraces(metricsCount int) pdata.Traces {
 	now := time.Now()
-	startTime := pdata.TimestampFromTime(now.Add(-10 * time.Second))
-	endTime := pdata.TimestampFromTime(now)
+	startTime := pdata.NewTimestampFromTime(now.Add(-10 * time.Second))
+	endTime := pdata.NewTimestampFromTime(now)
 
 	md := pdata.NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()

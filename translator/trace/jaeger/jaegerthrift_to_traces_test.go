@@ -195,12 +195,12 @@ func generateThriftSpan() *jaeger.Span {
 		},
 		Tags: []*jaeger.Tag{
 			{
-				Key:   tracetranslator.TagStatusCode,
+				Key:   conventions.OtelStatusCode,
 				VType: jaeger.TagType_LONG,
 				VLong: &statusCode,
 			},
 			{
-				Key:   tracetranslator.TagStatusMsg,
+				Key:   conventions.OtelStatusDescription,
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},
@@ -256,12 +256,12 @@ func generateThriftFollowerSpan() *jaeger.Span {
 		Duration:      1000,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   tracetranslator.TagStatusCode,
+				Key:   conventions.OtelStatusCode,
 				VType: jaeger.TagType_LONG,
 				VLong: &statusCode,
 			},
 			{
-				Key:   tracetranslator.TagStatusMsg,
+				Key:   conventions.OtelStatusDescription,
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},

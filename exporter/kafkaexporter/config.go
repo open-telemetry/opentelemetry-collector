@@ -42,6 +42,9 @@ type Config struct {
 	// Client, and shared by the Producer/Consumer.
 	Metadata Metadata `mapstructure:"metadata"`
 
+	// Producer is the namespaces for producer properties used only by the Producer
+	Producer Producer `mapstructure:"producer"`
+
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
 }
@@ -58,6 +61,12 @@ type Metadata struct {
 	// This configuration is useful to avoid race conditions when broker
 	// is starting at the same time as collector.
 	Retry MetadataRetry `mapstructure:"retry"`
+}
+
+// Producer defines configuration for producer
+type Producer struct {
+	// Maximum message bytes the producer will accept to produce.
+	MaxMessageBytes int `mapstructure:"max_message_bytes"`
 }
 
 // MetadataRetry defines retry configuration for Metadata.

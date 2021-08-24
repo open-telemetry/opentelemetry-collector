@@ -1,6 +1,5 @@
 extensions:
-  bearertokenauth:
-    token: "somerandomtoken"
+  nop:
 
 receivers:
   nop:
@@ -25,7 +24,7 @@ exporters:
       max_interval: 60s
       max_elapsed_time: 10m
     auth:
-      authenticator: bearertokenauth
+      authenticator: nop
     headers:
       "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
       header1: 234
@@ -37,7 +36,7 @@ exporters:
     balancer_name: "round_robin"
 
 service:
-  extensions: [bearertokenauth]
+  extensions: [nop]
   pipelines:
     traces:
       receivers: [nop]

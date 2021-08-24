@@ -1,0 +1,45 @@
+name: process
+
+labels:
+  direction:
+    description: Direction of flow of bytes (read or write).
+    enum: [read, write]
+
+  state:
+    description: Breakdown of CPU usage by type.
+    enum: [system, user, wait]
+
+metrics:
+  process.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [state]
+
+  process.memory.physical_usage:
+    description: The amount of physical memory in use.
+    unit: By
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.virtual_usage:
+    description: Virtual memory size.
+    unit: By
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: false
+
+  process.disk.io:
+    description: Disk bytes transferred.
+    unit: By
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [direction]

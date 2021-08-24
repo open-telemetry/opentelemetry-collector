@@ -34,9 +34,10 @@ type TracesUnmarshaler interface {
 	UnmarshalTraces(buf []byte) (Traces, error)
 }
 
-// TracesSizer returns the size of a Traces.
+// TracesSizer is an optional interface implemented by the TracesMarshaler,
+// that calculates the size of a marshaled Traces.
 type TracesSizer interface {
-	// TracesSize returns the size in bytes of a Traces.
+	// TracesSize returns the size in bytes of a marshaled Traces.
 	TracesSize(td Traces) int
 }
 

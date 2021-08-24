@@ -34,9 +34,10 @@ type MetricsUnmarshaler interface {
 	UnmarshalMetrics(buf []byte) (Metrics, error)
 }
 
-// MetricsSizer returns the size of a Metrics.
+// MetricsSizer is an optional interface implemented by the MetricsMarshaler,
+// that calculates the size of a marshaled Metrics.
 type MetricsSizer interface {
-	// LogsSize returns the size in bytes of a Metrics.
+	// MetricsSize returns the size in bytes of a marshaled Metrics.
 	MetricsSize(md Metrics) int
 }
 

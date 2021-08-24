@@ -18,14 +18,14 @@ package filesystemscraper
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
 const fileSystemStatesLen = 2
 
 func appendFileSystemUsageStateDataPoints(idps pdata.NumberDataPointSlice, now pdata.Timestamp, deviceUsage *deviceUsage) {
-	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Used, int64(deviceUsage.usage.Used))
-	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelFilesystemState.Free, int64(deviceUsage.usage.Free))
+	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelState.Used, int64(deviceUsage.usage.Used))
+	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelState.Free, int64(deviceUsage.usage.Free))
 }
 
 const systemSpecificMetricsLen = 0

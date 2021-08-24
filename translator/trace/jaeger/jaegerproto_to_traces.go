@@ -161,8 +161,8 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 	dest.SetTraceID(idutils.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
-	dest.SetStartTimestamp(pdata.TimestampFromTime(span.StartTime))
-	dest.SetEndTimestamp(pdata.TimestampFromTime(span.StartTime.Add(span.Duration)))
+	dest.SetStartTimestamp(pdata.NewTimestampFromTime(span.StartTime))
+	dest.SetEndTimestamp(pdata.NewTimestampFromTime(span.StartTime.Add(span.Duration)))
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
@@ -170,7 +170,6 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	attrs.EnsureCapacity(len(span.Tags))
 	jTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
@@ -183,7 +182,7 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 
 	// drop the attributes slice if all of them were replaced during translation
 	if attrs.Len() == 0 {
-		attrs.InitFromMap(nil)
+		attrs.Clear()
 	}
 
 	jLogsToSpanEvents(span.Logs, dest.Events())
@@ -210,7 +209,6 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 }
 
 func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
-
 	statusCode := pdata.StatusCodeUnset
 	statusMessage := ""
 	statusExists := false
@@ -223,15 +221,15 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 		}
 	}
 
-	if codeAttr, ok := attrs.Get(tracetranslator.TagStatusCode); ok {
+	if codeAttr, ok := attrs.Get(conventions.OtelStatusCode); ok {
 		statusExists = true
 		if code, err := getStatusCodeValFromAttr(codeAttr); err == nil {
 			statusCode = pdata.StatusCode(code)
-			attrs.Delete(tracetranslator.TagStatusCode)
+			attrs.Delete(conventions.OtelStatusCode)
 		}
-		if msgAttr, ok := attrs.Get(tracetranslator.TagStatusMsg); ok {
+		if msgAttr, ok := attrs.Get(conventions.OtelStatusDescription); ok {
 			statusMessage = msgAttr.StringVal()
-			attrs.Delete(tracetranslator.TagStatusMsg)
+			attrs.Delete(conventions.OtelStatusDescription)
 		}
 	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); ok {
 		statusExists = true
@@ -314,7 +312,7 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 			event = dest.AppendEmpty()
 		}
 
-		event.SetTimestamp(pdata.TimestampFromTime(log.Timestamp))
+		event.SetTimestamp(pdata.NewTimestampFromTime(log.Timestamp))
 		if len(log.Fields) == 0 {
 			continue
 		}

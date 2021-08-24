@@ -1,0 +1,45 @@
+name: paging
+
+labels:
+  device:
+    description: Name of the page file.
+
+  direction:
+    description: Page In or Page Out.
+    enum: [page_in, page_out]
+
+  state:
+    description: Breakdown of paging usage by type.
+    enum: [cached, free, used]
+
+  type:
+    description: Type of fault.
+    enum: [major, minor]
+
+metrics:
+  system.paging.usage:
+    description: Swap (unix) or pagefile (windows) usage.
+    unit: By
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: false
+    labels: [device, state]
+
+  system.paging.operations:
+    description: The number of paging operations.
+    unit: "{operations}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [direction, type]
+
+  system.paging.faults:
+    description: The number of page faults.
+    unit: "{faults}"
+    data:
+      type: sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [type]

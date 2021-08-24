@@ -20,14 +20,14 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 )
 
 const cpuStatesLen = 4
 
 func appendCPUTimeStateDataPoints(ddps pdata.NumberDataPointSlice, startTime, now pdata.Timestamp, cpuTime cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.User, cpuTime.User)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.System, cpuTime.System)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Idle, cpuTime.Idle)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelCPUState.Interrupt, cpuTime.Irq)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.User, cpuTime.User)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.System, cpuTime.System)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Idle, cpuTime.Idle)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Interrupt, cpuTime.Irq)
 }

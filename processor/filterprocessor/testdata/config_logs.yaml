@@ -1,0 +1,19 @@
+receivers:
+    nop:
+
+processors:
+    filter:
+        logs:
+            resource_attributes:
+                - key: should_exclude
+                  value: "true"
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        logs:
+            receivers: [nop]
+            processors: [filter]
+            exporters: [nop]

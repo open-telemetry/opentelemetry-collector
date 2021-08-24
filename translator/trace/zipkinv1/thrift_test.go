@@ -120,7 +120,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		// too large code for OC
 		{
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            "status.code",
+				Key:            conventions.OtelStatusCode,
 				Value:          uint64ToBytes(math.MaxInt64),
 				AnnotationType: zipkincore.AnnotationType_I64,
 			}},
@@ -130,7 +130,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		// only status.code tag
 		{
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            "status.code",
+				Key:            conventions.OtelStatusCode,
 				Value:          uint64ToBytes(5),
 				AnnotationType: zipkincore.AnnotationType_I64,
 			}},
@@ -141,7 +141,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		},
 		{
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            "status.code",
+				Key:            conventions.OtelStatusCode,
 				Value:          uint32ToBytes(6),
 				AnnotationType: zipkincore.AnnotationType_I32,
 			}},
@@ -152,7 +152,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		},
 		{
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            "status.code",
+				Key:            conventions.OtelStatusCode,
 				Value:          uint16ToBytes(7),
 				AnnotationType: zipkincore.AnnotationType_I16,
 			}},
@@ -164,7 +164,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		// only status.message tag
 		{
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            "status.message",
+				Key:            conventions.OtelStatusDescription,
 				Value:          []byte("Forbidden"),
 				AnnotationType: zipkincore.AnnotationType_STRING,
 			}},
@@ -175,12 +175,12 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		{
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
-					Key:            "status.code",
+					Key:            conventions.OtelStatusCode,
 					Value:          uint32ToBytes(13),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 				{
-					Key:            "status.message",
+					Key:            conventions.OtelStatusDescription,
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
@@ -240,12 +240,12 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            "status.code",
+					Key:            conventions.OtelStatusCode,
 					Value:          uint32ToBytes(13),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 				{
-					Key:            "status.message",
+					Key:            conventions.OtelStatusDescription,
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
@@ -284,7 +284,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            "status.code",
+					Key:            conventions.OtelStatusCode,
 					Value:          uint32ToBytes(14),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
@@ -321,7 +321,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            "status.message",
+					Key:            conventions.OtelStatusDescription,
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
@@ -391,12 +391,12 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            "status.message",
+					Key:            conventions.OtelStatusDescription,
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            "status.code",
+					Key:            conventions.OtelStatusCode,
 					Value:          uint32ToBytes(1),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
