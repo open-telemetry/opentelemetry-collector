@@ -59,22 +59,6 @@ all: checklicense checkdoc misspell goimpi golint gotest otelcol
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
-.PHONY: testbed-loadtest
-testbed-loadtest: otelcol
-	cd ./testbed/tests && ./runtests.sh
-
-.PHONY: testbed-correctness-traces
-testbed-correctness-traces: otelcol
-	cd ./testbed/correctness/traces && ./runtests.sh
-
-.PHONY: testbed-correctness-metrics
-testbed-correctness-metrics: otelcol
-	cd ./testbed/correctness/metrics && ./runtests.sh
-
-.PHONY: testbed-list-loadtest
-testbed-list-loadtest:
-	RUN_TESTBED=1 $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
-
 .PHONY: gomoddownload
 gomoddownload:
 	@$(MAKE) for-all CMD="go mod download"
@@ -373,9 +357,7 @@ check-contrib:
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := config/configgrpc/testdata \
-             config/confighttp/testdata \
-             receiver/jaegerreceiver/testdata \
-             exporter/jaegerexporter/testdata
+             config/confighttp/testdata
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs

@@ -8,21 +8,15 @@ pipelines.
 
 Available trace receivers (sorted alphabetically):
 
-- [Jaeger Receiver](jaegerreceiver/README.md)
-- [Kafka Receiver](kafkareceiver/README.md)
-- [OpenCensus Receiver](opencensusreceiver/README.md)
 - [OTLP Receiver](otlpreceiver/README.md)
-- [Zipkin Receiver](zipkinreceiver/README.md)
 
 Available metric receivers (sorted alphabetically):
 
 - [Host Metrics Receiver](hostmetricsreceiver/README.md)
-- [OpenCensus Receiver](opencensusreceiver/README.md)
 - [OTLP Receiver](otlpreceiver/README.md)
 
 Available log receivers (sorted alphabetically):
 
-- [Kafka Receiver](kafkareceiver/README.md)
 - [OTLP Receiver](otlpreceiver/README.md)
 
 The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)

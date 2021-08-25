@@ -11,17 +11,6 @@ receivers:
       grpc:
       http:
 
-  opencensus:
-
-  jaeger:
-    protocols:
-      grpc:
-      thrift_binary:
-      thrift_compact:
-      thrift_http:
-
-  zipkin:
-
 processors:
   batch:
 
@@ -34,12 +23,12 @@ service:
   pipelines:
 
     traces:
-      receivers: [otlp, opencensus, jaeger, zipkin]
+      receivers: [otlp]
       processors: [batch]
       exporters: [logging]
 
     metrics:
-      receivers: [otlp, opencensus]
+      receivers: [otlp]
       processors: [batch]
       exporters: [logging]
 

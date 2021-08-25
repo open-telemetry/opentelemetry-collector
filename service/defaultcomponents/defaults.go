@@ -19,13 +19,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
-	"go.opentelemetry.io/collector/exporter/jaegerexporter"
-	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
-	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
@@ -38,11 +34,7 @@ import (
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
 	"go.opentelemetry.io/collector/processor/spanprocessor"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
-	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
-	"go.opentelemetry.io/collector/receiver/kafkareceiver"
-	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
 // Components returns the default set of components used by the
@@ -64,26 +56,18 @@ func Components() (
 	}
 
 	receivers, err := component.MakeReceiverFactoryMap(
-		jaegerreceiver.NewFactory(),
-		zipkinreceiver.NewFactory(),
-		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
-		kafkareceiver.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
 	exporters, err := component.MakeExporterFactoryMap(
-		opencensusexporter.NewFactory(),
 		loggingexporter.NewFactory(),
-		zipkinexporter.NewFactory(),
-		jaegerexporter.NewFactory(),
 		fileexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
-		kafkaexporter.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

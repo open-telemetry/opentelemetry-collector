@@ -25,11 +25,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
@@ -63,8 +61,6 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	var views []*view.View
 	obsMetrics := obsreportconfig.Configure(level)
 	views = append(views, batchprocessor.MetricViews()...)
-	views = append(views, jaegerexporter.MetricViews()...)
-	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, obsMetrics.Views...)
 	views = append(views, processMetricsViews.Views()...)
 
