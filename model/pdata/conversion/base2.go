@@ -59,14 +59,14 @@ func calculateBoundaries(scale int) []uint64 {
 
 	// Note: boundaries is one longer than length to ensure the
 	// `mantissa >= el.boundaries[i+1]` test below is correct.
-	boundaries := make([]uint64, length+1)
+	boundaries := make([]uint64, length+2)
 
-	for i := 0; i < length; i++ {
-		boundaries[i] = 0x000fffffffffffff & math.Float64bits(math.Pow(2, float64(i+1)/float64(length)))
+	for i := 0; i <= length; i++ {
+		boundaries[i] = 0x000fffffffffffff & math.Float64bits(math.Pow(2, float64(i)/float64(length)))
 	}
 
-	boundaries[length-1] = 0x0010000000000000
 	boundaries[length] = 0x0010000000000000
+	boundaries[length+1] = 0x0010000000000000
 
 	return boundaries
 }
@@ -81,7 +81,7 @@ func calculateIndices(boundaries []uint64, scale int) []int64 {
 		// i=0: 1.0; i=1: 1.25; i=2: 1.5; i=3: 1.75
 		mantissaLowerBound := uint64(i) << (52 - scale)
 		// find the lowest boundary that is smaller than or equal to the equidistant bucket bound
-		for boundaries[c] <= mantissaLowerBound {
+		for boundaries[c+1] <= mantissaLowerBound {
 			c++
 		}
 		indices[i] = c
@@ -113,15 +113,14 @@ func (el *exponentialLayout) mapToBinIndex(value float64) int64 {
 
 	// The index in the boundaries array might not be correct right away, there might be an offset of a maximum of two buckets.
 	// Therefore, look at three buckets: The one specified by the index, and the next two.
-	// in other languages, this can be done in one line with a ternary operator
-	// e.g. return (exponent << el.scale) + i + (mantissa >= el.boundaries[i] ? 1 : 0) + (mantissa >= el.boundaries[i+1] ? 1 : 0) + el.indexOffset
 	offset := rough
-	if mantissa >= el.boundaries[rough] {
-		offset++
-	}
 	if mantissa >= el.boundaries[rough+1] {
 		offset++
 	}
+	if mantissa >= el.boundaries[rough+2] {
+		offset++
+	}
+
 	// the indexOffset is only used to skip subnormal buckets
 	// the exponent is used to find the correct "top-level" bucket,
 	// and k is used to find the correct index therein.
@@ -129,6 +128,10 @@ func (el *exponentialLayout) mapToBinIndex(value float64) int64 {
 }
 
 func (el *exponentialLayout) upperBoundary(index int64) float64 {
+	return el.lowerBoundary(index + 1)
+}
+
+func (el *exponentialLayout) lowerBoundary(index int64) float64 {
 	length := int64(1 << el.scale)
 	exponent := index / length
 	position := index % length
@@ -136,11 +139,7 @@ func (el *exponentialLayout) upperBoundary(index int64) float64 {
 		position += length
 		exponent -= 1
 	}
-	mantissa := el.boundaries[position]
+	mantissa := el.boundaries[position] & 0xfffffffffffff
 	expo := uint64((int64(exponent+1023) << 52))
 	return math.Float64frombits(expo | mantissa)
-}
-
-func (el *exponentialLayout) lowerBoundary(index int64) float64 {
-	return el.upperBoundary(index - 1)
 }

@@ -33,26 +33,32 @@ func (layout *exponentialLayout) scanPositive(buckets pdata.Buckets, boundaries 
 	for position, bound := range boundaries {
 		index := layout.mapToBinIndex(bound)
 
-		for ; bucketNumber < int64(len(buckets.BucketCounts())) && bucketNumber+buckets.Offset() < index; bucketNumber++ {
+		for ; bucketNumber < int64(len(buckets.BucketCounts())) && (bucketNumber+buckets.Offset()) < index; bucketNumber++ {
 			full := buckets.BucketCounts()[bucketNumber]
 			counts[position] += full
 		}
 
-		// The explicit boundary lies between two exponential
-		// boundaries.  When there is an exact match, it is
-		// the lowerBound.
-		lowerBound := layout.lowerBoundary(index)
-		upperBound := layout.upperBoundary(index)
+		if bucketNumber == int64(len(buckets.BucketCounts())) {
+			break
+		}
 
-		pLow := (bound - lowerBound) / (upperBound - lowerBound)
+		if bucketNumber+buckets.Offset() == index {
+			// The explicit boundary lies between two exponential
+			// boundaries.  When there is an exact match, it is
+			// the lowerBound.
+			lowerBound := layout.lowerBoundary(index)
+			upperBound := layout.upperBoundary(index)
 
-		cnt := buckets.BucketCounts()[bucketNumber]
-		low := uint64(pLow*float64(cnt) + 0.5)
-		high := cnt - low
+			pLow := (bound - lowerBound) / (upperBound - lowerBound)
 
-		counts[position] += low
-		counts[position+1] += high
-		bucketNumber++
+			cnt := buckets.BucketCounts()[bucketNumber]
+			low := uint64(pLow*float64(cnt) + 0.5)
+			high := cnt - low
+
+			counts[position] += low
+			counts[position+1] += high
+			bucketNumber++
+		}
 	}
 
 	for ; bucketNumber < int64(len(buckets.BucketCounts())); bucketNumber++ {
@@ -73,17 +79,23 @@ func (layout *exponentialLayout) scanNegative(buckets pdata.Buckets, boundaries 
 			counts[position+1] += full
 		}
 
-		lowerBound := -layout.lowerBoundary(index)
-		upperBound := -layout.upperBoundary(index)
-		pLow := (bound - lowerBound) / (upperBound - lowerBound)
+		if bucketNumber == int64(len(buckets.BucketCounts())) {
+			break
+		}
 
-		cnt := buckets.BucketCounts()[bucketNumber]
-		low := uint64(pLow*float64(cnt) + 0.5)
-		high := cnt - low
+		if bucketNumber+buckets.Offset() == index {
+			lowerBound := -layout.lowerBoundary(index)
+			upperBound := -layout.upperBoundary(index)
+			pLow := (bound - lowerBound) / (upperBound - lowerBound)
 
-		counts[position+1] += low
-		counts[position] += high
-		bucketNumber++
+			cnt := buckets.BucketCounts()[bucketNumber]
+			low := uint64(pLow*float64(cnt) + 0.5)
+			high := cnt - low
+
+			counts[position+1] += low
+			counts[position] += high
+			bucketNumber++
+		}
 	}
 
 	for ; bucketNumber < int64(len(buckets.BucketCounts())); bucketNumber++ {
@@ -130,11 +142,15 @@ func toExplicitPoint(input pdata.ExponentialHistogramDataPoint, boundaries []flo
 
 		layout.scanNegative(input.Negative(), boundaries, counts)
 
+	} else if boundaries[zeroCrosser-1] == 0 {
+		// We have a boundary at zero
+		// TODO
 	} else {
-		// True zero-crossing bucket.
+		// We have a bucket that spans zero.
 		counts[zeroCrosser] += input.ZeroCount()
 
-		// TODO
+		layout.scanNegative(input.Negative(), boundaries[0:zeroCrosser], counts[0:zeroCrosser+1])
+		layout.scanPositive(input.Positive(), boundaries[zeroCrosser:], counts[zeroCrosser:])
 	}
 	return r
 }
