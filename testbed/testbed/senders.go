@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 )
 
@@ -529,57 +528,6 @@ func (zs *zipkinDataSender) GenConfigYAMLStr() string {
 
 func (zs *zipkinDataSender) ProtocolName() string {
 	return "zipkin"
-}
-
-// prometheus
-
-type prometheusDataSender struct {
-	DataSenderBase
-	consumer.Metrics
-	namespace string
-}
-
-// NewPrometheusDataSender creates a new Prometheus sender that will expose data
-// on the specified port after Start is called.
-func NewPrometheusDataSender(host string, port int) MetricDataSender {
-	return &prometheusDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
-		},
-	}
-}
-
-func (pds *prometheusDataSender) Start() error {
-	factory := prometheusexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
-	cfg.Endpoint = pds.GetEndpoint().String()
-	cfg.Namespace = pds.namespace
-
-	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
-	if err != nil {
-		return err
-	}
-
-	pds.Metrics = exp
-	return exp.Start(context.Background(), pds)
-}
-
-func (pds *prometheusDataSender) GenConfigYAMLStr() string {
-	format := `
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'testbed'
-          scrape_interval: 100ms
-          static_configs:
-            - targets: ['%s']
-`
-	return fmt.Sprintf(format, pds.GetEndpoint())
-}
-
-func (pds *prometheusDataSender) ProtocolName() string {
-	return "prometheus"
 }
 
 func defaultExporterParams() component.ExporterCreateSettings {

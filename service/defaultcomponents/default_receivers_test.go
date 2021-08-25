@@ -19,7 +19,6 @@ import (
 	"errors"
 	"testing"
 
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -28,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 )
 
 func TestDefaultReceivers(t *testing.T) {
@@ -58,18 +56,6 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "otlp",
-		},
-		{
-			receiver: "prometheus",
-			getConfigFn: func() config.Receiver {
-				cfg := rcvrFactories["prometheus"].CreateDefaultConfig().(*prometheusreceiver.Config)
-				cfg.PrometheusConfig = &promconfig.Config{
-					ScrapeConfigs: []*promconfig.ScrapeConfig{
-						{JobName: "test"},
-					},
-				}
-				return cfg
-			},
 		},
 		{
 			receiver: "zipkin",

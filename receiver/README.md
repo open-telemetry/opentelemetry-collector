@@ -19,7 +19,6 @@ Available metric receivers (sorted alphabetically):
 - [Host Metrics Receiver](hostmetricsreceiver/README.md)
 - [OpenCensus Receiver](opencensusreceiver/README.md)
 - [OTLP Receiver](otlpreceiver/README.md)
-- [Prometheus Receiver](prometheusreceiver/README.md)
 
 Available log receivers (sorted alphabetically):
 

@@ -18,11 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
-
-	"github.com/prometheus/common/model"
-	promconfig "github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -33,13 +28,12 @@ import (
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
 // DataReceiver allows to receive traces or metrics. This is an interface that must
 // be implemented by all protocols that want to be used in MockBackend.
-// Note the terminology: testbed.DataReceiver is something that can listen and receive data
+// Note the terminology: DataReceiver is something that can listen and receive data
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
 type DataReceiver interface {
@@ -320,62 +314,4 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
 
 func (zr *zipkinDataReceiver) ProtocolName() string {
 	return "zipkin"
-}
-
-// prometheus
-
-type prometheusDataReceiver struct {
-	DataReceiverBase
-	receiver component.MetricsReceiver
-}
-
-func NewPrometheusDataReceiver(port int) DataReceiver {
-	return &prometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
-}
-
-func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
-	factory := prometheusreceiver.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
-	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
-	cfg.PrometheusConfig = &promconfig.Config{
-		ScrapeConfigs: []*promconfig.ScrapeConfig{{
-			JobName:        "testbed-job",
-			ScrapeInterval: model.Duration(100 * time.Millisecond),
-			ScrapeTimeout:  model.Duration(time.Second),
-			ServiceDiscoveryConfigs: discovery.Configs{
-				&discovery.StaticConfig{
-					{
-						Targets: []model.LabelSet{{
-							"__address__":      model.LabelValue(addr),
-							"__scheme__":       "http",
-							"__metrics_path__": "/metrics",
-						}},
-					},
-				},
-			},
-		}},
-	}
-	var err error
-	set := componenttest.NewNopReceiverCreateSettings()
-	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
-	if err != nil {
-		return err
-	}
-	return dr.receiver.Start(context.Background(), dr)
-}
-
-func (dr *prometheusDataReceiver) Stop() error {
-	return dr.receiver.Shutdown(context.Background())
-}
-
-func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
-	format := `
-  prometheus:
-    endpoint: "localhost:%d"
-`
-	return fmt.Sprintf(format, dr.Port)
-}
-
-func (dr *prometheusDataReceiver) ProtocolName() string {
-	return "prometheus"
 }
