@@ -41,11 +41,6 @@ commands:
             bin/otelcol_linux_arm64
             bin/otelcol_linux_amd64
             bin/otelcol_windows_amd64.exe
-            dist/otel-collector-*arm64.rpm
-            dist/otel-collector_*amd64.deb
-            dist/otel-collector-*x86_64.rpm
-            dist/otel-collector_*arm64.deb
-            dist/otel-collector-*amd64.msi
     steps:
       - run:
           name: Check if files exist
@@ -134,20 +129,11 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - windows-msi:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
           name: publish-check-main
           requires:
             - cross-compile
             - coverage
-            - windows-msi
-            - deb-package
-            - rpm-package
           filters:
             branches:
               only: main
@@ -156,9 +142,6 @@ workflows:
           requires:
             - cross-compile
             - coverage
-            - windows-msi
-            - deb-package
-            - rpm-package
           filters:
             branches:
               ignore: main
@@ -169,9 +152,6 @@ workflows:
           requires:
             - cross-compile
             - coverage
-            - windows-msi
-            - deb-package
-            - rpm-package
           filters:
             branches:
               ignore: /.*/
@@ -183,30 +163,11 @@ workflows:
           requires:
             - cross-compile
             - coverage
-            - windows-msi
-            - deb-package
-            - rpm-package
           filters:
             branches:
               only: main
             tags:
               ignore: /.*/
-      - build-package:
-          name: deb-package
-          package_type: deb
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - build-package:
-          name: rpm-package
-          package_type: rpm
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
 
 jobs:
   setup-environment:
@@ -304,60 +265,3 @@ jobs:
       - publish_docker_images:
           repo: opentelemetry-collector-dev
           tag: ${CIRCLE_SHA1}
-
-  windows-msi:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    steps:
-      - attach_to_workspace
-      - run:
-          command: mkdir -p dist
-      - run:
-          name: Install Wix Toolset
-          command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
-      - run:
-          name: Build MSI
-          command: |
-            $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
-            .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
-      - run:
-          name: Validate MSI
-          command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
-      - persist_to_workspace:
-          root: ~/
-          paths: project/dist/*.msi
-
-  build-package:
-    machine:
-      image: ubuntu-1604:202007-01
-    parameters:
-      package_type:
-        type: enum
-        enum: ["deb", "rpm"]
-    steps:
-      - checkout
-      - attach_to_workspace
-      - run:
-          name: Install fpm and dependencies
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
-            gem install --no-document fpm -v 1.11.0
-      - run:
-          name: Build << parameters.package_type >> amd64 package
-          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./dist/"
-      - run:
-          name: Build << parameters.package_type >> arm64 package
-          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./dist/"
-      - run:
-          name: Test << parameters.package_type >> package
-          command: |
-            if [[ "<< parameters.package_type >>" = "deb" ]]; then
-                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*amd64.deb
-            else
-                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*x86_64.rpm
-            fi
-      - persist_to_workspace:
-          root: ~/
-          paths: project/dist
