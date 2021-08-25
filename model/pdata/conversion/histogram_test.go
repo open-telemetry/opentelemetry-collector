@@ -1,8 +1,6 @@
 package conversion
 
 import (
-	"fmt"
-	"math"
 	"testing"
 	"time"
 
@@ -20,7 +18,6 @@ func TestHistogramConversion(t *testing.T) {
 		testScale          = int32(3)
 		testSum            = float64(1e6)
 		testCount          = uint64(10000)
-		testZeros          = uint64(1000)
 	)
 
 	mp := pdata.NewExponentialHistogramDataPoint()
@@ -34,40 +31,33 @@ func TestHistogramConversion(t *testing.T) {
 	mp.Positive().SetBucketCounts([]uint64{
 		// 8 buckets offset -4 means indices in the range [-4, 3].
 		100, 100, 100, 100, 100, 100, 100, 100,
+
+		// These have positions
+		// 2^(-4/8)=0.707107
+		// 2^(-3/8)=0.771105
+		// 2^(-2/8)=0.840896
+		// 2^(-1/8)=0.917004
+		// 2^(0/8)=1.000000
+		// 2^(1/8)=1.090508
+		// 2^(2/8)=1.189207
+		// 2^(3/8)=1.296840
+		// 2^(4/8)=1.414214
 	})
-	mp.SetZeroCount(testZeros)
 
 	xp := toExplicitPoint(mp, []float64{
+		// explicit boundaries
 		0.8, 0.9, 1.0, 1.1, 1.2,
+		// map to indices:
+		// -3, -2, 0, 1, 2
 	})
 
+	require.Equal(t, 800, int(sumUint64s(xp.BucketCounts())))
 	require.Equal(t, []uint64{
-		0,
+		141, // (-Inf, 0.8]
+		137, // (0.8, 0.9]
+		122, // (0.9, 1.0]
+		110, // (1.0, 1.1]
+		100, // (1.1, 1.2]
+		190, // (1.2, +Inf]
 	}, xp.BucketCounts())
-}
-
-func TestB(t *testing.T) {
-	scale := 3
-	length := 1 << scale
-	fmt.Println("------------------------")
-	fmt.Println("scale:", scale)
-	fmt.Println("number of buckets:", length)
-	fmt.Println("------------------------")
-	for i := -1; i < length; i++ {
-		fmt.Printf("2^(%d/%d)=%f\n", i+1, length, math.Pow(2, float64(i+1)/float64(length)))
-	}
-
-	fmt.Println("index mapping:")
-	layout := getExponentialLayout(scale)
-	fmt.Printf("% 4.5f\t%d\n", 0.0001, layout.mapToBinIndex(0.0001))
-	fmt.Printf("% 4.5f\t%d\n", 0.01, layout.mapToBinIndex(0.01))
-	fmt.Printf("% 4.5f\t%d\n", 0.1, layout.mapToBinIndex(0.1))
-	fmt.Printf("% 4.5f\t%d\n", 1.0, layout.mapToBinIndex(1))
-	fmt.Printf("% 4.5f\t%d\n", 2.0, layout.mapToBinIndex(2))
-	fmt.Printf("% 4.5f\t%d\n", 3.0, layout.mapToBinIndex(3))
-	fmt.Printf("% 4.1f\t\t%d\n", 10.0, layout.mapToBinIndex(10))
-	fmt.Printf("% 4.1f\t\t%d\n", 100.0, layout.mapToBinIndex(100))
-	fmt.Printf("% 4.1f\t\t%d\n", 1000.0, layout.mapToBinIndex(1000))
-	fmt.Printf("%s\t%d\n", "math.SmallestNonzeroFloat64", layout.mapToBinIndex(math.SmallestNonzeroFloat64))
-	fmt.Printf("%s\t\t\t%d\n", "math.MaxFloat64", layout.mapToBinIndex(math.MaxFloat64))
 }

@@ -35,17 +35,30 @@ func (layout *exponentialLayout) scanPositive(buckets pdata.Buckets, boundaries 
 		index := layout.mapToBinIndex(bound)
 
 		for ; bucketNumber < int64(len(buckets.BucketCounts())) && bucketNumber+buckets.Offset() < index; bucketNumber++ {
-			one := buckets.BucketCounts()[bucketNumber]
-			counts[position] += one
+			full := buckets.BucketCounts()[bucketNumber]
+			counts[position] += full
 		}
 
 		// The explicit boundary lies between two exponential
-		// boundaries, except for the exact match case (TODO).
+		// boundaries.  When there is an exact match, it is
+		// the lowerBound.
 		lowerBound := layout.lowerBoundary(index)
 		upperBound := layout.upperBoundary(index)
 
-		pLow := 1 - (bound-lowerBound)/(upperBound-lowerBound)
+		pLow := (bound - lowerBound) / (upperBound - lowerBound)
+
+		cnt := buckets.BucketCounts()[bucketNumber]
+		low := uint64(pLow*float64(cnt) + 0.5)
+		high := cnt - low
+
+		counts[position] += low
+		counts[position+1] += high
 		bucketNumber++
+	}
+
+	for ; bucketNumber < int64(len(buckets.BucketCounts())); bucketNumber++ {
+		full := buckets.BucketCounts()[bucketNumber]
+		counts[len(counts)-1] += full
 	}
 }
 
