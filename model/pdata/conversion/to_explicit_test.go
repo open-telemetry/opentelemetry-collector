@@ -193,10 +193,10 @@ func TestMappingFunctionInclusivity(t *testing.T) {
 
 		t.Run(fmt.Sprint("scale=", scale), func(t *testing.T) {
 
-			require.Equal(t, int64(0), layout.mapToBinIndex(1))
-			require.Equal(t, int64(0), layout.mapToBinIndex(1+epsilon))
-			require.Equal(t, size, layout.mapToBinIndex(2))
-			require.Equal(t, size, layout.mapToBinIndex(2+epsilon))
+			require.Equal(t, int64(0), layout.mapToIndex(1))
+			require.Equal(t, int64(0), layout.mapToIndex(1+epsilon))
+			require.Equal(t, size, layout.mapToIndex(2))
+			require.Equal(t, size, layout.mapToIndex(2+epsilon))
 
 			require.Equal(t, 0.25, layout.upperBoundary(-2*size-1))
 			require.Equal(t, 0.25, layout.lowerBoundary(-2*size))

@@ -5,6 +5,27 @@ import (
 	"sync"
 )
 
+const (
+	// mantissaWidth is the size of an IEEE 754 double-precision
+	// floating-point mantissa.
+	mantissaWidth = 52
+	// exponentWidth is the size of an IEEE 754 double-precision
+	// floating-point exponent.
+	exponentWidth = 11
+
+	// mantissaOnes is mantissaWidth 1 bits
+	mantissaOnes = 1<<mantissaWidth - 1
+
+	// exponentBias is the exponent bias specified for encoding
+	// the IEEE 754 double-precision floating point exponent.
+	exponentBias = 1<<(exponentWidth-1) - 1
+
+	// exponentMask are set to 1 for the bits of an IEEE 754
+	// floating point exponent (as distinct from the mantissa and
+	// sign.
+	exponentMask = ((1 << exponentWidth) - 1) << mantissaWidth
+)
+
 var (
 	layoutLock sync.Mutex
 	layouts    map[int]*exponentialLayout
@@ -62,11 +83,11 @@ func calculateBoundaries(scale int) []uint64 {
 	boundaries := make([]uint64, length+2)
 
 	for i := 0; i <= length; i++ {
-		boundaries[i] = 0x000fffffffffffff & math.Float64bits(math.Pow(2, float64(i)/float64(length)))
+		boundaries[i] = mantissaOnes & math.Float64bits(math.Pow(2, float64(i)/float64(length)))
 	}
 
-	boundaries[length] = 0x0010000000000000
-	boundaries[length+1] = 0x0010000000000000
+	boundaries[length] = 1 << mantissaWidth
+	boundaries[length+1] = 1 << mantissaWidth
 
 	return boundaries
 }
@@ -79,7 +100,7 @@ func calculateIndices(boundaries []uint64, scale int) []int64 {
 	for i := 0; i < length; i++ {
 		// e.g. for scale = 2, this evaluates to:
 		// i=0: 1.0; i=1: 1.25; i=2: 1.5; i=3: 1.75
-		mantissaLowerBound := uint64(i) << (52 - scale)
+		mantissaLowerBound := uint64(i) << (mantissaWidth - scale)
 		// find the lowest boundary that is smaller than or equal to the equidistant bucket bound
 		for boundaries[c+1] <= mantissaLowerBound {
 			c++
@@ -90,26 +111,25 @@ func calculateIndices(boundaries []uint64, scale int) []int64 {
 }
 
 // This is the code that actually maps the double value to the correct bin.
-func (el *exponentialLayout) mapToBinIndex(value float64) int64 {
+func (el *exponentialLayout) mapToIndex(value float64) int64 {
 	valueBits := math.Float64bits(value)
 
 	// The last 52 bits (bits 0 through 51) of a double are the mantissa.
 	// Get these from the valueBits, which is a bit representation of the double value
-	mantissa := 0xfffffffffffff & valueBits
+	mantissa := mantissaOnes & valueBits
 
 	// The bits 52 through 63 are the exponent.
 	// extract the exponent from the bit representation of the double value.
 	// Then shift it over by 52 bits (the length of the mantissa) and convert it to an integer
 	// This also removes the sign bit.
-	exponent := int64((0x7ff0000000000000 & valueBits) >> 52)
-	// 1023 (2^10-1) is the exponent bias corresponding to 11 exponent bits.
-	exponent -= 1023
+	exponent := int64((exponentMask & valueBits) >> mantissaWidth)
+	exponent -= exponentBias
 
 	// find the "rough" bucket index from the indices array
 	// The indices array has evenly spaced buckets and contains indices into the boundaries array
 	// The line below transforms the normalized mantissa into an index into the indices array
 	// Then, the index into the boundaries array is retrieved.
-	rough := el.indices[int(mantissa>>(52-el.scale))]
+	rough := el.indices[int(mantissa>>(mantissaWidth-el.scale))]
 
 	// The index in the boundaries array might not be correct right away, there might be an offset of a maximum of two buckets.
 	// Therefore, look at three buckets: The one specified by the index, and the next two.
@@ -127,10 +147,15 @@ func (el *exponentialLayout) mapToBinIndex(value float64) int64 {
 	return (exponent << el.scale) + offset
 }
 
+// upperBoundary is exclusive in this implementation, thus we define
+// it as the lowerBoundary of the next bucket.
 func (el *exponentialLayout) upperBoundary(index int64) float64 {
 	return el.lowerBoundary(index + 1)
 }
 
+// lowerBoundary computes the inclusive lower bound corresponding to a
+// particular histogram bucket.  This returns the least result value that
+// such that `mapToIndex(lowerBoundary(index)) == index`.
 func (el *exponentialLayout) lowerBoundary(index int64) float64 {
 	length := int64(1 << el.scale)
 	exponent := index / length
@@ -139,7 +164,7 @@ func (el *exponentialLayout) lowerBoundary(index int64) float64 {
 		position += length
 		exponent -= 1
 	}
-	mantissa := el.boundaries[position] & 0xfffffffffffff
-	expo := uint64((int64(exponent+1023) << 52))
+	mantissa := el.boundaries[position] & mantissaOnes
+	expo := uint64((int64(exponent+exponentBias) << mantissaWidth))
 	return math.Float64frombits(expo | mantissa)
 }

@@ -31,7 +31,7 @@ func (layout *exponentialLayout) scanPositive(buckets pdata.Buckets, boundaries 
 	bucketNumber := int64(0)
 
 	for position, bound := range boundaries {
-		index := layout.mapToBinIndex(bound)
+		index := layout.mapToIndex(bound)
 
 		for ; bucketNumber < int64(len(buckets.BucketCounts())) && (bucketNumber+buckets.Offset()) < index; bucketNumber++ {
 			full := buckets.BucketCounts()[bucketNumber]
@@ -52,6 +52,8 @@ func (layout *exponentialLayout) scanPositive(buckets pdata.Buckets, boundaries 
 			pLow := (bound - lowerBound) / (upperBound - lowerBound)
 
 			cnt := buckets.BucketCounts()[bucketNumber]
+
+			// the 0.5 below rounds the number to the nearest integer.
 			low := uint64(pLow*float64(cnt) + 0.5)
 			high := cnt - low
 
@@ -72,7 +74,7 @@ func (layout *exponentialLayout) scanNegative(buckets pdata.Buckets, boundaries 
 
 	for position := len(boundaries) - 1; position >= 0; position-- {
 		bound := boundaries[position]
-		index := layout.mapToBinIndex(-bound)
+		index := layout.mapToIndex(-bound)
 
 		for ; bucketNumber < int64(len(buckets.BucketCounts())) && bucketNumber+buckets.Offset() < index; bucketNumber++ {
 			full := buckets.BucketCounts()[bucketNumber]
