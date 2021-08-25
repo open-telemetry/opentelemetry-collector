@@ -143,8 +143,11 @@ func toExplicitPoint(input pdata.ExponentialHistogramDataPoint, boundaries []flo
 		layout.scanNegative(input.Negative(), boundaries, counts)
 
 	} else if boundaries[zeroCrosser-1] == 0 {
-		// We have a boundary at zero
-		// TODO
+		// We have a boundary at zero as in (-1, 0], (0, 1]
+		counts[zeroCrosser-1] += input.ZeroCount()
+
+		layout.scanNegative(input.Negative(), boundaries[0:zeroCrosser-1], counts[0:zeroCrosser])
+		layout.scanPositive(input.Positive(), boundaries[zeroCrosser:], counts[zeroCrosser:])
 	} else {
 		// We have a bucket that spans zero.
 		counts[zeroCrosser] += input.ZeroCount()

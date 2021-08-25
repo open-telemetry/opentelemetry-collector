@@ -152,6 +152,39 @@ func TestHistogramZeroCrossing(t *testing.T) {
 	validateTestPoint(t, xp)
 }
 
+func TestHistogramZeroBoundary(t *testing.T) {
+	var (
+		testBoundaries = []float64{
+			// explicit boundaries
+			-10, -1, 0, 1, 10,
+		}
+
+		// This is the positive case, negative is the reverse.
+		expectCounts = []uint64{
+			0,    // (-Inf, -10]: empty
+			400,  // (-10, -1]:   half of the test input range
+			1200, // (-1, 0]:     half the test input range + the zero bucket
+			400,  // (0, +1]:     half of the test input range
+			400,  // (+1, +10]:   half of the test input range
+			0,    // (+10, +Inf]: empty
+		}
+	)
+
+	mp := testExpoPoint()
+	mp.Positive().SetOffset(testOffset)
+	mp.Positive().SetBucketCounts(testBucketCounts)
+	mp.Negative().SetOffset(testOffset)
+	mp.Negative().SetBucketCounts(testBucketCounts)
+	mp.SetZeroCount(testCount)
+
+	xp := toExplicitPoint(mp, testBoundaries)
+
+	require.Equal(t, 3*testCount, sumUint64s(xp.BucketCounts()))
+	require.Equal(t, expectCounts, xp.BucketCounts())
+
+	validateTestPoint(t, xp)
+}
+
 func TestMappingFunctionInclusivity(t *testing.T) {
 	for scale := 0; scale < 8; scale++ {
 		layout := getExponentialLayout(scale)
