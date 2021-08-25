@@ -26,14 +26,8 @@ import (
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/filterprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
-	"go.opentelemetry.io/collector/processor/probabilisticsamplerprocessor"
-	"go.opentelemetry.io/collector/processor/resourceprocessor"
-	"go.opentelemetry.io/collector/processor/spanprocessor"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -57,7 +51,6 @@ func Components() (
 
 	receivers, err := component.MakeReceiverFactoryMap(
 		otlpreceiver.NewFactory(),
-		hostmetricsreceiver.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -74,13 +67,8 @@ func Components() (
 	}
 
 	processors, err := component.MakeProcessorFactoryMap(
-		attributesprocessor.NewFactory(),
-		resourceprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiter.NewFactory(),
-		probabilisticsamplerprocessor.NewFactory(),
-		spanprocessor.NewFactory(),
-		filterprocessor.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
