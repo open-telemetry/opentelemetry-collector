@@ -18,7 +18,6 @@ package defaultcomponents
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/fileexporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -58,7 +57,6 @@ func Components() (
 
 	exporters, err := component.MakeExporterFactoryMap(
 		loggingexporter.NewFactory(),
-		fileexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 	)
