@@ -17,7 +17,7 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -101,9 +101,11 @@ var (
 	errKeyNotPresentInBatch = errors.New("key was not present in get batchStruct")
 )
 
-// newPersistentContiguousStorage creates a new file-storage extension backed queue. It needs to be initialized separately
+// newPersistentContiguousStorage creates a new file-storage extension backed queue;
+// queueName parameter must be a unique value that identifies the queue.
+// The queue needs to be initialized separately using initPersistentContiguousStorage.
 func newPersistentContiguousStorage(ctx context.Context, queueName string, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
-	wcs := &persistentContiguousStorage{
+	pcs := &persistentContiguousStorage{
 		logger:      logger,
 		client:      client,
 		queueName:   queueName,
@@ -113,17 +115,17 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, logge
 		retryDelay:  defaultRetryDelay,
 	}
 
-	initPersistentContiguousStorage(ctx, wcs)
+	initPersistentContiguousStorage(ctx, pcs)
 
 	err := currentlyProcessedBatchesGauge.UpsertEntry(func() int64 {
-		return int64(wcs.numberOfCurrentlyProcessedItems())
-	}, metricdata.NewLabelValue(wcs.queueName))
+		return int64(pcs.numberOfCurrentlyProcessedItems())
+	}, metricdata.NewLabelValue(pcs.queueName))
 	if err != nil {
 		logger.Error("failed to create number of currently processed items metric", zap.Error(err))
 	}
 
-	go wcs.loop()
-	return wcs
+	go pcs.loop()
+	return pcs
 }
 
 func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContiguousStorage) {
@@ -140,7 +142,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	}
 
 	if err != nil {
-		pcs.logger.Debug("failed getting read/write index, starting with new ones",
+		pcs.logger.Error("failed getting read/write index, starting with new ones",
 			zap.String(zapQueueNameKey, pcs.queueName),
 			zap.Error(err))
 		pcs.readIndex = 0
@@ -162,9 +164,17 @@ func (pcs *persistentContiguousStorage) loop() {
 				errCount++
 			}
 		}
-		pcs.logger.Info("moved items for processing back to queue",
-			zap.String(zapQueueNameKey, pcs.queueName),
-			zap.Int(zapNumberOfItems, len(reqs)), zap.Int(zapErrorCount, errCount))
+		if errCount > 0 {
+			pcs.logger.Error("errors occurred while moving items for processing back to queue",
+				zap.String(zapQueueNameKey, pcs.queueName),
+				zap.Int(zapNumberOfItems, len(reqs)), zap.Int(zapErrorCount, errCount))
+
+		} else {
+			pcs.logger.Info("moved items for processing back to queue",
+				zap.String(zapQueueNameKey, pcs.queueName),
+				zap.Int(zapNumberOfItems, len(reqs)))
+
+		}
 	}
 
 	for {
@@ -207,10 +217,10 @@ func (pcs *persistentContiguousStorage) numberOfCurrentlyProcessedItems() int {
 func (pcs *persistentContiguousStorage) stop() {
 	pcs.logger.Debug("stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
 	pcs.stopOnce.Do(func() {
-		_ = currentlyProcessedBatchesGauge.UpsertEntry(func() int64 {
-			return int64(0)
-		}, metricdata.NewLabelValue(pcs.queueName))
 		close(pcs.stopChan)
+		_ = currentlyProcessedBatchesGauge.UpsertEntry(func() int64 {
+			return int64(pcs.numberOfCurrentlyProcessedItems())
+		}, metricdata.NewLabelValue(pcs.queueName))
 	})
 }
 
@@ -230,11 +240,8 @@ func (pcs *persistentContiguousStorage) put(req request) error {
 	pcs.writeIndex++
 
 	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
@@ -242,7 +249,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	if pcs.readIndex < pcs.writeIndex {
+	if pcs.readIndex != pcs.writeIndex {
 		index := pcs.readIndex
 		// Increase here, so even if errors happen below, it always iterates
 		pcs.readIndex++
@@ -286,7 +293,7 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 		processedItems, err = batch.getItemIndexArrayResult(currentlyProcessedItemsKey)
 	}
 	if err != nil {
-		pcs.logger.Warn("could not fetch items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
+		pcs.logger.Error("could not fetch items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 		return reqs
 	}
 
@@ -309,7 +316,7 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 
 	_, err = batch.execute(ctx)
 	if err != nil {
-		pcs.logger.Warn("failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
+		pcs.logger.Warn("failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 		return reqs
 	}
 
@@ -317,7 +324,7 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 		req, err := batch.getRequestResult(key)
 		if err != nil {
 			pcs.logger.Warn("failed unmarshalling item",
-				zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key))
+				zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
 		} else {
 			reqs[i] = req
 		}
@@ -364,11 +371,11 @@ func (pcs *persistentContiguousStorage) updateReadIndex(ctx context.Context) {
 		execute(ctx)
 
 	if err != nil {
-		pcs.logger.Warn("failed updating read index",
+		pcs.logger.Debug("failed updating read index",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
 
 func (pcs *persistentContiguousStorage) itemKey(index itemIndex) string {
-	return fmt.Sprintf("%d", index)
+	return strconv.FormatUint(uint64(index), 10)
 }

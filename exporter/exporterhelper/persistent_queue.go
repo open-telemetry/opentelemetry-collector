@@ -37,7 +37,7 @@ type persistentQueue struct {
 	storage   persistentStorage
 }
 
-// newPersistentQueue creates a new queue backed by file storage
+// newPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
 func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentQueue {
 	return &persistentQueue{
 		logger:   logger,
@@ -50,7 +50,6 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 // StartConsumers starts the given number of consumers which will be consuming items
 func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
 	pq.numWorkers = num
-	var startWG sync.WaitGroup
 
 	factory := func() queue.Consumer {
 		return queue.ConsumerFunc(callback)
@@ -58,9 +57,7 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 
 	for i := 0; i < pq.numWorkers; i++ {
 		pq.stopWG.Add(1)
-		startWG.Add(1)
 		go func() {
-			startWG.Done()
 			defer pq.stopWG.Done()
 			consumer := factory()
 
@@ -74,7 +71,6 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 			}
 		}()
 	}
-	startWG.Wait()
 }
 
 // Produce adds an item to the queue and returns true if it was accepted

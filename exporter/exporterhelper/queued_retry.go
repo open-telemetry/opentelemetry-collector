@@ -97,7 +97,7 @@ type RetrySettings struct {
 	// MaxInterval is the upper bound on backoff interval. Once this value is reached the delay between
 	// consecutive retries will always be `MaxInterval`.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
-	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batchStruct.
+	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
 	// Once this value is reached, the data is discarded.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
@@ -114,7 +114,7 @@ func DefaultRetrySettings() RetrySettings {
 
 type queuedRetrySender struct {
 	id                 config.ComponentID
-	signal             signalType
+	signal             config.DataType
 	cfg                QueueSettings
 	consumerSender     requestSender
 	queue              consumersQueue
@@ -144,7 +144,7 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 	return logger.WithOptions(opts)
 }
 
-func newQueuedRetrySender(id config.ComponentID, signal signalType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
@@ -212,7 +212,7 @@ func (qrs *queuedRetrySender) onTemporaryFailure(req request, err error) error {
 	return err
 }
 
-func getStorageClient(ctx context.Context, host component.Host, id config.ComponentID, signal signalType) (*storage.Client, error) {
+func getStorageClient(ctx context.Context, host component.Host, id config.ComponentID, signal config.DataType) (*storage.Client, error) {
 	var storageExtension storage.Extension
 	for _, ext := range host.GetExtensions() {
 		if se, ok := ext.(storage.Extension); ok {
@@ -423,7 +423,7 @@ func (rs *retrySender) send(req request) error {
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			// throw away the batchStruct
+			// throw away the batch
 			err = fmt.Errorf("max elapsed time expired %w", err)
 			return rs.onTemporaryFailure(req, err)
 		}

@@ -18,12 +18,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"sync"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/extension/storage"
 )
+
+var errItemIndexArrInvalidDataType = errors.New("invalid data type, expected []itemIndex")
 
 // batchStruct provides convenience capabilities for creating and processing storage extension batches
 type batchStruct struct {
@@ -65,7 +68,7 @@ func (bof *batchStruct) set(key string, value interface{}, marshal func(interfac
 
 	valueBytes, err := marshal(value)
 	if err != nil {
-		bof.logger.Warn("failed marshaling item, skipping it", zap.String(zapKey, key), zap.Error(err))
+		bof.logger.Debug("failed marshaling item, skipping it", zap.String(zapKey, key), zap.Error(err))
 	}
 
 	bof.operations = append(bof.operations, storage.SetOperation(key, valueBytes))
@@ -186,16 +189,18 @@ func bytesToItemIndex(b []byte) (interface{}, error) {
 
 func itemIndexArrayToBytes(arr interface{}) ([]byte, error) {
 	var buf bytes.Buffer
-	count := 0
+	size := 0
 
 	if arr != nil {
 		arrItemIndex, ok := arr.([]itemIndex)
 		if ok {
-			count = len(arrItemIndex)
+			size = len(arrItemIndex)
+		} else {
+			return nil, errItemIndexArrInvalidDataType
 		}
 	}
 
-	err := binary.Write(&buf, binary.LittleEndian, uint32(count))
+	err := binary.Write(&buf, binary.LittleEndian, uint32(size))
 	if err != nil {
 		return nil, err
 	}

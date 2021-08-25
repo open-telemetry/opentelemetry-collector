@@ -146,7 +146,7 @@ func TestPersistentStorage_MetricsReported(t *testing.T) {
 	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/processed_batches_size")
 
 	ps.stop()
-	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(0), "exporter/processed_batches_size")
+	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/processed_batches_size")
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {

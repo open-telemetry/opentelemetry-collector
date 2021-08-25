@@ -40,7 +40,7 @@ func DefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
-// request is an abstraction of an individual request (batchStruct of data) independent of the type of the data (traces, metrics, logs).
+// request is an abstraction of an individual request (batch of data) independent of the type of the data (traces, metrics, logs).
 type request interface {
 	// context returns the Context of the requests.
 	context() context.Context
@@ -54,8 +54,9 @@ type request interface {
 	count() int
 	// marshal serializes the current request into a byte stream
 	marshal() ([]byte, error)
-	// onProcessingFinished provides capability to do the cleanup (e.g. remove item from persistent queue)
+	// onProcessingFinished calls the optional callback function to handle cleanup after all processing is finished
 	onProcessingFinished()
+	// setOnProcessingFinished allows to set an optional callback function to do the cleanup (e.g. remove the item from persistent queue)
 	setOnProcessingFinished(callback func())
 }
 
@@ -178,15 +179,7 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-type signalType string
-
-const (
-	signalLogs    = signalType("logs")
-	signalMetrics = signalType("metrics")
-	signalTraces  = signalType("traces")
-)
-
-func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal signalType, reqUnnmarshaler requestUnmarshaler) *baseExporter {
+func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnnmarshaler requestUnmarshaler) *baseExporter {
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}
