@@ -17,7 +17,6 @@ package defaultcomponents
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"runtime"
 	"testing"
 
@@ -29,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/exporter/fileexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/testutil"
@@ -47,17 +45,6 @@ func TestDefaultExporters(t *testing.T) {
 		getConfigFn   getExporterConfigFn
 		skipLifecycle bool
 	}{
-		{
-			exporter: "file",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
-				f, err := ioutil.TempFile("", "otelcol_defaults_file_exporter_test*.tmp")
-				require.NoError(t, err)
-				assert.NoError(t, f.Close())
-				cfg.Path = f.Name()
-				return cfg
-			},
-		},
 		{
 			exporter:      "logging",
 			skipLifecycle: runtime.GOOS == "darwin", // TODO: investigate why this fails on darwin.
