@@ -15,9 +15,11 @@
 package confighttp
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -27,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -419,6 +422,31 @@ func TestHttpReception(t *testing.T) {
 				body, errRead := ioutil.ReadAll(resp.Body)
 				assert.NoError(t, errRead)
 				assert.Equal(t, "test", string(body))
+			}
+
+			// Check that h2c payloads are handled when serving insecure traffic
+			if tt.tlsClientCreds.Insecure {
+				client := http.Client{
+					Transport: &http2.Transport{
+						// So http2.Transport doesn't complain the URL scheme isn't 'https'
+						AllowHTTP: true,
+						// Pretend we are dialing a TLS endpoint.
+						// Note, we ignore the passed tls.Config
+						DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+							return net.Dial(network, addr)
+						},
+					},
+				}
+
+				resp, errResp := client.Get(hcs.Endpoint)
+				if tt.hasError {
+					assert.Error(t, errResp)
+				} else {
+					assert.NoError(t, errResp)
+					body, errRead := ioutil.ReadAll(resp.Body)
+					assert.NoError(t, errRead)
+					assert.Equal(t, "test", string(body))
+				}
 			}
 			require.NoError(t, s.Close())
 		})
