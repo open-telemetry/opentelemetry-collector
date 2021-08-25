@@ -50,4 +50,7 @@ require (
 {{- range .Replaces}}
 replace {{.}}
 {{- end}}
+{{- range .Excludes}}
+exclude {{.}}
+{{- end}}
 `

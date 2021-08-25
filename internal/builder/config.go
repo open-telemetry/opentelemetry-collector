@@ -42,6 +42,7 @@ type Config struct {
 	Receivers    []Module     `mapstructure:"receivers"`
 	Processors   []Module     `mapstructure:"processors"`
 	Replaces     []string     `mapstructure:"replaces"`
+	Excludes     []string     `mapstructure:"excludes"`
 }
 
 // Distribution holds the parameters for the final binary
