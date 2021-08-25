@@ -96,8 +96,8 @@
 // `<name>` is the name used in the configuration for the instance of the
 // component, eg.:
 //
-// `receiver/accepted_spans{receiver="opencensus",...}`
-// `exporter/sent_spans{exporter="jaeger/prod",...}`
+// `receiver/accepted_spans{receiver="otlp",...}`
+// `exporter/sent_spans{exporter="otlp/prod",...}`
 //
 // Component Specific Metrics:
 // These metrics are implemented by specific components, eg.: batch processor.

@@ -1,2 +1,0 @@
-Receiver	Exporter
-otlp	otlp

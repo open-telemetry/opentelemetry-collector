@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
@@ -95,7 +95,7 @@ func TestDefault(t *testing.T) {
 			// this creates actions array of size 1
 			"--set=processors.attributes.actions.key=foo",
 			"--set=processors.attributes.actions.value=bar",
-			"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
+			"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
 			"--set=extensions.health_check.endpoint=localhost:8080",
 		})
 		require.NoError(t, err)
@@ -115,8 +115,8 @@ func TestDefault(t *testing.T) {
 		assert.Equal(t, 2, len(cfg.Processors))
 		batch := cfg.Processors[config.NewID("batch")].(*batchprocessor.Config)
 		assert.Equal(t, time.Second*2, batch.Timeout)
-		jaeger := cfg.Receivers[config.NewID("jaeger")].(*jaegerreceiver.Config)
-		assert.Equal(t, "localhost:12345", jaeger.GRPC.NetAddr.Endpoint)
+		otlp := cfg.Receivers[config.NewID("otlp")].(*otlpreceiver.Config)
+		assert.Equal(t, "localhost:12345", otlp.GRPC.NetAddr.Endpoint)
 		attributes := cfg.Processors[config.NewID("attributes")].(*attributesprocessor.Config)
 		require.Equal(t, 1, len(attributes.Actions))
 		assert.Equal(t, "foo", attributes.Actions[0].Key)
@@ -137,7 +137,7 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 		// this creates actions array of size 1
 		"--set=processors.attributes.actions.key=foo",
 		"--set=processors.attributes.actions.value=bar",
-		"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
+		"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
 	})
 	require.NoError(t, err)
 

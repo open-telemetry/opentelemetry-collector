@@ -58,7 +58,7 @@ func TestExternalPkgDirErr(t *testing.T) {
 
 func TestExternalPkgDir(t *testing.T) {
 	dr := testDR()
-	testPkg := "grpc-ecosystem/grpc-gateway"
+	testPkg := "google.golang.org/grpc"
 	pkgPath, err := dr.externalPackageDir(testPkg)
 	assert.NoError(t, err)
 	goPath := os.Getenv("GOPATH")

@@ -30,12 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
-	"go.opentelemetry.io/collector/exporter/jaegerexporter"
-	"go.opentelemetry.io/collector/exporter/kafkaexporter"
-	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -63,36 +59,8 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "jaeger",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
-				cfg.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "kafka",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["kafka"].CreateDefaultConfig().(*kafkaexporter.Config)
-				cfg.Brokers = []string{"invalid:9092"}
-				// this disables contacting the broker so we can successfully create the exporter
-				cfg.Metadata.Full = false
-				return cfg
-			},
-		},
-		{
 			exporter:      "logging",
 			skipLifecycle: runtime.GOOS == "darwin", // TODO: investigate why this fails on darwin.
-		},
-		{
-			exporter: "opencensus",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["opencensus"].CreateDefaultConfig().(*opencensusexporter.Config)
-				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
-					Endpoint: endpoint,
-				}
-				return cfg
-			},
 		},
 		{
 			exporter: "otlp",
@@ -109,14 +77,6 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "zipkin",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["zipkin"].CreateDefaultConfig().(*zipkinexporter.Config)
-				cfg.Endpoint = endpoint
 				return cfg
 			},
 		},

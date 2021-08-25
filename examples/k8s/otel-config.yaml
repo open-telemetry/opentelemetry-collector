@@ -113,11 +113,6 @@ data:
         protocols:
           grpc:
           http:
-      jaeger:
-        protocols:
-          grpc:
-          thrift_http:
-      zipkin: {}
     processors:
       batch:
       memory_limiter:
@@ -132,22 +127,16 @@ data:
       health_check: {}
       zpages: {}
     exporters:
-      zipkin:
-        endpoint: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
-      jaeger:
-        endpoint: "somejaegergrpc.target.com:14250" # Replace with a real endpoint.
+      otlp:
+        endpoint: "http://someotlp.target.com:4317" # Replace with a real endpoint.
         insecure: true
     service:
       extensions: [health_check, zpages]
       pipelines:
         traces/1:
-          receivers: [otlp, zipkin]
+          receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [zipkin]
-        traces/2:
-          receivers: [otlp, jaeger]
-          processors: [memory_limiter, batch]
-          exporters: [jaeger]
+          exporters: [otlp]
 ---
 apiVersion: v1
 kind: Service
@@ -158,16 +147,14 @@ metadata:
     component: otel-collector
 spec:
   ports:
-  - name: otlp # Default endpoint for OpenTelemetry receiver.
+  - name: otlp # Default endpoint for OpenTelemetry gRPC receiver.
     port: 4317
     protocol: TCP
     targetPort: 4317
-  - name: jaeger-grpc # Default endpoint for Jaeger gRPC receiver
-    port: 14250
-  - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
-    port: 14268
-  - name: zipkin # Default endpoint for Zipkin receiver.
-    port: 9411
+  - name: otlp # Default endpoint for OpenTelemetry HTTP receiver.
+    port: 4318
+    protocol: TCP
+    targetPort: 4318
   - name: metrics # Default endpoint for querying metrics.
     port: 8888
   selector:
