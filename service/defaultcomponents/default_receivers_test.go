@@ -42,9 +42,6 @@ func TestDefaultReceivers(t *testing.T) {
 		getConfigFn getReceiverConfigFn
 	}{
 		{
-			receiver: "hostmetrics",
-		},
-		{
 			receiver: "otlp",
 			getConfigFn: func() config.Receiver {
 				cfg := otlpreceiver.NewFactory().CreateDefaultConfig()

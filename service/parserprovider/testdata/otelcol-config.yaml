@@ -8,11 +8,6 @@ exporters:
     endpoint: "locahost:55678"
 
 processors:
-  attributes:
-    actions:
-      - key: key1
-        value: 123
-        action: insert
   batch:
 
 extensions:
@@ -25,5 +20,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [attributes, batch]
+      processors: [batch]
       exporters: [otlp]
