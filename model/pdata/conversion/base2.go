@@ -109,17 +109,17 @@ func (el *exponentialLayout) mapToBinIndex(value float64) int64 {
 	// The indices array has evenly spaced buckets and contains indices into the boundaries array
 	// The line below transforms the normalized mantissa into an index into the indices array
 	// Then, the index into the boundaries array is retrieved.
-	i := el.indices[int(mantissa>>(52-el.scale))]
+	rough := el.indices[int(mantissa>>(52-el.scale))]
 
 	// The index in the boundaries array might not be correct right away, there might be an offset of a maximum of two buckets.
 	// Therefore, look at three buckets: The one specified by the index, and the next two.
 	// in other languages, this can be done in one line with a ternary operator
 	// e.g. return (exponent << el.scale) + i + (mantissa >= el.boundaries[i] ? 1 : 0) + (mantissa >= el.boundaries[i+1] ? 1 : 0) + el.indexOffset
-	offset := i
-	if mantissa >= el.boundaries[i] {
+	offset := rough
+	if mantissa >= el.boundaries[rough] {
 		offset++
 	}
-	if mantissa >= el.boundaries[i+1] {
+	if mantissa >= el.boundaries[rough+1] {
 		offset++
 	}
 	// the indexOffset is only used to skip subnormal buckets

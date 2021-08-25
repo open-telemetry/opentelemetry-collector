@@ -61,3 +61,19 @@ func TestHistogramConversion(t *testing.T) {
 		190, // (1.2, +Inf]
 	}, xp.BucketCounts())
 }
+
+func TestMappingFunction(t *testing.T) {
+	for scale := 0; scale < 8; scale++ {
+		layout := getExponentialLayout(scale)
+		size := int64(1) << 3
+
+		require.Equal(t, 0, layout.mapToBinIndex(1))
+		require.Equal(t, size, layout.mapToBinIndex(2))
+
+		require.Equal(t, 1.0, layout.lowerBoundary(0))
+		require.Equal(t, 1.0, layout.upperBoundary(-1))
+
+		require.Equal(t, 2.0, layout.lowerBoundary(size))
+		require.Equal(t, 2.0, layout.upperBoundary(size-1))
+	}
+}
