@@ -11,7 +11,7 @@ import (
 func main() {
 	scale, err := strconv.Atoi(os.Args[1])
 	if err != nil {
-		fmt.Println("usage: %s scale (an integer)\n", os.Args[1])
+		fmt.Printf("usage: %s scale (an integer)\n", os.Args[1])
 		os.Exit(1)
 	}
 

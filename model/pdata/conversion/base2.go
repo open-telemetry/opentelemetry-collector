@@ -76,18 +76,24 @@ func getExponentialLayout(scale int) *exponentialLayout {
 // It depends only on the desired number of buckets subdividing the [1, 2] range covered by the mantissa.
 // The number of buckets is 2^scale
 func calculateBoundaries(scale int) []uint64 {
-	length := 1 << scale
+	size := 1 << scale
 
-	// Note: boundaries is one longer than length to ensure the
-	// `mantissa >= el.boundaries[i+1]` test below is correct.
-	boundaries := make([]uint64, length+2)
-
-	for i := 0; i <= length; i++ {
-		boundaries[i] = mantissaOnes & math.Float64bits(math.Pow(2, float64(i)/float64(length)))
+	if len(exponentialConstants) < size {
+		// See the code in ./printer to precompute larger constant arrays.
+		panic("precomputed boundaries are not available")
 	}
 
-	boundaries[length] = 1 << mantissaWidth
-	boundaries[length+1] = 1 << mantissaWidth
+	// Note: boundaries is two longer than size to ensure the
+	// `mantissa >= el.boundaries[i+1]` test below is correct.
+	boundaries := make([]uint64, size+2)
+	factor := len(exponentialConstants) / size
+
+	for i := 0; i < size; i++ {
+		boundaries[i] = exponentialConstants[i*factor]
+	}
+
+	boundaries[size] = 1 << mantissaWidth
+	boundaries[size+1] = 1 << mantissaWidth
 
 	return boundaries
 }
