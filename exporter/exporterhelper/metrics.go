@@ -90,9 +90,6 @@ func NewMetricsExporter(
 	})
 
 	mc, err := consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
-		if bs.ResourceToTelemetrySettings.Enabled {
-			md = convertResourceToAttributes(md)
-		}
 		req := newMetricsRequest(ctx, md, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {

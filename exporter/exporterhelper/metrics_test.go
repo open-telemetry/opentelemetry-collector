@@ -186,28 +186,6 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 	assert.True(t, shutdownCalled)
 }
 
-func TestMetricsExporter_WithResourceToTelemetryConversionDisabled(t *testing.T) {
-	md := testdata.GenerateMetricsTwoMetrics()
-	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(nil), WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()))
-	assert.NotNil(t, me)
-	assert.NoError(t, err)
-
-	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.ConsumeMetrics(context.Background(), md))
-	assert.NoError(t, me.Shutdown(context.Background()))
-}
-
-func TestMetricsExporter_WithResourceToTelemetryConversionEnabled(t *testing.T) {
-	md := testdata.GenerateMetricsTwoMetrics()
-	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(nil), WithResourceToTelemetryConversion(ResourceToTelemetrySettings{Enabled: true}))
-	assert.NotNil(t, me)
-	assert.NoError(t, err)
-
-	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.ConsumeMetrics(context.Background(), md))
-	assert.NoError(t, me.Shutdown(context.Background()))
-}
-
 func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
