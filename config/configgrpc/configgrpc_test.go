@@ -81,6 +81,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
+	_ = grpc.NewServer(opts...)
+
 	assert.NoError(t, err)
 	assert.Len(t, opts, 2)
 }
@@ -114,6 +116,8 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 		},
 	}
 	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
+	_ = grpc.NewServer(opts...)
+
 	assert.NoError(t, err)
 	assert.Len(t, opts, 9)
 }
@@ -133,6 +137,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 		config.NewID("mock"): &configauth.MockAuthenticator{},
 	}
 	opts, err := gss.ToServerOption(ext)
+	_ = grpc.NewServer(opts...)
 
 	// verify
 	assert.NoError(t, err)
@@ -297,7 +302,9 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToServerOption(map[config.ComponentID]component.Extension{})
+			opts, err := test.settings.ToServerOption(map[config.ComponentID]component.Extension{})
+			_ = grpc.NewServer(opts...)
+
 			assert.Regexp(t, test.err, err)
 		})
 	}

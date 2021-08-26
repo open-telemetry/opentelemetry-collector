@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"sort"
+
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -105,43 +107,25 @@ func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new ResourceSpansSlice can be initialized:
-//   es := NewResourceSpansSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es ResourceSpansSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.ResourceSpans, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.ResourceSpans, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty ResourceSpans.
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
+// provided less function so that two instances of ResourceSpansSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b ResourceSpans) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) ResourceSpansSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -183,6 +167,7 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 //
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type ResourceSpans struct {
 	orig *otlptrace.ResourceSpans
 }
@@ -203,6 +188,16 @@ func (ms ResourceSpans) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
+// SchemaUrl returns the schemaurl associated with this ResourceSpans.
+func (ms ResourceSpans) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
+func (ms ResourceSpans) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // InstrumentationLibrarySpans returns the InstrumentationLibrarySpans associated with this ResourceSpans.
 func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpansSlice {
 	return newInstrumentationLibrarySpansSlice(&(*ms.orig).InstrumentationLibrarySpans)
@@ -211,6 +206,7 @@ func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpan
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	ms.Resource().CopyTo(dest.Resource())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.InstrumentationLibrarySpans().CopyTo(dest.InstrumentationLibrarySpans())
 }
 
@@ -298,43 +294,25 @@ func (es InstrumentationLibrarySpansSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new InstrumentationLibrarySpansSlice can be initialized:
-//   es := NewInstrumentationLibrarySpansSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.InstrumentationLibrarySpans, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.InstrumentationLibrarySpans, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibrarySpans.
 // It returns the newly added InstrumentationLibrarySpans.
 func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibrarySpans {
 	*es.orig = append(*es.orig, &otlptrace.InstrumentationLibrarySpans{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the InstrumentationLibrarySpans elements within InstrumentationLibrarySpansSlice given the
+// provided less function so that two instances of InstrumentationLibrarySpansSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b InstrumentationLibrarySpans) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es InstrumentationLibrarySpansSlice) Sort(less func(a, b InstrumentationLibrarySpans) bool) InstrumentationLibrarySpansSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -376,6 +354,7 @@ func (es InstrumentationLibrarySpansSlice) RemoveIf(f func(InstrumentationLibrar
 //
 // Must use NewInstrumentationLibrarySpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type InstrumentationLibrarySpans struct {
 	orig *otlptrace.InstrumentationLibrarySpans
 }
@@ -396,6 +375,16 @@ func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLi
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
+// SchemaUrl returns the schemaurl associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // Spans returns the Spans associated with this InstrumentationLibrarySpans.
 func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 	return newSpanSlice(&(*ms.orig).Spans)
@@ -404,6 +393,7 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibrarySpans) CopyTo(dest InstrumentationLibrarySpans) {
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Spans().CopyTo(dest.Spans())
 }
 
@@ -491,43 +481,25 @@ func (es SpanSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new SpanSlice can be initialized:
-//   es := NewSpanSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es SpanSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.Span, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.Span, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty Span.
 // It returns the newly added Span.
 func (es SpanSlice) AppendEmpty() Span {
 	*es.orig = append(*es.orig, &otlptrace.Span{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the Span elements within SpanSlice given the
+// provided less function so that two instances of SpanSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b Span) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanSlice) Sort(less func(a, b Span) bool) SpanSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -570,6 +542,7 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 //
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type Span struct {
 	orig *otlptrace.Span
 }
@@ -818,43 +791,25 @@ func (es SpanEventSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new SpanEventSlice can be initialized:
-//   es := NewSpanEventSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es SpanEventSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.Span_Event, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.Span_Event, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty SpanEvent.
 // It returns the newly added SpanEvent.
 func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the SpanEvent elements within SpanEventSlice given the
+// provided less function so that two instances of SpanEventSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b SpanEvent) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) SpanEventSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -897,6 +852,7 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 //
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type SpanEvent struct {
 	orig *otlptrace.Span_Event
 }
@@ -1039,43 +995,25 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new SpanLinkSlice can be initialized:
-//   es := NewSpanLinkSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es SpanLinkSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlptrace.Span_Link, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlptrace.Span_Link, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty SpanLink.
 // It returns the newly added SpanLink.
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the SpanLink elements within SpanLinkSlice given the
+// provided less function so that two instances of SpanLinkSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b SpanLink) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) SpanLinkSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1119,6 +1057,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 //
 // Must use NewSpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type SpanLink struct {
 	orig *otlptrace.Span_Link
 }
@@ -1196,6 +1135,7 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 //
 // Must use NewSpanStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type SpanStatus struct {
 	orig *otlptrace.Status
 }

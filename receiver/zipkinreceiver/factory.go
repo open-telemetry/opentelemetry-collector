@@ -60,5 +60,5 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	rCfg := cfg.(*Config)
-	return New(rCfg, nextConsumer)
+	return newReceiver(rCfg, nextConsumer)
 }

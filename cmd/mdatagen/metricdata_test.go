@@ -27,9 +27,6 @@ func TestMetricData(t *testing.T) {
 		hasAggregated bool
 		hasMonotonic  bool
 	}{
-		{&intGauge{}, "IntGauge", false, false},
-		{&intSum{}, "IntSum", true, true},
-		{&intHistogram{}, "IntHistogram", true, false},
 		{&gauge{}, "Gauge", false, false},
 		{&sum{}, "Sum", true, true},
 		{&histogram{}, "Histogram", true, false},

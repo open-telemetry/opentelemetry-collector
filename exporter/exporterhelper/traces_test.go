@@ -145,30 +145,32 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 }
 
 func TestTracesExporter_WithSpan(t *testing.T) {
+	set := componenttest.NewNopExporterCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, set, newTraceDataPusher(nil))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTracesExporter(t, sr, tp.Tracer("test"), te, nil, 1)
+	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, nil, 1)
 }
 
 func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
+	set := componenttest.NewNopExporterCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
 	want := errors.New("my_error")
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(want))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, set, newTraceDataPusher(want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTracesExporter(t, sr, tp.Tracer("test"), te, want, 1)
+	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, want, 1)
 }
 
 func TestTracesExporter_WithShutdown(t *testing.T) {

@@ -42,6 +42,7 @@ type Config struct {
 
 	// BallastSizeMiB is the size, in MiB, of the ballast size being used by the
 	// process.
+	// Deprecated: use the ballast size configuration in `ballastextension` component instead.
 	BallastSizeMiB uint32 `mapstructure:"ballast_size_mib"`
 
 	// MemoryLimitPercentage is the maximum amount of memory, in %, targeted to be

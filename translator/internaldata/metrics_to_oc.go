@@ -23,14 +23,17 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-type labelKeys struct {
+type labelKeysAndType struct {
 	// ordered OC label keys
 	keys []*ocmetrics.LabelKey
 	// map from a label key literal
 	// to its index in the slice above
 	keyIndices map[string]int
+	// true if the metric is a scalar (number data points) and all int vales:
+	allNumberDataPointValueInt bool
 }
 
 // ResourceMetricsToOC may be used only by OpenCensus receiver and exporter implementations.
@@ -60,15 +63,21 @@ func ResourceMetricsToOC(rm pdata.ResourceMetrics) (*occommon.Node, *ocresource.
 }
 
 func metricToOC(metric pdata.Metric) *ocmetrics.Metric {
-	labelKeys := collectLabelKeys(metric)
+	lblKeys := collectLabelKeysAndValueType(metric)
 	return &ocmetrics.Metric{
-		MetricDescriptor: descriptorToOC(metric, labelKeys),
-		Timeseries:       dataPointsToTimeseries(metric, labelKeys),
-		Resource:         nil,
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        metric.Name(),
+			Description: metric.Description(),
+			Unit:        metric.Unit(),
+			Type:        descriptorTypeToOC(metric, lblKeys.allNumberDataPointValueInt),
+			LabelKeys:   lblKeys.keys,
+		},
+		Timeseries: dataPointsToTimeseries(metric, lblKeys),
+		Resource:   nil,
 	}
 }
 
-func collectLabelKeys(metric pdata.Metric) *labelKeys {
+func collectLabelKeysAndValueType(metric pdata.Metric) *labelKeysAndType {
 	// NOTE: Internal data structure and OpenCensus have different representations of labels:
 	// - OC has a single "global" ordered list of label keys per metric in the MetricDescriptor;
 	// then, every data point has an ordered list of label values matching the key index.
@@ -84,26 +93,23 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{})
-
+	allNumberDataPointValueInt := false
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		collectLabelKeysIntDataPoints(metric.IntGauge().DataPoints(), keySet)
 	case pdata.MetricDataTypeGauge:
-		collectLabelKeysDoubleDataPoints(metric.Gauge().DataPoints(), keySet)
-	case pdata.MetricDataTypeIntSum:
-		collectLabelKeysIntDataPoints(metric.IntSum().DataPoints(), keySet)
+		allNumberDataPointValueInt = collectLabelKeysNumberDataPoints(metric.Gauge().DataPoints(), keySet)
 	case pdata.MetricDataTypeSum:
-		collectLabelKeysDoubleDataPoints(metric.Sum().DataPoints(), keySet)
-	case pdata.MetricDataTypeIntHistogram:
-		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
+		allNumberDataPointValueInt = collectLabelKeysNumberDataPoints(metric.Sum().DataPoints(), keySet)
 	case pdata.MetricDataTypeHistogram:
-		collectLabelKeysDoubleHistogramDataPoints(metric.Histogram().DataPoints(), keySet)
+		collectLabelKeysHistogramDataPoints(metric.Histogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeSummary:
-		collectLabelKeysDoubleSummaryDataPoints(metric.Summary().DataPoints(), keySet)
+		collectLabelKeysSummaryDataPoints(metric.Summary().DataPoints(), keySet)
 	}
 
+	lkt := &labelKeysAndType{
+		allNumberDataPointValueInt: allNumberDataPointValueInt,
+	}
 	if len(keySet) == 0 {
-		return &labelKeys{}
+		return lkt
 	}
 
 	// Sort keys: while not mandatory, this helps to make the
@@ -117,96 +123,63 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 	sort.Strings(sortedKeys)
 
 	// Construct a resulting list of label keys
-	keys := make([]*ocmetrics.LabelKey, 0, len(sortedKeys))
+	lkt.keys = make([]*ocmetrics.LabelKey, 0, len(sortedKeys))
 	// Label values will have to match keys by index
 	// so this map will help with fast lookups.
-	indices := make(map[string]int, len(sortedKeys))
+	lkt.keyIndices = make(map[string]int, len(sortedKeys))
 	for i, key := range sortedKeys {
-		keys = append(keys, &ocmetrics.LabelKey{
+		lkt.keys = append(lkt.keys, &ocmetrics.LabelKey{
 			Key: key,
 		})
-		indices[key] = i
+		lkt.keyIndices[key] = i
 	}
 
-	return &labelKeys{
-		keys:       keys,
-		keyIndices: indices,
-	}
+	return lkt
 }
 
-func collectLabelKeysIntDataPoints(ips pdata.IntDataPointSlice, keySet map[string]struct{}) {
-	for i := 0; i < ips.Len(); i++ {
-		addLabelKeys(keySet, ips.At(i).LabelsMap())
-	}
-}
-
-func collectLabelKeysDoubleDataPoints(dps pdata.DoubleDataPointSlice, keySet map[string]struct{}) {
+// collectLabelKeysNumberDataPoints returns true if all values are int.
+func collectLabelKeysNumberDataPoints(dps pdata.NumberDataPointSlice, keySet map[string]struct{}) bool {
+	allInt := true
 	for i := 0; i < dps.Len(); i++ {
-		addLabelKeys(keySet, dps.At(i).LabelsMap())
+		addLabelKeys(keySet, dps.At(i).Attributes())
+		if dps.At(i).Type() != pdata.MetricValueTypeInt {
+			allInt = false
+		}
 	}
+	return allInt
 }
 
-func collectLabelKeysIntHistogramDataPoints(ihdp pdata.IntHistogramDataPointSlice, keySet map[string]struct{}) {
-	for i := 0; i < ihdp.Len(); i++ {
-		addLabelKeys(keySet, ihdp.At(i).LabelsMap())
-	}
-}
-
-func collectLabelKeysDoubleHistogramDataPoints(dhdp pdata.HistogramDataPointSlice, keySet map[string]struct{}) {
+func collectLabelKeysHistogramDataPoints(dhdp pdata.HistogramDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
-		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
+		addLabelKeys(keySet, dhdp.At(i).Attributes())
 	}
 }
 
-func collectLabelKeysDoubleSummaryDataPoints(dhdp pdata.SummaryDataPointSlice, keySet map[string]struct{}) {
+func collectLabelKeysSummaryDataPoints(dhdp pdata.SummaryDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
-		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
+		addLabelKeys(keySet, dhdp.At(i).Attributes())
 	}
 }
 
-func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
-	labels.Range(func(k string, v string) bool {
+func addLabelKeys(keySet map[string]struct{}, attributes pdata.AttributeMap) {
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		keySet[k] = struct{}{}
 		return true
 	})
 }
 
-func descriptorToOC(metric pdata.Metric, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
-	return &ocmetrics.MetricDescriptor{
-		Name:        metric.Name(),
-		Description: metric.Description(),
-		Unit:        metric.Unit(),
-		Type:        descriptorTypeToOC(metric),
-		LabelKeys:   labelKeys.keys,
-	}
-}
-
-func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
+func descriptorTypeToOC(metric pdata.Metric, allNumberDataPointValueInt bool) ocmetrics.MetricDescriptor_Type {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		return ocmetrics.MetricDescriptor_GAUGE_INT64
 	case pdata.MetricDataTypeGauge:
-		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
-	case pdata.MetricDataTypeIntSum:
-		sd := metric.IntSum()
-		if sd.IsMonotonic() && sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
-			return ocmetrics.MetricDescriptor_CUMULATIVE_INT64
-		}
-		return ocmetrics.MetricDescriptor_GAUGE_INT64
+		return gaugeType(allNumberDataPointValueInt)
 	case pdata.MetricDataTypeSum:
 		sd := metric.Sum()
 		if sd.IsMonotonic() && sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
-			return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
+			return cumulativeType(allNumberDataPointValueInt)
 		}
-		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
+		return gaugeType(allNumberDataPointValueInt)
 	case pdata.MetricDataTypeHistogram:
 		hd := metric.Histogram()
-		if hd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
-			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
-		}
-		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case pdata.MetricDataTypeIntHistogram:
-		hd := metric.IntHistogram()
 		if hd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
@@ -217,18 +190,26 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 	return ocmetrics.MetricDescriptor_UNSPECIFIED
 }
 
-func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func gaugeType(allNumberDataPointValueInt bool) ocmetrics.MetricDescriptor_Type {
+	if allNumberDataPointValueInt {
+		return ocmetrics.MetricDescriptor_GAUGE_INT64
+	}
+	return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
+}
+
+func cumulativeType(allNumberDataPointValueInt bool) ocmetrics.MetricDescriptor_Type {
+	if allNumberDataPointValueInt {
+		return ocmetrics.MetricDescriptor_CUMULATIVE_INT64
+	}
+	return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
+}
+
+func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeysAndType) []*ocmetrics.TimeSeries {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		return intPointsToOC(metric.IntGauge().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeGauge:
-		return doublePointToOC(metric.Gauge().DataPoints(), labelKeys)
-	case pdata.MetricDataTypeIntSum:
-		return intPointsToOC(metric.IntSum().DataPoints(), labelKeys)
+		return numberDataPointsToOC(metric.Gauge().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeSum:
-		return doublePointToOC(metric.Sum().DataPoints(), labelKeys)
-	case pdata.MetricDataTypeIntHistogram:
-		return intHistogramPointToOC(metric.IntHistogram().DataPoints(), labelKeys)
+		return numberDataPointsToOC(metric.Sum().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeHistogram:
 		return doubleHistogramPointToOC(metric.Histogram().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeSummary:
@@ -238,55 +219,37 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 	return nil
 }
 
-func intPointsToOC(dps pdata.IntDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
-	if dps.Len() == 0 {
-		return nil
-	}
-	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
-		ip := dps.At(i)
-		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(ip.StartTimestamp()),
-			LabelValues:    labelValuesToOC(ip.LabelsMap(), labelKeys),
-			Points: []*ocmetrics.Point{
-				{
-					Timestamp: timestampAsTimestampPb(ip.Timestamp()),
-					Value: &ocmetrics.Point_Int64Value{
-						Int64Value: ip.Value(),
-					},
-				},
-			},
-		}
-		timeseries = append(timeseries, ts)
-	}
-	return timeseries
-}
-
-func doublePointToOC(dps pdata.DoubleDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func numberDataPointsToOC(dps pdata.NumberDataPointSlice, labelKeys *labelKeysAndType) []*ocmetrics.TimeSeries {
 	if dps.Len() == 0 {
 		return nil
 	}
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
+		point := &ocmetrics.Point{
+			Timestamp: timestampAsTimestampPb(dp.Timestamp()),
+		}
+		switch dp.Type() {
+		case pdata.MetricValueTypeInt:
+			point.Value = &ocmetrics.Point_Int64Value{
+				Int64Value: dp.IntVal(),
+			}
+		case pdata.MetricValueTypeDouble:
+			point.Value = &ocmetrics.Point_DoubleValue{
+				DoubleValue: dp.DoubleVal(),
+			}
+		}
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
-			Points: []*ocmetrics.Point{
-				{
-					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
-					Value: &ocmetrics.Point_DoubleValue{
-						DoubleValue: dp.Value(),
-					},
-				},
-			},
+			LabelValues:    attributeValuesToOC(dp.Attributes(), labelKeys),
+			Points:         []*ocmetrics.Point{point},
 		}
 		timeseries = append(timeseries, ts)
 	}
 	return timeseries
 }
 
-func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labelKeysAndType) []*ocmetrics.TimeSeries {
 	if dps.Len() == 0 {
 		return nil
 	}
@@ -294,11 +257,11 @@ func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labe
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		buckets := histogramBucketsToOC(dp.BucketCounts())
-		doubleExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
+		exemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
+			LabelValues:    attributeValuesToOC(dp.Attributes(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
 					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
@@ -306,39 +269,6 @@ func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labe
 						DistributionValue: &ocmetrics.DistributionValue{
 							Count:                 int64(dp.Count()),
 							Sum:                   dp.Sum(),
-							SumOfSquaredDeviation: 0,
-							BucketOptions:         histogramExplicitBoundsToOC(dp.ExplicitBounds()),
-							Buckets:               buckets,
-						},
-					},
-				},
-			},
-		}
-		timeseries = append(timeseries, ts)
-	}
-	return timeseries
-}
-
-func intHistogramPointToOC(dps pdata.IntHistogramDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
-	if dps.Len() == 0 {
-		return nil
-	}
-	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		buckets := histogramBucketsToOC(dp.BucketCounts())
-		intExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
-
-		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
-			Points: []*ocmetrics.Point{
-				{
-					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
-					Value: &ocmetrics.Point_DistributionValue{
-						DistributionValue: &ocmetrics.DistributionValue{
-							Count:                 int64(dp.Count()),
-							Sum:                   float64(dp.Sum()),
 							SumOfSquaredDeviation: 0,
 							BucketOptions:         histogramExplicitBoundsToOC(dp.ExplicitBounds()),
 							Buckets:               buckets,
@@ -380,7 +310,7 @@ func histogramBucketsToOC(bcts []uint64) []*ocmetrics.DistributionValue_Bucket {
 	return ocBuckets
 }
 
-func doubleSummaryPointToOC(dps pdata.SummaryDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func doubleSummaryPointToOC(dps pdata.SummaryDataPointSlice, labelKeys *labelKeysAndType) []*ocmetrics.TimeSeries {
 	if dps.Len() == 0 {
 		return nil
 	}
@@ -391,7 +321,7 @@ func doubleSummaryPointToOC(dps pdata.SummaryDataPointSlice, labelKeys *labelKey
 
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
-			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
+			LabelValues:    attributeValuesToOC(dp.Attributes(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
 					Timestamp: timestampAsTimestampPb(dp.Timestamp()),
@@ -428,14 +358,20 @@ func summaryPercentilesToOC(qtls pdata.ValueAtQuantileSlice) []*ocmetrics.Summar
 	return ocPercentiles
 }
 
-func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pdata.ExemplarSlice) {
+func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pdata.ExemplarSlice) {
 	if exemplars.Len() == 0 {
 		return
 	}
 
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		val := exemplar.Value()
+		var val float64
+		switch exemplar.Type() {
+		case pdata.MetricValueTypeInt:
+			val = float64(exemplar.IntVal())
+		case pdata.MetricValueTypeDouble:
+			val = exemplar.DoubleVal()
+		}
 		pos := 0
 		for ; pos < len(bounds); pos++ {
 			if val > bounds[pos] {
@@ -443,35 +379,16 @@ func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionVa
 			}
 			break
 		}
-		ocBuckets[pos].Exemplar = exemplarToOC(exemplar.FilteredLabels(), val, exemplar.Timestamp())
+		ocBuckets[pos].Exemplar = exemplarToOC(exemplar.FilteredAttributes(), val, exemplar.Timestamp())
 	}
 }
 
-func intExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pdata.IntExemplarSlice) {
-	if exemplars.Len() == 0 {
-		return
-	}
-
-	for i := 0; i < exemplars.Len(); i++ {
-		exemplar := exemplars.At(i)
-		val := float64(exemplar.Value())
-		pos := 0
-		for ; pos < len(bounds); pos++ {
-			if val > bounds[pos] {
-				continue
-			}
-			break
-		}
-		ocBuckets[pos].Exemplar = exemplarToOC(exemplar.FilteredLabels(), val, exemplar.Timestamp())
-	}
-}
-
-func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata.Timestamp) *ocmetrics.DistributionValue_Exemplar {
+func exemplarToOC(filteredLabels pdata.AttributeMap, value float64, timestamp pdata.Timestamp) *ocmetrics.DistributionValue_Exemplar {
 	var labels map[string]string
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())
-		filteredLabels.Range(func(k string, v string) bool {
-			labels[k] = v
+		filteredLabels.Range(func(k string, v pdata.AttributeValue) bool {
+			labels[k] = tracetranslator.AttributeValueToString(v)
 			return true
 		})
 	}
@@ -483,7 +400,7 @@ func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata
 	}
 }
 
-func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
+func attributeValuesToOC(labels pdata.AttributeMap, labelKeys *labelKeysAndType) []*ocmetrics.LabelValue {
 	if len(labelKeys.keys) == 0 {
 		return nil
 	}
@@ -497,13 +414,13 @@ func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	labels.Range(func(k string, v string) bool {
+	labels.Range(func(k string, v pdata.AttributeValue) bool {
 		// Find the appropriate label value that we need to update
 		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = v
+		labelValue.Value = pdata.AttributeValueToString(v)
 		labelValue.HasValue = true
 		return true
 	})

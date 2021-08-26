@@ -24,7 +24,9 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -88,8 +90,6 @@ const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
-	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
-
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}
@@ -103,14 +103,13 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 	}
 
 	logger.Info("Memory limiter configured",
-		zap.Uint64("limit_mib", usageChecker.memAllocLimit),
-		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit),
+		zap.Uint64("limit_mib", usageChecker.memAllocLimit/mibBytes),
+		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit/mibBytes),
 		zap.Duration("check_interval", cfg.CheckInterval))
 
 	ml := &memoryLimiter{
 		usageChecker:   *usageChecker,
 		memCheckWait:   cfg.CheckInterval,
-		ballastSize:    ballastSize,
 		ticker:         time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
@@ -119,8 +118,6 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 			ProcessorID: cfg.ID(),
 		}),
 	}
-
-	ml.startMonitoring()
 
 	return ml, nil
 }
@@ -136,10 +133,23 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
 	}
 	logger.Info("Using percentage memory limiter",
-		zap.Uint64("total_memory", totalMemory),
+		zap.Uint64("total_memory_mib", totalMemory/mibBytes),
 		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
 		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
 	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage))
+}
+
+func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
+	extensions := host.GetExtensions()
+	for _, extension := range extensions {
+		if ext, ok := extension.(*ballastextension.MemoryBallast); ok {
+			ml.ballastSize = ext.GetBallastSize()
+			break
+		}
+	}
+
+	ml.startMonitoring()
+	return nil
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
@@ -213,8 +223,7 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 	} else if !ml.configMismatchedLogged {
 		// This indicates misconfiguration. Log it once.
 		ml.configMismatchedLogged = true
-		ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
-			" must be set equal to --mem-ballast-size-mib command line option.")
+		ml.logger.Warn(ballastSizeMibKey + " in ballast extension is likely incorrectly configured.")
 	}
 
 	return ms
@@ -244,7 +253,7 @@ func (ml *memoryLimiter) setForcingDrop(b bool) {
 }
 
 func memstatToZapField(ms *runtime.MemStats) zap.Field {
-	return zap.Uint64("cur_mem_mib", ms.Alloc/1024/1024)
+	return zap.Uint64("cur_mem_mib", ms.Alloc/mibBytes)
 }
 
 func (ml *memoryLimiter) doGCandReadMemStats() *runtime.MemStats {

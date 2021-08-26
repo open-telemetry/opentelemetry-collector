@@ -357,7 +357,7 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 			m.SetDataType(pdata.MetricDataTypeGauge)
 			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetValue(123)
+			dp.SetDoubleVal(123)
 		}
 	}
 	return md
@@ -422,7 +422,8 @@ func metricSlice(numMetrics int) []pdata.Metrics {
 
 func pdm(prefix string, size int) pdata.Metrics {
 	c := goldendataset.MetricsCfg{
-		MetricDescriptorType: pdata.MetricDataTypeIntGauge,
+		MetricDescriptorType: pdata.MetricDataTypeGauge,
+		MetricValueType:      pdata.MetricValueTypeInt,
 		MetricNamePrefix:     prefix,
 		NumILMPerResource:    size,
 		NumMetricsPerILM:     size,

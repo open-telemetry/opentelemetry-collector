@@ -28,19 +28,6 @@ import (
 )
 
 func TestOCToMetrics(t *testing.T) {
-	// From OC we never generate Int Histograms, will generate Double Histogram always.
-	allTypesNoDataPoints := testdata.GenerateMetricsAllTypesNoDataPoints()
-	dh := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
-	ih := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
-	ih.SetDataType(pdata.MetricDataTypeHistogram)
-	dh.Histogram().CopyTo(ih.Histogram())
-
-	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
-	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2)
-	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3)
-	ih.SetDataType(pdata.MetricDataTypeHistogram)
-	dh.Histogram().CopyTo(ih.Histogram())
-
 	tests := []struct {
 		name     string
 		oc       *agentmetricspb.ExportMetricsServiceRequest
@@ -68,15 +55,9 @@ func TestOCToMetrics(t *testing.T) {
 		},
 
 		{
-			name:     "all-types-no-data-points",
-			oc:       generateOCTestDataNoPoints(),
-			internal: allTypesNoDataPoints,
-		},
-
-		{
 			name:     "one-metric-no-labels",
 			oc:       generateOCTestDataNoLabels(),
-			internal: testdata.GenerateMetricsOneMetricNoLabels(),
+			internal: testdata.GenerateMetricsOneMetricNoAttributes(),
 		},
 
 		{
@@ -86,11 +67,17 @@ func TestOCToMetrics(t *testing.T) {
 		},
 
 		{
+			name:     "all-types-no-data-points",
+			oc:       generateOCTestDataNoPoints(),
+			internal: testdata.GenerateMetricsAllTypesNoDataPoints(),
+		},
+
+		{
 			name: "one-metric-one-summary",
 			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
-					generateOCTestMetricInt(),
+					generateOCTestMetricCumulativeInt(),
 					generateOCTestMetricDoubleSummary(),
 				},
 			},
@@ -126,14 +113,15 @@ func TestOCToMetrics(t *testing.T) {
 			oc: &agentmetricspb.ExportMetricsServiceRequest{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
-					generateOCTestMetricInt(),
-					generateOCTestMetricDouble(),
+					generateOCTestMetricGaugeInt(),
+					generateOCTestMetricGaugeDouble(),
+					generateOCTestMetricCumulativeInt(),
+					generateOCTestMetricCumulativeDouble(),
 					generateOCTestMetricDoubleHistogram(),
-					generateOCTestMetricIntHistogram(),
 					generateOCTestMetricDoubleSummary(),
 				},
 			},
-			internal: sampleMetricData,
+			internal: testdata.GeneratMetricsAllTypesWithSampleDatapoints(),
 		},
 	}
 
@@ -176,9 +164,9 @@ func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 func BenchmarkMetricIntOCToMetrics(b *testing.B) {
 	ocResource := generateOCTestResource()
 	ocMetrics := []*ocmetrics.Metric{
-		generateOCTestMetricInt(),
-		generateOCTestMetricInt(),
-		generateOCTestMetricInt(),
+		generateOCTestMetricCumulativeInt(),
+		generateOCTestMetricCumulativeInt(),
+		generateOCTestMetricCumulativeInt(),
 	}
 
 	b.ResetTimer()
@@ -190,9 +178,9 @@ func BenchmarkMetricIntOCToMetrics(b *testing.B) {
 func BenchmarkMetricDoubleOCToMetrics(b *testing.B) {
 	ocResource := generateOCTestResource()
 	ocMetrics := []*ocmetrics.Metric{
-		generateOCTestMetricDouble(),
-		generateOCTestMetricDouble(),
-		generateOCTestMetricDouble(),
+		generateOCTestMetricCumulativeDouble(),
+		generateOCTestMetricCumulativeDouble(),
+		generateOCTestMetricCumulativeDouble(),
 	}
 
 	b.ResetTimer()

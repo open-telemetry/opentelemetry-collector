@@ -68,7 +68,6 @@ type transaction struct {
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
-	receiverID           config.ComponentID
 	ms                   *metadataService
 	node                 *commonpb.Node
 	resource             *resourcepb.Resource
@@ -98,7 +97,6 @@ func newTransaction(
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverID:           receiverID,
 		ms:                   ms,
 		externalLabels:       externalLabels,
 		logger:               logger,
@@ -166,7 +164,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node, tr.resource = createNodeAndResource(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.stalenessStore)
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.stalenessStore, tr.startTimeMs)
 	tr.isNew = false
 	return nil
 }

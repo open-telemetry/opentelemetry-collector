@@ -24,7 +24,7 @@ import (
 type MetricsMarshaler interface {
 	// MarshalMetrics the given pdata.Metrics into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
-	MarshalMetrics(td Metrics) ([]byte, error)
+	MarshalMetrics(md Metrics) ([]byte, error)
 }
 
 // MetricsUnmarshaler unmarshalls bytes into pdata.Metrics.
@@ -32,6 +32,12 @@ type MetricsUnmarshaler interface {
 	// UnmarshalMetrics the given bytes into pdata.Metrics.
 	// If the error is not nil, the returned pdata.Metrics cannot be used.
 	UnmarshalMetrics(buf []byte) (Metrics, error)
+}
+
+// MetricsSizer returns the size of a Metrics.
+type MetricsSizer interface {
+	// LogsSize returns the size in bytes of a Metrics.
+	MetricsSize(md Metrics) int
 }
 
 // Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitates the
@@ -87,12 +93,6 @@ func (md Metrics) MetricCount() int {
 	return metricCount
 }
 
-// OtlpProtoSize returns the size in bytes of this Metrics encoded as OTLP Collector
-// ExportMetricsServiceRequest ProtoBuf bytes.
-func (md Metrics) OtlpProtoSize() int {
-	return md.orig.Size()
-}
-
 // DataPointCount calculates the total number of data points.
 func (md Metrics) DataPointCount() (dataPointCount int) {
 	rms := md.ResourceMetrics()
@@ -105,16 +105,10 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
 				switch m.DataType() {
-				case MetricDataTypeIntGauge:
-					dataPointCount += m.IntGauge().DataPoints().Len()
 				case MetricDataTypeGauge:
 					dataPointCount += m.Gauge().DataPoints().Len()
-				case MetricDataTypeIntSum:
-					dataPointCount += m.IntSum().DataPoints().Len()
 				case MetricDataTypeSum:
 					dataPointCount += m.Sum().DataPoints().Len()
-				case MetricDataTypeIntHistogram:
-					dataPointCount += m.IntHistogram().DataPoints().Len()
 				case MetricDataTypeHistogram:
 					dataPointCount += m.Histogram().DataPoints().Len()
 				case MetricDataTypeSummary:
@@ -131,11 +125,8 @@ type MetricDataType int32
 
 const (
 	MetricDataTypeNone MetricDataType = iota
-	MetricDataTypeIntGauge
 	MetricDataTypeGauge
-	MetricDataTypeIntSum
 	MetricDataTypeSum
-	MetricDataTypeIntHistogram
 	MetricDataTypeHistogram
 	MetricDataTypeSummary
 )
@@ -145,16 +136,10 @@ func (mdt MetricDataType) String() string {
 	switch mdt {
 	case MetricDataTypeNone:
 		return "None"
-	case MetricDataTypeIntGauge:
-		return "IntGauge"
 	case MetricDataTypeGauge:
 		return "Gauge"
-	case MetricDataTypeIntSum:
-		return "IntSum"
 	case MetricDataTypeSum:
 		return "Sum"
-	case MetricDataTypeIntHistogram:
-		return "IntHistogram"
 	case MetricDataTypeHistogram:
 		return "Histogram"
 	case MetricDataTypeSummary:
@@ -167,16 +152,10 @@ func (mdt MetricDataType) String() string {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DataType() MetricDataType {
 	switch ms.orig.Data.(type) {
-	case *otlpmetrics.Metric_IntGauge:
-		return MetricDataTypeIntGauge
 	case *otlpmetrics.Metric_Gauge:
 		return MetricDataTypeGauge
-	case *otlpmetrics.Metric_IntSum:
-		return MetricDataTypeIntSum
 	case *otlpmetrics.Metric_Sum:
 		return MetricDataTypeSum
-	case *otlpmetrics.Metric_IntHistogram:
-		return MetricDataTypeIntHistogram
 	case *otlpmetrics.Metric_Histogram:
 		return MetricDataTypeHistogram
 	case *otlpmetrics.Metric_Summary:
@@ -189,28 +168,15 @@ func (ms Metric) DataType() MetricDataType {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetDataType(ty MetricDataType) {
 	switch ty {
-	case MetricDataTypeIntGauge:
-		ms.orig.Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
 	case MetricDataTypeGauge:
 		ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-	case MetricDataTypeIntSum:
-		ms.orig.Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
 	case MetricDataTypeSum:
 		ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	case MetricDataTypeIntHistogram:
-		ms.orig.Data = &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
 	case MetricDataTypeHistogram:
 		ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
 	case MetricDataTypeSummary:
 		ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
 	}
-}
-
-// IntGauge returns the data as IntGauge.
-// Calling this function when DataType() != MetricDataTypeIntGauge will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntGauge() IntGauge {
-	return newIntGauge(ms.orig.Data.(*otlpmetrics.Metric_IntGauge).IntGauge)
 }
 
 // Gauge returns the data as Gauge.
@@ -220,25 +186,11 @@ func (ms Metric) Gauge() Gauge {
 	return newGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
 }
 
-// IntSum returns the data as IntSum.
-// Calling this function when DataType() != MetricDataTypeIntSum  will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntSum() IntSum {
-	return newIntSum(ms.orig.Data.(*otlpmetrics.Metric_IntSum).IntSum)
-}
-
 // Sum returns the data as Sum.
 // Calling this function when DataType() != MetricDataTypeSum will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Sum() Sum {
 	return newSum(ms.orig.Data.(*otlpmetrics.Metric_Sum).Sum)
-}
-
-// IntHistogram returns the data as IntHistogram.
-// Calling this function when DataType() != MetricDataTypeIntHistogram will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntHistogram() IntHistogram {
-	return newIntHistogram(ms.orig.Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram)
 }
 
 // Histogram returns the data as Histogram.
@@ -257,25 +209,13 @@ func (ms Metric) Summary() Summary {
 
 func copyData(src, dest *otlpmetrics.Metric) {
 	switch srcData := (src).Data.(type) {
-	case *otlpmetrics.Metric_IntGauge:
-		data := &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
-		newIntGauge(srcData.IntGauge).CopyTo(newIntGauge(data.IntGauge))
-		dest.Data = data
 	case *otlpmetrics.Metric_Gauge:
 		data := &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
 		newGauge(srcData.Gauge).CopyTo(newGauge(data.Gauge))
 		dest.Data = data
-	case *otlpmetrics.Metric_IntSum:
-		data := &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
-		newIntSum(srcData.IntSum).CopyTo(newIntSum(data.IntSum))
-		dest.Data = data
 	case *otlpmetrics.Metric_Sum:
 		data := &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 		newSum(srcData.Sum).CopyTo(newSum(data.Sum))
-		dest.Data = data
-	case *otlpmetrics.Metric_IntHistogram:
-		data := &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
-		newIntHistogram(srcData.IntHistogram).CopyTo(newIntHistogram(data.IntHistogram))
 		dest.Data = data
 	case *otlpmetrics.Metric_Histogram:
 		data := &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
@@ -304,4 +244,43 @@ const (
 // String returns the string representation of the AggregationTemporality.
 func (at AggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
+}
+
+// MetricValueType specifies the type of NumberDataPoint.
+type MetricValueType int32
+
+const (
+	MetricValueTypeNone MetricValueType = iota
+	MetricValueTypeInt
+	MetricValueTypeDouble
+)
+
+// Type returns the type of the value for this NumberDataPoint.
+// Calling this function on zero-initialized NumberDataPoint will cause a panic.
+func (ms NumberDataPoint) Type() MetricValueType {
+	if ms.orig.Value == nil {
+		return MetricValueTypeNone
+	}
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		return MetricValueTypeDouble
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		return MetricValueTypeInt
+	}
+	return MetricValueTypeNone
+}
+
+// Type returns the type of the value for this Exemplar.
+// Calling this function on zero-initialized Exemplar will cause a panic.
+func (ms Exemplar) Type() MetricValueType {
+	if ms.orig.Value == nil {
+		return MetricValueTypeNone
+	}
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		return MetricValueTypeDouble
+	case *otlpmetrics.Exemplar_AsInt:
+		return MetricValueTypeInt
+	}
+	return MetricValueTypeNone
 }

@@ -158,8 +158,15 @@ func (procBuilder *processorsBuilder) buildProcessors(ctx context.Context, dataT
 	var err error
 	btProcs := make(builtProcessors)
 	for i, procId := range processors {
-		procCfg := procBuilder.config.Processors[procId]
-		factory := procBuilder.factories[procCfg.ID().Type()]
+		procCfg, existsCfg := procBuilder.config.Processors[procId]
+		if !existsCfg {
+			return nil, fmt.Errorf("processor %q is not configured", procId)
+		}
+
+		factory, existsFactory := procBuilder.factories[procCfg.ID().Type()]
+		if !existsFactory {
+			return nil, fmt.Errorf("processor factory for type %q is not configured", procId.Type())
+		}
 
 		componentLogger := procBuilder.set.Logger.With(zap.String(zapKindKey, zapKindProcessor), zap.Stringer(zapNameKey, procCfg.ID()))
 		creationParams := component.ProcessorCreateSettings{

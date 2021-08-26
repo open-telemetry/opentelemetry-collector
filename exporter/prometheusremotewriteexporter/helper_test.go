@@ -148,21 +148,21 @@ func Test_timeSeriesSignature(t *testing.T) {
 		{
 			"histogram_signature",
 			promLbs2,
-			validMetrics1[validIntHistogram],
-			validMetrics1[validIntHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram],
+			validMetrics1[validHistogram].DataType().String() + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
-			validMetrics1[validIntHistogram],
-			validMetrics1[validIntHistogram].DataType().String() + lb2Sig,
+			validMetrics1[validHistogram],
+			validMetrics1[validHistogram].DataType().String() + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
 			nil,
-			validMetrics1[validIntHistogram],
-			validMetrics1[validIntHistogram].DataType().String(),
+			validMetrics1[validHistogram],
+			validMetrics1[validHistogram].DataType().String(),
 		},
 	}
 
@@ -180,7 +180,7 @@ func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
 		resource       pdata.Resource
-		orig           pdata.StringMap
+		orig           pdata.AttributeMap
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
@@ -220,7 +220,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"no_original_case",
 			getResource(),
-			pdata.NewStringMap(),
+			pdata.NewAttributeMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
@@ -261,7 +261,7 @@ func Test_createLabelSet(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createLabelSet(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
 		})
 	}
 }

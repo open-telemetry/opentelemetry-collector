@@ -18,14 +18,13 @@ import (
 	"context"
 	"net/http"
 
-	"go.opencensus.io/zpages"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 )
 
 type zpagesExtension struct {
-	config Config
+	config *Config
 	logger *zap.Logger
 	server http.Server
 	stopCh chan struct{}
@@ -33,7 +32,6 @@ type zpagesExtension struct {
 
 func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error {
 	zPagesMux := http.NewServeMux()
-	zpages.Handle(zPagesMux, "/debug")
 
 	hostZPages, ok := host.(interface {
 		RegisterZPages(mux *http.ServeMux, pathPrefix string)
@@ -74,7 +72,7 @@ func (zpe *zpagesExtension) Shutdown(context.Context) error {
 	return err
 }
 
-func newServer(config Config, logger *zap.Logger) *zpagesExtension {
+func newServer(config *Config, logger *zap.Logger) *zpagesExtension {
 	return &zpagesExtension{
 		config: config,
 		logger: logger,

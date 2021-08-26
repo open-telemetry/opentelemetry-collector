@@ -35,8 +35,7 @@ var errUnusedReceiver = errors.New("receiver defined but not used by any pipelin
 // builtReceiver is a receiver that is built based on a config. It can have
 // a trace and/or a metrics component.
 type builtReceiver struct {
-	set component.ReceiverCreateSettings
-
+	logger   *zap.Logger
 	receiver component.Receiver
 }
 
@@ -69,12 +68,12 @@ func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
 // StartAll starts all receivers.
 func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 	for _, rcv := range rcvs {
-		rcv.set.Logger.Info("Receiver is starting...")
+		rcv.logger.Info("Receiver is starting...")
 
-		if err := rcv.Start(ctx, newHostWrapper(host, rcv.set.Logger)); err != nil {
+		if err := rcv.Start(ctx, newHostWrapper(host, rcv.logger)); err != nil {
 			return err
 		}
-		rcv.set.Logger.Info("Receiver started.")
+		rcv.logger.Info("Receiver started.")
 	}
 	return nil
 }
@@ -89,10 +88,11 @@ func (rcvs Receivers) ReloadReceivers(
 	factories map[config.Type]component.ReceiverFactory,
 	host component.Host,
 ) error {
-	set := component.ReceiverCreateSettings{Logger: logger.With(zap.String(zapKindKey, zapKindReceiver)), BuildInfo: buildInfo, TracerProvider: tracerProvider}
-	rb := &receiversBuilder{set, config, builtPipelines, factories}
+	rb := &receiversBuilder{config, builtPipelines, factories}
 
 	for id, rcv := range rcvs {
+		set := component.ReceiverCreateSettings{Logger: logger.With(zap.String(zapKindKey, zapKindReceiver)), BuildInfo: buildInfo, TracerProvider: tracerProvider}
+
 		rcvCfg := config.Receivers[id]
 		if reloadableRcv, ok := rcv.receiver.(component.Reloadable); ok {
 			if err := reloadableRcv.Reload(host, ctx, rcvCfg); err != nil {
@@ -103,12 +103,10 @@ func (rcvs Receivers) ReloadReceivers(
 
 		rcv.Shutdown(ctx)
 
-		recvLogger := rb.set.Logger.With(zap.Stringer(zapNameKey, id))
-
-		rcv, err := rb.buildReceiver(context.Background(), rcvCfg)
+		rcv, err := rb.buildReceiver(context.Background(), set, rcvCfg)
 		if err != nil {
 			if err == errUnusedReceiver {
-				recvLogger.Info("Ignoring receiver as it is not used by any pipeline")
+				set.Logger.Info("Ignoring receiver as it is not used by any pipeline")
 				continue
 			}
 			return err
@@ -121,7 +119,6 @@ func (rcvs Receivers) ReloadReceivers(
 
 // receiversBuilder builds receivers from config.
 type receiversBuilder struct {
-	set            component.ReceiverCreateSettings
 	config         *config.Config
 	builtPipelines BuiltPipelines
 	factories      map[config.Type]component.ReceiverFactory
@@ -132,16 +129,21 @@ func BuildReceivers(
 	logger *zap.Logger,
 	tracerProvider trace.TracerProvider,
 	buildInfo component.BuildInfo,
-	config *config.Config,
+	cfg *config.Config,
 	builtPipelines BuiltPipelines,
 	factories map[config.Type]component.ReceiverFactory,
 ) (Receivers, error) {
-	set := component.ReceiverCreateSettings{Logger: logger.With(zap.String(zapKindKey, zapKindReceiver)), BuildInfo: buildInfo, TracerProvider: tracerProvider}
-	rb := &receiversBuilder{set, config, builtPipelines, factories}
+	rb := &receiversBuilder{cfg, builtPipelines, factories}
 
 	receivers := make(Receivers)
-	for id, recvCfg := range rb.config.Receivers {
-		rcv, err := rb.buildReceiver(context.Background(), recvCfg)
+	for recvID, recvCfg := range cfg.Receivers {
+		set := component.ReceiverCreateSettings{
+			Logger:         logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
+			TracerProvider: tracerProvider,
+			BuildInfo:      buildInfo,
+		}
+
+		rcv, err := rb.buildReceiver(context.Background(), set, recvCfg)
 		if err != nil {
 			if err == errUnusedReceiver {
 				set.Logger.Info("Ignoring receiver as it is not used by any pipeline")
@@ -149,7 +151,7 @@ func BuildReceivers(
 			}
 			return nil, err
 		}
-		receivers[id] = rcv
+		receivers[recvID] = rcv
 	}
 
 	return receivers, nil
@@ -235,13 +237,10 @@ func attachReceiverToPipelines(
 	if err != nil {
 		if err == componenterror.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
-				"receiver %v does not support %s but it was used in a "+
-					"%s pipeline",
-				cfg.ID(),
-				dataType,
-				dataType)
+				"receiver %v does not support %s but it was used in a %s pipeline",
+				cfg.ID(), dataType, dataType)
 		}
-		return fmt.Errorf("cannot create receiver %v: %s", cfg.ID(), err.Error())
+		return fmt.Errorf("cannot create receiver %v: %w", cfg.ID(), err)
 	}
 
 	// Check if the factory really created the receiver.
@@ -269,7 +268,7 @@ func attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *receiversBuilder) buildReceiver(ctx context.Context, cfg config.Receiver) (*builtReceiver, error) {
+func (rb *receiversBuilder) buildReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(cfg.ID())
@@ -282,14 +281,8 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, cfg config.Receiv
 	if factory == nil {
 		return nil, fmt.Errorf("receiver factory not found for: %v", cfg.ID())
 	}
-
-	set := component.ReceiverCreateSettings{
-		Logger:         rb.set.Logger.With(zap.Stringer(zapNameKey, cfg.ID())),
-		TracerProvider: rb.set.TracerProvider,
-		BuildInfo:      rb.set.BuildInfo,
-	}
 	rcv := &builtReceiver{
-		set: set,
+		logger: set.Logger,
 	}
 
 	// Now we have list of pipelines broken down by data type. Iterate for each data type.

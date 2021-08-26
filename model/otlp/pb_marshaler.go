@@ -19,26 +19,31 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// NewProtobufTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
+// NewProtobufTracesMarshaler returns a pdata.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
 func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
 	return newPbMarshaler()
 }
 
-// NewProtobufMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
+// NewProtobufMetricsMarshaler returns a pdata.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
 func NewProtobufMetricsMarshaler() pdata.MetricsMarshaler {
 	return newPbMarshaler()
 }
 
-// NewProtobufLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
+// NewProtobufLogsMarshaler returns a pdata.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
 func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
 	return newPbMarshaler()
 }
 
+// TODO(#3842): Figure out how we want to represent/return *Sizers.
 type pbMarshaler struct{}
 
 func newPbMarshaler() *pbMarshaler {
 	return &pbMarshaler{}
 }
+
+var _ pdata.TracesSizer = (*pbMarshaler)(nil)
+var _ pdata.MetricsSizer = (*pbMarshaler)(nil)
+var _ pdata.LogsSizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 	return internal.LogsToOtlp(ld.InternalRep()).Marshal()
@@ -50,4 +55,16 @@ func (e *pbMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
 
 func (e *pbMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 	return internal.TracesToOtlp(td.InternalRep()).Marshal()
+}
+
+func (e *pbMarshaler) TracesSize(td pdata.Traces) int {
+	return internal.TracesToOtlp(td.InternalRep()).Size()
+}
+
+func (e *pbMarshaler) MetricsSize(md pdata.Metrics) int {
+	return internal.MetricsToOtlp(md.InternalRep()).Size()
+}
+
+func (e *pbMarshaler) LogsSize(ld pdata.Logs) int {
+	return internal.LogsToOtlp(ld.InternalRep()).Size()
 }

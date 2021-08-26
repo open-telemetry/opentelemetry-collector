@@ -156,6 +156,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd cmd/mdatagen && go install ./
@@ -349,6 +350,14 @@ genproto_sub:
 genpdata:
 	go run cmd/pdatagen/main.go
 	$(MAKE) fmt
+
+# Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
+gensemconv:
+	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
+	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
+	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
+	semconvgen -o translator/conventions/${SPECTAG} -t internal/conventions/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource
+	semconvgen -o translator/conventions/${SPECTAG} -t internal/conventions/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.

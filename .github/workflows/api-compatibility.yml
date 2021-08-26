@@ -26,11 +26,11 @@ jobs:
         with: 
           path: ${{ github.head_ref }}
 
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.16
+
       - name: Install-Tools
         run: |
           cd ${{ github.base_ref }}

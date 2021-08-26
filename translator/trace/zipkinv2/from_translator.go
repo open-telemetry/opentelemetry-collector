@@ -26,7 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
 )
@@ -201,7 +201,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					Value:     event.Name(),
 				}
 			} else {
-				jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(event.Attributes()))
+				jsonStr, err := json.Marshal(pdata.AttributeMapToMap(event.Attributes()))
 				if err != nil {
 					return err
 				}
@@ -221,7 +221,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		key := fmt.Sprintf("otlp.link.%d", i)
-		jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(link.Attributes()))
+		jsonStr, err := json.Marshal(pdata.AttributeMapToMap(link.Attributes()))
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		rawMap[k] = tracetranslator.AttributeValueToString(v)
+		rawMap[k] = pdata.AttributeValueToString(v)
 		return true
 	})
 	return rawMap
@@ -258,7 +258,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		zTags[k] = tracetranslator.AttributeValueToString(v)
+		zTags[k] = pdata.AttributeValueToString(v)
 		return true
 	})
 
@@ -271,14 +271,14 @@ func extractZipkinServiceName(zTags map[string]string) string {
 	if sn, ok := zTags[conventions.AttributeServiceName]; ok {
 		serviceName = sn
 		delete(zTags, conventions.AttributeServiceName)
-	} else if fn, ok := zTags[conventions.AttributeFaasName]; ok {
+	} else if fn, ok := zTags[conventions.AttributeFaaSName]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeFaasName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeFaasName
-	} else if fn, ok := zTags[conventions.AttributeK8sDeployment]; ok {
+		delete(zTags, conventions.AttributeFaaSName)
+		zTags[zipkin.TagServiceNameSource] = conventions.AttributeFaaSName
+	} else if fn, ok := zTags[conventions.AttributeK8SDeploymentName]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeK8sDeployment)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeK8sDeployment
+		delete(zTags, conventions.AttributeK8SDeploymentName)
+		zTags[zipkin.TagServiceNameSource] = conventions.AttributeK8SDeploymentName
 	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
 		serviceName = fn
 		delete(zTags, conventions.AttributeProcessExecutableName)

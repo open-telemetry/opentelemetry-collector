@@ -126,7 +126,7 @@ func TestService_Reload(t *testing.T) {
 	assert.Contains(t, expMap[config.LogsDataType], config.NewID("nop"))
 
 	extMap := srv.GetExtensions()
-	assert.NotEqual(t, oldExts, srv.builtExtensions)
+	assert.False(t, oldExts[config.NewID("nop")] == srv.builtExtensions[config.NewID("nop")])
 	assert.Len(t, extMap, 1)
 	assert.Contains(t, extMap, config.NewID("nop"))
 

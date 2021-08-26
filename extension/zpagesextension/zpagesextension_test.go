@@ -18,34 +18,50 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"path"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testutil"
 )
 
+type zpagesHost struct {
+	component.Host
+}
+
+func newZPagesHost() *zpagesHost {
+	return &zpagesHost{Host: componenttest.NewNopHost()}
+}
+
+func (*zpagesHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	mux.HandleFunc(path.Join(pathPrefix, "tracez"), func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+}
+
 func TestZPagesExtensionUsage(t *testing.T) {
-	config := Config{
+	cfg := &Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
-	zpagesExt := newServer(config, zap.NewNop())
+	zpagesExt := newServer(cfg, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
-	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
 	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, zpagesPort, err := net.SplitHostPort(config.TCPAddr.Endpoint)
+	_, zpagesPort, err := net.SplitHostPort(cfg.TCPAddr.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}
@@ -62,25 +78,25 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	require.NoError(t, err)
 	defer ln.Close()
 
-	config := Config{
+	cfg := &Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: endpoint,
 		},
 	}
-	zpagesExt := newServer(config, zap.NewNop())
+	zpagesExt := newServer(cfg, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestZPagesMultipleStarts(t *testing.T) {
-	config := Config{
+	cfg := &Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
-	zpagesExt := newServer(config, zap.NewNop())
+	zpagesExt := newServer(cfg, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -91,13 +107,13 @@ func TestZPagesMultipleStarts(t *testing.T) {
 }
 
 func TestZPagesMultipleShutdowns(t *testing.T) {
-	config := Config{
+	cfg := &Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
-	zpagesExt := newServer(config, zap.NewNop())
+	zpagesExt := newServer(cfg, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -106,13 +122,13 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 }
 
 func TestZPagesShutdownWithoutStart(t *testing.T) {
-	config := Config{
+	cfg := &Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
-	zpagesExt := newServer(config, zap.NewNop())
+	zpagesExt := newServer(cfg, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Shutdown(context.Background()))

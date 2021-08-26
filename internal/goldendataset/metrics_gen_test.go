@@ -43,18 +43,18 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, "my-md-description", pdm.Description())
 	require.Equal(t, "my-md-units", pdm.Unit())
 
-	require.Equal(t, pdata.MetricDataTypeIntGauge, pdm.DataType())
-	pts := pdm.IntGauge().DataPoints()
+	require.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
+	pts := pdm.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 
-	require.Equal(t, 1, pt.LabelsMap().Len())
-	ptLabels, _ := pt.LabelsMap().Get("pt-label-key-0")
-	require.Equal(t, "pt-label-val-0", ptLabels)
+	require.Equal(t, 1, pt.Attributes().Len())
+	ptAttributes, _ := pt.Attributes().Get("pt-label-key-0")
+	require.Equal(t, "pt-label-val-0", ptAttributes.StringVal())
 
 	require.EqualValues(t, 940000000000000000, pt.StartTimestamp())
 	require.EqualValues(t, 940000000000000042, pt.Timestamp())
-	require.EqualValues(t, 1, pt.Value())
+	require.EqualValues(t, 1, pt.IntVal())
 }
 
 func TestDoubleHistogramFunctions(t *testing.T) {
@@ -74,28 +74,6 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 	require.EqualValues(t, 1, pt.BucketCounts()[1])
 
 	addDoubleHistogramVal(pt, 2)
-	require.EqualValues(t, 3, pt.Count())
-	require.EqualValues(t, 5, pt.Sum())
-	require.EqualValues(t, 2, pt.BucketCounts()[1])
-}
-
-func TestIntHistogramFunctions(t *testing.T) {
-	pt := pdata.NewIntHistogramDataPoint()
-	setIntHistogramBounds(pt, 1, 2, 3, 4, 5)
-	require.Equal(t, 5, len(pt.ExplicitBounds()))
-	require.Equal(t, 5, len(pt.BucketCounts()))
-
-	addIntHistogramVal(pt, 1)
-	require.EqualValues(t, 1, pt.Count())
-	require.EqualValues(t, 1, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[0])
-
-	addIntHistogramVal(pt, 2)
-	require.EqualValues(t, 2, pt.Count())
-	require.EqualValues(t, 3, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[1])
-
-	addIntHistogramVal(pt, 2)
 	require.EqualValues(t, 3, pt.Count())
 	require.EqualValues(t, 5, pt.Sum())
 	require.EqualValues(t, 2, pt.BucketCounts()[1])
@@ -121,7 +99,7 @@ func TestGenDoubleGauge(t *testing.T) {
 	pts := metric.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	require.EqualValues(t, 1, pt.Value())
+	require.EqualValues(t, float64(1), pt.IntVal())
 }
 
 func getMetric(md pdata.Metrics) pdata.Metric {

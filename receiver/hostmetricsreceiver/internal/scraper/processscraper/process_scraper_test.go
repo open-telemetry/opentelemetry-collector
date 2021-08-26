@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func skipTestOnUnsupportedOS(t *testing.T) {
@@ -81,7 +81,7 @@ func TestScrape(t *testing.T) {
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attr := resourceMetrics.At(0).Resource().Attributes()
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessID)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutableName)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
@@ -96,10 +96,10 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetric
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertSumMetricLabelHasValue(t, cpuTimeMetric, 0, "state", "user")
-	internal.AssertSumMetricLabelHasValue(t, cpuTimeMetric, 1, "state", "system")
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewAttributeValueString(metadata.LabelProcessState.User))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewAttributeValueString(metadata.LabelProcessState.System))
 	if runtime.GOOS == "linux" {
-		internal.AssertSumMetricLabelHasValue(t, cpuTimeMetric, 2, "state", "wait")
+		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewAttributeValueString(metadata.LabelProcessState.Wait))
 	}
 }
 
@@ -112,10 +112,10 @@ func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetrics
 	diskIOMetric := getMetric(t, metadata.Metrics.ProcessDiskIo.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessDiskIo.New(), diskIOMetric)
 	if startTime != 0 {
-		internal.AssertIntSumMetricStartTimeEquals(t, diskIOMetric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 0, "direction", "read")
-	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 1, "direction", "write")
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelProcessDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelProcessDirection.Write))
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {

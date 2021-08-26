@@ -1,10 +1,14 @@
 ---
-title: "Collector"
-linkTitle: "Collector"
+title: Collector
 weight: 10
-description: >
+description: >-
   <img width="35" src="https://raw.github.com/open-telemetry/opentelemetry.io/main/iconography/32x32/Collector.svg" alt="Collector logo"></img>
-  Vendor-agnostic way to receive, process and export telemetry data
+  Vendor-agnostic way to receive, process and export telemetry data.
+cascade:
+  github_repo: &repo https://github.com/open-telemetry/opentelemetry-collector
+  github_subdir: website_docs
+  path_base_for_github_subdir: content/en/docs/collector/
+  github_project_repo: *repo
 ---
 
 <img src="https://raw.github.com/open-telemetry/opentelemetry.io/main/iconography/Otel_Collector.svg" alt="Otel-Collector diagram with Jaeger, OTLP and Prometheus integration"></img>

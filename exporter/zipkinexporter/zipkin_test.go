@@ -81,7 +81,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.New(recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), recvCfg, zexp)
 	assert.NoError(t, err)
 	require.NotNil(t, zi)
 
@@ -89,9 +89,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, zi.Shutdown(context.Background())) })
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
-	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
-	responseWriter := httptest.NewRecorder()
-	zi.ServeHTTP(responseWriter, req)
+	_, err = http.Post("http://"+addr, "application/json", strings.NewReader(zipkinSpansJSONJavaLibrary))
+	require.NoError(t, err)
 
 	// Use the mock zipkin reporter to ensure all expected spans in a single batch. Since Flush waits for
 	// server response there is no need for further synchronization.
@@ -330,7 +329,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 			Endpoint: fmt.Sprintf(":%d", port),
 		},
 	}
-	zi, err := zipkinreceiver.New(recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), recvCfg, zexp)
 	require.NoError(t, err)
 
 	err = zi.Start(context.Background(), componenttest.NewNopHost())
@@ -338,9 +337,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, zi.Shutdown(context.Background())) })
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
-	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
-	responseWriter := httptest.NewRecorder()
-	zi.ServeHTTP(responseWriter, req)
+	_, _ = http.Post(fmt.Sprintf("http://localhost:%d", port), "", strings.NewReader(zipkinSpansJSONJavaLibrary))
 
 	// Use the mock zipkin reporter to ensure all expected spans in a single batch. Since Flush waits for
 	// server response there is no need for further synchronization.

@@ -36,20 +36,6 @@ func (j jsonUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	return j.toTranslator.ToTraces(spans)
 }
 
-type jsonMarshaler struct {
-	serializer     zipkinreporter.JSONSerializer
-	fromTranslator FromTranslator
-}
-
-// MarshalTraces to JSON bytes.
-func (j jsonMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
-	spans, err := j.fromTranslator.FromTraces(td)
-	if err != nil {
-		return nil, err
-	}
-	return j.serializer.Serialize(spans)
-}
-
 // NewJSONTracesUnmarshaler returns an unmarshaler for JSON bytes.
 func NewJSONTracesUnmarshaler(parseStringTags bool) pdata.TracesUnmarshaler {
 	return jsonUnmarshaler{toTranslator: ToTranslator{ParseStringTags: parseStringTags}}
@@ -57,5 +43,7 @@ func NewJSONTracesUnmarshaler(parseStringTags bool) pdata.TracesUnmarshaler {
 
 // NewJSONTracesMarshaler returns a marshaler to JSON bytes.
 func NewJSONTracesMarshaler() pdata.TracesMarshaler {
-	return jsonMarshaler{}
+	return marshaler{
+		serializer: zipkinreporter.JSONSerializer{},
+	}
 }

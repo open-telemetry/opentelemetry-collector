@@ -25,7 +25,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
 )
@@ -164,9 +164,9 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	}
 }
 
-func newTestZipkinReceiver() *ZipkinReceiver {
+func newTestZipkinReceiver() *zipkinReceiver {
 	cfg := createDefaultConfig().(*Config)
-	return &ZipkinReceiver{
+	return &zipkinReceiver{
 		config:                   cfg,
 		jsonUnmarshaler:          zipkinv2.NewJSONTracesUnmarshaler(cfg.ParseStringTags),
 		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, cfg.ParseStringTags),

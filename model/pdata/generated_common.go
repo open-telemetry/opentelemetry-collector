@@ -28,6 +28,7 @@ import (
 //
 // Must use NewInstrumentationLibrary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type InstrumentationLibrary struct {
 	orig *otlpcommon.InstrumentationLibrary
 }
@@ -146,38 +147,6 @@ func (es AnyValueArray) EnsureCapacity(newCap int) {
 	newOrig := make([]otlpcommon.AnyValue, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
-}
-
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new AnyValueArray can be initialized:
-//   es := NewAnyValueArray()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es AnyValueArray) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]otlpcommon.AnyValue, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	empty := otlpcommon.AnyValue{}
-	for i := oldLen; i < newLen; i++ {
-		*es.orig = append(*es.orig, empty)
-	}
 }
 
 // AppendEmpty will append to the end of the slice an empty AttributeValue.

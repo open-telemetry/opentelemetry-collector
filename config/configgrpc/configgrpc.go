@@ -15,6 +15,7 @@
 package configgrpc
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"strings"
@@ -39,8 +40,6 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
-
-	PerRPCAuthTypeBearer = "bearer"
 )
 
 var (
@@ -159,6 +158,26 @@ type GRPCServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
+// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
+func (gcs *GRPCClientSettings) SanitizedEndpoint() string {
+	switch {
+	case gcs.isSchemeHTTP():
+		return strings.TrimPrefix(gcs.Endpoint, "http://")
+	case gcs.isSchemeHTTPS():
+		return strings.TrimPrefix(gcs.Endpoint, "https://")
+	default:
+		return gcs.Endpoint
+	}
+}
+
+func (gcs *GRPCClientSettings) isSchemeHTTP() bool {
+	return strings.HasPrefix(gcs.Endpoint, "http://")
+}
+
+func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
+	return strings.HasPrefix(gcs.Endpoint, "https://")
+}
+
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
@@ -177,6 +196,8 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 	tlsDialOption := grpc.WithInsecure()
 	if tlsCfg != nil {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
+	} else if gcs.isSchemeHTTPS() {
+		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
 	}
 	opts = append(opts, tlsDialOption)
 
@@ -304,6 +325,9 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 		}
 	}
 
+	uInterceptors := []grpc.UnaryServerInterceptor{}
+	sInterceptors := []grpc.StreamServerInterceptor{}
+
 	if gss.Auth != nil {
 		componentID, cperr := config.NewIDFromString(gss.Auth.AuthenticatorName)
 		if cperr != nil {
@@ -315,24 +339,22 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 			return nil, err
 		}
 
-		opts = append(opts,
-			grpc.UnaryInterceptor(authenticator.GRPCUnaryServerInterceptor),
-			grpc.StreamInterceptor(authenticator.GRPCStreamServerInterceptor),
-		)
+		uInterceptors = append(uInterceptors, authenticator.GRPCUnaryServerInterceptor)
+		sInterceptors = append(sInterceptors, authenticator.GRPCStreamServerInterceptor)
 	}
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Pass construct settings to have access to Tracer.
-	opts = append(opts, grpc.UnaryInterceptor(
-		otelgrpc.UnaryServerInterceptor(
-			otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
-			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		)))
-	opts = append(opts, grpc.StreamInterceptor(
-		otelgrpc.StreamServerInterceptor(
-			otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
-			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		)))
+	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(
+		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	))
+	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(
+		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	))
+
+	opts = append(opts, grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	return opts, nil
 }

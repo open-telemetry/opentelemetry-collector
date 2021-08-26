@@ -2,6 +2,99 @@
 
 ## Unreleased
 
+## v0.33.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Rename `configloader` interface to `configunmarshaler` (#3774)
+- Remove `LabelsMap` from all the metrics points (#3706)
+- Update generated K8S attribute labels to fix capitalization (#3823) 
+
+## 💡 Enhancements 💡
+
+- Collector has now full support for metrics proto v0.9.0.
+
+## v0.32.0 Beta
+
+This release is marked as "bad" since the metrics pipelines will produce bad data.
+
+- See https://github.com/open-telemetry/opentelemetry-collector/issues/3824
+
+## 🛑 Breaking changes 🛑
+
+- Rename `CustomUnmarshable` interface to `Unmarshallable` (#3774)
+
+## 💡 Enhancements 💡
+
+- Change default OTLP/HTTP port number from 55681 to 4318 (#3743)
+- Update OTLP proto to v0.9.0 (#3740)
+  - Remove `SetValue`/`Value` func for `NumberDataPoint`/`Exemplar` (#3730)
+  - Remove `IntGauge`/`IntSum`from pdata (#3731)
+  - Remove `IntDataPoint` from pdata (#3735)
+  - Add support for `Bytes` attribute type (#3756)
+  - Add `SchemaUrl` field (#3759)
+  - Add `Attributes` to `NumberDataPoint`, `HistogramDataPoint`, `SummaryDataPoint` (#3761)
+- `conventions` translator: Replace with conventions generated from spec v1.5.0 (#3494)
+- `prometheus` receiver: Add `ToMetricPdata` method (#3695)
+- Make configsource `Watchable` an optional interface (#3792)
+- `obsreport` exporter: Change to accept `ExporterCreateSettings` (#3789)
+
+## 🧰 Bug fixes 🧰
+
+- `configgrpc`: Use chained interceptors in the gRPC server (#3744)
+- `prometheus` receiver: Use actual interval startTimeMs for cumulative types (#3694)
+- `jaeger` translator: Fix bug that could generate empty proto spans (#3808)
+
+## v0.31.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Remove Resize() from pdata slice APIs (#3675)
+- Remove the ballast allocation when `mem-ballast-size-mib` is set in command line (#3626)
+  - Use [`ballast extension`](./extension/ballastextension/README.md) to set memory ballast instead.
+- Rename `DoubleDataPoint` to `NumberDataPoint` (#3633)
+- Remove `IntHistogram` (#3676)
+
+## 💡 Enhancements 💡
+
+- Update to OTLP 0.8.0:
+  - Translate `IntHistogram` to `Histogram` in `otlp_wrappers` (#3676)
+  - Translate `IntGauge` to `Gauge` in `otlp_wrappers` (#3619)
+  - Translate `IntSum` to `Sum` in `otlp_wrappers` (#3621)
+  - Update `NumberDataPoint` to support `DoubleVal` and `IntVal` (#3689)
+  - Update `Exemplar` to use `oneOfPrimitiveValue` (#3699)
+  - Remove `IntExemplar` and `IntExemplarSlice` from `pdata` (#3705)
+  - Mark `IntGauge`/`IntSum`/`IntDataPoint` as deprecated (#3707)
+  - Remove `IntGauge`/`IntSum` from `batchprocessor` (#3718)
+  - `prometheusremotewrite` exporter: Convert to new Number metrics (#3714)
+  - `prometheus` receiver: Convert to new Number metrics (#3716)
+  - `prometheus` exporter: Convert to new Number metrics (#3709)
+  - `hostmetrics` receiver: Convert to new Number metrics (#3710)
+  - `opencensus`: Convert to new Number metrics (#3708)
+  - `scraperhelper` receiver: Convert to new Number metrics (#3717)
+  - `testbed`: Convert to new Number metrics (#3719)
+  - `expoerterhelper`: Convert `resourcetolabel` to new Number metrics (#3723)
+- `configauth`: Prepare auth API to return a context (#3618)
+- `pdata`:
+  - Implement `Equal()` for map-valued `AttributeValues` (#3612)
+  - Add `[Type]Slice.Sort(func)` to sort slices (#3671)
+- `memorylimiter`:
+  - Add validation on ballast size between `memorylimiter` and `ballastextension` (#3532)
+  - Access Ballast extension via `Host.GetExtensions` (#3634)
+- `prometheusremotewrite` exporter: Add a WAL implementation without wiring up (#3597)
+- `prometheus` receiver: Add `metricGroup.toDistributionPoint` pdata conversion (#3667)
+- Use `ComponentID` as identifier instead of config (#3696)
+- `zpages`: Move config validation from factory to `Validate` (#3697)
+- Enable `tracez` z-pages from otel-go, disable opencensus (#3698)
+- Convert temporality and monotonicity for deprecated sums (#3729)
+
+## 🧰 Bug fixes 🧰
+
+- `otlpexporter`: Allow endpoint to be configured with a scheme of `http` or `https` (#3575)
+- Handle errors when reloading the collector service (#3615)
+- Do not report fatal error when `cmux.ErrServerClosed` (#3703)
+- Fix bool attribute equality in `pdata` (#3688)
+
 ## v0.30.0 Beta
 
 ## 🛑 Breaking changes 🛑

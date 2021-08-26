@@ -14,20 +14,23 @@
 
 package config
 
-// Receiver is the configuration of a receiver. Specific receivers must implement this
-// interface and will typically embed ReceiverSettings struct or a struct that extends it.
-// Embedded validatable will force each receiver to implement Validate() function.
+// Receiver is the configuration of a component.Receiver. Specific extensions must implement
+// this interface and must embed ReceiverSettings struct or a struct that extends it.
 type Receiver interface {
 	identifiable
 	validatable
+
+	privateConfigReceiver()
 }
 
 // Receivers is a map of names to Receivers.
 type Receivers map[ComponentID]Receiver
 
-// ReceiverSettings defines common settings for a receiver configuration.
+// ReceiverSettings defines common settings for a component.Receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
+//
 // It is highly recommended to "override" the Validate() function.
+//
 // When embedded in the receiver config it must be with `mapstructure:",squash"` tag.
 type ReceiverSettings struct {
 	id ComponentID `mapstructure:"-"`
@@ -54,3 +57,5 @@ func (rs *ReceiverSettings) SetIDName(idName string) {
 func (rs *ReceiverSettings) Validate() error {
 	return nil
 }
+
+func (rs *ReceiverSettings) privateConfigReceiver() {}

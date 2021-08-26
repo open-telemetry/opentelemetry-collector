@@ -87,10 +87,7 @@ func TestBuildReceivers(t *testing.T) {
 	}
 }
 
-func testReceivers(
-	t *testing.T,
-	test testCase,
-) {
+func testReceivers(t *testing.T, test testCase) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -116,9 +113,9 @@ func testReceivers(
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
-	for _, name := range test.exporterIDs {
+	for _, expID := range test.exporterIDs {
 		// Ensure exporter is created.
-		exp := allExporters[name]
+		exp := allExporters[expID]
 		require.NotNil(t, exp)
 		exporters = append(exporters, exp)
 	}
@@ -145,15 +142,15 @@ func testReceivers(
 	}
 
 	// Now verify received data.
-	for _, name := range test.exporterIDs {
+	for _, expID := range test.exporterIDs {
 		// Check that the data is received by exporter.
-		exporter := allExporters[name]
+		exporter := allExporters[expID]
 
 		// Validate traces.
 		if test.hasTraces {
 			var spanDuplicationCount int
 			if test.spanDuplicationByExporter != nil {
-				spanDuplicationCount = test.spanDuplicationByExporter[name]
+				spanDuplicationCount = test.spanDuplicationByExporter[expID]
 			} else {
 				spanDuplicationCount = 1
 			}
@@ -221,11 +218,11 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			assert.NotNil(t, receiver.receiver)
 
 			// Compose the list of created exporters.
-			exporterNames := []config.ComponentID{config.NewID("exampleexporter")}
+			exporterIDs := []config.ComponentID{config.NewID("exampleexporter")}
 			var exporters []*builtExporter
-			for _, name := range exporterNames {
+			for _, expID := range exporterIDs {
 				// Ensure exporter is created.
-				exp := allExporters[name]
+				exp := allExporters[expID]
 				require.NotNil(t, exp)
 				exporters = append(exporters, exp)
 			}
@@ -244,9 +241,9 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			require.NoError(t, producer.ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
-			for _, name := range exporterNames {
+			for _, expID := range exporterIDs {
 				// Check that the data is received by exporter.
-				exporter := allExporters[name]
+				exporter := allExporters[expID]
 
 				// Validate exported data.
 				consumer := exporter.getLogExporter().(*exporterWrapper).lc.(*testcomponents.ExampleExporterConsumer)
@@ -259,38 +256,29 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 func TestBuildReceivers_StartAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
-	receivers[rcvCfg.ID()] = &builtReceiver{
-		set:      set,
+	receivers[config.NewID("example")] = &builtReceiver{
+		logger:   zap.NewNop(),
 		receiver: receiver,
 	}
 
 	assert.False(t, receiver.Started)
-
-	err := receivers.StartAll(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
+	assert.NoError(t, receivers.StartAll(context.Background(), componenttest.NewNopHost()))
 	assert.True(t, receiver.Started)
 }
 
 func TestBuildReceivers_StopAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &testcomponents.ExampleReceiver{}
 	receiver := &testcomponents.ExampleReceiverProducer{}
 
-	set := component.ReceiverCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
-	receivers[rcvCfg.ID()] = &builtReceiver{
-		set:      set,
+	receivers[config.NewID("example")] = &builtReceiver{
+		logger:   zap.NewNop(),
 		receiver: receiver,
 	}
 
 	assert.False(t, receiver.Stopped)
-
 	assert.NoError(t, receivers.ShutdownAll(context.Background()))
-
 	assert.True(t, receiver.Stopped)
 }
 

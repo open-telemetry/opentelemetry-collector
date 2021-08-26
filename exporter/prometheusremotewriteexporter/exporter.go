@@ -131,36 +131,15 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 					switch metric.DataType() {
 					case pdata.MetricDataTypeGauge:
 						dataPoints := metric.Gauge().DataPoints()
-						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
-							dropped++
-							errs = append(errs, err)
-						}
-					case pdata.MetricDataTypeIntGauge:
-						dataPoints := metric.IntGauge().DataPoints()
-						if err := prwe.addIntDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
+						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
 						}
 					case pdata.MetricDataTypeSum:
 						dataPoints := metric.Sum().DataPoints()
-						if err := prwe.addDoubleDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
+						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
-						}
-					case pdata.MetricDataTypeIntSum:
-						dataPoints := metric.IntSum().DataPoints()
-						if err := prwe.addIntDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
-							dropped++
-							errs = append(errs, err)
-						}
-					case pdata.MetricDataTypeIntHistogram:
-						dataPoints := metric.IntHistogram().DataPoints()
-						if dataPoints.Len() == 0 {
-							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleIntHistogramDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 						}
 					case pdata.MetricDataTypeHistogram:
 						dataPoints := metric.Histogram().DataPoints()
@@ -220,22 +199,12 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 	return sanitizedLabels, nil
 }
 
-func (prwe *PRWExporter) addIntDataPointSlice(dataPoints pdata.IntDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+func (prwe *PRWExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	if dataPoints.Len() == 0 {
 		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 	}
 	for x := 0; x < dataPoints.Len(); x++ {
-		addSingleIntDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-	}
-	return nil
-}
-
-func (prwe *PRWExporter) addDoubleDataPointSlice(dataPoints pdata.DoubleDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
-	if dataPoints.Len() == 0 {
-		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
-	}
-	for x := 0; x < dataPoints.Len(); x++ {
-		addSingleDoubleDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
+		addSingleNumberDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }

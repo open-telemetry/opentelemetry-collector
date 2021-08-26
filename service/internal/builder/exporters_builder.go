@@ -152,9 +152,9 @@ func (exps Exporters) ToMapByDataType() map[config.DataType]map[config.Component
 	exportersMap[config.MetricsDataType] = make(map[config.ComponentID]component.Exporter, len(exps))
 	exportersMap[config.LogsDataType] = make(map[config.ComponentID]component.Exporter, len(exps))
 
-	for id, bexp := range exps {
+	for expID, bexp := range exps {
 		for t, exp := range bexp.expByDataType {
-			exportersMap[t][id] = exp
+			exportersMap[t][expID] = exp
 		}
 	}
 
@@ -177,35 +177,42 @@ func BuildExporters(
 	logger *zap.Logger,
 	tracerProvider trace.TracerProvider,
 	buildInfo component.BuildInfo,
-	config *config.Config,
+	cfg *config.Config,
 	factories map[config.Type]component.ExporterFactory,
 ) (Exporters, error) {
 	logger = logger.With(zap.String(zapKindKey, zapKindLogExporter))
 
 	// We need to calculate required input data types for each exporter so that we know
 	// which data type must be started for each exporter.
-	exporterInputDataTypes := calcExportersRequiredDataTypes(config)
+	exporterInputDataTypes := calcExportersRequiredDataTypes(cfg)
 
 	exporters := make(Exporters)
-	// BuildExporters exporters based on configuration and required input data types.
-	for id, expCfg := range config.Exporters {
+
+	// Build exporters exporters based on configuration and required input data types.
+	for expID, expCfg := range cfg.Exporters {
 		set := component.ExporterCreateSettings{
-			Logger:         logger.With(zap.Stringer(zapNameKey, expCfg.ID())),
+			Logger:         logger.With(zap.String(zapNameKey, expID.String())),
 			TracerProvider: tracerProvider,
 			BuildInfo:      buildInfo,
 		}
-		exp, err := buildExporter(context.Background(), factories, set, expCfg, exporterInputDataTypes)
+
+		factory, exists := factories[expID.Type()]
+		if !exists || factory == nil {
+			return nil, fmt.Errorf("exporter factory not found for type: %s", expID.Type())
+		}
+
+		exp, err := buildExporter(context.Background(), factory, set, expCfg, exporterInputDataTypes[expID])
 		if err != nil {
 			return nil, err
 		}
 
-		exporters[id] = exp
+		exporters[expID] = exp
 	}
 
 	return exporters, nil
 }
 
-func calcExportersRequiredDataTypes(config *config.Config) exportersRequiredDataTypes {
+func calcExportersRequiredDataTypes(cfg *config.Config) exportersRequiredDataTypes {
 	// Go over all pipelines. The data type of the pipeline defines what data type
 	// each exporter is expected to receive. Collect all required types for each
 	// exporter.
@@ -218,20 +225,17 @@ func calcExportersRequiredDataTypes(config *config.Config) exportersRequiredData
 	result := make(exportersRequiredDataTypes)
 
 	// Iterate over pipelines.
-	for _, pipeline := range config.Service.Pipelines {
+	for _, pipeline := range cfg.Service.Pipelines {
 		// Iterate over all exporters for this pipeline.
-		for _, expName := range pipeline.Exporters {
-			// Find the exporter config by name.
-			// exporter := eb.config.Exporters[expName]
-
-			// Create the data type requirement for the exporter if it does not exist.
-			if result[expName] == nil {
-				result[expName] = make(dataTypeRequirements)
+		for _, expID := range pipeline.Exporters {
+			// Create the data type requirement for the expCfg if it does not exist.
+			if _, ok := result[expID]; !ok {
+				result[expID] = make(dataTypeRequirements)
 			}
 
-			// Remember that this data type is required for the exporter and also which
+			// Remember that this data type is required for the expCfg and also which
 			// pipeline the requirement is coming from.
-			result[expName][pipeline.InputType] = dataTypeRequirement{pipeline}
+			result[expID][pipeline.InputType] = dataTypeRequirement{pipeline}
 		}
 	}
 	return result
@@ -239,22 +243,16 @@ func calcExportersRequiredDataTypes(config *config.Config) exportersRequiredData
 
 func buildExporter(
 	ctx context.Context,
-	factories map[config.Type]component.ExporterFactory,
+	factory component.ExporterFactory,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
-	exportersInputDataTypes exportersRequiredDataTypes,
+	inputDataTypes dataTypeRequirements,
 ) (*builtExporter, error) {
-	factory := factories[cfg.ID().Type()]
-	if factory == nil {
-		return nil, fmt.Errorf("exporter factory not found for type: %s", cfg.ID().Type())
-	}
-
 	exporter := &builtExporter{
 		logger:        set.Logger,
 		expByDataType: make(map[config.DataType]component.Exporter, 3),
 	}
 
-	inputDataTypes := exportersInputDataTypes[cfg.ID()]
 	if inputDataTypes == nil {
 		set.Logger.Info("Ignoring exporter as it is not used by any pipeline")
 		return exporter, nil

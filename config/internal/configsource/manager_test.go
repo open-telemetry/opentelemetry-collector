@@ -602,17 +602,17 @@ func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params
 		return nil, fmt.Errorf("no value for selector %q", selector)
 	}
 
-	watchForUpdateFn := func() error {
-		return configsource.ErrWatcherNotSupported
-	}
-
 	if entry.WatchForUpdateFn != nil {
-		watchForUpdateFn = entry.WatchForUpdateFn
+		return &watchableRetrieved{
+			retrieved: retrieved{
+				value: entry.Value,
+			},
+			watchForUpdateFn: entry.WatchForUpdateFn,
+		}, nil
 	}
 
 	return &retrieved{
-		value:            entry.Value,
-		watchForUpdateFn: watchForUpdateFn,
+		value: entry.Value,
 	}, nil
 }
 
@@ -625,8 +625,7 @@ func (t *testConfigSource) Close(context.Context) error {
 }
 
 type retrieved struct {
-	value            interface{}
-	watchForUpdateFn func() error
+	value interface{}
 }
 
 var _ configsource.Retrieved = (*retrieved)(nil)
@@ -635,6 +634,11 @@ func (r *retrieved) Value() interface{} {
 	return r.value
 }
 
-func (r *retrieved) WatchForUpdate() error {
+type watchableRetrieved struct {
+	retrieved
+	watchForUpdateFn func() error
+}
+
+func (r *watchableRetrieved) WatchForUpdate() error {
 	return r.watchForUpdateFn()
 }

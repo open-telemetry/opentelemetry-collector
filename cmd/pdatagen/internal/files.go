@@ -62,8 +62,12 @@ func (f *File) GenerateFile() string {
 	sb.WriteString(newLine + newLine)
 	// Add imports
 	sb.WriteString("import (" + newLine)
-	for _, i := range f.imports {
-		sb.WriteString("\t" + i + newLine)
+	for _, imp := range f.imports {
+		if imp != "" {
+			sb.WriteString("\t" + imp + newLine)
+		} else {
+			sb.WriteString(newLine)
+		}
 	}
 	sb.WriteString(")")
 	// Write all structs

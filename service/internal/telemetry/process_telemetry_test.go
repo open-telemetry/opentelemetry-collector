@@ -25,7 +25,6 @@ import (
 
 func TestProcessTelemetry(t *testing.T) {
 	const ballastSizeBytes uint64 = 0
-
 	pmv, err := NewProcessMetricsViews(ballastSizeBytes)
 	require.NoError(t, err)
 	assert.NotNil(t, pmv)

@@ -27,24 +27,24 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/zpages"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
-)
-
-const (
-	servicezPath   = "servicez"
-	pipelinezPath  = "pipelinez"
-	extensionzPath = "extensionz"
 )
 
 // State defines Collector's state.
@@ -74,12 +74,16 @@ type Collector struct {
 	rootCmd *cobra.Command
 	logger  *zap.Logger
 
+	tracerProvider      trace.TracerProvider
+	zPagesSpanProcessor *zpages.SpanProcessor
+
 	service      *service
 	stateChannel chan State
 
 	factories component.Factories
 
-	parserProvider parserprovider.ParserProvider
+	parserProvider    parserprovider.ParserProvider
+	configUnmarshaler configunmarshaler.ConfigUnmarshaler
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -100,12 +104,24 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	col := &Collector{
-		info:         set.BuildInfo,
-		factories:    set.Factories,
-		stateChannel: make(chan State, Closed+1),
+		info:              set.BuildInfo,
+		factories:         set.Factories,
+		stateChannel:      make(chan State, Closed+1),
+		parserProvider:    set.ParserProvider,
+		configUnmarshaler: set.ConfigUnmarshaler,
 		// We use a negative in the settings not to break the existing
 		// behavior. Internally, allowGracefulShutodwn is more readable.
 		allowGracefulShutodwn: !set.DisableGracefulShutdown,
+	}
+
+	if col.parserProvider == nil {
+		// use default provider.
+		col.parserProvider = parserprovider.Default()
+	}
+
+	if col.configUnmarshaler == nil {
+		// use default provider.
+		col.configUnmarshaler = configunmarshaler.NewDefault()
 	}
 
 	rootCmd := &cobra.Command{
@@ -116,6 +132,15 @@ func New(set CollectorSettings) (*Collector, error) {
 			if col.logger, err = newLogger(set.LoggingOptions); err != nil {
 				return fmt.Errorf("failed to get logger: %w", err)
 			}
+
+			col.zPagesSpanProcessor = zpages.NewSpanProcessor()
+			col.tracerProvider = sdktrace.NewTracerProvider(
+				sdktrace.WithSampler(internal.AlwaysRecord()),
+				sdktrace.WithSpanProcessor(col.zPagesSpanProcessor))
+
+			// Set the constructed tracer provider as Global, in case any component uses the
+			// global TracerProvider.
+			otel.SetTracerProvider(col.tracerProvider)
 
 			return col.execute(cmd.Context())
 		},
@@ -135,13 +160,6 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	col.rootCmd = rootCmd
-
-	parserProvider := set.ParserProvider
-	if parserProvider == nil {
-		// use default provider.
-		parserProvider = parserprovider.Default()
-	}
-	col.parserProvider = parserProvider
 
 	return col, nil
 }
@@ -229,11 +247,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.logger.Info("Applying configuration...")
 
 	service, err := newService(&svcSettings{
-		BuildInfo:         col.info,
-		Factories:         col.factories,
-		Config:            cfg,
-		Logger:            col.logger,
-		AsyncErrorChannel: col.asyncErrorChannel,
+		BuildInfo:           col.info,
+		Factories:           col.factories,
+		Config:              cfg,
+		Logger:              col.logger,
+		TracerProvider:      col.tracerProvider,
+		ZPagesSpanProcessor: col.zPagesSpanProcessor,
+		AsyncErrorChannel:   col.asyncErrorChannel,
 	})
 	if err != nil {
 		return err
@@ -257,7 +277,7 @@ func (col *Collector) getCfg() (cfg *config.Config, err error) {
 		return nil, fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
 
-	config, err := configloader.Load(cp, col.factories)
+	config, err := col.configUnmarshaler.Unmarshal(cp, col.factories)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load configuration: %w", err)
 	}
@@ -267,6 +287,7 @@ func (col *Collector) getCfg() (cfg *config.Config, err error) {
 	}
 	return config, nil
 }
+
 func (col *Collector) execute(ctx context.Context) error {
 	col.logger.Info("Starting "+col.info.Command+"...",
 		zap.String("Version", col.info.Version),
@@ -274,18 +295,21 @@ func (col *Collector) execute(ctx context.Context) error {
 	)
 	col.stateChannel <- Starting
 
-	// Set memory ballast
-	ballast, ballastSizeBytes := col.createMemoryBallast()
+	//  Add `mem-ballast-size-mib` warning message if it is still enabled
+	//  TODO: will remove all `mem-ballast-size-mib` footprints after some baking time.
+	if builder.MemBallastSize() > 0 {
+		col.logger.Warn("`mem-ballast-size-mib` command line option has been deprecated. Please use `ballast extension` instead!")
+	}
 
 	col.asyncErrorChannel = make(chan error)
 
-	// Setup everything.
-	err := col.setupTelemetry(ballastSizeBytes)
+	err := col.setupConfigurationComponents(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = col.setupConfigurationComponents(ctx)
+	// Get ballastSizeBytes if ballast extension is enabled and setup Telemetry.
+	err = col.setupTelemetry(col.getBallastSize())
 	if err != nil {
 		return err
 	}
@@ -297,7 +321,6 @@ func (col *Collector) execute(ctx context.Context) error {
 	var errs []error
 
 	// Begin shutdown sequence.
-	runtime.KeepAlive(ballast)
 	col.logger.Info("Starting shutdown...")
 
 	if closable, ok := col.parserProvider.(parserprovider.Closeable); ok {
@@ -321,17 +344,6 @@ func (col *Collector) execute(ctx context.Context) error {
 	close(col.stateChannel)
 
 	return consumererror.Combine(errs)
-}
-
-func (col *Collector) createMemoryBallast() ([]byte, uint64) {
-	ballastSizeMiB := builder.MemBallastSize()
-	if ballastSizeMiB > 0 {
-		ballastSizeBytes := uint64(ballastSizeMiB) * 1024 * 1024
-		ballast := make([]byte, ballastSizeBytes)
-		col.logger.Info("Using memory ballast", zap.Int("MiBs", ballastSizeMiB))
-		return ballast, ballastSizeBytes
-	}
-	return nil, 0
 }
 
 // reloadService shutdowns the current col.service and setups a new one according
@@ -461,4 +473,16 @@ func componentSetEqual(a []config.ComponentID, b []config.ComponentID) bool {
 	}
 
 	return true
+}
+
+func (col *Collector) getBallastSize() uint64 {
+	var ballastSize uint64
+	extensions := col.service.GetExtensions()
+	for _, extension := range extensions {
+		if ext, ok := extension.(*ballastextension.MemoryBallast); ok {
+			ballastSize = ext.GetBallastSize()
+			break
+		}
+	}
+	return ballastSize
 }

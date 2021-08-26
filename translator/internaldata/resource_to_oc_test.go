@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestResourceToOC(t *testing.T) {
@@ -83,11 +83,11 @@ func TestResourceToOC(t *testing.T) {
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pdata.NewResource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeK8sCluster:            pdata.NewAttributeValueString("cluster1"),
-		conventions.AttributeK8sPod:                pdata.NewAttributeValueString("pod1"),
-		conventions.AttributeK8sNamespace:          pdata.NewAttributeValueString("namespace1"),
+		conventions.AttributeK8SClusterName:        pdata.NewAttributeValueString("cluster1"),
+		conventions.AttributeK8SPodName:            pdata.NewAttributeValueString("pod1"),
+		conventions.AttributeK8SNamespaceName:      pdata.NewAttributeValueString("namespace1"),
 		conventions.AttributeContainerName:         pdata.NewAttributeValueString("container-name1"),
-		conventions.AttributeCloudAccount:          pdata.NewAttributeValueString("proj1"),
+		conventions.AttributeCloudAccountID:        pdata.NewAttributeValueString("proj1"),
 		conventions.AttributeCloudAvailabilityZone: pdata.NewAttributeValueString("zone1"),
 	})
 
@@ -133,11 +133,11 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "container",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:            "cluster1",
-				conventions.AttributeK8sPod:                "pod1",
-				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeK8SClusterName:        "cluster1",
+				conventions.AttributeK8SPodName:            "pod1",
+				conventions.AttributeK8SNamespaceName:      "namespace1",
 				conventions.AttributeContainerName:         "container-name1",
-				conventions.AttributeCloudAccount:          "proj1",
+				conventions.AttributeCloudAccountID:        "proj1",
 				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.ContainerType,
@@ -146,9 +146,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "pod",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:            "cluster1",
-				conventions.AttributeK8sPod:                "pod1",
-				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeK8SClusterName:        "cluster1",
+				conventions.AttributeK8SPodName:            "pod1",
+				conventions.AttributeK8SNamespaceName:      "namespace1",
 				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.K8SType,
@@ -157,7 +157,7 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "host",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeK8SClusterName:        "cluster1",
 				conventions.AttributeCloudAvailabilityZone: "zone1",
 				conventions.AttributeHostName:              "node1",
 			},
@@ -217,7 +217,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 				switch v.Type() {
 				case pdata.AttributeValueTypeInt:
 					// conventions.AttributeProcessID is special because we preserve the type for this.
-					if k == conventions.AttributeProcessID {
+					if k == conventions.AttributeProcessPID {
 						assert.Equal(t, v.IntVal(), a.IntVal())
 					} else {
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())

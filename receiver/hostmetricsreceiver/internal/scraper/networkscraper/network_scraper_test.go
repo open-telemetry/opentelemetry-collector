@@ -157,17 +157,17 @@ func TestScrape(t *testing.T) {
 func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
-		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, "device")
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "direction", "transmit")
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "direction", "receive")
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelNetworkDirection.Transmit))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelNetworkDirection.Receive))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "protocol", "tcp")
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, "state")
-	assert.Equal(t, 12, metric.IntSum().DataPoints().Len())
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.LabelNetworkProtocol.Tcp))
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
+	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

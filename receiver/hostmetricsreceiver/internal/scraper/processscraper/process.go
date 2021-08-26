@@ -21,7 +21,7 @@ import (
 	"github.com/shirou/gopsutil/process"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // processMetadata stores process related metadata along
@@ -50,7 +50,7 @@ type commandMetadata struct {
 func (m *processMetadata) initializeResource(resource pdata.Resource) {
 	attr := resource.Attributes()
 	attr.EnsureCapacity(6)
-	attr.InsertInt(conventions.AttributeProcessID, int64(m.pid))
+	attr.InsertInt(conventions.AttributeProcessPID, int64(m.pid))
 	attr.InsertString(conventions.AttributeProcessExecutableName, m.executable.name)
 	attr.InsertString(conventions.AttributeProcessExecutablePath, m.executable.path)
 	if m.command != nil {

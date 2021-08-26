@@ -30,11 +30,13 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -240,7 +242,8 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 func assertZPages(t *testing.T) {
 	paths := []string{
 		"/debug/tracez",
-		"/debug/rpcz",
+		// TODO: enable this when otel-metrics is used and this page is available.
+		// "/debug/rpcz",
 		"/debug/pipelinez",
 		"/debug/servicez",
 		"/debug/extensionz",
@@ -345,10 +348,12 @@ func TestCollector_reloadService(t *testing.T) {
 			}
 
 			col := Collector{
-				logger:         zap.NewNop(),
-				parserProvider: tt.parserProvider,
-				factories:      factories,
-				service:        tt.service,
+				logger:            zap.NewNop(),
+				tracerProvider:    trace.NewNoopTracerProvider(),
+				parserProvider:    tt.parserProvider,
+				configUnmarshaler: configunmarshaler.NewDefault(),
+				factories:         factories,
+				service:           tt.service,
 			}
 
 			if col.service != nil {

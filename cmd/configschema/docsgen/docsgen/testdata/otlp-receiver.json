@@ -270,7 +270,7 @@
               "Name": "endpoint",
               "Type": "",
               "Kind": "string",
-              "Default": "0.0.0.0:55681",
+              "Default": "0.0.0.0:4318",
               "Doc": "Endpoint configures the listening address for the server.\n",
               "Fields": null
             },

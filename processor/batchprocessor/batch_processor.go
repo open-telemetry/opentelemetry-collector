@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -223,10 +224,11 @@ type batchTraces struct {
 	nextConsumer consumer.Traces
 	traceData    pdata.Traces
 	spanCount    int
+	sizer        pdata.TracesSizer
 }
 
 func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
-	return &batchTraces{nextConsumer: nextConsumer, traceData: pdata.NewTraces()}
+	return &batchTraces{nextConsumer: nextConsumer, traceData: pdata.NewTraces(), sizer: otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)}
 }
 
 // add updates current batchTraces by adding new TraceData object
@@ -259,17 +261,18 @@ func (bt *batchTraces) itemCount() int {
 }
 
 func (bt *batchTraces) size() int {
-	return bt.traceData.OtlpProtoSize()
+	return bt.sizer.TracesSize(bt.traceData)
 }
 
 type batchMetrics struct {
 	nextConsumer   consumer.Metrics
 	metricData     pdata.Metrics
 	dataPointCount int
+	sizer          pdata.MetricsSizer
 }
 
 func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
-	return &batchMetrics{nextConsumer: nextConsumer, metricData: pdata.NewMetrics()}
+	return &batchMetrics{nextConsumer: nextConsumer, metricData: pdata.NewMetrics(), sizer: otlp.NewProtobufMetricsMarshaler().(pdata.MetricsSizer)}
 }
 
 func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int) error {
@@ -290,7 +293,7 @@ func (bm *batchMetrics) itemCount() int {
 }
 
 func (bm *batchMetrics) size() int {
-	return bm.metricData.OtlpProtoSize()
+	return bm.sizer.MetricsSize(bm.metricData)
 }
 
 func (bm *batchMetrics) add(item interface{}) {
@@ -308,10 +311,11 @@ type batchLogs struct {
 	nextConsumer consumer.Logs
 	logData      pdata.Logs
 	logCount     int
+	sizer        pdata.LogsSizer
 }
 
 func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
-	return &batchLogs{nextConsumer: nextConsumer, logData: pdata.NewLogs()}
+	return &batchLogs{nextConsumer: nextConsumer, logData: pdata.NewLogs(), sizer: otlp.NewProtobufLogsMarshaler().(pdata.LogsSizer)}
 }
 
 func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int) error {
@@ -332,7 +336,7 @@ func (bl *batchLogs) itemCount() int {
 }
 
 func (bl *batchLogs) size() int {
-	return bl.logData.OtlpProtoSize()
+	return bl.sizer.LogsSize(bl.logData)
 }
 
 func (bl *batchLogs) add(item interface{}) {

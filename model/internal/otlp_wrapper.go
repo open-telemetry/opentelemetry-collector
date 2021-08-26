@@ -18,6 +18,8 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -35,7 +37,39 @@ func MetricsToOtlp(mw MetricsWrapper) *otlpcollectormetrics.ExportMetricsService
 
 // MetricsFromOtlp internal helper to convert protobuf representation to MetricsWrapper.
 func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) MetricsWrapper {
+	MetricsCompatibilityChanges(req)
 	return MetricsWrapper{req: req}
+}
+
+// MetricsCompatibilityChanges performs backward compatibility conversion on Metrics:
+// - Convert IntHistogram to Histogram. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L170
+// - Convert IntGauge to Gauge. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
+// - Convert IntSum to Sum. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
+// - Converts Labels to Attributes. See https://github.com/open-telemetry/opentelemetry-proto/blob/8672494217bfc858e2a82a4e8c623d4a5530473a/opentelemetry/proto/metrics/v1/metrics.proto#L385
+func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceRequest) {
+	for _, rsm := range req.ResourceMetrics {
+		for _, ilm := range rsm.InstrumentationLibraryMetrics {
+			for _, metric := range ilm.Metrics {
+				switch m := metric.Data.(type) {
+				case *otlpmetrics.Metric_IntHistogram:
+					metric.Data = intHistogramToHistogram(m)
+				case *otlpmetrics.Metric_IntGauge:
+					metric.Data = intGaugeToGauge(m)
+				case *otlpmetrics.Metric_IntSum:
+					metric.Data = intSumToSum(m)
+				case *otlpmetrics.Metric_Sum:
+					numberDataPointsLabelsToAttributes(m.Sum.DataPoints)
+				case *otlpmetrics.Metric_Gauge:
+					numberDataPointsLabelsToAttributes(m.Gauge.DataPoints)
+				case *otlpmetrics.Metric_Summary:
+					summaryDataPointsLabelsToAttributes(m.Summary.DataPoints)
+				case *otlpmetrics.Metric_Histogram:
+					histogramDataPointsLabelsToAttributes(m.Histogram.DataPoints)
+				default:
+				}
+			}
+		}
+	}
 }
 
 // TracesWrapper is an intermediary struct that is declared in an internal package
@@ -52,6 +86,7 @@ func TracesToOtlp(mw TracesWrapper) *otlpcollectortrace.ExportTraceServiceReques
 
 // TracesFromOtlp internal helper to convert protobuf representation to TracesWrapper.
 func TracesFromOtlp(req *otlpcollectortrace.ExportTraceServiceRequest) TracesWrapper {
+	TracesCompatibilityChanges(req)
 	return TracesWrapper{req: req}
 }
 
@@ -94,4 +129,145 @@ func LogsToOtlp(l LogsWrapper) *otlpcollectorlog.ExportLogsServiceRequest {
 // LogsFromOtlp internal helper to convert protobuf representation to LogsWrapper.
 func LogsFromOtlp(req *otlpcollectorlog.ExportLogsServiceRequest) LogsWrapper {
 	return LogsWrapper{req: req}
+}
+
+func labelsToAttributes(labels []otlpcommon.StringKeyValue) []otlpcommon.KeyValue { //nolint:staticcheck // SA1019 ignore this!
+	attrs := make([]otlpcommon.KeyValue, len(labels))
+	for i, v := range labels {
+		attrs[i] = otlpcommon.KeyValue{
+			Key: v.Key,
+			Value: otlpcommon.AnyValue{
+				Value: &otlpcommon.AnyValue_StringValue{
+					StringValue: v.Value,
+				},
+			},
+		}
+	}
+	return attrs
+}
+
+func addFilteredAttributesToExemplars(exemplars []otlpmetrics.Exemplar) {
+	for i := range exemplars {
+		if exemplars[i].FilteredLabels != nil && exemplars[i].FilteredAttributes != nil {
+			continue
+		}
+		if exemplars[i].FilteredLabels != nil {
+			exemplars[i].FilteredAttributes = labelsToAttributes(exemplars[i].FilteredLabels)
+		}
+	}
+}
+
+func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.Metric_Histogram {
+	datapoints := []*otlpmetrics.HistogramDataPoint{}
+	for _, datapoint := range src.IntHistogram.DataPoints {
+		datapoints = append(datapoints, &otlpmetrics.HistogramDataPoint{
+			Labels:            datapoint.Labels,
+			TimeUnixNano:      datapoint.TimeUnixNano,
+			Count:             datapoint.Count,
+			StartTimeUnixNano: datapoint.StartTimeUnixNano,
+			Sum:               float64(datapoint.Sum),
+			BucketCounts:      datapoint.BucketCounts,
+			ExplicitBounds:    datapoint.ExplicitBounds,
+			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
+			Attributes:        labelsToAttributes(datapoint.Labels),
+		})
+	}
+	return &otlpmetrics.Metric_Histogram{
+		Histogram: &otlpmetrics.Histogram{
+			AggregationTemporality: src.IntHistogram.GetAggregationTemporality(),
+			DataPoints:             datapoints,
+		},
+	}
+}
+
+func intGaugeToGauge(src *otlpmetrics.Metric_IntGauge) *otlpmetrics.Metric_Gauge {
+	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntGauge.DataPoints))
+	for i, datapoint := range src.IntGauge.DataPoints {
+		datapoints[i] = &otlpmetrics.NumberDataPoint{
+			Labels:            datapoint.Labels,
+			TimeUnixNano:      datapoint.TimeUnixNano,
+			StartTimeUnixNano: datapoint.StartTimeUnixNano,
+			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
+			Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: datapoint.Value},
+			Attributes:        labelsToAttributes(datapoint.Labels),
+		}
+	}
+	return &otlpmetrics.Metric_Gauge{
+		Gauge: &otlpmetrics.Gauge{
+			DataPoints: datapoints,
+		},
+	}
+}
+
+func intSumToSum(src *otlpmetrics.Metric_IntSum) *otlpmetrics.Metric_Sum {
+	datapoints := make([]*otlpmetrics.NumberDataPoint, len(src.IntSum.DataPoints))
+	for i, datapoint := range src.IntSum.DataPoints {
+		datapoints[i] = &otlpmetrics.NumberDataPoint{
+			Labels:            datapoint.Labels,
+			TimeUnixNano:      datapoint.TimeUnixNano,
+			StartTimeUnixNano: datapoint.StartTimeUnixNano,
+			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),
+			Value:             &otlpmetrics.NumberDataPoint_AsInt{AsInt: datapoint.Value},
+			Attributes:        labelsToAttributes(datapoint.Labels),
+		}
+	}
+	return &otlpmetrics.Metric_Sum{
+		Sum: &otlpmetrics.Sum{
+			AggregationTemporality: src.IntSum.AggregationTemporality,
+			DataPoints:             datapoints,
+			IsMonotonic:            src.IntSum.IsMonotonic,
+		},
+	}
+}
+
+func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
+	exemplars := []otlpmetrics.Exemplar{}
+	for _, exemplar := range src {
+		exemplars = append(exemplars, otlpmetrics.Exemplar{
+			FilteredLabels:     exemplar.FilteredLabels,
+			FilteredAttributes: labelsToAttributes(exemplar.FilteredLabels),
+			TimeUnixNano:       exemplar.TimeUnixNano,
+			Value: &otlpmetrics.Exemplar_AsInt{
+				AsInt: exemplar.Value,
+			},
+			SpanId:  exemplar.SpanId,
+			TraceId: exemplar.TraceId,
+		})
+	}
+	return exemplars
+}
+
+func numberDataPointsLabelsToAttributes(dps []*otlpmetrics.NumberDataPoint) {
+	for i := range dps {
+		addFilteredAttributesToExemplars(dps[i].Exemplars)
+		if dps[i].Labels != nil && dps[i].Attributes != nil {
+			continue
+		}
+		if dps[i].Labels != nil {
+			dps[i].Attributes = labelsToAttributes(dps[i].Labels)
+		}
+	}
+}
+
+func summaryDataPointsLabelsToAttributes(dps []*otlpmetrics.SummaryDataPoint) {
+	for i := range dps {
+		if dps[i].Labels != nil && dps[i].Attributes != nil {
+			continue
+		}
+		if dps[i].Labels != nil {
+			dps[i].Attributes = labelsToAttributes(dps[i].Labels)
+		}
+	}
+}
+
+func histogramDataPointsLabelsToAttributes(dps []*otlpmetrics.HistogramDataPoint) {
+	for i := range dps {
+		addFilteredAttributesToExemplars(dps[i].Exemplars)
+		if dps[i].Labels != nil && dps[i].Attributes != nil {
+			continue
+		}
+		if dps[i].Labels != nil {
+			dps[i].Attributes = labelsToAttributes(dps[i].Labels)
+		}
+	}
 }

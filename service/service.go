@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -30,12 +30,13 @@ import (
 
 // service represents the implementation of a component.Host.
 type service struct {
-	factories         component.Factories
-	buildInfo         component.BuildInfo
-	config            *config.Config
-	logger            *zap.Logger
-	tracerProvider    trace.TracerProvider
-	asyncErrorChannel chan error
+	factories           component.Factories
+	buildInfo           component.BuildInfo
+	config              *config.Config
+	logger              *zap.Logger
+	tracerProvider      trace.TracerProvider
+	zPagesSpanProcessor *zpages.SpanProcessor
+	asyncErrorChannel   chan error
 
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers
@@ -45,13 +46,13 @@ type service struct {
 
 func newService(set *svcSettings) (*service, error) {
 	srv := &service{
-		factories: set.Factories,
-		buildInfo: set.BuildInfo,
-		config:    set.Config,
-		logger:    set.Logger,
-		// TODO: Configure the right tracer provider.
-		tracerProvider:    otel.GetTracerProvider(),
-		asyncErrorChannel: set.AsyncErrorChannel,
+		factories:           set.Factories,
+		buildInfo:           set.BuildInfo,
+		config:              set.Config,
+		logger:              set.Logger,
+		tracerProvider:      set.TracerProvider,
+		zPagesSpanProcessor: set.ZPagesSpanProcessor,
+		asyncErrorChannel:   set.AsyncErrorChannel,
 	}
 
 	if err := srv.config.Validate(); err != nil {
@@ -101,6 +102,14 @@ func (srv *service) Shutdown(ctx context.Context) error {
 }
 
 func (srv *service) Reload(ctx context.Context, cfg *config.Config) error {
+	if err := srv.config.Validate(); err != nil {
+		return err
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+
 	if err := srv.reloadExtensions(ctx, cfg); err != nil {
 		return err
 	}
@@ -160,10 +169,6 @@ func (srv *service) startExtensions(ctx context.Context) error {
 }
 
 func (srv *service) reloadExtensions(ctx context.Context, cfg *config.Config) error {
-	if err := srv.config.Validate(); err != nil {
-		return err
-	}
-
 	if err := srv.builtExtensions.NotifyPipelineNotReady(); err != nil {
 		return err
 	}
@@ -241,10 +246,6 @@ func (srv *service) startPipelines(ctx context.Context) error {
 }
 
 func (srv *service) reloadPipelines(ctx context.Context, config *config.Config) error {
-	if err := srv.config.Validate(); err != nil {
-		return fmt.Errorf("invalid configuration: %w", err)
-	}
-
 	if err := srv.builtExporters.ReloadExporters(ctx, srv.logger, srv.tracerProvider, srv.buildInfo, config, srv.factories.Exporters, srv); err != nil {
 		return err
 	}

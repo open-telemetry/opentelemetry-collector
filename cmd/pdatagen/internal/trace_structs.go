@@ -17,6 +17,8 @@ package internal
 var traceFile = &File{
 	Name: "trace",
 	imports: []string{
+		`"sort"`,
+		``,
 		`otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"`,
 	},
 	testImports: []string{
@@ -52,6 +54,7 @@ var resourceSpans = &messageValueStruct{
 	originFullName: "otlptrace.ResourceSpans",
 	fields: []baseField{
 		resourceField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "InstrumentationLibrarySpans",
 			originFieldName: "InstrumentationLibrarySpans",
@@ -71,6 +74,7 @@ var instrumentationLibrarySpans = &messageValueStruct{
 	originFullName: "otlptrace.InstrumentationLibrarySpans",
 	fields: []baseField{
 		instrumentationLibraryField,
+		schemaURLField,
 		&sliceField{
 			fieldName:       "Spans",
 			originFieldName: "Spans",

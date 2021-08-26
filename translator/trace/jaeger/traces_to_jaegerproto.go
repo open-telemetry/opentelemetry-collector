@@ -19,9 +19,9 @@ import (
 
 	"github.com/jaegertracing/jaeger/model"
 
-	idutils "go.opentelemetry.io/collector/internal/idutils"
+	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -157,7 +157,7 @@ func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyV
 		tag.VFloat64 = attr.DoubleVal()
 	case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
 		tag.VType = model.ValueType_STRING
-		tag.VStr = tracetranslator.AttributeValueToString(attr)
+		tag.VStr = pdata.AttributeValueToString(attr)
 	}
 	return tag
 }

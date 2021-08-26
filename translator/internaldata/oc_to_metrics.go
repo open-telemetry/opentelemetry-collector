@@ -143,8 +143,8 @@ func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 		return
 	}
 
-	descriptorType := descriptorTypeToMetrics(ocDescriptor.Type, metric)
-	if descriptorType == pdata.MetricDataTypeNone {
+	dataType, valType := descriptorTypeToMetrics(ocDescriptor.Type, metric)
+	if dataType == pdata.MetricDataTypeNone {
 		pdata.NewMetric().CopyTo(metric)
 		return
 	}
@@ -153,53 +153,49 @@ func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	metric.SetName(ocDescriptor.GetName())
 	metric.SetUnit(ocDescriptor.GetUnit())
 
-	setDataPoints(ocMetric, metric)
+	setDataPoints(ocMetric, metric, valType)
 }
 
-func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Metric) pdata.MetricDataType {
+func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Metric) (pdata.MetricDataType, pdata.MetricValueType) {
 	switch t {
 	case ocmetrics.MetricDescriptor_GAUGE_INT64:
-		metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		return pdata.MetricDataTypeIntGauge
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		return pdata.MetricDataTypeGauge, pdata.MetricValueTypeInt
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
 		metric.SetDataType(pdata.MetricDataTypeGauge)
-		return pdata.MetricDataTypeGauge
+		return pdata.MetricDataTypeGauge, pdata.MetricValueTypeDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
-		metric.SetDataType(pdata.MetricDataTypeIntSum)
-		sum := metric.IntSum()
+		metric.SetDataType(pdata.MetricDataTypeSum)
+		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		return pdata.MetricDataTypeIntSum
+		return pdata.MetricDataTypeSum, pdata.MetricValueTypeInt
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
 		metric.SetDataType(pdata.MetricDataTypeSum)
 		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		return pdata.MetricDataTypeSum
+		return pdata.MetricDataTypeSum, pdata.MetricValueTypeDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		metric.SetDataType(pdata.MetricDataTypeHistogram)
 		histo := metric.Histogram()
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		return pdata.MetricDataTypeHistogram
+		return pdata.MetricDataTypeHistogram, pdata.MetricValueTypeNone
 	case ocmetrics.MetricDescriptor_SUMMARY:
 		metric.SetDataType(pdata.MetricDataTypeSummary)
 		// no temporality specified for summary metric
-		return pdata.MetricDataTypeSummary
+		return pdata.MetricDataTypeSummary, pdata.MetricValueTypeNone
 	}
-	return pdata.MetricDataTypeNone
+	return pdata.MetricDataTypeNone, pdata.MetricValueTypeNone
 }
 
 // setDataPoints converts OC timeseries to internal datapoints based on metric type
-func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
+func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric, valType pdata.MetricValueType) {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		fillIntDataPoint(ocMetric, metric.IntGauge().DataPoints())
 	case pdata.MetricDataTypeGauge:
-		fillDoubleDataPoint(ocMetric, metric.Gauge().DataPoints())
-	case pdata.MetricDataTypeIntSum:
-		fillIntDataPoint(ocMetric, metric.IntSum().DataPoints())
+		fillNumberDataPoint(ocMetric, metric.Gauge().DataPoints(), valType)
 	case pdata.MetricDataTypeSum:
-		fillDoubleDataPoint(ocMetric, metric.Sum().DataPoints())
+		fillNumberDataPoint(ocMetric, metric.Sum().DataPoints(), valType)
 	case pdata.MetricDataTypeHistogram:
 		fillDoubleHistogramDataPoint(ocMetric, metric.Histogram().DataPoints())
 	case pdata.MetricDataTypeSummary:
@@ -207,7 +203,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	}
 }
 
-func fillLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, labelsMap pdata.StringMap) {
+func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, attributesMap pdata.AttributeMap) {
 	if len(ocLabelsKeys) == 0 || len(ocLabelValues) == 0 {
 		return
 	}
@@ -219,17 +215,17 @@ func fillLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetric
 		lablesCount = len(ocLabelValues)
 	}
 
-	labelsMap.Clear()
-	labelsMap.EnsureCapacity(lablesCount)
+	attributesMap.Clear()
+	attributesMap.EnsureCapacity(lablesCount)
 	for i := 0; i < lablesCount; i++ {
 		if !ocLabelValues[i].GetHasValue() {
 			continue
 		}
-		labelsMap.Insert(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
+		attributesMap.InsertString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
 	}
 }
 
-func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
+func fillNumberDataPoint(ocMetric *ocmetrics.Metric, dps pdata.NumberDataPointSlice, valType pdata.MetricValueType) {
 	ocPointsCount := getPointsCount(ocMetric)
 	dps.EnsureCapacity(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
@@ -247,32 +243,13 @@ func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
-			dp.SetValue(point.GetInt64Value())
-		}
-	}
-}
-
-func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSlice) {
-	ocPointsCount := getPointsCount(ocMetric)
-	dps.EnsureCapacity(ocPointsCount)
-	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
-	for _, timeseries := range ocMetric.GetTimeseries() {
-		if timeseries == nil {
-			continue
-		}
-		startTimestamp := pdata.TimestampFromTime(timeseries.GetStartTimestamp().AsTime())
-
-		for _, point := range timeseries.GetPoints() {
-			if point == nil {
-				continue
+			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
+			switch valType {
+			case pdata.MetricValueTypeInt:
+				dp.SetIntVal(point.GetInt64Value())
+			case pdata.MetricValueTypeDouble:
+				dp.SetDoubleVal(point.GetDoubleValue())
 			}
-
-			dp := dps.AppendEmpty()
-			dp.SetStartTimestamp(startTimestamp)
-			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
-			dp.SetValue(point.GetDoubleValue())
 		}
 	}
 }
@@ -295,7 +272,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.Histogra
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			distributionValue := point.GetDistributionValue()
 			dp.SetSum(distributionValue.GetSum())
 			dp.SetCount(uint64(distributionValue.GetCount()))
@@ -323,7 +300,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 			dp := dps.AppendEmpty()
 			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampFromTime(point.GetTimestamp().AsTime()))
-			fillLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			summaryValue := point.GetSummaryValue()
 			dp.SetSum(summaryValue.GetSum().GetValue())
 			dp.SetCount(uint64(summaryValue.GetCount().GetValue()))
@@ -369,12 +346,12 @@ func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempla
 		exemplar.SetTimestamp(pdata.TimestampFromTime(ocExemplar.GetTimestamp().AsTime()))
 	}
 	ocAttachments := ocExemplar.GetAttachments()
-	exemplar.SetValue(ocExemplar.GetValue())
-	filteredLabels := exemplar.FilteredLabels()
-	filteredLabels.Clear()
-	filteredLabels.EnsureCapacity(len(ocAttachments))
+	exemplar.SetDoubleVal(ocExemplar.GetValue())
+	filteredAttributes := exemplar.FilteredAttributes()
+	filteredAttributes.Clear()
+	filteredAttributes.EnsureCapacity(len(ocAttachments))
 	for k, v := range ocAttachments {
-		filteredLabels.Upsert(k, v)
+		filteredAttributes.UpsertString(k, v)
 	}
 }
 

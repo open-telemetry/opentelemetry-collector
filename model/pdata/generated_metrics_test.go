@@ -147,6 +147,14 @@ func TestResourceMetrics_Resource(t *testing.T) {
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
+func TestResourceMetrics_SchemaUrl(t *testing.T) {
+	ms := NewResourceMetrics()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
+}
+
 func TestResourceMetrics_InstrumentationLibraryMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(), ms.InstrumentationLibraryMetrics())
@@ -275,6 +283,14 @@ func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+}
+
+func TestInstrumentationLibraryMetrics_SchemaUrl(t *testing.T) {
+	ms := NewInstrumentationLibraryMetrics()
+	assert.EqualValues(t, "", ms.SchemaUrl())
+	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
+	ms.SetSchemaUrl(testValSchemaUrl)
+	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
 func TestInstrumentationLibraryMetrics_Metrics(t *testing.T) {
@@ -425,20 +441,6 @@ func TestMetric_Unit(t *testing.T) {
 	assert.EqualValues(t, testValUnit, ms.Unit())
 }
 
-func TestIntGauge_CopyTo(t *testing.T) {
-	ms := NewIntGauge()
-	generateTestIntGauge().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntGauge(), ms)
-}
-
-func TestIntGauge_DataPoints(t *testing.T) {
-	ms := NewIntGauge()
-	assert.EqualValues(t, NewIntDataPointSlice(), ms.DataPoints())
-	fillTestIntDataPointSlice(ms.DataPoints())
-	testValDataPoints := generateTestIntDataPointSlice()
-	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
-}
-
 func TestGauge_CopyTo(t *testing.T) {
 	ms := NewGauge()
 	generateTestGauge().CopyTo(ms)
@@ -447,39 +449,9 @@ func TestGauge_CopyTo(t *testing.T) {
 
 func TestGauge_DataPoints(t *testing.T) {
 	ms := NewGauge()
-	assert.EqualValues(t, NewDoubleDataPointSlice(), ms.DataPoints())
-	fillTestDoubleDataPointSlice(ms.DataPoints())
-	testValDataPoints := generateTestDoubleDataPointSlice()
-	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
-}
-
-func TestIntSum_CopyTo(t *testing.T) {
-	ms := NewIntSum()
-	generateTestIntSum().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntSum(), ms)
-}
-
-func TestIntSum_AggregationTemporality(t *testing.T) {
-	ms := NewIntSum()
-	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporalityCumulative
-	ms.SetAggregationTemporality(testValAggregationTemporality)
-	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
-}
-
-func TestIntSum_IsMonotonic(t *testing.T) {
-	ms := NewIntSum()
-	assert.EqualValues(t, false, ms.IsMonotonic())
-	testValIsMonotonic := true
-	ms.SetIsMonotonic(testValIsMonotonic)
-	assert.EqualValues(t, testValIsMonotonic, ms.IsMonotonic())
-}
-
-func TestIntSum_DataPoints(t *testing.T) {
-	ms := NewIntSum()
-	assert.EqualValues(t, NewIntDataPointSlice(), ms.DataPoints())
-	fillTestIntDataPointSlice(ms.DataPoints())
-	testValDataPoints := generateTestIntDataPointSlice()
+	assert.EqualValues(t, NewNumberDataPointSlice(), ms.DataPoints())
+	fillTestNumberDataPointSlice(ms.DataPoints())
+	testValDataPoints := generateTestNumberDataPointSlice()
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
@@ -507,31 +479,9 @@ func TestSum_IsMonotonic(t *testing.T) {
 
 func TestSum_DataPoints(t *testing.T) {
 	ms := NewSum()
-	assert.EqualValues(t, NewDoubleDataPointSlice(), ms.DataPoints())
-	fillTestDoubleDataPointSlice(ms.DataPoints())
-	testValDataPoints := generateTestDoubleDataPointSlice()
-	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
-}
-
-func TestIntHistogram_CopyTo(t *testing.T) {
-	ms := NewIntHistogram()
-	generateTestIntHistogram().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntHistogram(), ms)
-}
-
-func TestIntHistogram_AggregationTemporality(t *testing.T) {
-	ms := NewIntHistogram()
-	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporalityCumulative
-	ms.SetAggregationTemporality(testValAggregationTemporality)
-	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
-}
-
-func TestIntHistogram_DataPoints(t *testing.T) {
-	ms := NewIntHistogram()
-	assert.EqualValues(t, NewIntHistogramDataPointSlice(), ms.DataPoints())
-	fillTestIntHistogramDataPointSlice(ms.DataPoints())
-	testValDataPoints := generateTestIntHistogramDataPointSlice()
+	assert.EqualValues(t, NewNumberDataPointSlice(), ms.DataPoints())
+	fillTestNumberDataPointSlice(ms.DataPoints())
+	testValDataPoints := generateTestNumberDataPointSlice()
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
@@ -571,197 +521,41 @@ func TestSummary_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestIntDataPointSlice(t *testing.T) {
-	es := NewIntDataPointSlice()
+func TestNumberDataPointSlice(t *testing.T) {
+	es := NewNumberDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newIntDataPointSlice(&[]*otlpmetrics.IntDataPoint{})
+	es = newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newIntDataPoint(&otlpmetrics.IntDataPoint{})
-	testVal := generateTestIntDataPoint()
+	emptyVal := newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
+	testVal := generateTestNumberDataPoint()
 	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.EqualValues(t, emptyVal, el)
-		fillTestIntDataPoint(el)
+		fillTestNumberDataPoint(el)
 		assert.EqualValues(t, testVal, el)
 	}
 }
 
-func TestIntDataPointSlice_CopyTo(t *testing.T) {
-	dest := NewIntDataPointSlice()
+func TestNumberDataPointSlice_CopyTo(t *testing.T) {
+	dest := NewNumberDataPointSlice()
 	// Test CopyTo to empty
-	NewIntDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, NewIntDataPointSlice(), dest)
+	NewNumberDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, NewNumberDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestIntDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntDataPointSlice(), dest)
+	generateTestNumberDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestIntDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntDataPointSlice(), dest)
+	generateTestNumberDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestNumberDataPointSlice(), dest)
 }
 
-func TestIntDataPointSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestIntDataPointSlice()
-	// Test ensure smaller capacity.
-	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.IntDataPoint]bool)
-	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, es.Len(), len(expectedEs))
-	es.EnsureCapacity(ensureSmallLen)
-	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.IntDataPoint]bool, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
-
-	// Test ensure larger capacity
-	const ensureLargeLen = 9
-	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.IntDataPoint]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, oldLen, len(expectedEs))
-	es.EnsureCapacity(ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.IntDataPoint]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
-}
-
-func TestIntDataPointSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestIntDataPointSlice()
-	dest := NewIntDataPointSlice()
-	src := generateTestIntDataPointSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntDataPointSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntDataPointSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestIntDataPointSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
-func TestIntDataPointSlice_RemoveIf(t *testing.T) {
-	// Test RemoveIf on empty slice
-	emptySlice := NewIntDataPointSlice()
-	emptySlice.RemoveIf(func(el IntDataPoint) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test RemoveIf
-	filtered := generateTestIntDataPointSlice()
-	pos := 0
-	filtered.RemoveIf(func(el IntDataPoint) bool {
-		pos++
-		return pos%3 == 0
-	})
-	assert.Equal(t, 5, filtered.Len())
-}
-
-func TestIntDataPoint_CopyTo(t *testing.T) {
-	ms := NewIntDataPoint()
-	generateTestIntDataPoint().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntDataPoint(), ms)
-}
-
-func TestIntDataPoint_LabelsMap(t *testing.T) {
-	ms := NewIntDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
-}
-
-func TestIntDataPoint_StartTimestamp(t *testing.T) {
-	ms := NewIntDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
-	testValStartTimestamp := Timestamp(1234567890)
-	ms.SetStartTimestamp(testValStartTimestamp)
-	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
-}
-
-func TestIntDataPoint_Timestamp(t *testing.T) {
-	ms := NewIntDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
-	testValTimestamp := Timestamp(1234567890)
-	ms.SetTimestamp(testValTimestamp)
-	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
-}
-
-func TestIntDataPoint_Value(t *testing.T) {
-	ms := NewIntDataPoint()
-	assert.EqualValues(t, int64(0), ms.Value())
-	testValValue := int64(-17)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
-}
-
-func TestIntDataPoint_Exemplars(t *testing.T) {
-	ms := NewIntDataPoint()
-	assert.EqualValues(t, NewIntExemplarSlice(), ms.Exemplars())
-	fillTestIntExemplarSlice(ms.Exemplars())
-	testValExemplars := generateTestIntExemplarSlice()
-	assert.EqualValues(t, testValExemplars, ms.Exemplars())
-}
-
-func TestDoubleDataPointSlice(t *testing.T) {
-	es := NewDoubleDataPointSlice()
-	assert.EqualValues(t, 0, es.Len())
-	es = newDoubleDataPointSlice(&[]*otlpmetrics.NumberDataPoint{})
-	assert.EqualValues(t, 0, es.Len())
-
-	es.EnsureCapacity(7)
-	emptyVal := newDoubleDataPoint(&otlpmetrics.NumberDataPoint{})
-	testVal := generateTestDoubleDataPoint()
-	assert.EqualValues(t, 7, cap(*es.orig))
-	for i := 0; i < es.Len(); i++ {
-		el := es.AppendEmpty()
-		assert.EqualValues(t, emptyVal, el)
-		fillTestDoubleDataPoint(el)
-		assert.EqualValues(t, testVal, el)
-	}
-}
-
-func TestDoubleDataPointSlice_CopyTo(t *testing.T) {
-	dest := NewDoubleDataPointSlice()
-	// Test CopyTo to empty
-	NewDoubleDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, NewDoubleDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestDoubleDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestDoubleDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
-}
-
-func TestDoubleDataPointSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestDoubleDataPointSlice()
+func TestNumberDataPointSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestNumberDataPointSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	expectedEs := make(map[*otlpmetrics.NumberDataPoint]bool)
@@ -794,24 +588,24 @@ func TestDoubleDataPointSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
-func TestDoubleDataPointSlice_MoveAndAppendTo(t *testing.T) {
+func TestNumberDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestDoubleDataPointSlice()
-	dest := NewDoubleDataPointSlice()
-	src := generateTestDoubleDataPointSlice()
+	expectedSlice := generateTestNumberDataPointSlice()
+	dest := NewNumberDataPointSlice()
+	src := generateTestNumberDataPointSlice()
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
+	assert.EqualValues(t, generateTestNumberDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
+	assert.EqualValues(t, generateTestNumberDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestDoubleDataPointSlice().MoveAndAppendTo(dest)
+	generateTestNumberDataPointSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -819,247 +613,74 @@ func TestDoubleDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestDoubleDataPointSlice_RemoveIf(t *testing.T) {
+func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewDoubleDataPointSlice()
-	emptySlice.RemoveIf(func(el DoubleDataPoint) bool {
+	emptySlice := NewNumberDataPointSlice()
+	emptySlice.RemoveIf(func(el NumberDataPoint) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestDoubleDataPointSlice()
+	filtered := generateTestNumberDataPointSlice()
 	pos := 0
-	filtered.RemoveIf(func(el DoubleDataPoint) bool {
+	filtered.RemoveIf(func(el NumberDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestDoubleDataPoint_CopyTo(t *testing.T) {
-	ms := NewDoubleDataPoint()
-	generateTestDoubleDataPoint().CopyTo(ms)
-	assert.EqualValues(t, generateTestDoubleDataPoint(), ms)
+func TestNumberDataPoint_CopyTo(t *testing.T) {
+	ms := NewNumberDataPoint()
+	generateTestNumberDataPoint().CopyTo(ms)
+	assert.EqualValues(t, generateTestNumberDataPoint(), ms)
 }
 
-func TestDoubleDataPoint_LabelsMap(t *testing.T) {
-	ms := NewDoubleDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+func TestNumberDataPoint_Attributes(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
-func TestDoubleDataPoint_StartTimestamp(t *testing.T) {
-	ms := NewDoubleDataPoint()
+func TestNumberDataPoint_StartTimestamp(t *testing.T) {
+	ms := NewNumberDataPoint()
 	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
 	testValStartTimestamp := Timestamp(1234567890)
 	ms.SetStartTimestamp(testValStartTimestamp)
 	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
 }
 
-func TestDoubleDataPoint_Timestamp(t *testing.T) {
-	ms := NewDoubleDataPoint()
+func TestNumberDataPoint_Timestamp(t *testing.T) {
+	ms := NewNumberDataPoint()
 	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
 	testValTimestamp := Timestamp(1234567890)
 	ms.SetTimestamp(testValTimestamp)
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
 
-func TestDoubleDataPoint_Value(t *testing.T) {
-	ms := NewDoubleDataPoint()
-	assert.EqualValues(t, float64(0.0), ms.Value())
-	testValValue := float64(17.13)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
+func TestNumberDataPoint_DoubleVal(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.DoubleVal())
+	testValDoubleVal := float64(17.13)
+	ms.SetDoubleVal(testValDoubleVal)
+	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+func TestNumberDataPoint_IntVal(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, int64(0), ms.IntVal())
+	testValIntVal := int64(17)
+	ms.SetIntVal(testValIntVal)
+	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
-func TestDoubleDataPoint_Exemplars(t *testing.T) {
-	ms := NewDoubleDataPoint()
+func TestNumberDataPoint_Exemplars(t *testing.T) {
+	ms := NewNumberDataPoint()
 	assert.EqualValues(t, NewExemplarSlice(), ms.Exemplars())
 	fillTestExemplarSlice(ms.Exemplars())
 	testValExemplars := generateTestExemplarSlice()
-	assert.EqualValues(t, testValExemplars, ms.Exemplars())
-}
-
-func TestIntHistogramDataPointSlice(t *testing.T) {
-	es := NewIntHistogramDataPointSlice()
-	assert.EqualValues(t, 0, es.Len())
-	es = newIntHistogramDataPointSlice(&[]*otlpmetrics.IntHistogramDataPoint{})
-	assert.EqualValues(t, 0, es.Len())
-
-	es.EnsureCapacity(7)
-	emptyVal := newIntHistogramDataPoint(&otlpmetrics.IntHistogramDataPoint{})
-	testVal := generateTestIntHistogramDataPoint()
-	assert.EqualValues(t, 7, cap(*es.orig))
-	for i := 0; i < es.Len(); i++ {
-		el := es.AppendEmpty()
-		assert.EqualValues(t, emptyVal, el)
-		fillTestIntHistogramDataPoint(el)
-		assert.EqualValues(t, testVal, el)
-	}
-}
-
-func TestIntHistogramDataPointSlice_CopyTo(t *testing.T) {
-	dest := NewIntHistogramDataPointSlice()
-	// Test CopyTo to empty
-	NewIntHistogramDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, NewIntHistogramDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestIntHistogramDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntHistogramDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestIntHistogramDataPointSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntHistogramDataPointSlice(), dest)
-}
-
-func TestIntHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestIntHistogramDataPointSlice()
-	// Test ensure smaller capacity.
-	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.IntHistogramDataPoint]bool)
-	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, es.Len(), len(expectedEs))
-	es.EnsureCapacity(ensureSmallLen)
-	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.IntHistogramDataPoint]bool, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
-
-	// Test ensure larger capacity
-	const ensureLargeLen = 9
-	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.IntHistogramDataPoint]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, oldLen, len(expectedEs))
-	es.EnsureCapacity(ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.IntHistogramDataPoint]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
-}
-
-func TestIntHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestIntHistogramDataPointSlice()
-	dest := NewIntHistogramDataPointSlice()
-	src := generateTestIntHistogramDataPointSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntHistogramDataPointSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntHistogramDataPointSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestIntHistogramDataPointSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
-func TestIntHistogramDataPointSlice_RemoveIf(t *testing.T) {
-	// Test RemoveIf on empty slice
-	emptySlice := NewIntHistogramDataPointSlice()
-	emptySlice.RemoveIf(func(el IntHistogramDataPoint) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test RemoveIf
-	filtered := generateTestIntHistogramDataPointSlice()
-	pos := 0
-	filtered.RemoveIf(func(el IntHistogramDataPoint) bool {
-		pos++
-		return pos%3 == 0
-	})
-	assert.Equal(t, 5, filtered.Len())
-}
-
-func TestIntHistogramDataPoint_CopyTo(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	generateTestIntHistogramDataPoint().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntHistogramDataPoint(), ms)
-}
-
-func TestIntHistogramDataPoint_LabelsMap(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
-}
-
-func TestIntHistogramDataPoint_StartTimestamp(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.StartTimestamp())
-	testValStartTimestamp := Timestamp(1234567890)
-	ms.SetStartTimestamp(testValStartTimestamp)
-	assert.EqualValues(t, testValStartTimestamp, ms.StartTimestamp())
-}
-
-func TestIntHistogramDataPoint_Timestamp(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
-	testValTimestamp := Timestamp(1234567890)
-	ms.SetTimestamp(testValTimestamp)
-	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
-}
-
-func TestIntHistogramDataPoint_Count(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, uint64(0), ms.Count())
-	testValCount := uint64(17)
-	ms.SetCount(testValCount)
-	assert.EqualValues(t, testValCount, ms.Count())
-}
-
-func TestIntHistogramDataPoint_Sum(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, int64(0.0), ms.Sum())
-	testValSum := int64(1713)
-	ms.SetSum(testValSum)
-	assert.EqualValues(t, testValSum, ms.Sum())
-}
-
-func TestIntHistogramDataPoint_BucketCounts(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
-	testValBucketCounts := []uint64{1, 2, 3}
-	ms.SetBucketCounts(testValBucketCounts)
-	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
-}
-
-func TestIntHistogramDataPoint_ExplicitBounds(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, []float64(nil), ms.ExplicitBounds())
-	testValExplicitBounds := []float64{1, 2, 3}
-	ms.SetExplicitBounds(testValExplicitBounds)
-	assert.EqualValues(t, testValExplicitBounds, ms.ExplicitBounds())
-}
-
-func TestIntHistogramDataPoint_Exemplars(t *testing.T) {
-	ms := NewIntHistogramDataPoint()
-	assert.EqualValues(t, NewIntExemplarSlice(), ms.Exemplars())
-	fillTestIntExemplarSlice(ms.Exemplars())
-	testValExemplars := generateTestIntExemplarSlice()
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
@@ -1179,12 +800,12 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestHistogramDataPoint(), ms)
 }
 
-func TestHistogramDataPoint_LabelsMap(t *testing.T) {
+func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
 func TestHistogramDataPoint_StartTimestamp(t *testing.T) {
@@ -1359,12 +980,12 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestSummaryDataPoint(), ms)
 }
 
-func TestSummaryDataPoint_LabelsMap(t *testing.T) {
+func TestSummaryDataPoint_Attributes(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
+	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
 func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
@@ -1539,141 +1160,10 @@ func TestValueAtQuantile_Value(t *testing.T) {
 	assert.EqualValues(t, testValValue, ms.Value())
 }
 
-func TestIntExemplarSlice(t *testing.T) {
-	es := NewIntExemplarSlice()
-	assert.EqualValues(t, 0, es.Len())
-	es = newIntExemplarSlice(&[]otlpmetrics.IntExemplar{})
-	assert.EqualValues(t, 0, es.Len())
-
-	es.EnsureCapacity(7)
-	emptyVal := newIntExemplar(&otlpmetrics.IntExemplar{})
-	testVal := generateTestIntExemplar()
-	assert.EqualValues(t, 7, cap(*es.orig))
-	for i := 0; i < es.Len(); i++ {
-		el := es.AppendEmpty()
-		assert.EqualValues(t, emptyVal, el)
-		fillTestIntExemplar(el)
-		assert.EqualValues(t, testVal, el)
-	}
-}
-
-func TestIntExemplarSlice_CopyTo(t *testing.T) {
-	dest := NewIntExemplarSlice()
-	// Test CopyTo to empty
-	NewIntExemplarSlice().CopyTo(dest)
-	assert.EqualValues(t, NewIntExemplarSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestIntExemplarSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestIntExemplarSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-}
-
-func TestIntExemplarSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestIntExemplarSlice()
-	// Test ensure smaller capacity.
-	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.IntExemplar]bool)
-	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, es.Len(), len(expectedEs))
-	es.EnsureCapacity(ensureSmallLen)
-	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.IntExemplar]bool, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
-
-	// Test ensure larger capacity
-	const ensureLargeLen = 9
-	oldLen := es.Len()
-	assert.Equal(t, oldLen, len(expectedEs))
-	es.EnsureCapacity(ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-}
-
-func TestIntExemplarSlice_MoveAndAppendTo(t *testing.T) {
-	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestIntExemplarSlice()
-	dest := NewIntExemplarSlice()
-	src := generateTestIntExemplarSlice()
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo empty slice
-	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestIntExemplarSlice(), dest)
-	assert.EqualValues(t, 0, src.Len())
-	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
-
-	// Test MoveAndAppendTo not empty slice
-	generateTestIntExemplarSlice().MoveAndAppendTo(dest)
-	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
-	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
-		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
-	}
-}
-
-func TestIntExemplarSlice_RemoveIf(t *testing.T) {
-	// Test RemoveIf on empty slice
-	emptySlice := NewIntExemplarSlice()
-	emptySlice.RemoveIf(func(el IntExemplar) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test RemoveIf
-	filtered := generateTestIntExemplarSlice()
-	pos := 0
-	filtered.RemoveIf(func(el IntExemplar) bool {
-		pos++
-		return pos%3 == 0
-	})
-	assert.Equal(t, 5, filtered.Len())
-}
-
-func TestIntExemplar_CopyTo(t *testing.T) {
-	ms := NewIntExemplar()
-	generateTestIntExemplar().CopyTo(ms)
-	assert.EqualValues(t, generateTestIntExemplar(), ms)
-}
-
-func TestIntExemplar_Timestamp(t *testing.T) {
-	ms := NewIntExemplar()
-	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
-	testValTimestamp := Timestamp(1234567890)
-	ms.SetTimestamp(testValTimestamp)
-	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
-}
-
-func TestIntExemplar_Value(t *testing.T) {
-	ms := NewIntExemplar()
-	assert.EqualValues(t, int64(0), ms.Value())
-	testValValue := int64(-17)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
-}
-
-func TestIntExemplar_FilteredLabels(t *testing.T) {
-	ms := NewIntExemplar()
-	assert.EqualValues(t, NewStringMap(), ms.FilteredLabels())
-	fillTestStringMap(ms.FilteredLabels())
-	testValFilteredLabels := generateTestStringMap()
-	assert.EqualValues(t, testValFilteredLabels, ms.FilteredLabels())
-}
-
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newExemplarSlice(&[]*otlpmetrics.Exemplar{})
+	es = newExemplarSlice(&[]otlpmetrics.Exemplar{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
@@ -1723,18 +1213,9 @@ func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.Exemplar]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		expectedEs[es.At(i).orig] = true
-	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.Exemplar]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
@@ -1794,20 +1275,27 @@ func TestExemplar_Timestamp(t *testing.T) {
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
 
-func TestExemplar_Value(t *testing.T) {
+func TestExemplar_DoubleVal(t *testing.T) {
 	ms := NewExemplar()
-	assert.EqualValues(t, float64(0.0), ms.Value())
-	testValValue := float64(17.13)
-	ms.SetValue(testValValue)
-	assert.EqualValues(t, testValValue, ms.Value())
+	assert.EqualValues(t, float64(0.0), ms.DoubleVal())
+	testValDoubleVal := float64(17.13)
+	ms.SetDoubleVal(testValDoubleVal)
+	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+func TestExemplar_IntVal(t *testing.T) {
+	ms := NewExemplar()
+	assert.EqualValues(t, int64(0), ms.IntVal())
+	testValIntVal := int64(17)
+	ms.SetIntVal(testValIntVal)
+	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
 
-func TestExemplar_FilteredLabels(t *testing.T) {
+func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
-	assert.EqualValues(t, NewStringMap(), ms.FilteredLabels())
-	fillTestStringMap(ms.FilteredLabels())
-	testValFilteredLabels := generateTestStringMap()
-	assert.EqualValues(t, testValFilteredLabels, ms.FilteredLabels())
+	assert.EqualValues(t, NewAttributeMap(), ms.FilteredAttributes())
+	fillTestAttributeMap(ms.FilteredAttributes())
+	testValFilteredAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, testValFilteredAttributes, ms.FilteredAttributes())
 }
 
 func generateTestResourceMetricsSlice() ResourceMetricsSlice {
@@ -1832,6 +1320,7 @@ func generateTestResourceMetrics() ResourceMetrics {
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
 	fillTestResource(tv.Resource())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestInstrumentationLibraryMetricsSlice(tv.InstrumentationLibraryMetrics())
 }
 
@@ -1857,6 +1346,7 @@ func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 
 func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
+	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestMetricSlice(tv.Metrics())
 }
 
@@ -1884,18 +1374,8 @@ func fillTestMetric(tv Metric) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
-	(*tv.orig).Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
-	fillTestIntGauge(tv.IntGauge())
-}
-
-func generateTestIntGauge() IntGauge {
-	tv := NewIntGauge()
-	fillTestIntGauge(tv)
-	return tv
-}
-
-func fillTestIntGauge(tv IntGauge) {
-	fillTestIntDataPointSlice(tv.DataPoints())
+	(*tv.orig).Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
+	fillTestGauge(tv.Gauge())
 }
 
 func generateTestGauge() Gauge {
@@ -1905,19 +1385,7 @@ func generateTestGauge() Gauge {
 }
 
 func fillTestGauge(tv Gauge) {
-	fillTestDoubleDataPointSlice(tv.DataPoints())
-}
-
-func generateTestIntSum() IntSum {
-	tv := NewIntSum()
-	fillTestIntSum(tv)
-	return tv
-}
-
-func fillTestIntSum(tv IntSum) {
-	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
-	tv.SetIsMonotonic(true)
-	fillTestIntDataPointSlice(tv.DataPoints())
+	fillTestNumberDataPointSlice(tv.DataPoints())
 }
 
 func generateTestSum() Sum {
@@ -1929,18 +1397,7 @@ func generateTestSum() Sum {
 func fillTestSum(tv Sum) {
 	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
 	tv.SetIsMonotonic(true)
-	fillTestDoubleDataPointSlice(tv.DataPoints())
-}
-
-func generateTestIntHistogram() IntHistogram {
-	tv := NewIntHistogram()
-	fillTestIntHistogram(tv)
-	return tv
-}
-
-func fillTestIntHistogram(tv IntHistogram) {
-	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
-	fillTestIntHistogramDataPointSlice(tv.DataPoints())
+	fillTestNumberDataPointSlice(tv.DataPoints())
 }
 
 func generateTestHistogram() Histogram {
@@ -1964,91 +1421,33 @@ func fillTestSummary(tv Summary) {
 	fillTestSummaryDataPointSlice(tv.DataPoints())
 }
 
-func generateTestIntDataPointSlice() IntDataPointSlice {
-	tv := NewIntDataPointSlice()
-	fillTestIntDataPointSlice(tv)
+func generateTestNumberDataPointSlice() NumberDataPointSlice {
+	tv := NewNumberDataPointSlice()
+	fillTestNumberDataPointSlice(tv)
 	return tv
 }
 
-func fillTestIntDataPointSlice(tv IntDataPointSlice) {
+func fillTestNumberDataPointSlice(tv NumberDataPointSlice) {
 	l := 7
 	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
-		fillTestIntDataPoint(tv.AppendEmpty())
+		fillTestNumberDataPoint(tv.AppendEmpty())
 	}
 }
 
-func generateTestIntDataPoint() IntDataPoint {
-	tv := NewIntDataPoint()
-	fillTestIntDataPoint(tv)
+func generateTestNumberDataPoint() NumberDataPoint {
+	tv := NewNumberDataPoint()
+	fillTestNumberDataPoint(tv)
 	return tv
 }
 
-func fillTestIntDataPoint(tv IntDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
+func fillTestNumberDataPoint(tv NumberDataPoint) {
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(int64(-17))
-	fillTestIntExemplarSlice(tv.Exemplars())
-}
+	tv.SetDoubleVal(float64(17.13))
 
-func generateTestDoubleDataPointSlice() DoubleDataPointSlice {
-	tv := NewDoubleDataPointSlice()
-	fillTestDoubleDataPointSlice(tv)
-	return tv
-}
-
-func fillTestDoubleDataPointSlice(tv DoubleDataPointSlice) {
-	l := 7
-	tv.EnsureCapacity(l)
-	for i := 0; i < l; i++ {
-		fillTestDoubleDataPoint(tv.AppendEmpty())
-	}
-}
-
-func generateTestDoubleDataPoint() DoubleDataPoint {
-	tv := NewDoubleDataPoint()
-	fillTestDoubleDataPoint(tv)
-	return tv
-}
-
-func fillTestDoubleDataPoint(tv DoubleDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
-	tv.SetStartTimestamp(Timestamp(1234567890))
-	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(float64(17.13))
 	fillTestExemplarSlice(tv.Exemplars())
-}
-
-func generateTestIntHistogramDataPointSlice() IntHistogramDataPointSlice {
-	tv := NewIntHistogramDataPointSlice()
-	fillTestIntHistogramDataPointSlice(tv)
-	return tv
-}
-
-func fillTestIntHistogramDataPointSlice(tv IntHistogramDataPointSlice) {
-	l := 7
-	tv.EnsureCapacity(l)
-	for i := 0; i < l; i++ {
-		fillTestIntHistogramDataPoint(tv.AppendEmpty())
-	}
-}
-
-func generateTestIntHistogramDataPoint() IntHistogramDataPoint {
-	tv := NewIntHistogramDataPoint()
-	fillTestIntHistogramDataPoint(tv)
-	return tv
-}
-
-func fillTestIntHistogramDataPoint(tv IntHistogramDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
-	tv.SetStartTimestamp(Timestamp(1234567890))
-	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetCount(uint64(17))
-	tv.SetSum(int64(1713))
-	tv.SetBucketCounts([]uint64{1, 2, 3})
-	tv.SetExplicitBounds([]float64{1, 2, 3})
-	fillTestIntExemplarSlice(tv.Exemplars())
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
@@ -2072,7 +1471,7 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 }
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -2103,7 +1502,7 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 }
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	fillTestStringMap(tv.LabelsMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -2136,32 +1535,6 @@ func fillTestValueAtQuantile(tv ValueAtQuantile) {
 	tv.SetValue(float64(17.13))
 }
 
-func generateTestIntExemplarSlice() IntExemplarSlice {
-	tv := NewIntExemplarSlice()
-	fillTestIntExemplarSlice(tv)
-	return tv
-}
-
-func fillTestIntExemplarSlice(tv IntExemplarSlice) {
-	l := 7
-	tv.EnsureCapacity(l)
-	for i := 0; i < l; i++ {
-		fillTestIntExemplar(tv.AppendEmpty())
-	}
-}
-
-func generateTestIntExemplar() IntExemplar {
-	tv := NewIntExemplar()
-	fillTestIntExemplar(tv)
-	return tv
-}
-
-func fillTestIntExemplar(tv IntExemplar) {
-	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(int64(-17))
-	fillTestStringMap(tv.FilteredLabels())
-}
-
 func generateTestExemplarSlice() ExemplarSlice {
 	tv := NewExemplarSlice()
 	fillTestExemplarSlice(tv)
@@ -2184,6 +1557,7 @@ func generateTestExemplar() Exemplar {
 
 func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetValue(float64(17.13))
-	fillTestStringMap(tv.FilteredLabels())
+	tv.SetDoubleVal(float64(17.13))
+
+	fillTestAttributeMap(tv.FilteredAttributes())
 }

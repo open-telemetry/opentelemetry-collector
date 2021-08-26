@@ -68,25 +68,16 @@ func TestConvertInvalidDataType(t *testing.T) {
 func TestConvertInvalidMetric(t *testing.T) {
 	for _, mType := range []pdata.MetricDataType{
 		pdata.MetricDataTypeHistogram,
-		pdata.MetricDataTypeIntHistogram,
 		pdata.MetricDataTypeSum,
-		pdata.MetricDataTypeIntSum,
 		pdata.MetricDataTypeGauge,
-		pdata.MetricDataTypeIntGauge,
 	} {
 		metric := pdata.NewMetric()
 		metric.SetDataType(mType)
 		switch metric.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			metric.IntGauge().DataPoints().AppendEmpty()
-		case pdata.MetricDataTypeIntSum:
-			metric.IntSum().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeGauge:
 			metric.Gauge().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeSum:
 			metric.Sum().DataPoints().AppendEmpty()
-		case pdata.MetricDataTypeIntHistogram:
-			metric.IntHistogram().DataPoints().AppendEmpty()
 		case pdata.MetricDataTypeHistogram:
 			metric.Histogram().DataPoints().AppendEmpty()
 		}
@@ -121,12 +112,12 @@ func (*errorCheckCore) Sync() error { return nil }
 func TestCollectMetricsLabelSanitize(t *testing.T) {
 	metric := pdata.NewMetric()
 	metric.SetName("test_metric")
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.SetDescription("test description")
-	dp := metric.IntGauge().DataPoints().AppendEmpty()
-	dp.SetValue(42)
-	dp.LabelsMap().Insert("label.1", "1")
-	dp.LabelsMap().Insert("label/2", "2")
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetIntVal(42)
+	dp.Attributes().InsertString("label.1", "1")
+	dp.Attributes().InsertString("label/2", "2")
 	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 
 	loggerCore := errorCheckCore{}
@@ -175,12 +166,12 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntGauge)
+				metric.SetDataType(pdata.MetricDataTypeGauge)
 				metric.SetDescription("test description")
-				dp := metric.IntGauge().DataPoints().AppendEmpty()
-				dp.SetValue(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp := metric.Gauge().DataPoints().AppendEmpty()
+				dp.SetIntVal(42)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -196,9 +187,9 @@ func TestCollectMetrics(t *testing.T) {
 				metric.SetDataType(pdata.MetricDataTypeGauge)
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
-				dp.SetValue(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.SetDoubleVal(42.42)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -211,14 +202,14 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntSum)
-				metric.IntSum().SetIsMonotonic(false)
-				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(false)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.IntSum().DataPoints().AppendEmpty()
-				dp.SetValue(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntVal(42)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -236,9 +227,9 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetValue(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.SetDoubleVal(42.42)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -251,14 +242,14 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pdata.Metric) {
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntSum)
-				metric.IntSum().SetIsMonotonic(true)
-				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(true)
+				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
-				dp := metric.IntSum().DataPoints().AppendEmpty()
-				dp.SetValue(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntVal(42)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -276,9 +267,9 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetValue(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.SetDoubleVal(42.42)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				return
@@ -359,32 +350,6 @@ func TestAccumulateHistograms(t *testing.T) {
 		histogramCount  uint64
 	}{
 		{
-			name: "IntHistogram",
-			histogramPoints: map[float64]uint64{
-				1.2:  5,
-				10.0: 7,
-			},
-			histogramSum:   42.0,
-			histogramCount: 7,
-			metric: func(ts time.Time) (metric pdata.Metric) {
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-				metric.SetDescription("test description")
-				dp := metric.IntHistogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
-				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{1.2, 10.0})
-				dp.SetSum(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				return
-			},
-		},
-		{
 			name: "Histogram",
 			histogramPoints: map[float64]uint64{
 				3.5:  5,
@@ -403,8 +368,8 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 				return
 			},
@@ -501,8 +466,8 @@ func TestAccumulateSummary(t *testing.T) {
 				sp.SetCount(10)
 				sp.SetSum(0.012)
 				sp.SetCount(10)
-				sp.LabelsMap().Insert("label_1", "1")
-				sp.LabelsMap().Insert("label_2", "2")
+				sp.Attributes().InsertString("label_1", "1")
+				sp.Attributes().InsertString("label_2", "2")
 				sp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				fillQuantileValue(0.50, 190, sp.QuantileValues().AppendEmpty())

@@ -51,8 +51,8 @@ func TestBuildExporters(t *testing.T) {
 				},
 				NumWorkers: 2,
 			},
-			config.NewID(expType):    createDefaultConfig(),
-			config.NewID(rldExpType): createRldDefaultConfig(),
+			createDefaultConfig().ID():    createDefaultConfig(),
+			createRldDefaultConfig().ID(): createRldDefaultConfig(),
 		},
 
 		Service: config.Service{
@@ -79,13 +79,13 @@ func TestBuildExporters(t *testing.T) {
 	assert.Nil(t, e1.getMetricExporter())
 	assert.Nil(t, e1.getLogExporter())
 
-	e2 := exporters[config.NewID(expType)]
+	e2 := exporters[createDefaultConfig().ID()]
 	require.NotNil(t, e2)
 	assert.NotNil(t, e2.getTracesExporter())
 	assert.Nil(t, e2.getMetricExporter())
 	assert.Nil(t, e2.getLogExporter())
 
-	e3 := exporters[config.NewID(rldExpType)]
+	e3 := exporters[createRldDefaultConfig().ID()]
 	require.NotNil(t, e3)
 	assert.NotNil(t, e3.getTracesExporter())
 	assert.Nil(t, e3.getMetricExporter())
@@ -100,7 +100,7 @@ func TestBuildExporters(t *testing.T) {
 		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may
 		// already stop because it cannot connect.
 		// The test should stop running if this isn't the error cause.
-		require.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+		require.EqualError(t, err, "rpc error: code = Canceled desc = grpc: the client connection is closing")
 	}
 
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
@@ -184,19 +184,18 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	assert.Nil(t, e1.getLogExporter())
 }
 
-func TestBuildExporters_StartAll(t *testing.T) {
+func TestBuildExporters_StartStopAll(t *testing.T) {
 	exporters := make(Exporters)
-	expCfg := &config.ExporterSettings{}
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
 	set := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.DefaultBuildInfo(), TracerProvider: trace.NewNoopTracerProvider()}
-	exporters[expCfg.ID()] = &builtExporter{
+	exporters[config.NewID("example")] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
-			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
-			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, expCfg.ID(), set, testcomponents.ExampleExporterFactory},
+			config.TracesDataType:  &exporterWrapper{config.TracesDataType, nil, traceExporter, nil, traceExporter, config.NewID("example"), set, testcomponents.ExampleExporterFactory},
+			config.MetricsDataType: &exporterWrapper{config.MetricsDataType, metricExporter, nil, nil, metricExporter, config.NewID("example"), set, testcomponents.ExampleExporterFactory},
+			config.LogsDataType:    &exporterWrapper{config.LogsDataType, nil, nil, logsExporter, logsExporter, config.NewID("example"), set, testcomponents.ExampleExporterFactory},
 		},
 	}
 	assert.False(t, traceExporter.ExporterStarted)
@@ -204,7 +203,6 @@ func TestBuildExporters_StartAll(t *testing.T) {
 	assert.False(t, logsExporter.ExporterStarted)
 
 	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
-
 	assert.True(t, traceExporter.ExporterStarted)
 	assert.True(t, metricExporter.ExporterStarted)
 	assert.True(t, logsExporter.ExporterStarted)
@@ -307,7 +305,6 @@ func TestBuildExporters_StopAll(t *testing.T) {
 	assert.False(t, metricExporter.ExporterShutdown)
 	assert.False(t, logsExporter.ExporterShutdown)
 	assert.NoError(t, exporters.ShutdownAll(context.Background()))
-
 	assert.True(t, traceExporter.ExporterShutdown)
 	assert.True(t, metricExporter.ExporterShutdown)
 	assert.True(t, logsExporter.ExporterShutdown)

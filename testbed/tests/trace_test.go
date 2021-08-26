@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -213,46 +213,50 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 			expectedMaxRAM: 100,
 			resultsSummary: performanceResultsSummary,
 		},
-	}, nil)
+	}, nil, nil)
 }
 
 func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
-	args := []string{"--mem-ballast-size-mib", "1000"}
-	Scenario1kSPSWithAttrs(t, args, []TestCase{
+	ballastExtCfg := `
+  memory_ballast:
+    size_mib: 1000`
+	Scenario1kSPSWithAttrs(t, []string{}, []TestCase{
 		// No attributes.
 		{
 			attrCount:      0,
 			attrSizeByte:   0,
 			expectedMaxCPU: 30,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      100,
 			attrSizeByte:   50,
 			expectedMaxCPU: 80,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      10,
 			attrSizeByte:   1000,
 			expectedMaxCPU: 80,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      20,
 			attrSizeByte:   5000,
 			expectedMaxCPU: 120,
-			expectedMaxRAM: 2000,
+			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
-	}, nil)
+	}, nil, map[string]string{"memory_ballast": ballastExtCfg})
 }
 
 func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
-	args := []string{"--mem-ballast-size-mib", "1000"}
+	ballastExtCfg := `
+  memory_ballast:
+    size_mib: 1000`
 
 	attrProcCfg := `
   attributes:
@@ -275,7 +279,7 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 
 	Scenario1kSPSWithAttrs(
 		t,
-		args,
+		[]string{},
 		[]TestCase{
 			{
 				attrCount:      0,
@@ -307,6 +311,7 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 			},
 		},
 		map[string]string{"attributes": attrProcCfg},
+		map[string]string{"memory_ballast": ballastExtCfg},
 	)
 }
 

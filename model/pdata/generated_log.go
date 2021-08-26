@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"sort"
+
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
@@ -105,43 +107,25 @@ func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new ResourceLogsSlice can be initialized:
-//   es := NewResourceLogsSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es ResourceLogsSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlplogs.ResourceLogs, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlplogs.ResourceLogs, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty ResourceLogs.
 // It returns the newly added ResourceLogs.
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
+// provided less function so that two instances of ResourceLogsSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b ResourceLogs) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) ResourceLogsSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -183,6 +167,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 //
 // Must use NewResourceLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type ResourceLogs struct {
 	orig *otlplogs.ResourceLogs
 }
@@ -203,6 +188,16 @@ func (ms ResourceLogs) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
+// SchemaUrl returns the schemaurl associated with this ResourceLogs.
+func (ms ResourceLogs) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this ResourceLogs.
+func (ms ResourceLogs) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // InstrumentationLibraryLogs returns the InstrumentationLibraryLogs associated with this ResourceLogs.
 func (ms ResourceLogs) InstrumentationLibraryLogs() InstrumentationLibraryLogsSlice {
 	return newInstrumentationLibraryLogsSlice(&(*ms.orig).InstrumentationLibraryLogs)
@@ -211,6 +206,7 @@ func (ms ResourceLogs) InstrumentationLibraryLogs() InstrumentationLibraryLogsSl
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	ms.Resource().CopyTo(dest.Resource())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.InstrumentationLibraryLogs().CopyTo(dest.InstrumentationLibraryLogs())
 }
 
@@ -298,43 +294,25 @@ func (es InstrumentationLibraryLogsSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new InstrumentationLibraryLogsSlice can be initialized:
-//   es := NewInstrumentationLibraryLogsSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlplogs.InstrumentationLibraryLogs, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlplogs.InstrumentationLibraryLogs, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibraryLogs.
 // It returns the newly added InstrumentationLibraryLogs.
 func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLogs {
 	*es.orig = append(*es.orig, &otlplogs.InstrumentationLibraryLogs{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the InstrumentationLibraryLogs elements within InstrumentationLibraryLogsSlice given the
+// provided less function so that two instances of InstrumentationLibraryLogsSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b InstrumentationLibraryLogs) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es InstrumentationLibraryLogsSlice) Sort(less func(a, b InstrumentationLibraryLogs) bool) InstrumentationLibraryLogsSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -376,6 +354,7 @@ func (es InstrumentationLibraryLogsSlice) RemoveIf(f func(InstrumentationLibrary
 //
 // Must use NewInstrumentationLibraryLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type InstrumentationLibraryLogs struct {
 	orig *otlplogs.InstrumentationLibraryLogs
 }
@@ -396,6 +375,16 @@ func (ms InstrumentationLibraryLogs) InstrumentationLibrary() InstrumentationLib
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
+// SchemaUrl returns the schemaurl associated with this InstrumentationLibraryLogs.
+func (ms InstrumentationLibraryLogs) SchemaUrl() string {
+	return (*ms.orig).SchemaUrl
+}
+
+// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibraryLogs.
+func (ms InstrumentationLibraryLogs) SetSchemaUrl(v string) {
+	(*ms.orig).SchemaUrl = v
+}
+
 // Logs returns the Logs associated with this InstrumentationLibraryLogs.
 func (ms InstrumentationLibraryLogs) Logs() LogSlice {
 	return newLogSlice(&(*ms.orig).Logs)
@@ -404,6 +393,7 @@ func (ms InstrumentationLibraryLogs) Logs() LogSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibraryLogs) CopyTo(dest InstrumentationLibraryLogs) {
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Logs().CopyTo(dest.Logs())
 }
 
@@ -491,43 +481,25 @@ func (es LogSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// Resize is an operation that resizes the slice:
-// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
-// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
-//
-// Here is how a new LogSlice can be initialized:
-//   es := NewLogSlice()
-//   es.Resize(4)
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       // Here should set all the values for e.
-//   }
-//
-// Deprecated: Use EnsureCapacity() and AppendEmpty() instead.
-func (es LogSlice) Resize(newLen int) {
-	oldLen := len(*es.orig)
-	oldCap := cap(*es.orig)
-	if newLen <= oldLen {
-		*es.orig = (*es.orig)[:newLen:oldCap]
-		return
-	}
-	if newLen > oldCap {
-		newOrig := make([]*otlplogs.LogRecord, oldLen, newLen)
-		copy(newOrig, *es.orig)
-		*es.orig = newOrig
-	}
-	// Add extra empty elements to the array.
-	extraOrigs := make([]otlplogs.LogRecord, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
-	}
-}
-
 // AppendEmpty will append to the end of the slice an empty LogRecord.
 // It returns the newly added LogRecord.
 func (es LogSlice) AppendEmpty() LogRecord {
 	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
 	return es.At(es.Len() - 1)
+}
+
+// Sort sorts the LogRecord elements within LogSlice given the
+// provided less function so that two instances of LogSlice
+// can be compared.
+//
+// Returns the same instance to allow nicer code like:
+//   lessFunc := func(a, b LogRecord) bool {
+//     return a.Name() < b.Name() // choose any comparison here
+//   }
+//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+func (es LogSlice) Sort(less func(a, b LogRecord) bool) LogSlice {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -570,6 +542,7 @@ func (es LogSlice) RemoveIf(f func(LogRecord) bool) {
 //
 // Must use NewLogRecord function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+//
 type LogRecord struct {
 	orig *otlplogs.LogRecord
 }
