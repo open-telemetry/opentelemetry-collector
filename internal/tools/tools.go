@@ -31,6 +31,7 @@ import (
 	_ "github.com/ory/go-acc"
 	_ "github.com/pavius/impi/cmd/impi"
 	_ "github.com/tcnksm/ghr"
+	_ "go.opentelemetry.io/build-tools/checkdoc"
 	_ "go.opentelemetry.io/build-tools/semconvgen"
 	_ "golang.org/x/exp/cmd/apidiff"
 	_ "golang.org/x/tools/cmd/goimports"
