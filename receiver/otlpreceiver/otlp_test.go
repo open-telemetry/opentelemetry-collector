@@ -50,9 +50,9 @@ import (
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
+	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 const otlpReceiverName = "receiver_test"
@@ -95,7 +95,7 @@ var traceJSON = []byte(`
 var traceOtlp = func() pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString(conventions.AttributeHostName, "testHost")
+	rs.Resource().Attributes().UpsertString(semconv.AttributeHostName, "testHost")
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
