@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestDefaultExtensions(t *testing.T) {

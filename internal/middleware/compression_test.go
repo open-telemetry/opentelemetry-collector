@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestHTTPClientCompression(t *testing.T) {
