@@ -1,6 +1,6 @@
 extensions:
-  pprof:
-    endpoint: 0.0.0.0:1777
+  memory_ballast:
+    size_mib: 512
   zpages:
     endpoint: 0.0.0.0:55679
 
@@ -34,4 +34,4 @@ service:
       processors: [memory_limiter, batch]
       exporters: [logging]
 
-  extensions: [pprof, zpages]
+  extensions: [memory_ballast, zpages]

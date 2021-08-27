@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
@@ -41,14 +40,6 @@ func TestDefaultExtensions(t *testing.T) {
 		extension   config.Type
 		getConfigFn getExtensionConfigFn
 	}{
-		{
-			extension: "pprof",
-			getConfigFn: func() config.Extension {
-				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
-				cfg.TCPAddr.Endpoint = endpoint
-				return cfg
-			},
-		},
 		{
 			extension: "zpages",
 			getConfigFn: func() config.Extension {
