@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/testutil"
@@ -42,14 +41,6 @@ func TestDefaultExtensions(t *testing.T) {
 		extension   config.Type
 		getConfigFn getExtensionConfigFn
 	}{
-		{
-			extension: "health_check",
-			getConfigFn: func() config.Extension {
-				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
-				cfg.TCPAddr.Endpoint = endpoint
-				return cfg
-			},
-		},
 		{
 			extension: "pprof",
 			getConfigFn: func() config.Extension {

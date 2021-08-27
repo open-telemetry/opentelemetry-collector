@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/jaegertracing/jaeger/pkg/queue"
 	"go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
@@ -31,6 +30,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -102,7 +102,7 @@ type queuedRetrySender struct {
 	fullName        string
 	cfg             QueueSettings
 	consumerSender  requestSender
-	queue           *queue.BoundedQueue
+	queue           *internal.BoundedQueue
 	retryStopCh     chan struct{}
 	traceAttributes []attribute.KeyValue
 	logger          *zap.Logger
@@ -141,7 +141,7 @@ func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySetting
 			stopCh:         retryStopCh,
 			logger:         sampledLogger,
 		},
-		queue:           queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
+		queue:           internal.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
 		retryStopCh:     retryStopCh,
 		traceAttributes: []attribute.KeyValue{traceAttr},
 		logger:          sampledLogger,

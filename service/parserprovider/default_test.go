@@ -91,7 +91,6 @@ func TestDefault(t *testing.T) {
 			"--config=testdata/otelcol-config.yaml",
 			"--set=processors.batch.timeout=2s",
 			"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
-			"--set=extensions.health_check.endpoint=localhost:8080",
 		})
 		require.NoError(t, err)
 		pl := Default()
