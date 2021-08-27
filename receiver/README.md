@@ -12,7 +12,6 @@ Available trace receivers (sorted alphabetically):
 
 Available metric receivers (sorted alphabetically):
 
-- [Host Metrics Receiver](hostmetricsreceiver/README.md)
 - [OTLP Receiver](otlpreceiver/README.md)
 
 Available log receivers (sorted alphabetically):
