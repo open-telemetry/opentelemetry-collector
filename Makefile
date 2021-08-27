@@ -2,7 +2,6 @@ include ./Makefile.Common
 
 # This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
-							-not -path './cmd/mdatagen/*' \
 							-not -path './cmd/schemagen/*' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
@@ -142,7 +141,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
-	cd cmd/mdatagen && go install ./
 
 .PHONY: otelcol
 otelcol:
