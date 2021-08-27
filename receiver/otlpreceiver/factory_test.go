@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

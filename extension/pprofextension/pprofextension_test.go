@@ -28,7 +28,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {
