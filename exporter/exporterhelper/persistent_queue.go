@@ -18,9 +18,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/jaegertracing/jaeger/pkg/queue"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/extension/storage"
 )
 
@@ -51,8 +51,8 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
 	pq.numWorkers = num
 
-	factory := func() queue.Consumer {
-		return queue.ConsumerFunc(callback)
+	factory := func() internal.Consumer {
+		return internal.ConsumerFunc(callback)
 	}
 
 	for i := 0; i < pq.numWorkers; i++ {
