@@ -11,11 +11,10 @@ processors:
   batch:
 
 extensions:
-  health_check: {}
   zpages:
 
 service:
-  extensions: [zpages, health_check]
+  extensions: [zpages]
   pipelines:
     traces:
       receivers: [otlp]

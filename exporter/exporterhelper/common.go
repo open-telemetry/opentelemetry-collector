@@ -79,7 +79,6 @@ type baseSettings struct {
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
-	ResourceToTelemetrySettings
 }
 
 // fromOptions returns the internal options starting from the default and applying all configured options.
@@ -90,8 +89,7 @@ func fromOptions(options ...Option) *baseSettings {
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
-		RetrySettings:               RetrySettings{Enabled: false},
-		ResourceToTelemetrySettings: defaultResourceToTelemetrySettings(),
+		RetrySettings: RetrySettings{Enabled: false},
 	}
 
 	for _, op := range options {
@@ -150,14 +148,6 @@ func WithQueue(queueSettings QueueSettings) Option {
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
 		o.consumerOptions = append(o.consumerOptions, consumerhelper.WithCapabilities(capabilities))
-	}
-}
-
-// WithResourceToTelemetryConversion overrides the default ResourceToTelemetrySettings for an exporter.
-// The default ResourceToTelemetrySettings is to disable resource attributes to metric labels conversion.
-func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTelemetrySettings) Option {
-	return func(o *baseSettings) {
-		o.ResourceToTelemetrySettings = resourceToTelemetrySettings
 	}
 }
 

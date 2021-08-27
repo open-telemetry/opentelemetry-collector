@@ -11,12 +11,12 @@ processors:
   batch:
 
 extensions:
-  health_check: {}
-  pprof:
+  memory_ballast:
+    size_mib: 512
   zpages:
 
 service:
-  extensions: [pprof, zpages, health_check]
+  extensions: [memory_ballast, zpages]
   pipelines:
     traces:
       receivers: [otlp]
