@@ -33,10 +33,9 @@ data:
         spike_limit_mib: 100
         check_interval: 5s
     extensions:
-      health_check: {}
       zpages: {}
     service:
-      extensions: [health_check, zpages]
+      extensions: [zpages]
       pipelines:
         traces:
           receivers: [otlp]
@@ -124,14 +123,13 @@ data:
         spike_limit_mib: 512
         check_interval: 5s
     extensions:
-      health_check: {}
       zpages: {}
     exporters:
       otlp:
         endpoint: "http://someotlp.target.com:4317" # Replace with a real endpoint.
         insecure: true
     service:
-      extensions: [health_check, zpages]
+      extensions: [zpages]
       pipelines:
         traces/1:
           receivers: [otlp]
