@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
@@ -38,7 +37,6 @@ func Components() (
 	var errs []error
 
 	extensions, err := component.MakeExtensionFactoryMap(
-		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
 		ballastextension.NewFactory(),
 	)
