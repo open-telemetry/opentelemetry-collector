@@ -17,6 +17,7 @@ package defaultcomponents
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/collector/exporter/skywalkingexporter"
 	"runtime"
 	"testing"
 
@@ -64,6 +65,16 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "skywalking",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
+				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+					Endpoint: endpoint,
+				}
 				return cfg
 			},
 		},
