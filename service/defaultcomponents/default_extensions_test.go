@@ -25,11 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
-	"go.opentelemetry.io/collector/extension/healthcheckextension"
-	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestDefaultExtensions(t *testing.T) {
@@ -44,34 +41,10 @@ func TestDefaultExtensions(t *testing.T) {
 		getConfigFn getExtensionConfigFn
 	}{
 		{
-			extension: "health_check",
-			getConfigFn: func() config.Extension {
-				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
-				cfg.TCPAddr.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
-			extension: "pprof",
-			getConfigFn: func() config.Extension {
-				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
-				cfg.TCPAddr.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
 			extension: "zpages",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
-			extension: "bearertokenauth",
-			getConfigFn: func() config.Extension {
-				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
-				cfg.BearerToken = "sometoken"
 				return cfg
 			},
 		},
@@ -84,9 +57,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 	}
 
-	// we have one more extension that we can't test here: the OIDC Auth extension requires
-	// an OIDC server to get the config from, and we don't want to spawn one here for this test.
-	assert.Equal(t, len(tests)+1, len(extFactories))
+	assert.Equal(t, len(tests), len(extFactories))
 
 	for _, tt := range tests {
 		t.Run(string(tt.extension), func(t *testing.T) {

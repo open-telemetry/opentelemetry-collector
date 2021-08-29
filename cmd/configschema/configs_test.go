@@ -35,7 +35,7 @@ func TestCreateReceiverConfig(t *testing.T) {
 }
 
 func TestCreateProcesorConfig(t *testing.T) {
-	cfg, err := GetCfgInfo(testComponents(), "processor", "filter")
+	cfg, err := GetCfgInfo(testComponents(), "processor", "batch")
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }
@@ -50,7 +50,7 @@ func TestGetConfig(t *testing.T) {
 			componentType: "receiver",
 		},
 		{
-			name:          "filter",
+			name:          "batch",
 			componentType: "processor",
 		},
 		{

@@ -1,29 +1,22 @@
 receivers:
-  jaeger:
+  otlp:
     protocols:
       grpc:
 
 exporters:
-  opencensus:
+  otlp:
     endpoint: "locahost:55678"
 
 processors:
-  attributes:
-    actions:
-      - key: key1
-        value: 123
-        action: insert
   batch:
 
 extensions:
-  health_check: {}
-  pprof:
   zpages:
 
 service:
-  extensions: [pprof, zpages, health_check]
+  extensions: [zpages]
   pipelines:
     traces:
-      receivers: [jaeger]
-      processors: [attributes, batch]
-      exporters: [opencensus]
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]

@@ -15,22 +15,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/cmd/checkdoc"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/issuegenerator"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/mdatagen"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/examples/demo/app"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/internal/tools"
     schedule:
       interval: "weekly"

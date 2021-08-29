@@ -26,9 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
@@ -82,8 +81,8 @@ func TestDefault(t *testing.T) {
 		}
 		sort.Strings(processors)
 		// batch/foo is not added to the pipeline
-		assert.Equal(t, []string{"attributes", "batch", "batch/foo"}, processors)
-		assert.Equal(t, []config.ComponentID{config.NewID("attributes"), config.NewID("batch")}, cfg.Service.Pipelines["traces"].Processors)
+		assert.Equal(t, []string{"batch", "batch/foo"}, processors)
+		assert.Equal(t, []config.ComponentID{config.NewID("batch")}, cfg.Service.Pipelines["traces"].Processors)
 	})
 	t.Run("ok", func(t *testing.T) {
 		flags := new(flag.FlagSet)
@@ -91,12 +90,7 @@ func TestDefault(t *testing.T) {
 		err = flags.Parse([]string{
 			"--config=testdata/otelcol-config.yaml",
 			"--set=processors.batch.timeout=2s",
-			// Arrays are overridden and object arrays cannot be indexed
-			// this creates actions array of size 1
-			"--set=processors.attributes.actions.key=foo",
-			"--set=processors.attributes.actions.value=bar",
-			"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
-			"--set=extensions.health_check.endpoint=localhost:8080",
+			"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
 		})
 		require.NoError(t, err)
 		pl := Default()
@@ -112,15 +106,12 @@ func TestDefault(t *testing.T) {
 		err = cfg.Validate()
 		require.NoError(t, err)
 
-		assert.Equal(t, 2, len(cfg.Processors))
-		batch := cfg.Processors[config.NewID("batch")].(*batchprocessor.Config)
+		batch, hasBatch := cfg.Processors[config.NewID("batch")].(*batchprocessor.Config)
+		require.True(t, hasBatch)
 		assert.Equal(t, time.Second*2, batch.Timeout)
-		jaeger := cfg.Receivers[config.NewID("jaeger")].(*jaegerreceiver.Config)
-		assert.Equal(t, "localhost:12345", jaeger.GRPC.NetAddr.Endpoint)
-		attributes := cfg.Processors[config.NewID("attributes")].(*attributesprocessor.Config)
-		require.Equal(t, 1, len(attributes.Actions))
-		assert.Equal(t, "foo", attributes.Actions[0].Key)
-		assert.Equal(t, "bar", attributes.Actions[0].Value)
+		otlp, hasOTLP := cfg.Receivers[config.NewID("otlp")].(*otlpreceiver.Config)
+		require.True(t, hasOTLP)
+		assert.Equal(t, "localhost:12345", otlp.GRPC.NetAddr.Endpoint)
 	})
 }
 
@@ -133,11 +124,7 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 	err = flags.Parse([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--set=processors.batch.timeout=2s",
-		// Arrays are overridden and object arrays cannot be indexed
-		// this creates actions array of size 1
-		"--set=processors.attributes.actions.key=foo",
-		"--set=processors.attributes.actions.value=bar",
-		"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
+		"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
 	})
 	require.NoError(t, err)
 
