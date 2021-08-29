@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.42.0
-	github.com/google/addlicense v0.0.0-20200414192033-fb22319bcc1c
+	github.com/google/addlicense v1.0.0
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
 	github.com/ory/go-acc v0.2.6
@@ -30,6 +30,7 @@ require (
 	github.com/ashanbrown/makezero v0.0.0-20210520155254-b6261585ddde // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
