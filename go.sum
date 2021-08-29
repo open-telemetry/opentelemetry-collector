@@ -828,3 +828,5 @@ honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
+skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481 h1:K8jQuADJdwsl4+3P6g/nFjRo9ADNhal2MWUW2R4D8Xk=
+skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481/go.mod h1:2abOB2LaQEsJLmollzCt5kNfVMWFGKE58905uYzs+sc=
