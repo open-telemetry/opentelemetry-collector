@@ -20,7 +20,6 @@ import (
 	"fmt"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -38,8 +37,7 @@ type logsClientWithCancel struct {
 type swExporter struct {
 	cfg *Config
 	// gRPC clients and connection.
-	logSvcClient     logpb.LogReportServiceClient
-	metricsSvcClient agentmetricspb.MetricsServiceClient
+	logSvcClient logpb.LogReportServiceClient
 	// In any of the channels we keep always NumWorkers object (sometimes nil),
 	// to make sure we don't open more than NumWorkers RPCs at any moment.
 	logsClients    chan *logsClientWithCancel
