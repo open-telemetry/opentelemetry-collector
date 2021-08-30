@@ -347,7 +347,8 @@ check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -replace go.opentelemetry.io/collector/model=$(CURDIR)/model"
-	make -C $(CONTRIB_PATH) for-all CMD="go mod tidy"
+	make -C $(CONTRIB_PATH) for-all CMD="go mod tidy -go=1.16"
+	make -C $(CONTRIB_PATH) for-all CMD="go mod tidy -go=1.17"
 	make -C $(CONTRIB_PATH) test
 	@echo Restoring contrib to no longer use this core checkout
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
