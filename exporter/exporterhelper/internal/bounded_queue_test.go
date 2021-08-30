@@ -26,8 +26,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber/jaeger-lib/metrics"
-	"github.com/uber/jaeger-lib/metrics/metricstest"
 	uatomic "go.uber.org/atomic"
 )
 
@@ -35,13 +33,7 @@ import (
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
 func helper(t *testing.T, startConsumers func(q *BoundedQueue, consumerFn func(item interface{}))) {
-	mFact := metricstest.NewFactory(0)
-	counter := mFact.Counter(metrics.Options{Name: "dropped", Tags: nil})
-	gauge := mFact.Gauge(metrics.Options{Name: "size", Tags: nil})
-
-	q := NewBoundedQueue(1, func(item interface{}) {
-		counter.Inc(1)
-	})
+	q := NewBoundedQueue(1, func(item interface{}) {})
 	assert.Equal(t, 1, q.Capacity())
 
 	var startLock sync.Mutex
@@ -76,20 +68,6 @@ func helper(t *testing.T, startConsumers func(q *BoundedQueue, consumerFn func(i
 	// the second should be rejected since the queue is full
 	assert.False(t, q.Produce("c"))
 	assert.Equal(t, 1, q.Size())
-
-	q.StartLengthReporting(time.Millisecond, gauge)
-	for i := 0; i < 1000; i++ {
-		_, g := mFact.Snapshot()
-		if g["size"] == 0 {
-			time.Sleep(time.Millisecond)
-		} else {
-			break
-		}
-	}
-
-	c, g := mFact.Snapshot()
-	assert.EqualValues(t, 1, c["dropped"])
-	assert.EqualValues(t, 1, g["size"])
 
 	startLock.Unlock() // unblock consumer
 
