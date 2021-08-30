@@ -43,7 +43,7 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 		logger:   logger,
 		stopChan: make(chan struct{}),
 		capacity: capacity,
-		storage:  newPersistentContiguousStorage(ctx, name, logger, client, unmarshaler),
+		storage:  newPersistentContiguousStorage(ctx, name, capacity, logger, client, unmarshaler),
 	}
 }
 

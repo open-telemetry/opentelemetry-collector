@@ -65,7 +65,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 				require.False(t, result)
 			}
 
-			// Lets make sure the loop picks the first element into the channel,
+			// Let's make sure the loop picks the first element into the channel,
 			// so the capacity could be used in full
 			if i == 0 {
 				require.Eventually(t, func() bool {

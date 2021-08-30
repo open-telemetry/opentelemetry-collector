@@ -49,7 +49,7 @@ func createTestClient(extension storage.Extension) storage.Client {
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
 	logger, _ := zap.NewDevelopment()
-	return newPersistentContiguousStorage(context.Background(), "foo", logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
+	return newPersistentContiguousStorage(context.Background(), "foo", 1000, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
 }
 
 func createTemporaryDirectory() string {

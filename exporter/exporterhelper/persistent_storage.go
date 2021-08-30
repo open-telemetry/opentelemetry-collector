@@ -19,7 +19,6 @@ import (
 	"errors"
 	"strconv"
 	"sync"
-	"time"
 
 	"go.opencensus.io/metric/metricdata"
 	"go.uber.org/zap"
@@ -33,7 +32,7 @@ type persistentStorage interface {
 	put(req request) error
 	// get returns the next available request; note that the channel is unbuffered
 	get() <-chan request
-	// size returns the current size of the storage with items waiting for processing
+	// size returns the current size of the persistent storage with items waiting for processing
 	size() int
 	// stop gracefully stops the storage
 	stop()
@@ -67,12 +66,13 @@ type persistentContiguousStorage struct {
 	logger      *zap.Logger
 	queueName   string
 	client      storage.Client
-	retryDelay  time.Duration
 	unmarshaler requestUnmarshaler
 
-	reqChan  chan request
-	stopOnce sync.Once
+	putChan  chan struct{}
 	stopChan chan struct{}
+	stopOnce sync.Once
+
+	reqChan chan request
 
 	mu                      sync.Mutex
 	readIndex               itemIndex
@@ -88,8 +88,6 @@ const (
 	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
-	defaultRetryDelay = 100 * time.Millisecond
-
 	readIndexKey               = "ri"
 	writeIndexKey              = "wi"
 	currentlyProcessedItemsKey = "pi"
@@ -104,18 +102,19 @@ var (
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
 // The queue needs to be initialized separately using initPersistentContiguousStorage.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, channelCapacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
 		logger:      logger,
 		client:      client,
 		queueName:   queueName,
 		unmarshaler: unmarshaler,
+		putChan:     make(chan struct{}, channelCapacity),
 		reqChan:     make(chan request),
 		stopChan:    make(chan struct{}),
-		retryDelay:  defaultRetryDelay,
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
+	unprocessedReqs := pcs.retrieveUnprocessedItems(context.Background())
 
 	err := currentlyProcessedBatchesGauge.UpsertEntry(func() int64 {
 		return int64(pcs.numberOfCurrentlyProcessedItems())
@@ -124,7 +123,18 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, logge
 		logger.Error("failed to create number of currently processed items metric", zap.Error(err))
 	}
 
+	// We start the loop first so in case there are more elements in the persistent storage than the capacity,
+	// it does not get blocked on initialization
+
 	go pcs.loop()
+
+	// Make sure the leftover requests are handled
+	pcs.enqueueUnprocessedReqs(unprocessedReqs)
+	// Make sure the communication channel is loaded up
+	for i := 0; i < pcs.size(); i++ {
+		pcs.putChan <- struct{}{}
+	}
+
 	return pcs
 }
 
@@ -153,10 +163,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	}
 }
 
-// loop is the main loop that handles fetching items from the persistent buffer
-func (pcs *persistentContiguousStorage) loop() {
-	// We want to run it here so it's not blocking
-	reqs := pcs.retrieveUnprocessedItems(context.Background())
+func (pcs *persistentContiguousStorage) enqueueUnprocessedReqs(reqs []request) {
 	if len(reqs) > 0 {
 		errCount := 0
 		for _, req := range reqs {
@@ -176,20 +183,18 @@ func (pcs *persistentContiguousStorage) loop() {
 
 		}
 	}
+}
 
+// loop is the main loop that handles fetching items from the persistent buffer
+func (pcs *persistentContiguousStorage) loop() {
 	for {
-		req, found := pcs.getNextItem(context.Background())
-		if found {
-			select {
-			case <-pcs.stopChan:
-				return
-			case pcs.reqChan <- req:
-			}
-		} else {
-			select {
-			case <-pcs.stopChan:
-				return
-			case <-time.After(pcs.retryDelay):
+		select {
+		case <-pcs.stopChan:
+			return
+		case <-pcs.putChan:
+			req, found := pcs.getNextItem(context.Background())
+			if found {
+				pcs.reqChan <- req
 			}
 		}
 	}
@@ -240,6 +245,9 @@ func (pcs *persistentContiguousStorage) put(req request) error {
 	pcs.writeIndex++
 
 	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
+
+	// Inform the loop that there's some data to process
+	pcs.putChan <- struct{}{}
 
 	return err
 }
