@@ -96,7 +96,7 @@ func NewDefault() ConfigUnmarshaler {
 }
 
 // Unmarshal the Config from a Parser.
-// After the config is unmarshalled, `Validate()` must be called to validate.
+// After the config is unmarshaled, `Validate()` must be called to validate.
 func (*defaultUnmarshaler) Unmarshal(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 

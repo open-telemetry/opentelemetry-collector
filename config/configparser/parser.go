@@ -187,7 +187,7 @@ func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
 // config:
 //   thing:
 //
-// we want an unmarshalled Config to be equivalent to
+// we want an unmarshaled Config to be equivalent to
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
 func expandNilStructPointers() mapstructure.DecodeHookFunc {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
