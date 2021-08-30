@@ -74,7 +74,7 @@ Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-tele
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
-- [Alex Boten](https://github.com/codeboten), LightStep
+- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
