@@ -951,7 +951,7 @@ func TestAnyValueArrayWithNilValues(t *testing.T) {
 	assert.EqualValues(t, "other_value", val.StringVal())
 }
 
-func TestAttributeValueToString(t *testing.T) {
+func TestAsString(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    AttributeValue
@@ -1005,7 +1005,7 @@ func TestAttributeValueToString(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := AttributeValueToString(test.input)
+			actual := test.input.AsString()
 			assert.Equal(t, test.expected, actual)
 		})
 	}

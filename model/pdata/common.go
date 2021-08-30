@@ -363,6 +363,39 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 	return false
 }
 
+// String converts an OTLP AttributeValue object of any type to its equivalent string
+// representation. This differs from StringVal which only returns a non-empty value
+// if the AttributeValueType is AttributeValueTypeString.
+func (a AttributeValue) AsString() string {
+	switch a.Type() {
+	case AttributeValueTypeNull:
+		return ""
+
+	case AttributeValueTypeString:
+		return a.StringVal()
+
+	case AttributeValueTypeBool:
+		return strconv.FormatBool(a.BoolVal())
+
+	case AttributeValueTypeDouble:
+		return strconv.FormatFloat(a.DoubleVal(), 'f', -1, 64)
+
+	case AttributeValueTypeInt:
+		return strconv.FormatInt(a.IntVal(), 10)
+
+	case AttributeValueTypeMap:
+		jsonStr, _ := json.Marshal(AttributeMapToMap(a.MapVal()))
+		return string(jsonStr)
+
+	case AttributeValueTypeArray:
+		jsonStr, _ := json.Marshal(attributeArrayToSlice(a.ArrayVal()))
+		return string(jsonStr)
+
+	default:
+		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", a.Type())
+	}
+}
+
 func newAttributeKeyValueString(k string, v string) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := AttributeValue{&orig.Value}
@@ -745,34 +778,9 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 }
 
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
+// Deprecated: use AttributeValue's String method instead.
 func AttributeValueToString(attr AttributeValue) string {
-	switch attr.Type() {
-	case AttributeValueTypeNull:
-		return ""
-
-	case AttributeValueTypeString:
-		return attr.StringVal()
-
-	case AttributeValueTypeBool:
-		return strconv.FormatBool(attr.BoolVal())
-
-	case AttributeValueTypeDouble:
-		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
-
-	case AttributeValueTypeInt:
-		return strconv.FormatInt(attr.IntVal(), 10)
-
-	case AttributeValueTypeMap:
-		jsonStr, _ := json.Marshal(AttributeMapToMap(attr.MapVal()))
-		return string(jsonStr)
-
-	case AttributeValueTypeArray:
-		jsonStr, _ := json.Marshal(attributeArrayToSlice(attr.ArrayVal()))
-		return string(jsonStr)
-
-	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
-	}
+	return attr.AsString()
 }
 
 // AttributeMapToMap converts an OTLP AttributeMap to a standard go map
