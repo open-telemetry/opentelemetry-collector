@@ -306,22 +306,31 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 
 	reqs = make([]request, len(processedItems))
 	keys := make([]string, len(processedItems))
-	batch = newBatch(pcs)
+	retrieveBatch := newBatch(pcs)
+	cleanupBatch := newBatch(pcs)
 	for i, it := range processedItems {
 		keys[i] = pcs.itemKey(it)
-		batch.
-			get(keys[i]).
-			delete(keys[i])
+		retrieveBatch.get(keys[i])
+		cleanupBatch.delete(keys[i])
 	}
 
-	_, err = batch.execute(ctx)
-	if err != nil {
-		pcs.logger.Warn("failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+	_, retrieveErr := retrieveBatch.execute(ctx)
+	_, cleanupErr := cleanupBatch.execute(ctx)
+
+	if retrieveErr != nil {
+		pcs.logger.Warn("failed retrieving items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(retrieveErr))
+	}
+
+	if cleanupErr != nil {
+		pcs.logger.Debug("failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(cleanupErr))
+	}
+
+	if retrieveErr != nil {
 		return reqs
 	}
 
 	for i, key := range keys {
-		req, err := batch.getRequestResult(key)
+		req, err := retrieveBatch.getRequestResult(key)
 		if err != nil {
 			pcs.logger.Warn("failed unmarshalling item",
 				zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
@@ -340,7 +349,7 @@ func (pcs *persistentContiguousStorage) itemProcessingStart(ctx context.Context,
 		setItemIndexArray(currentlyProcessedItemsKey, pcs.currentlyProcessedItems).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Warn("failed updating currently processed items",
+		pcs.logger.Debug("failed updating currently processed items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
@@ -360,7 +369,7 @@ func (pcs *persistentContiguousStorage) itemProcessingFinish(ctx context.Context
 		delete(pcs.itemKey(index)).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Warn("failed updating currently processed items",
+		pcs.logger.Debug("failed updating currently processed items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }

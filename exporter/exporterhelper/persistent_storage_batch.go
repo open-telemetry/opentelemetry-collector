@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"sync"
 
 	"go.uber.org/zap"
 
@@ -32,8 +31,6 @@ var errItemIndexArrInvalidDataType = errors.New("invalid data type, expected []i
 type batchStruct struct {
 	logger *zap.Logger
 	pcs    *persistentContiguousStorage
-
-	mu sync.Mutex
 
 	operations    []storage.Operation
 	getOperations map[string]storage.Operation
@@ -50,9 +47,6 @@ func newBatch(pcs *persistentContiguousStorage) *batchStruct {
 
 // execute runs the provided operations in order
 func (bof *batchStruct) execute(ctx context.Context) (*batchStruct, error) {
-	bof.mu.Lock()
-	defer bof.mu.Unlock()
-
 	err := bof.pcs.client.Batch(ctx, bof.operations...)
 	if err != nil {
 		return nil, err
@@ -63,9 +57,6 @@ func (bof *batchStruct) execute(ctx context.Context) (*batchStruct, error) {
 
 // set adds a Set operation to the batch
 func (bof *batchStruct) set(key string, value interface{}, marshal func(interface{}) ([]byte, error)) *batchStruct {
-	bof.mu.Lock()
-	defer bof.mu.Unlock()
-
 	valueBytes, err := marshal(value)
 	if err != nil {
 		bof.logger.Debug("failed marshaling item, skipping it", zap.String(zapKey, key), zap.Error(err))
@@ -78,9 +69,6 @@ func (bof *batchStruct) set(key string, value interface{}, marshal func(interfac
 
 // get adds a Get operation to the batch. After executing, its result will be available through getResult
 func (bof *batchStruct) get(keys ...string) *batchStruct {
-	bof.mu.Lock()
-	defer bof.mu.Unlock()
-
 	for _, key := range keys {
 		op := storage.GetOperation(key)
 		bof.getOperations[key] = op
@@ -92,9 +80,6 @@ func (bof *batchStruct) get(keys ...string) *batchStruct {
 
 // delete adds a Delete operation to the batch
 func (bof *batchStruct) delete(keys ...string) *batchStruct {
-	bof.mu.Lock()
-	defer bof.mu.Unlock()
-
 	for _, key := range keys {
 		bof.operations = append(bof.operations, storage.DeleteOperation(key))
 	}
