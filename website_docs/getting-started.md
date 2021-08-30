@@ -180,9 +180,9 @@ Prometheus metrics.
 $ git clone git@github.com:open-telemetry/opentelemetry-collector-contrib.git; \
     cd opentelemetry-collector-contrib/examples/demo; \
     go build client/main.go; ./client/main & pid1="$!"; \
-    go build server/main.go; ./server/main & pid1="$!"; \
+    go build server/main.go; ./server/main & pid2="$!"; \
 
 $ git clone git@github.com:open-telemetry/opentelemetry-collector.git; \
     cd opentelemetry-collector; make install-tools; make otelcol; \
-    ./bin/otelcol_$(go env GOOS)_$(go env GOARCH) --config ./examples/local/otel-config.yaml; kill $pid1
+    ./bin/otelcol_$(go env GOOS)_$(go env GOARCH) --config ./examples/local/otel-config.yaml; kill $pid1; kill $pid2
 ```
