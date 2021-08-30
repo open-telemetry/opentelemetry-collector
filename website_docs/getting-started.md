@@ -50,7 +50,7 @@ Prometheus back-ends. More information can be found on the demo
 
 ```bash
 $ git clone git@github.com:open-telemetry/opentelemetry-collector-contrib.git; \
-    cd opentelemetry-collector/examples/demo; \
+    cd opentelemetry-collector-contrib/examples/demo; \
     docker-compose up -d
 ```
 
