@@ -588,12 +588,54 @@ func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
 
+// Gauge returns the gauge associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Gauge() Gauge {
+	return newGauge((*ms.orig).GetGauge())
+}
+
+// Sum returns the sum associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeSum will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Sum() Sum {
+	return newSum((*ms.orig).GetSum())
+}
+
+// Histogram returns the histogram associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeHistogram will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Histogram() Histogram {
+	return newHistogram((*ms.orig).GetHistogram())
+}
+
+// Summary returns the summary associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeSummary will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Summary() Summary {
+	return newSummary((*ms.orig).GetSummary())
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
-	copyData(ms.orig, dest.orig)
+	switch ms.DataType() {
+	case MetricDataTypeGauge:
+		dest.SetDataType(MetricDataTypeGauge)
+		ms.Gauge().CopyTo(dest.Gauge())
+	case MetricDataTypeSum:
+		dest.SetDataType(MetricDataTypeSum)
+		ms.Sum().CopyTo(dest.Sum())
+	case MetricDataTypeHistogram:
+		dest.SetDataType(MetricDataTypeHistogram)
+		ms.Histogram().CopyTo(dest.Histogram())
+	case MetricDataTypeSummary:
+		dest.SetDataType(MetricDataTypeSummary)
+		ms.Summary().CopyTo(dest.Summary())
+	}
+
 }
 
 // Gauge represents the type of a double scalar metric that always exports the "current value" for every data point.

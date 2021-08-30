@@ -118,7 +118,31 @@ var metric = &messageValueStruct{
 			defaultVal:      `""`,
 			testVal:         `"1"`,
 		},
-		oneofDataField,
+		&oneOfField{
+			fieldName: "DataType",
+			fields: []baseField{
+				&oneOfMessageValue{
+					fieldName:     "Gauge",
+					fieldType:     "Gauge",
+					returnMessage: doubleGauge,
+				},
+				&oneOfMessageValue{
+					fieldName:     "Sum",
+					fieldType:     "Sum",
+					returnMessage: doubleSum,
+				},
+				&oneOfMessageValue{
+					fieldName:     "Histogram",
+					fieldType:     "Histogram",
+					returnMessage: histogram,
+				},
+				&oneOfMessageValue{
+					fieldName:     "Summary",
+					fieldType:     "Summary",
+					returnMessage: summary,
+				},
+			},
+		},
 	},
 }
 
@@ -190,9 +214,10 @@ var numberDataPoint = &messageValueStruct{
 		attributes,
 		startTimeField,
 		timeField,
-		&numberField{
-			fields: []*oneOfPrimitiveValue{
-				{
+		&oneOfField{
+			fieldName: "Type",
+			fields: []baseField{
+				&oneOfPrimitiveValue{
 					originFullName:  "otlpmetrics.NumberDataPoint",
 					name:            "DoubleVal",
 					originFieldName: "Value",
@@ -201,7 +226,7 @@ var numberDataPoint = &messageValueStruct{
 					testVal:         "float64(17.13)",
 					fieldType:       "Double",
 				},
-				{
+				&oneOfPrimitiveValue{
 					originFullName:  "otlpmetrics.NumberDataPoint",
 					name:            "IntVal",
 					originFieldName: "Value",
@@ -289,9 +314,10 @@ var exemplar = &messageValueStruct{
 	originFullName: "otlpmetrics.Exemplar",
 	fields: []baseField{
 		timeField,
-		&numberField{
-			fields: []*oneOfPrimitiveValue{
-				{
+		&oneOfField{
+			fieldName: "Type",
+			fields: []baseField{
+				&oneOfPrimitiveValue{
 					originFullName:  "otlpmetrics.Exemplar",
 					name:            "DoubleVal",
 					originFieldName: "Value",
@@ -300,7 +326,7 @@ var exemplar = &messageValueStruct{
 					testVal:         "float64(17.13)",
 					fieldType:       "Double",
 				},
-				{
+				&oneOfPrimitiveValue{
 					originFullName:  "otlpmetrics.Exemplar",
 					name:            "IntVal",
 					originFieldName: "Value",
@@ -388,11 +414,4 @@ var aggregationTemporalityField = &primitiveTypedField{
 	rawType:         "otlpmetrics.AggregationTemporality",
 	defaultVal:      "AggregationTemporalityUnspecified",
 	testVal:         "AggregationTemporalityCumulative",
-}
-
-var oneofDataField = &oneofField{
-	copyFuncName:    "copyData",
-	originFieldName: "Data",
-	testVal:         "&otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}",
-	fillTestName:    "Gauge",
 }

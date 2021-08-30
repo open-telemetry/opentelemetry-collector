@@ -65,6 +65,13 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	}
 }`
 
+const accessorsOneofMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+// Calling this function when DataType() != MetricDataType${fieldType} will cause a panic.
+// Calling this function on zero-initialized ${structName} will cause a panic.
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return new${returnType}((*ms.orig).Get${fieldType}())
+}`
+
 const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
 	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
@@ -459,7 +466,7 @@ func (opv *oneOfPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *strings
 }
 
 func (opv *oneOfPrimitiveValue) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\t tv.Set" + opv.name + "(" + opv.testVal + ")\n")
+	sb.WriteString("\t tv.Set" + opv.name + "(" + opv.testVal + ")")
 }
 
 func (opv *oneOfPrimitiveValue) generateCopyToValue(sb *strings.Builder) {
@@ -469,37 +476,93 @@ func (opv *oneOfPrimitiveValue) generateCopyToValue(sb *strings.Builder) {
 
 var _ baseField = (*oneOfPrimitiveValue)(nil)
 
-type numberField struct {
-	fields []*oneOfPrimitiveValue
+type oneOfMessageValue struct {
+	fieldName     string
+	fieldType     string
+	returnMessage *messageValueStruct
 }
 
-func (nf *numberField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (opv *oneOfMessageValue) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsOneofMessageTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "returnType":
+			return opv.returnMessage.structName
+		case "lowerFieldName":
+			return strings.ToLower(opv.fieldName)
+		case "fieldName":
+			return opv.fieldName
+		case "fieldType":
+			return opv.fieldType
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
+}
+
+func (opv *oneOfMessageValue) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsMessageValueTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return opv.fieldName
+		case "returnType":
+			return opv.returnMessage.structName
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (opv *oneOfMessageValue) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\tfillTest" + opv.returnMessage.structName + "(tv." + opv.fieldName + "())")
+}
+
+func (opv *oneOfMessageValue) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tcase MetricDataType" + opv.fieldType + ":\n")
+	sb.WriteString("\t  dest.SetDataType(MetricDataType" + opv.fieldType + ")\n")
+	sb.WriteString("\t  ms." + opv.fieldName + "().CopyTo(dest." + opv.fieldName + "())\n")
+}
+
+var _ baseField = (*oneOfMessageValue)(nil)
+
+type oneOfField struct {
+	fieldName string
+	fields    []baseField
+}
+
+func (nf *oneOfField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	for _, field := range nf.fields {
 		field.generateAccessors(ms, sb)
 	}
 }
 
-func (nf *numberField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (nf *oneOfField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
 	for _, field := range nf.fields {
 		field.generateAccessorsTest(ms, sb)
+		sb.WriteString("\n")
 	}
 }
 
-func (nf *numberField) generateSetWithTestValue(sb *strings.Builder) {
+func (nf *oneOfField) generateSetWithTestValue(sb *strings.Builder) {
 	for _, field := range nf.fields {
 		field.generateSetWithTestValue(sb)
 		// TODO: this test should be generated for all number values,
 		//       for now, it's ok to only set one value
+		sb.WriteString("\n")
 		return
 	}
 }
 
-func (nf *numberField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tswitch ms.Type() {\n")
+func (nf *oneOfField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tswitch ms." + nf.fieldName + "() {\n")
 	for _, field := range nf.fields {
 		field.generateCopyToValue(sb)
 	}
 	sb.WriteString("\t}\n")
 }
 
-var _ baseField = (*numberField)(nil)
+var _ baseField = (*oneOfField)(nil)

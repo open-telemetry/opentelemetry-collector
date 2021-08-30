@@ -34,7 +34,7 @@ const (
 	endTime   = uint64(12578940000000054321)
 )
 
-func TestCopyData(t *testing.T) {
+func TestMetricCopyData(t *testing.T) {
 	tests := []struct {
 		name string
 		src  *otlpmetrics.Metric
@@ -70,7 +70,7 @@ func TestCopyData(t *testing.T) {
 			dest := &otlpmetrics.Metric{}
 			assert.Nil(t, dest.Data)
 			assert.NotNil(t, test.src.Data)
-			copyData(test.src, dest)
+			newMetric(test.src).CopyTo(newMetric(dest))
 			assert.EqualValues(t, test.src, dest)
 		})
 	}
