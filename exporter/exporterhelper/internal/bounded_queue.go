@@ -19,10 +19,8 @@ package internal
 import (
 	"sync"
 	"sync/atomic"
-	"time"
 	"unsafe"
 
-	"github.com/uber/jaeger-lib/metrics"
 	uatomic "go.uber.org/atomic"
 )
 
@@ -160,24 +158,6 @@ func (q *BoundedQueue) Size() int {
 // Capacity returns capacity of the queue
 func (q *BoundedQueue) Capacity() int {
 	return int(q.capacity.Load())
-}
-
-// StartLengthReporting starts a timer-based goroutine that periodically reports
-// current queue length to a given metrics gauge.
-func (q *BoundedQueue) StartLengthReporting(reportPeriod time.Duration, gauge metrics.Gauge) {
-	ticker := time.NewTicker(reportPeriod)
-	go func() {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				size := q.Size()
-				gauge.Update(int64(size))
-			case <-q.stopCh:
-				return
-			}
-		}
-	}()
 }
 
 // Resize changes the capacity of the queue, returning whether the action was successful
