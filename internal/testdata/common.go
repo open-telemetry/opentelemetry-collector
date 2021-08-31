@@ -38,41 +38,41 @@ const (
 )
 
 func initResourceAttributes1(dest pdata.AttributeMap) {
-	dest.InitFromMap(resourceAttributes1)
+	pdata.NewAttributeMapFromMap(resourceAttributes1).CopyTo(dest)
 }
 
 func initResourceAttributes2(dest pdata.AttributeMap) {
-	dest.InitFromMap(resourceAttributes2)
+	pdata.NewAttributeMapFromMap(resourceAttributes2).CopyTo(dest)
 }
 
 func initSpanAttributes(dest pdata.AttributeMap) {
-	dest.InitFromMap(spanAttributes)
+	pdata.NewAttributeMapFromMap(spanAttributes).CopyTo(dest)
 }
 
 func initSpanEventAttributes(dest pdata.AttributeMap) {
-	dest.InitFromMap(spanEventAttributes)
+	pdata.NewAttributeMapFromMap(spanEventAttributes).CopyTo(dest)
 }
 
 func initSpanLinkAttributes(dest pdata.AttributeMap) {
-	dest.InitFromMap(spanLinkAttributes)
+	pdata.NewAttributeMapFromMap(spanLinkAttributes).CopyTo(dest)
 }
 
 func initMetricAttachment(dest pdata.AttributeMap) {
-	dest.InitFromMap(map[string]pdata.AttributeValue{TestAttachmentKey: pdata.NewAttributeValueString(TestAttachmentValue)})
+	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{TestAttachmentKey: pdata.NewAttributeValueString(TestAttachmentValue)}).CopyTo(dest)
 }
 
 func initMetricAttributes1(dest pdata.AttributeMap) {
-	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1)})
+	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1)}).CopyTo(dest)
 }
 
 func initMetricAttributes12(dest pdata.AttributeMap) {
-	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1), TestLabelKey2: pdata.NewAttributeValueString(TestLabelValue2)}).Sort()
+	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1), TestLabelKey2: pdata.NewAttributeValueString(TestLabelValue2)}).Sort().CopyTo(dest)
 }
 
 func initMetricAttributes13(dest pdata.AttributeMap) {
-	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1), TestLabelKey3: pdata.NewAttributeValueString(TestLabelValue3)}).Sort()
+	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{TestLabelKey1: pdata.NewAttributeValueString(TestLabelValue1), TestLabelKey3: pdata.NewAttributeValueString(TestLabelValue3)}).Sort().CopyTo(dest)
 }
 
 func initMetricAttributes2(dest pdata.AttributeMap) {
-	dest.InitFromMap(map[string]pdata.AttributeValue{TestLabelKey2: pdata.NewAttributeValueString(TestLabelValue2)})
+	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{TestLabelKey2: pdata.NewAttributeValueString(TestLabelValue2)}).CopyTo(dest)
 }
