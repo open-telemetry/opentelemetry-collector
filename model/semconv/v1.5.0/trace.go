@@ -14,7 +14,7 @@
 
 // Code generated from semantic convention specification. DO NOT EDIT.
 
-package conventions
+package semconv
 
 // Span attributes used by AWS Lambda (in addition to general `faas` attributes).
 const (

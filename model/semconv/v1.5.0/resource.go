@@ -14,7 +14,7 @@
 
 // Code generated from semantic convention specification. DO NOT EDIT.
 
-package conventions
+package semconv
 
 // A cloud environment (e.g. GCP, Azure, AWS)
 const (

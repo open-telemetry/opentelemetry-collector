@@ -50,7 +50,7 @@ Note: {{ attr.note | render_markdown(paragraph="{0}", code="{0}", link="{1}", em
 
 // Code generated from semantic convention specification. DO NOT EDIT.
 
-package conventions
+package semconv
 
 {% for semconv in semconvs -%}
 {%- if semconvs[semconv].attributes | rejectattr("ref") | selectattr("is_local") | sort(attribute=fqn) | length > 0 -%}

@@ -12,8 +12,8 @@ generate in the `SPECTAG` variable.
 ```console
 $ make gensemconv SPECPATH=~/dev/opentelemetry-specification SPECTAG=v1.5.0
 Generating semantic convention constants from specification version v1.5.0 at ~/dev/opentelemetry-specification
-semconvgen -o translator/conventions/v1.5.0 -t internal/conventions/template.j2 -s v1.5.0 -i ~/dev/opentelemetry-specification/semantic_conventions/resource -p conventionType=resource
-semconvgen -o translator/conventions/v1.5.0 -t internal/conventions/template.j2 -s v1.5.0 -i ~/dev/opentelemetry-specification/semantic_conventions/trace -p conventionType=trace
+semconvgen -o model/semconv/v1.5.0 -t model/internal/semconv/template.j2 -s v1.5.0 -i ~/dev/opentelemetry-specification/semantic_conventions/resource -p conventionType=resource
+semconvgen -o model/semconv/v1.5.0 -t model/internal/semconv/template.j2 -s v1.5.0 -i ~/dev/opentelemetry-specification/semantic_conventions/trace -p conventionType=trace
 ```
 
 When generating the constants for a new version ot the specification it is important to note that only `trace.go` and
