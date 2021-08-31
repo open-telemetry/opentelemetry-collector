@@ -107,7 +107,7 @@ func (mapping *exponentialMapping) scanNegative(buckets pdata.Buckets, boundarie
 }
 
 func toExplicitPoint(input pdata.ExponentialHistogramDataPoint, boundaries []float64) pdata.HistogramDataPoint {
-	mapping := GetExponentialMapping(int(input.Scale()))
+	mapping := getExponentialMapping(int(input.Scale()))
 	counts := make([]uint64, len(boundaries)+1)
 
 	r := pdata.NewHistogramDataPoint()

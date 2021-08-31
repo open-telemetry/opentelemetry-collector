@@ -187,7 +187,7 @@ func TestHistogramZeroBoundary(t *testing.T) {
 
 func TestMappingFunctionInclusivity(t *testing.T) {
 	for scale := 0; scale < 8; scale++ {
-		mapping := GetExponentialMapping(scale)
+		mapping := getExponentialMapping(scale)
 		size := int64(1) << scale
 		const epsilon = 1 / float64(1<<32)
 

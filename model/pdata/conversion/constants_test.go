@@ -8,7 +8,7 @@ import (
 )
 
 func TestMappingFunctionConstants(t *testing.T) {
-	mapping := GetExponentialMapping(10)
+	mapping := getExponentialMapping(10)
 	require.Equal(t, int64(0), mapping.MapToIndex(1))
 	require.Equal(t, 1.0, mapping.lowerBoundary(0))
 	require.Equal(t, 1<<10, len(exponentialConstants))

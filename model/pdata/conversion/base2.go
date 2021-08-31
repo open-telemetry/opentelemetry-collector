@@ -31,15 +31,10 @@ var (
 	mappings    map[int]*exponentialMapping
 )
 
-type Mapping interface {
-	MapToIndex(float64) int64
-}
-
 type Histogram struct {
-	*exponential
+	mapping *exponentialMapping
+	counts  []uint64
 }
-
-var _ Mapping = &exponentialMapping{}
 
 type exponentialMapping struct {
 	// there are 2^scale buckets for the mantissa to map to.
@@ -52,7 +47,7 @@ type exponentialMapping struct {
 	boundaries []uint64
 }
 
-func GetExponentialMapping(scale int) Mapping {
+func getExponentialMapping(scale int) *exponentialMapping {
 	mappingLock.Lock()
 	defer mappingLock.Unlock()
 
