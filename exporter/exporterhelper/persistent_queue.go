@@ -30,11 +30,8 @@ type persistentQueue struct {
 	stopWG     sync.WaitGroup
 	stopOnce   sync.Once
 	stopChan   chan struct{}
-	capacity   int
 	numWorkers int
-
-	produceMu sync.Mutex
-	storage   persistentStorage
+	storage    persistentStorage
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
@@ -42,8 +39,7 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
-		capacity: capacity,
-		storage:  newPersistentContiguousStorage(ctx, name, capacity, logger, client, unmarshaler),
+		storage:  newPersistentContiguousStorage(ctx, name, uint64(capacity), logger, client, unmarshaler),
 	}
 }
 
@@ -75,12 +71,6 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 
 // Produce adds an item to the queue and returns true if it was accepted
 func (pq *persistentQueue) Produce(item interface{}) bool {
-	pq.produceMu.Lock()
-	defer pq.produceMu.Unlock()
-
-	if pq.storage.size() >= pq.capacity {
-		return false
-	}
 	err := pq.storage.put(item.(request))
 	return err == nil
 }
@@ -96,5 +86,5 @@ func (pq *persistentQueue) Stop() {
 
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
 func (pq *persistentQueue) Size() int {
-	return pq.storage.size()
+	return int(pq.storage.size())
 }

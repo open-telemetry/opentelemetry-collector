@@ -19,6 +19,7 @@ import (
 	"errors"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"go.opencensus.io/metric/metricdata"
 	"go.uber.org/zap"
@@ -33,7 +34,7 @@ type persistentStorage interface {
 	// get returns the next available request; note that the channel is unbuffered
 	get() <-chan request
 	// size returns the current size of the persistent storage with items waiting for processing
-	size() int
+	size() uint64
 	// stop gracefully stops the storage
 	stop()
 }
@@ -71,6 +72,7 @@ type persistentContiguousStorage struct {
 	putChan  chan struct{}
 	stopChan chan struct{}
 	stopOnce sync.Once
+	capacity uint64
 
 	reqChan chan request
 
@@ -78,6 +80,8 @@ type persistentContiguousStorage struct {
 	readIndex               itemIndex
 	writeIndex              itemIndex
 	currentlyProcessedItems []itemIndex
+
+	itemsCount uint64
 }
 
 type itemIndex uint64
@@ -94,21 +98,22 @@ const (
 )
 
 var (
-	errValueNotSet = errors.New("value not set")
-
+	errMaxCapacityReached   = errors.New("max capacity reached")
+	errValueNotSet          = errors.New("value not set")
 	errKeyNotPresentInBatch = errors.New("key was not present in get batchStruct")
 )
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
 // The queue needs to be initialized separately using initPersistentContiguousStorage.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, channelCapacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
 		logger:      logger,
 		client:      client,
 		queueName:   queueName,
 		unmarshaler: unmarshaler,
-		putChan:     make(chan struct{}, channelCapacity),
+		capacity:    capacity,
+		putChan:     make(chan struct{}, capacity),
 		reqChan:     make(chan request),
 		stopChan:    make(chan struct{}),
 	}
@@ -131,7 +136,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, chann
 	// Make sure the leftover requests are handled
 	pcs.enqueueUnprocessedReqs(unprocessedReqs)
 	// Make sure the communication channel is loaded up
-	for i := 0; i < pcs.size(); i++ {
+	for i := uint64(0); i < pcs.size(); i++ {
 		pcs.putChan <- struct{}{}
 	}
 
@@ -161,6 +166,8 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 		pcs.readIndex = readIndex
 		pcs.writeIndex = writeIndex
 	}
+
+	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
 }
 
 func (pcs *persistentContiguousStorage) enqueueUnprocessedReqs(reqs []request) {
@@ -206,10 +213,8 @@ func (pcs *persistentContiguousStorage) get() <-chan request {
 }
 
 // size returns the number of currently available items, which were not picked by consumers yet
-func (pcs *persistentContiguousStorage) size() int {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	return int(pcs.writeIndex - pcs.readIndex)
+func (pcs *persistentContiguousStorage) size() uint64 {
+	return atomic.LoadUint64(&pcs.itemsCount)
 }
 
 // numberOfCurrentlyProcessedItems returns the count of batches for which processing started but hasn't finish yet
@@ -239,11 +244,16 @@ func (pcs *persistentContiguousStorage) put(req request) error {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	ctx := context.Background()
+	if pcs.size() >= pcs.capacity {
+		pcs.logger.Warn("maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
+		return errMaxCapacityReached
+	}
 
 	itemKey := pcs.itemKey(pcs.writeIndex)
 	pcs.writeIndex++
+	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
 
+	ctx := context.Background()
 	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
 
 	// Inform the loop that there's some data to process
@@ -261,6 +271,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 		index := pcs.readIndex
 		// Increase here, so even if errors happen below, it always iterates
 		pcs.readIndex++
+		atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
 
 		pcs.updateReadIndex(ctx)
 		pcs.itemProcessingStart(ctx, index)

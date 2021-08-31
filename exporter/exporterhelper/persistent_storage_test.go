@@ -47,9 +47,13 @@ func createTestClient(extension storage.Extension) storage.Client {
 	return client
 }
 
-func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
+func createTestPersistentStorageWithCapacity(client storage.Client, capacity uint64) *persistentContiguousStorage {
 	logger, _ := zap.NewDevelopment()
-	return newPersistentContiguousStorage(context.Background(), "foo", 1000, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
+	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
+}
+
+func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
+	return createTestPersistentStorageWithCapacity(client, 1000)
 }
 
 func createTemporaryDirectory() string {
@@ -160,7 +164,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 		ext := createStorageExtension(path)
 		client := createTestClient(ext)
 		ps := createTestPersistentStorage(client)
-		require.Equal(t, 0, ps.size())
+		require.Equal(t, uint64(0), ps.size())
 
 		// Put two elements
 		err := ps.put(req)
@@ -186,7 +190,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 
 		readReq = getItemFromChannel(t, ps)
 		require.Equal(t, req.(*tracesRequest).td, readReq.(*tracesRequest).td)
-		require.Equal(t, 0, ps.size())
+		require.Equal(t, uint64(0), ps.size())
 
 		err = ext.Shutdown(context.Background())
 		require.NoError(t, err)
@@ -207,12 +211,12 @@ func TestPersistentStorage_EmptyRequest(t *testing.T) {
 	client := createTestClient(ext)
 	ps := createTestPersistentStorage(client)
 
-	require.Equal(t, 0, ps.size())
+	require.Equal(t, uint64(0), ps.size())
 
 	err := ps.put(nil)
 	require.NoError(t, err)
 
-	require.Equal(t, 0, ps.size())
+	require.Equal(t, uint64(0), ps.size())
 
 	err = ext.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -243,7 +247,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			defer os.RemoveAll(path)
 			ext := createStorageExtension(path)
 			client := createTestClient(ext)
-			ps := createTestPersistentStorage(client)
+			ps := createTestPersistentStorageWithCapacity(client, 10000000)
 
 			traces := newTraces(c.numTraces, c.numSpansPerTrace)
 			req := newTracesRequest(context.Background(), traces, nopTracePusher())
