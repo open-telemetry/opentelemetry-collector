@@ -1,26 +1,3 @@
-# Using Contexts:
-#   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
-#   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
-#   
-#   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
-#   explicitly enables the context for the job. 
-#
-#   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
-#   part of the approved security groups for the given context. This means that contributors who are not part of the
-#   OpenTelemetry GitHub organisation will not be able to run jobs that depend on contexts. As a result, PR pipelines
-#   should never depend on any contexts and never use any tokens/secrets.
-#
-#   This CI pipeline uses two contexts:
-#      - github-release-and-issues-api-token
-#        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
-#        We use this to report failures as issues back to the GitHub project.
-#        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
-#        
-#      - dockerhub-token
-#        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
-#        This is used to publish docker images to Docker Hub.
-#        Only project approvers and maintainers can run jobs that depend on this context such e.g, publish-stable.
-
 version: 2.1
 
 orbs:
@@ -75,40 +52,6 @@ commands:
           keys:
             - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}
 
-  publish_docker_images:
-    parameters:
-      repo:
-        type: string
-      tag:
-        type: string
-
-    steps:
-      - run:
-          name: Build image
-          command: |
-            make docker-otelcol
-            docker tag otelcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
-            docker tag otelcol:latest otel/<< parameters.repo >>:latest
-      - run:
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-      - run:
-          name: Push image
-          command: |
-            docker push otel/<< parameters.repo >>:<< parameters.tag >>
-            docker push otel/<< parameters.repo >>:latest
-
-  github_issue_generator:
-    steps:
-      - when:
-          condition:
-            equal: [main, << pipeline.git.branch >>]
-          steps:
-            - run:
-                name: Generate GitHub Issue
-                command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
-                when: on_fail
-
 workflows:
   version: 2
   build-and-test:
@@ -145,30 +88,6 @@ workflows:
           filters:
             branches:
               ignore: main
-      - publish-stable:
-          context:
-            - github-release-and-issues-api-token
-            - dockerhub-token
-          requires:
-            - cross-compile
-            - coverage
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - publish-dev:
-          context:
-            - dockerhub-token
-          requires:
-            - cross-compile
-            - coverage
-          filters:
-            branches:
-              only: main
-            tags:
-              ignore: /.*/
-
 jobs:
   setup-environment:
     executor: golang
@@ -233,35 +152,3 @@ jobs:
           name: Check failed
           command: echo "publish check failed. This means release CI jobs will likely fail as well"
           when: on_fail
-
-  publish-stable:
-    docker:
-      - image: cimg/go:1.17
-    steps:
-      - attach_to_workspace
-      - verify_dist_files_exist
-      - setup_remote_docker
-      - publish_docker_images:
-          repo: opentelemetry-collector
-          tag: ${CIRCLE_TAG:1}
-      - run:
-          name: Prepare release artifacts
-          command: |
-            cp bin/* dist/
-      - run:
-          name: Calculate checksums
-          command: cd dist && shasum -a 256 * > checksums.txt
-      - run:
-          name: Create Github release and upload artifacts
-          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
-
-  publish-dev:
-    docker:
-      - image: cimg/go:1.17
-    steps:
-      - attach_to_workspace
-      - verify_dist_files_exist
-      - setup_remote_docker
-      - publish_docker_images:
-          repo: opentelemetry-collector-dev
-          tag: ${CIRCLE_SHA1}
