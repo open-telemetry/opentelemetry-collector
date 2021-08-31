@@ -47,13 +47,13 @@ func createTestClient(extension storage.Extension) storage.Client {
 	return client
 }
 
-func createTestPersistentStorageWithCapacity(client storage.Client, capacity uint64) *persistentContiguousStorage {
-	logger, _ := zap.NewDevelopment()
+func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
 	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
-	return createTestPersistentStorageWithCapacity(client, 1000)
+	logger, _ := zap.NewDevelopment()
+	return createTestPersistentStorageWithLoggingAndCapacity(client, logger, 1000)
 }
 
 func createTemporaryDirectory() string {
@@ -247,7 +247,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			defer os.RemoveAll(path)
 			ext := createStorageExtension(path)
 			client := createTestClient(ext)
-			ps := createTestPersistentStorageWithCapacity(client, 10000000)
+			ps := createTestPersistentStorageWithLoggingAndCapacity(client, zap.NewNop(), 10000000)
 
 			traces := newTraces(c.numTraces, c.numSpansPerTrace)
 			req := newTracesRequest(context.Background(), traces, nopTracePusher())
