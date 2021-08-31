@@ -28,3 +28,7 @@ const (
 	AttributeMessageType    = "message.type"
 	AttributeHTTPStatusText = "http.status_text"
 )
+
+const (
+	ExceptionEventName = "exception"
+)
