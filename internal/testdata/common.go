@@ -68,20 +68,20 @@ func initMetricAttachment(dest pdata.AttributeMap) {
 
 func initMetricAttributes1(dest pdata.AttributeMap) {
 	dest.Clear()
-	dest.Insert(TestLabelKey1, pdata.NewAttributeValueString(TestLabelValue1))
+	dest.InsertString(TestLabelKey1, TestLabelValue1)
 }
 
 func initMetricAttributes12(dest pdata.AttributeMap) {
 	initMetricAttributes1(dest)
-	dest.Insert(TestLabelKey2, pdata.NewAttributeValueString(TestLabelValue2))
+	dest.InsertString(TestLabelKey2, TestLabelValue2)
 }
 
 func initMetricAttributes13(dest pdata.AttributeMap) {
 	initMetricAttributes1(dest)
-	dest.Insert(TestLabelKey3, pdata.NewAttributeValueString(TestLabelValue3))
+	dest.InsertString(TestLabelKey3, TestLabelValue3)
 }
 
 func initMetricAttributes2(dest pdata.AttributeMap) {
 	dest.Clear()
-	dest.Insert(TestLabelKey2, pdata.NewAttributeValueString(TestLabelValue2))
+	dest.InsertString(TestLabelKey2, TestLabelValue2)
 }
