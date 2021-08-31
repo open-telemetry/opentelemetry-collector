@@ -157,9 +157,13 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	}
 
 	if err != nil {
-		pcs.logger.Error("failed getting read/write index, starting with new ones",
-			zap.String(zapQueueNameKey, pcs.queueName),
-			zap.Error(err))
+		if err == errValueNotSet {
+			pcs.logger.Info("Initializing new persistent queue", zap.String(zapQueueNameKey, pcs.queueName))
+		} else {
+			pcs.logger.Error("Failed getting read/write index, starting with new ones",
+				zap.String(zapQueueNameKey, pcs.queueName),
+				zap.Error(err))
+		}
 		pcs.readIndex = 0
 		pcs.writeIndex = 0
 	} else {
@@ -179,12 +183,12 @@ func (pcs *persistentContiguousStorage) enqueueUnprocessedReqs(reqs []request) {
 			}
 		}
 		if errCount > 0 {
-			pcs.logger.Error("errors occurred while moving items for processing back to queue",
+			pcs.logger.Error("Errors occurred while moving items for processing back to queue",
 				zap.String(zapQueueNameKey, pcs.queueName),
 				zap.Int(zapNumberOfItems, len(reqs)), zap.Int(zapErrorCount, errCount))
 
 		} else {
-			pcs.logger.Info("moved items for processing back to queue",
+			pcs.logger.Info("Moved items for processing back to queue",
 				zap.String(zapQueueNameKey, pcs.queueName),
 				zap.Int(zapNumberOfItems, len(reqs)))
 
@@ -217,7 +221,7 @@ func (pcs *persistentContiguousStorage) size() uint64 {
 	return atomic.LoadUint64(&pcs.itemsCount)
 }
 
-// numberOfCurrentlyProcessedItems returns the count of batches for which processing started but hasn't finish yet
+// numberOfCurrentlyProcessedItems returns the count of batches for which processing started but hasn't finished yet
 func (pcs *persistentContiguousStorage) numberOfCurrentlyProcessedItems() int {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
@@ -225,7 +229,7 @@ func (pcs *persistentContiguousStorage) numberOfCurrentlyProcessedItems() int {
 }
 
 func (pcs *persistentContiguousStorage) stop() {
-	pcs.logger.Debug("stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
+	pcs.logger.Debug("Stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
 	pcs.stopOnce.Do(func() {
 		close(pcs.stopChan)
 		_ = currentlyProcessedBatchesGauge.UpsertEntry(func() int64 {
@@ -245,7 +249,7 @@ func (pcs *persistentContiguousStorage) put(req request) error {
 	defer pcs.mu.Unlock()
 
 	if pcs.size() >= pcs.capacity {
-		pcs.logger.Warn("maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
+		pcs.logger.Warn("Maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
 		return errMaxCapacityReached
 	}
 
@@ -306,21 +310,21 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	pcs.logger.Debug("checking if there are items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
+	pcs.logger.Debug("Checking if there are items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
 	batch, err := newBatch(pcs).get(currentlyProcessedItemsKey).execute(ctx)
 	if err == nil {
 		processedItems, err = batch.getItemIndexArrayResult(currentlyProcessedItemsKey)
 	}
 	if err != nil {
-		pcs.logger.Error("could not fetch items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+		pcs.logger.Error("Could not fetch items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 		return reqs
 	}
 
 	if len(processedItems) > 0 {
-		pcs.logger.Info("fetching items left for processing by consumers",
+		pcs.logger.Info("Fetching items left for processing by consumers",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Int(zapNumberOfItems, len(processedItems)))
 	} else {
-		pcs.logger.Debug("no items left for processing by consumers")
+		pcs.logger.Debug("No items left for processing by consumers")
 	}
 
 	reqs = make([]request, len(processedItems))
@@ -337,11 +341,11 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 	_, cleanupErr := cleanupBatch.execute(ctx)
 
 	if retrieveErr != nil {
-		pcs.logger.Warn("failed retrieving items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(retrieveErr))
+		pcs.logger.Warn("Failed retrieving items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(retrieveErr))
 	}
 
 	if cleanupErr != nil {
-		pcs.logger.Debug("failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(cleanupErr))
+		pcs.logger.Debug("Failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(cleanupErr))
 	}
 
 	if retrieveErr != nil {
@@ -351,7 +355,7 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 	for i, key := range keys {
 		req, err := retrieveBatch.getRequestResult(key)
 		if err != nil {
-			pcs.logger.Warn("failed unmarshalling item",
+			pcs.logger.Warn("Failed unmarshalling item",
 				zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
 		} else {
 			reqs[i] = req
@@ -368,7 +372,7 @@ func (pcs *persistentContiguousStorage) itemProcessingStart(ctx context.Context,
 		setItemIndexArray(currentlyProcessedItemsKey, pcs.currentlyProcessedItems).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Debug("failed updating currently processed items",
+		pcs.logger.Debug("Failed updating currently processed items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
@@ -388,7 +392,7 @@ func (pcs *persistentContiguousStorage) itemProcessingFinish(ctx context.Context
 		delete(pcs.itemKey(index)).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Debug("failed updating currently processed items",
+		pcs.logger.Debug("Failed updating currently processed items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
@@ -399,7 +403,7 @@ func (pcs *persistentContiguousStorage) updateReadIndex(ctx context.Context) {
 		execute(ctx)
 
 	if err != nil {
-		pcs.logger.Debug("failed updating read index",
+		pcs.logger.Debug("Failed updating read index",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }

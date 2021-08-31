@@ -59,7 +59,7 @@ func (bof *batchStruct) execute(ctx context.Context) (*batchStruct, error) {
 func (bof *batchStruct) set(key string, value interface{}, marshal func(interface{}) ([]byte, error)) *batchStruct {
 	valueBytes, err := marshal(value)
 	if err != nil {
-		bof.logger.Debug("failed marshaling item, skipping it", zap.String(zapKey, key), zap.Error(err))
+		bof.logger.Debug("Failed marshaling item, skipping it", zap.String(zapKey, key), zap.Error(err))
 	} else {
 		bof.operations = append(bof.operations, storage.SetOperation(key, valueBytes))
 	}

@@ -47,7 +47,7 @@ var (
 		metric.WithUnit(metricdata.UnitDimensionless))
 
 	currentlyProcessedBatchesGauge, _ = r.AddInt64DerivedGauge(
-		obsmetrics.ExporterKey+"/processed_batches_size",
+		obsmetrics.ExporterKey+"/currently_processed_batches",
 		metric.WithDescription("Number of currently processed batches"),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))

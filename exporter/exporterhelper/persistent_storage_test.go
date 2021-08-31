@@ -147,10 +147,10 @@ func TestPersistentStorage_MetricsReported(t *testing.T) {
 
 	_ = getItemFromChannel(t, ps)
 	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 1})
-	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/processed_batches_size")
+	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_processed_batches")
 
 	ps.stop()
-	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/processed_batches_size")
+	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_processed_batches")
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
