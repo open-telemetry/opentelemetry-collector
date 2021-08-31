@@ -1,4 +1,4 @@
-package conversion
+package histogram
 
 import (
 	"math"
@@ -31,11 +31,6 @@ var (
 	mappings    map[int]*exponentialMapping
 )
 
-type Histogram struct {
-	mapping *exponentialMapping
-	counts  []uint64
-}
-
 type exponentialMapping struct {
 	// there are 2^scale buckets for the mantissa to map to.
 	scale int
@@ -50,6 +45,14 @@ type exponentialMapping struct {
 func getExponentialMapping(scale int) *exponentialMapping {
 	mappingLock.Lock()
 	defer mappingLock.Unlock()
+
+	if scale < 0 {
+		// TODO: This logic does not work at negative scale
+		// factors.  No calculated arrays are needed for
+		// negative scales because the IEEE representation's
+		// exponent maps directly to an index in that case.
+		panic("unsupported scale")
+	}
 
 	if mappings[scale] != nil {
 		return mappings[scale]

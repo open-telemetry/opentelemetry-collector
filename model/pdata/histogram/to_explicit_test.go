@@ -1,4 +1,4 @@
-package conversion
+package histogram
 
 import (
 	"fmt"

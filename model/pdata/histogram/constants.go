@@ -1,4 +1,4 @@
-package conversion
+package histogram
 
 var exponentialConstants = [1024]uint64{
 	0x000000000000,  // significand(2^(0/1024) == 1)

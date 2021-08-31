@@ -77,7 +77,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf(`package conversion
+	fmt.Printf(`package histogram
 
 var exponentialConstants = [%d]uint64{
 `, size)
