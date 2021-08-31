@@ -6,20 +6,22 @@ helps ensure that data makes it through a pipeline successfully (e.g.
 batch/retry).
 
 Some important aspects of pipelines and processors to be aware of:
-- [Recommended Processors](#recommended-processors)
-- [Data Ownership](#data-ownership)
-- [Exclusive Ownership](#exclusive-ownership)
-- [Shared Ownership](#shared-ownership)
-- [Ordering Processors](#ordering-processors)
+- [General Information](#general-information)
+  - [Recommended Processors](#recommended-processors)
+    - [Traces](#traces)
+    - [Metrics](#metrics)
+  - [Data Ownership](#data-ownership)
+    - [Exclusive Ownership](#exclusive-ownership)
+    - [Shared Ownership](#shared-ownership)
+  - [Ordering Processors](#ordering-processors)
+    - [Include/Exclude Metrics](#includeexclude-metrics)
+      - [Match Configuration](#match-configuration)
+    - [Include/Exclude Spans](#includeexclude-spans)
+      - [Match Configuration](#match-configuration-1)
 
 Supported processors (sorted alphabetically):
-- [Attributes Processor](attributesprocessor/README.md)
 - [Batch Processor](batchprocessor/README.md)
-- [Filter Processor](filterprocessor/README.md)
 - [Memory Limiter Processor](memorylimiter/README.md)
-- [Resource Processor](resourceprocessor/README.md)
-- [Probabilistic Sampling Processor](probabilisticsamplerprocessor/README.md)
-- [Span Processor](spanprocessor/README.md)
 
 The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more processors that can be added to a custom build of the Collector.
