@@ -187,31 +187,31 @@ func TestHistogramZeroBoundary(t *testing.T) {
 
 func TestMappingFunctionInclusivity(t *testing.T) {
 	for scale := 0; scale < 8; scale++ {
-		layout := getExponentialLayout(scale)
+		mapping := GetExponentialMapping(scale)
 		size := int64(1) << scale
 		const epsilon = 1 / float64(1<<32)
 
 		t.Run(fmt.Sprint("scale=", scale), func(t *testing.T) {
 
-			require.Equal(t, int64(0), layout.mapToIndex(1))
-			require.Equal(t, int64(0), layout.mapToIndex(1+epsilon))
-			require.Equal(t, size, layout.mapToIndex(2))
-			require.Equal(t, size, layout.mapToIndex(2+epsilon))
+			require.Equal(t, int64(0), mapping.MapToIndex(1))
+			require.Equal(t, int64(0), mapping.MapToIndex(1+epsilon))
+			require.Equal(t, size, mapping.MapToIndex(2))
+			require.Equal(t, size, mapping.MapToIndex(2+epsilon))
 
-			require.Equal(t, 0.25, layout.upperBoundary(-2*size-1))
-			require.Equal(t, 0.25, layout.lowerBoundary(-2*size))
+			require.Equal(t, 0.25, mapping.upperBoundary(-2*size-1))
+			require.Equal(t, 0.25, mapping.lowerBoundary(-2*size))
 
-			require.Equal(t, 0.5, layout.upperBoundary(-size-1))
-			require.Equal(t, 0.5, layout.lowerBoundary(-size))
+			require.Equal(t, 0.5, mapping.upperBoundary(-size-1))
+			require.Equal(t, 0.5, mapping.lowerBoundary(-size))
 
-			require.Equal(t, 1.0, layout.upperBoundary(-1))
-			require.Equal(t, 1.0, layout.lowerBoundary(0))
+			require.Equal(t, 1.0, mapping.upperBoundary(-1))
+			require.Equal(t, 1.0, mapping.lowerBoundary(0))
 
-			require.Equal(t, 2.0, layout.upperBoundary(size-1))
-			require.Equal(t, 2.0, layout.lowerBoundary(size))
+			require.Equal(t, 2.0, mapping.upperBoundary(size-1))
+			require.Equal(t, 2.0, mapping.lowerBoundary(size))
 
-			require.Equal(t, 4.0, layout.upperBoundary(2*size-1))
-			require.Equal(t, 4.0, layout.lowerBoundary(2*size))
+			require.Equal(t, 4.0, mapping.upperBoundary(2*size-1))
+			require.Equal(t, 4.0, mapping.lowerBoundary(2*size))
 		})
 	}
 }

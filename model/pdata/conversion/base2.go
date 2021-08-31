@@ -27,15 +27,21 @@ const (
 )
 
 var (
-	layoutLock sync.Mutex
-	layouts    map[int]*exponentialLayout
+	mappingLock sync.Mutex
+	mappings    map[int]*exponentialMapping
 )
 
-type Layout interface {
-	MapToIndex(float64) int
+type Mapping interface {
+	MapToIndex(float64) int64
 }
 
-type exponentialLayout struct {
+type Histogram struct {
+	*exponential
+}
+
+var _ Mapping = &exponentialMapping{}
+
+type exponentialMapping struct {
 	// there are 2^scale buckets for the mantissa to map to.
 	scale int
 	// An array of indices (lookup table). Mantissas of floats are mapped to this array
@@ -46,33 +52,33 @@ type exponentialLayout struct {
 	boundaries []uint64
 }
 
-func getExponentialLayout(scale int) *exponentialLayout {
-	layoutLock.Lock()
-	defer layoutLock.Unlock()
+func GetExponentialMapping(scale int) Mapping {
+	mappingLock.Lock()
+	defer mappingLock.Unlock()
 
-	if layouts[scale] != nil {
-		return layouts[scale]
+	if mappings[scale] != nil {
+		return mappings[scale]
 	}
 
-	if layouts == nil {
-		layouts = map[int]*exponentialLayout{}
+	if mappings == nil {
+		mappings = map[int]*exponentialMapping{}
 	}
 
 	bounds := calculateBoundaries(scale)
 	indices := calculateIndices(bounds, scale)
 
-	layout := &exponentialLayout{
+	mapping := &exponentialMapping{
 		scale:      scale,
 		indices:    indices,
 		boundaries: bounds,
 	}
-	layouts[scale] = layout
-	return layout
+	mappings[scale] = mapping
+	return mapping
 }
 
 // calculate boundaries for the mantissa part only.
 // This calculates the bucket boundaries independent of the exponent.
-// This layout is the same for all mantissas, independent of the exponents.
+// This mapping is the same for all mantissas, independent of the exponents.
 // It depends only on the desired number of buckets subdividing the [1, 2] range covered by the mantissa.
 // The number of buckets is 2^scale
 func calculateBoundaries(scale int) []uint64 {
@@ -117,7 +123,7 @@ func calculateIndices(boundaries []uint64, scale int) []int64 {
 }
 
 // This is the code that actually maps the double value to the correct bin.
-func (el *exponentialLayout) mapToIndex(value float64) int64 {
+func (el *exponentialMapping) MapToIndex(value float64) int64 {
 	valueBits := math.Float64bits(value)
 
 	// The last 52 bits (bits 0 through 51) of a double are the mantissa.
@@ -155,14 +161,14 @@ func (el *exponentialLayout) mapToIndex(value float64) int64 {
 
 // upperBoundary is exclusive in this implementation, thus we define
 // it as the lowerBoundary of the next bucket.
-func (el *exponentialLayout) upperBoundary(index int64) float64 {
+func (el *exponentialMapping) upperBoundary(index int64) float64 {
 	return el.lowerBoundary(index + 1)
 }
 
 // lowerBoundary computes the inclusive lower bound corresponding to a
 // particular histogram bucket.  This returns the least result value that
-// such that `mapToIndex(lowerBoundary(index)) == index`.
-func (el *exponentialLayout) lowerBoundary(index int64) float64 {
+// such that `MapToIndex(lowerBoundary(index)) == index`.
+func (el *exponentialMapping) lowerBoundary(index int64) float64 {
 	length := int64(1 << el.scale)
 	exponent := index / length
 	position := index % length
