@@ -13,13 +13,8 @@ Some important aspects of pipelines and processors to be aware of:
 - [Ordering Processors](#ordering-processors)
 
 Supported processors (sorted alphabetically):
-- [Attributes Processor](attributesprocessor/README.md)
 - [Batch Processor](batchprocessor/README.md)
-- [Filter Processor](filterprocessor/README.md)
 - [Memory Limiter Processor](memorylimiter/README.md)
-- [Resource Processor](resourceprocessor/README.md)
-- [Probabilistic Sampling Processor](probabilisticsamplerprocessor/README.md)
-- [Span Processor](spanprocessor/README.md)
 
 The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more processors that can be added to a custom build of the Collector.
