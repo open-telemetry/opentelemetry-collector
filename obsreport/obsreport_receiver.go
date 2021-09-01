@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/internal/version"
 )
 
 // Receiver is a helper to add obersvability to a component.Receiver.
@@ -59,6 +60,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 		mutators: []tag.Mutator{
 			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
+			tag.Upsert(obsmetrics.TagKeyCollectorVersion, version.Version, tag.WithTTL(tag.TTLNoPropagation)),
 		},
 		tracer: otel.GetTracerProvider().Tracer(cfg.ReceiverID.String()),
 	}

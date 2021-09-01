@@ -26,6 +26,8 @@ const (
 	TransportKey = "transport"
 	// FormatKey used to identify the format of the data received.
 	FormatKey = "format"
+	// CollectorVersionKey used to identify the version of the Collector
+	CollectorVersionKey = "collector_version"
 
 	// AcceptedSpansKey used to identify spans accepted by the Collector.
 	AcceptedSpansKey = "accepted_spans"
@@ -46,8 +48,9 @@ const (
 )
 
 var (
-	TagKeyReceiver, _  = tag.NewKey(ReceiverKey)
-	TagKeyTransport, _ = tag.NewKey(TransportKey)
+	TagKeyReceiver, _         = tag.NewKey(ReceiverKey)
+	TagKeyTransport, _        = tag.NewKey(TransportKey)
+	TagKeyCollectorVersion, _ = tag.NewKey(CollectorVersionKey)
 
 	ReceiverPrefix                  = ReceiverKey + NameSep
 	ReceiveTraceDataOperationSuffix = NameSep + "TraceDataReceived"

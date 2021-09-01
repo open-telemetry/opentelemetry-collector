@@ -61,7 +61,7 @@ func allViews() *ObsMetrics {
 		obsmetrics.ReceiverRefusedLogRecords,
 	}
 	tagKeys := []tag.Key{
-		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport,
+		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport, obsmetrics.TagKeyCollectorVersion,
 	}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
@@ -70,7 +70,7 @@ func allViews() *ObsMetrics {
 		obsmetrics.ScraperScrapedMetricPoints,
 		obsmetrics.ScraperErroredMetricPoints,
 	}
-	tagKeys = []tag.Key{obsmetrics.TagKeyReceiver, obsmetrics.TagKeyScraper}
+	tagKeys = []tag.Key{obsmetrics.TagKeyReceiver, obsmetrics.TagKeyScraper, obsmetrics.TagKeyCollectorVersion}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	// Exporter views.
@@ -85,7 +85,7 @@ func allViews() *ObsMetrics {
 		obsmetrics.ExporterFailedToSendLogRecords,
 		obsmetrics.ExporterFailedToEnqueueLogRecords,
 	}
-	tagKeys = []tag.Key{obsmetrics.TagKeyExporter}
+	tagKeys = []tag.Key{obsmetrics.TagKeyExporter, obsmetrics.TagKeyCollectorVersion}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	errorNumberView := &view.View{
@@ -108,7 +108,7 @@ func allViews() *ObsMetrics {
 		obsmetrics.ProcessorRefusedLogRecords,
 		obsmetrics.ProcessorDroppedLogRecords,
 	}
-	tagKeys = []tag.Key{obsmetrics.TagKeyProcessor}
+	tagKeys = []tag.Key{obsmetrics.TagKeyProcessor, obsmetrics.TagKeyCollectorVersion}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	return &ObsMetrics{

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -42,7 +43,8 @@ func ScraperContext(
 	ctx, _ = tag.New(
 		ctx,
 		tag.Upsert(obsmetrics.TagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-		tag.Upsert(obsmetrics.TagKeyScraper, scraper.String(), tag.WithTTL(tag.TTLNoPropagation)))
+		tag.Upsert(obsmetrics.TagKeyScraper, scraper.String(), tag.WithTTL(tag.TTLNoPropagation)),
+		tag.Upsert(obsmetrics.TagKeyCollectorVersion, version.Version, tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
 }
