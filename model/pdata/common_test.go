@@ -578,7 +578,7 @@ func TestAttributeMap_Range(t *testing.T) {
 		"k_null":   NewAttributeValueNull(),
 		"k_bytes":  NewAttributeValueBytes([]byte{}),
 	}
-	am := NewAttributeMap().InitFromMap(rawMap)
+	am := NewAttributeMapFromMap(rawMap)
 	assert.Equal(t, 6, am.Len())
 
 	calls := 0
@@ -597,7 +597,7 @@ func TestAttributeMap_Range(t *testing.T) {
 }
 
 func TestAttributeMap_InitFromMap(t *testing.T) {
-	am := NewAttributeMap().InitFromMap(map[string]AttributeValue(nil))
+	am := NewAttributeMapFromMap(map[string]AttributeValue(nil))
 	assert.EqualValues(t, NewAttributeMap(), am)
 
 	rawMap := map[string]AttributeValue{
@@ -616,7 +616,7 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		newAttributeKeyValueNull("k_null"),
 		newAttributeKeyValueBytes("k_bytes", []byte{1, 2, 3}),
 	}
-	am = NewAttributeMap().InitFromMap(rawMap)
+	am = NewAttributeMapFromMap(rawMap)
 	assert.EqualValues(t, AttributeMap{orig: &rawOrig}.Sort(), am.Sort())
 }
 
@@ -846,48 +846,38 @@ func generateTestAttributeMap() AttributeMap {
 }
 
 func fillTestAttributeMap(dest AttributeMap) {
-	dest.InitFromMap(map[string]AttributeValue{
+	NewAttributeMapFromMap(map[string]AttributeValue{
 		"k": NewAttributeValueString("v"),
-	})
+	}).CopyTo(dest)
 }
 
 func generateTestNullAttributeMap() AttributeMap {
-	am := NewAttributeMap()
-	am.InitFromMap(map[string]AttributeValue{
+	return NewAttributeMapFromMap(map[string]AttributeValue{
 		"k": NewAttributeValueNull(),
 	})
-	return am
 }
 func generateTestIntAttributeMap() AttributeMap {
-	am := NewAttributeMap()
-	am.InitFromMap(map[string]AttributeValue{
+	return NewAttributeMapFromMap(map[string]AttributeValue{
 		"k": NewAttributeValueInt(123),
 	})
-	return am
 }
 
 func generateTestDoubleAttributeMap() AttributeMap {
-	am := NewAttributeMap()
-	am.InitFromMap(map[string]AttributeValue{
+	return NewAttributeMapFromMap(map[string]AttributeValue{
 		"k": NewAttributeValueDouble(12.3),
 	})
-	return am
 }
 
 func generateTestBoolAttributeMap() AttributeMap {
-	am := NewAttributeMap()
-	am.InitFromMap(map[string]AttributeValue{
+	return NewAttributeMapFromMap(map[string]AttributeValue{
 		"k": NewAttributeValueBool(true),
 	})
-	return am
 }
 
 func generateTestBytesAttributeMap() AttributeMap {
-	am := NewAttributeMap()
-	am.InitFromMap(map[string]AttributeValue{
+	return NewAttributeMapFromMap(map[string]AttributeValue{
 		"k": NewAttributeValueBytes([]byte{1, 2, 3, 4, 5}),
 	})
-	return am
 }
 
 func TestAttributeValueArray(t *testing.T) {
@@ -951,7 +941,7 @@ func TestAnyValueArrayWithNilValues(t *testing.T) {
 	assert.EqualValues(t, "other_value", val.StringVal())
 }
 
-func TestAttributeValueToString(t *testing.T) {
+func TestAsString(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    AttributeValue
@@ -1005,7 +995,7 @@ func TestAttributeValueToString(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := AttributeValueToString(test.input)
+			actual := test.input.AsString()
 			assert.Equal(t, test.expected, actual)
 		})
 	}

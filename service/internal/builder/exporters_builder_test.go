@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/opencensusexporter"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
@@ -37,16 +37,15 @@ func TestBuildExporters(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	oceFactory := opencensusexporter.NewFactory()
-	factories.Exporters[oceFactory.Type()] = oceFactory
+	otlpFactory := otlpexporter.NewFactory()
+	factories.Exporters[otlpFactory.Type()] = otlpFactory
 	cfg := &config.Config{
 		Exporters: map[config.ComponentID]config.Exporter{
-			config.NewID("opencensus"): &opencensusexporter.Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID("opencensus")),
+			config.NewID("otlp"): &otlpexporter.Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "0.0.0.0:12345",
 				},
-				NumWorkers: 2,
 			},
 		},
 
@@ -55,7 +54,7 @@ func TestBuildExporters(t *testing.T) {
 				"trace": {
 					Name:      "trace",
 					InputType: config.TracesDataType,
-					Exporters: []config.ComponentID{config.NewID("opencensus")},
+					Exporters: []config.ComponentID{config.NewID("otlp")},
 				},
 			},
 		},
@@ -66,7 +65,7 @@ func TestBuildExporters(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[config.NewID("opencensus")]
+	e1 := exporters[config.NewID("otlp")]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -80,7 +79,7 @@ func TestBuildExporters(t *testing.T) {
 	// Ensure it can be stopped.
 	if err = e1.Shutdown(context.Background()); err != nil {
 		// TODO Find a better way to handle this case
-		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may
+		// Since the endpoint of otlp exporter doesn't actually exist, e1 may
 		// already stop because it cannot connect.
 		// The test should stop running if this isn't the error cause.
 		require.EqualError(t, err, "rpc error: code = Canceled desc = grpc: the client connection is closing")
@@ -94,7 +93,7 @@ func TestBuildExporters(t *testing.T) {
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
-	e1 = exporters[config.NewID("opencensus")]
+	e1 = exporters[config.NewID("otlp")]
 
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.

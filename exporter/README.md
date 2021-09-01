@@ -5,24 +5,16 @@ exporter translates the internal format into another defined format.
 
 Available trace exporters (sorted alphabetically):
 
-- [Jaeger](jaegerexporter/README.md)
-- [Kafka](kafkaexporter/README.md)
-- [OpenCensus](opencensusexporter/README.md)
 - [OTLP gRPC](otlpexporter/README.md)
 - [OTLP HTTP](otlphttpexporter/README.md)
-- [Zipkin](zipkinexporter/README.md)
 
 Available metric exporters (sorted alphabetically):
 
-- [OpenCensus](opencensusexporter/README.md)
 - [OTLP gRPC](otlpexporter/README.md)
 - [OTLP HTTP](otlphttpexporter/README.md)
-- [Prometheus](prometheusexporter/README.md)
-- [Prometheus Remote Write](prometheusremotewriteexporter/README.md)
 
 Available log exporters (sorted alphabetically):
 
-- [Kafka](kafkaexporter/README.md)
 - [OTLP gRPC](otlpexporter/README.md)
 - [OTLP HTTP](otlphttpexporter/README.md)
 

@@ -1,6 +1,0 @@
-# Yaml form of the configuration for FilterSets
-# This configuration can be embedded into other component's yamls
-# The top level here are just test names and do not represent part of the actual configuration.
-
-invalid/matchtype:
-  match_type: "invalid"

@@ -107,7 +107,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.16 and up)
+2. [go](https://golang.org/) (version 1.17 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -152,7 +152,7 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.16.* and CircleCI.
+This project uses Go 1.17.* and CircleCI.
 
 CircleCI uses the Makefile with the `ci` target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
@@ -288,11 +288,6 @@ Cover important functionality with unit tests. We require that contributions
 do not decrease overall code coverage of the codebase - this is aligned with our
 goal to increase coverage over time. Keep track of execution time for your unit
 tests and try to keep them as short as possible.
-
-## End-to-end Tests
-
-If you implement a new component add end-to-end tests for the component using
-the automated [Testbed](testbed/README.md).
 
 ## Release
 

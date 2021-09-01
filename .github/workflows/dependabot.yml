@@ -14,7 +14,7 @@ jobs:
           ref: ${{ github.head_ref }}
       - uses: actions/setup-go@v2
         with:
-          go-version: '^1.16.0'
+          go-version: '^1.17.0'
       - uses: evantorrie/mott-the-tidier@v1-beta
         id: modtidy
         with:

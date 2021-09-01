@@ -1,0 +1,87 @@
+{%- macro to_go_attr_type(type, val) -%}
+  {%- if type == "string" -%}
+    String("{{val}}")
+  {%- elif type == "int" -%}
+    Int({{val}})
+  {%- endif -%}
+{%- endmacro -%}
+{%- macro to_go_name(fqn) -%}
+{{fqn | replace(".", " ") | replace("_", " ") | title | replace(" ", "")}}
+{%- endmacro -%}
+{%- macro godoc(attr) -%}
+{{ attr.brief | render_markdown(paragraph="{0}", code="{0}", link="{1}", emphasis="{0}", strong="{0}") }}
+//
+{%- if attr.attr_type is string %}
+Type: {{ attr.attr_type }}
+{%- else %}
+Type: Enum
+{%- endif %}
+{%- if attr.required == Required.ALWAYS %}
+Required: Always
+{%- elif attr.required == Required.CONDITIONAL %}
+Required: {{ attr.required_msg }}
+{%- else %}
+Required: No
+{%- endif %}
+{{ attr.stability |  replace("Level.", ": ") | capitalize }}
+{%- if attr.deprecated != None %}
+Deprecated: {{ attr.deprecated }}
+{%- endif %}
+{%- if attr.examples is iterable %}
+Examples: {{ attr.examples | pprint | trim("[]")  }}
+{%- endif %}
+{%- if attr.note %}
+Note: {{ attr.note | render_markdown(paragraph="{0}", code="{0}", link="{1}", emphasis="{0}", strong="{0}") }}
+{%- endif %}
+{%- endmacro -%}
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Code generated from semantic convention specification. DO NOT EDIT.
+
+package semconv
+
+{% for semconv in semconvs -%}
+{%- if semconvs[semconv].attributes | rejectattr("ref") | selectattr("is_local") | sort(attribute=fqn) | length > 0 -%}
+// {{ semconvs[semconv].brief }}
+const (
+{% for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
+    // {{ godoc(attr) | wordwrap | indent(3) | replace("   ", "\t// ") | replace("// //", "//") }}
+    Attribute{{to_go_name(attr.fqn)}} = "{{attr.fqn}}"
+{% endfor %}
+)
+{%- for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
+{%- if attr.attr_type is not string %}
+
+const (
+{%- for val in attr.attr_type.members %}
+    // {{ val.brief | to_doc_brief }}
+    Attribute{{to_go_name("{}.{}".format(attr.fqn, val.member_id))}} = "{{val.value}}"
+{%- endfor %}
+)
+{%- endif -%}
+{%- endfor %}
+
+{% endif %}
+{% endfor -%}
+
+func Get{{ conventionType | title }}SemanticConventionAttributeNames() []string {
+    return []string{
+        {% for semconv in semconvs -%}
+        {%- for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
+        Attribute{{to_go_name(attr.fqn)}},
+        {% endfor %}
+        {%- endfor %}
+    }
+}

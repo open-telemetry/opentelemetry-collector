@@ -19,7 +19,6 @@ import (
 	"errors"
 	"testing"
 
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -28,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
+	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 func TestDefaultReceivers(t *testing.T) {
@@ -38,41 +38,17 @@ func TestDefaultReceivers(t *testing.T) {
 	rcvrFactories := allFactories.Receivers
 
 	tests := []struct {
-		receiver     config.Type
-		skipLifecyle bool
-		getConfigFn  getReceiverConfigFn
+		receiver    config.Type
+		getConfigFn getReceiverConfigFn
 	}{
 		{
-			receiver: "hostmetrics",
-		},
-		{
-			receiver: "jaeger",
-		},
-		{
-			receiver:     "kafka",
-			skipLifecyle: true, // TODO: It needs access to internals to successful start.
-		},
-		{
-			receiver:     "opencensus",
-			skipLifecyle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
-		},
-		{
 			receiver: "otlp",
-		},
-		{
-			receiver: "prometheus",
 			getConfigFn: func() config.Receiver {
-				cfg := rcvrFactories["prometheus"].CreateDefaultConfig().(*prometheusreceiver.Config)
-				cfg.PrometheusConfig = &promconfig.Config{
-					ScrapeConfigs: []*promconfig.ScrapeConfig{
-						{JobName: "test"},
-					},
-				}
+				cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
+				cfg.(*otlpreceiver.Config).GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+				cfg.(*otlpreceiver.Config).HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 				return cfg
 			},
-		},
-		{
-			receiver: "zipkin",
 		},
 	}
 
@@ -83,11 +59,6 @@ func TestDefaultReceivers(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
 			assert.Equal(t, config.NewID(tt.receiver), factory.CreateDefaultConfig().ID())
-
-			if tt.skipLifecyle {
-				t.Log("Skipping lifecycle test", tt.receiver)
-				return
-			}
 
 			verifyReceiverLifecycle(t, factory, tt.getConfigFn)
 		})

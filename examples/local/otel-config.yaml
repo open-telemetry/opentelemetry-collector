@@ -1,7 +1,6 @@
 extensions:
-  health_check:
-  pprof:
-    endpoint: 0.0.0.0:1777
+  memory_ballast:
+    size_mib: 512
   zpages:
     endpoint: 0.0.0.0:55679
 
@@ -10,26 +9,15 @@ receivers:
     protocols:
       grpc:
       http:
-  opencensus:
-  jaeger:
-    protocols:
-      grpc:
-      thrift_binary:
-      thrift_compact:
-      thrift_http:
-  zipkin:
-
-  # Collect own metrics
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 10s
-          static_configs:
-            - targets: [ '0.0.0.0:8888' ]
 
 processors:
   batch:
+  memory_limiter:
+    # 75% of maximum memory up to 4G
+    limit_mib: 1536
+    # 25% of limit up to 2G
+    spike_limit_mib: 512
+    check_interval: 5s
 
 exporters:
   logging:
@@ -38,12 +26,12 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [otlp, opencensus, jaeger, zipkin]
-      processors: [batch]
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
       exporters: [logging]
     metrics:
-      receivers: [otlp, opencensus, prometheus]
-      processors: [batch]
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
       exporters: [logging]
 
-  extensions: [health_check, pprof, zpages]
+  extensions: [memory_ballast, zpages]
