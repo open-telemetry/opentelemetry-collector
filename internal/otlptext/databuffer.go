@@ -159,7 +159,7 @@ func (b *dataBuffer) logLogRecord(lr pdata.LogRecord) {
 	b.logAttributeMap("Attributes", lr.Attributes())
 	b.logEntry("Trace ID: %s", lr.TraceID().HexString())
 	b.logEntry("Span ID: %s", lr.SpanID().HexString())
-	b.logEntry("Flags: %d", l.Flags())
+	b.logEntry("Flags: %d", lr.Flags())
 }
 
 func (b *dataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
