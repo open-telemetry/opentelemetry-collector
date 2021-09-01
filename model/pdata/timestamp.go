@@ -27,12 +27,6 @@ func NewTimestampFromTime(t time.Time) Timestamp {
 	return Timestamp(uint64(t.UnixNano()))
 }
 
-// TimestampFromTime constructs a new Timestamp from the provided time.Time.
-// Deprecated: use NewTimestampFromTime instead.
-func TimestampFromTime(t time.Time) Timestamp {
-	return Timestamp(uint64(t.UnixNano()))
-}
-
 // AsTime converts this to a time.Time.
 func (ts Timestamp) AsTime() time.Time {
 	return time.Unix(0, int64(ts)).UTC()

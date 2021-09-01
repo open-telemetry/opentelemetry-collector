@@ -1,0 +1,40 @@
+name: build-and-test-windows
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
+env:
+  TEST_RESULTS: testbed/tests/results/junit/results.xml
+
+jobs:
+  windows-unittest:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.4
+        with:
+          go-version: 1.17
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        shell: bash
+      - name: Cache Go
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            \Users\runneradmin\go\pkg\mod
+            %LocalAppData%\go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod', '**/go.sum') }}
+      - name: Run Unit tests
+        run: go test ./...
+      - name: GitHub Issue Generator
+        if: ${{ failure() && github.ref == 'ref/head/main' }}
+        run: |
+          go run cmd/issuegenerator/main.go $TEST_RESULTS

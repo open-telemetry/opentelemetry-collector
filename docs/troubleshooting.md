@@ -168,7 +168,7 @@ Attributes:
 ### Health Check
 
 The
-[health_check](https://github.com/open-telemetry/opentelemetry-collector/tree/main/extension/healthcheckextension/README.md)
+[health_check](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/healthcheckextension/README.md)
 extension, which by default is available on all interfaces on port `13133`, can
 be used to ensure the Collector is functioning properly.
 
@@ -182,13 +182,17 @@ service:
 It returns a response like the following:
 
 ```json
-{"status":"Server available","upSince":"2020-11-11T04:12:31.6847174Z","uptime":"49.0132518s"}
+{
+  "status": "Server available",
+  "upSince": "2020-11-11T04:12:31.6847174Z",
+  "uptime": "49.0132518s"
+}
 ```
 
 ### pprof
 
 The
-[pprof](https://github.com/open-telemetry/opentelemetry-collector/tree/main/extension/pprofextension/README.md)
+[pprof](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/pprofextension/README.md)
 extension, which by default is available locally on port `1777`, allows you to profile the
 Collector as it runs. This is an advanced use-case that should not be needed in most circumstances.
 

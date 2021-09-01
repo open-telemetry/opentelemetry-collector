@@ -247,7 +247,7 @@ func attributeMapToString(av pdata.AttributeMap) string {
 	b.WriteString("{\n")
 
 	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
-		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), pdata.AttributeValueToString(v))
+		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), v.AsString())
 		return true
 	})
 	b.WriteByte('}')

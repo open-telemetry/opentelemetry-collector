@@ -2,11 +2,44 @@
 
 ## Unreleased
 
+## v0.34.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
+- Artifacts are no longer published in this repository, check [here](https://github.com/open-telemetry/opentelemetry-collector-releases) (#3941)
 - Remove deprecated `tracetranslator.AttributeValueToString` and `tracetranslator.AttributeMapToMap` (#3873)
 - Change semantic conventions for status (code, msg) as per specifications (#3872)
 - Add `pdata.NewTimestampFromTime`, deprecate `pdata.TimestampFromTime` (#3868)
+- Add `pdata.NewAttributeMapFromMap`, deprecate `pdata.AttributeMap.InitFromMap` (#3936)
+- Move `fileexporter` to contrib (#3474)
+- Move `jaegerexporter` to contrib (#3474)
+- Move `kafkaexporter` to contrib (#3474)
+- Move `opencensusexporter` to contrib (#3474)
+- Move `prometheusexporter` to contrib (#3474)
+- Move `prometheusremotewriteexporter` to contrib (#3474)
+- Move `zipkinexporter` to contrib (#3474)
+- Move `attributeprocessor` to contrib (#3474)
+- Move `filterprocessor` to contrib (#3474)
+- Move `probabilisticsamplerprocessor` to contrib (#3474)
+- Move `resourceprocessor` to contrib (#3474)
+- Move `spanprocessor` to contrib (#3474)
+- Move `hostmetricsreceiver` to contrib (#3474)
+- Move `jaegerreceiver` to contrib (#3474)
+- Move `kafkareceiver` to contrib (#3474)
+- Move `opencensusreceiver` to contrib (#3474)
+- Move `prometheusreceiver` to contrib (#3474)
+- Move `zipkinreceiver` to contrib (#3474)
+- Move `bearertokenauthextension` to contrib (#3474)
+- Move `healthcheckextension` to contrib (#3474)
+- Move `oidcauthextension` to contrib (#3474)
+- Move `pprofextension` to contrib (#3474)
+- Move `translator/internaldata` to contrib (#3474)
+- Move `translator/trace/jaeger` to contrib (#3474)
+- Move `translator/trace/zipkin` to contrib (#3474)
+- Move `testbed` to contrib (#3474)
+- Move `exporter/exporterhelper/resource_to_telemetry` to contrib (#3474)
+- Move `processor/processorhelper/attraction` to contrib (#3474)
+- Move `translator/conventions` to `model/semconv` (#3901)
 
 ## v0.33.0 Beta
 

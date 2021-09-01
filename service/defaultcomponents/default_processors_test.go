@@ -28,11 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
-	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/processor/resourceprocessor"
-	"go.opentelemetry.io/collector/processor/spanprocessor"
 )
 
 func TestDefaultProcessors(t *testing.T) {
@@ -46,20 +42,7 @@ func TestDefaultProcessors(t *testing.T) {
 		getConfigFn getProcessorConfigFn
 	}{
 		{
-			processor: "attributes",
-			getConfigFn: func() config.Processor {
-				cfg := procFactories["attributes"].CreateDefaultConfig().(*attributesprocessor.Config)
-				cfg.Actions = []processorhelper.ActionKeyValue{
-					{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
-				}
-				return cfg
-			},
-		},
-		{
 			processor: "batch",
-		},
-		{
-			processor: "filter",
 		},
 		{
 			processor: "memory_limiter",
@@ -67,27 +50,6 @@ func TestDefaultProcessors(t *testing.T) {
 				cfg := procFactories["memory_limiter"].CreateDefaultConfig().(*memorylimiter.Config)
 				cfg.CheckInterval = 100 * time.Millisecond
 				cfg.MemoryLimitMiB = 1024 * 1024
-				return cfg
-			},
-		},
-		{
-			processor: "probabilistic_sampler",
-		},
-		{
-			processor: "resource",
-			getConfigFn: func() config.Processor {
-				cfg := procFactories["resource"].CreateDefaultConfig().(*resourceprocessor.Config)
-				cfg.AttributesActions = []processorhelper.ActionKeyValue{
-					{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
-				}
-				return cfg
-			},
-		},
-		{
-			processor: "span",
-			getConfigFn: func() config.Processor {
-				cfg := procFactories["span"].CreateDefaultConfig().(*spanprocessor.Config)
-				cfg.Rename.FromAttributes = []string{"test-key"}
 				return cfg
 			},
 		},

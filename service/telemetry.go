@@ -25,13 +25,11 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // collectorTelemetry is collector's own telemetry.
@@ -63,8 +61,6 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	var views []*view.View
 	obsMetrics := obsreportconfig.Configure(level)
 	views = append(views, batchprocessor.MetricViews()...)
-	views = append(views, jaegerexporter.MetricViews()...)
-	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, obsMetrics.Views...)
 	views = append(views, processMetricsViews.Views()...)
 
@@ -85,7 +81,7 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
 		opts.ConstLabels = map[string]string{
-			sanitizePrometheusKey(conventions.AttributeServiceInstanceID): instanceID,
+			sanitizePrometheusKey(semconv.AttributeServiceInstanceID): instanceID,
 		}
 	}
 
@@ -100,7 +96,7 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		"Serving Prometheus metrics",
 		zap.String("address", metricsAddr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
-		zap.String(conventions.AttributeServiceInstanceID, instanceID),
+		zap.String(semconv.AttributeServiceInstanceID, instanceID),
 	)
 
 	mux := http.NewServeMux()

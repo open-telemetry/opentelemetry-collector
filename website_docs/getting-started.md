@@ -46,11 +46,11 @@ within an environment.
 
 Deploys a load generator, agent and gateway as well as Jaeger, Zipkin and
 Prometheus back-ends. More information can be found on the demo
-[README.md](https://github.com/open-telemetry/opentelemetry-collector/tree/main/examples/demo)
+[README.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/examples/demo)
 
 ```bash
-$ git clone git@github.com:open-telemetry/opentelemetry-collector.git; \
-    cd opentelemetry-collector/examples/demo; \
+$ git clone git@github.com:open-telemetry/opentelemetry-collector-contrib.git; \
+    cd opentelemetry-collector-contrib/examples/demo; \
     docker-compose up -d
 ```
 
@@ -177,8 +177,12 @@ locally to a file. Data is sent to the container and the container scrapes its o
 Prometheus metrics.
 
 ```bash
+$ git clone git@github.com:open-telemetry/opentelemetry-collector-contrib.git; \
+    cd opentelemetry-collector-contrib/examples/demo; \
+    go build client/main.go; ./client/main & pid1="$!"; \
+    go build server/main.go; ./server/main & pid2="$!"; \
+
 $ git clone git@github.com:open-telemetry/opentelemetry-collector.git; \
     cd opentelemetry-collector; make install-tools; make otelcol; \
-    go build examples/demo/app/main.go; ./main & pid1="$!"; \
-    ./bin/otelcol_$(go env GOOS)_$(go env GOARCH) --config ./examples/local/otel-config.yaml; kill $pid1
+    ./bin/otelcol_$(go env GOOS)_$(go env GOARCH) --config ./examples/local/otel-config.yaml; kill $pid1; kill $pid2
 ```

@@ -36,10 +36,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
-	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestCollector_Start(t *testing.T) {
@@ -62,12 +62,10 @@ func TestCollector_Start(t *testing.T) {
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
-	healthCheckEndpoint := testutil.GetAvailableLocalAddress(t)
 	col.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
-		"--set=extensions.health_check.endpoint=" + healthCheckEndpoint,
 	})
 
 	colDone := make(chan struct{})
@@ -78,7 +76,6 @@ func TestCollector_Start(t *testing.T) {
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
 	assert.Equal(t, Running, <-col.GetStateChannel())
-	require.True(t, isCollectorAvailable(t, "http://"+healthCheckEndpoint))
 	assert.Equal(t, col.logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
@@ -97,7 +94,6 @@ func TestCollector_Start(t *testing.T) {
 
 	// Trigger another configuration load.
 	require.NoError(t, col.reloadService(context.Background()))
-	require.True(t, isCollectorAvailable(t, "http://"+healthCheckEndpoint))
 
 	col.signalsChannel <- syscall.SIGTERM
 	<-colDone
@@ -172,17 +168,6 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	<-colDone
 	assert.Equal(t, Closing, <-col.GetStateChannel())
 	assert.Equal(t, Closed, <-col.GetStateChannel())
-}
-
-// isCollectorAvailable checks if the healthcheck server at the given endpoint is
-// returning `available`.
-func isCollectorAvailable(t *testing.T, healthCheckEndPoint string) bool {
-	client := &http.Client{}
-	resp, err := client.Get(healthCheckEndPoint)
-	require.NoError(t, err)
-
-	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusOK
 }
 
 func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLabels []string) {
