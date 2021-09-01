@@ -82,15 +82,15 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	assert.Equal(t, cfg, cfgValidate)
 }
 
-func TestValidateConfigPointerAndValue(t *testing.T) {
+func TestCheckConfigStructPointerAndValue(t *testing.T) {
 	config := struct {
 		SomeFiled string `mapstructure:"test"`
 	}{}
-	assert.NoError(t, ValidateConfig(config))
-	assert.NoError(t, ValidateConfig(&config))
+	assert.NoError(t, CheckConfigStruct(config))
+	assert.NoError(t, CheckConfigStruct(&config))
 }
 
-func TestValidateConfig(t *testing.T) {
+func TestCheckConfigStruct(t *testing.T) {
 	type BadConfigTag struct {
 		BadTagField int `mapstructure:"test-dash"`
 	}
@@ -206,7 +206,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateConfig(tt.config)
+			err := CheckConfigStruct(tt.config)
 			if tt.wantErrMsgSubStr == "" {
 				assert.NoError(t, err)
 			} else {

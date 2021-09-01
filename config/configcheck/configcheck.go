@@ -20,28 +20,28 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-// ValidateConfigFromFactories checks if all configurations for the given factories
+// CheckConfigStructFromFactories checks if all configurations for the given factories
 // are satisfying the patterns used by the collector.
-func ValidateConfigFromFactories(factories component.Factories) error {
+func CheckConfigStructFromFactories(factories component.Factories) error {
 	var errs []error
 
 	for _, factory := range factories.Receivers {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	for _, factory := range factories.Processors {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	for _, factory := range factories.Exporters {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	for _, factory := range factories.Extensions {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
