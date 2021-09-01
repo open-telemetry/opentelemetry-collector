@@ -95,14 +95,9 @@ func Compile(cfg Config) error {
 		return nil
 	}
 
-	// first, we test to check if we have Go at all
-	goBinary, err := getGoPath(cfg)
-	if err != nil {
-		return err
-	}
-
 	cfg.Logger.Info("Compiling")
-	cmd := exec.Command(goBinary, "build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.ExeName)
+	// #nosec G204
+	cmd := exec.Command(cfg.Distribution.Go, "build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.ExeName)
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w. Output: %q", err, out)
@@ -114,20 +109,21 @@ func Compile(cfg Config) error {
 
 // GetModules retrieves the go modules, updating go.mod and go.sum in the process
 func GetModules(cfg Config) error {
-	// first, we test to check if we have Go at all
-	goBinary, err := getGoPath(cfg)
-	if err != nil {
-		return err
+	// #nosec G204
+	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy")
+	cmd.Dir = cfg.Distribution.OutputPath
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to update go.mod: %w. Output: %q", err, out)
 	}
 
 	cfg.Logger.Info("Getting go modules")
-
 	// basic retry if error from go mod command (in case of transient network error). This could be improved
 	// retry 3 times with 5 second spacing interval
 	retries := 3
 	failReason := "unknown"
 	for i := 1; i <= retries; i++ {
-		cmd := exec.Command(goBinary, "mod", "download", "all")
+		// #nosec G204
+		cmd := exec.Command(cfg.Distribution.Go, "mod", "download", "all")
 		cmd.Dir = cfg.Distribution.OutputPath
 		if out, err := cmd.CombinedOutput(); err != nil {
 			failReason = fmt.Sprintf("%s. Output: %q", err, out)
@@ -138,21 +134,6 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 	return fmt.Errorf("failed to download go modules: %s", failReason)
-}
-
-// getGoPath checks if go is present and correct, and returns a useable go bin location
-func getGoPath(cfg Config) (string, error) {
-	goBinary := cfg.Distribution.Go
-	if _, err := exec.Command(goBinary, "env").CombinedOutput(); err != nil {
-		path, err := exec.LookPath("go")
-		if err != nil {
-			return "", ErrGoNotFound
-		}
-		goBinary = path
-		cfg.Logger.Info("Using go from PATH", "Go executable", path)
-	}
-
-	return goBinary, nil
 }
 
 func processAndWrite(cfg Config, tmpl string, outFile string, tmplParams interface{}) error {

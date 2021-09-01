@@ -75,7 +75,7 @@ func Execute() error {
 	cmd.Flags().BoolVar(&cfg.Distribution.IncludeCore, "include-core", true, "Whether the core components should be included in the distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, "otelcol-version", cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, "output-path", cfg.Distribution.OutputPath, "Where to write the resulting files")
-	cmd.Flags().StringVar(&cfg.Distribution.Go, "go", "/usr/bin/go", "The Go binary to use during the compilation phase")
+	cmd.Flags().StringVar(&cfg.Distribution.Go, "go", "", "The Go binary to use during the compilation phase. Default: go from the PATH")
 	cmd.Flags().StringVar(&cfg.Distribution.Module, "module", "github.com/open-telemetry/opentelemetry-collector-builder", "The Go module for the new distribution")
 
 	// version of this binary

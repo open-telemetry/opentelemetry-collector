@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -89,7 +90,17 @@ func DefaultConfig() Config {
 }
 
 // Validate checks whether the current configuration is valid
-func (c Config) Validate() error {
+func (c *Config) Validate() error {
+	// #nosec G204
+	if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
+		path, err := exec.LookPath("go")
+		if err != nil {
+			return ErrGoNotFound
+		}
+		c.Distribution.Go = path
+	}
+	c.Logger.Info("Using go", "Go executable", c.Distribution.Go)
+
 	return nil
 }
 
