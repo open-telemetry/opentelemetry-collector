@@ -121,17 +121,17 @@ func (c *Config) ParseModules() error {
 }
 
 func parseModules(mods []Module) ([]Module, error) {
-	parsedModules := []Module{}
+	var parsedModules []Module
 	for _, mod := range mods {
-		if len(mod.GoMod) == 0 && !mod.Core {
+		if mod.GoMod == "" && !mod.Core {
 			return mods, fmt.Errorf("%w, module: %q", ErrInvalidGoMod, mod.GoMod)
 		}
 
-		if len(mod.Import) == 0 {
+		if mod.Import == "" {
 			mod.Import = strings.Split(mod.GoMod, " ")[0]
 		}
 
-		if len(mod.Name) == 0 {
+		if mod.Name == "" {
 			parts := strings.Split(mod.Import, "/")
 			mod.Name = parts[len(parts)-1]
 		}

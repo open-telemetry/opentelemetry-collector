@@ -27,11 +27,8 @@ import (
 )
 
 var (
-	// ErrFailedToGenerateSourceFromTemplate indicates a failure in writing the final contents to the destination file
-	ErrFailedToGenerateSourceFromTemplate = errors.New("failed to generate source from template")
-
 	// ErrGoNotFound is returned when a Go binary hasn't been found
-	ErrGoNotFound = errors.New("Go binary not found")
+	ErrGoNotFound = errors.New("go binary not found")
 )
 
 // GenerateAndCompile will generate the source files based on the given configuration, update go mod, and will compile into a binary
