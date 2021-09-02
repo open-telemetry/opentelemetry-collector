@@ -1,14 +1,14 @@
 dist:
   module: github.com/open-telemetry/opentelemetry-collector-builder/test/nocore
-  otelcol_version: 0.33.0
+  otelcol_version: 0.34.0
   include_core: false
 
 receivers:
-  - import: go.opentelemetry.io/collector/receiver/jaegerreceiver
+  - import: go.opentelemetry.io/collector/receiver/otlpreceiver
     core: true
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
     core: true
 extensions:
-  - import: go.opentelemetry.io/collector/extension/healthcheckextension
+  - import: go.opentelemetry.io/collector/extension/zpagesextension
     core: true

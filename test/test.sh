@@ -62,7 +62,7 @@ do
             break
         fi
 
-        curl -s localhost:13133  | grep "Server available" > /dev/null
+        curl -s http://localhost:55679/debug/servicez | grep Uptime > /dev/null
         if [ $? == 0 ]; then
             echo "✅ PASS ${test}"
 

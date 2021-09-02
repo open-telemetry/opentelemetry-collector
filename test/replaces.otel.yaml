@@ -1,5 +1,5 @@
 extensions:
-  health_check:
+  zpages:
 
 receivers:
   otlp:
@@ -24,7 +24,7 @@ exporters:
   logging:
 
 service:
-  extensions: [health_check]
+  extensions: [zpages]
   pipelines:
     traces:
       receivers:

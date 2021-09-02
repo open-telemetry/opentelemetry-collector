@@ -1,13 +1,10 @@
 extensions:
-  health_check:
+  zpages:
 
 receivers:
-  jaeger:
+  otlp:
     protocols:
       grpc:
-      thrift_http:
-      thrift_compact:
-      thrift_binary:
 
 processors:
 
@@ -15,11 +12,11 @@ exporters:
   logging:
 
 service:
-  extensions: [health_check]
+  extensions: [zpages]
   pipelines:
     traces:
       receivers:
-        - jaeger
+        - otlp
       processors: []
       exporters:
         - logging
