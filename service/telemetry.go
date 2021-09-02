@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/version"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
@@ -82,6 +83,7 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		instanceID = instanceUUID.String()
 		opts.ConstLabels = map[string]string{
 			sanitizePrometheusKey(semconv.AttributeServiceInstanceID): instanceID,
+			sanitizePrometheusKey(semconv.AttributeServiceVersion):    version.Version,
 		}
 	}
 
