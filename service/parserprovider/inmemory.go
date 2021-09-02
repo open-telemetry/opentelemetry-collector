@@ -29,6 +29,6 @@ func NewInMemory(buf io.Reader) ParserProvider {
 	return &inMemoryProvider{buf: buf}
 }
 
-func (inp *inMemoryProvider) Get() (*configparser.Parser, error) {
+func (inp *inMemoryProvider) Get() (*configparser.ConfigMap, error) {
 	return configparser.NewParserFromBuffer(inp.buf)
 }
