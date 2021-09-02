@@ -795,12 +795,6 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	*dest.orig = origs
 }
 
-// AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
-// Deprecated: use AttributeValue's String method instead.
-func AttributeValueToString(attr AttributeValue) string {
-	return attr.AsString()
-}
-
 // AttributeMapToMap converts an OTLP AttributeMap to a standard go map
 func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
 	rawMap := make(map[string]interface{})
