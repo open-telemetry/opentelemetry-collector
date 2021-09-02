@@ -179,7 +179,7 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnnmarshaler requestUnmarshaler) *baseExporter {
+func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnmarshaler requestUnmarshaler) *baseExporter {
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}
@@ -189,7 +189,7 @@ func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, 
 		ExporterID:             cfg.ID(),
 		ExporterCreateSettings: set,
 	})
-	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 
 	return be

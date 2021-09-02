@@ -21,7 +21,7 @@ The following configuration options can be modified:
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
-  - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension
+  - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension (note, `unable_unstable` compilation flag needs to be enabled first)
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend.
@@ -34,7 +34,7 @@ The full list of settings exposed for this helper exporter are documented [here]
 
 When `persistent_storage_enabled` is set to true, the queue is being buffered to disk by the 
 [file storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage). 
-It currently can be enabled only in OpenTelemetry Collector Contrib.
+It currently can be enabled only in OpenTelemetry Collector Contrib. Also, `unable_unstable` compilation flag needs to be enabled.
 
 
 ```

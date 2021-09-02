@@ -66,7 +66,7 @@ gotestinstall:
 
 .PHONY: gotest
 gotest:
-	@$(MAKE) for-all CMD="make test"
+	@$(MAKE) for-all CMD="make test test-unstable"
 
 .PHONY: gobenchmark
 gobenchmark:
@@ -81,7 +81,7 @@ gotest-with-cover:
 
 .PHONY: golint
 golint:
-	@$(MAKE) for-all CMD="make lint"
+	@$(MAKE) for-all CMD="make lint lint-unstable"
 
 .PHONY: goimpi
 goimpi:
@@ -147,6 +147,11 @@ install-tools:
 otelcol:
 	go generate ./...
 	$(MAKE) build-binary-internal
+
+.PHONY: otelcol-unstable
+otelcol-unstable:
+	go generate ./...
+	$(MAKE) build-binary-internal-unstable
 
 .PHONY: run
 run:
@@ -236,6 +241,10 @@ binaries-windows_amd64:
 .PHONY: build-binary-internal
 build-binary-internal:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+
+.PHONY: build-binary-internal-unstable
+build-binary-internal-unstable:
+	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION)_unstable $(BUILD_INFO) -tags enable_unstable ./cmd/otelcol
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
