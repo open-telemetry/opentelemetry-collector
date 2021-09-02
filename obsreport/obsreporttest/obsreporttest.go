@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 var (
@@ -36,12 +35,11 @@ var (
 	// Changes to metric names or labels can break alerting, dashboards, etc
 	// that are used to monitor the Collector in production deployments.
 	// DO NOT SWITCH THE VARIABLES BELOW TO SIMILAR ONES DEFINED ON THE PACKAGE.
-	receiverTag, _         = tag.NewKey("receiver")
-	scraperTag, _          = tag.NewKey("scraper")
-	transportTag, _        = tag.NewKey("transport")
-	exporterTag, _         = tag.NewKey("exporter")
-	processorTag, _        = tag.NewKey("processor")
-	collectorVersionTag, _ = tag.NewKey("collector_version")
+	receiverTag, _  = tag.NewKey("receiver")
+	scraperTag, _   = tag.NewKey("scraper")
+	transportTag, _ = tag.NewKey("transport")
+	exporterTag, _  = tag.NewKey("exporter")
+	processorTag, _ = tag.NewKey("processor")
 )
 
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
@@ -167,8 +165,8 @@ func checkValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName stri
 // tagsForReceiverView returns the tags that are needed for the receiver views.
 func tagsForReceiverView(receiver config.ComponentID, transport string) []tag.Tag {
 	tags := make([]tag.Tag, 0, 2)
+
 	tags = append(tags, tag.Tag{Key: receiverTag, Value: receiver.String()})
-	tags = append(tags, tag.Tag{Key: collectorVersionTag, Value: version.Version})
 	if transport != "" {
 		tags = append(tags, tag.Tag{Key: transportTag, Value: transport})
 	}
@@ -181,7 +179,6 @@ func tagsForScraperView(receiver config.ComponentID, scraper config.ComponentID)
 	return []tag.Tag{
 		{Key: receiverTag, Value: receiver.String()},
 		{Key: scraperTag, Value: scraper.String()},
-		{Key: collectorVersionTag, Value: version.Version},
 	}
 }
 
@@ -189,7 +186,6 @@ func tagsForScraperView(receiver config.ComponentID, scraper config.ComponentID)
 func tagsForProcessorView(processor config.ComponentID) []tag.Tag {
 	return []tag.Tag{
 		{Key: processorTag, Value: processor.String()},
-		{Key: collectorVersionTag, Value: version.Version},
 	}
 }
 
@@ -197,7 +193,6 @@ func tagsForProcessorView(processor config.ComponentID) []tag.Tag {
 func tagsForExporterView(exporter config.ComponentID) []tag.Tag {
 	return []tag.Tag{
 		{Key: exporterTag, Value: exporter.String()},
-		{Key: collectorVersionTag, Value: version.Version},
 	}
 }
 

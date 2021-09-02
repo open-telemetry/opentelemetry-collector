@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 // BuildProcessorCustomMetricName is used to be build a metric name following
@@ -56,10 +55,8 @@ type ProcessorSettings struct {
 // NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) *Processor {
 	return &Processor{
-		level: cfg.Level,
-		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-			tag.Upsert(obsmetrics.TagKeyCollectorVersion, version.Version, tag.WithTTL(tag.TTLNoPropagation)),
-		},
+		level:    cfg.Level,
+		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }
 

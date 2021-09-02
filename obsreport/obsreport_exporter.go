@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/internal/version"
 )
 
 // Exporter is a helper to add observability to a component.Exporter.
@@ -50,9 +49,8 @@ func NewExporter(cfg ExporterSettings) *Exporter {
 	return &Exporter{
 		level:          cfg.Level,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
-		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-			tag.Upsert(obsmetrics.TagKeyCollectorVersion, version.Version, tag.WithTTL(tag.TTLNoPropagation))},
-		tracer: cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
+		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
+		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
 	}
 }
 
