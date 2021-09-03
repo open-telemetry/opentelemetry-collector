@@ -48,7 +48,7 @@ type persistentStorage interface {
 // Read index describes which item needs to be read next.
 // When Write index = Read index, no elements are in the queue.
 //
-// The items currently processed by consumers are not deleted until the processing is finished.
+// The items currently dispatched by consumers are not deleted until the processing is finished.
 // Their list is stored under a separate key.
 //
 //
@@ -62,7 +62,7 @@ type persistentStorage interface {
 //      ▲              ▲     x     |     x
 //      │              │     x     |     xxxx deleted
 //      │              │     x     |
-//    write          read    x     └── currently processed item
+//    write          read    x     └── currently dispatched item
 //    index          index   x
 //                           xxxx deleted
 //
@@ -79,10 +79,10 @@ type persistentContiguousStorage struct {
 
 	reqChan chan request
 
-	mu                      sync.Mutex
-	readIndex               itemIndex
-	writeIndex              itemIndex
-	currentlyProcessedItems []itemIndex
+	mu                       sync.Mutex
+	readIndex                itemIndex
+	writeIndex               itemIndex
+	currentlyDispatchedItems []itemIndex
 
 	itemsCount uint64
 }
@@ -95,9 +95,9 @@ const (
 	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
-	readIndexKey               = "ri"
-	writeIndexKey              = "wi"
-	currentlyProcessedItemsKey = "pi"
+	readIndexKey                = "ri"
+	writeIndexKey               = "wi"
+	currentlyDispatchedItemsKey = "di"
 )
 
 var (
@@ -122,13 +122,13 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
-	unprocessedReqs := pcs.retrieveUnprocessedItems(context.Background())
+	notDispatchedReqs := pcs.retrieveNotDispatchedReqs(context.Background())
 
-	err := currentlyProcessedBatchesGauge.UpsertEntry(func() int64 {
-		return int64(pcs.numberOfCurrentlyProcessedItems())
+	err := currentlyDispatchedBatchesGauge.UpsertEntry(func() int64 {
+		return int64(pcs.numberOfCurrentlyDispatchedItems())
 	}, metricdata.NewLabelValue(pcs.queueName))
 	if err != nil {
-		logger.Error("failed to create number of currently processed items metric", zap.Error(err))
+		logger.Error("failed to create number of currently dispatched items metric", zap.Error(err))
 	}
 
 	// We start the loop first so in case there are more elements in the persistent storage than the capacity,
@@ -137,7 +137,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 	go pcs.loop()
 
 	// Make sure the leftover requests are handled
-	pcs.enqueueUnprocessedReqs(unprocessedReqs)
+	pcs.enqueueNotDispatchedReqs(notDispatchedReqs)
 	// Make sure the communication channel is loaded up
 	for i := uint64(0); i < pcs.size(); i++ {
 		pcs.putChan <- struct{}{}
@@ -177,7 +177,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
 }
 
-func (pcs *persistentContiguousStorage) enqueueUnprocessedReqs(reqs []request) {
+func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []request) {
 	if len(reqs) > 0 {
 		errCount := 0
 		for _, req := range reqs {
@@ -186,12 +186,12 @@ func (pcs *persistentContiguousStorage) enqueueUnprocessedReqs(reqs []request) {
 			}
 		}
 		if errCount > 0 {
-			pcs.logger.Error("Errors occurred while moving items for processing back to queue",
+			pcs.logger.Error("Errors occurred while moving items for dispatching back to queue",
 				zap.String(zapQueueNameKey, pcs.queueName),
 				zap.Int(zapNumberOfItems, len(reqs)), zap.Int(zapErrorCount, errCount))
 
 		} else {
-			pcs.logger.Info("Moved items for processing back to queue",
+			pcs.logger.Info("Moved items for dispatching back to queue",
 				zap.String(zapQueueNameKey, pcs.queueName),
 				zap.Int(zapNumberOfItems, len(reqs)))
 
@@ -224,19 +224,19 @@ func (pcs *persistentContiguousStorage) size() uint64 {
 	return atomic.LoadUint64(&pcs.itemsCount)
 }
 
-// numberOfCurrentlyProcessedItems returns the count of batches for which processing started but hasn't finished yet
-func (pcs *persistentContiguousStorage) numberOfCurrentlyProcessedItems() int {
+// numberOfCurrentlyDispatchedItems returns the count of batches for which processing started but hasn't finished yet
+func (pcs *persistentContiguousStorage) numberOfCurrentlyDispatchedItems() int {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
-	return len(pcs.currentlyProcessedItems)
+	return len(pcs.currentlyDispatchedItems)
 }
 
 func (pcs *persistentContiguousStorage) stop() {
 	pcs.logger.Debug("Stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
 	pcs.stopOnce.Do(func() {
 		close(pcs.stopChan)
-		_ = currentlyProcessedBatchesGauge.UpsertEntry(func() int64 {
-			return int64(pcs.numberOfCurrentlyProcessedItems())
+		_ = currentlyDispatchedBatchesGauge.UpsertEntry(func() int64 {
+			return int64(pcs.numberOfCurrentlyDispatchedItems())
 		}, metricdata.NewLabelValue(pcs.queueName))
 	})
 }
@@ -281,7 +281,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 		atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
 
 		pcs.updateReadIndex(ctx)
-		pcs.itemProcessingStart(ctx, index)
+		pcs.itemDispatchingStart(ctx, index)
 
 		batch, err := newBatch(pcs).get(pcs.itemKey(index)).execute(ctx)
 		if err != nil {
@@ -296,7 +296,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 		req.setOnProcessingFinished(func() {
 			pcs.mu.Lock()
 			defer pcs.mu.Unlock()
-			pcs.itemProcessingFinish(ctx, index)
+			pcs.itemDispatchingFinish(ctx, index)
 		})
 		return req, true
 	}
@@ -304,37 +304,37 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 	return nil, false
 }
 
-// retrieveUnprocessedItems gets the items for which processing was not finished, cleans the storage
+// retrieveNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items back to the queue
-func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Context) []request {
+func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []request {
 	var reqs []request
-	var processedItems []itemIndex
+	var dispatchedItems []itemIndex
 
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	pcs.logger.Debug("Checking if there are items left by consumers", zap.String(zapQueueNameKey, pcs.queueName))
-	batch, err := newBatch(pcs).get(currentlyProcessedItemsKey).execute(ctx)
+	pcs.logger.Debug("Checking if there are items left for dispatch by consumers", zap.String(zapQueueNameKey, pcs.queueName))
+	batch, err := newBatch(pcs).get(currentlyDispatchedItemsKey).execute(ctx)
 	if err == nil {
-		processedItems, err = batch.getItemIndexArrayResult(currentlyProcessedItemsKey)
+		dispatchedItems, err = batch.getItemIndexArrayResult(currentlyDispatchedItemsKey)
 	}
 	if err != nil {
-		pcs.logger.Error("Could not fetch items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+		pcs.logger.Error("Could not fetch items left for dispatch by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 		return reqs
 	}
 
-	if len(processedItems) > 0 {
-		pcs.logger.Info("Fetching items left for processing by consumers",
-			zap.String(zapQueueNameKey, pcs.queueName), zap.Int(zapNumberOfItems, len(processedItems)))
+	if len(dispatchedItems) > 0 {
+		pcs.logger.Info("Fetching items left for dispatch by consumers",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Int(zapNumberOfItems, len(dispatchedItems)))
 	} else {
-		pcs.logger.Debug("No items left for processing by consumers")
+		pcs.logger.Debug("No items left for dispatch by consumers")
 	}
 
-	reqs = make([]request, len(processedItems))
-	keys := make([]string, len(processedItems))
+	reqs = make([]request, len(dispatchedItems))
+	keys := make([]string, len(dispatchedItems))
 	retrieveBatch := newBatch(pcs)
 	cleanupBatch := newBatch(pcs)
-	for i, it := range processedItems {
+	for i, it := range dispatchedItems {
 		keys[i] = pcs.itemKey(it)
 		retrieveBatch.get(keys[i])
 		cleanupBatch.delete(keys[i])
@@ -368,34 +368,34 @@ func (pcs *persistentContiguousStorage) retrieveUnprocessedItems(ctx context.Con
 	return reqs
 }
 
-// itemProcessingStart appends the item to the list of currently processed items
-func (pcs *persistentContiguousStorage) itemProcessingStart(ctx context.Context, index itemIndex) {
-	pcs.currentlyProcessedItems = append(pcs.currentlyProcessedItems, index)
+// itemDispatchingStart appends the item to the list of currently dispatched items
+func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context, index itemIndex) {
+	pcs.currentlyDispatchedItems = append(pcs.currentlyDispatchedItems, index)
 	_, err := newBatch(pcs).
-		setItemIndexArray(currentlyProcessedItemsKey, pcs.currentlyProcessedItems).
+		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Debug("Failed updating currently processed items",
+		pcs.logger.Debug("Failed updating currently dispatched items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
 
-// itemProcessingFinish removes the item from the list of currently processed items and deletes it from the persistent queue
-func (pcs *persistentContiguousStorage) itemProcessingFinish(ctx context.Context, index itemIndex) {
-	var updatedProcessedItems []itemIndex
-	for _, it := range pcs.currentlyProcessedItems {
+// itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
+func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index itemIndex) {
+	var updatedDispatchedItems []itemIndex
+	for _, it := range pcs.currentlyDispatchedItems {
 		if it != index {
-			updatedProcessedItems = append(updatedProcessedItems, it)
+			updatedDispatchedItems = append(updatedDispatchedItems, it)
 		}
 	}
-	pcs.currentlyProcessedItems = updatedProcessedItems
+	pcs.currentlyDispatchedItems = updatedDispatchedItems
 
 	_, err := newBatch(pcs).
-		setItemIndexArray(currentlyProcessedItemsKey, pcs.currentlyProcessedItems).
+		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems).
 		delete(pcs.itemKey(index)).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Debug("Failed updating currently processed items",
+		pcs.logger.Debug("Failed updating currently dispatched items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }

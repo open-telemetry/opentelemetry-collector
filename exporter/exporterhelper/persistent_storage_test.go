@@ -84,20 +84,20 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	}
 
 	// Item index 0 is currently in unbuffered channel
-	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0})
 
 	// Now, this will take item 0 and pull item 1 into the unbuffered channel
 	readReq := getItemFromChannel(t, ps)
 	require.Equal(t, req.(*tracesRequest).td, readReq.(*tracesRequest).td)
-	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 1})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
 
 	// This takes item 1 from channel and pulls another one (item 2) into the unbuffered channel
 	secondReadReq := getItemFromChannel(t, ps)
-	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 1, 2})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1, 2})
 
-	// Lets mark item 1 as finished, it will remove it from the currently processed items list
+	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list
 	secondReadReq.onProcessingFinished()
-	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 2})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 2})
 
 	// Reload the storage. Since items 0 and 2 were not finished, those should be requeued at the end.
 	// The queue should be essentially {3,4,0,2} out of which item "3" should be pulled right away into
@@ -107,7 +107,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 		return newPs.size() == 3
 	}, 500*time.Millisecond, 10*time.Millisecond)
 
-	requireCurrentItemIndexesEqual(t, newPs, []itemIndex{3})
+	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{3})
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
@@ -116,7 +116,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	}
 
 	// The queue should be now empty
-	requireCurrentItemIndexesEqual(t, newPs, nil)
+	requireCurrentlyDispatchedItemsEqual(t, newPs, nil)
 	require.Eventually(t, func() bool {
 		return newPs.size() == 0
 	}, 500*time.Millisecond, 10*time.Millisecond)
@@ -149,11 +149,11 @@ func TestPersistentStorage_MetricsReported(t *testing.T) {
 	}
 
 	_ = getItemFromChannel(t, ps)
-	requireCurrentItemIndexesEqual(t, ps, []itemIndex{0, 1})
-	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_processed_batches")
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
+	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_dispatched_batches")
 
 	ps.stop()
-	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_processed_batches")
+	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_dispatched_batches")
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
@@ -314,11 +314,11 @@ func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) request 
 	return readReq
 }
 
-func requireCurrentItemIndexesEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
+func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
 	require.Eventually(t, func() bool {
 		pcs.mu.Lock()
 		defer pcs.mu.Unlock()
-		return reflect.DeepEqual(pcs.currentlyProcessedItems, compare)
+		return reflect.DeepEqual(pcs.currentlyDispatchedItems, compare)
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 

@@ -38,9 +38,9 @@ import (
 // enabled by setting "enable_unstable" build tag
 
 var (
-	currentlyProcessedBatchesGauge, _ = r.AddInt64DerivedGauge(
-		obsmetrics.ExporterKey+"/currently_processed_batches",
-		metric.WithDescription("Number of currently processed batches"),
+	currentlyDispatchedBatchesGauge, _ = r.AddInt64DerivedGauge(
+		obsmetrics.ExporterKey+"/currently_dispatched_batches",
+		metric.WithDescription("Number of batches that are currently being sent"),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 

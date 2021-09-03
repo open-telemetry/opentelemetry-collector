@@ -60,7 +60,7 @@ It currently can be enabled only in OpenTelemetry Collector Contrib. Also, `unab
    ▲                          │                          │    └─────────────┘
    │                          │                          │
    │                      currently                      │    ┌─Consumer #4─┐
-   │                      processed                      │    │    ┌───┐    │     Temporary
+   │                      dispatched                     │    │    ┌───┐    │     Temporary
    │                                                     └───►│    │ 4 │    ├───►  failure
    │                                                          │    └───┘    │         │
    │                                                          │             │         │
