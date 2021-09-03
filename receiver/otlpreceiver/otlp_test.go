@@ -574,6 +574,31 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
+func TestGRPCMaxRecvSize(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	sink := new(consumertest.TracesSink)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.NetAddr.Endpoint = addr
+	cfg.GRPC.MaxRecvMsgSizeMiB = 100
+	cfg.HTTP = nil
+	ocr := newReceiver(t, factory, cfg, sink, nil)
+
+	require.NotNil(t, ocr)
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+
+	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+	require.NoError(t, err)
+	defer cc.Close()
+
+	td := testdata.GenerateTracesManySpansSameResource(500000)
+	require.NoError(t, exportTraces(cc, td))
+	require.Len(t, sink.AllTraces(), 1)
+	assert.Equal(t, td, sink.AllTraces()[0])
+}
+
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
