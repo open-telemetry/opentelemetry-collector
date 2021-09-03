@@ -241,9 +241,9 @@ binaries-linux_arm64:
 binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) build-binary-internal
 
-.PHONY: binaries-darwin_amd64
-binaries-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal
+.PHONY: binaries-darwin_amd64-unstable
+binaries-darwin_amd64-unstable:
+	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal-unstable
 
 .PHONY: binaries-darwin_arm64-unstable
 binaries-darwin_arm64-unstable:
