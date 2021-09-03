@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-// queued_retry_v1 includes the code for memory-backed (original) queued retry helper only
+// queued_retry_inmemory includes the code for memory-backed (original) queued retry helper only
 // enabled when "enable_unstable" build tag is not set
 
 type queuedRetrySender struct {

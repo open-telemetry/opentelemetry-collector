@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-// queued_retry_v2 includes the code for both memory-backed and persistent-storage backed queued retry helpers
+// queued_retry_experimental includes the code for both memory-backed and persistent-storage backed queued retry helpers
 // enabled by setting "enable_unstable" build tag
 
 var (
