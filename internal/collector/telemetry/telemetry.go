@@ -29,7 +29,8 @@ var (
 	metricsAddrPtr   *string
 	metricsPrefixPtr *string
 
-	addInstanceIDPtr *bool
+	addInstanceIDPtr       *bool
+	addCollectorVersionPtr *bool
 )
 
 func Flags(flags *flag.FlagSet) {
@@ -49,6 +50,11 @@ func Flags(flags *flag.FlagSet) {
 		"add-instance-id",
 		true,
 		"Flag to control the addition of 'service.instance.id' to the collector metrics.")
+
+	addCollectorVersionPtr = flags.Bool(
+		"add-collector-version",
+		true,
+		"Flag to control the addition of 'service.version' to the collector metrics.")
 }
 
 // GetMetricsAddrDefault returns the default metrics bind address and port depending on
@@ -59,6 +65,10 @@ func GetMetricsAddrDefault() string {
 
 func GetAddInstanceID() bool {
 	return *addInstanceIDPtr
+}
+
+func GetAddCollectorVersion() bool {
+	return *addCollectorVersionPtr
 }
 
 func GetMetricsAddr() string {

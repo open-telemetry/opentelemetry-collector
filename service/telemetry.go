@@ -76,15 +76,17 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	opts := prometheus.Options{
 		Namespace: telemetry.GetMetricsPrefix(),
 	}
+	opts.ConstLabels = make(map[string]string)
 
 	var instanceID string
 	if telemetry.GetAddInstanceID() {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
-		opts.ConstLabels = map[string]string{
-			sanitizePrometheusKey(semconv.AttributeServiceInstanceID): instanceID,
-			sanitizePrometheusKey(semconv.AttributeServiceVersion):    version.Version,
-		}
+		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
+	}
+
+	if telemetry.GetAddCollectorVersion() {
+		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version
 	}
 
 	pe, err := prometheus.NewExporter(opts)
