@@ -151,17 +151,6 @@ func (b *dataBuffer) logDataPointAttributes(labels pdata.AttributeMap) {
 	b.logAttributeMap("Data point attributes", labels)
 }
 
-func (b *dataBuffer) logLogRecord(lr pdata.LogRecord) {
-	b.logEntry("Timestamp: %s", lr.Timestamp())
-	b.logEntry("Severity: %s", lr.SeverityText())
-	b.logEntry("ShortName: %s", lr.Name())
-	b.logEntry("Body: %s", attributeValueToString(lr.Body()))
-	b.logAttributeMap("Attributes", lr.Attributes())
-	b.logEntry("Trace ID: %s", lr.TraceID().HexString())
-	b.logEntry("Span ID: %s", lr.SpanID().HexString())
-	b.logEntry("Flags: %d", lr.Flags())
-}
-
 func (b *dataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 	if se.Len() == 0 {
 		return
