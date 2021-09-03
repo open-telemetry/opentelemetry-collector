@@ -42,9 +42,9 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+	opts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{}, "")
 	assert.NoError(t, err)
-	assert.Len(t, opts, 3)
+	assert.Len(t, opts, 4)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
@@ -73,9 +73,9 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		config.NewID("testauth"): &configauth.MockClientAuthenticator{},
 	}
 
-	opts, err := gcs.ToDialOptions(ext)
+	opts, err := gcs.ToDialOptions(ext, "")
 	assert.NoError(t, err)
-	assert.Len(t, opts, 9)
+	assert.Len(t, opts, 10)
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
@@ -233,7 +233,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions(test.ext)
+			opts, err := test.settings.ToDialOptions(test.ext, "")
 			assert.Nil(t, opts)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
@@ -249,9 +249,9 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+	dialOpts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{}, "")
 	assert.NoError(t, err)
-	assert.Len(t, dialOpts, 3)
+	assert.Len(t, dialOpts, 4)
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {
@@ -470,7 +470,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+			clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{}, "")
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
@@ -517,7 +517,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+	clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{}, "")
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)

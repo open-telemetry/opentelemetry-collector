@@ -36,26 +36,27 @@ import (
 
 type exporter struct {
 	// Input configuration.
-	config *Config
-	w      *grpcSender
+	config    *Config
+	w         *grpcSender
+	buildInfo component.BuildInfo
 }
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter) (*exporter, error) {
+func newExporter(cfg config.Exporter, buildInfo component.BuildInfo) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
 
-	return &exporter{config: oCfg}, nil
+	return &exporter{config: oCfg, buildInfo: buildInfo}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	e.w, err = newGrpcSender(e.config, host.GetExtensions())
+	e.w, err = newGrpcSender(e.config, host.GetExtensions(), e.buildInfo)
 	return
 }
 
@@ -94,8 +95,8 @@ type grpcSender struct {
 	callOptions    []grpc.CallOption
 }
 
-func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extension) (*grpcSender, error) {
-	dialOpts, err := config.GRPCClientSettings.ToDialOptions(ext)
+func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extension, info component.BuildInfo) (*grpcSender, error) {
+	dialOpts, err := config.GRPCClientSettings.ToDialOptions(ext, exporterhelper.DefaultUserAgent(info))
 	if err != nil {
 		return nil, err
 	}

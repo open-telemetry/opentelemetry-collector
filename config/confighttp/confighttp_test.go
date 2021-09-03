@@ -82,13 +82,13 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(ext)
+			client, err := test.settings.ToClient(ext, "")
 			if test.shouldError {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			transport := client.Transport.(*http.Transport)
+			transport := client.Transport.(*headerRoundTripper).transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
 		})
@@ -143,7 +143,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{})
+			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{}, "")
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -214,7 +214,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(test.extensionMap)
+			client, err := test.settings.ToClient(test.extensionMap, "")
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -408,7 +408,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
+			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{}, "")
 			assert.NoError(t, errClient)
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
@@ -558,15 +558,34 @@ func ExampleHTTPServerSettings() {
 }
 
 func TestHttpHeaders(t *testing.T) {
+	defaultUA := "Collector/1.2.3test"
 	tests := []struct {
-		name    string
-		headers map[string]string
+		name       string
+		headers    map[string]string
+		expectedUA string
 	}{
 		{
-			"with_headers",
-			map[string]string{
+			name: "with_headers",
+			headers: map[string]string{
 				"header1": "value1",
 			},
+			expectedUA: defaultUA,
+		},
+		{
+			name: "with_custom_user_agent",
+			headers: map[string]string{
+				"header1":    "value1",
+				"User-Agent": "My Test Agent",
+			},
+			expectedUA: "My Test Agent",
+		},
+		{
+			name: "with_custom_user_agent_lowercase",
+			headers: map[string]string{
+				"header1":    "value1",
+				"user-agent": "My Test Agent",
+			},
+			expectedUA: "My Test Agent",
 		},
 	}
 	for _, tt := range tests {
@@ -575,6 +594,7 @@ func TestHttpHeaders(t *testing.T) {
 				for k, v := range tt.headers {
 					assert.Equal(t, r.Header.Get(k), v)
 				}
+				assert.Equal(t, tt.expectedUA, r.Header.Get("user-agent"))
 				w.WriteHeader(200)
 			}))
 			defer server.Close()
@@ -585,11 +605,9 @@ func TestHttpHeaders(t *testing.T) {
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,
-				Headers: map[string]string{
-					"header1": "value1",
-				},
+				Headers:         tt.headers,
 			}
-			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{})
+			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{}, defaultUA)
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)

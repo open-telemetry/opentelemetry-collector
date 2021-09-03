@@ -179,7 +179,8 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 }
 
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
-func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
+func (gcs *GRPCClientSettings) ToDialOptions(
+	ext map[config.ComponentID]component.Extension, userAgent string) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
@@ -251,6 +252,8 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	opts = append(opts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+
+	opts = append(opts, grpc.WithUserAgent(userAgent))
 
 	return opts, nil
 }

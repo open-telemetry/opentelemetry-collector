@@ -49,6 +49,7 @@ type exporter struct {
 	metricsURL string
 	logsURL    string
 	logger     *zap.Logger
+	buildInfo  component.BuildInfo
 }
 
 var (
@@ -63,7 +64,7 @@ const (
 )
 
 // Crete new exporter.
-func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporter, error) {
+func newExporter(cfg config.Exporter, logger *zap.Logger, buildInfo component.BuildInfo) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {
@@ -75,15 +76,16 @@ func newExporter(cfg config.Exporter, logger *zap.Logger) (*exporter, error) {
 
 	// client construction is deferred to start
 	return &exporter{
-		config: oCfg,
-		logger: logger,
+		config:    oCfg,
+		logger:    logger,
+		buildInfo: buildInfo,
 	}, nil
 }
 
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions(), exporterhelper.DefaultUserAgent(e.buildInfo))
 	if err != nil {
 		return err
 	}

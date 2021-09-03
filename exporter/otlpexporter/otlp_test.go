@@ -200,6 +200,8 @@ func TestSendTraces(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo.Description = "Collector"
+	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -244,7 +246,10 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, td, rcv.GetLastRequest())
 
-	require.EqualValues(t, rcv.GetMetadata().Get("header"), expectedHeader)
+	md := rcv.GetMetadata()
+	require.EqualValues(t, md.Get("header"), expectedHeader)
+	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 }
 
 func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
@@ -341,6 +346,8 @@ func TestSendMetrics(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo.Description = "Collector"
+	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -385,7 +392,10 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 4, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, md, rcv.GetLastRequest())
 
-	require.EqualValues(t, rcv.GetMetadata().Get("header"), expectedHeader)
+	mdata := rcv.GetMetadata()
+	require.EqualValues(t, mdata.Get("header"), expectedHeader)
+	require.Equal(t, len(mdata.Get("User-Agent")), 1)
+	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 }
 
 func TestSendTraceDataServerDownAndUp(t *testing.T) {
@@ -542,6 +552,8 @@ func TestSendLogData(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo.Description = "Collector"
+	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -583,4 +595,8 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, ld, rcv.GetLastRequest())
+
+	md := rcv.GetMetadata()
+	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 }
