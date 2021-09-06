@@ -22,10 +22,10 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.22.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0
 	go.opentelemetry.io/contrib/zpages v0.22.0
-	go.opentelemetry.io/otel v1.0.0-RC2
+	go.opentelemetry.io/otel v1.0.0-RC3
 	go.opentelemetry.io/otel/oteltest v1.0.0-RC2
-	go.opentelemetry.io/otel/sdk v1.0.0-RC2
-	go.opentelemetry.io/otel/trace v1.0.0-RC2
+	go.opentelemetry.io/otel/sdk v1.0.0-RC3
+	go.opentelemetry.io/otel/trace v1.0.0-RC3
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
