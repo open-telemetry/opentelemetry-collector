@@ -82,14 +82,6 @@ spec:
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
       volumes:
         - configMap:
             name: otel-agent-conf
@@ -206,14 +198,6 @@ spec:
           mountPath: /conf
 #        - name: otel-collector-secrets
 #          mountPath: /secrets
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
       volumes:
         - configMap:
             name: otel-collector-conf
