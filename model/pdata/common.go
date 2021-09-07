@@ -805,6 +805,7 @@ func (am AttributeMap) AsMap() map[string]AttributeValue {
 	return rawMap
 }
 
+// AsRaw converts an OTLP AttributeMap to a standard go map
 func (am AttributeMap) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
 	am.Range(func(k string, v AttributeValue) bool {
