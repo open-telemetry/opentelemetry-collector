@@ -2,11 +2,15 @@
 
 ## Unreleased
 
+## v0.34.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
+- Artifacts are no longer published in this repository, check [here](https://github.com/open-telemetry/opentelemetry-collector-releases) (#3941)
 - Remove deprecated `tracetranslator.AttributeValueToString` and `tracetranslator.AttributeMapToMap` (#3873)
 - Change semantic conventions for status (code, msg) as per specifications (#3872)
 - Add `pdata.NewTimestampFromTime`, deprecate `pdata.TimestampFromTime` (#3868)
+- Add `pdata.NewAttributeMapFromMap`, deprecate `pdata.AttributeMap.InitFromMap` (#3936)
 - Move `fileexporter` to contrib (#3474)
 - Move `jaegerexporter` to contrib (#3474)
 - Move `kafkaexporter` to contrib (#3474)

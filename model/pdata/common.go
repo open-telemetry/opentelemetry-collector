@@ -363,7 +363,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 	return false
 }
 
-// String converts an OTLP AttributeValue object of any type to its equivalent string
+// AsString converts an OTLP AttributeValue object of any type to its equivalent string
 // representation. This differs from StringVal which only returns a non-empty value
 // if the AttributeValueType is AttributeValueTypeString.
 func (a AttributeValue) AsString() string {
@@ -453,15 +453,33 @@ func NewAttributeMap() AttributeMap {
 	return AttributeMap{&orig}
 }
 
+// NewAttributeMapFromMap creates a AttributeMap with values
+// from the given map[string]AttributeValue.
+func NewAttributeMapFromMap(attrMap map[string]AttributeValue) AttributeMap {
+	if len(attrMap) == 0 {
+		kv := []otlpcommon.KeyValue(nil)
+		return AttributeMap{&kv}
+	}
+	origs := make([]otlpcommon.KeyValue, len(attrMap))
+	ix := 0
+	for k, v := range attrMap {
+		origs[ix].Key = k
+		v.copyTo(&origs[ix].Value)
+		ix++
+	}
+	return AttributeMap{&origs}
+}
+
 func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
 	return AttributeMap{orig}
 }
 
 // InitFromMap overwrites the entire AttributeMap and reconstructs the AttributeMap
-// with values from the given map[string]string.
+// with values from the given map[string]AttributeValue.
 //
 // Returns the same instance to allow nicer code like:
 //   assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
+// Deprecated: use NewAttributeMapFromMap instead.
 func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeMap {
 	if len(attrMap) == 0 {
 		*am.orig = []otlpcommon.KeyValue(nil)
@@ -775,12 +793,6 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 		AttributeValue{&akv.Value}.copyTo(&origs[i].Value)
 	}
 	*dest.orig = origs
-}
-
-// AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
-// Deprecated: use AttributeValue's String method instead.
-func AttributeValueToString(attr AttributeValue) string {
-	return attr.AsString()
 }
 
 // AttributeMapToMap converts an OTLP AttributeMap to a standard go map
