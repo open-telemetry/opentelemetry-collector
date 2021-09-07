@@ -15,11 +15,8 @@
 package semconv
 
 const (
-	InstrumentationLibraryName    = "otel.library.name"
-	InstrumentationLibraryVersion = "otel.library.version"
-)
-
-const (
+	OtelLibraryName       = "otel.library.name"
+	OtelLibraryVersion    = "otel.library.version"
 	OtelStatusCode        = "otel.status_code"
 	OtelStatusDescription = "otel.status_description"
 )
