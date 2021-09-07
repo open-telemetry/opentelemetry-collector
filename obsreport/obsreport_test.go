@@ -60,12 +60,11 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	set := componenttest.NewNopReceiverCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -73,7 +72,11 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		{items: 42, err: nil},
 	}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		})
 		ctx := rec.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
 		rec.EndTracesOp(ctx, format, params[i].items, param.err)
@@ -109,12 +112,11 @@ func TestReceiveLogsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	set := componenttest.NewNopReceiverCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -122,7 +124,11 @@ func TestReceiveLogsOp(t *testing.T) {
 		{items: 42, err: nil},
 	}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		})
 		ctx := rec.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		rec.EndLogsOp(ctx, format, params[i].items, param.err)
@@ -158,12 +164,11 @@ func TestReceiveMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	set := componenttest.NewNopReceiverCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -171,7 +176,11 @@ func TestReceiveMetricsOp(t *testing.T) {
 		{items: 29, err: nil},
 	}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		})
 		ctx := rec.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		rec.EndMetricsOp(ctx, format, params[i].items, param.err)
@@ -429,12 +438,11 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
+	set := componenttest.NewNopReceiverCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	longLivedCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	longLivedCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -444,7 +452,12 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport, LongLivedCtx: true})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+			LongLivedCtx:           true,
+		})
 		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
 		rec.EndTracesOp(ctx, format, params[i].items, params[i].err)

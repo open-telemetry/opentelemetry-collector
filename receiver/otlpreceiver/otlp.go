@@ -53,16 +53,18 @@ type otlpReceiver struct {
 	logReceiver     *logs.Receiver
 	shutdownWG      sync.WaitGroup
 
-	logger *zap.Logger
+	logger   *zap.Logger
+	settings component.ReceiverCreateSettings
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
+func newOtlpReceiver(cfg *Config, set component.ReceiverCreateSettings) *otlpReceiver {
 	r := &otlpReceiver{
-		cfg:    cfg,
-		logger: logger,
+		cfg:      cfg,
+		logger:   set.Logger,
+		settings: set,
 	}
 	if cfg.HTTP != nil {
 		r.httpMux = mux.NewRouter()
@@ -201,7 +203,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.traceReceiver = trace.New(r.cfg.ID(), tc)
+	r.traceReceiver = trace.New(r.cfg.ID(), tc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, pbContentType, r.traceReceiver, tracesPbUnmarshaler)
@@ -228,7 +230,7 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.metricsReceiver = metrics.New(r.cfg.ID(), mc)
+	r.metricsReceiver = metrics.New(r.cfg.ID(), mc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, pbContentType, r.metricsReceiver, metricsPbUnmarshaler)
@@ -247,7 +249,7 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 	if lc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.logReceiver = logs.New(r.cfg.ID(), lc)
+	r.logReceiver = logs.New(r.cfg.ID(), lc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
 			handleLogs(w, req, pbContentType, r.logReceiver, logsPbUnmarshaler)
