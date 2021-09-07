@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/oteltest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -56,11 +56,11 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	require.Equal(t, want, be.Shutdown(context.Background()))
 }
 
-func checkStatus(t *testing.T, sd *oteltest.Span, err error) {
+func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 	if err != nil {
-		require.Equal(t, codes.Error, sd.StatusCode(), "SpanData %v", sd)
-		require.Equal(t, err.Error(), sd.StatusMessage(), "SpanData %v", sd)
+		require.Equal(t, codes.Error, sd.Status().Code, "SpanData %v", sd)
+		require.Equal(t, err.Error(), sd.Status().Description, "SpanData %v", sd)
 	} else {
-		require.Equal(t, codes.Unset, sd.StatusCode(), "SpanData %v", sd)
+		require.Equal(t, codes.Unset, sd.Status().Code, "SpanData %v", sd)
 	}
 }

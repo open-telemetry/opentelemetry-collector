@@ -24,7 +24,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/oteltest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -60,8 +61,8 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(tp)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -79,7 +80,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		rec.EndTracesOp(ctx, format, params[i].items, param.err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var acceptedSpans, refusedSpans int
@@ -88,15 +89,15 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			acceptedSpans += params[i].items
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
 			refusedSpans += params[i].items
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
@@ -109,8 +110,8 @@ func TestReceiveLogsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(tp)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -128,7 +129,7 @@ func TestReceiveLogsOp(t *testing.T) {
 		rec.EndLogsOp(ctx, format, params[i].items, param.err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var acceptedLogRecords, refusedLogRecords int
@@ -137,15 +138,15 @@ func TestReceiveLogsOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			acceptedLogRecords += params[i].items
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedLogRecordsKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedLogRecordsKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
 			refusedLogRecords += params[i].items
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedLogRecordsKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedLogRecordsKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
@@ -158,8 +159,8 @@ func TestReceiveMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(tp)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -177,7 +178,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 		rec.EndMetricsOp(ctx, format, params[i].items, param.err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var acceptedMetricPoints, refusedMetricPoints int
@@ -186,15 +187,15 @@ func TestReceiveMetricsOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			acceptedMetricPoints += params[i].items
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedMetricPointsKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedMetricPointsKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
 			refusedMetricPoints += params[i].items
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedMetricPointsKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedMetricPointsKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
@@ -208,8 +209,8 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(tp)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -230,7 +231,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var scrapedMetricPoints, erroredMetricPoints int
@@ -239,23 +240,23 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			scrapedMetricPoints += params[i].items
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.ScrapedMetricPointsKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.ErroredMetricPointsKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
 			erroredMetricPoints += params[i].items
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.ScrapedMetricPointsKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.ErroredMetricPointsKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 
 		case partialErrFake:
 			scrapedMetricPoints += params[i].items
 			erroredMetricPoints++
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.ScrapedMetricPointsKey])
-			assert.Equal(t, attribute.Int64Value(1), span.Attributes()[obsmetrics.ErroredMetricPointsKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(1)})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected err param: %v", params[i].err)
 		}
@@ -270,8 +271,8 @@ func TestExportTraceDataOp(t *testing.T) {
 	defer doneFn()
 
 	set := componenttest.NewNopExporterCreateSettings()
-	sr := new(oteltest.SpanRecorder)
-	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -292,7 +293,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		obsrep.EndTracesOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var sentSpans, failedToSendSpans int
@@ -301,15 +302,15 @@ func TestExportTraceDataOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			sentSpans += params[i].items
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.SentSpansKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.FailedToSendSpansKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
 			failedToSendSpans += params[i].items
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.SentSpansKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.FailedToSendSpansKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected error: %v", params[i].err)
 		}
@@ -324,8 +325,8 @@ func TestExportMetricsOp(t *testing.T) {
 	defer doneFn()
 
 	set := componenttest.NewNopExporterCreateSettings()
-	sr := new(oteltest.SpanRecorder)
-	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -347,7 +348,7 @@ func TestExportMetricsOp(t *testing.T) {
 		obsrep.EndMetricsOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var sentMetricPoints, failedToSendMetricPoints int
@@ -356,15 +357,15 @@ func TestExportMetricsOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			sentMetricPoints += params[i].items
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.SentMetricPointsKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.FailedToSendMetricPointsKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
 			failedToSendMetricPoints += params[i].items
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.SentMetricPointsKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.FailedToSendMetricPointsKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected error: %v", params[i].err)
 		}
@@ -379,8 +380,8 @@ func TestExportLogsOp(t *testing.T) {
 	defer doneFn()
 
 	set := componenttest.NewNopExporterCreateSettings()
-	sr := new(oteltest.SpanRecorder)
-	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -402,7 +403,7 @@ func TestExportLogsOp(t *testing.T) {
 		obsrep.EndLogsOp(ctx, params[i].items, params[i].err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var sentLogRecords, failedToSendLogRecords int
@@ -411,15 +412,15 @@ func TestExportLogsOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			sentLogRecords += params[i].items
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.SentLogRecordsKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.FailedToSendLogRecordsKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
 			failedToSendLogRecords += params[i].items
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.SentLogRecordsKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.FailedToSendLogRecordsKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected error: %v", params[i].err)
 		}
@@ -429,8 +430,8 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(tp)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -450,27 +451,27 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		rec.EndTracesOp(ctx, format, params[i].items, params[i].err)
 	}
 
-	spans := sr.Completed()
+	spans := sr.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	for i, span := range spans {
-		assert.Equal(t, trace.SpanID{}, span.ParentSpanID())
+		assert.False(t, span.Parent().IsValid())
 		require.Equal(t, 1, len(span.Links()))
 		link := span.Links()[0]
 		assert.Equal(t, parentSpan.SpanContext().TraceID(), link.SpanContext.TraceID())
 		assert.Equal(t, parentSpan.SpanContext().SpanID(), link.SpanContext.SpanID())
 		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
-		assert.Equal(t, attribute.StringValue(transport), span.Attributes()[obsmetrics.TransportKey])
+		require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.TransportKey, Value: attribute.StringValue(transport)})
 		switch params[i].err {
 		case nil:
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, codes.Unset, span.StatusCode())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errFake:
-			assert.Equal(t, attribute.Int64Value(0), span.Attributes()[obsmetrics.AcceptedSpansKey])
-			assert.Equal(t, attribute.Int64Value(int64(params[i].items)), span.Attributes()[obsmetrics.RefusedSpansKey])
-			assert.Equal(t, codes.Error, span.StatusCode())
-			assert.Equal(t, params[i].err.Error(), span.StatusMessage())
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
 			t.Fatalf("unexpected error: %v", params[i].err)
 		}
