@@ -43,7 +43,11 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             receiver,
+		Transport:              transport,
+		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+	})
 	ctx := rec.StartTracesOp(context.Background())
 	assert.NotNil(t, ctx)
 	rec.EndTracesOp(
@@ -60,7 +64,11 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             receiver,
+		Transport:              transport,
+		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+	})
 	ctx := rec.StartMetricsOp(context.Background())
 	assert.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
@@ -73,7 +81,11 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
+	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             receiver,
+		Transport:              transport,
+		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+	})
 	ctx := rec.StartLogsOp(context.Background())
 	assert.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)

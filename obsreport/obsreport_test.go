@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/oteltest"
@@ -41,7 +40,7 @@ const (
 )
 
 var (
-	receiver  = config.NewID("fakeReicever")
+	receiver  = config.NewID("fakeReceiver")
 	scraper   = config.NewID("fakeScraper")
 	processor = config.NewID("fakeProcessor")
 	exporter  = config.NewID("fakeExporter")
@@ -217,12 +216,11 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	set := componenttest.NewNopReceiverCreateSettings()
 	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
-	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	receiverCtx := ScraperContext(parentCtx, receiver, scraper)
@@ -232,7 +230,11 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp := NewScraper(ScraperSettings{ReceiverID: receiver, Scraper: scraper})
+		scrp := NewScraper(ScraperSettings{
+			ReceiverID:             receiver,
+			Scraper:                scraper,
+			ReceiverCreateSettings: set,
+		})
 		ctx := scrp.StartMetricsOp(receiverCtx)
 		assert.NotNil(t, ctx)
 

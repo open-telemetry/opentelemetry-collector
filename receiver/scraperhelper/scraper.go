@@ -44,7 +44,7 @@ type Scraper interface {
 
 	// ID returns the scraper id.
 	ID() config.ComponentID
-	Scrape(context.Context, config.ComponentID) (pdata.Metrics, error)
+	Scrape(context.Context, config.ComponentID, component.ReceiverCreateSettings) (pdata.Metrics, error)
 }
 
 type baseScraper struct {
@@ -101,9 +101,13 @@ func NewMetricsScraper(
 	return ms
 }
 
-func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
+func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID, set component.ReceiverCreateSettings) (pdata.Metrics, error) {
 	ctx = obsreport.ScraperContext(ctx, receiverID, ms.ID())
-	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: ms.ID()})
+	scrp := obsreport.NewScraper(obsreport.ScraperSettings{
+		ReceiverID:             receiverID,
+		Scraper:                ms.ID(),
+		ReceiverCreateSettings: set,
+	})
 	ctx = scrp.StartMetricsOp(ctx)
 	metrics, err := ms.ScrapeMetrics(ctx)
 	count := 0
@@ -148,9 +152,13 @@ func NewResourceMetricsScraper(
 	return rms
 }
 
-func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
+func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID, set component.ReceiverCreateSettings) (pdata.Metrics, error) {
 	ctx = obsreport.ScraperContext(ctx, receiverID, rms.ID())
-	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: rms.ID()})
+	scrp := obsreport.NewScraper(obsreport.ScraperSettings{
+		ReceiverID:             receiverID,
+		Scraper:                rms.ID(),
+		ReceiverCreateSettings: set,
+	})
 	ctx = scrp.StartMetricsOp(ctx)
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
 

@@ -22,12 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/oteltest"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -37,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/oteltest"
 )
 
 type testInitialize struct {
@@ -185,10 +181,9 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			set := componenttest.NewNopReceiverCreateSettings()
 			sr := new(oteltest.SpanRecorder)
-			tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
-			otel.SetTracerProvider(tp)
-			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+			set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
 
 			done, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
@@ -214,7 +209,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, zap.NewNop(), nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, set, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -428,7 +423,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(NewMetricsScraper("", tsm.scrape)),
 		AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
