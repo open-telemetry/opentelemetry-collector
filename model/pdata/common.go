@@ -384,7 +384,7 @@ func (a AttributeValue) AsString() string {
 		return strconv.FormatInt(a.IntVal(), 10)
 
 	case AttributeValueTypeMap:
-		jsonStr, _ := json.Marshal(attributeMapToMarshalable(a.MapVal()))
+		jsonStr, _ := json.Marshal(a.MapVal().AsRaw())
 		return string(jsonStr)
 
 	case AttributeValueTypeArray:
@@ -805,17 +805,9 @@ func (am AttributeMap) AsMap() map[string]AttributeValue {
 	return rawMap
 }
 
-// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
-// Deprecated: use AttributeMap's AsMap method instead.
-func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
-	return attributeMapToMarshalable(attrMap)
-}
-
-// attributeMapToMarshalable returns a map containing values that
-// can be marshaled via JSON
-func attributeMapToMarshalable(attrMap AttributeMap) map[string]interface{} {
+func (am AttributeMap) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
-	attrMap.Range(func(k string, v AttributeValue) bool {
+	am.Range(func(k string, v AttributeValue) bool {
 		switch v.Type() {
 		case AttributeValueTypeString:
 			rawMap[k] = v.StringVal()
@@ -828,13 +820,19 @@ func attributeMapToMarshalable(attrMap AttributeMap) map[string]interface{} {
 		case AttributeValueTypeNull:
 			rawMap[k] = nil
 		case AttributeValueTypeMap:
-			rawMap[k] = attributeMapToMarshalable(v.MapVal())
+			rawMap[k] = v.MapVal().AsRaw()
 		case AttributeValueTypeArray:
 			rawMap[k] = attributeArrayToSlice(v.ArrayVal())
 		}
 		return true
 	})
 	return rawMap
+}
+
+// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
+// Deprecated: use AttributeMap's AsRaw method instead.
+func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
+	return attrMap.AsRaw()
 }
 
 // attributeArrayToSlice creates a slice out of a AnyValueArray.
