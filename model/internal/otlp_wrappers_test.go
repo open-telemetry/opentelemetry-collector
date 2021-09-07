@@ -752,3 +752,32 @@ func TestAttributesAndLabels(t *testing.T) {
 		})
 	}
 }
+
+func TestNilMetric(t *testing.T) {
+	tests := []struct {
+		inputMetrics  []*otlpmetrics.Metric
+		outputMetrics []*otlpmetrics.Metric
+	}{
+		{
+			inputMetrics:  nil,
+			outputMetrics: nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("nil input metric", func(t *testing.T) {
+			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+					{
+						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+							{
+								Metrics: test.inputMetrics,
+							},
+						}},
+				},
+			}
+			MetricsCompatibilityChanges(req)
+			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
+		})
+	}
+}

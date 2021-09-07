@@ -50,6 +50,9 @@ func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceR
 	for _, rsm := range req.ResourceMetrics {
 		for _, ilm := range rsm.InstrumentationLibraryMetrics {
 			for _, metric := range ilm.Metrics {
+				if metric == nil {
+					continue
+				}
 				switch m := metric.Data.(type) {
 				case *otlpmetrics.Metric_IntHistogram:
 					metric.Data = intHistogramToHistogram(m)
