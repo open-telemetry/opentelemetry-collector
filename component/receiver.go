@@ -17,9 +17,6 @@ package component
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -58,12 +55,7 @@ type LogsReceiver interface {
 
 // ReceiverCreateSettings configures Receiver creators.
 type ReceiverCreateSettings struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// TracerProvider that the factory can pass to other instrumented third-party libraries.
-	TracerProvider trace.TracerProvider
+	TelemetryCreateSettings
 
 	// BuildInfo can be used by components for informational purposes.
 	BuildInfo BuildInfo
