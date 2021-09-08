@@ -17,7 +17,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"math"
 	"net"
 	"sync/atomic"
 
@@ -109,14 +108,6 @@ var _ storage.Appender = (*transaction)(nil)
 
 // Append always returns 0 to disable label caching.
 func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) (uint64, error) {
-	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
-	// scrape the remote target,  if the previous scrape was success and some data were cached internally
-	// in our case, we don't need these data, simply drop them shall be good enough. more details:
-	// https://github.com/prometheus/prometheus/blob/851131b0740be7291b98f295567a97f32fffc655/scrape/scrape.go#L933-L935
-	if math.IsNaN(v) {
-		return 0, nil
-	}
-
 	select {
 	case <-tr.ctx.Done():
 		return 0, errTransactionAborted
