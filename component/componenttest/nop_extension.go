@@ -25,8 +25,8 @@ import (
 // NewNopExtensionCreateSettings returns a new nop settings for Create*Extension functions.
 func NewNopExtensionCreateSettings() component.ExtensionCreateSettings {
 	return component.ExtensionCreateSettings{
-		TelemetryCreateSettings: NewNopTelemetryCreateSettings(),
-		BuildInfo:               component.DefaultBuildInfo(),
+		TelemetrySettings: NewNopTelemetrySettings(),
+		BuildInfo:         component.DefaultBuildInfo(),
 	}
 }
 

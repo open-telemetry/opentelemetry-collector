@@ -27,8 +27,8 @@ import (
 // NewNopProcessorCreateSettings returns a new nop settings for Create*Processor functions.
 func NewNopProcessorCreateSettings() component.ProcessorCreateSettings {
 	return component.ProcessorCreateSettings{
-		TelemetryCreateSettings: NewNopTelemetryCreateSettings(),
-		BuildInfo:               component.DefaultBuildInfo(),
+		TelemetrySettings: NewNopTelemetrySettings(),
+		BuildInfo:         component.DefaultBuildInfo(),
 	}
 }
 

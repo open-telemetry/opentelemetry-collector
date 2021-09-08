@@ -26,8 +26,8 @@ import (
 // NewNopExporterCreateSettings returns a new nop settings for Create*Exporter functions.
 func NewNopExporterCreateSettings() component.ExporterCreateSettings {
 	return component.ExporterCreateSettings{
-		TelemetryCreateSettings: NewNopTelemetryCreateSettings(),
-		BuildInfo:               component.DefaultBuildInfo(),
+		TelemetrySettings: NewNopTelemetrySettings(),
+		BuildInfo:         component.DefaultBuildInfo(),
 	}
 }
 

@@ -26,8 +26,8 @@ import (
 // NewNopReceiverCreateSettings returns a new nop settings for Create*Receiver functions.
 func NewNopReceiverCreateSettings() component.ReceiverCreateSettings {
 	return component.ReceiverCreateSettings{
-		TelemetryCreateSettings: NewNopTelemetryCreateSettings(),
-		BuildInfo:               component.DefaultBuildInfo(),
+		TelemetrySettings: NewNopTelemetrySettings(),
+		BuildInfo:         component.DefaultBuildInfo(),
 	}
 }
 

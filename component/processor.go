@@ -48,7 +48,7 @@ type LogsProcessor interface {
 
 // ProcessorCreateSettings is passed to Create* functions in ProcessorFactory.
 type ProcessorCreateSettings struct {
-	TelemetryCreateSettings
+	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo BuildInfo
