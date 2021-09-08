@@ -29,7 +29,7 @@ func NewFile() ParserProvider {
 	return &fileProvider{}
 }
 
-func (fl *fileProvider) Get() (*configparser.Parser, error) {
+func (fl *fileProvider) Get() (*configparser.ConfigMap, error) {
 	fileName := getConfigFlag()
 	if fileName == "" {
 		return nil, errors.New("config file not specified")

@@ -38,7 +38,7 @@ type ExampleExporter struct {
 }
 
 // Unmarshal a viper data into the config struct
-func (cfg *ExampleExporter) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *ExampleExporter) Unmarshal(componentParser *configparser.ConfigMap) error {
 	return componentParser.UnmarshalExact(cfg)
 }
 
