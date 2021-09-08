@@ -133,18 +133,6 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 		if err != nil {
 			return err
 		}
-		if r.cfg.GRPC.NetAddr.Endpoint == defaultGRPCEndpoint {
-			r.logger.Info("Setting up a second GRPC listener on legacy endpoint " + legacyGRPCEndpoint)
-
-			// Copy the config.
-			cfgLegacyGRPC := r.cfg.GRPC
-			// And use the legacy endpoint.
-			cfgLegacyGRPC.NetAddr.Endpoint = legacyGRPCEndpoint
-			err = r.startGRPCServer(cfgLegacyGRPC, host)
-			if err != nil {
-				return err
-			}
-		}
 	}
 	if r.cfg.HTTP != nil {
 		r.serverHTTP = r.cfg.HTTP.ToServer(

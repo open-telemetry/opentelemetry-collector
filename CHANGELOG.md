@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+## 🛑 Breaking changes 🛑
+
+- Remove the legacy gRPC port(`55680`) support in OTLP receiver 
 
 ## v0.34.0 Beta
 
