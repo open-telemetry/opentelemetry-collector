@@ -363,7 +363,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 	return false
 }
 
-// String converts an OTLP AttributeValue object of any type to its equivalent string
+// AsString converts an OTLP AttributeValue object of any type to its equivalent string
 // representation. This differs from StringVal which only returns a non-empty value
 // if the AttributeValueType is AttributeValueTypeString.
 func (a AttributeValue) AsString() string {

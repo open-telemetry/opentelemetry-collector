@@ -99,9 +99,11 @@ func BuildReceivers(
 	receivers := make(Receivers)
 	for recvID, recvCfg := range cfg.Receivers {
 		set := component.ReceiverCreateSettings{
-			Logger:         logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
-			TracerProvider: tracerProvider,
-			BuildInfo:      buildInfo,
+			TelemetryCreateSettings: component.TelemetryCreateSettings{
+				Logger:         logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
+				TracerProvider: tracerProvider,
+			},
+			BuildInfo: buildInfo,
 		}
 
 		rcv, err := rb.buildReceiver(context.Background(), set, recvCfg)

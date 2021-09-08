@@ -160,9 +160,11 @@ func BuildExporters(
 	// Build exporters exporters based on configuration and required input data types.
 	for expID, expCfg := range cfg.Exporters {
 		set := component.ExporterCreateSettings{
-			Logger:         logger.With(zap.String(zapNameKey, expID.String())),
-			TracerProvider: tracerProvider,
-			BuildInfo:      buildInfo,
+			TelemetryCreateSettings: component.TelemetryCreateSettings{
+				Logger:         logger.With(zap.String(zapNameKey, expID.String())),
+				TracerProvider: tracerProvider,
+			},
+			BuildInfo: buildInfo,
 		}
 
 		factory, exists := factories[expID.Type()]

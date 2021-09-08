@@ -145,11 +145,11 @@ metadata:
     component: otel-collector
 spec:
   ports:
-  - name: otlp # Default endpoint for OpenTelemetry gRPC receiver.
+  - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
     port: 4317
     protocol: TCP
     targetPort: 4317
-  - name: otlp # Default endpoint for OpenTelemetry HTTP receiver.
+  - name: otlp-http # Default endpoint for OpenTelemetry HTTP receiver.
     port: 4318
     protocol: TCP
     targetPort: 4318

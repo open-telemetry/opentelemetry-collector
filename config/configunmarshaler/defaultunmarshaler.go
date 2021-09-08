@@ -97,7 +97,7 @@ func NewDefault() ConfigUnmarshaler {
 
 // Unmarshal the Config from a Parser.
 // After the config is unmarshaled, `Validate()` must be called to validate.
-func (*defaultUnmarshaler) Unmarshal(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
+func (*defaultUnmarshaler) Unmarshal(v *configparser.ConfigMap, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
 	// Unmarshal the config.
@@ -239,7 +239,7 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *configparser.Parser, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
+func LoadReceiver(componentConfig *configparser.ConfigMap, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(id.Name())
@@ -434,9 +434,9 @@ func parseIDNames(pipelineID config.ComponentID, componentType string, names []s
 	return ret, nil
 }
 
-// expandEnvConfig updates a configparser.Parser with expanded values for all the values (simple, list or map value).
+// expandEnvConfig updates a configparser.ConfigMap with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
-func expandEnvConfig(v *configparser.Parser) {
+func expandEnvConfig(v *configparser.ConfigMap) {
 	for _, k := range v.AllKeys() {
 		v.Set(k, expandStringValues(v.Get(k)))
 	}
@@ -527,7 +527,7 @@ func expandEnv(s string) string {
 	})
 }
 
-func unmarshal(componentSection *configparser.Parser, intoCfg interface{}) error {
+func unmarshal(componentSection *configparser.ConfigMap, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.Unmarshallable); ok {
 		return cu.Unmarshal(componentSection)
 	}

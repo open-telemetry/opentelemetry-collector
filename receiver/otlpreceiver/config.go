@@ -56,7 +56,7 @@ func (cfg *Config) Validate() error {
 }
 
 // Unmarshal a config.Parser into the config struct.
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *configparser.ConfigMap) error {
 	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
 		return fmt.Errorf("empty config for OTLP receiver")
 	}
@@ -66,7 +66,7 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 		return err
 	}
 
-	// next manually search for protocols in the configparser.Parser, if a protocol is not present it means it is disable.
+	// next manually search for protocols in the configparser.ConfigMap, if a protocol is not present it means it is disable.
 	protocols, err := componentParser.Sub(protocolsFieldName)
 	if err != nil {
 		return err
