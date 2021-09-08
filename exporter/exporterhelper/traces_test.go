@@ -22,7 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/oteltest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -146,8 +147,8 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 
 func TestTracesExporter_WithSpan(t *testing.T) {
 	set := componenttest.NewNopExporterCreateSettings()
-	sr := new(oteltest.SpanRecorder)
-	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -160,8 +161,8 @@ func TestTracesExporter_WithSpan(t *testing.T) {
 
 func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 	set := componenttest.NewNopExporterCreateSettings()
-	sr := new(oteltest.SpanRecorder)
-	set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -233,19 +234,19 @@ func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te component.Traces
 	}
 }
 
-func checkWrapSpanForTracesExporter(t *testing.T, sr *oteltest.SpanRecorder, tracer trace.Tracer, te component.TracesExporter, wantError error, numSpans int64) {
+func checkWrapSpanForTracesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, te component.TracesExporter, wantError error, numSpans int64) {
 	const numRequests = 5
 	generateTraceTraffic(t, tracer, te, numRequests, wantError)
 
 	// Inspection time!
-	gotSpanData := sr.Completed()
+	gotSpanData := sr.Ended()
 	require.Equal(t, numRequests+1, len(gotSpanData))
 
 	parentSpan := gotSpanData[numRequests]
 	require.Equalf(t, fakeTraceParentSpanName, parentSpan.Name(), "SpanData %v", parentSpan)
 
 	for _, sd := range gotSpanData[:numRequests] {
-		require.Equalf(t, parentSpan.SpanContext().SpanID(), sd.ParentSpanID(), "Exporter span not a child\nSpanData %v", sd)
+		require.Equalf(t, parentSpan.SpanContext(), sd.Parent(), "Exporter span not a child\nSpanData %v", sd)
 		checkStatus(t, sd, wantError)
 
 		sentSpans := numSpans
@@ -254,8 +255,7 @@ func checkWrapSpanForTracesExporter(t *testing.T, sr *oteltest.SpanRecorder, tra
 			sentSpans = 0
 			failedToSendSpans = numSpans
 		}
-
-		require.Equalf(t, attribute.Int64Value(sentSpans), sd.Attributes()[obsmetrics.SentSpansKey], "SpanData %v", sd)
-		require.Equalf(t, attribute.Int64Value(failedToSendSpans), sd.Attributes()[obsmetrics.FailedToSendSpansKey], "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(sentSpans)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(failedToSendSpans)}, "SpanData %v", sd)
 	}
 }
