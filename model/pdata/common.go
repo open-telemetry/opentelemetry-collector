@@ -795,16 +795,6 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	*dest.orig = origs
 }
 
-// AsMap converts an OTLP AttributeMap to a standard go map
-func (am AttributeMap) AsMap() map[string]AttributeValue {
-	rawMap := make(map[string]AttributeValue)
-	am.Range(func(k string, v AttributeValue) bool {
-		rawMap[k] = v
-		return true
-	})
-	return rawMap
-}
-
 // AsRaw converts an OTLP AttributeMap to a standard go map
 func (am AttributeMap) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
