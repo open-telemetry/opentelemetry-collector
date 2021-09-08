@@ -54,7 +54,6 @@ type mockPrometheusResponse struct {
 }
 
 type mockPrometheus struct {
-	mu          sync.Mutex // mu protects the fields below.
 	endpoints   map[string][]mockPrometheusResponse
 	accessIndex map[string]*int32
 	wg          *sync.WaitGroup
@@ -80,9 +79,6 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 }
 
 func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	mp.mu.Lock()
-	defer mp.mu.Unlock()
-
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(404)
@@ -186,7 +182,7 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.Ex
 		}
 	}
 	if l := len(mds); l != want {
-		t.Fatalf("want %d, but got %d\n", want, l)
+		t.Errorf("want %d, but got %d\n", want, l)
 	}
 }
 
@@ -439,9 +435,6 @@ rpc_duration_seconds_count 1001
 
 func verifyTarget1(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
 	verifyNumScrapeResults(t, td, mds)
-	if len(mds) < 1 {
-		t.Fatal("At least one metric request should be present")
-	}
 	m1 := mds[0]
 	// m1 has 4 metrics + 5 internal scraper metrics
 	if l := len(m1.Metrics); l != 9 {
@@ -1376,7 +1369,7 @@ func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.
 				timestamp = nil
 			}
 			for _, ts := range metric.GetTimeseries() {
-				assert.Equal(t, timestamp.AsTime(), ts.GetStartTimestamp().AsTime(), ts.String())
+				assert.Equal(t, timestamp, ts.GetStartTimestamp())
 				numTimeseries++
 			}
 		}
@@ -1439,13 +1432,6 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 
 	lres, lep := len(results), len(mp.endpoints)
 	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
-
-	// Skipping the validate loop below, because it falsely assumed that
-	// staleness markers would not be returned, yet the tests are a bit rigid.
-	if true {
-		t.Log(`Skipping the "up" metric checks as they seem to be spuriously failing after staleness marker insertions`)
-		return
-	}
 
 	// loop to validate outputs for each targets
 	for _, target := range targets {
@@ -1511,15 +1497,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-
-	// Splitting out targets, because the prior tests were oblivious
-	// about staleness metrics being emitted, and hence when trying
-	// to compare values across 2 different scrapes emits staleness
-	// markers whose NaN values are unaccounted for.
-	// TODO: Perhaps refactor these tests.
-	for _, target := range targets {
-		testEndToEndRegex(t, []*testData{target}, true, "^(.+_)*process_start_time_seconds$")
-	}
+	testEndToEndRegex(t, targets, true, "^(.+_)*process_start_time_seconds$")
 }
 
 func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
