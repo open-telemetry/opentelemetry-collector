@@ -62,8 +62,7 @@ type HTTPClientSettings struct {
 }
 
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient(
-	ext map[config.ComponentID]component.Extension, defaultUserAgent string) (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -79,10 +78,13 @@ func (hcs *HTTPClientSettings) ToClient(
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
 
-	clientTransport := (http.RoundTripper)(&headerRoundTripper{
-		transport: transport,
-		headers:   addDefaultUserAgent(hcs.Headers, defaultUserAgent),
-	})
+	clientTransport := (http.RoundTripper)(transport)
+	if len(hcs.Headers) > 0 {
+		clientTransport = &headerRoundTripper{
+			transport: transport,
+			headers:   hcs.Headers,
+		}
+	}
 
 	if hcs.Auth != nil {
 		if ext == nil {
@@ -118,19 +120,19 @@ func (hcs *HTTPClientSettings) ToClient(
 	}, nil
 }
 
-func addDefaultUserAgent(headers map[string]string, defaultUserAgent string) map[string]string {
-	newHeaders := make(map[string]string, len(headers))
+func (hcs *HTTPClientSettings) WithDefaultUserAgent(defaultUserAgent string) {
 	userAgentFound := false
-	for k, v := range headers {
-		newHeaders[k] = v
+	for k := range hcs.Headers {
 		if strings.ToLower(k) == "user-agent" {
 			userAgentFound = true
 		}
 	}
 	if !userAgentFound {
-		newHeaders["User-Agent"] = defaultUserAgent
+		if hcs.Headers == nil {
+			hcs.Headers = map[string]string{}
+		}
+		hcs.Headers["User-Agent"] = defaultUserAgent
 	}
-	return newHeaders
 }
 
 // Custom RoundTripper that adds headers.

@@ -474,3 +474,122 @@ func TestErrorResponses(t *testing.T) {
 		})
 	}
 }
+
+func TestUserAgent(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo.Description = "Collector"
+	set.BuildInfo.Version = "1.2.3test"
+
+	t.Run("traces", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+			assert.Contains(t, request.Header.Get("user-agent"), "Collector/1.2.3test")
+			writer.WriteHeader(200)
+		})
+		srv := http.Server{
+			Addr:    addr,
+			Handler: mux,
+		}
+		ln, err := net.Listen("tcp", addr)
+		require.NoError(t, err)
+		go func() {
+			_ = srv.Serve(ln)
+		}()
+
+		cfg := &Config{
+			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
+		}
+		exp, err := createTracesExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+
+		// start the exporter
+		err = exp.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background()))
+		})
+
+		// generate data
+		traces := pdata.NewTraces()
+		err = exp.ConsumeTraces(context.Background(), traces)
+		require.NoError(t, err)
+
+		srv.Close()
+	})
+	t.Run("metrics", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+			assert.Contains(t, request.Header.Get("user-agent"), "Collector/1.2.3test")
+			writer.WriteHeader(200)
+		})
+		srv := http.Server{
+			Addr:    addr,
+			Handler: mux,
+		}
+		ln, err := net.Listen("tcp", addr)
+		require.NoError(t, err)
+		go func() {
+			_ = srv.Serve(ln)
+		}()
+
+		cfg := &Config{
+			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			MetricsEndpoint:  fmt.Sprintf("http://%s/v1/metrics", addr),
+		}
+		exp, err := createMetricsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+
+		// start the exporter
+		err = exp.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background()))
+		})
+
+		// generate data
+		metrics := pdata.NewMetrics()
+		err = exp.ConsumeMetrics(context.Background(), metrics)
+		require.NoError(t, err)
+
+		srv.Close()
+	})
+	t.Run("logs", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+			assert.Contains(t, request.Header.Get("user-agent"), "Collector/1.2.3test")
+			writer.WriteHeader(200)
+		})
+		srv := http.Server{
+			Addr:    addr,
+			Handler: mux,
+		}
+		ln, err := net.Listen("tcp", addr)
+		require.NoError(t, err)
+		go func() {
+			_ = srv.Serve(ln)
+		}()
+
+		cfg := &Config{
+			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			LogsEndpoint:     fmt.Sprintf("http://%s/v1/logs", addr),
+		}
+		exp, err := createLogsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+
+		// start the exporter
+		err = exp.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background()))
+		})
+
+		// generate data
+		logs := pdata.NewLogs()
+		err = exp.ConsumeLogs(context.Background(), logs)
+		require.NoError(t, err)
+
+		srv.Close()
+	})
+}

@@ -96,10 +96,11 @@ type grpcSender struct {
 }
 
 func newGrpcSender(config *Config, ext map[config.ComponentID]component.Extension, info component.BuildInfo) (*grpcSender, error) {
-	dialOpts, err := config.GRPCClientSettings.ToDialOptions(ext, exporterhelper.DefaultUserAgent(info))
+	dialOpts, err := config.GRPCClientSettings.ToDialOptions(ext)
 	if err != nil {
 		return nil, err
 	}
+	dialOpts = append(dialOpts, grpc.WithUserAgent(exporterhelper.DefaultUserAgent(info)))
 
 	var clientConn *grpc.ClientConn
 	if clientConn, err = grpc.Dial(config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {

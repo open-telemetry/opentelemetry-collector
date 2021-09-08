@@ -17,6 +17,7 @@ package exporterhelper
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -221,5 +222,5 @@ func (ts *timeoutSender) send(req request) error {
 
 // DefaultUserAgent User-Agent value used by exporters
 func DefaultUserAgent(info component.BuildInfo) string {
-	return fmt.Sprintf("%s/%s", info.Description, info.Version)
+	return fmt.Sprintf("%s/%s %s/%s", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
 }
