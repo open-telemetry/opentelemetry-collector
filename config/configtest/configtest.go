@@ -50,12 +50,12 @@ func LoadConfigAndValidate(fileName string, factories component.Factories) (*con
 	return cfg, cfg.Validate()
 }
 
-// CheckConfigStruct enforces that given configuration object is following the patterns
+// ValidateConfig enforces that given configuration object is following the patterns
 // used by the collector. This ensures consistency between different implementations
 // of components and extensions. It is recommended for implementers of components
 // to call this function on their tests passing the default configuration of the
 // component factory.
-func CheckConfigStruct(config interface{}) error {
+func ValidateConfig(config interface{}) error {
 	t := reflect.TypeOf(config)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -65,18 +65,18 @@ func CheckConfigStruct(config interface{}) error {
 		return fmt.Errorf("config must be a struct or a pointer to one, the passed object is a %s", t.Kind())
 	}
 
-	return CheckConfigStructDataType(t)
+	return validateConfigDataType(t)
 }
 
-// CheckConfigStructDataType performs a descending validation of the given type.
+// validateConfigDataType performs a descending validation of the given type.
 // If the type is a struct it goes to each of its fields to check for the proper
 // tags.
-func CheckConfigStructDataType(t reflect.Type) error {
+func validateConfigDataType(t reflect.Type) error {
 	var errs []error
 
 	switch t.Kind() {
 	case reflect.Ptr:
-		if err := CheckConfigStructDataType(t.Elem()); err != nil {
+		if err := validateConfigDataType(t.Elem()); err != nil {
 			errs = append(errs, err)
 		}
 	case reflect.Struct:
@@ -158,11 +158,11 @@ func checkStructFieldTags(f reflect.StructField) error {
 	switch f.Type.Kind() {
 	case reflect.Struct:
 		// It is another struct, continue down-level.
-		return CheckConfigStructDataType(f.Type)
+		return validateConfigDataType(f.Type)
 
 	case reflect.Map, reflect.Slice, reflect.Array:
 		// The element of map, array, or slice can be itself a configuration object.
-		return CheckConfigStructDataType(f.Type.Elem())
+		return validateConfigDataType(f.Type.Elem())
 
 	default:
 		fieldTag := tagParts[0]

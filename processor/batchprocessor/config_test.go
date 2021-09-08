@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		})
 }
 
-func TestCheckConfigStruct_DefaultBatchMaxSize(t *testing.T) {
+func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
 		SendBatchSize:     100,
@@ -65,7 +65,7 @@ func TestCheckConfigStruct_DefaultBatchMaxSize(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 }
 
-func TestCheckConfigStruct_ValidBatchSizes(t *testing.T) {
+func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
 		SendBatchSize:     100,
@@ -75,7 +75,7 @@ func TestCheckConfigStruct_ValidBatchSizes(t *testing.T) {
 
 }
 
-func TestCheckConfigStruct_InvalidBatchSize(t *testing.T) {
+func TestValidateConfig_InvalidBatchSize(t *testing.T) {
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
 		SendBatchSize:     1000,

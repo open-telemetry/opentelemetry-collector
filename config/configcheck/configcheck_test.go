@@ -25,15 +25,15 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
-func TestCheckConfigStructFromFactories_Success(t *testing.T) {
+func TestValidateConfigFromFactories_Success(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	err = CheckConfigStructFromFactories(factories)
+	err = ValidateConfigFromFactories(factories)
 	require.NoError(t, err)
 }
 
-func TestCheckConfigStructFromFactories_Failure(t *testing.T) {
+func TestValidateConfigFromFactories_Failure(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
@@ -41,7 +41,7 @@ func TestCheckConfigStructFromFactories_Failure(t *testing.T) {
 	f := &badConfigExtensionFactory{}
 	factories.Extensions[f.Type()] = f
 
-	err = CheckConfigStructFromFactories(factories)
+	err = ValidateConfigFromFactories(factories)
 	require.Error(t, err)
 }
 

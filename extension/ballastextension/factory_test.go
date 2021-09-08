@@ -30,7 +30,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr))}, cfg)
 
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, configtest.ValidateConfig(cfg))
 	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)

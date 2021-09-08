@@ -79,7 +79,7 @@ type ReceiverFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Receiver.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'configtest.CheckConfigStruct'. It is recommended to have these checks in the
+	// 'configtest.ValidateConfig'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Receiver
 
