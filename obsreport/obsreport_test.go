@@ -217,7 +217,6 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	parentCtx, parentSpan := tp.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	receiverCtx := ScraperContext(parentCtx, receiver, scraper)
 	params := []testParams{
 		{items: 23, err: partialErrFake},
 		{items: 29, err: errFake},
@@ -225,9 +224,8 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	}
 	for i := range params {
 		scrp := NewScraper(ScraperSettings{ReceiverID: receiver, Scraper: scraper})
-		ctx := scrp.StartMetricsOp(receiverCtx)
+		ctx := scrp.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
-
 		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
 	}
 
