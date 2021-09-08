@@ -32,8 +32,6 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func dummyStalenessStore() *stalenessStore { return newStalenessStore() }
-
 func Test_transaction(t *testing.T) {
 	// discoveredLabels contain labels prior to any processing
 	discoveredLabels := labels.New(
@@ -68,7 +66,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Commit Without Adding", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger, dummyStalenessStore())
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
@@ -76,7 +74,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Rollback dose nothing", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger, dummyStalenessStore())
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
 		if got := tr.Rollback(); got != nil {
 			t.Errorf("expecting nil from Rollback() but got err %v", got)
 		}
@@ -85,7 +83,7 @@ func Test_transaction(t *testing.T) {
 	badLabels := labels.Labels([]labels.Label{{Name: "foo", Value: "bar"}})
 	t.Run("Add One No Target", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger, dummyStalenessStore())
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
 		if _, got := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -97,7 +95,7 @@ func Test_transaction(t *testing.T) {
 		{Name: "foo", Value: "bar"}})
 	t.Run("Add One Job not found", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger, dummyStalenessStore())
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, nomc, nil, testLogger)
 		if _, got := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -108,7 +106,7 @@ func Test_transaction(t *testing.T) {
 		{Name: "__name__", Value: "foo"}})
 	t.Run("Add One Good", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger, dummyStalenessStore())
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
 		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
@@ -142,7 +140,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Error when start time is zero", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger, dummyStalenessStore())
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
 		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
@@ -157,7 +155,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Drop NaN value", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger, dummyStalenessStore())
+		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
 		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}

@@ -23,7 +23,6 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
-	"github.com/prometheus/prometheus/pkg/value"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -91,7 +90,7 @@ type metricBuilderPdata struct {
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger, stalenessStore *stalenessStore) *metricBuilderPdata {
+func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger) *metricBuilderPdata {
 	var regex *regexp.Regexp
 	if startTimeMetricRegex != "" {
 		regex, _ = regexp.Compile(startTimeMetricRegex)
@@ -105,7 +104,6 @@ func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeM
 			droppedTimeseries:    0,
 			useStartTimeMetric:   useStartTimeMetric,
 			startTimeMetricRegex: regex,
-			stalenessStore:       stalenessStore,
 		},
 	}
 }
@@ -132,14 +130,6 @@ func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) 
 		sort.Strings(dupLabels)
 		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabels)
 	}
-
-	defer func() {
-		// Only mark this data point as in the current scrape
-		// iff it isn't a stale metric.
-		if rerr == nil && !value.IsStaleNaN(v) {
-			b.stalenessStore.markAsCurrentlySeen(ls, t)
-		}
-	}()
 
 	metricName := ls.Get(model.MetricNameLabel)
 	switch {

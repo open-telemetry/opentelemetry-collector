@@ -75,7 +75,6 @@ type transaction struct {
 	externalLabels       labels.Labels
 	logger               *zap.Logger
 	obsrecv              *obsreport.Receiver
-	stalenessStore       *stalenessStore
 	startTimeMs          int64
 }
 
@@ -88,7 +87,7 @@ func newTransaction(
 	ms *metadataService,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
-	logger *zap.Logger, stalenessStore *stalenessStore) *transaction {
+	logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -101,7 +100,6 @@ func newTransaction(
 		externalLabels:       externalLabels,
 		logger:               logger,
 		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport}),
-		stalenessStore:       stalenessStore,
 		startTimeMs:          -1,
 	}
 }
@@ -136,7 +134,6 @@ func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) 
 			return 0, err
 		}
 	}
-
 	return 0, tr.metricBuilder.AddDataPoint(ls, t, v)
 }
 
@@ -164,7 +161,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node, tr.resource = createNodeAndResource(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.stalenessStore, tr.startTimeMs)
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.startTimeMs)
 	tr.isNew = false
 	return nil
 }
@@ -175,13 +172,6 @@ func (tr *transaction) Commit() error {
 		// In a situation like not able to connect to the remote server, scrapeloop will still commit even if it had
 		// never added any data points, that the transaction has not been initialized.
 		return nil
-	}
-
-	// Before building metrics, issue staleness markers for every stale metric.
-	staleLabels := tr.stalenessStore.emitStaleLabels()
-
-	for _, sEntry := range staleLabels {
-		tr.metricBuilder.AddDataPoint(sEntry.labels, sEntry.seenAtMs, stalenessSpecialValue)
 	}
 
 	tr.startTimeMs = -1
