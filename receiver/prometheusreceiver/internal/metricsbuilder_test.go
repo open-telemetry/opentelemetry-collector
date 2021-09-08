@@ -124,7 +124,6 @@ func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 			for _, page := range tt.inputs {
 				b := newMetricBuilder(mc, true, startTimeMetricRegex,
 					testLogger, 0)
-					testLogger)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
