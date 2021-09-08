@@ -16,7 +16,6 @@ package internal
 
 import (
 	"context"
-	"math"
 	"testing"
 	"time"
 
@@ -150,20 +149,6 @@ func Test_transaction(t *testing.T) {
 			t.Error("expecting error from Commit() but got nil")
 		} else if got.Error() != errNoStartTimeMetrics.Error() {
 			t.Errorf("expected error %q but got %q", errNoStartTimeMetrics, got)
-		}
-	})
-
-	t.Run("Drop NaN value", func(t *testing.T) {
-		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(context.Background(), nil, true, "", rID, ms, sink, nil, testLogger)
-		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
-			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
-		}
-		if got := tr.Commit(); got != nil {
-			t.Errorf("expecting nil from Commit() but got err %v", got)
-		}
-		if len(sink.AllMetrics()) != 0 {
-			t.Errorf("wanted nil, got %v\n", sink.AllMetrics())
 		}
 	})
 
