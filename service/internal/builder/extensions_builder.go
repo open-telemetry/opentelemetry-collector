@@ -132,7 +132,7 @@ func BuildExtensions(
 		}
 
 		set := component.ExtensionCreateSettings{
-			TelemetryCreateSettings: component.TelemetryCreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
 				Logger: logger.With(
 					zap.String(zapKindKey, zapKindExtension),
 					zap.String(zapNameKey, extID.String())),

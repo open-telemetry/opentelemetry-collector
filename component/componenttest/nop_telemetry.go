@@ -21,9 +21,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// NewNopTelemetryCreateSettings returns a new nop telemetry settings for Create* functions.
-func NewNopTelemetryCreateSettings() component.TelemetryCreateSettings {
-	return component.TelemetryCreateSettings{
+// NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.
+func NewNopTelemetrySettings() component.TelemetrySettings {
+	return component.TelemetrySettings{
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
 	}

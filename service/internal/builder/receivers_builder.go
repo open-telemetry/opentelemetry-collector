@@ -99,7 +99,7 @@ func BuildReceivers(
 	receivers := make(Receivers)
 	for recvID, recvCfg := range cfg.Receivers {
 		set := component.ReceiverCreateSettings{
-			TelemetryCreateSettings: component.TelemetryCreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
 				Logger:         logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
 				TracerProvider: tracerProvider,
 			},

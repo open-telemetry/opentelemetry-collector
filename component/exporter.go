@@ -46,7 +46,7 @@ type LogsExporter interface {
 
 // ExporterCreateSettings configures Exporter creators.
 type ExporterCreateSettings struct {
-	TelemetryCreateSettings
+	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo BuildInfo

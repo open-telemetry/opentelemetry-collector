@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type TelemetryCreateSettings struct {
+type TelemetrySettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger

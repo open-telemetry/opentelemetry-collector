@@ -55,7 +55,7 @@ type LogsReceiver interface {
 
 // ReceiverCreateSettings configures Receiver creators.
 type ReceiverCreateSettings struct {
-	TelemetryCreateSettings
+	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes.
 	BuildInfo BuildInfo
