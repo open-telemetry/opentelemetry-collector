@@ -121,14 +121,12 @@ receivers:
           scrape_interval: 2ms
           static_configs:
             - targets: [%q]
-
 processors:
   batch:
 exporters:
   prometheusremotewrite:
     endpoint: %q
     insecure: true
-
 service:
   pipelines:
     metrics:
