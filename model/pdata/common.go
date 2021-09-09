@@ -401,6 +401,9 @@ func (a AttributeValue) AsString() string {
 		jsonStr, _ := json.Marshal(a.MapVal().AsRaw())
 		return string(jsonStr)
 
+	case AttributeValueTypeBytes:
+		return string(a.BytesVal())
+
 	case AttributeValueTypeArray:
 		jsonStr, _ := json.Marshal(attributeArrayToSlice(a.ArrayVal()))
 		return string(jsonStr)
