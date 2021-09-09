@@ -1511,7 +1511,6 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-
 	// Splitting out targets, because the prior tests were oblivious
 	// about staleness metrics being emitted, and hence when trying
 	// to compare values across 2 different scrapes emits staleness
