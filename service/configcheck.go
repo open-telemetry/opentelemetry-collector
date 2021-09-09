@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configcheck
+package service
 
 import (
 	"go.opentelemetry.io/collector/component"
@@ -20,9 +20,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-// ValidateConfigFromFactories checks if all configurations for the given factories
+// validateConfigFromFactories checks if all configurations for the given factories
 // are satisfying the patterns used by the collector.
-func ValidateConfigFromFactories(factories component.Factories) error {
+func validateConfigFromFactories(factories component.Factories) error {
 	var errs []error
 
 	for _, factory := range factories.Receivers {
