@@ -347,12 +347,10 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	// TODO: Pass construct settings to have access to Tracer.
 	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		// otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		// otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 

@@ -15,7 +15,6 @@
 package component
 
 import (
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -27,7 +26,4 @@ type TelemetrySettings struct {
 
 	// TracerProvider that the factory can pass to other instrumented third-party libraries.
 	TracerProvider trace.TracerProvider
-
-	// MeterProvider that the factory can pass to other instrumented third-party libraries.
-	MeterProvider metric.MeterProvider
 }
