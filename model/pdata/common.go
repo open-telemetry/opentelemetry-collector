@@ -826,6 +826,8 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 			rawMap[k] = v.DoubleVal()
 		case AttributeValueTypeBool:
 			rawMap[k] = v.BoolVal()
+		case AttributeValueTypeBytes:
+			rawMap[k] = v.BytesVal()
 		case AttributeValueTypeEmpty:
 			rawMap[k] = nil
 		case AttributeValueTypeMap:

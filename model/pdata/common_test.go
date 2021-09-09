@@ -1006,6 +1006,46 @@ func TestAsString(t *testing.T) {
 	}
 }
 
+func TestAsRaw(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    AttributeMap
+		expected map[string]interface{}
+	}{
+		{
+			name: "asraw",
+			input: NewAttributeMapFromMap(
+				map[string]AttributeValue{
+					"array":  NewAttributeValueArray(),
+					"bool":   NewAttributeValueBool(true),
+					"bytes":  NewAttributeValueBytes([]byte("bytes value")),
+					"double": NewAttributeValueDouble(1.2),
+					"empty":  NewAttributeValueEmpty(),
+					"int":    NewAttributeValueInt(900),
+					"map":    NewAttributeValueMap(),
+					"string": NewAttributeValueString("string value"),
+				},
+			),
+			expected: map[string]interface{}{
+				"array":  []interface{}{},
+				"bool":   true,
+				"bytes":  []byte("bytes value"),
+				"double": 1.2,
+				"empty":  interface{}(nil),
+				"int":    int64(900),
+				"map":    map[string]interface{}{},
+				"string": "string value",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := test.input.AsRaw()
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
 func simpleAttributeValueMap() AttributeValue {
 	ret := NewAttributeValueMap()
 	attrMap := ret.MapVal()
