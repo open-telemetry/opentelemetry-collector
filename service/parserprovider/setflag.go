@@ -40,7 +40,7 @@ func NewSetFlag(base ParserProvider) ParserProvider {
 	}
 }
 
-func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
+func (sfl *setFlagProvider) Get() (*configparser.ConfigMap, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
 		return sfl.base.Get()
@@ -61,7 +61,7 @@ func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
 	}
 
 	// Create a map manually instead of using props.Map() to allow env var expansion
-	// as used by original Viper-based configparser.Parser.
+	// as used by original Viper-based configparser.ConfigMap.
 	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
@@ -69,7 +69,7 @@ func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	var cp *configparser.Parser
+	var cp *configparser.ConfigMap
 	if cp, err = sfl.base.Get(); err != nil {
 		return nil, err
 	}

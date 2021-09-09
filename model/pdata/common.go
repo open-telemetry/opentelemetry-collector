@@ -31,7 +31,7 @@ import (
 type AttributeValueType int32
 
 const (
-	AttributeValueTypeNull AttributeValueType = iota
+	AttributeValueTypeEmpty AttributeValueType = iota
 	AttributeValueTypeString
 	AttributeValueTypeInt
 	AttributeValueTypeDouble
@@ -44,8 +44,8 @@ const (
 // String returns the string representation of the AttributeValueType.
 func (avt AttributeValueType) String() string {
 	switch avt {
-	case AttributeValueTypeNull:
-		return "NULL"
+	case AttributeValueTypeEmpty:
+		return "EMPTY"
 	case AttributeValueTypeString:
 		return "STRING"
 	case AttributeValueTypeBool:
@@ -88,8 +88,8 @@ func newAttributeValue(orig *otlpcommon.AnyValue) AttributeValue {
 	return AttributeValue{orig}
 }
 
-// NewAttributeValueNull creates a new AttributeValue with a null value.
-func NewAttributeValueNull() AttributeValue {
+// NewAttributeValueEmpty creates a new AttributeValue with an empty value.
+func NewAttributeValueEmpty() AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AnyValue{}}
 }
 
@@ -134,7 +134,7 @@ func NewAttributeValueBytes(v []byte) AttributeValue {
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) Type() AttributeValueType {
 	if a.orig.Value == nil {
-		return AttributeValueTypeNull
+		return AttributeValueTypeEmpty
 	}
 	switch a.orig.Value.(type) {
 	case *otlpcommon.AnyValue_StringValue:
@@ -152,7 +152,7 @@ func (a AttributeValue) Type() AttributeValueType {
 	case *otlpcommon.AnyValue_BytesValue:
 		return AttributeValueTypeBytes
 	}
-	return AttributeValueTypeNull
+	return AttributeValueTypeEmpty
 }
 
 // StringVal returns the string value associated with this AttributeValue.
@@ -252,6 +252,20 @@ func (a AttributeValue) SetBoolVal(v bool) {
 // across multiple attributes is forbidden.
 func (a AttributeValue) SetBytesVal(v []byte) {
 	a.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: v}
+}
+
+// SetMapVal replaces the AttributeMap value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeMap.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) SetMapVal(v AttributeMap) {
+	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
+}
+
+// SetArrayVal replaces the AnyValueArray value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeArray.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) SetArrayVal(v AnyValueArray) {
+	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
 }
 
 // copyTo copies the value to AnyValue. Will panic if dest is nil.
@@ -368,7 +382,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 // if the AttributeValueType is AttributeValueTypeString.
 func (a AttributeValue) AsString() string {
 	switch a.Type() {
-	case AttributeValueTypeNull:
+	case AttributeValueTypeEmpty:
 		return ""
 
 	case AttributeValueTypeString:
@@ -384,7 +398,7 @@ func (a AttributeValue) AsString() string {
 		return strconv.FormatInt(a.IntVal(), 10)
 
 	case AttributeValueTypeMap:
-		jsonStr, _ := json.Marshal(AttributeMapToMap(a.MapVal()))
+		jsonStr, _ := json.Marshal(a.MapVal().AsRaw())
 		return string(jsonStr)
 
 	case AttributeValueTypeArray:
@@ -795,10 +809,10 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	*dest.orig = origs
 }
 
-// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
-func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
+// AsRaw converts an OTLP AttributeMap to a standard go map
+func (am AttributeMap) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
-	attrMap.Range(func(k string, v AttributeValue) bool {
+	am.Range(func(k string, v AttributeValue) bool {
 		switch v.Type() {
 		case AttributeValueTypeString:
 			rawMap[k] = v.StringVal()
@@ -808,16 +822,22 @@ func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
 			rawMap[k] = v.DoubleVal()
 		case AttributeValueTypeBool:
 			rawMap[k] = v.BoolVal()
-		case AttributeValueTypeNull:
+		case AttributeValueTypeEmpty:
 			rawMap[k] = nil
 		case AttributeValueTypeMap:
-			rawMap[k] = AttributeMapToMap(v.MapVal())
+			rawMap[k] = v.MapVal().AsRaw()
 		case AttributeValueTypeArray:
 			rawMap[k] = attributeArrayToSlice(v.ArrayVal())
 		}
 		return true
 	})
 	return rawMap
+}
+
+// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
+// Deprecated: use AttributeMap's AsRaw method instead.
+func AttributeMapToMap(attrMap AttributeMap) map[string]interface{} {
+	return attrMap.AsRaw()
 }
 
 // attributeArrayToSlice creates a slice out of a AnyValueArray.
@@ -834,7 +854,7 @@ func attributeArrayToSlice(attrArray AnyValueArray) []interface{} {
 			rawSlice = append(rawSlice, v.DoubleVal())
 		case AttributeValueTypeBool:
 			rawSlice = append(rawSlice, v.BoolVal())
-		case AttributeValueTypeNull:
+		case AttributeValueTypeEmpty:
 			rawSlice = append(rawSlice, nil)
 		default:
 			rawSlice = append(rawSlice, "<Invalid array value>")

@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configunmarshaler
+package component
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
-// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the configparser.ConfigMap.
-type ConfigUnmarshaler interface {
-	// Unmarshal the configuration from the given parser and factories.
-	Unmarshal(v *configparser.ConfigMap, factories component.Factories) (*config.Config, error)
+type TelemetrySettings struct {
+	// Logger that the factory can use during creation and can pass to the created
+	// component to be used later as well.
+	Logger *zap.Logger
+
+	// TracerProvider that the factory can pass to other instrumented third-party libraries.
+	TracerProvider trace.TracerProvider
 }

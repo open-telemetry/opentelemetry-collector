@@ -44,7 +44,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configparser.Parser
+		var cp *configparser.ConfigMap
 		cp, err = pl.Get()
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -64,7 +64,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configparser.Parser
+		var cp *configparser.ConfigMap
 		cp, err = pl.Get()
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -95,7 +95,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configparser.Parser
+		var cp *configparser.ConfigMap
 		cp, err = pl.Get()
 		require.NoError(t, err)
 		require.NotNil(t, cp)

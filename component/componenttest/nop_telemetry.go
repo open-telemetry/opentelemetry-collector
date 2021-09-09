@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configunmarshaler
+package componenttest
 
 import (
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 )
 
-// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the configparser.ConfigMap.
-type ConfigUnmarshaler interface {
-	// Unmarshal the configuration from the given parser and factories.
-	Unmarshal(v *configparser.ConfigMap, factories component.Factories) (*config.Config, error)
+// NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.
+func NewNopTelemetrySettings() component.TelemetrySettings {
+	return component.TelemetrySettings{
+		Logger:         zap.NewNop(),
+		TracerProvider: trace.NewNoopTracerProvider(),
+	}
 }

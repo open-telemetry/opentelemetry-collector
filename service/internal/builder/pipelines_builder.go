@@ -161,9 +161,11 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		// which we will build in the next loop iteration).
 		var err error
 		set := component.ProcessorCreateSettings{
-			Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
-			TracerProvider: pb.tracerProvider,
-			BuildInfo:      pb.buildInfo,
+			TelemetrySettings: component.TelemetrySettings{
+				Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
+				TracerProvider: pb.tracerProvider,
+			},
+			BuildInfo: pb.buildInfo,
 		}
 
 		switch pipelineCfg.InputType {
