@@ -17,7 +17,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"math"
 	"net"
 	"sync/atomic"
 
@@ -75,7 +74,6 @@ type transaction struct {
 	externalLabels       labels.Labels
 	logger               *zap.Logger
 	obsrecv              *obsreport.Receiver
-	stalenessStore       *stalenessStore
 	startTimeMs          int64
 }
 
@@ -88,7 +86,7 @@ func newTransaction(
 	ms *metadataService,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
-	logger *zap.Logger, stalenessStore *stalenessStore) *transaction {
+	logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -101,7 +99,6 @@ func newTransaction(
 		externalLabels:       externalLabels,
 		logger:               logger,
 		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport}),
-		stalenessStore:       stalenessStore,
 		startTimeMs:          -1,
 	}
 }
@@ -114,14 +111,6 @@ func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) 
 	if tr.startTimeMs < 0 {
 		tr.startTimeMs = t
 	}
-	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
-	// scrape the remote target,  if the previous scrape was success and some data were cached internally
-	// in our case, we don't need these data, simply drop them shall be good enough. more details:
-	// https://github.com/prometheus/prometheus/blob/851131b0740be7291b98f295567a97f32fffc655/scrape/scrape.go#L933-L935
-	if math.IsNaN(v) {
-		return 0, nil
-	}
-
 	select {
 	case <-tr.ctx.Done():
 		return 0, errTransactionAborted
@@ -136,7 +125,6 @@ func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) 
 			return 0, err
 		}
 	}
-
 	return 0, tr.metricBuilder.AddDataPoint(ls, t, v)
 }
 
@@ -164,7 +152,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node, tr.resource = createNodeAndResource(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.stalenessStore, tr.startTimeMs)
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger, tr.startTimeMs)
 	tr.isNew = false
 	return nil
 }
@@ -175,13 +163,6 @@ func (tr *transaction) Commit() error {
 		// In a situation like not able to connect to the remote server, scrapeloop will still commit even if it had
 		// never added any data points, that the transaction has not been initialized.
 		return nil
-	}
-
-	// Before building metrics, issue staleness markers for every stale metric.
-	staleLabels := tr.stalenessStore.emitStaleLabels()
-
-	for _, sEntry := range staleLabels {
-		tr.metricBuilder.AddDataPoint(sEntry.labels, sEntry.seenAtMs, stalenessSpecialValue)
 	}
 
 	tr.startTimeMs = -1
