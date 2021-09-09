@@ -25,5 +25,5 @@ const (
 )
 
 const (
-	AttributeMessageType    = "message.type"
+	AttributeMessageType = "message.type"
 )
