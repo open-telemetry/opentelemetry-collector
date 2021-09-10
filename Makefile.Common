@@ -12,6 +12,10 @@ IMPI=impi
 test:
 	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
 
+.PHONY: test-unstable
+test-unstable:
+	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT) -tags enable_unstable
+
 .PHONY: benchmark
 benchmark:
 	$(GOTEST) -bench=. -run=notests ./...
@@ -24,6 +28,10 @@ fmt:
 .PHONY: lint
 lint:
 	$(LINT) run --allow-parallel-runners
+
+.PHONY: lint-unstable
+lint-unstable:
+	$(LINT) run --allow-parallel-runners --build-tags enable_unstable
 
 .PHONY: impi
 impi:
