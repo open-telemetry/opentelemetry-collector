@@ -318,12 +318,14 @@ func TestCollector_reloadService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			col := Collector{
-				logger:            zap.NewNop(),
-				tracerProvider:    trace.NewNoopTracerProvider(),
-				parserProvider:    tt.parserProvider,
-				configUnmarshaler: configunmarshaler.NewDefault(),
-				factories:         factories,
-				service:           tt.service,
+				set: CollectorSettings{
+					ParserProvider:    tt.parserProvider,
+					ConfigUnmarshaler: configunmarshaler.NewDefault(),
+					Factories:         factories,
+				},
+				logger:         zap.NewNop(),
+				tracerProvider: trace.NewNoopTracerProvider(),
+				service:        tt.service,
 			}
 
 			err := col.reloadService(ctx)
