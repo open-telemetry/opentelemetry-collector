@@ -42,7 +42,6 @@ import (
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal"
-	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
@@ -151,7 +150,6 @@ func New(set CollectorSettings) (*Collector, error) {
 		configtelemetry.Flags,
 		parserprovider.Flags,
 		telemetry.Flags,
-		builder.Flags,
 		loggerFlags,
 	}
 	for _, addFlags := range addFlagsFns {
@@ -305,12 +303,6 @@ func (col *Collector) execute(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 	col.stateChannel <- Starting
-
-	//  Add `mem-ballast-size-mib` warning message if it is still enabled
-	//  TODO: will remove all `mem-ballast-size-mib` footprints after some baking time.
-	if builder.MemBallastSize() > 0 {
-		col.logger.Warn("`mem-ballast-size-mib` command line option has been deprecated. Please use `ballast extension` instead!")
-	}
 
 	col.asyncErrorChannel = make(chan error)
 
