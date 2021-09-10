@@ -97,7 +97,7 @@ func (srv *service) Start(ctx context.Context) error {
 
 	srv.logger.Info("Starting exporters...")
 	if err := srv.builtExporters.StartAll(ctx, srv); err != nil {
-		return fmt.Errorf("cannot start builtExporters: %w", err)
+		return fmt.Errorf("cannot start exporters: %w", err)
 	}
 
 	srv.logger.Info("Starting processors...")
