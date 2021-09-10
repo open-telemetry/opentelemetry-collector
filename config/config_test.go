@@ -212,6 +212,24 @@ func TestConfigValidate(t *testing.T) {
 			},
 			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
 		},
+		{
+			name: "invalid-service-telemetry-level",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Telemetry.Logs.Level = "unknown"
+				return cfg
+			},
+			expected: errors.New(`service telemetry logs invalid level: "unknown", valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`),
+		},
+		{
+			name: "invalid-service-telemetry-encoding",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Telemetry.Logs.Encoding = "unknown"
+				return cfg
+			},
+			expected: errors.New(`service telemetry logs invalid encoding: "unknown", valid values are "json" and "console"`),
+		},
 	}
 
 	for _, test := range testCases {
@@ -245,6 +263,7 @@ func generateConfig() *Config {
 			},
 		},
 		Service: Service{
+			Telemetry:  ServiceTelemetry{Logs: ServiceTelemetryLogs{Level: "DEBUG", Development: true, Encoding: "console"}},
 			Extensions: []ComponentID{NewID("nop")},
 			Pipelines: map[string]*Pipeline{
 				"traces": {

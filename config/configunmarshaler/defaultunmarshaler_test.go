@@ -41,11 +41,6 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, 3, len(cfg.Extensions))
 	assert.Equal(t, "some string", cfg.Extensions[config.NewIDWithName("exampleextension", "1")].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
 
-	// Verify service.
-	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
-	assert.Equal(t, config.NewIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
-
 	// Verify receivers
 	assert.Equal(t, 2, len(cfg.Receivers), "Incorrect receivers count")
 
@@ -101,7 +96,15 @@ func TestDecodeConfig(t *testing.T) {
 		cfg.Processors[config.NewID("exampleprocessor")],
 		"Did not load processor config correctly")
 
-	// Verify Pipelines
+	// Verify Service Telemetry
+	assert.Equal(t, config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{Level: "DEBUG", Development: true, Encoding: "console"}}, cfg.Service.Telemetry)
+
+	// Verify Service Extensions
+	assert.Equal(t, 2, len(cfg.Service.Extensions))
+	assert.Equal(t, config.NewIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
+
+	// Verify Service Pipelines
 	assert.Equal(t, 1, len(cfg.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,

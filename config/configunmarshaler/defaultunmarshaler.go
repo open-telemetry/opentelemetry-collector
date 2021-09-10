@@ -77,6 +77,7 @@ type configSettings struct {
 }
 
 type serviceSettings struct {
+	Telemetry  config.ServiceTelemetry     `mapstructure:"telemetry"`
 	Extensions []string                    `mapstructure:"extensions"`
 	Pipelines  map[string]pipelineSettings `mapstructure:"pipelines"`
 }
@@ -103,7 +104,19 @@ func (*defaultUnmarshaler) Unmarshal(v *configparser.ConfigMap, factories compon
 	// Unmarshal the config.
 
 	// Struct to validate top level sections.
-	var rawCfg configSettings
+	rawCfg := configSettings{
+		// Setup default telemetry values as in service/logger.go.
+		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
+		Service: serviceSettings{
+			Telemetry: config.ServiceTelemetry{
+				Logs: config.ServiceTelemetryLogs{
+					Level:       "INFO",
+					Development: false,
+					Encoding:    "console",
+				},
+			},
+		},
+	}
 	if err := v.UnmarshalExact(&rawCfg); err != nil {
 		return nil, &configError{
 			code: errUnmarshalTopLevelStructureError,
@@ -221,6 +234,8 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 
 func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	var ret config.Service
+	ret.Telemetry = rawService.Telemetry
+
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))
 	for _, extIDStr := range rawService.Extensions {
 		id, err := config.NewIDFromString(extIDStr)

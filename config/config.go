@@ -18,6 +18,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/config/configparser"
 )
 
@@ -84,18 +86,16 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// Check that all enabled extensions in the service are configured.
-	if err := cfg.validateServiceExtensions(); err != nil {
+	return cfg.validateService()
+}
+
+func (cfg *Config) validateService() error {
+	// Validate Telemetry
+	if err := cfg.Service.Telemetry.validate(); err != nil {
 		return err
 	}
 
-	// Check that all pipelines have at least one receiver and one exporter, and they reference
-	// only configured components.
-	return cfg.validateServicePipelines()
-}
-
-func (cfg *Config) validateServiceExtensions() error {
-	// Validate extensions.
+	// Check that all enabled extensions in the service are configured.
 	for _, ref := range cfg.Service.Extensions {
 		// Check that the name referenced in the Service extensions exists in the top-level extensions.
 		if cfg.Extensions[ref] == nil {
@@ -103,16 +103,13 @@ func (cfg *Config) validateServiceExtensions() error {
 		}
 	}
 
-	return nil
-}
-
-func (cfg *Config) validateServicePipelines() error {
 	// Must have at least one pipeline.
 	if len(cfg.Service.Pipelines) == 0 {
 		return errMissingServicePipelines
 	}
 
-	// Validate pipelines.
+	// Check that all pipelines have at least one receiver and one exporter, and they reference
+	// only configured components.
 	for _, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline has at least one receiver.
 		if len(pipeline.Receivers) == 0 {
@@ -153,11 +150,51 @@ func (cfg *Config) validateServicePipelines() error {
 
 // Service defines the configurable components of the service.
 type Service struct {
+	Telemetry ServiceTelemetry
+
 	// Extensions are the ordered list of extensions configured for the service.
 	Extensions []ComponentID
 
 	// Pipelines are the set of data pipelines configured for the service.
 	Pipelines Pipelines
+}
+
+// ServiceTelemetry defines the configurable settings for service telemetry.
+type ServiceTelemetry struct {
+	Logs ServiceTelemetryLogs `mapstructure:"logs"`
+}
+
+func (srvT *ServiceTelemetry) validate() error {
+	return srvT.Logs.validate()
+}
+
+// ServiceTelemetryLogs defines the configurable settings for service telemetry logs.
+// This MUST be compatible with zap.Config. Cannot use directly zap.Config because
+// the collector uses mapstructure and not yaml tags.
+type ServiceTelemetryLogs struct {
+	// Level is the minimum enabled logging level.
+	// Valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL".
+	Level string `mapstructure:"level"`
+
+	// Development puts the logger in development mode, which changes the
+	// behavior of DPanicLevel and takes stacktraces more liberally.
+	Development bool `mapstructure:"development"`
+
+	// Encoding sets the logger's encoding.
+	// Valid values are "json" and "console".
+	Encoding string `mapstructure:"encoding"`
+}
+
+func (srvTL *ServiceTelemetryLogs) validate() error {
+	var lvl zapcore.Level
+	if err := lvl.UnmarshalText([]byte(srvTL.Level)); err != nil {
+		return fmt.Errorf(`service telemetry logs invalid level: %q, valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`, srvTL.Level)
+	}
+
+	if srvTL.Encoding != "json" && srvTL.Encoding != "console" {
+		return fmt.Errorf(`service telemetry logs invalid encoding: %q, valid values are "json" and "console"`, srvTL.Encoding)
+	}
+	return nil
 }
 
 // Type is the component type as it is used in the config.
