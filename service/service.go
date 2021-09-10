@@ -127,7 +127,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 
 	srv.logger.Info("Stopping receivers...")
 	if err := srv.builtReceivers.ShutdownAll(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to stop receivers: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown receivers: %w", err))
 	}
 
 	srv.logger.Info("Stopping processors...")
