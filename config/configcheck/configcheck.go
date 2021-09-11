@@ -26,22 +26,22 @@ func ValidateConfigFromFactories(factories component.Factories) error {
 	var errs []error
 
 	for _, factory := range factories.Receivers {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	for _, factory := range factories.Processors {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	for _, factory := range factories.Exporters {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	for _, factory := range factories.Extensions {
-		if err := configtest.ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
