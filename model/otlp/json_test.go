@@ -120,3 +120,118 @@ func TestLogsJSON_Marshal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, logsJSON, string(jsonBuf))
 }
+
+func TestMetricsNil(t *testing.T) {
+	jsonBuf := `{
+"resourceMetrics": [
+	{
+	"resource": {
+		"attributes": [
+		{
+			"key": "service.name",
+			"value": {
+			"stringValue": "unknown_service:node"
+			}
+		},
+		{
+			"key": "telemetry.sdk.language",
+			"value": {
+			"stringValue": "nodejs"
+			}
+		},
+		{
+			"key": "telemetry.sdk.name",
+			"value": {
+			"stringValue": "opentelemetry"
+			}
+		},
+		{
+			"key": "telemetry.sdk.version",
+			"value": {
+			"stringValue": "0.24.0"
+			}
+		}
+		],
+		"droppedAttributesCount": 0
+	},
+	"instrumentationLibraryMetrics": [
+		{
+		"metrics": [
+			{
+			"name": "metric_name",
+			"description": "Example of a UpDownCounter",
+			"unit": "1",
+			"doubleSum": {
+				"dataPoints": [
+				{
+					"labels": [
+					{
+						"key": "pid",
+						"value": "50712"
+					}
+					],
+					"value": 1,
+					"startTimeUnixNano": 1631056185376000000,
+					"timeUnixNano": 1631056185378763800
+				}
+				],
+				"isMonotonic": false,
+				"aggregationTemporality": 2
+			}
+			},
+			{
+			"name": "your_metric_name",
+			"description": "Example of a sync observer with callback",
+			"unit": "1",
+			"doubleGauge": {
+				"dataPoints": [
+				{
+					"labels": [
+					{
+						"key": "label",
+						"value": "1"
+					}
+					],
+					"value": 0.07604853280317792,
+					"startTimeUnixNano": 1631056185376000000,
+					"timeUnixNano": 1631056189394600700
+				}
+				]
+			}
+			},
+			{
+			"name": "your_metric_name",
+			"description": "Example of a sync observer with callback",
+			"unit": "1",
+			"doubleGauge": {
+				"dataPoints": [
+				{
+					"labels": [
+					{
+						"key": "label",
+						"value": "2"
+					}
+					],
+					"value": 0.9332005145656965,
+					"startTimeUnixNano": 1631056185376000000,
+					"timeUnixNano": 1631056189394630400
+				}
+				]
+			}
+			}
+		],
+		"instrumentationLibrary": {
+			"name": "example-meter"
+		}
+		}
+	]
+	}
+]
+}`
+	decoder := NewJSONMetricsUnmarshaler()
+	var got interface{}
+	got, err := decoder.UnmarshalMetrics([]byte(jsonBuf))
+	assert.Error(t, err)
+
+	assert.EqualValues(t, pdata.Metrics{}, got)
+}
