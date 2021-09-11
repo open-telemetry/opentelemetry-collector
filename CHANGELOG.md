@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005).
+
 ## v0.35.0 Beta
 
 ## 🛑 Breaking changes 🛑
