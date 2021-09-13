@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove AttributeMessageType (#4020)
 - Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005).
 
 ## v0.35.0 Beta
