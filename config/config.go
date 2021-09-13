@@ -161,7 +161,7 @@ type Service struct {
 
 // ServiceTelemetry defines the configurable settings for service telemetry.
 type ServiceTelemetry struct {
-	Logs ServiceTelemetryLogs `mapstructure:"logs"`
+	Logs ServiceTelemetryLogs
 }
 
 func (srvT *ServiceTelemetry) validate() error {
@@ -173,24 +173,18 @@ func (srvT *ServiceTelemetry) validate() error {
 // the collector uses mapstructure and not yaml tags.
 type ServiceTelemetryLogs struct {
 	// Level is the minimum enabled logging level.
-	// Valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL".
-	Level string `mapstructure:"level"`
+	Level zapcore.Level
 
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
-	Development bool `mapstructure:"development"`
+	Development bool
 
 	// Encoding sets the logger's encoding.
 	// Valid values are "json" and "console".
-	Encoding string `mapstructure:"encoding"`
+	Encoding string
 }
 
 func (srvTL *ServiceTelemetryLogs) validate() error {
-	var lvl zapcore.Level
-	if err := lvl.UnmarshalText([]byte(srvTL.Level)); err != nil {
-		return fmt.Errorf(`service telemetry logs invalid level: %q, valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`, srvTL.Level)
-	}
-
 	if srvTL.Encoding != "json" && srvTL.Encoding != "console" {
 		return fmt.Errorf(`service telemetry logs invalid encoding: %q, valid values are "json" and "console"`, srvTL.Encoding)
 	}

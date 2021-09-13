@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zapcore"
 )
 
 var errInvalidRecvConfig = errors.New("invalid receiver config")
@@ -213,15 +214,6 @@ func TestConfigValidate(t *testing.T) {
 			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
 		},
 		{
-			name: "invalid-service-telemetry-level",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				cfg.Service.Telemetry.Logs.Level = "unknown"
-				return cfg
-			},
-			expected: errors.New(`service telemetry logs invalid level: "unknown", valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`),
-		},
-		{
 			name: "invalid-service-telemetry-encoding",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
@@ -263,7 +255,7 @@ func generateConfig() *Config {
 			},
 		},
 		Service: Service{
-			Telemetry:  ServiceTelemetry{Logs: ServiceTelemetryLogs{Level: "DEBUG", Development: true, Encoding: "console"}},
+			Telemetry:  ServiceTelemetry{Logs: ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}},
 			Extensions: []ComponentID{NewID("nop")},
 			Pipelines: map[string]*Pipeline{
 				"traces": {

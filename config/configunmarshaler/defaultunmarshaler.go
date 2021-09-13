@@ -19,6 +19,8 @@ import (
 	"os"
 	"reflect"
 
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
@@ -33,6 +35,7 @@ const (
 	_ configErrorCode = iota
 
 	errInvalidTypeAndNameKey
+	errInvalidLogsLevel
 	errUnknownType
 	errDuplicateName
 	errUnmarshalTopLevelStructureError
@@ -77,9 +80,19 @@ type configSettings struct {
 }
 
 type serviceSettings struct {
-	Telemetry  config.ServiceTelemetry     `mapstructure:"telemetry"`
+	Telemetry  serviceTelemetrySettings    `mapstructure:"telemetry"`
 	Extensions []string                    `mapstructure:"extensions"`
 	Pipelines  map[string]pipelineSettings `mapstructure:"pipelines"`
+}
+
+type serviceTelemetrySettings struct {
+	Logs serviceTelemetryLogsSettings `mapstructure:"logs"`
+}
+
+type serviceTelemetryLogsSettings struct {
+	Level       string `mapstructure:"level"`
+	Development bool   `mapstructure:"development"`
+	Encoding    string `mapstructure:"encoding"`
 }
 
 type pipelineSettings struct {
@@ -108,8 +121,8 @@ func (*defaultUnmarshaler) Unmarshal(v *configparser.ConfigMap, factories compon
 		// Setup default telemetry values as in service/logger.go.
 		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
 		Service: serviceSettings{
-			Telemetry: config.ServiceTelemetry{
-				Logs: config.ServiceTelemetryLogs{
+			Telemetry: serviceTelemetrySettings{
+				Logs: serviceTelemetryLogsSettings{
 					Level:       "INFO",
 					Development: false,
 					Encoding:    "console",
@@ -234,7 +247,20 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 
 func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	var ret config.Service
-	ret.Telemetry = rawService.Telemetry
+
+	var lvl zapcore.Level
+	if err := lvl.UnmarshalText([]byte(rawService.Telemetry.Logs.Level)); err != nil {
+		return ret, &configError{
+			msg:  fmt.Sprintf(`service telemetry logs invalid level: %q, valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`, rawService.Telemetry.Logs.Level),
+			code: errInvalidLogsLevel,
+		}
+	}
+
+	ret.Telemetry.Logs = config.ServiceTelemetryLogs{
+		Level:       lvl,
+		Development: rawService.Telemetry.Logs.Development,
+		Encoding:    rawService.Telemetry.Logs.Encoding,
+	}
 
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))
 	for _, extIDStr := range rawService.Extensions {
