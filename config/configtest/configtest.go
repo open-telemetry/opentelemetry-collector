@@ -50,12 +50,12 @@ func LoadConfigAndValidate(fileName string, factories component.Factories) (*con
 	return cfg, cfg.Validate()
 }
 
-// ValidateConfig enforces that given configuration object is following the patterns
+// CheckConfigStruct enforces that given configuration object is following the patterns
 // used by the collector. This ensures consistency between different implementations
 // of components and extensions. It is recommended for implementers of components
 // to call this function on their tests passing the default configuration of the
 // component factory.
-func ValidateConfig(config interface{}) error {
+func CheckConfigStruct(config interface{}) error {
 	t := reflect.TypeOf(config)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
