@@ -234,7 +234,7 @@ func assertZPages(t *testing.T) {
 
 type minimalParserLoader struct{}
 
-func (*minimalParserLoader) Get() (*configparser.Parser, error) {
+func (*minimalParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
 	configStr := `
 receivers:
   otlp:
@@ -261,12 +261,20 @@ service:
 	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
 }
 
+func (*minimalParserLoader) Close(context.Context) error {
+	return nil
+}
+
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get() (*configparser.Parser, error) {
+func (epl *errParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
 	return nil, epl.err
+}
+
+func (epl *errParserLoader) Close(context.Context) error {
+	return nil
 }
 
 func TestCollector_reloadService(t *testing.T) {
@@ -310,12 +318,14 @@ func TestCollector_reloadService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			col := Collector{
-				logger:            zap.NewNop(),
-				tracerProvider:    trace.NewNoopTracerProvider(),
-				parserProvider:    tt.parserProvider,
-				configUnmarshaler: configunmarshaler.NewDefault(),
-				factories:         factories,
-				service:           tt.service,
+				set: CollectorSettings{
+					ParserProvider:    tt.parserProvider,
+					ConfigUnmarshaler: configunmarshaler.NewDefault(),
+					Factories:         factories,
+				},
+				logger:         zap.NewNop(),
+				tracerProvider: trace.NewNoopTracerProvider(),
+				service:        tt.service,
 			}
 
 			err := col.reloadService(ctx)

@@ -61,9 +61,7 @@ type ConfigSource interface {
 
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.
-	// This method must be called when the configuration session ends, either in case of success
-	// or error. Each Session object should use this call according to their needs: release resources,
-	// close communication channels, etc.
+	// This method must be called when the configuration session ends, either in case of success or error.
 	Close(ctx context.Context) error
 }
 

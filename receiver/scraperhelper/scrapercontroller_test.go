@@ -22,6 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/codes"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -31,8 +35,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/oteltest"
 )
 
 type testInitialize struct {
@@ -182,8 +184,8 @@ func TestScrapeController(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			set := componenttest.NewNopReceiverCreateSettings()
-			sr := new(oteltest.SpanRecorder)
-			set.TracerProvider = oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+			sr := new(tracetest.SpanRecorder)
+			set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 			done, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
@@ -250,7 +252,7 @@ func TestScrapeController(t *testing.T) {
 					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
-				spans := sr.Completed()
+				spans := sr.Ended()
 				assertReceiverSpan(t, spans)
 				assertReceiverViews(t, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)
@@ -340,7 +342,7 @@ func assertChannelCalled(t *testing.T, ch chan bool, message string) {
 	}
 }
 
-func assertReceiverSpan(t *testing.T, spans []*oteltest.Span) {
+func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	receiverSpan := false
 	for _, span := range spans {
 		if span.Name() == "receiver/receiver/MetricsReceived" {
@@ -359,7 +361,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	obsreporttest.CheckReceiverMetrics(t, config.NewID("receiver"), "", int64(dataPointCount), 0)
 }
 
-func assertScraperSpan(t *testing.T, expectedErr error, spans []*oteltest.Span) {
+func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
 	expectedStatusCode := codes.Unset
 	expectedStatusMessage := ""
 	if expectedErr != nil {
@@ -371,8 +373,8 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []*oteltest.Span) 
 	for _, span := range spans {
 		if span.Name() == "scraper/receiver/scraper/MetricsScraped" {
 			scraperSpan = true
-			assert.Equal(t, expectedStatusCode, span.StatusCode())
-			assert.Equal(t, expectedStatusMessage, span.StatusMessage())
+			assert.Equal(t, expectedStatusCode, span.Status().Code)
+			assert.Equal(t, expectedStatusMessage, span.Status().Description)
 			break
 		}
 	}

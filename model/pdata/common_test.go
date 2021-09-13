@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"encoding/base64"
 	"strconv"
 	"testing"
 
@@ -41,8 +42,8 @@ func TestAttributeValue(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
 
-	v = NewAttributeValueNull()
-	assert.EqualValues(t, AttributeValueTypeNull, v.Type())
+	v = NewAttributeValueEmpty()
+	assert.EqualValues(t, AttributeValueTypeEmpty, v.Type())
 
 	v.SetStringVal("abc")
 	assert.EqualValues(t, AttributeValueTypeString, v.Type())
@@ -67,7 +68,7 @@ func TestAttributeValue(t *testing.T) {
 }
 
 func TestAttributeValueType(t *testing.T) {
-	assert.EqualValues(t, "NULL", AttributeValueTypeNull.String())
+	assert.EqualValues(t, "EMPTY", AttributeValueTypeEmpty.String())
 	assert.EqualValues(t, "STRING", AttributeValueTypeString.String())
 	assert.EqualValues(t, "BOOL", AttributeValueTypeBool.String())
 	assert.EqualValues(t, "INT", AttributeValueTypeInt.String())
@@ -155,30 +156,30 @@ func TestAttributeValueMap(t *testing.T) {
 }
 
 func TestNilOrigSetAttributeValue(t *testing.T) {
-	av := NewAttributeValueNull()
+	av := NewAttributeValueEmpty()
 	av.SetStringVal("abc")
 	assert.EqualValues(t, "abc", av.StringVal())
 
-	av = NewAttributeValueNull()
+	av = NewAttributeValueEmpty()
 	av.SetIntVal(123)
 	assert.EqualValues(t, 123, av.IntVal())
 
-	av = NewAttributeValueNull()
+	av = NewAttributeValueEmpty()
 	av.SetBoolVal(true)
 	assert.True(t, av.BoolVal())
 
-	av = NewAttributeValueNull()
+	av = NewAttributeValueEmpty()
 	av.SetDoubleVal(1.23)
 	assert.EqualValues(t, 1.23, av.DoubleVal())
 
-	av = NewAttributeValueNull()
+	av = NewAttributeValueEmpty()
 	av.SetBytesVal([]byte{1, 2, 3})
 	assert.Equal(t, []byte{1, 2, 3}, av.BytesVal())
 }
 
 func TestAttributeValueEqual(t *testing.T) {
-	av1 := NewAttributeValueNull()
-	av2 := NewAttributeValueNull()
+	av1 := NewAttributeValueEmpty()
+	av2 := NewAttributeValueEmpty()
 	assert.True(t, av1.Equal(av2))
 
 	av2 = NewAttributeValueString("abc")
@@ -285,7 +286,7 @@ func TestNilAttributeMap(t *testing.T) {
 
 	insertMapNull := NewAttributeMap()
 	insertMapNull.InsertNull("k")
-	assert.EqualValues(t, generateTestNullAttributeMap(), insertMapNull)
+	assert.EqualValues(t, generateTestEmptyAttributeMap(), insertMapNull)
 
 	insertMapInt := NewAttributeMap()
 	insertMapInt.InsertInt("k", 123)
@@ -381,7 +382,7 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 
 	val, exist = sm.Get("test_key2")
 	assert.True(t, exist)
-	assert.EqualValues(t, AttributeValueTypeNull, val.Type())
+	assert.EqualValues(t, AttributeValueTypeEmpty, val.Type())
 	assert.EqualValues(t, "", val.StringVal())
 
 	sm.Insert("other_key", NewAttributeValueString("other_value"))
@@ -551,7 +552,7 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 
 	val, exist = sm.Get("test_key2")
 	assert.True(t, exist)
-	assert.EqualValues(t, AttributeValueTypeNull, val.Type())
+	assert.EqualValues(t, AttributeValueTypeEmpty, val.Type())
 	assert.EqualValues(t, "", val.StringVal())
 
 	_, exist = sm.Get("test_key3")
@@ -575,7 +576,7 @@ func TestAttributeMap_Range(t *testing.T) {
 		"k_int":    NewAttributeValueInt(123),
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
-		"k_null":   NewAttributeValueNull(),
+		"k_empty":  NewAttributeValueEmpty(),
 		"k_bytes":  NewAttributeValueBytes([]byte{}),
 	}
 	am := NewAttributeMapFromMap(rawMap)
@@ -605,7 +606,7 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		"k_int":    NewAttributeValueInt(123),
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
-		"k_null":   NewAttributeValueNull(),
+		"k_null":   NewAttributeValueEmpty(),
 		"k_bytes":  NewAttributeValueBytes([]byte{1, 2, 3}),
 	}
 	rawOrig := []otlpcommon.KeyValue{
@@ -622,13 +623,13 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 
 func TestAttributeValue_CopyTo(t *testing.T) {
 	// Test nil KvlistValue case for MapVal() func.
-	dest := NewAttributeValueNull()
+	dest := NewAttributeValueEmpty()
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
 	AttributeValue{orig: orig}.CopyTo(dest)
 	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
 
 	// Test nil ArrayValue case for ArrayVal() func.
-	dest = NewAttributeValueNull()
+	dest = NewAttributeValueEmpty()
 	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
 	AttributeValue{orig: orig}.CopyTo(dest)
 	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
@@ -659,7 +660,7 @@ func TestAttributeMap_CopyTo(t *testing.T) {
 }
 
 func TestAttributeValue_copyTo(t *testing.T) {
-	av := NewAttributeValueNull()
+	av := NewAttributeValueEmpty()
 	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
 	av.copyTo(&destVal)
 	assert.EqualValues(t, nil, destVal.Value)
@@ -693,7 +694,7 @@ func TestAttributeMap_Update(t *testing.T) {
 
 	av, exists = sm.Get("test_key2")
 	assert.True(t, exists)
-	assert.EqualValues(t, AttributeValueTypeNull, av.Type())
+	assert.EqualValues(t, AttributeValueTypeEmpty, av.Type())
 	assert.EqualValues(t, "", av.StringVal())
 	av.SetIntVal(123)
 
@@ -834,7 +835,7 @@ func fillTestAttributeValue(dest AttributeValue) {
 }
 
 func generateTestAttributeValue() AttributeValue {
-	av := NewAttributeValueNull()
+	av := NewAttributeValueEmpty()
 	fillTestAttributeValue(av)
 	return av
 }
@@ -851,9 +852,9 @@ func fillTestAttributeMap(dest AttributeMap) {
 	}).CopyTo(dest)
 }
 
-func generateTestNullAttributeMap() AttributeMap {
+func generateTestEmptyAttributeMap() AttributeMap {
 	return NewAttributeMapFromMap(map[string]AttributeValue{
-		"k": NewAttributeValueNull(),
+		"k": NewAttributeValueEmpty(),
 	})
 }
 func generateTestIntAttributeMap() AttributeMap {
@@ -886,8 +887,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
 	assert.EqualValues(t, 0, a1.ArrayVal().Len())
 
-	v := a1.ArrayVal().AppendEmpty()
-	v.SetDoubleVal(123)
+	a1.ArrayVal().AppendEmpty().SetDoubleVal(123)
 	assert.EqualValues(t, 1, a1.ArrayVal().Len())
 	assert.EqualValues(t, NewAttributeValueDouble(123), a1.ArrayVal().At(0))
 	// Create a second array.
@@ -899,7 +899,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAttributeValueString("somestr"), a2.ArrayVal().At(0))
 
 	// Insert the second array as a child.
-	a2.CopyTo(a1.ArrayVal().AppendEmpty())
+	a1.ArrayVal().AppendEmpty().SetArrayVal(a2.ArrayVal())
 	assert.EqualValues(t, 2, a1.ArrayVal().Len())
 	assert.EqualValues(t, NewAttributeValueDouble(123), a1.ArrayVal().At(0))
 	assert.EqualValues(t, a2, a1.ArrayVal().At(1))
@@ -909,7 +909,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeArray, childArray.Type())
 	assert.EqualValues(t, 1, childArray.ArrayVal().Len())
 
-	v = childArray.ArrayVal().At(0)
+	v := childArray.ArrayVal().At(0)
 	assert.EqualValues(t, AttributeValueTypeString, v.Type())
 	assert.EqualValues(t, "somestr", v.StringVal())
 
@@ -928,7 +928,7 @@ func TestAnyValueArrayWithNilValues(t *testing.T) {
 	}
 
 	val := sm.At(0)
-	assert.EqualValues(t, AttributeValueTypeNull, val.Type())
+	assert.EqualValues(t, AttributeValueTypeEmpty, val.Type())
 	assert.EqualValues(t, "", val.StringVal())
 
 	val = sm.At(1)
@@ -988,9 +988,14 @@ func TestAsString(t *testing.T) {
 			expected: "[\"strVal\",7,18.6,false,null]",
 		},
 		{
-			name:     "null",
-			input:    NewAttributeValueNull(),
+			name:     "empty",
+			input:    NewAttributeValueEmpty(),
 			expected: "",
+		},
+		{
+			name:     "bytes",
+			input:    NewAttributeValueBytes([]byte("String bytes")),
+			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
 	for _, test := range tests {
@@ -1008,7 +1013,7 @@ func simpleAttributeValueMap() AttributeValue {
 	attrMap.UpsertInt("intKey", 7)
 	attrMap.UpsertDouble("floatKey", 18.6)
 	attrMap.UpsertBool("boolKey", false)
-	attrMap.Upsert("nullKey", NewAttributeValueNull())
+	attrMap.Upsert("nullKey", NewAttributeValueEmpty())
 	attrMap.Upsert("mapKey", constructTestAttributeSubmap())
 	attrMap.Upsert("arrKey", constructTestAttributeSubarray())
 	return ret

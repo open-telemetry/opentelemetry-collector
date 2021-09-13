@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -80,7 +81,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
-	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
+	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
 	assert.NoError(t, err)
@@ -115,7 +116,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
+	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
 	assert.NoError(t, err)
@@ -126,7 +127,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 
 	// sanity check
-	_, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
+	_, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	// test
@@ -136,7 +137,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	ext := map[config.ComponentID]component.Extension{
 		config.NewID("mock"): &configauth.MockAuthenticator{},
 	}
-	opts, err := gss.ToServerOption(ext)
+	opts, err := gss.ToServerOption(ext, componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
 	// verify
@@ -302,7 +303,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToServerOption(map[config.ComponentID]component.Extension{})
+			opts, err := test.settings.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			_ = grpc.NewServer(opts...)
 
 			assert.Regexp(t, test.err, err)
@@ -457,7 +458,7 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)
-			opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
+			opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			s := grpc.NewServer(opts...)
 			otlpgrpc.RegisterTracesServer(s, &grpcTraceServer{})
@@ -502,7 +503,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	ln, err := gss.ToListener()
 	assert.NoError(t, err)
-	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{})
+	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	s := grpc.NewServer(opts...)
 	otlpgrpc.RegisterTracesServer(s, &grpcTraceServer{})

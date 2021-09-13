@@ -21,11 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/oteltest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (
@@ -37,7 +39,7 @@ var (
 )
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions())
+	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(), "", nopRequestUnmarshaler())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -51,16 +53,28 @@ func TestBaseExporterWithOptions(t *testing.T) {
 			WithStart(func(ctx context.Context, host component.Host) error { return want }),
 			WithShutdown(func(ctx context.Context) error { return want }),
 			WithTimeout(DefaultTimeoutSettings())),
+		"",
+		nopRequestUnmarshaler(),
 	)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Equal(t, want, be.Shutdown(context.Background()))
 }
 
-func checkStatus(t *testing.T, sd *oteltest.Span, err error) {
+func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 	if err != nil {
-		require.Equal(t, codes.Error, sd.StatusCode(), "SpanData %v", sd)
-		require.Equal(t, err.Error(), sd.StatusMessage(), "SpanData %v", sd)
+		require.Equal(t, codes.Error, sd.Status().Code, "SpanData %v", sd)
+		require.Equal(t, err.Error(), sd.Status().Description, "SpanData %v", sd)
 	} else {
-		require.Equal(t, codes.Unset, sd.StatusCode(), "SpanData %v", sd)
+		require.Equal(t, codes.Unset, sd.Status().Code, "SpanData %v", sd)
 	}
+}
+
+func nopTracePusher() consumerhelper.ConsumeTracesFunc {
+	return func(ctx context.Context, ld pdata.Traces) error {
+		return nil
+	}
+}
+
+func nopRequestUnmarshaler() requestUnmarshaler {
+	return newTraceRequestUnmarshalerFunc(nopTracePusher())
 }

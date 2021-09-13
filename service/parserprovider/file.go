@@ -15,6 +15,7 @@
 package parserprovider
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -29,7 +30,7 @@ func NewFile() ParserProvider {
 	return &fileProvider{}
 }
 
-func (fl *fileProvider) Get() (*configparser.Parser, error) {
+func (fl *fileProvider) Get(context.Context) (*configparser.ConfigMap, error) {
 	fileName := getConfigFlag()
 	if fileName == "" {
 		return nil, errors.New("config file not specified")
@@ -41,4 +42,8 @@ func (fl *fileProvider) Get() (*configparser.Parser, error) {
 	}
 
 	return cp, nil
+}
+
+func (fl *fileProvider) Close(context.Context) error {
+	return nil
 }

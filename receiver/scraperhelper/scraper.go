@@ -102,7 +102,6 @@ func NewMetricsScraper(
 }
 
 func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID, set component.ReceiverCreateSettings) (pdata.Metrics, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverID, ms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{
 		ReceiverID:             receiverID,
 		Scraper:                ms.ID(),
@@ -153,7 +152,6 @@ func NewResourceMetricsScraper(
 }
 
 func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID, set component.ReceiverCreateSettings) (pdata.Metrics, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverID, rms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{
 		ReceiverID:             receiverID,
 		Scraper:                rms.ID(),

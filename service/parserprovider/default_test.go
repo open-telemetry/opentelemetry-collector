@@ -15,6 +15,7 @@
 package parserprovider
 
 import (
+	"context"
 	"flag"
 	"sort"
 	"testing"
@@ -44,8 +45,8 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configparser.Parser
-		cp, err = pl.Get()
+		var cp *configparser.ConfigMap
+		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
 		var cfg *config.Config
@@ -64,8 +65,8 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configparser.Parser
-		cp, err = pl.Get()
+		var cp *configparser.ConfigMap
+		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
 		var cfg *config.Config
@@ -95,8 +96,8 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configparser.Parser
-		cp, err = pl.Get()
+		var cp *configparser.ConfigMap
+		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
 		var cfg *config.Config
@@ -130,7 +131,7 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 
 	pl := Default()
 	require.NotNil(t, pl)
-	cp, err := pl.Get()
+	cp, err := pl.Get(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, cp)
 	cfg, err := configunmarshaler.NewDefault().Unmarshal(cp, factories)
