@@ -15,6 +15,7 @@
 package parserprovider
 
 import (
+	"context"
 	"io"
 
 	"go.opentelemetry.io/collector/config/configparser"
@@ -29,6 +30,10 @@ func NewInMemory(buf io.Reader) ParserProvider {
 	return &inMemoryProvider{buf: buf}
 }
 
-func (inp *inMemoryProvider) Get() (*configparser.ConfigMap, error) {
+func (inp *inMemoryProvider) Get(context.Context) (*configparser.ConfigMap, error) {
 	return configparser.NewParserFromBuffer(inp.buf)
+}
+
+func (inp *inMemoryProvider) Close(context.Context) error {
+	return nil
 }
