@@ -110,7 +110,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 	var err error
 	if r.cfg.GRPC != nil {
 		var opts []grpc.ServerOption
-		opts, err = r.cfg.GRPC.ToServerOption(host.GetExtensions(), r.settings.TelemetrySettings)
+		opts, err = r.cfg.GRPC.ToServerOption(host, r.settings.TelemetrySettings)
 		if err != nil {
 			return err
 		}

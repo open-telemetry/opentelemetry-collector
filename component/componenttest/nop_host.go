@@ -20,13 +20,22 @@ import (
 )
 
 // nopHost mocks a receiver.ReceiverHost for test purposes.
-type nopHost struct{}
+type nopHost struct {
+	ext map[config.ComponentID]component.Extension
+}
 
 var nopHostInstance component.Host = &nopHost{}
 
 // NewNopHost returns a new instance of nopHost with proper defaults for most tests.
 func NewNopHost() component.Host {
 	return nopHostInstance
+}
+
+// NewNopHost returns a new instance of nopHost with proper defaults for most tests.
+func NewNopHostWithExtensions(ext map[config.ComponentID]component.Extension) component.Host {
+	return &nopHost{
+		ext: ext,
+	}
 }
 
 func (nh *nopHost) ReportFatalError(_ error) {}
@@ -36,7 +45,7 @@ func (nh *nopHost) GetFactory(_ component.Kind, _ config.Type) component.Factory
 }
 
 func (nh *nopHost) GetExtensions() map[config.ComponentID]component.Extension {
-	return nil
+	return nh.ext
 }
 
 func (nh *nopHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
