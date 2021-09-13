@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"encoding/base64"
 	"strconv"
 	"testing"
 
@@ -990,6 +991,11 @@ func TestAsString(t *testing.T) {
 			name:     "empty",
 			input:    NewAttributeValueEmpty(),
 			expected: "",
+		},
+		{
+			name:     "bytes",
+			input:    NewAttributeValueBytes([]byte("String bytes")),
+			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
 	for _, test := range tests {

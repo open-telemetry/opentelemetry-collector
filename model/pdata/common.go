@@ -19,6 +19,7 @@ package pdata
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -400,6 +401,9 @@ func (a AttributeValue) AsString() string {
 	case AttributeValueTypeMap:
 		jsonStr, _ := json.Marshal(a.MapVal().AsRaw())
 		return string(jsonStr)
+
+	case AttributeValueTypeBytes:
+		return base64.StdEncoding.EncodeToString(a.BytesVal())
 
 	case AttributeValueTypeArray:
 		jsonStr, _ := json.Marshal(a.ArrayVal().asRaw())
