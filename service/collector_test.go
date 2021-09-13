@@ -234,7 +234,7 @@ func assertZPages(t *testing.T) {
 
 type minimalParserLoader struct{}
 
-func (*minimalParserLoader) Get() (*configparser.ConfigMap, error) {
+func (*minimalParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
 	configStr := `
 receivers:
   otlp:
@@ -261,12 +261,20 @@ service:
 	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
 }
 
+func (*minimalParserLoader) Close(context.Context) error {
+	return nil
+}
+
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get() (*configparser.ConfigMap, error) {
+func (epl *errParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
 	return nil, epl.err
+}
+
+func (epl *errParserLoader) Close(context.Context) error {
+	return nil
 }
 
 func TestCollector_reloadService(t *testing.T) {

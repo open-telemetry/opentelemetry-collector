@@ -239,7 +239,7 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.logger.Info("Loading configuration...")
 
-	cp, err := col.parserProvider.Get()
+	cp, err := col.parserProvider.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
@@ -326,10 +326,8 @@ func (col *Collector) execute(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if closable, ok := col.parserProvider.(parserprovider.Closeable); ok {
-		if err := closable.Close(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("failed to close config: %w", err))
-		}
+	if err = col.parserProvider.Close(ctx); err != nil {
+		errs = append(errs, fmt.Errorf("failed to close config: %w", err))
 	}
 
 	if col.service != nil {
@@ -353,10 +351,8 @@ func (col *Collector) execute(ctx context.Context) error {
 // to the latest configuration. It requires that col.parserProvider and col.factories
 // are properly populated to finish successfully.
 func (col *Collector) reloadService(ctx context.Context) error {
-	if closeable, ok := col.parserProvider.(parserprovider.Closeable); ok {
-		if err := closeable.Close(ctx); err != nil {
-			return fmt.Errorf("failed close current config provider: %w", err)
-		}
+	if err := col.parserProvider.Close(ctx); err != nil {
+		return fmt.Errorf("failed close current config provider: %w", err)
 	}
 
 	if col.service != nil {
