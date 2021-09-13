@@ -19,6 +19,7 @@ package pdata
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -402,7 +403,7 @@ func (a AttributeValue) AsString() string {
 		return string(jsonStr)
 
 	case AttributeValueTypeBytes:
-		return string(a.BytesVal())
+		return base64.StdEncoding.EncodeToString(a.BytesVal())
 
 	case AttributeValueTypeArray:
 		jsonStr, _ := json.Marshal(attributeArrayToSlice(a.ArrayVal()))
