@@ -15,6 +15,7 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -47,15 +48,22 @@ type colTelemetry struct {
 	doInitOnce sync.Once
 }
 
-func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) (err error) {
+func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+	var err error
 	tel.doInitOnce.Do(
 		func() {
 			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger)
 		},
 	)
-	return
+	if err != nil {
+		return fmt.Errorf("failed to initialize telemetry: %w", err)
+	}
+	return nil
 }
+
 func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+	logger.Info("Setting up own telemetry...")
+
 	level := configtelemetry.GetMetricsLevelFlagValue()
 	metricsAddr := telemetry.GetMetricsAddr()
 
