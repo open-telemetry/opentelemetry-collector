@@ -16,6 +16,7 @@ package parserprovider
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 
@@ -40,10 +41,10 @@ func NewSetFlag(base ParserProvider) ParserProvider {
 	}
 }
 
-func (sfl *setFlagProvider) Get() (*configparser.ConfigMap, error) {
+func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
-		return sfl.base.Get()
+		return sfl.base.Get(ctx)
 	}
 
 	b := &bytes.Buffer{}
@@ -70,8 +71,12 @@ func (sfl *setFlagProvider) Get() (*configparser.ConfigMap, error) {
 	prop := maps.Unflatten(parsed, ".")
 
 	var cp *configparser.ConfigMap
-	if cp, err = sfl.base.Get(); err != nil {
+	if cp, err = sfl.base.Get(ctx); err != nil {
 		return nil, err
 	}
 	return cp, cp.MergeStringMap(prop)
+}
+
+func (sfl *setFlagProvider) Close(context.Context) error {
+	return nil
 }

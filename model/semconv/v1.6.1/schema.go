@@ -14,13 +14,7 @@
 
 package semconv
 
-const (
-	InstrumentationLibraryName    = "otel.library.name"
-	InstrumentationLibraryVersion = "otel.library.version"
-)
-
-const (
-	OtelStatusCode        = "otel.status_code"
-	OtelStatusDescription = "otel.status_description"
-)
-
+// SchemaURL is the schema URL that matches the version of the semantic conventions
+// that this package defines. Conventions packages starting from v1.4.0 must declare
+// non-empty schema URL in the form https://opentelemetry.io/schemas/<version>
+const SchemaURL = "https://opentelemetry.io/schemas/v1.6.1"
