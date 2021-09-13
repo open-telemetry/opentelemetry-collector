@@ -24,7 +24,7 @@ import (
 // LoadConfig loads a config from file, and does NOT validate the configuration.
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
-	cp, err := configparser.NewParserFromFile(fileName)
+	cp, err := configparser.NewConfigMapFromFile(fileName)
 	if err != nil {
 		return nil, err
 	}

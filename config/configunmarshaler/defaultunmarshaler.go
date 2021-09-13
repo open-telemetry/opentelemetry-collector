@@ -183,7 +183,7 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -260,7 +260,7 @@ func unmarshalReceivers(recvs map[string]map[string]interface{}, factories map[c
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -297,7 +297,7 @@ func unmarshalExporters(exps map[string]map[string]interface{}, factories map[co
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -339,7 +339,7 @@ func unmarshalProcessors(procs map[string]map[string]interface{}, factories map[
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
