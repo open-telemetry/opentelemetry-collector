@@ -20,7 +20,7 @@ import (
 )
 
 // nopHost mocks a receiver.ReceiverHost for test purposes.
-type nopHost struct {}
+type nopHost struct{}
 
 var nopHostInstance component.Host = &nopHost{}
 
