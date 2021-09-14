@@ -82,7 +82,7 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	assert.Equal(t, cfg, cfgValidate)
 }
 
-func TestValidateConfigPointerAndValue(t *testing.T) {
+func TestCheckConfigStructPointerAndValue(t *testing.T) {
 	config := struct {
 		SomeFiled string `mapstructure:"test"`
 	}{}
@@ -90,7 +90,7 @@ func TestValidateConfigPointerAndValue(t *testing.T) {
 	assert.NoError(t, CheckConfigStruct(&config))
 }
 
-func TestValidateConfig(t *testing.T) {
+func TestCheckConfigStruct(t *testing.T) {
 	type BadConfigTag struct {
 		BadTagField int `mapstructure:"test-dash"`
 	}
