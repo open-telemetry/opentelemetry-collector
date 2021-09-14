@@ -70,9 +70,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		Auth:            &configauth.Authentication{AuthenticatorName: "testauth"},
 	}
 
-	host := componenttest.NewNopHostWithExtensions(map[config.ComponentID]component.Extension{
-		config.NewID("testauth"): &configauth.MockClientAuthenticator{},
-	})
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewID("testauth"): &configauth.MockClientAuthenticator{},
+		},
+	}
 
 	opts, err := gcs.ToDialOptions(host)
 	assert.NoError(t, err)
@@ -134,9 +136,11 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	gss.Auth = &configauth.Authentication{
 		AuthenticatorName: "mock",
 	}
-	host := componenttest.NewNopHostWithExtensions(map[config.ComponentID]component.Extension{
-		config.NewID("mock"): &configauth.MockAuthenticator{},
-	})
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewID("mock"): &configauth.MockAuthenticator{},
+		},
+	}
 	opts, err := gss.ToServerOption(host, componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
@@ -211,9 +215,9 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{},
 			},
-			host: componenttest.NewNopHostWithExtensions(map[config.ComponentID]component.Extension{
+			host: &mockHost{ext: map[config.ComponentID]component.Extension{
 				config.NewID("mock"): &configauth.MockClientAuthenticator{},
-			}),
+			}},
 		},
 		{
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
@@ -221,7 +225,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
 			},
-			host: componenttest.NewNopHostWithExtensions(map[config.ComponentID]component.Extension{}),
+			host: &mockHost{ext: map[config.ComponentID]component.Extension{}},
 		},
 		{
 			err: "no extensions configuration available",
@@ -229,7 +233,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
 			},
-			host: componenttest.NewNopHostWithExtensions(nil),
+			host: &mockHost{},
 		},
 	}
 	for _, test := range tests {
@@ -545,4 +549,13 @@ func tempSocketName(t *testing.T) string {
 	socket := tmpfile.Name()
 	require.NoError(t, os.Remove(socket))
 	return socket
+}
+
+type mockHost struct {
+	component.Host
+	ext map[config.ComponentID]component.Extension
+}
+
+func (nh *mockHost) GetExtensions() map[config.ComponentID]component.Extension {
+	return nh.ext
 }
