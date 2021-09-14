@@ -451,3 +451,86 @@ following proxy environment variables:
 
 If set at Collector start time then exporters, regardless of protocol, will or
 will not proxy traffic as defined by these environment variables.
+
+### Authentication
+
+Most receivers exposing an HTTP or gRPC port are able to be protected using the collector's
+authentication mechanism, and most exporters using HTTP or gRPC clients are able to add
+authentication data to the outgoing requests.
+
+The authentication mechanism in the collector uses the extensions mechanism, allowing for
+custom authenticators to be plugged into collector distributions. If you are interested
+in developing a custom authenticator, check out the ["Building a custom authenticator"](../custom-auth) document.
+
+Each authentication extension has two possible usages: as client authenticator for exporters,
+adding auth data to outgoing requests, and as server authenticator for receivers, authenticating
+incoming connections. Refer to the authentication extension for a list of its capabilities, but
+in general, an authentication extension would only implement one of those traits. For a list of
+known authenticators, use the [Registry](/registry/?s=authenticator&component=extension&language=) available in this website.
+
+To add a server authenticator to a receiver in your collector, make sure to:
+
+1. add the authenticator extension and its configuration under `.extensions`
+1. add a reference to the authenticator to `.services.extensions`, so that it's loaded by the collector
+1. add a reference to the authenticator under `.receivers.<your-receiver>.<http-or-grpc-config>.auth`
+
+Here's an example that uses the OIDC authenticator on the receiver side, making this suitable for
+a remote collector that receives data from an OpenTelemetry Collector acting as agent:
+
+```yaml
+extensions:
+  oidc:
+    issuer_url: http://localhost:8080/auth/realms/opentelemetry
+    audience: collector
+receivers:
+  otlp/auth:
+    protocols:
+      grpc:
+        auth:
+          authenticator: oidc
+processors:
+exporters:
+  logging:
+service:
+  extensions:
+    - oidc
+  pipelines:
+    traces:
+      receivers:
+        - otlp/auth
+      processors: []
+      exporters:
+        - logging
+```
+
+On the agent side, this is an example that makes the OTLP exporter obtain OIDC tokens, adding
+them to every RPC made to a remote collector:
+
+```yaml
+extensions:
+  oauth2clientcredentials:
+    client_id: agent
+    client_secret: some-secret
+    token_url: http://localhost:8080/auth/realms/opentelemetry/protocol/openid-connect/token
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+processors:
+exporters:
+  otlp/auth:
+    endpoint: remote-collector:4317
+    auth:
+      authenticator: oauth2clientcredentials
+service:
+  extensions:
+    - oauth2clientcredentials
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - otlp/auth
+```
