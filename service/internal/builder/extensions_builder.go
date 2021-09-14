@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -115,6 +116,7 @@ func (exts Extensions) ToMap() map[config.ComponentID]component.Extension {
 func BuildExtensions(
 	logger *zap.Logger,
 	tracerProvider trace.TracerProvider,
+	meterProvider metric.MeterProvider,
 	buildInfo component.BuildInfo,
 	config *config.Config,
 	factories map[config.Type]component.ExtensionFactory,
@@ -137,6 +139,7 @@ func BuildExtensions(
 					zap.String(zapKindKey, zapKindExtension),
 					zap.String(zapNameKey, extID.String())),
 				TracerProvider: tracerProvider,
+				MeterProvider:  meterProvider,
 			},
 			BuildInfo: buildInfo,
 		}

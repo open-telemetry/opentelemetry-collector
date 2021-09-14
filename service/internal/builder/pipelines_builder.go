@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -84,6 +85,7 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 type pipelinesBuilder struct {
 	logger         *zap.Logger
 	tracerProvider trace.TracerProvider
+	meterProvider  metric.MeterProvider
 	buildInfo      component.BuildInfo
 	config         *config.Config
 	exporters      Exporters
@@ -95,12 +97,13 @@ type pipelinesBuilder struct {
 func BuildPipelines(
 	logger *zap.Logger,
 	tracerProvider trace.TracerProvider,
+	meterProvider metric.MeterProvider,
 	buildInfo component.BuildInfo,
 	config *config.Config,
 	exporters Exporters,
 	factories map[config.Type]component.ProcessorFactory,
 ) (BuiltPipelines, error) {
-	pb := &pipelinesBuilder{logger, tracerProvider, buildInfo, config, exporters, factories}
+	pb := &pipelinesBuilder{logger, tracerProvider, meterProvider, buildInfo, config, exporters, factories}
 
 	pipelineProcessors := make(BuiltPipelines)
 	for _, pipeline := range pb.config.Service.Pipelines {
@@ -164,6 +167,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			TelemetrySettings: component.TelemetrySettings{
 				Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
 				TracerProvider: pb.tracerProvider,
+				MeterProvider:  pb.meterProvider,
 			},
 			BuildInfo: pb.buildInfo,
 		}

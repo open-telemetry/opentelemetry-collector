@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -116,7 +117,7 @@ func TestService_setupExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ext, err := BuildExtensions(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), tt.config, tt.factories.Extensions)
+			ext, err := BuildExtensions(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), tt.config, tt.factories.Extensions)
 
 			assert.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)

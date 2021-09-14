@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -113,7 +114,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			cfg := createExampleConfig(dataType)
 
 			// BuildProcessors the pipeline
-			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, factories.Exporters)
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
@@ -121,7 +122,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 
 			require.NoError(t, err)
 			require.EqualValues(t, 1, len(allExporters))
-			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 
 			assert.NoError(t, err)
 			require.NotNil(t, pipelineProcessors)
@@ -185,9 +186,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 	require.Nil(t, err)
 
 	// BuildProcessors the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
@@ -259,10 +260,10 @@ func TestBuildPipelines_NotSupportedDataType(t *testing.T) {
 			cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
-			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, factories.Exporters)
 			assert.NoError(t, err)
 
-			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 			assert.Error(t, err)
 			assert.Zero(t, len(pipelineProcessors))
 		})

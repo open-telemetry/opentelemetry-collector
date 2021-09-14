@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -95,11 +96,11 @@ func testReceivers(t *testing.T, test testCase) {
 	require.NoError(t, err)
 
 	// Build the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
-	receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
+	receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
@@ -196,16 +197,16 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			cfg := createExampleConfig(dataType)
 
 			// Build the pipeline
-			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, factories.Exporters)
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
 			}
 
 			assert.NoError(t, err)
-			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 			assert.NoError(t, err)
-			receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
+			receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 
 			assert.NoError(t, err)
 			require.NotNil(t, receivers)
@@ -280,11 +281,11 @@ func TestBuildReceivers_Unused(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Build the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+	pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
-	receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
+	receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 	assert.NoError(t, err)
 	assert.NotNil(t, receivers)
 
@@ -316,13 +317,13 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, cfg)
 
-			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, factories.Exporters)
 			assert.NoError(t, err)
 
-			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, allExporters, factories.Processors)
 			assert.NoError(t, err)
 
-			receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
+			receivers, err := BuildReceivers(zap.NewNop(), trace.NewNoopTracerProvider(), metric.NoopMeterProvider{}, component.DefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
 			assert.Error(t, err)
 			assert.Zero(t, len(receivers))
 		})

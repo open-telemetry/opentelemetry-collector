@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -145,6 +146,7 @@ type exportersRequiredDataTypes map[config.ComponentID]dataTypeRequirements
 func BuildExporters(
 	logger *zap.Logger,
 	tracerProvider trace.TracerProvider,
+	meterProvider metric.MeterProvider,
 	buildInfo component.BuildInfo,
 	cfg *config.Config,
 	factories map[config.Type]component.ExporterFactory,
@@ -163,6 +165,7 @@ func BuildExporters(
 			TelemetrySettings: component.TelemetrySettings{
 				Logger:         logger.With(zap.String(zapNameKey, expID.String())),
 				TracerProvider: tracerProvider,
+				MeterProvider:  meterProvider,
 			},
 			BuildInfo: buildInfo,
 		}

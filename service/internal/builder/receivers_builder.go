@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -89,6 +90,7 @@ type receiversBuilder struct {
 func BuildReceivers(
 	logger *zap.Logger,
 	tracerProvider trace.TracerProvider,
+	meterProvider metric.MeterProvider,
 	buildInfo component.BuildInfo,
 	cfg *config.Config,
 	builtPipelines BuiltPipelines,
@@ -102,6 +104,7 @@ func BuildReceivers(
 			TelemetrySettings: component.TelemetrySettings{
 				Logger:         logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
 				TracerProvider: tracerProvider,
+				MeterProvider:  meterProvider,
 			},
 			BuildInfo: buildInfo,
 		}
