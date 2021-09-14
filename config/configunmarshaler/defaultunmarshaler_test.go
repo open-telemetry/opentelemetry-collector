@@ -456,10 +456,10 @@ func TestLoadEmptyAllSections(t *testing.T) {
 }
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
-	v, err := configparser.NewParserFromFile(fileName)
+	v, err := configparser.NewConfigMapFromFile(fileName)
 	require.NoError(t, err)
 
-	// Unmarshal the config from the configparser.Parser using the given factories.
+	// Unmarshal the config from the configparser.ConfigMap using the given factories.
 	return NewDefault().Unmarshal(v, factories)
 }
 

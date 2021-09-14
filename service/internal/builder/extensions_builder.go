@@ -132,11 +132,13 @@ func BuildExtensions(
 		}
 
 		set := component.ExtensionCreateSettings{
-			Logger: logger.With(
-				zap.String(zapKindKey, zapKindExtension),
-				zap.String(zapNameKey, extID.String())),
-			TracerProvider: tracerProvider,
-			BuildInfo:      buildInfo,
+			TelemetrySettings: component.TelemetrySettings{
+				Logger: logger.With(
+					zap.String(zapKindKey, zapKindExtension),
+					zap.String(zapNameKey, extID.String())),
+				TracerProvider: tracerProvider,
+			},
+			BuildInfo: buildInfo,
 		}
 		ext, err := buildExtension(context.Background(), factory, set, extCfg)
 		if err != nil {

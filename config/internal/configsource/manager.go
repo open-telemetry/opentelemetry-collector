@@ -173,7 +173,7 @@ type Manager struct {
 // NewManager creates a new instance of a Manager to be used to inject data from
 // ConfigSource objects into a configuration and watch for updates on the injected
 // data.
-func NewManager(_ *configparser.Parser) (*Manager, error) {
+func NewManager(_ *configparser.ConfigMap) (*Manager, error) {
 	// TODO: Config sources should be extracted for the config itself, need Factories for that.
 
 	return &Manager{
@@ -185,8 +185,8 @@ func NewManager(_ *configparser.Parser) (*Manager, error) {
 // Resolve inspects the given config.Parser and resolves all config sources referenced
 // in the configuration, returning a config.Parser fully resolved. This must be called only
 // once per lifetime of a Manager object.
-func (m *Manager) Resolve(ctx context.Context, parser *configparser.Parser) (*configparser.Parser, error) {
-	res := configparser.NewParser()
+func (m *Manager) Resolve(ctx context.Context, parser *configparser.ConfigMap) (*configparser.ConfigMap, error) {
+	res := configparser.NewConfigMap()
 	allKeys := parser.AllKeys()
 	for _, k := range allKeys {
 		value, err := m.expandStringValues(ctx, parser.Get(k))
@@ -483,8 +483,8 @@ func parseCfgSrc(s string) (cfgSrcName, selector string, params interface{}, err
 		selector = strings.Trim(parts[0], " ")
 
 		if len(parts) > 1 && len(parts[1]) > 0 {
-			var cp *configparser.Parser
-			cp, err = configparser.NewParserFromBuffer(bytes.NewReader([]byte(parts[1])))
+			var cp *configparser.ConfigMap
+			cp, err = configparser.NewConfigMapFromBuffer(bytes.NewReader([]byte(parts[1])))
 			if err != nil {
 				return
 			}

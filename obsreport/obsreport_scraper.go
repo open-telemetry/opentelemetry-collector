@@ -30,27 +30,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-// ScraperContext adds the keys used when recording observability metrics to
-// the given context returning the newly created context. This context should
-// be used in related calls to the obsreport functions so metrics are properly
-// recorded.
-func ScraperContext(
-	ctx context.Context,
-	receiverID config.ComponentID,
-	scraper config.ComponentID,
-) context.Context {
-	ctx, _ = tag.New(
-		ctx,
-		tag.Upsert(obsmetrics.TagKeyReceiver, receiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-		tag.Upsert(obsmetrics.TagKeyScraper, scraper.String(), tag.WithTTL(tag.TTLNoPropagation)))
-
-	return ctx
-}
-
 // Scraper is a helper to add observability to a component.Scraper.
 type Scraper struct {
 	receiverID config.ComponentID
 	scraper    config.ComponentID
+	mutators   []tag.Mutator
 	tracer     trace.Tracer
 }
 
@@ -65,18 +49,21 @@ func NewScraper(cfg ScraperSettings) *Scraper {
 	return &Scraper{
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
-		tracer:     otel.GetTracerProvider().Tracer(cfg.Scraper.String()),
+		mutators: []tag.Mutator{
+			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
+			tag.Upsert(obsmetrics.TagKeyScraper, cfg.Scraper.String(), tag.WithTTL(tag.TTLNoPropagation))},
+		tracer: otel.GetTracerProvider().Tracer(cfg.Scraper.String()),
 	}
 }
 
 // StartMetricsOp is called when a scrape operation is started. The
 // returned context should be used in other calls to the obsreport functions
 // dealing with the same scrape operation.
-func (s *Scraper) StartMetricsOp(
-	scraperCtx context.Context,
-) context.Context {
+func (s *Scraper) StartMetricsOp(ctx context.Context) context.Context {
+	ctx, _ = tag.New(ctx, s.mutators...)
+
 	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.NameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
-	ctx, _ := s.tracer.Start(scraperCtx, spanName)
+	ctx, _ = s.tracer.Start(ctx, spanName)
 	return ctx
 }
 

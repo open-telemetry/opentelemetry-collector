@@ -270,7 +270,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
-func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]component.Extension) ([]grpc.ServerOption, error) {
+func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -346,11 +346,15 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Pass construct settings to have access to Tracer.
 	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(
-		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
+		// otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(
-		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
+		// otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 

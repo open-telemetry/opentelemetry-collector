@@ -16,6 +16,7 @@ package parserprovider
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 
@@ -40,10 +41,10 @@ func NewSetFlag(base ParserProvider) ParserProvider {
 	}
 }
 
-func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
+func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
-		return sfl.base.Get()
+		return sfl.base.Get(ctx)
 	}
 
 	b := &bytes.Buffer{}
@@ -61,7 +62,7 @@ func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
 	}
 
 	// Create a map manually instead of using props.Map() to allow env var expansion
-	// as used by original Viper-based configparser.Parser.
+	// as used by original Viper-based configparser.ConfigMap.
 	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
@@ -69,9 +70,13 @@ func (sfl *setFlagProvider) Get() (*configparser.Parser, error) {
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	var cp *configparser.Parser
-	if cp, err = sfl.base.Get(); err != nil {
+	var cp *configparser.ConfigMap
+	if cp, err = sfl.base.Get(ctx); err != nil {
 		return nil, err
 	}
 	return cp, cp.MergeStringMap(prop)
+}
+
+func (sfl *setFlagProvider) Close(context.Context) error {
+	return nil
 }

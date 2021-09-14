@@ -51,18 +51,26 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 
 func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
 	ld := &otlpcollectorlog.ExportLogsServiceRequest{}
-	err := d.delegate.Unmarshal(bytes.NewReader(buf), ld)
-	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld)), err
+
+	if err := d.delegate.Unmarshal(bytes.NewReader(buf), ld); err != nil {
+		return pdata.Logs{}, err
+	}
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld)), nil
 }
 
 func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 	md := &otlpcollectormetrics.ExportMetricsServiceRequest{}
-	err := d.delegate.Unmarshal(bytes.NewReader(buf), md)
-	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(md)), err
+
+	if err := d.delegate.Unmarshal(bytes.NewReader(buf), md); err != nil {
+		return pdata.Metrics{}, err
+	}
+	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(md)), nil
 }
 
 func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	td := &otlpcollectortrace.ExportTraceServiceRequest{}
-	err := d.delegate.Unmarshal(bytes.NewReader(buf), td)
-	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(td)), err
+	if err := d.delegate.Unmarshal(bytes.NewReader(buf), td); err != nil {
+		return pdata.Traces{}, err
+	}
+	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(td)), nil
 }

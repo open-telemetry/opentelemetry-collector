@@ -35,29 +35,29 @@ const (
 	KeyDelimiter = "::"
 )
 
-// NewParser creates a new empty Parser instance.
-func NewParser() *Parser {
-	return &Parser{k: koanf.New(KeyDelimiter)}
+// NewConfigMap creates a new empty ConfigMap instance.
+func NewConfigMap() *ConfigMap {
+	return &ConfigMap{k: koanf.New(KeyDelimiter)}
 }
 
-// NewParserFromFile creates a new Parser by reading the given file.
-func NewParserFromFile(fileName string) (*Parser, error) {
+// NewConfigMapFromFile creates a new ConfigMap by reading the given file.
+func NewConfigMapFromFile(fileName string) (*ConfigMap, error) {
 	// Read yaml config from file.
-	p := NewParser()
+	p := NewConfigMap()
 	if err := p.k.Load(file.Provider(fileName), yaml.Parser()); err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
 	}
 	return p, nil
 }
 
-// NewParserFromBuffer creates a new Parser by reading the given yaml buffer.
-func NewParserFromBuffer(buf io.Reader) (*Parser, error) {
+// NewConfigMapFromBuffer creates a new ConfigMap by reading the given yaml buffer.
+func NewConfigMapFromBuffer(buf io.Reader) (*ConfigMap, error) {
 	content, err := ioutil.ReadAll(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	p := NewParser()
+	p := NewConfigMap()
 	if err := p.k.Load(rawbytes.Provider(content), yaml.Parser()); err != nil {
 		return nil, err
 	}
@@ -65,28 +65,28 @@ func NewParserFromBuffer(buf io.Reader) (*Parser, error) {
 	return p, nil
 }
 
-// NewParserFromStringMap creates a parser from a map[string]interface{}.
-func NewParserFromStringMap(data map[string]interface{}) *Parser {
-	p := NewParser()
+// NewConfigMapFromStringMap creates a ConfigMap from a map[string]interface{}.
+func NewConfigMapFromStringMap(data map[string]interface{}) *ConfigMap {
+	p := NewConfigMap()
 	// Cannot return error because the koanf instance is empty.
 	_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
 	return p
 }
 
-// Parser loads configuration.
-type Parser struct {
+// ConfigMap loads configuration.
+type ConfigMap struct {
 	k *koanf.Koanf
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
 // Nested keys are returned with a KeyDelimiter separator.
-func (l *Parser) AllKeys() []string {
+func (l *ConfigMap) AllKeys() []string {
 	return l.k.Keys()
 }
 
 // Unmarshal unmarshalls the config into a struct.
 // Tags on the fields of the structure must be properly set.
-func (l *Parser) Unmarshal(rawVal interface{}) error {
+func (l *ConfigMap) Unmarshal(rawVal interface{}) error {
 	decoder, err := mapstructure.NewDecoder(decoderConfig(rawVal))
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (l *Parser) Unmarshal(rawVal interface{}) error {
 }
 
 // UnmarshalExact unmarshalls the config into a struct, erroring if a field is nonexistent.
-func (l *Parser) UnmarshalExact(intoCfg interface{}) error {
+func (l *ConfigMap) UnmarshalExact(intoCfg interface{}) error {
 	dc := decoderConfig(intoCfg)
 	dc.ErrorUnused = true
 	decoder, err := mapstructure.NewDecoder(dc)
@@ -106,12 +106,12 @@ func (l *Parser) UnmarshalExact(intoCfg interface{}) error {
 }
 
 // Get can retrieve any value given the key to use.
-func (l *Parser) Get(key string) interface{} {
+func (l *ConfigMap) Get(key string) interface{} {
 	return l.k.Get(key)
 }
 
 // Set sets the value for the key.
-func (l *Parser) Set(key string, value interface{}) {
+func (l *ConfigMap) Set(key string, value interface{}) {
 	// koanf doesn't offer a direct setting mechanism so merging is required.
 	merged := koanf.New(KeyDelimiter)
 	merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
@@ -120,13 +120,13 @@ func (l *Parser) Set(key string, value interface{}) {
 
 // IsSet checks to see if the key has been set in any of the data locations.
 // IsSet is case-insensitive for a key.
-func (l *Parser) IsSet(key string) bool {
+func (l *ConfigMap) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
 
 // MergeStringMap merges the configuration from the given map with the existing config.
 // Note that the given map may be modified.
-func (l *Parser) MergeStringMap(cfg map[string]interface{}) error {
+func (l *ConfigMap) MergeStringMap(cfg map[string]interface{}) error {
 	toMerge := koanf.New(KeyDelimiter)
 	toMerge.Load(confmap.Provider(cfg, KeyDelimiter), nil)
 	return l.k.Merge(toMerge)
@@ -135,14 +135,14 @@ func (l *Parser) MergeStringMap(cfg map[string]interface{}) error {
 // Sub returns new Parser instance representing a sub-config of this instance.
 // It returns an error is the sub-config is not a map (use Get()) and an empty Parser if
 // none exists.
-func (l *Parser) Sub(key string) (*Parser, error) {
+func (l *ConfigMap) Sub(key string) (*ConfigMap, error) {
 	data := l.Get(key)
 	if data == nil {
-		return NewParser(), nil
+		return NewConfigMap(), nil
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subParser := NewParser()
+		subParser := NewConfigMap()
 		// Cannot return error because the subv is empty.
 		_ = subParser.MergeStringMap(cast.ToStringMap(data))
 		return subParser, nil
@@ -152,7 +152,7 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 }
 
 // ToStringMap creates a map[string]interface{} from a Parser.
-func (l *Parser) ToStringMap() map[string]interface{} {
+func (l *ConfigMap) ToStringMap() map[string]interface{} {
 	return maps.Unflatten(l.k.All(), KeyDelimiter)
 }
 
@@ -187,7 +187,7 @@ func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
 // config:
 //   thing:
 //
-// we want an unmarshalled Config to be equivalent to
+// we want an unmarshaled Config to be equivalent to
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
 func expandNilStructPointers() mapstructure.DecodeHookFunc {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
