@@ -511,6 +511,17 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	require.NoError(t, s.Close())
 }
 
+func TestInvalidTelemetrySettings(t *testing.T) {
+	hss := &HTTPServerSettings{
+		Endpoint: "localhost:0",
+	}
+
+	// This includes non-initialized TelemetrySettings
+	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), component.TelemetrySettings{})
+	require.NotNil(t, s)
+	require.NoError(t, s.Close())
+}
+
 func verifyCorsResp(t *testing.T, url string, origin string, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest("OPTIONS", url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
