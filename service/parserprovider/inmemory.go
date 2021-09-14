@@ -31,7 +31,7 @@ func NewInMemory(buf io.Reader) ParserProvider {
 }
 
 func (inp *inMemoryProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	return configparser.NewParserFromBuffer(inp.buf)
+	return configparser.NewConfigMapFromBuffer(inp.buf)
 }
 
 func (inp *inMemoryProvider) Close(context.Context) error {

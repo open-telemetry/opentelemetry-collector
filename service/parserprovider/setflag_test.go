@@ -61,7 +61,7 @@ func TestSetFlags_empty(t *testing.T) {
 type emptyProvider struct{}
 
 func (el *emptyProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	return configparser.NewParser(), nil
+	return configparser.NewConfigMap(), nil
 }
 
 func (el *emptyProvider) Close(context.Context) error {

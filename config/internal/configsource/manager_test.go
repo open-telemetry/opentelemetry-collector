@@ -54,7 +54,7 @@ func TestConfigSourceManager_Simple(t *testing.T) {
 		},
 	}
 
-	cp := configparser.NewParserFromStringMap(originalCfg)
+	cp := configparser.NewConfigMapFromStringMap(originalCfg)
 
 	actualParser, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 			require.NoError(t, err)
 			manager.configSources = tt.configSourceMap
 
-			res, err := manager.Resolve(ctx, configparser.NewParserFromStringMap(tt.config))
+			res, err := manager.Resolve(ctx, configparser.NewConfigMapFromStringMap(tt.config))
 			require.Error(t, err)
 			require.Nil(t, res)
 			require.NoError(t, manager.Close(ctx))
@@ -145,11 +145,11 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 	}
 
 	file := path.Join("testdata", "arrays_and_maps.yaml")
-	cp, err := configparser.NewParserFromFile(file)
+	cp, err := configparser.NewConfigMapFromFile(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "arrays_and_maps_expected.yaml")
-	expectedParser, err := configparser.NewParserFromFile(expectedFile)
+	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	actualParser, err := manager.Resolve(ctx, cp)
@@ -197,11 +197,11 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 	}
 
 	file := path.Join("testdata", "params_handling.yaml")
-	cp, err := configparser.NewParserFromFile(file)
+	cp, err := configparser.NewConfigMapFromFile(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "params_handling_expected.yaml")
-	expectedParser, err := configparser.NewParserFromFile(expectedFile)
+	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	actualParser, err := manager.Resolve(ctx, cp)
@@ -235,7 +235,7 @@ func TestConfigSourceManager_WatchForUpdate(t *testing.T) {
 		},
 	}
 
-	cp := configparser.NewParserFromStringMap(originalCfg)
+	cp := configparser.NewConfigMapFromStringMap(originalCfg)
 	_, err = manager.Resolve(ctx, cp)
 	require.NoError(t, err)
 
@@ -291,7 +291,7 @@ func TestConfigSourceManager_MultipleWatchForUpdate(t *testing.T) {
 		},
 	}
 
-	cp := configparser.NewParserFromStringMap(originalCfg)
+	cp := configparser.NewConfigMapFromStringMap(originalCfg)
 	_, err = manager.Resolve(ctx, cp)
 	require.NoError(t, err)
 
@@ -342,11 +342,11 @@ func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
 	}
 
 	file := path.Join("testdata", "envvar_cfgsrc_mix.yaml")
-	cp, err := configparser.NewParserFromFile(file)
+	cp, err := configparser.NewConfigMapFromFile(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "envvar_cfgsrc_mix_expected.yaml")
-	expectedParser, err := configparser.NewParserFromFile(expectedFile)
+	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	actualParser, err := manager.Resolve(ctx, cp)

@@ -258,7 +258,7 @@ service:
       processors: [batch]
       exporters: [otlp]
 `
-	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
+	return configparser.NewConfigMapFromBuffer(strings.NewReader(configStr))
 }
 
 func (*minimalParserLoader) Close(context.Context) error {
