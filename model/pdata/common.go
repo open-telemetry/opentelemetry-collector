@@ -854,6 +854,8 @@ func (es AnyValueArray) asRaw() []interface{} {
 			rawSlice = append(rawSlice, v.DoubleVal())
 		case AttributeValueTypeBool:
 			rawSlice = append(rawSlice, v.BoolVal())
+		case AttributeValueTypeBytes:
+			rawSlice = append(rawSlice, v.BytesVal())
 		case AttributeValueTypeEmpty:
 			rawSlice = append(rawSlice, nil)
 		default:

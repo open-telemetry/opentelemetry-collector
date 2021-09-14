@@ -1007,6 +1007,13 @@ func TestAsString(t *testing.T) {
 }
 
 func TestAsRaw(t *testing.T) {
+	arr := NewAttributeValueArray()
+	arr.ArrayVal().AppendEmpty().SetBoolVal(false)
+	arr.ArrayVal().AppendEmpty().SetBytesVal([]byte("test"))
+	arr.ArrayVal().AppendEmpty().SetDoubleVal(12.9)
+	arr.ArrayVal().AppendEmpty().SetIntVal(91)
+	arr.ArrayVal().AppendEmpty().SetStringVal("another string")
+
 	tests := []struct {
 		name     string
 		input    AttributeMap
@@ -1016,7 +1023,7 @@ func TestAsRaw(t *testing.T) {
 			name: "asraw",
 			input: NewAttributeMapFromMap(
 				map[string]AttributeValue{
-					"array":  NewAttributeValueArray(),
+					"array":  arr,
 					"bool":   NewAttributeValueBool(true),
 					"bytes":  NewAttributeValueBytes([]byte("bytes value")),
 					"double": NewAttributeValueDouble(1.2),
@@ -1027,7 +1034,7 @@ func TestAsRaw(t *testing.T) {
 				},
 			),
 			expected: map[string]interface{}{
-				"array":  []interface{}{},
+				"array":  []interface{}{false, []byte("test"), 12.9, int64(91), "another string"},
 				"bool":   true,
 				"bytes":  []byte("bytes value"),
 				"double": 1.2,
