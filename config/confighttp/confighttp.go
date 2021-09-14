@@ -219,6 +219,7 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 		handler,
 		"",
 		otelhttp.WithTracerProvider(settings.TracerProvider),
+		otelhttp.WithMeterProvider(settings.MeterProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
 			return r.URL.Path
