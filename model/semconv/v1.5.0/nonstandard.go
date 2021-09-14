@@ -23,4 +23,3 @@ const (
 	OtelStatusCode        = "otel.status_code"
 	OtelStatusDescription = "otel.status_description"
 )
-
