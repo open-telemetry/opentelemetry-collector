@@ -33,7 +33,7 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 // LoadConfig loads a config from file, and does NOT validate the configuration.
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
-	cp, err := configparser.NewParserFromFile(fileName)
+	cp, err := configparser.NewConfigMapFromFile(fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +50,12 @@ func LoadConfigAndValidate(fileName string, factories component.Factories) (*con
 	return cfg, cfg.Validate()
 }
 
-// ValidateConfig enforces that given configuration object is following the patterns
+// CheckConfigStruct enforces that given configuration object is following the patterns
 // used by the collector. This ensures consistency between different implementations
 // of components and extensions. It is recommended for implementers of components
 // to call this function on their tests passing the default configuration of the
 // component factory.
-func ValidateConfig(config interface{}) error {
+func CheckConfigStruct(config interface{}) error {
 	t := reflect.TypeOf(config)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()

@@ -66,7 +66,7 @@ gotestinstall:
 
 .PHONY: gotest
 gotest:
-	@$(MAKE) for-all CMD="make test"
+	@$(MAKE) for-all CMD="make test test-unstable"
 
 .PHONY: gobenchmark
 gobenchmark:
@@ -81,7 +81,7 @@ gotest-with-cover:
 
 .PHONY: golint
 golint:
-	@$(MAKE) for-all CMD="make lint"
+	@$(MAKE) for-all CMD="make lint lint-unstable"
 
 .PHONY: goimpi
 goimpi:
@@ -148,6 +148,11 @@ otelcol:
 	go generate ./...
 	$(MAKE) build-binary-internal
 
+.PHONY: otelcol-unstable
+otelcol-unstable:
+	go generate ./...
+	$(MAKE) build-binary-internal-unstable
+
 .PHONY: run
 run:
 	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
@@ -213,6 +218,9 @@ docker-otelcol:
 .PHONY: binaries-all-sys
 binaries-all-sys: binaries-darwin_amd64 binaries-darwin_arm64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
 
+.PHONY: binaries-all-sys-unstable
+binaries-all-sys-unstable: binaries-darwin_amd64-unstable binaries-darwin_arm64-unstable binaries-linux_amd64-unstable binaries-linux_arm64-unstable binaries-windows_amd64-unstable
+
 .PHONY: binaries-darwin_amd64
 binaries-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal
@@ -233,9 +241,33 @@ binaries-linux_arm64:
 binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) build-binary-internal
 
+.PHONY: binaries-darwin_amd64-unstable
+binaries-darwin_amd64-unstable:
+	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal-unstable
+
+.PHONY: binaries-darwin_arm64-unstable
+binaries-darwin_arm64-unstable:
+	GOOS=darwin  GOARCH=arm64 $(MAKE) build-binary-internal-unstable
+
+.PHONY: binaries-linux_amd64-unstable
+binaries-linux_amd64-unstable:
+	GOOS=linux   GOARCH=amd64 $(MAKE) build-binary-internal-unstable
+
+.PHONY: binaries-linux_arm64-unstable
+binaries-linux_arm64-unstable:
+	GOOS=linux   GOARCH=arm64 $(MAKE) build-binary-internal-unstable
+
+.PHONY: binaries-windows_amd64-unstable
+binaries-windows_amd64-unstable:
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) build-binary-internal-unstable
+
 .PHONY: build-binary-internal
 build-binary-internal:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
+
+.PHONY: build-binary-internal-unstable
+build-binary-internal-unstable:
+	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION)_unstable $(BUILD_INFO) -tags enable_unstable ./cmd/otelcol
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
