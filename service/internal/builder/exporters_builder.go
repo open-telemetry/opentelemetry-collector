@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -144,14 +142,12 @@ type exportersRequiredDataTypes map[config.ComponentID]dataTypeRequirements
 
 // BuildExporters builds Exporters from config.
 func BuildExporters(
-	logger *zap.Logger,
-	tracerProvider trace.TracerProvider,
-	meterProvider metric.MeterProvider,
+	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfg *config.Config,
 	factories map[config.Type]component.ExporterFactory,
 ) (Exporters, error) {
-	logger = logger.With(zap.String(zapKindKey, zapKindLogExporter))
+	logger := settings.Logger.With(zap.String(zapKindKey, zapKindLogExporter))
 
 	// We need to calculate required input data types for each exporter so that we know
 	// which data type must be started for each exporter.
@@ -164,8 +160,8 @@ func BuildExporters(
 		set := component.ExporterCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
 				Logger:         logger.With(zap.String(zapNameKey, expID.String())),
-				TracerProvider: tracerProvider,
-				MeterProvider:  meterProvider,
+				TracerProvider: settings.TracerProvider,
+				MeterProvider:  settings.MeterProvider,
 			},
 			BuildInfo: buildInfo,
 		}

@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -256,7 +255,7 @@ func (col *Collector) execute(ctx context.Context) error {
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
 
-	col.meterProvider = global.GetMeterProvider()
+	col.meterProvider = metric.NoopMeterProvider{}
 
 	col.logger.Info("Starting "+col.set.BuildInfo.Command+"...",
 		zap.String("Version", col.set.BuildInfo.Version),

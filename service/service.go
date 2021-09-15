@@ -63,7 +63,12 @@ func newService(set *svcSettings) (*service, error) {
 	}
 
 	var err error
-	srv.builtExtensions, err = builder.BuildExtensions(srv.logger, srv.tracerProvider, srv.meterProvider, srv.buildInfo, srv.config, srv.factories.Extensions)
+	telemetrySettings := component.TelemetrySettings{
+		Logger:         srv.logger,
+		TracerProvider: srv.tracerProvider,
+		MeterProvider:  srv.meterProvider,
+	}
+	srv.builtExtensions, err = builder.BuildExtensions(telemetrySettings, srv.buildInfo, srv.config, srv.factories.Extensions)
 	if err != nil {
 		return nil, fmt.Errorf("cannot build extensions: %w", err)
 	}
@@ -72,19 +77,19 @@ func newService(set *svcSettings) (*service, error) {
 	// which are referenced before objects which reference them.
 
 	// First create exporters.
-	srv.builtExporters, err = builder.BuildExporters(srv.logger, srv.tracerProvider, srv.meterProvider, srv.buildInfo, srv.config, srv.factories.Exporters)
+	srv.builtExporters, err = builder.BuildExporters(telemetrySettings, srv.buildInfo, srv.config, srv.factories.Exporters)
 	if err != nil {
 		return nil, fmt.Errorf("cannot build exporters: %w", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the end of the pipelines.
-	srv.builtPipelines, err = builder.BuildPipelines(srv.logger, srv.tracerProvider, srv.meterProvider, srv.buildInfo, srv.config, srv.builtExporters, srv.factories.Processors)
+	srv.builtPipelines, err = builder.BuildPipelines(telemetrySettings, srv.buildInfo, srv.config, srv.builtExporters, srv.factories.Processors)
 	if err != nil {
 		return nil, fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	srv.builtReceivers, err = builder.BuildReceivers(srv.logger, srv.tracerProvider, srv.meterProvider, srv.buildInfo, srv.config, srv.builtPipelines, srv.factories.Receivers)
+	srv.builtReceivers, err = builder.BuildReceivers(telemetrySettings, srv.buildInfo, srv.config, srv.builtPipelines, srv.factories.Receivers)
 	if err != nil {
 		return nil, fmt.Errorf("cannot build receivers: %w", err)
 	}
