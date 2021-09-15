@@ -80,8 +80,6 @@ functionality and configuration:
 | OTLP metrics exporter configuration | Beta |
 | OTLP logs exporter configuration | Beta |
 | Logging exporter | Experimental |
-| OTLP logs receiver functionality | Beta |
-| OTLP traces receiver configuration | Beta |
 | Batch processor functionality | Beta |
 | Batch processor configuration | Beta |
 | MemoryLimiter processor functionality | Beta |
