@@ -38,28 +38,28 @@ type queuedRetrySender struct {
 	fullName        string
 	cfg             QueueSettings
 	consumerSender  requestSender
-	queue           consumersQueue
+	queue           internal.BoundedQueue
 	retryStopCh     chan struct{}
 	traceAttributes []attribute.KeyValue
 	logger          *zap.Logger
 }
 
-func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSettings, rCfg RetrySettings, _ requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, _ config.DataType, bs *baseSettings, _ internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 	return &queuedRetrySender{
 		fullName: id.String(),
-		cfg:      qCfg,
+		cfg:      bs.QueueSettings,
 		consumerSender: &retrySender{
 			traceAttribute:     traceAttr,
-			cfg:                rCfg,
+			cfg:                bs.RetrySettings,
 			nextSender:         nextSender,
 			stopCh:             retryStopCh,
 			logger:             sampledLogger,
 			onTemporaryFailure: onTemporaryFailure,
 		},
-		queue:           internal.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
+		queue:           internal.NewBoundedMemoryQueue(bs.QueueSettings.QueueSize, func(item interface{}) {}),
 		retryStopCh:     retryStopCh,
 		traceAttributes: []attribute.KeyValue{traceAttr},
 		logger:          sampledLogger,
@@ -80,7 +80,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
-		req.onProcessingFinished()
+		req.OnProcessingFinished()
 	})
 
 	// Start reporting queue length metric

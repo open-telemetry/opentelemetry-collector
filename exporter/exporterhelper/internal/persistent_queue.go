@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package exporterhelper
+package internal
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/extension/storage"
 )
 
@@ -37,8 +36,8 @@ type persistentQueue struct {
 	storage    persistentStorage
 }
 
-// newPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
-func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentQueue {
+// NewPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
+func NewPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) BoundedQueue {
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
@@ -48,11 +47,15 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 
 // StartConsumers starts the given number of consumers which will be consuming items
 func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
-	pq.numWorkers = num
+	pq.StartConsumersWithFactory(num, func() Consumer {
+		return ConsumerFunc(callback)
+	})
+}
 
-	factory := func() internal.Consumer {
-		return internal.ConsumerFunc(callback)
-	}
+// StartConsumersWithFactory creates a given number of consumers consuming items
+// from the queue in separate goroutines.
+func (pq *persistentQueue) StartConsumersWithFactory(num int, factory func() Consumer) {
+	pq.numWorkers = num
 
 	for i := 0; i < pq.numWorkers; i++ {
 		pq.stopWG.Add(1)
@@ -74,7 +77,7 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 
 // Produce adds an item to the queue and returns true if it was accepted
 func (pq *persistentQueue) Produce(item interface{}) bool {
-	err := pq.storage.put(item.(request))
+	err := pq.storage.put(item.(PersistentRequest))
 	return err == nil
 }
 
@@ -90,4 +93,12 @@ func (pq *persistentQueue) Stop() {
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
 func (pq *persistentQueue) Size() int {
 	return int(pq.storage.size())
+}
+
+func (pq *persistentQueue) Capacity() int {
+	return pq.Size() + 1
+}
+
+func (pq *persistentQueue) Resize(_ int) bool {
+	return true
 }

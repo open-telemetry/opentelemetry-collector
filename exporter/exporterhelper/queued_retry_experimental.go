@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -38,12 +37,6 @@ import (
 // enabled by setting "enable_unstable" build tag
 
 var (
-	currentlyDispatchedBatchesGauge, _ = r.AddInt64DerivedGauge(
-		obsmetrics.ExporterKey+"/currently_dispatched_batches",
-		metric.WithDescription("Number of batches that are currently being sent"),
-		metric.WithLabelKeys(obsmetrics.ExporterKey),
-		metric.WithUnit(metricdata.UnitDimensionless))
-
 	errNoStorageClient        = errors.New("no storage client extension found")
 	errMultipleStorageClients = errors.New("multiple storage extensions found")
 )
@@ -53,12 +46,12 @@ type queuedRetrySender struct {
 	signal             config.DataType
 	cfg                QueueSettings
 	consumerSender     requestSender
-	queue              consumersQueue
+	queue              internal.BoundedQueue
 	retryStopCh        chan struct{}
 	traceAttributes    []attribute.KeyValue
 	logger             *zap.Logger
 	requeuingEnabled   bool
-	requestUnmarshaler requestUnmarshaler
+	requestUnmarshaler internal.RequestUnmarshaler
 }
 
 func (qrs *queuedRetrySender) fullName() string {
@@ -68,7 +61,7 @@ func (qrs *queuedRetrySender) fullName() string {
 	return fmt.Sprintf("%s-%s", qrs.id.String(), qrs.signal)
 }
 
-func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, signal config.DataType, bs *baseSettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
@@ -76,7 +69,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 	qrs := &queuedRetrySender{
 		id:                 id,
 		signal:             signal,
-		cfg:                qCfg,
+		cfg:                bs.QueueSettings,
 		retryStopCh:        retryStopCh,
 		traceAttributes:    []attribute.KeyValue{traceAttr},
 		logger:             sampledLogger,
@@ -85,7 +78,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 
 	qrs.consumerSender = &retrySender{
 		traceAttribute: traceAttr,
-		cfg:            rCfg,
+		cfg:            bs.RetrySettings,
 		nextSender:     nextSender,
 		stopCh:         retryStopCh,
 		logger:         sampledLogger,
@@ -93,8 +86,8 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 		onTemporaryFailure: qrs.onTemporaryFailure,
 	}
 
-	if !qCfg.PersistentStorageEnabled {
-		qrs.queue = internal.NewBoundedQueue(qrs.cfg.QueueSize, func(item interface{}) {})
+	if !bs.PersistentStorageEnabled {
+		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize, func(item interface{}) {})
 	}
 	// The Persistent Queue is initialized separately as it needs extra information about the component
 
@@ -132,7 +125,7 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 			return err
 		}
 
-		qrs.queue = newPersistentQueue(ctx, qrs.fullName(), qrs.cfg.QueueSize, qrs.logger, *storageClient, qrs.requestUnmarshaler)
+		qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName(), qrs.cfg.QueueSize, qrs.logger, *storageClient, qrs.requestUnmarshaler)
 
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		qrs.requeuingEnabled = true
@@ -176,7 +169,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
-		req.onProcessingFinished()
+		req.OnProcessingFinished()
 	})
 
 	// Start reporting queue length metric

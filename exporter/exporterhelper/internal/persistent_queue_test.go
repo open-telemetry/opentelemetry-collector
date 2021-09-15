@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package exporterhelper
+package internal
 
 import (
 	"context"
@@ -42,8 +42,8 @@ func createTestQueue(extension storage.Extension, capacity int) *persistentQueue
 		panic(err)
 	}
 
-	wq := newPersistentQueue(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
-	return wq
+	pq := NewPersistentQueue(context.Background(), "foo", capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	return pq.(*persistentQueue)
 }
 
 func TestPersistentQueue_Capacity(t *testing.T) {
@@ -58,7 +58,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 		require.Equal(t, 0, wq.Size())
 
 		traces := newTraces(1, 10)
-		req := newTracesRequest(context.Background(), traces, nopTracePusher())
+		req := newFakeTracesRequest(traces)
 
 		for i := 0; i < 10; i++ {
 			result := wq.Produce(req)
@@ -89,7 +89,7 @@ func TestPersistentQueue_Close(t *testing.T) {
 
 	wq := createTestQueue(ext, 1001)
 	traces := newTraces(1, 10)
-	req := newTracesRequest(context.Background(), traces, nopTracePusher())
+	req := newFakeTracesRequest(traces)
 
 	wq.StartConsumers(100, func(item interface{}) {})
 
@@ -140,7 +140,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			path := createTemporaryDirectory()
 
 			traces := newTraces(1, 10)
-			req := newTracesRequest(context.Background(), traces, nopTracePusher())
+			req := newFakeTracesRequest(traces)
 
 			ext := createStorageExtension(path)
 			tq := createTestQueue(ext, 5000)

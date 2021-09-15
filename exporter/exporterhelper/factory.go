@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
 // FactoryOption apply changes to ExporterOptions.
@@ -78,6 +79,7 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
+	internal.RegisterMetrics()
 	return f
 }
 
