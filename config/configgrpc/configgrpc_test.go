@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
@@ -481,7 +480,7 @@ func TestHttpReception(t *testing.T) {
 			assert.NoError(t, errDial)
 			client := otlpgrpc.NewTracesClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-			resp, errResp := client.Export(ctx, pdata.NewTraces(), grpc.WaitForReady(true))
+			resp, errResp := client.Export(ctx, otlpgrpc.NewTracesRequest(), grpc.WaitForReady(true))
 			if tt.hasError {
 				assert.Error(t, errResp)
 			} else {
@@ -528,7 +527,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	assert.NoError(t, errDial)
 	client := otlpgrpc.NewTracesClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-	resp, errResp := client.Export(ctx, pdata.NewTraces(), grpc.WaitForReady(true))
+	resp, errResp := client.Export(ctx, otlpgrpc.NewTracesRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
 	assert.NotNil(t, resp)
 	cancelFunc()
@@ -537,7 +536,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 type grpcTraceServer struct{}
 
-func (gts *grpcTraceServer) Export(context.Context, pdata.Traces) (otlpgrpc.TracesResponse, error) {
+func (gts *grpcTraceServer) Export(context.Context, otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
 	return otlpgrpc.NewTracesResponse(), nil
 }
 

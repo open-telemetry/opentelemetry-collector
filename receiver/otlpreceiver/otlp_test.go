@@ -754,7 +754,9 @@ loop:
 
 func exportTraces(cc *grpc.ClientConn, td pdata.Traces) error {
 	acc := otlpgrpc.NewTracesClient(cc)
-	_, err := acc.Export(context.Background(), td)
+	req := otlpgrpc.NewTracesRequest()
+	req.SetTraces(td)
+	_, err := acc.Export(context.Background(), req)
 
 	return err
 }
