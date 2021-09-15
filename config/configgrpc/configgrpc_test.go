@@ -43,7 +43,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+	opts, err := gcs.ToDialOptions(componenttest.NewNopHost())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
@@ -70,18 +70,20 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		Auth:            &configauth.Authentication{AuthenticatorName: "testauth"},
 	}
 
-	ext := map[config.ComponentID]component.Extension{
-		config.NewID("testauth"): &configauth.MockClientAuthenticator{},
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewID("testauth"): &configauth.MockClientAuthenticator{},
+		},
 	}
 
-	opts, err := gcs.ToDialOptions(ext)
+	opts, err := gcs.ToDialOptions(host)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 9)
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
-	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
 	assert.NoError(t, err)
@@ -116,7 +118,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
 	assert.NoError(t, err)
@@ -127,17 +129,19 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 
 	// sanity check
-	_, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+	_, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	// test
 	gss.Auth = &configauth.Authentication{
 		AuthenticatorName: "mock",
 	}
-	ext := map[config.ComponentID]component.Extension{
-		config.NewID("mock"): &configauth.MockAuthenticator{},
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewID("mock"): &configauth.MockAuthenticator{},
+		},
 	}
-	opts, err := gss.ToServerOption(ext, componenttest.NewNopTelemetrySettings())
+	opts, err := gss.ToServerOption(host, componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
 	// verify
@@ -149,7 +153,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	tests := []struct {
 		settings GRPCClientSettings
 		err      string
-		ext      map[config.ComponentID]component.Extension
+		host     component.Host
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
@@ -211,9 +215,9 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{},
 			},
-			ext: map[config.ComponentID]component.Extension{
+			host: &mockHost{ext: map[config.ComponentID]component.Extension{
 				config.NewID("mock"): &configauth.MockClientAuthenticator{},
-			},
+			}},
 		},
 		{
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
@@ -221,7 +225,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
 			},
-			ext: map[config.ComponentID]component.Extension{},
+			host: &mockHost{ext: map[config.ComponentID]component.Extension{}},
 		},
 		{
 			err: "no extensions configuration available",
@@ -229,12 +233,12 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
 			},
-			ext: nil,
+			host: &mockHost{},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions(test.ext)
+			opts, err := test.settings.ToDialOptions(test.host)
 			assert.Nil(t, opts)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
@@ -250,7 +254,7 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost())
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 3)
 }
@@ -303,7 +307,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+			opts, err := test.settings.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			_ = grpc.NewServer(opts...)
 
 			assert.Regexp(t, test.err, err)
@@ -458,7 +462,7 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)
-			opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+			opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			s := grpc.NewServer(opts...)
 			otlpgrpc.RegisterTracesServer(s, &grpcTraceServer{})
@@ -471,7 +475,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+			clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost())
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
@@ -503,7 +507,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	ln, err := gss.ToListener()
 	assert.NoError(t, err)
-	opts, err := gss.ToServerOption(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	s := grpc.NewServer(opts...)
 	otlpgrpc.RegisterTracesServer(s, &grpcTraceServer{})
@@ -518,7 +522,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	clientOpts, errClient := gcs.ToDialOptions(map[config.ComponentID]component.Extension{})
+	clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost())
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)
@@ -545,4 +549,13 @@ func tempSocketName(t *testing.T) string {
 	socket := tmpfile.Name()
 	require.NoError(t, os.Remove(socket))
 	return socket
+}
+
+type mockHost struct {
+	component.Host
+	ext map[config.ComponentID]component.Extension
+}
+
+func (nh *mockHost) GetExtensions() map[config.ComponentID]component.Extension {
+	return nh.ext
 }
