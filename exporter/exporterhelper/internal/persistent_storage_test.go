@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package exporterhelper
+package internal
 
 import (
 	"context"
@@ -29,12 +29,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func createStorageExtension(_ string) storage.Extension {
@@ -51,7 +54,7 @@ func createTestClient(extension storage.Extension) storage.Client {
 }
 
 func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
-	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
+	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
@@ -67,12 +70,48 @@ func createTemporaryDirectory() string {
 	return directory
 }
 
+type fakeTracesRequest struct {
+	td                         pdata.Traces
+	processingFinishedCallback func()
+	PersistentRequest
+}
+
+func newFakeTracesRequest(td pdata.Traces) *fakeTracesRequest {
+	return &fakeTracesRequest{
+		td: td,
+	}
+}
+
+func (fd *fakeTracesRequest) Marshal() ([]byte, error) {
+	return otlp.NewProtobufTracesMarshaler().MarshalTraces(fd.td)
+}
+
+func (fd *fakeTracesRequest) OnProcessingFinished() {
+	if fd.processingFinishedCallback != nil {
+		fd.processingFinishedCallback()
+	}
+}
+
+func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
+	fd.processingFinishedCallback = callback
+}
+
+func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
+	return func(bytes []byte) (PersistentRequest, error) {
+		traces, err := otlp.NewProtobufTracesUnmarshaler().UnmarshalTraces(bytes)
+		if err != nil {
+			return nil, err
+		}
+		return newFakeTracesRequest(traces), nil
+	}
+}
+
 func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	path := createTemporaryDirectory()
 	defer os.RemoveAll(path)
 
 	traces := newTraces(5, 10)
-	req := newTracesRequest(context.Background(), traces, nopTracePusher())
+	req := newFakeTracesRequest(traces)
 
 	ext := createStorageExtension(path)
 	client := createTestClient(ext)
@@ -88,7 +127,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 
 	// Now, this will take item 0 and pull item 1 into the unbuffered channel
 	readReq := getItemFromChannel(t, ps)
-	require.Equal(t, req.(*tracesRequest).td, readReq.(*tracesRequest).td)
+	require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
 
 	// This takes item 1 from channel and pulls another one (item 2) into the unbuffered channel
@@ -96,7 +135,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1, 2})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list
-	secondReadReq.onProcessingFinished()
+	secondReadReq.OnProcessingFinished()
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 2})
 
 	// Reload the storage. Since items 0 and 2 were not finished, those should be requeued at the end.
@@ -112,7 +151,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
 		req := getItemFromChannel(t, newPs)
-		req.onProcessingFinished()
+		req.OnProcessingFinished()
 	}
 
 	// The queue should be now empty
@@ -137,11 +176,13 @@ func TestPersistentStorage_MetricsReported(t *testing.T) {
 	defer os.RemoveAll(path)
 
 	traces := newTraces(5, 10)
-	req := newTracesRequest(context.Background(), traces, nopTracePusher())
+	req := newFakeTracesRequest(traces)
 
 	ext := createStorageExtension(path)
 	client := createTestClient(ext)
 	ps := createTestPersistentStorage(client)
+
+	RegisterMetrics()
 
 	for i := 0; i < 5; i++ {
 		err := ps.put(req)
@@ -150,10 +191,15 @@ func TestPersistentStorage_MetricsReported(t *testing.T) {
 
 	_ = getItemFromChannel(t, ps)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
-	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_dispatched_batches")
+
+	dd, err := view.RetrieveData("/currently_dispatched_batches")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(dd))
+	require.Equal(t, 1, len(dd[0].Tags))
+	require.Equal(t, tag.Tag{Key: queueNameKey, Value: "foo"}, dd[0].Tags[0])
+	require.Equal(t, int64(2), dd[0].Data.(*view.CountData).Value)
 
 	ps.stop()
-	checkValueForProducer(t, []tag.Tag{{Key: exporterTag, Value: "foo"}}, int64(2), "exporter/currently_dispatched_batches")
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
@@ -161,7 +207,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 	defer os.RemoveAll(path)
 
 	traces := newTraces(5, 10)
-	req := newTracesRequest(context.Background(), traces, nopTracePusher())
+	req := newFakeTracesRequest(traces)
 
 	for i := 0; i < 10; i++ {
 		ext := createStorageExtension(path)
@@ -189,10 +235,10 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 
 		// Lets read both of the elements we put
 		readReq := getItemFromChannel(t, ps)
-		require.Equal(t, req.(*tracesRequest).td, readReq.(*tracesRequest).td)
+		require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
 
 		readReq = getItemFromChannel(t, ps)
-		require.Equal(t, req.(*tracesRequest).td, readReq.(*tracesRequest).td)
+		require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
 		require.Equal(t, uint64(0), ps.size())
 
 		err = ext.Shutdown(context.Background())
@@ -253,7 +299,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			ps := createTestPersistentStorageWithLoggingAndCapacity(client, zap.NewNop(), 10000000)
 
 			traces := newTraces(c.numTraces, c.numSpansPerTrace)
-			req := newTracesRequest(context.Background(), traces, nopTracePusher())
+			req := newFakeTracesRequest(traces)
 
 			bb.ResetTimer()
 
@@ -305,8 +351,8 @@ func TestPersistentStorage_ItemIndexMarshaling(t *testing.T) {
 	}
 }
 
-func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) request {
-	var readReq request
+func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) PersistentRequest {
+	var readReq PersistentRequest
 	require.Eventually(t, func() bool {
 		readReq = <-pcs.get()
 		return true

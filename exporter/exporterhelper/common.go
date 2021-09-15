@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -37,58 +38,6 @@ type TimeoutSettings struct {
 func DefaultTimeoutSettings() TimeoutSettings {
 	return TimeoutSettings{
 		Timeout: 5 * time.Second,
-	}
-}
-
-// request is an abstraction of an individual request (batch of data) independent of the type of the data (traces, metrics, logs).
-type request interface {
-	// context returns the Context of the requests.
-	context() context.Context
-	// setContext updates the Context of the requests.
-	setContext(context.Context)
-	export(ctx context.Context) error
-	// Returns a new request may contain the items left to be sent if some items failed to process and can be retried.
-	// Otherwise, it should return the original request.
-	onError(error) request
-	// Returns the count of spans/metric points or log records.
-	count() int
-	// marshal serializes the current request into a byte stream
-	marshal() ([]byte, error)
-	// onProcessingFinished calls the optional callback function to handle cleanup after all processing is finished
-	onProcessingFinished()
-	// setOnProcessingFinished allows to set an optional callback function to do the cleanup (e.g. remove the item from persistent queue)
-	setOnProcessingFinished(callback func())
-}
-
-// requestUnmarshaler defines a function which takes a byte slice and unmarshals it into a relevant request
-type requestUnmarshaler func([]byte) (request, error)
-
-// requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
-type requestSender interface {
-	send(req request) error
-}
-
-// baseRequest is a base implementation for the request.
-type baseRequest struct {
-	ctx                        context.Context
-	processingFinishedCallback func()
-}
-
-func (req *baseRequest) context() context.Context {
-	return req.ctx
-}
-
-func (req *baseRequest) setContext(ctx context.Context) {
-	req.ctx = ctx
-}
-
-func (req *baseRequest) setOnProcessingFinished(callback func()) {
-	req.processingFinishedCallback = callback
-}
-
-func (req *baseRequest) onProcessingFinished() {
-	if req.processingFinishedCallback != nil {
-		req.processingFinishedCallback()
 	}
 }
 
@@ -179,7 +128,7 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnmarshaler requestUnmarshaler) *baseExporter {
+func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnmarshaler internal.RequestUnmarshaler) *baseExporter {
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}
@@ -189,7 +138,7 @@ func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, 
 		ExporterID:             cfg.ID(),
 		ExporterCreateSettings: set,
 	})
-	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 
 	return be
