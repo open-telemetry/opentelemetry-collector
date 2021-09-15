@@ -24,7 +24,6 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric/global"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -214,21 +213,13 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 	}
 	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
 
-	tp := settings.TracerProvider
-	if tp == nil {
-		tp = otel.GetTracerProvider()
-	}
-	mp := settings.MeterProvider
-	if mp == nil {
-		mp = global.GetMeterProvider()
-	}
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Consider to use component ID string as prefix for all the operations.
 	handler = otelhttp.NewHandler(
 		handler,
 		"",
-		otelhttp.WithTracerProvider(tp),
-		otelhttp.WithMeterProvider(mp),
+		otelhttp.WithTracerProvider(settings.TracerProvider),
+		otelhttp.WithMeterProvider(settings.MeterProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
 			return r.URL.Path
