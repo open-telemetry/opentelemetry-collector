@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -82,25 +81,23 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 
 // pipelinesBuilder builds Pipelines from config.
 type pipelinesBuilder struct {
-	logger         *zap.Logger
-	tracerProvider trace.TracerProvider
-	buildInfo      component.BuildInfo
-	config         *config.Config
-	exporters      Exporters
-	factories      map[config.Type]component.ProcessorFactory
+	settings  component.TelemetrySettings
+	buildInfo component.BuildInfo
+	config    *config.Config
+	exporters Exporters
+	factories map[config.Type]component.ProcessorFactory
 }
 
 // BuildPipelines builds pipeline processors from config. Requires exporters to be already
 // built via BuildExporters.
 func BuildPipelines(
-	logger *zap.Logger,
-	tracerProvider trace.TracerProvider,
+	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	config *config.Config,
 	exporters Exporters,
 	factories map[config.Type]component.ProcessorFactory,
 ) (BuiltPipelines, error) {
-	pb := &pipelinesBuilder{logger, tracerProvider, buildInfo, config, exporters, factories}
+	pb := &pipelinesBuilder{settings, buildInfo, config, exporters, factories}
 
 	pipelineProcessors := make(BuiltPipelines)
 	for _, pipeline := range pb.config.Service.Pipelines {
@@ -162,8 +159,9 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		var err error
 		set := component.ProcessorCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
-				Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
-				TracerProvider: pb.tracerProvider,
+				Logger:         pb.settings.Logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
+				TracerProvider: pb.settings.TracerProvider,
+				MeterProvider:  pb.settings.MeterProvider,
 			},
 			BuildInfo: pb.buildInfo,
 		}
@@ -211,7 +209,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		}
 	}
 
-	pipelineLogger := pb.logger.With(zap.String("pipeline_name", pipelineCfg.Name),
+	pipelineLogger := pb.settings.Logger.With(zap.String("pipeline_name", pipelineCfg.Name),
 		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
 	pipelineLogger.Info("Pipeline was built.")
 
