@@ -25,6 +25,8 @@ service:
       level: "DEBUG"
       development: true
       encoding: "console"
+    metrics:
+      add_version_tag: true
   extensions: [exampleextension/0, exampleextension/1]
   pipelines:
     traces:

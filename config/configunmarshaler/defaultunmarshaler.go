@@ -86,13 +86,18 @@ type serviceSettings struct {
 }
 
 type serviceTelemetrySettings struct {
-	Logs serviceTelemetryLogsSettings `mapstructure:"logs"`
+	Logs   serviceTelemetryLogsSettings    `mapstructure:"logs"`
+	Metric serviceTelemetryMetricsSettings `mapstructure:"metrics"`
 }
 
 type serviceTelemetryLogsSettings struct {
 	Level       string `mapstructure:"level"`
 	Development bool   `mapstructure:"development"`
 	Encoding    string `mapstructure:"encoding"`
+}
+
+type serviceTelemetryMetricsSettings struct {
+	AddVersionTag bool `mapstructure:"add_version_tag"`
 }
 
 type pipelineSettings struct {
@@ -126,6 +131,9 @@ func (*defaultUnmarshaler) Unmarshal(v *configparser.ConfigMap, factories compon
 					Level:       "INFO",
 					Development: false,
 					Encoding:    "console",
+				},
+				Metric: serviceTelemetryMetricsSettings{
+					AddVersionTag: true,
 				},
 			},
 		},
@@ -260,6 +268,10 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 		Level:       lvl,
 		Development: rawService.Telemetry.Logs.Development,
 		Encoding:    rawService.Telemetry.Logs.Encoding,
+	}
+
+	ret.Telemetry.Metrics = config.ServiceTelemetryMetrics{
+		AddVersionTag: rawService.Telemetry.Metric.AddVersionTag,
 	}
 
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))

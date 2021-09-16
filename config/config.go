@@ -161,11 +161,16 @@ type Service struct {
 
 // ServiceTelemetry defines the configurable settings for service telemetry.
 type ServiceTelemetry struct {
-	Logs ServiceTelemetryLogs
+	Logs    ServiceTelemetryLogs
+	Metrics ServiceTelemetryMetrics
 }
 
 func (srvT *ServiceTelemetry) validate() error {
-	return srvT.Logs.validate()
+	err := srvT.Logs.validate()
+	if err != nil {
+		return err
+	}
+	return srvT.Metrics.validate()
 }
 
 // ServiceTelemetryLogs defines the configurable settings for service telemetry logs.
@@ -184,10 +189,21 @@ type ServiceTelemetryLogs struct {
 	Encoding string
 }
 
+// ServiceTelemetryMetrics defines the configurable settings for service telemetry metrics.
+// the collector uses mapstructure and not yaml tags.
+type ServiceTelemetryMetrics struct {
+	// Add the collector version tag to the collector's telemetry metrics
+	AddVersionTag bool
+}
+
 func (srvTL *ServiceTelemetryLogs) validate() error {
 	if srvTL.Encoding != "json" && srvTL.Encoding != "console" {
 		return fmt.Errorf(`service telemetry logs invalid encoding: %q, valid values are "json" and "console"`, srvTL.Encoding)
 	}
+	return nil
+}
+
+func (srvTL *ServiceTelemetryMetrics) validate() error {
 	return nil
 }
 
