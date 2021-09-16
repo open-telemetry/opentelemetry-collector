@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/shirou/gopsutil/process"
+	netutil "github.com/shirou/gopsutil/v3/net"
 	"go.opentelemetry.io/collector/myip"
 	"go.uber.org/zap"
 	"net"
 	"strconv"
-	"strings"
-
-	netutil "github.com/shirou/gopsutil/v3/net"
 )
 
 type ClientInfo struct {
@@ -43,14 +41,12 @@ func GetClientInfo(ctx context.Context) (ClientInfo, error) {
 
 func handleAddr(ctx context.Context, netAddr net.Addr, logger *zap.Logger) context.Context {
 	addr := netAddr.String()
-	l := strings.LastIndexByte(addr, ':')
-	if l == -1 {
-		logger.Error(fmt.Sprintf("can not get ip: %s", addr))
+	ip, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		logger.Error(fmt.Sprintf("can not get ip port;addr: %s", addr))
 		context.WithCancel(ctx)
 		return ctx
 	}
-	ip := addr[:l]
-	portStr := addr[l+1:]
 	port, err := strconv.ParseUint(portStr, 0, 64)
 	if err != nil {
 		logger.Error(fmt.Sprintf("parse port to int fail:%s;port %s", err, portStr))
