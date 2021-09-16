@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -73,6 +74,7 @@ type Collector struct {
 	logger  *zap.Logger
 
 	tracerProvider      trace.TracerProvider
+	meterProvider       metric.MeterProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service      *service
@@ -217,6 +219,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		Config:              cfg,
 		Logger:              col.logger,
 		TracerProvider:      col.tracerProvider,
+		MeterProvider:       col.meterProvider,
 		ZPagesSpanProcessor: col.zPagesSpanProcessor,
 		AsyncErrorChannel:   col.asyncErrorChannel,
 	})
@@ -250,6 +253,8 @@ func (col *Collector) execute(ctx context.Context) error {
 	// Set the constructed tracer provider as Global, in case any component uses the
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
+
+	col.meterProvider = metric.NoopMeterProvider{}
 
 	col.logger.Info("Starting "+col.set.BuildInfo.Command+"...",
 		zap.String("Version", col.set.BuildInfo.Version),

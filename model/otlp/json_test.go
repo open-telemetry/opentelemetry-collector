@@ -88,7 +88,7 @@ func TestMetricsJSON(t *testing.T) {
 }
 
 func TestLogsJSON(t *testing.T) {
-	encoder := newJSONMarshaler()
+	encoder := NewJSONLogsMarshaler()
 	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
 	assert.NoError(t, err)
 
@@ -115,7 +115,7 @@ func TestMetricsJSON_Marshal(t *testing.T) {
 }
 
 func TestLogsJSON_Marshal(t *testing.T) {
-	encoder := newJSONMarshaler()
+	encoder := NewJSONLogsMarshaler()
 	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
 	assert.NoError(t, err)
 	assert.Equal(t, logsJSON, string(jsonBuf))

@@ -36,6 +36,24 @@ func NewMetricsResponse() MetricsResponse {
 	return MetricsResponse{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
 }
 
+// MetricsRequest represents the response for gRPC client/server.
+type MetricsRequest struct {
+	orig *otlpcollectormetrics.ExportMetricsServiceRequest
+}
+
+// NewMetricsRequest returns an empty MetricsRequest.
+func NewMetricsRequest() MetricsRequest {
+	return MetricsRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
+}
+
+func (lr MetricsRequest) SetMetrics(ld pdata.Metrics) {
+	lr.orig.ResourceMetrics = internal.MetricsToOtlp(ld.InternalRep()).ResourceMetrics
+}
+
+func (lr MetricsRequest) Metrics() pdata.Metrics {
+	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(lr.orig))
+}
+
 // MetricsClient is the client API for OTLP-GRPC Metrics service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -44,7 +62,7 @@ type MetricsClient interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(ctx context.Context, in pdata.Metrics, opts ...grpc.CallOption) (MetricsResponse, error)
+	Export(ctx context.Context, request MetricsRequest, opts ...grpc.CallOption) (MetricsResponse, error)
 }
 
 type metricsClient struct {
@@ -56,8 +74,8 @@ func NewMetricsClient(cc *grpc.ClientConn) MetricsClient {
 	return &metricsClient{rawClient: otlpcollectormetrics.NewMetricsServiceClient(cc)}
 }
 
-func (c *metricsClient) Export(ctx context.Context, in pdata.Metrics, opts ...grpc.CallOption) (MetricsResponse, error) {
-	rsp, err := c.rawClient.Export(ctx, internal.MetricsToOtlp(in.InternalRep()), opts...)
+func (c *metricsClient) Export(ctx context.Context, request MetricsRequest, opts ...grpc.CallOption) (MetricsResponse, error) {
+	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
 	return MetricsResponse{orig: rsp}, err
 }
 
@@ -67,7 +85,7 @@ type MetricsServer interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(context.Context, pdata.Metrics) (MetricsResponse, error)
+	Export(context.Context, MetricsRequest) (MetricsResponse, error)
 }
 
 // RegisterMetricsServer registers the MetricsServer to the grpc.Server.
@@ -80,6 +98,6 @@ type rawMetricsServer struct {
 }
 
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {
-	rsp, err := s.srv.Export(ctx, pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(request)))
+	rsp, err := s.srv.Export(ctx, MetricsRequest{orig: request})
 	return rsp.orig, err
 }

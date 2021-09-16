@@ -191,15 +191,9 @@ func (m *Manager) Resolve(ctx context.Context, parser *configparser.ConfigMap) (
 	for _, k := range allKeys {
 		value, err := m.expandStringValues(ctx, parser.Get(k))
 		if err != nil {
-			// Call RetrieveEnd for all sources used so far but don't record any errors.
-			_ = m.retrieveEnd(ctx)
 			return nil, err
 		}
 		res.Set(k, value)
-	}
-
-	if errs := m.retrieveEnd(ctx); len(errs) > 0 {
-		return nil, consumererror.Combine(errs)
 	}
 
 	return res, nil
@@ -273,16 +267,6 @@ func (m *Manager) Close(ctx context.Context) error {
 	m.watchersWG.Wait()
 
 	return consumererror.Combine(errs)
-}
-
-func (m *Manager) retrieveEnd(ctx context.Context) []error {
-	var errs []error
-	for _, source := range m.configSources {
-		if err := source.RetrieveEnd(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errs
 }
 
 func (m *Manager) expandStringValues(ctx context.Context, value interface{}) (interface{}, error) {

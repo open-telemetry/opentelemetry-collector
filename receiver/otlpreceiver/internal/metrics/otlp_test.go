@@ -29,12 +29,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestExport(t *testing.T) {
-	// given
-
 	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
@@ -44,19 +41,18 @@ func TestExport(t *testing.T) {
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
-	// when
-
-	req := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := req.Clone()
+	metricData := md.Clone()
 
+	req := otlpgrpc.NewMetricsRequest()
+	req.SetMetrics(md)
 	resp, err := metricsClient.Export(context.Background(), req)
+
 	require.NoError(t, err, "Failed to export metrics: %v", err)
 	require.NotNil(t, resp, "The response is missing")
-
-	// assert
 
 	mds := metricSink.AllMetrics()
 	require.Len(t, mds, 1)
@@ -64,8 +60,6 @@ func TestExport(t *testing.T) {
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	// given
-
 	metricSink := new(consumertest.MetricsSink)
 
 	addr, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
@@ -75,14 +69,12 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
-	resp, err := metricsClient.Export(context.Background(), pdata.NewMetrics())
+	resp, err := metricsClient.Export(context.Background(), otlpgrpc.NewMetricsRequest())
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	// given
-
 	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
 	defer doneFn()
 
@@ -90,7 +82,9 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
-	req := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
+	req := otlpgrpc.NewMetricsRequest()
+	req.SetMetrics(md)
 
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")

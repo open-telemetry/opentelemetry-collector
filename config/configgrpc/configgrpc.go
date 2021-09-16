@@ -179,7 +179,7 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 }
 
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
-func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
+func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
@@ -219,7 +219,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 	}
 
 	if gcs.Auth != nil {
-		if ext == nil {
+		if host.GetExtensions() == nil {
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
@@ -228,7 +228,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 			return nil, cperr
 		}
 
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, componentID)
+		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(host.GetExtensions(), componentID)
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -270,7 +270,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
-func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -334,7 +334,7 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 			return nil, cperr
 		}
 
-		authenticator, err := configauth.GetServerAuthenticator(ext, componentID)
+		authenticator, err := configauth.GetServerAuthenticator(host.GetExtensions(), componentID)
 		if err != nil {
 			return nil, err
 		}

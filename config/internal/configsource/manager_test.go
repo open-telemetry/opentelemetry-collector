@@ -100,20 +100,6 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 				"tstcfgsrc": &testConfigSource{ErrOnRetrieve: testErr},
 			},
 		},
-		{
-			name: "error_on_retrieve_end",
-			config: map[string]interface{}{
-				"cfgsrc": "$tstcfgsrc:selector",
-			},
-			configSourceMap: map[string]configsource.ConfigSource{
-				"tstcfgsrc": &testConfigSource{
-					ErrOnRetrieveEnd: testErr,
-					ValueMap: map[string]valueEntry{
-						"selector": {Value: "test_value"},
-					},
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -554,9 +540,8 @@ func Test_parseCfgSrc(t *testing.T) {
 type testConfigSource struct {
 	ValueMap map[string]valueEntry
 
-	ErrOnRetrieve    error
-	ErrOnRetrieveEnd error
-	ErrOnClose       error
+	ErrOnRetrieve error
+	ErrOnClose    error
 
 	OnRetrieve func(ctx context.Context, selector string, params interface{}) error
 }
@@ -596,10 +581,6 @@ func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params
 	return &retrieved{
 		value: entry.Value,
 	}, nil
-}
-
-func (t *testConfigSource) RetrieveEnd(context.Context) error {
-	return t.ErrOnRetrieveEnd
 }
 
 func (t *testConfigSource) Close(context.Context) error {

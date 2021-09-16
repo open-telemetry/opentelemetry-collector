@@ -25,6 +25,10 @@ is designed so that the following goal can be achieved:
           module name).
         * If a module is version `v0` or `v1`, do not include the major version in
           either the module path or the import path.
+        * Semantic convention packages will contain a complete version identifier in their
+          import path to enable concurrent use of multiple convention versions in a single
+          application. This identifies the version of the specification used to generate
+          the package and is not related to the version of the module containing the package.
     * A single module should exist, rooted at the top level of this repository,
       that contains all packages provided for use outside this repository.
     * Additional modules may be created in this repository to provide for
