@@ -123,17 +123,23 @@ func (gs *grpcSender) stop() error {
 }
 
 func (gs *grpcSender) exportTrace(ctx context.Context, td pdata.Traces) error {
-	_, err := gs.traceExporter.Export(gs.enhanceContext(ctx), td, gs.callOptions...)
+	req := otlpgrpc.NewTracesRequest()
+	req.SetTraces(td)
+	_, err := gs.traceExporter.Export(gs.enhanceContext(ctx), req, gs.callOptions...)
 	return processError(err)
 }
 
 func (gs *grpcSender) exportMetrics(ctx context.Context, md pdata.Metrics) error {
-	_, err := gs.metricExporter.Export(gs.enhanceContext(ctx), md, gs.callOptions...)
+	req := otlpgrpc.NewMetricsRequest()
+	req.SetMetrics(md)
+	_, err := gs.metricExporter.Export(gs.enhanceContext(ctx), req, gs.callOptions...)
 	return processError(err)
 }
 
 func (gs *grpcSender) exportLogs(ctx context.Context, ld pdata.Logs) error {
-	_, err := gs.logExporter.Export(gs.enhanceContext(ctx), ld, gs.callOptions...)
+	req := otlpgrpc.NewLogsRequest()
+	req.SetLogs(ld)
+	_, err := gs.logExporter.Export(gs.enhanceContext(ctx), req, gs.callOptions...)
 	return processError(err)
 }
 

@@ -29,12 +29,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestExport(t *testing.T) {
-	// given
-
 	traceSink := new(consumertest.TracesSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
@@ -44,19 +41,18 @@ func TestExport(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	// when
-
-	req := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTracesOneSpan()
 
 	// Keep trace data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := req.Clone()
+	traceData := td.Clone()
+	req := otlpgrpc.NewTracesRequest()
+	req.SetTraces(td)
 
 	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
-	// assert
 	require.Len(t, traceSink.AllTraces(), 1)
 	assert.EqualValues(t, traceData, traceSink.AllTraces()[0])
 }
@@ -71,7 +67,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	resp, err := traceClient.Export(context.Background(), pdata.NewTraces())
+	resp, err := traceClient.Export(context.Background(), otlpgrpc.NewTracesRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
@@ -84,7 +80,9 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	req := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTracesOneSpan()
+	req := otlpgrpc.NewTracesRequest()
+	req.SetTraces(td)
 	resp, err := traceClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, otlpgrpc.TracesResponse{}, resp)
