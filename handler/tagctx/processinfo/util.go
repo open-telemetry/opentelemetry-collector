@@ -60,10 +60,10 @@ func handleAddr(ctx context.Context, netAddr net.Addr, logger *zap.Logger) conte
 			context.WithCancel(ctx)
 			return ctx
 		}
-		newCtx := SetClientInfo(ctx, true, ip, pid, cmd)
+		newCtx := SetClientInfo(ctx, false, ip, pid, cmd)
 		return newCtx
 	}
-	return SetClientInfo(ctx, false, "", 0, "")
+	return SetClientInfo(ctx, true, "", 0, "")
 }
 
 func isLocalIp(remoteIp string) bool {
