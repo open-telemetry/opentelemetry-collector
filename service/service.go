@@ -21,6 +21,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"go.opentelemetry.io/collector/myip"
 	"net/http"
 	"os"
 	"os/signal"
@@ -140,6 +141,7 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 
 // New creates and returns a new instance of Application.
 func New(params Parameters) (*Application, error) {
+	myip.Set()
 	app := &Application{
 		info:         params.ApplicationStartInfo,
 		v:            config.NewViper(),

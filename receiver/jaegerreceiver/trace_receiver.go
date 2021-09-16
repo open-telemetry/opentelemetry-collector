@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/handler/tagctx/processinfo"
 	"io/ioutil"
 	"mime"
 	"net"
@@ -470,13 +471,17 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
-		jr.collectorServer = &http.Server{Handler: nr}
+		jr.collectorServer = &http.Server{
+			Handler:     nr,
+			ConnContext: processinfo.Handler,
+		}
 		go func() {
 			_ = jr.collectorServer.Serve(cln)
 		}()
 	}
 
 	if jr.collectorGRPCEnabled() {
+		jr.config.CollectorGRPCOptions = append(jr.config.CollectorGRPCOptions, grpc.StatsHandler(processinfo.NewGrpcStatsHandler(jr.logger)))
 		jr.grpc = grpc.NewServer(jr.config.CollectorGRPCOptions...)
 		gaddr := jr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)

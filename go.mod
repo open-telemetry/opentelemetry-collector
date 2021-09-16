@@ -5,7 +5,6 @@ go 1.14
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/Shopify/sarama v1.28.0
-	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.13.0
 	github.com/armon/go-metrics v0.3.3 // indirect
@@ -14,7 +13,6 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-kit/kit v0.10.0
-	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
@@ -41,6 +39,7 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210217141258-a6be548dbc17
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v3.21.2+incompatible
+	github.com/shirou/gopsutil/v3 v3.21.8
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
@@ -48,13 +47,12 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5
-	github.com/tklauser/go-sysconf v0.3.4 // indirect
 	github.com/uber/jaeger-lib v2.4.0+incompatible
 	github.com/xdg-go/scram v0.0.0-20180814205039-7eeb5667e42c
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/sys v0.0.0-20210217105451-b926d437f341
+	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
 	golang.org/x/text v0.3.5
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.36.0

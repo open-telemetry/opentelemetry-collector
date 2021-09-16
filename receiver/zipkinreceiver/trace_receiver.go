@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"go.opentelemetry.io/collector/handler/tagctx/processinfo"
 	"io"
 	"io/ioutil"
 	"net"
@@ -103,6 +104,7 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 			return
 		}
 		go func() {
+			zr.server.ConnContext = processinfo.Handler
 			err = zr.server.Serve(listener)
 			if err != nil {
 				host.ReportFatalError(err)
