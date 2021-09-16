@@ -21,11 +21,7 @@ import (
 
 type combined []error
 
-var (
-	_ error                                    = (*combined)(nil)
-	_ interface{ Is(target error) bool }       = (*combined)(nil)
-	_ interface{ As(target interface{}) bool } = (*combined)(nil)
-)
+var _ error = (*combined)(nil)
 
 func (c combined) Error() string {
 	var sb strings.Builder
@@ -39,17 +35,8 @@ func (c combined) Error() string {
 	return "[" + sb.String() + "]"
 }
 
-// Range iterates over the slice and all subslices of errors
-// and will apply the passed function on each.
-// The method will return once a the passed function returns true
-// or there is no items in the slice.
-func (c combined) Range(fn func(error) bool) bool {
+func (c combined) iterate(fn func(error) bool) bool {
 	for _, err := range c {
-		if target, ok := err.(combined); ok {
-			if target.Range(fn) {
-				return true
-			}
-		}
 		if fn(err) {
 			return true
 		}
@@ -58,13 +45,13 @@ func (c combined) Range(fn func(error) bool) bool {
 }
 
 func (c combined) Is(target error) bool {
-	return c.Range(func(err error) bool {
+	return c.iterate(func(err error) bool {
 		return errors.Is(err, target)
 	})
 }
 
 func (c combined) As(target interface{}) bool {
-	return c.Range(func(err error) bool {
+	return c.iterate(func(err error) bool {
 		return errors.As(err, target)
 	})
 }
