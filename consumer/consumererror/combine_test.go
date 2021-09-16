@@ -15,11 +15,17 @@
 package consumererror
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCombine(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		errors            []error
 		expected          string
@@ -48,7 +54,26 @@ func TestCombine(t *testing.T) {
 				fmt.Errorf("foo"),
 				fmt.Errorf("bar"),
 				Permanent(fmt.Errorf("permanent"))},
-			expected: "Permanent error: [foo; bar; Permanent error: permanent]",
+			expected: "[foo; bar; Permanent error: permanent]",
+		},
+		{
+			errors: []error{
+				errors.New("foo"),
+				errors.New("bar"),
+				nil,
+			},
+			expected: "[foo; bar]",
+		},
+		{
+			errors: []error{
+				errors.New("foo"),
+				errors.New("bar"),
+				Combine([]error{
+					errors.New("foo"),
+					errors.New("bar"),
+				}),
+			},
+			expected: "[foo; bar; [foo; bar]]",
 		},
 	}
 
@@ -64,4 +89,23 @@ func TestCombine(t *testing.T) {
 			t.Errorf("Combine(%v) = %q. Want: consumererror.permanent", tc.errors, got)
 		}
 	}
+}
+
+func TestCombineContainsError(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		contains error
+		err      error
+	}{
+		{contains: io.EOF, err: Combine([]error{errors.New("invalid entry"), io.EOF})},
+		{contains: io.EOF, err: Combine([]error{errors.New("invalid entry"), Permanent(io.EOF)})},
+		{contains: io.EOF, err: Combine([]error{errors.New("foo"), errors.New("bar"), Combine([]error{errors.New("xyz"), io.EOF})})},
+	}
+
+	for _, tc := range testCases {
+		assert.ErrorIs(t, tc.err, tc.contains, "Must have the expected error")
+	}
+
+	assert.NotErrorIs(t, Combine([]error{errors.New("invalid"), errors.New("foo")}), io.EOF, "Must return false when error does not exist within error")
 }
