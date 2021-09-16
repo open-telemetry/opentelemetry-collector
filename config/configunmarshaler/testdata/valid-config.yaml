@@ -20,6 +20,11 @@ extensions:
     extra: "some string"
 
 service:
+  telemetry:
+    logs:
+      level: "DEBUG"
+      development: true
+      encoding: "console"
   extensions: [exampleextension/0, exampleextension/1]
   pipelines:
     traces:
