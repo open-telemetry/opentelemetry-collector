@@ -15,12 +15,12 @@
 package componenttest
 
 import (
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 // NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.

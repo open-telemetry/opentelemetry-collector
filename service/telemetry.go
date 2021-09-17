@@ -24,9 +24,9 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"

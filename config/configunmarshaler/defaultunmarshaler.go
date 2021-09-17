@@ -19,12 +19,12 @@ import (
 	"os"
 	"reflect"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part
@@ -293,8 +293,8 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	}
 
 	var metricLvl configtelemetry.Level
-	var err error
-	if metricLvl, err = configtelemetry.ParseLevel(rawService.Telemetry.Metrics.Level); err != nil {
+	var merr error
+	if metricLvl, merr = configtelemetry.ParseLevel(rawService.Telemetry.Metrics.Level); merr != nil {
 		return ret, &configError{
 			msg:  fmt.Sprintf(`service telemetry metrics invalid level: %q, valid values are "none", "basic", "normal", "detailed"`, rawService.Telemetry.Metrics.Level),
 			code: errInvalidMetricsLevel,

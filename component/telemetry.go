@@ -15,10 +15,11 @@
 package component
 
 import (
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 type TelemetrySettings struct {
