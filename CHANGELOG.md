@@ -4,7 +4,10 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Move ValidateConfig from configcheck to configtest (#3956)
+- Remove AttributeMessageType (#4020)
 - Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005).
+- Remove `AttributeHTTPStatusText` const, replaced with `"http.status_text"` (#4015, contrib/#5182).
 
 ## v0.35.0 Beta
 

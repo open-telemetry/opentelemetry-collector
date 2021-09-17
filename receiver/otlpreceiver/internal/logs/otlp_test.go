@@ -30,12 +30,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestExport(t *testing.T) {
-	// given
-
 	logSink := new(consumertest.LogsSink)
 
 	addr, doneFn := otlpReceiverOnGRPCServer(t, logSink)
@@ -45,10 +42,12 @@ func TestExport(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	req := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogsOneLogRecord()
 	// Keep log data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	logData := req.Clone()
+	logData := ld.Clone()
+	req := otlpgrpc.NewLogsRequest()
+	req.SetLogs(ld)
 
 	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
@@ -69,7 +68,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer logClientDoneFn()
 
-	resp, err := logClient.Export(context.Background(), pdata.NewLogs())
+	resp, err := logClient.Export(context.Background(), otlpgrpc.NewLogsRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
@@ -82,7 +81,9 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer logClientDoneFn()
 
-	req := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogsOneLogRecord()
+	req := otlpgrpc.NewLogsRequest()
+	req.SetLogs(ld)
 
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")

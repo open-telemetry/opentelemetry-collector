@@ -826,6 +826,8 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 			rawMap[k] = v.DoubleVal()
 		case AttributeValueTypeBool:
 			rawMap[k] = v.BoolVal()
+		case AttributeValueTypeBytes:
+			rawMap[k] = v.BytesVal()
 		case AttributeValueTypeEmpty:
 			rawMap[k] = nil
 		case AttributeValueTypeMap:
@@ -852,6 +854,8 @@ func (es AnyValueArray) asRaw() []interface{} {
 			rawSlice = append(rawSlice, v.DoubleVal())
 		case AttributeValueTypeBool:
 			rawSlice = append(rawSlice, v.BoolVal())
+		case AttributeValueTypeBytes:
+			rawSlice = append(rawSlice, v.BytesVal())
 		case AttributeValueTypeEmpty:
 			rawSlice = append(rawSlice, nil)
 		default:

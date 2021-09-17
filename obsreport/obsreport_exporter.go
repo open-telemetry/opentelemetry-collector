@@ -115,7 +115,7 @@ func (exp *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
 	span := trace.SpanFromContext(ctx)
-	// End span according to errors.
+	// End the span according to errors.
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.Int64(sentItemsKey, numSent),

@@ -35,29 +35,29 @@ const (
 	KeyDelimiter = "::"
 )
 
-// NewParser creates a new empty Parser instance.
-func NewParser() *ConfigMap {
+// NewConfigMap creates a new empty ConfigMap instance.
+func NewConfigMap() *ConfigMap {
 	return &ConfigMap{k: koanf.New(KeyDelimiter)}
 }
 
-// NewParserFromFile creates a new Parser by reading the given file.
-func NewParserFromFile(fileName string) (*ConfigMap, error) {
+// NewConfigMapFromFile creates a new ConfigMap by reading the given file.
+func NewConfigMapFromFile(fileName string) (*ConfigMap, error) {
 	// Read yaml config from file.
-	p := NewParser()
+	p := NewConfigMap()
 	if err := p.k.Load(file.Provider(fileName), yaml.Parser()); err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
 	}
 	return p, nil
 }
 
-// NewParserFromBuffer creates a new Parser by reading the given yaml buffer.
-func NewParserFromBuffer(buf io.Reader) (*ConfigMap, error) {
+// NewConfigMapFromBuffer creates a new ConfigMap by reading the given yaml buffer.
+func NewConfigMapFromBuffer(buf io.Reader) (*ConfigMap, error) {
 	content, err := ioutil.ReadAll(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	p := NewParser()
+	p := NewConfigMap()
 	if err := p.k.Load(rawbytes.Provider(content), yaml.Parser()); err != nil {
 		return nil, err
 	}
@@ -65,9 +65,9 @@ func NewParserFromBuffer(buf io.Reader) (*ConfigMap, error) {
 	return p, nil
 }
 
-// NewParserFromStringMap creates a parser from a map[string]interface{}.
-func NewParserFromStringMap(data map[string]interface{}) *ConfigMap {
-	p := NewParser()
+// NewConfigMapFromStringMap creates a ConfigMap from a map[string]interface{}.
+func NewConfigMapFromStringMap(data map[string]interface{}) *ConfigMap {
+	p := NewConfigMap()
 	// Cannot return error because the koanf instance is empty.
 	_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
 	return p
@@ -138,11 +138,11 @@ func (l *ConfigMap) MergeStringMap(cfg map[string]interface{}) error {
 func (l *ConfigMap) Sub(key string) (*ConfigMap, error) {
 	data := l.Get(key)
 	if data == nil {
-		return NewParser(), nil
+		return NewConfigMap(), nil
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subParser := NewParser()
+		subParser := NewConfigMap()
 		// Cannot return error because the subv is empty.
 		_ = subParser.MergeStringMap(cast.ToStringMap(data))
 		return subParser, nil
