@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -89,7 +88,9 @@ type memoryLimiter struct {
 const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
-func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
+func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memoryLimiter, error) {
+	logger := set.Logger
+
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}
@@ -114,7 +115,7 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:       configtelemetry.GetMetricsLevelFlagValue(),
+			Level:       set.MetricsLevel,
 			ProcessorID: cfg.ID(),
 		}),
 	}

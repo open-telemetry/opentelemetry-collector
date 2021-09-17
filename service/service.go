@@ -67,6 +67,7 @@ func newService(set *svcSettings) (*service, error) {
 		Logger:         srv.logger,
 		TracerProvider: srv.tracerProvider,
 		MeterProvider:  srv.meterProvider,
+		MetricsLevel:   srv.config.Telemetry.Metrics.Level,
 	}
 	srv.builtExtensions, err = builder.BuildExtensions(telemetrySettings, srv.buildInfo, srv.config, srv.factories.Extensions)
 	if err != nil {

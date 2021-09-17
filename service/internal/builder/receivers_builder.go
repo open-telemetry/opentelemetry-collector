@@ -101,6 +101,7 @@ func BuildReceivers(
 				Logger:         settings.Logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
+				MetricsLevel:   cfg.Telemetry.Metrics.Level,
 			},
 			BuildInfo: buildInfo,
 		}

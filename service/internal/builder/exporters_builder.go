@@ -162,6 +162,7 @@ func BuildExporters(
 				Logger:         logger.With(zap.String(zapNameKey, expID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
+				MetricsLevel:   cfg.Telemetry.Metrics.Level,
 			},
 			BuildInfo: buildInfo,
 		}
