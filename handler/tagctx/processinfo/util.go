@@ -63,7 +63,7 @@ func handleAddr(ctx context.Context, netAddr net.Addr, logger *zap.Logger) conte
 		newCtx := SetClientInfo(ctx, false, ip, pid, cmd)
 		return newCtx
 	}
-	return SetClientInfo(ctx, true, "", 0, "")
+	return SetClientInfo(ctx, true, ip, 0, "")
 }
 
 func isLocalIp(remoteIp string) bool {
