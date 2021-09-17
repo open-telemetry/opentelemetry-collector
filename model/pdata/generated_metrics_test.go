@@ -1298,6 +1298,22 @@ func TestExemplar_FilteredAttributes(t *testing.T) {
 	assert.EqualValues(t, testValFilteredAttributes, ms.FilteredAttributes())
 }
 
+func TestExemplar_TraceID(t *testing.T) {
+	ms := NewExemplar()
+	assert.EqualValues(t, NewTraceID([16]byte{}), ms.TraceID())
+	testValTraceID := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	ms.SetTraceID(testValTraceID)
+	assert.EqualValues(t, testValTraceID, ms.TraceID())
+}
+
+func TestExemplar_SpanID(t *testing.T) {
+	ms := NewExemplar()
+	assert.EqualValues(t, NewSpanID([8]byte{}), ms.SpanID())
+	testValSpanID := NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	ms.SetSpanID(testValSpanID)
+	assert.EqualValues(t, testValSpanID, ms.SpanID())
+}
+
 func generateTestResourceMetricsSlice() ResourceMetricsSlice {
 	tv := NewResourceMetricsSlice()
 	fillTestResourceMetricsSlice(tv)
@@ -1560,4 +1576,6 @@ func fillTestExemplar(tv Exemplar) {
 	tv.SetDoubleVal(float64(17.13))
 
 	fillTestAttributeMap(tv.FilteredAttributes())
+	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 }
