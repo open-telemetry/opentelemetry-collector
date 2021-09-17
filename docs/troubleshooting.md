@@ -17,14 +17,18 @@ the `--log-level` flag to the `otelcol` process. See `--help` for more details.
 $ otelcol --log-level DEBUG
 ```
 
+Note that debug logs do not provide a lot of additional value today. Instead,
+consider enabling a [local exporter](#local-exporters) which is often more
+helpful in troubleshooting use-cases.
+
 ### Metrics
 
 Prometheus metrics are exposed locally on port `8888` and path `/metrics`.
 
 For containerized environments it may be desirable to expose this port on a
-public interface instead of just locally. The metrics address can be configured
-by passing the `--metrics-addr` flag to the `otelcol` process. See `--help` for
-more details.
+public interface instead of just locally (though this may pose a security
+risk). The metrics address can be configured by passing the `--metrics-addr`
+flag to the `otelcol` process. See `--help` for more details.
 
 ```bash
 $ otelcol --metrics-addr 0.0.0.0:8888
@@ -68,8 +72,9 @@ check receivers and exporters trace operations via `/debug/tracez`. `zpages`
 may contain error logs that the Collector does not emit.
 
 For containerized environments it may be desirable to expose this port on a
-public interface instead of just locally. This can be configured via the
-extensions configuration section. For example:
+public interface instead of just locally (though this may pose a security
+risk). This can be configured via the extensions configuration section. For
+example:
 
 ```yaml
 extensions:
@@ -85,7 +90,8 @@ can be configured to inspect the data being processed by the Collector.
 
 For live troubleshooting purposes consider leveraging the `logging` exporter,
 which can be used to confirm that data is being received, processed and
-exported by the Collector.
+exported by the Collector. Note that for Windows today the `logging` exporter
+does not work and the `file` exporter should be used instead.
 
 ```yaml
 receivers:
@@ -197,14 +203,6 @@ extension, which by default is available locally on port `1777`, allows you to p
 Collector as it runs. This is an advanced use-case that should not be needed in most circumstances.
 
 ## Common Issues
-
-To see logs for the Collector:
-
-On a Linux systemd system, logs can be found using `journalctl`:  
-`journalctl | grep otelcol`
-
-or to find only errors:  
-`journalctl | grep otelcol | grep Error`
 
 ### Collector exit/restart
 
