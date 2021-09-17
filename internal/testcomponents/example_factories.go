@@ -16,6 +16,15 @@ package testcomponents
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/loggingexporter"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 // ExampleComponents registers example factories. This is only used by tests.
@@ -38,4 +47,53 @@ func ExampleComponents() (
 	factories.Processors, err = component.MakeProcessorFactoryMap(ExampleProcessorFactory)
 
 	return
+}
+
+// DefaultComponents returns the default set of components used by the OpenTelemetry collector.
+func DefaultComponents() (
+	component.Factories,
+	error,
+) {
+	var errs []error
+
+	extensions, err := component.MakeExtensionFactoryMap(
+		zpagesextension.NewFactory(),
+		ballastextension.NewFactory(),
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	receivers, err := component.MakeReceiverFactoryMap(
+		otlpreceiver.NewFactory(),
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	exporters, err := component.MakeExporterFactoryMap(
+		loggingexporter.NewFactory(),
+		otlpexporter.NewFactory(),
+		otlphttpexporter.NewFactory(),
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	processors, err := component.MakeProcessorFactoryMap(
+		batchprocessor.NewFactory(),
+		memorylimiterprocessor.NewFactory(),
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	factories := component.Factories{
+		Extensions: extensions,
+		Receivers:  receivers,
+		Processors: processors,
+		Exporters:  exporters,
+	}
+
+	return factories, consumererror.Combine(errs)
 }

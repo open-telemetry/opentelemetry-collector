@@ -26,13 +26,13 @@ import (
 	"golang.org/x/sys/windows/svc"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
 func TestWindowsService_Execute(t *testing.T) {
 	os.Args = []string{"otelcol", "--config", "testdata/otelcol-config-minimal.yaml"}
 
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.DefaultComponents()
 	require.NoError(t, err)
 
 	s := NewWindowsService(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})

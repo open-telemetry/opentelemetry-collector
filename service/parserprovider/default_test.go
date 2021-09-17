@@ -27,13 +27,13 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
 func TestDefault(t *testing.T) {
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.DefaultComponents()
 	require.NoError(t, err)
 	t.Run("unknown_component", func(t *testing.T) {
 		flags := new(flag.FlagSet)
@@ -117,7 +117,7 @@ func TestDefault(t *testing.T) {
 }
 
 func TestDefault_ComponentDoesNotExist(t *testing.T) {
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.DefaultComponents()
 	require.NoError(t, err)
 
 	flags := new(flag.FlagSet)
