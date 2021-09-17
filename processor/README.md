@@ -14,7 +14,7 @@ Some important aspects of pipelines and processors to be aware of:
 
 Supported processors (sorted alphabetically):
 - [Batch Processor](batchprocessor/README.md)
-- [Memory Limiter Processor](memorylimiter/README.md)
+- [Memory Limiter Processor](memorylimiterprocessor/README.md)
 
 The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more processors that can be added to a custom build of the Collector.
@@ -29,7 +29,7 @@ processor documentation for more information.
 
 ### Traces
 
-1. [memory_limiter](memorylimiter/README.md)
+1. [memory_limiter](memorylimiterprocessor/README.md)
 2. *any sampling processors*
 3. Any processor relying on sending source from `Context` (e.g. `k8s_tagger`)
 3. [batch](batchprocessor/README.md)
@@ -37,7 +37,7 @@ processor documentation for more information.
 
 ### Metrics
 
-1. [memory_limiter](memorylimiter/README.md)
+1. [memory_limiter](memorylimiterprocessor/README.md)
 2. Any processor relying on sending source from `Context` (e.g. `k8s_tagger`)
 3. [batch](batchprocessor/README.md)
 4. *any other processors*
