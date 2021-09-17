@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package memorylimiter provides a processor for OpenTelemetry Service pipeline
+// Package memorylimiterprocessor provides a processor for OpenTelemetry Service pipeline
 // that drops data on the pipeline according to the current state of memory
 // usage.
-package memorylimiter
+package memorylimiterprocessor
 
 import (
 	"time"

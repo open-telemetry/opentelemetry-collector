@@ -1821,6 +1821,26 @@ func (ms Exemplar) FilteredAttributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).FilteredAttributes)
 }
 
+// TraceID returns the traceid associated with this Exemplar.
+func (ms Exemplar) TraceID() TraceID {
+	return TraceID{orig: ((*ms.orig).TraceId)}
+}
+
+// SetTraceID replaces the traceid associated with this Exemplar.
+func (ms Exemplar) SetTraceID(v TraceID) {
+	(*ms.orig).TraceId = v.orig
+}
+
+// SpanID returns the spanid associated with this Exemplar.
+func (ms Exemplar) SpanID() SpanID {
+	return SpanID{orig: ((*ms.orig).SpanId)}
+}
+
+// SetSpanID replaces the spanid associated with this Exemplar.
+func (ms Exemplar) SetSpanID(v SpanID) {
+	(*ms.orig).SpanId = v.orig
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
@@ -1832,4 +1852,6 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	}
 
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
+	dest.SetTraceID(ms.TraceID())
+	dest.SetSpanID(ms.SpanID())
 }
