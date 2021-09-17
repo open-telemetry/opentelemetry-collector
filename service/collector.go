@@ -41,7 +41,6 @@ import (
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
@@ -125,7 +124,6 @@ func New(set CollectorSettings) (*Collector, error) {
 	addFlagsFns := []func(*flag.FlagSet){
 		configtelemetry.Flags,
 		parserprovider.Flags,
-		telemetry.Flags,
 		loggerFlags,
 	}
 	for _, addFlags := range addFlagsFns {
