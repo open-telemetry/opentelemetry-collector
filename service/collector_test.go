@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -103,7 +104,7 @@ func TestCollector_Start(t *testing.T) {
 
 type mockColTelemetry struct{}
 
-func (tel *mockColTelemetry) init(chan<- error, uint64, *zap.Logger) error {
+func (tel *mockColTelemetry) init(chan<- error, uint64, *zap.Logger, config.ServiceTelemetry) error {
 	return nil
 }
 

@@ -57,7 +57,7 @@ func TestParseFrom(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.str, func(t *testing.T) {
-			lvl, err := parseLevel(test.str)
+			lvl, err := ParseLevel(test.str)
 			if test.err {
 				assert.Error(t, err)
 			} else {

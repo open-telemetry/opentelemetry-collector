@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -98,7 +99,15 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load processor config correctly")
 
 	// Verify Service Telemetry
-	assert.Equal(t, config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}}, cfg.Service.Telemetry)
+	assert.Equal(t, config.ServiceTelemetry{
+		Logs: config.ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"},
+		Metrics: config.ServiceTelemetryMetrics{
+			Level:         configtelemetry.LevelNormal,
+			Address:       ":8081",
+			Prefix:        "otelcoltest",
+			AddInstanceID: false,
+		},
+	}, cfg.Service.Telemetry)
 
 	// Verify Service Extensions
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
@@ -420,6 +429,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "invalid-pipeline-sub-config", expected: errUnmarshalTopLevelStructureError},
 
 		{name: "invalid-logs-level", expected: errInvalidLogsLevel},
+		{name: "invalid-metrics-level", expected: errInvalidMetricsLevel},
 	}
 
 	factories, err := testcomponents.ExampleComponents()

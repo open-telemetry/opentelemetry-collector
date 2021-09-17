@@ -24,6 +24,7 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -37,7 +38,7 @@ import (
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
 type collectorTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
+	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, cfg config.ServiceTelemetry) error
 	shutdown() error
 }
 
@@ -47,11 +48,11 @@ type colTelemetry struct {
 	doInitOnce sync.Once
 }
 
-func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, cfg config.ServiceTelemetry) error {
 	var err error
 	tel.doInitOnce.Do(
 		func() {
-			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger)
+			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger, cfg)
 		},
 	)
 	if err != nil {
@@ -60,11 +61,11 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, cfg config.ServiceTelemetry) error {
 	logger.Info("Setting up own telemetry...")
 
-	level := configtelemetry.GetMetricsLevelFlagValue()
-	metricsAddr := configtelemetry.GetMetricsAddr()
+	level := cfg.Metrics.Level
+	metricsAddr := cfg.Metrics.Address
 
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
 		return nil
@@ -90,11 +91,11 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
-		Namespace: configtelemetry.GetMetricsPrefix(),
+		Namespace: cfg.Metrics.Prefix,
 	}
 
 	var instanceID string
-	if configtelemetry.GetAddInstanceID() {
+	if cfg.Metrics.AddInstanceID {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
 		opts.ConstLabels = map[string]string{

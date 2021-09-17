@@ -19,6 +19,7 @@ import (
 	"os"
 	"reflect"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,6 +40,7 @@ const (
 	errUnknownType
 	errDuplicateName
 	errUnmarshalTopLevelStructureError
+	errInvalidMetricsLevel
 )
 
 type configError struct {
@@ -86,13 +88,40 @@ type serviceSettings struct {
 }
 
 type serviceTelemetrySettings struct {
-	Logs serviceTelemetryLogsSettings `mapstructure:"logs"`
+	Logs    serviceTelemetryLogsSettings    `mapstructure:"logs"`
+	Metrics serviceTelemetryMetricsSettings `mapstructure:"metrics"`
 }
 
 type serviceTelemetryLogsSettings struct {
 	Level       string `mapstructure:"level"`
 	Development bool   `mapstructure:"development"`
 	Encoding    string `mapstructure:"encoding"`
+}
+
+type serviceTelemetryMetricsSettings struct {
+	Level         string `mapstructure:"level"`
+	Address       string `mapstructure:"address"`
+	Prefix        string `mapstructure:"prefix"`
+	AddInstanceID bool   `mapstructure:"add_instance_id"`
+}
+
+func defaultServiceTelemetryMetricsSettings() serviceTelemetryMetricsSettings {
+	addr := configtelemetry.GetMetricsAddr()
+	if addr == "" {
+		addr = configtelemetry.GetMetricsAddrDefault()
+	}
+
+	prefix := configtelemetry.GetMetricsPrefix()
+	if prefix == "" {
+		prefix = configtelemetry.GetMetricsPrefixDefault()
+	}
+
+	return serviceTelemetryMetricsSettings{
+		Level:         configtelemetry.GetMetricsLevelFlagValue().String(),
+		Address:       addr,
+		Prefix:        prefix,
+		AddInstanceID: configtelemetry.GetAddInstanceID(),
+	}
 }
 
 type pipelineSettings struct {
@@ -127,6 +156,7 @@ func (*defaultUnmarshaler) Unmarshal(v *configparser.ConfigMap, factories compon
 					Development: false,
 					Encoding:    "console",
 				},
+				Metrics: defaultServiceTelemetryMetricsSettings(),
 			},
 		},
 	}
@@ -248,8 +278,8 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	var ret config.Service
 
-	var lvl zapcore.Level
-	if err := lvl.UnmarshalText([]byte(rawService.Telemetry.Logs.Level)); err != nil {
+	var logLvl zapcore.Level
+	if err := logLvl.UnmarshalText([]byte(rawService.Telemetry.Logs.Level)); err != nil {
 		return ret, &configError{
 			msg:  fmt.Sprintf(`service telemetry logs invalid level: %q, valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`, rawService.Telemetry.Logs.Level),
 			code: errInvalidLogsLevel,
@@ -257,9 +287,25 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	}
 
 	ret.Telemetry.Logs = config.ServiceTelemetryLogs{
-		Level:       lvl,
+		Level:       logLvl,
 		Development: rawService.Telemetry.Logs.Development,
 		Encoding:    rawService.Telemetry.Logs.Encoding,
+	}
+
+	var metricLvl configtelemetry.Level
+	var err error
+	if metricLvl, err = configtelemetry.ParseLevel(rawService.Telemetry.Metrics.Level); err != nil {
+		return ret, &configError{
+			msg:  fmt.Sprintf(`service telemetry metrics invalid level: %q, valid values are "none", "basic", "normal", "detailed"`, rawService.Telemetry.Metrics.Level),
+			code: errInvalidMetricsLevel,
+		}
+	}
+
+	ret.Telemetry.Metrics = config.ServiceTelemetryMetrics{
+		Level:         metricLvl,
+		Address:       rawService.Telemetry.Metrics.Address,
+		Prefix:        rawService.Telemetry.Metrics.Prefix,
+		AddInstanceID: rawService.Telemetry.Metrics.AddInstanceID,
 	}
 
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))

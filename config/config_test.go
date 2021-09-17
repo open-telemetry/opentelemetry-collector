@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -255,7 +256,15 @@ func generateConfig() *Config {
 			},
 		},
 		Service: Service{
-			Telemetry:  ServiceTelemetry{Logs: ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}},
+			Telemetry: ServiceTelemetry{
+				Logs: ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"},
+				Metrics: ServiceTelemetryMetrics{
+					Level:         configtelemetry.LevelNormal,
+					Address:       ":8080",
+					Prefix:        "otelcol",
+					AddInstanceID: true,
+				},
+			},
 			Extensions: []ComponentID{NewID("nop")},
 			Pipelines: map[string]*Pipeline{
 				"traces": {
