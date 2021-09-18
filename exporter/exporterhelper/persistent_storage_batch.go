@@ -25,7 +25,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storageextension"
 )
 
 var errItemIndexArrInvalidDataType = errors.New("invalid data type, expected []itemIndex")
@@ -35,16 +35,16 @@ type batchStruct struct {
 	logger *zap.Logger
 	pcs    *persistentContiguousStorage
 
-	operations    []storage.Operation
-	getOperations map[string]storage.Operation
+	operations    []storageextension.Operation
+	getOperations map[string]storageextension.Operation
 }
 
 func newBatch(pcs *persistentContiguousStorage) *batchStruct {
 	return &batchStruct{
 		logger:        pcs.logger,
 		pcs:           pcs,
-		operations:    []storage.Operation{},
-		getOperations: map[string]storage.Operation{},
+		operations:    []storageextension.Operation{},
+		getOperations: map[string]storageextension.Operation{},
 	}
 }
 
@@ -64,7 +64,7 @@ func (bof *batchStruct) set(key string, value interface{}, marshal func(interfac
 	if err != nil {
 		bof.logger.Debug("Failed marshaling item, skipping it", zap.String(zapKey, key), zap.Error(err))
 	} else {
-		bof.operations = append(bof.operations, storage.SetOperation(key, valueBytes))
+		bof.operations = append(bof.operations, storageextension.SetOperation(key, valueBytes))
 	}
 
 	return bof
@@ -73,7 +73,7 @@ func (bof *batchStruct) set(key string, value interface{}, marshal func(interfac
 // get adds a Get operation to the batch. After executing, its result will be available through getResult
 func (bof *batchStruct) get(keys ...string) *batchStruct {
 	for _, key := range keys {
-		op := storage.GetOperation(key)
+		op := storageextension.GetOperation(key)
 		bof.getOperations[key] = op
 		bof.operations = append(bof.operations, op)
 	}
@@ -84,7 +84,7 @@ func (bof *batchStruct) get(keys ...string) *batchStruct {
 // delete adds a Delete operation to the batch
 func (bof *batchStruct) delete(keys ...string) *batchStruct {
 	for _, key := range keys {
-		bof.operations = append(bof.operations, storage.DeleteOperation(key))
+		bof.operations = append(bof.operations, storageextension.DeleteOperation(key))
 	}
 
 	return bof

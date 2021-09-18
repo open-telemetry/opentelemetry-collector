@@ -14,4 +14,4 @@
 
 // Package stanzareceiver implements a receiver that can be used by the
 // Opentelemetry collector to receive logs using the stanza log agent
-package storage
+package storageextension

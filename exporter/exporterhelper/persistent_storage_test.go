@@ -34,15 +34,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storageextension"
 )
 
-func createStorageExtension(_ string) storage.Extension {
+func createStorageExtension(_ string) storageextension.Extension {
 	// After having storage moved to core, we could leverage storagetest.NewTestExtension(nil, path)
 	return newMockStorageExtension()
 }
 
-func createTestClient(extension storage.Extension) storage.Client {
+func createTestClient(extension storageextension.Extension) storageextension.Client {
 	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
 	if err != nil {
 		panic(err)
@@ -50,11 +50,11 @@ func createTestClient(extension storage.Extension) storage.Client {
 	return client
 }
 
-func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
+func createTestPersistentStorageWithLoggingAndCapacity(client storageextension.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
 	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
 }
 
-func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
+func createTestPersistentStorage(client storageextension.Client) *persistentContiguousStorage {
 	logger, _ := zap.NewDevelopment()
 	return createTestPersistentStorageWithLoggingAndCapacity(client, logger, 1000)
 }
@@ -332,15 +332,15 @@ func (m mockStorageExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id config.ComponentID, s string) (storage.Client, error) {
+func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id config.ComponentID, s string) (storageextension.Client, error) {
 	return newMockStorageClient(), nil
 }
 
-func newMockStorageExtension() storage.Extension {
+func newMockStorageExtension() storageextension.Extension {
 	return &mockStorageExtension{}
 }
 
-func newMockStorageClient() storage.Client {
+func newMockStorageClient() storageextension.Client {
 	return &mockStorageClient{
 		st: map[string][]byte{},
 	}
@@ -383,17 +383,17 @@ func (m *mockStorageClient) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *mockStorageClient) Batch(_ context.Context, ops ...storageextension.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
 	for _, op := range ops {
 		switch op.Type {
-		case storage.Get:
+		case storageextension.Get:
 			op.Value = m.st[op.Key]
-		case storage.Set:
+		case storageextension.Set:
 			m.st[op.Key] = op.Value
-		case storage.Delete:
+		case storageextension.Delete:
 			delete(m.st, op.Key)
 		default:
 			return errors.New("wrong operation type")

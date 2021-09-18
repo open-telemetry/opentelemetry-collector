@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storageextension"
 )
 
 // persistentQueue holds the queue backed by file storage
@@ -38,7 +38,7 @@ type persistentQueue struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
-func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentQueue {
+func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storageextension.Client, unmarshaler requestUnmarshaler) *persistentQueue {
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),

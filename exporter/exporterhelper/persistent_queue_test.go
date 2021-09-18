@@ -30,11 +30,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storageextension"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
+func createTestQueue(extension storageextension.Extension, capacity int) *persistentQueue {
 	logger, _ := zap.NewDevelopment()
 
 	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
