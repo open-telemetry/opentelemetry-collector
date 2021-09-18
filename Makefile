@@ -300,7 +300,7 @@ gendependabot: $(eval SHELL:=/bin/bash)
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="docker"
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="gomod"
 	@set -e; for dir in $(ALL_MODULES); do \
-		$(MAKE) internal-gendependabot DIR="$${dir:1}" PACKAGE="gomod"; \
+		$(MAKE) internal-gendependabot DIR=$${dir:1} PACKAGE="gomod"; \
 	done
 
 # Definitions for ProtoBuf generation.
