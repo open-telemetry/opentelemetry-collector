@@ -43,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/service/internal"
+	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
@@ -69,8 +70,7 @@ const (
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set CollectorSettings
-
+	set     CollectorSettings
 	rootCmd *cobra.Command
 	logger  *zap.Logger
 
@@ -126,7 +126,7 @@ func New(set CollectorSettings) (*Collector, error) {
 		configtelemetry.Flags,
 		parserprovider.Flags,
 		telemetry.Flags,
-		loggerFlags,
+		telemetrylogs.Flags,
 	}
 	for _, addFlags := range addFlagsFns {
 		addFlags(flagSet)
@@ -214,6 +214,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
+		return fmt.Errorf("failed to get logger: %w", err)
+	}
+
+	col.logger.Info("Applying configuration...")
+
 	col.service, err = newService(&svcSettings{
 		BuildInfo:           col.set.BuildInfo,
 		Factories:           col.set.Factories,
@@ -241,11 +247,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 }
 
 func (col *Collector) execute(ctx context.Context) error {
-	var err error
-	if col.logger, err = newLogger(col.set.LoggingOptions); err != nil {
-		return fmt.Errorf("failed to get logger: %w", err)
-	}
-
 	col.zPagesSpanProcessor = zpages.NewSpanProcessor()
 	col.tracerProvider = sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(internal.AlwaysRecord()),
@@ -257,21 +258,22 @@ func (col *Collector) execute(ctx context.Context) error {
 
 	col.meterProvider = metric.NoopMeterProvider{}
 
-	col.logger.Info("Starting "+col.set.BuildInfo.Command+"...",
-		zap.String("Version", col.set.BuildInfo.Version),
-		zap.Int("NumCPU", runtime.NumCPU()),
-	)
 	col.stateChannel <- Starting
 
 	col.asyncErrorChannel = make(chan error)
 
-	if err = col.setupConfigurationComponents(ctx); err != nil {
+	if err := col.setupConfigurationComponents(ctx); err != nil {
 		return err
 	}
 
-	if err = collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger); err != nil {
+	if err := collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger); err != nil {
 		return err
 	}
+
+	col.logger.Info("Starting "+col.set.BuildInfo.Command+"...",
+		zap.String("Version", col.set.BuildInfo.Version),
+		zap.Int("NumCPU", runtime.NumCPU()),
+	)
 
 	// Everything is ready, now run until an event requiring shutdown happens.
 	col.runAndWaitForShutdownEvent()
@@ -282,12 +284,12 @@ func (col *Collector) execute(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err = col.set.ParserProvider.Close(ctx); err != nil {
+	if err := col.set.ParserProvider.Close(ctx); err != nil {
 		errs = append(errs, fmt.Errorf("failed to close config: %w", err))
 	}
 
 	if col.service != nil {
-		if err = col.service.Shutdown(ctx); err != nil {
+		if err := col.service.Shutdown(ctx); err != nil {
 			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 		}
 	}
