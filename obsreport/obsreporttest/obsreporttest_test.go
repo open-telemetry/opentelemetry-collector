@@ -52,7 +52,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 		7,
 		nil)
 
-	obsreporttest.CheckReceiverTraces(t, receiver, transport, 7, 0)
+	require.NoError(t, obsreporttest.CheckReceiverTraces(receiver, transport, 7, 0))
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	assert.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
-	obsreporttest.CheckReceiverMetrics(t, receiver, transport, 7, 0)
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(receiver, transport, 7, 0))
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
@@ -78,7 +78,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	assert.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)
 
-	obsreporttest.CheckReceiverLogs(t, receiver, transport, 7, 0)
+	require.NoError(t, obsreporttest.CheckReceiverLogs(receiver, transport, 7, 0))
 }
 
 func TestCheckExporterTracesViews(t *testing.T) {
@@ -96,7 +96,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 
 	obsrep.EndTracesOp(ctx, 7, nil)
 
-	obsreporttest.CheckExporterTraces(t, exporter, 7, 0)
+	require.NoError(t, obsreporttest.CheckExporterTraces(exporter, 7, 0))
 }
 
 func TestCheckExporterMetricsViews(t *testing.T) {
@@ -114,7 +114,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 
 	obsrep.EndMetricsOp(ctx, 7, nil)
 
-	obsreporttest.CheckExporterMetrics(t, exporter, 7, 0)
+	require.NoError(t, obsreporttest.CheckExporterMetrics(exporter, 7, 0))
 }
 
 func TestCheckExporterLogsViews(t *testing.T) {
@@ -131,5 +131,5 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	assert.NotNil(t, ctx)
 	obsrep.EndLogsOp(ctx, 7, nil)
 
-	obsreporttest.CheckExporterLogs(t, exporter, 7, 0)
+	require.NoError(t, obsreporttest.CheckExporterLogs(exporter, 7, 0))
 }
