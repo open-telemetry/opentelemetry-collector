@@ -48,8 +48,8 @@ func runInteractive(settings service.CollectorSettings) error {
 		return fmt.Errorf("failed to construct the collector server: %w", err)
 	}
 
-	err = app.Run()
-	if err != nil {
+	cmd := service.NewCommand(app)
+	if err = cmd.Execute(); err != nil {
 		return fmt.Errorf("collector server run finished with error: %w", err)
 	}
 
