@@ -18,5 +18,5 @@ package parserprovider
 // defined by the --config command line flag and overwrites properties from --set
 // command line flag (if the flag is present).
 func Default() ParserProvider {
-	return NewSetFlag(NewFile())
+	return NewMergeProvider(NewFile(), NewSetFlag())
 }

@@ -26,25 +26,20 @@ import (
 	"go.opentelemetry.io/collector/config/configparser"
 )
 
-type setFlagProvider struct {
-	base ParserProvider
-}
+type setFlagProvider struct{}
 
-// NewSetFlag returns a config.ParserProvider, that wraps a "base" config.ParserProvider, then
-// overrides properties from set flag(s) in the loaded Parser.
+// NewSetFlag returns a ParserProvider, that provides a configparser.ConfigMap from set flag(s) properties.
 //
 // The implementation reads set flag(s) from the cmd and concatenates them as a "properties" file.
 // Then the properties file is read and properties are set to the loaded Parser.
-func NewSetFlag(base ParserProvider) ParserProvider {
-	return &setFlagProvider{
-		base: base,
-	}
+func NewSetFlag() ParserProvider {
+	return &setFlagProvider{}
 }
 
-func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, error) {
+func (sfl *setFlagProvider) Get(context.Context) (*configparser.ConfigMap, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
-		return sfl.base.Get(ctx)
+		return configparser.NewConfigMap(), nil
 	}
 
 	b := &bytes.Buffer{}
@@ -70,11 +65,7 @@ func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, e
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	var cp *configparser.ConfigMap
-	if cp, err = sfl.base.Get(ctx); err != nil {
-		return nil, err
-	}
-	return cp, cp.Merge(configparser.NewConfigMapFromStringMap(prop))
+	return configparser.NewConfigMapFromStringMap(prop), nil
 }
 
 func (sfl *setFlagProvider) Close(context.Context) error {
