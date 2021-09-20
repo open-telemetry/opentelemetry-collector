@@ -30,8 +30,12 @@ func NewInMemoryMapProvider(buf io.Reader) config.MapProvider {
 	return &inMemoryMapProvider{buf: buf}
 }
 
-func (inp *inMemoryMapProvider) Get(context.Context) (*config.Map, error) {
-	return config.NewMapFromBuffer(inp.buf)
+func (inp *inMemoryMapProvider) Retrieve(context.Context) (config.Retrieved, error) {
+	cfg, err := config.NewMapFromBuffer(inp.buf)
+	if err != nil {
+		return nil, err
+	}
+	return &simpleRetrieved{confMap: cfg}, nil
 }
 
 func (inp *inMemoryMapProvider) Close(context.Context) error {

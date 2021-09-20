@@ -62,7 +62,7 @@ type CollectorSettings struct {
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
-	// If the provider is config.WatchableMapProvider, collector may reload the configuration upon error.
+	// If the provider is config.WatchableRetrieved, collector may reload the configuration upon error.
 	ConfigMapProvider config.MapProvider
 
 	// ConfigUnmarshaler unmarshalls the configuration's Parser into the service configuration.

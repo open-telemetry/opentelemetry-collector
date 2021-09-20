@@ -33,15 +33,16 @@ func NewExpandMapProvider(base config.MapProvider) config.MapProvider {
 	}
 }
 
-func (emp *expandMapProvider) Get(ctx context.Context) (*config.Map, error) {
-	cfgMap, err := emp.base.Get(ctx)
+func (emp *expandMapProvider) Retrieve(ctx context.Context) (config.Retrieved, error) {
+	retr, err := emp.base.Retrieve(ctx)
 	if err != nil {
 		return nil, err
 	}
+	cfgMap := retr.Get()
 	for _, k := range cfgMap.AllKeys() {
 		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
 	}
-	return cfgMap, nil
+	return &simpleRetrieved{confMap: cfgMap}, nil
 }
 
 func (emp *expandMapProvider) Close(ctx context.Context) error {
