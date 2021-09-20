@@ -4,7 +4,7 @@ This module allows server types, such as gRPC and HTTP, to be configured to perf
 
 The currently known authenticators:
 
-- [oidc](../../extension/oidcauthextension)
+- [oidc](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oidcauthextension)
 
 Examples:
 ```yaml
@@ -22,7 +22,7 @@ receivers:
     protocols:
       grpc:
         endpoint: localhost:4318
-        tls_settings:
+        tls:
           cert_file: /tmp/certs/cert.pem
           key_file: /tmp/certs/cert-key.pem
         auth:

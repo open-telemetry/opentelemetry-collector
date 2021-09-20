@@ -12,7 +12,8 @@ exporters:
   otlp/2:
     endpoint: "1.2.3.4:1234"
     compression: "on"
-    ca_file: /var/lib/mycert.pem
+    tls:
+      ca_file: /var/lib/mycert.pem
     timeout: 10s
     sending_queue:
       enabled: true

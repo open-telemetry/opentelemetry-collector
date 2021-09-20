@@ -316,6 +316,8 @@ var exemplar = &messageValueStruct{
 			originFieldName: "FilteredAttributes",
 			returnSlice:     attributeMap,
 		},
+		traceIDField,
+		spanIDField,
 	},
 }
 

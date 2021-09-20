@@ -54,11 +54,11 @@ receivers:
   otlp/tlscredentials:
     protocols:
       grpc:
-        tls_settings:
+        tls:
           cert_file: test.crt
           key_file: test.key
       http:
-        tls_settings:
+        tls:
           cert_file: test.crt
           key_file: test.key
   # The following entry demonstrates how to specify a Unix Domain Socket for the server.

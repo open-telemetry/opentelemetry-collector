@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/memorylimiter"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -62,7 +62,7 @@ func Components() (
 
 	processors, err := component.MakeProcessorFactoryMap(
 		batchprocessor.NewFactory(),
-		memorylimiter.NewFactory(),
+		memorylimiterprocessor.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

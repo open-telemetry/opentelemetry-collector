@@ -22,7 +22,7 @@ Config defines configuration for OTLP receiver.
 | ---- | ---- | ------- | ---- |
 | endpoint |string| 0.0.0.0:4317 | Endpoint configures the address for this network connection. For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address, or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name. If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.  |
 | transport |string| tcp | Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".  |
-| tls_settings |[configtls-TLSServerSetting](#configtls-TLSServerSetting)| <no value> | Configures the protocol to use TLS. The default value is nil, which will cause the protocol to not use TLS.  |
+| tls |[configtls-TLSServerSetting](#configtls-TLSServerSetting)| <no value> | Configures the protocol to use TLS. The default value is nil, which will cause the protocol to not use TLS.  |
 | max_recv_msg_size_mib |uint64| <no value> | MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.  |
 | max_concurrent_streams |uint32| <no value> | MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport. It has effect only for streaming RPCs.  |
 | read_buffer_size |int| 524288 | ReadBufferSize for gRPC server. See grpc.ReadBufferSize (https://godoc.org/google.golang.org/grpc#ReadBufferSize).  |
@@ -74,7 +74,7 @@ Config defines configuration for OTLP receiver.
 | Name | Type | Default | Docs |
 | ---- | ---- | ------- | ---- |
 | endpoint |string| 0.0.0.0:4318 | Endpoint configures the listening address for the server.  |
-| tls_settings |[configtls-TLSServerSetting](#configtls-TLSServerSetting)| <no value> | TLSSetting struct exposes TLS client configuration.  |
+| tls |[configtls-TLSServerSetting](#configtls-TLSServerSetting)| <no value> | TLSSetting struct exposes TLS client configuration.  |
 | cors_allowed_origins |[]string| <no value> | CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter for the OTLP receiver. See github.com/rs/cors An empty list means that CORS is not enabled at all. A wildcard (*) can be used to match any origin or one or more characters of an origin.  |
 | cors_allowed_headers |[]string| <no value> | CorsHeaders are the allowed CORS headers for HTTP/JSON requests to grpc-gateway adapter for the OTLP receiver. See github.com/rs/cors CORS needs to be enabled first by providing a non-empty list in CorsOrigins A wildcard (*) can be used to match any header.  |
 
