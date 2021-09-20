@@ -8,10 +8,11 @@ exporters:
   otlphttp:
   otlphttp/2:
     endpoint: "https://1.2.3.4:1234"
-    insecure: true
-    ca_file: /var/lib/mycert.pem
-    cert_file: certfile
-    key_file: keyfile
+    tls:
+      ca_file: /var/lib/mycert.pem
+      cert_file: certfile
+      key_file: keyfile
+      insecure: true
     timeout: 10s
     read_buffer_size: 123
     write_buffer_size: 345
