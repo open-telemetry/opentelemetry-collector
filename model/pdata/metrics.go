@@ -247,6 +247,22 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
+// DataPointFlags defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
+type DataPointFlags uint32
+
+const (
+	// DataPointFlagsNone is the default DataPointFlags.
+	DataPointFlagsNone = DataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
+	// DataPointFlagsNoRecordedValue is a DataPointFlags for a metric aggregator which reports changes since last report time.
+	DataPointFlagsNoRecordedValue = DataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+)
+
+// String returns the string representation of the DataPointFlags.
+func (d DataPointFlags) String() string {
+	return otlpmetrics.DataPointFlags(d).String()
+}
+
 // MetricValueType specifies the type of NumberDataPoint.
 type MetricValueType int32
 
