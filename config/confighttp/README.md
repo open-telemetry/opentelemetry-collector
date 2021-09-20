@@ -9,12 +9,13 @@ receivers or exporters.
 [Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md)
 leverage client configuration.
 
-Note that client configuration supports TLS configuration, however
-configuration parameters are not defined under `tls_settings` like server
+Note that client configuration supports TLS configuration, the
+configuration parameters are also defined under `tls` like server
 configuration. For more information, see [configtls
 README](../configtls/README.md).
 
 - `endpoint`: address:port
+- [`tls`](../configtls/README.md)
 - `headers`: name/value pairs added to the HTTP request headers
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
@@ -26,6 +27,10 @@ Example:
 exporter:
   otlp:
     endpoint: otelcol2:55690
+    tls:
+      ca_file: ca.pem
+      cert_file: cert.pem
+      key_file: key.pem
     headers:
       test1: "value1"
       "test 2": "value 2"
@@ -44,7 +49,7 @@ leverage server configuration.
   `Content-Type`, `X-Requested-With`. `Origin` is also always
   added to the list. A wildcard (`*`) can be used to match any header.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
-- [`tls_settings`](../configtls/README.md)
+- [`tls`](../configtls/README.md)
 
 Example:
 

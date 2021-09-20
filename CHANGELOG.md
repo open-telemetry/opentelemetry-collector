@@ -7,8 +7,11 @@
 - Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
 - Move ValidateConfig from configcheck to configtest (#3956)
 - Remove AttributeMessageType (#4020)
-- Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005).
-- Remove `AttributeHTTPStatusText` const, replaced with `"http.status_text"` (#4015, contrib/#5182).
+- Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005)
+- Remove `AttributeHTTPStatusText` const (#4015)
+- Remove squash on `configtls.TLSClientSetting` and move TLS client configs under `tls` (#4063)
+- Rename TLS server config `*configtls.TLSServerSetting` from `tls_settings` to `tls` (#4063)
+- Split `service.Collector` from the `cobra.Command` (#4074)
 
 ## v0.35.0 Beta
 
