@@ -35,25 +35,22 @@ func (c combined) Error() string {
 	return "[" + sb.String() + "]"
 }
 
-func (c combined) iterate(fn func(error) bool) bool {
+func (c combined) Is(target error) bool {
 	for _, err := range c {
-		if fn(err) {
+		if errors.Is(err, target) {
 			return true
 		}
 	}
 	return false
 }
 
-func (c combined) Is(target error) bool {
-	return c.iterate(func(err error) bool {
-		return errors.Is(err, target)
-	})
-}
-
 func (c combined) As(target interface{}) bool {
-	return c.iterate(func(err error) bool {
-		return errors.As(err, target)
-	})
+	for _, err := range c {
+		if errors.As(err, target) {
+			return true
+		}
+	}
+	return false
 }
 
 // Combine converts a list of errors into one error.
