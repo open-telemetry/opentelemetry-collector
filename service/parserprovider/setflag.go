@@ -41,40 +41,46 @@ func NewSetFlag(base ParserProvider) ParserProvider {
 	}
 }
 
-func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, error) {
+func (sfl *setFlagProvider) Retrieve(ctx context.Context) (Retrieved, error) {
+	var ret Retrieved
+	var err error
+	if ret, err = sfl.base.Retrieve(ctx); err != nil {
+		return nil, err
+	}
+
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
-		return sfl.base.Get(ctx)
+		return ret, nil
 	}
 
 	b := &bytes.Buffer{}
 	for _, property := range flagProperties {
 		property = strings.TrimSpace(property)
-		if _, err := fmt.Fprintf(b, "%s\n", property); err != nil {
+		if _, err = fmt.Fprintf(b, "%s\n", property); err != nil {
 			return nil, err
 		}
 	}
 
 	var props *properties.Properties
-	var err error
 	if props, err = properties.Load(b.Bytes(), properties.UTF8); err != nil {
 		return nil, err
 	}
 
 	// Create a map manually instead of using props.Map() to allow env var expansion
 	// as used by original Viper-based configparser.ConfigMap.
-	parsed := make(map[string]interface{}, props.Len())
+	propMap := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
-		parsed[key] = value
+		propMap[key] = value
 	}
-	prop := maps.Unflatten(parsed, ".")
-
-	var cp *configparser.ConfigMap
-	if cp, err = sfl.base.Get(ctx); err != nil {
+	var confMap *configparser.ConfigMap
+	if confMap, err = ret.Get(); err != nil {
 		return nil, err
 	}
-	return cp, cp.MergeStringMap(prop)
+	if err = confMap.MergeStringMap(maps.Unflatten(propMap, ".")); err != nil {
+		return nil, err
+	}
+	return &simpleRetrieved{confMap: confMap}, nil
 }
 
 func (sfl *setFlagProvider) Close(context.Context) error {

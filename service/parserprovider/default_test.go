@@ -32,91 +32,100 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
-func TestDefault(t *testing.T) {
+func TestUnknownComponent(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
-	t.Run("unknown_component", func(t *testing.T) {
-		flags := new(flag.FlagSet)
-		Flags(flags)
-		err = flags.Parse([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.doesnotexist.timeout=2s",
-		})
-		require.NoError(t, err)
-		pl := Default()
-		require.NotNil(t, pl)
-		var cp *configparser.ConfigMap
-		cp, err = pl.Get(context.Background())
-		require.NoError(t, err)
-		require.NotNil(t, cp)
-		var cfg *config.Config
-		cfg, err = configunmarshaler.NewDefault().Unmarshal(cp, factories)
-		require.Error(t, err)
-		require.Nil(t, cfg)
-
+	flags := new(flag.FlagSet)
+	Flags(flags)
+	err = flags.Parse([]string{
+		"--config=testdata/otelcol-config.yaml",
+		"--set=processors.doesnotexist.timeout=2s",
 	})
-	t.Run("component_not_added_to_pipeline", func(t *testing.T) {
-		flags := new(flag.FlagSet)
-		Flags(flags)
-		err = flags.Parse([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.batch/foo.timeout=2s",
-		})
-		require.NoError(t, err)
-		pl := Default()
-		require.NotNil(t, pl)
-		var cp *configparser.ConfigMap
-		cp, err = pl.Get(context.Background())
-		require.NoError(t, err)
-		require.NotNil(t, cp)
-		var cfg *config.Config
-		cfg, err = configunmarshaler.NewDefault().Unmarshal(cp, factories)
-		require.NoError(t, err)
-		assert.NotNil(t, cfg)
-		err = cfg.Validate()
-		require.NoError(t, err)
-
-		var processors []string
-		for k := range cfg.Processors {
-			processors = append(processors, k.String())
-		}
-		sort.Strings(processors)
-		// batch/foo is not added to the pipeline
-		assert.Equal(t, []string{"batch", "batch/foo"}, processors)
-		assert.Equal(t, []config.ComponentID{config.NewID("batch")}, cfg.Service.Pipelines["traces"].Processors)
-	})
-	t.Run("ok", func(t *testing.T) {
-		flags := new(flag.FlagSet)
-		Flags(flags)
-		err = flags.Parse([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.batch.timeout=2s",
-			"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
-		})
-		require.NoError(t, err)
-		pl := Default()
-		require.NotNil(t, pl)
-		var cp *configparser.ConfigMap
-		cp, err = pl.Get(context.Background())
-		require.NoError(t, err)
-		require.NotNil(t, cp)
-		var cfg *config.Config
-		cfg, err = configunmarshaler.NewDefault().Unmarshal(cp, factories)
-		require.NoError(t, err)
-		require.NotNil(t, cfg)
-		err = cfg.Validate()
-		require.NoError(t, err)
-
-		batch, hasBatch := cfg.Processors[config.NewID("batch")].(*batchprocessor.Config)
-		require.True(t, hasBatch)
-		assert.Equal(t, time.Second*2, batch.Timeout)
-		otlp, hasOTLP := cfg.Receivers[config.NewID("otlp")].(*otlpreceiver.Config)
-		require.True(t, hasOTLP)
-		assert.Equal(t, "localhost:12345", otlp.GRPC.NetAddr.Endpoint)
-	})
+	require.NoError(t, err)
+	pl := Default()
+	require.NotNil(t, pl)
+	var ret Retrieved
+	ret, err = pl.Retrieve(context.Background())
+	require.NoError(t, err)
+	var cfgMap *configparser.ConfigMap
+	cfgMap, err = ret.Get()
+	require.NoError(t, err)
+	var cfg *config.Config
+	cfg, err = configunmarshaler.NewDefault().Unmarshal(cfgMap, factories)
+	require.Error(t, err)
+	require.Nil(t, cfg)
 }
 
-func TestDefault_ComponentDoesNotExist(t *testing.T) {
+func TestComponentNotAddedToPipeline(t *testing.T) {
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+	flags := new(flag.FlagSet)
+	Flags(flags)
+	err = flags.Parse([]string{
+		"--config=testdata/otelcol-config.yaml",
+		"--set=processors.batch/foo.timeout=2s",
+	})
+	require.NoError(t, err)
+	pl := Default()
+	require.NotNil(t, pl)
+	var ret Retrieved
+	ret, err = pl.Retrieve(context.Background())
+	require.NoError(t, err)
+	var cfgMap *configparser.ConfigMap
+	cfgMap, err = ret.Get()
+	require.NoError(t, err)
+	var cfg *config.Config
+	cfg, err = configunmarshaler.NewDefault().Unmarshal(cfgMap, factories)
+	require.NoError(t, err)
+	assert.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NoError(t, err)
+
+	var processors []string
+	for k := range cfg.Processors {
+		processors = append(processors, k.String())
+	}
+	sort.Strings(processors)
+	// batch/foo is not added to the pipeline
+	assert.Equal(t, []string{"batch", "batch/foo"}, processors)
+	assert.Equal(t, []config.ComponentID{config.NewID("batch")}, cfg.Service.Pipelines["traces"].Processors)
+}
+
+func TestValidConfig(t *testing.T) {
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+	flags := new(flag.FlagSet)
+	Flags(flags)
+	err = flags.Parse([]string{
+		"--config=testdata/otelcol-config.yaml",
+		"--set=processors.batch.timeout=2s",
+		"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
+	})
+	require.NoError(t, err)
+	pl := Default()
+	require.NotNil(t, pl)
+	var ret Retrieved
+	ret, err = pl.Retrieve(context.Background())
+	require.NoError(t, err)
+	var cfgMap *configparser.ConfigMap
+	cfgMap, err = ret.Get()
+	require.NoError(t, err)
+	var cfg *config.Config
+	cfg, err = configunmarshaler.NewDefault().Unmarshal(cfgMap, factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NoError(t, err)
+
+	batch, hasBatch := cfg.Processors[config.NewID("batch")].(*batchprocessor.Config)
+	require.True(t, hasBatch)
+	assert.Equal(t, time.Second*2, batch.Timeout)
+	otlp, hasOTLP := cfg.Receivers[config.NewID("otlp")].(*otlpreceiver.Config)
+	require.True(t, hasOTLP)
+	assert.Equal(t, "localhost:12345", otlp.GRPC.NetAddr.Endpoint)
+}
+
+func TestComponentDoesNotExist(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
@@ -131,10 +140,13 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 
 	pl := Default()
 	require.NotNil(t, pl)
-	cp, err := pl.Get(context.Background())
+	var ret Retrieved
+	ret, err = pl.Retrieve(context.Background())
 	require.NoError(t, err)
-	require.NotNil(t, cp)
-	cfg, err := configunmarshaler.NewDefault().Unmarshal(cp, factories)
+	var cfgMap *configparser.ConfigMap
+	cfgMap, err = ret.Get()
+	require.NoError(t, err)
+	cfg, err := configunmarshaler.NewDefault().Unmarshal(cfgMap, factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }

@@ -36,34 +36,49 @@ func TestSetFlags(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get(context.Background())
+	sfl := NewSetFlag(new(testProvider))
+	var ret Retrieved
+	ret, err = sfl.Retrieve(context.Background())
+	require.NoError(t, err)
+	var cfgMap *configparser.ConfigMap
+	cfgMap, err = ret.Get()
 	require.NoError(t, err)
 
-	keys := cp.AllKeys()
-	assert.Len(t, keys, 4)
-	assert.Equal(t, "2s", cp.Get("processors::batch::timeout"))
-	assert.Equal(t, "3s", cp.Get("processors::batch/foo::timeout"))
-	assert.Equal(t, "foo:9200,foo2:9200", cp.Get("exporters::kafka::brokers"))
-	assert.Equal(t, "localhost:1818", cp.Get("receivers::otlp::protocols::grpc::endpoint"))
+	assert.Len(t, cfgMap.AllKeys(), 4)
+	assert.Equal(t, "2s", cfgMap.Get("processors::batch::timeout"))
+	assert.Equal(t, "3s", cfgMap.Get("processors::batch/foo::timeout"))
+	assert.Equal(t, "foo:9200,foo2:9200", cfgMap.Get("exporters::kafka::brokers"))
+	assert.Equal(t, "localhost:1818", cfgMap.Get("receivers::otlp::protocols::grpc::endpoint"))
 }
 
 func TestSetFlags_empty(t *testing.T) {
 	flags := new(flag.FlagSet)
 	Flags(flags)
 
-	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get(context.Background())
+	sfl := NewSetFlag(new(testProvider))
+	ret, err := sfl.Retrieve(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(cp.AllKeys()))
+	var cfgMap *configparser.ConfigMap
+	cfgMap, err = ret.Get()
+	require.NoError(t, err)
+	assert.Equal(t, generateConfig(), cfgMap)
 }
 
-type emptyProvider struct{}
-
-func (el *emptyProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	return configparser.NewConfigMap(), nil
+func generateConfig() *configparser.ConfigMap {
+	return configparser.NewConfigMapFromStringMap(map[string]interface{}{
+		"processors::batch::timeout":                 "1s",
+		"processors::batch/foo::timeout":             "2s",
+		"receivers::otlp::protocols::grpc::endpoint": "localhost:1717",
+		"exporters::kafka::brokers":                  "foo:9200,foo2:8200",
+	})
 }
 
-func (el *emptyProvider) Close(context.Context) error {
+type testProvider struct{}
+
+func (el *testProvider) Retrieve(context.Context) (Retrieved, error) {
+	return &simpleRetrieved{confMap: generateConfig()}, nil
+}
+
+func (el *testProvider) Close(context.Context) error {
 	return nil
 }

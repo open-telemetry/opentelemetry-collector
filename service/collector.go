@@ -34,7 +34,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
@@ -198,14 +200,19 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	cp, err := col.set.ParserProvider.Get(ctx)
+	ret, err := col.set.ParserProvider.Retrieve(ctx)
 	if err != nil {
-		return fmt.Errorf("cannot load configuration's parser: %w", err)
+		return fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
 
-	cfg, err := col.set.ConfigUnmarshaler.Unmarshal(cp, col.set.Factories)
-	if err != nil {
-		return fmt.Errorf("cannot load configuration: %w", err)
+	var cfgMap *configparser.ConfigMap
+	if cfgMap, err = ret.Get(); err != nil {
+		return fmt.Errorf("cannot get the retrieved configuration: %w", err)
+	}
+
+	var cfg *config.Config
+	if cfg, err = col.set.ConfigUnmarshaler.Unmarshal(cfgMap, col.set.Factories); err != nil {
+		return fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
 	if err = cfg.Validate(); err != nil {
@@ -229,8 +236,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return err
 	}
 
-	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := col.set.ParserProvider.(parserprovider.Watchable); ok {
+	// If the retrieved value is watchable start a goroutine watching for updates.
+	if watchable, ok := ret.(parserprovider.Watchable); ok {
 		go col.watchForConfigUpdates(watchable)
 	}
 

@@ -23,8 +23,13 @@ import (
 // ParserProvider is an interface that helps providing configuration's parser.
 // Implementations may load the parser from a file, a database or any other source.
 type ParserProvider interface {
-	// Get returns the config.Parser if succeed or error otherwise.
-	Get(ctx context.Context) (*configparser.ConfigMap, error)
+	// Retrieve goes to the configuration source and retrieves the selected data which
+	// contains the value to be injected in the configuration and the corresponding watcher that
+	// will be used to monitor for updates of the retrieved value.
+	//
+	// The selector is a string that is required on all invocations, the params are optional. Each
+	// implementation handles the generic params according to their requirements.
+	Retrieve(ctx context.Context) (Retrieved, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.
@@ -32,8 +37,14 @@ type ParserProvider interface {
 	Close(ctx context.Context) error
 }
 
-// Watchable is an extension for ParserProvider that is implemented if the given provider
-// supports monitoring of configuration updates.
+// Retrieved holds the result of a call to the Retrieve method of a Session object.
+type Retrieved interface {
+	// Get returns the configparser.ConfigMap if succeed or error otherwise.
+	Get() (*configparser.ConfigMap, error)
+}
+
+// Watchable is an optional interface that Retrieved can implement if the given source
+// supports monitoring for updates.
 type Watchable interface {
 	// WatchForUpdate waits for updates on any of the values retrieved from config sources.
 	// It blocks until configuration updates are received and can
@@ -41,4 +52,13 @@ type Watchable interface {
 	// first evaluation of the configuration and is not used to watch configuration
 	// changes continuously.
 	WatchForUpdate() error
+}
+
+// TODO: This probably will make sense to be exported, but needs better name and documentation.
+type simpleRetrieved struct {
+	confMap *configparser.ConfigMap
+}
+
+func (sr *simpleRetrieved) Get() (*configparser.ConfigMap, error) {
+	return sr.confMap, nil
 }

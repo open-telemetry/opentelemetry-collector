@@ -30,18 +30,18 @@ func NewFile() ParserProvider {
 	return &fileProvider{}
 }
 
-func (fl *fileProvider) Get(context.Context) (*configparser.ConfigMap, error) {
+func (fl *fileProvider) Retrieve(context.Context) (Retrieved, error) {
 	fileName := getConfigFlag()
 	if fileName == "" {
 		return nil, errors.New("config file not specified")
 	}
 
-	cp, err := configparser.NewConfigMapFromFile(fileName)
+	confMap, err := configparser.NewConfigMapFromFile(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file %q: %v", fileName, err)
 	}
 
-	return cp, nil
+	return &simpleRetrieved{confMap: confMap}, nil
 }
 
 func (fl *fileProvider) Close(context.Context) error {
