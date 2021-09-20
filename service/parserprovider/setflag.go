@@ -23,7 +23,7 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/magiconair/properties"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configmap"
 )
 
 type setFlagProvider struct{}
@@ -36,10 +36,10 @@ func NewSetFlag() ParserProvider {
 	return &setFlagProvider{}
 }
 
-func (sfl *setFlagProvider) Get(context.Context) (*configparser.ConfigMap, error) {
+func (sfl *setFlagProvider) Get(context.Context) (*configmap.ConfigMap, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
-		return configparser.NewConfigMap(), nil
+		return configmap.NewConfigMap(), nil
 	}
 
 	b := &bytes.Buffer{}
@@ -57,7 +57,7 @@ func (sfl *setFlagProvider) Get(context.Context) (*configparser.ConfigMap, error
 	}
 
 	// Create a map manually instead of using props.Map() to allow env var expansion
-	// as used by original Viper-based configparser.ConfigMap.
+	// as used by original Viper-based configmap.ConfigMap.
 	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
@@ -65,7 +65,7 @@ func (sfl *setFlagProvider) Get(context.Context) (*configparser.ConfigMap, error
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	return configparser.NewConfigMapFromStringMap(prop), nil
+	return configmap.NewConfigMapFromStringMap(prop), nil
 }
 
 func (sfl *setFlagProvider) Close(context.Context) error {

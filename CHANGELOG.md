@@ -3,8 +3,12 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
-
+ 
 - Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
+- Rename `configparser` package to `configmap` (#4075)
+
+## 💡 Enhancements 💡
+
 - Add Gen dependabot into CI (#4083)
 
 ## v0.36.0 Beta

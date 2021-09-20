@@ -17,14 +17,14 @@ package parserprovider
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configmap"
 )
 
 // ParserProvider is an interface that helps providing configuration's parser.
 // Implementations may load the parser from a file, a database or any other source.
 type ParserProvider interface {
 	// Get returns the config.Parser if succeed or error otherwise.
-	Get(ctx context.Context) (*configparser.ConfigMap, error)
+	Get(ctx context.Context) (*configmap.ConfigMap, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.

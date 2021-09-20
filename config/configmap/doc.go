@@ -12,16 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configunmarshaler
-
-import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmap"
-)
-
-// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the configmap.ConfigMap.
-type ConfigUnmarshaler interface {
-	// Unmarshal the configuration from the given parser and factories.
-	Unmarshal(v *configmap.ConfigMap, factories component.Factories) (*config.Config, error)
-}
+// Package configmap defines the configuration map and the map providers for
+// the OpenTelemetry Collector.
+package configmap

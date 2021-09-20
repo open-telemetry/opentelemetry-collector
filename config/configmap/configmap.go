@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configparser
+package configmap
 
 import (
 	"fmt"
@@ -73,7 +73,8 @@ func NewConfigMapFromStringMap(data map[string]interface{}) *ConfigMap {
 	return p
 }
 
-// ConfigMap loads configuration.
+// ConfigMap represents the raw configuration map for the OpenTelemetry Collector.
+// The ConfigMap can be unmarshalled into the Collector's config using the "configunmarshaler" package.
 type ConfigMap struct {
 	k *koanf.Koanf
 }

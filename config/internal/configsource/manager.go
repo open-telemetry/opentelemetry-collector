@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v2"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configmap"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
@@ -182,7 +182,7 @@ type Manager struct {
 // NewManager creates a new instance of a Manager to be used to inject data from
 // ConfigSource objects into a configuration and watch for updates on the injected
 // data.
-func NewManager(_ *configparser.ConfigMap) (*Manager, error) {
+func NewManager(_ *configmap.ConfigMap) (*Manager, error) {
 	// TODO: Config sources should be extracted for the config itself, need Factories for that.
 
 	return &Manager{
@@ -195,8 +195,8 @@ func NewManager(_ *configparser.ConfigMap) (*Manager, error) {
 // in the configuration, returning a configparser.ConfigMap in which all env vars and config sources on
 // the given input config map are resolved to actual literal values of the env vars or config sources.
 // This method must be called only once per lifetime of a Manager object.
-func (m *Manager) Resolve(ctx context.Context, configMap *configparser.ConfigMap) (*configparser.ConfigMap, error) {
-	res := configparser.NewConfigMap()
+func (m *Manager) Resolve(ctx context.Context, configMap *configmap.ConfigMap) (*configmap.ConfigMap, error) {
+	res := configmap.NewConfigMap()
 	allKeys := configMap.AllKeys()
 	for _, k := range allKeys {
 		if strings.HasPrefix(k, configSourcesKey) {
@@ -516,7 +516,7 @@ func newErrUnknownConfigSource(cfgSrcName string) error {
 // for some examples of input and output.
 // The caller should check for error explicitly since it is possible for the
 // other values to have been partially set.
-func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigMap *configparser.ConfigMap, err error) {
+func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigMap *configmap.ConfigMap, err error) {
 	parts := strings.SplitN(s, string(configSourceNameDelimChar), 2)
 	if len(parts) != 2 {
 		err = fmt.Errorf("invalid config source syntax at %q, it must have at least the config source name and a selector", s)
@@ -533,8 +533,8 @@ func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigM
 		selector = strings.Trim(parts[0], " ")
 
 		if len(parts) > 1 && len(parts[1]) > 0 {
-			var cp *configparser.ConfigMap
-			cp, err = configparser.NewConfigMapFromBuffer(bytes.NewReader([]byte(parts[1])))
+			var cp *configmap.ConfigMap
+			cp, err = configmap.NewConfigMapFromBuffer(bytes.NewReader([]byte(parts[1])))
 			if err != nil {
 				return
 			}
@@ -560,7 +560,7 @@ func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigM
 	return cfgSrcName, selector, paramsConfigMap, err
 }
 
-func parseParamsAsURLQuery(s string) (*configparser.ConfigMap, error) {
+func parseParamsAsURLQuery(s string) (*configmap.ConfigMap, error) {
 	values, err := url.ParseQuery(s)
 	if err != nil {
 		return nil, err
@@ -591,7 +591,7 @@ func parseParamsAsURLQuery(s string) (*configparser.ConfigMap, error) {
 			params[k] = elemSlice
 		}
 	}
-	return configparser.NewConfigMapFromStringMap(params), err
+	return configmap.NewConfigMapFromStringMap(params), err
 }
 
 // osExpandEnv replicate the internal behavior of os.ExpandEnv when handling env
