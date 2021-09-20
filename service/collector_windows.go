@@ -87,9 +87,12 @@ func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 		return err
 	}
 
-	// col.Start blocks until receiving a SIGTERM signal, so needs to be started
+	// col.Run blocks until receiving a SIGTERM signal, so needs to be started
 	// asynchronously, but it will exit early if an error occurs on startup
-	go func() { colErrorChannel <- s.col.Run() }()
+	go func() {
+		cmd := NewCommand(s.col)
+		colErrorChannel <- cmd.Execute()
+	}()
 
 	// wait until the collector server is in the Running state
 	go func() {

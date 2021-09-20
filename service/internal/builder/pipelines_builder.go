@@ -200,7 +200,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("error creating processor %q in pipeline %q: %v",
+			return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w",
 				procID, pipelineCfg.Name, err)
 		}
 

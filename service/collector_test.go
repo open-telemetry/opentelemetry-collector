@@ -59,11 +59,11 @@ func TestCollector_Start(t *testing.T) {
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, col.rootCmd, col.Command())
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
-	col.rootCmd.SetArgs([]string{
+	cmd := NewCommand(col)
+	cmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
@@ -72,7 +72,7 @@ func TestCollector_Start(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.NoError(t, col.Run())
+		assert.NoError(t, cmd.Execute())
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -124,12 +124,13 @@ func TestCollector_ReportError(t *testing.T) {
 	col, err := New(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
 	require.NoError(t, err)
 
-	col.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
+	cmd := NewCommand(col)
+	cmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
 
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.EqualError(t, col.Run(), "failed to shutdown collector telemetry: err1")
+		assert.EqualError(t, cmd.Execute(), "failed to shutdown collector telemetry: err1")
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -155,7 +156,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		colErr := col.Run()
+		colErr := col.Run(context.Background())
 		if colErr != nil {
 			err = colErr
 		}

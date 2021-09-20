@@ -252,7 +252,7 @@ func buildExporter(
 				// Could not create because this exporter does not support this data type.
 				return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
 			}
-			return nil, fmt.Errorf("error creating %v exporter: %v", cfg.ID(), err)
+			return nil, fmt.Errorf("error creating %v exporter: %w", cfg.ID(), err)
 		}
 
 		// Check if the factory really created the exporter.

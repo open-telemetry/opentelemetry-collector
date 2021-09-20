@@ -19,14 +19,12 @@ package service
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 
-	"github.com/spf13/cobra"
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
@@ -36,7 +34,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -58,20 +55,19 @@ const (
 
 // (Internal note) Collector Lifecycle:
 // - New constructs a new Collector.
-// - Run starts the collector and calls (*Collector).execute.
-// - execute calls setupConfigurationComponents to handle configuration.
+// - Run starts the collector.
+// - Run calls setupConfigurationComponents to handle configuration.
 //   If configuration parser fails, collector's config can be reloaded.
 //   Collector can be shutdown if parser gets a shutdown error.
-// - execute runs runAndWaitForShutdownEvent and waits for a shutdown event.
+// - Run runs runAndWaitForShutdownEvent and waits for a shutdown event.
 //   SIGINT and SIGTERM, errors, and (*Collector).Shutdown can trigger the shutdown events.
 // - Upon shutdown, pipelines are notified, then pipelines and extensions are shut down.
-// - Users can call (*Collector).Shutdown anytime to shutdown the collector.
+// - Users can call (*Collector).Shutdown anytime to shut down the collector.
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set     CollectorSettings
-	rootCmd *cobra.Command
-	logger  *zap.Logger
+	set    CollectorSettings
+	logger *zap.Logger
 
 	tracerProvider      trace.TracerProvider
 	meterProvider       metric.MeterProvider
@@ -106,54 +102,15 @@ func New(set CollectorSettings) (*Collector, error) {
 		set.ConfigUnmarshaler = configunmarshaler.NewDefault()
 	}
 
-	col := &Collector{
+	return &Collector{
 		set:          set,
 		stateChannel: make(chan State, Closed+1),
-	}
-
-	rootCmd := &cobra.Command{
-		Use:     set.BuildInfo.Command,
-		Version: set.BuildInfo.Version,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return col.execute(cmd.Context())
-		},
-	}
-
-	// TODO: coalesce this code and expose this information to other components.
-	flagSet := new(flag.FlagSet)
-	addFlagsFns := []func(*flag.FlagSet){
-		configtelemetry.Flags,
-		parserprovider.Flags,
-		telemetrylogs.Flags,
-	}
-	for _, addFlags := range addFlagsFns {
-		addFlags(flagSet)
-	}
-	rootCmd.Flags().AddGoFlagSet(flagSet)
-	col.rootCmd = rootCmd
-
-	return col, nil
-}
-
-// Run starts the collector according to the command and configuration
-// given by the user, and waits for it to complete.
-// Consecutive calls to Run are not allowed, Run shouldn't be called
-// once a collector is shut down.
-func (col *Collector) Run() error {
-	// From this point on do not show usage in case of error.
-	col.rootCmd.SilenceUsage = true
-
-	return col.rootCmd.Execute()
+	}, nil
 }
 
 // GetStateChannel returns state channel of the collector server.
 func (col *Collector) GetStateChannel() chan State {
 	return col.stateChannel
-}
-
-// Command returns Collector's root command.
-func (col *Collector) Command() *cobra.Command {
-	return col.rootCmd
 }
 
 // GetLogger returns logger used by the Collector.
@@ -244,7 +201,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	return nil
 }
 
-func (col *Collector) execute(ctx context.Context) error {
+// Run starts the collector according to the given configuration given, and waits for it to complete.
+// Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
+func (col *Collector) Run(ctx context.Context) error {
 	col.zPagesSpanProcessor = zpages.NewSpanProcessor()
 	col.tracerProvider = sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(internal.AlwaysRecord()),
