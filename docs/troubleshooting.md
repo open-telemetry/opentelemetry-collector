@@ -91,7 +91,7 @@ can be configured to inspect the data being processed by the Collector.
 For live troubleshooting purposes consider leveraging the `logging` exporter,
 which can be used to confirm that data is being received, processed and
 exported by the Collector. Note that for Windows today the `logging` exporter
-does not work and the `file` exporter should be used instead.
+[does not work](https://github.com/open-telemetry/opentelemetry-collector/issues/4086) and the `file` exporter should be used instead.
 
 ```yaml
 receivers:
