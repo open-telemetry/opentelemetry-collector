@@ -15,8 +15,10 @@
 package otlpgrpc
 
 import (
+	"bytes"
 	"context"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/model/internal"
@@ -24,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// TODO: Consider to add `LogsRequest`. If we add non pdata properties we can add them to the request.
+var jsonMarshaler = &jsonpb.Marshaler{}
 
 // LogsResponse represents the response for gRPC client/server.
 type LogsResponse struct {
@@ -36,6 +38,20 @@ func NewLogsResponse() LogsResponse {
 	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
 }
 
+// Marshal marshals LogsResponse into JSON bytes.
+func (lr LogsResponse) Marshal() ([]byte, error) {
+	return lr.orig.Marshal()
+}
+
+// MarshalJSON marshals LogsResponse into JSON bytes.
+func (lr LogsResponse) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := jsonMarshaler.Marshal(&buf, lr.orig); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // LogsRequest represents the response for gRPC client/server.
 type LogsRequest struct {
 	orig *otlpcollectorlog.ExportLogsServiceRequest
@@ -44,6 +60,20 @@ type LogsRequest struct {
 // NewLogsRequest returns an empty LogsRequest.
 func NewLogsRequest() LogsRequest {
 	return LogsRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+}
+
+// Marshal marshals LogsRequest into proto bytes.
+func (lr LogsRequest) Marshal() ([]byte, error) {
+	return lr.orig.Marshal()
+}
+
+// MarshalJSON marshals LogsRequest into JSON bytes.
+func (lr LogsRequest) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := jsonMarshaler.Marshal(&buf, lr.orig); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func (lr LogsRequest) SetLogs(ld pdata.Logs) {
