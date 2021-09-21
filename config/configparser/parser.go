@@ -114,7 +114,7 @@ func (l *ConfigMap) Get(key string) interface{} {
 func (l *ConfigMap) Set(key string, value interface{}) {
 	// koanf doesn't offer a direct setting mechanism so merging is required.
 	merged := koanf.New(KeyDelimiter)
-	merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
+	_ = merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
 	l.k.Merge(merged)
 }
 
@@ -124,12 +124,10 @@ func (l *ConfigMap) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
 
-// MergeStringMap merges the configuration from the given map with the existing config.
+// Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
-func (l *ConfigMap) MergeStringMap(cfg map[string]interface{}) error {
-	toMerge := koanf.New(KeyDelimiter)
-	toMerge.Load(confmap.Provider(cfg, KeyDelimiter), nil)
-	return l.k.Merge(toMerge)
+func (l *ConfigMap) Merge(in *ConfigMap) error {
+	return l.k.Merge(in.k)
 }
 
 // Sub returns new Parser instance representing a sub-config of this instance.
@@ -142,10 +140,7 @@ func (l *ConfigMap) Sub(key string) (*ConfigMap, error) {
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subParser := NewConfigMap()
-		// Cannot return error because the subv is empty.
-		_ = subParser.MergeStringMap(cast.ToStringMap(data))
-		return subParser, nil
+		return NewConfigMapFromStringMap(cast.ToStringMap(data)), nil
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
