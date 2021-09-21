@@ -33,7 +33,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -88,7 +87,7 @@ type Collector struct {
 
 // New creates and returns a new instance of Collector.
 func New(set CollectorSettings) (*Collector, error) {
-	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
+	if err := validateConfigFromFactories(set.Factories); err != nil {
 		return nil, err
 	}
 

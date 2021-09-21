@@ -74,7 +74,7 @@ func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, e
 	if cp, err = sfl.base.Get(ctx); err != nil {
 		return nil, err
 	}
-	return cp, cp.MergeStringMap(prop)
+	return cp, cp.Merge(configparser.NewConfigMapFromStringMap(prop))
 }
 
 func (sfl *setFlagProvider) Close(context.Context) error {

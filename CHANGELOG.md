@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
 - Add Gen dependabot into CI (#4083)
 
 ## v0.36.0 Beta
