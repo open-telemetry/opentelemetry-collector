@@ -242,5 +242,5 @@ func (ts *timeoutSender) send(req request) error {
 
 // DefaultUserAgent User-Agent value used by exporters
 func DefaultUserAgent(info component.BuildInfo) string {
-	return fmt.Sprintf("%s/%s %s/%s", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
+	return fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
 }
