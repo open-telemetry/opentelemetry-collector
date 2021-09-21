@@ -120,6 +120,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}, nil
 }
 
+// WithDefaultUserAgent adds a user-agent header to settings, unless one already exists.
 func (hcs *HTTPClientSettings) WithDefaultUserAgent(defaultUserAgent string) {
 	userAgentFound := false
 	for k := range hcs.Headers {
