@@ -289,6 +289,7 @@ internal-gendependabot:
 	@echo "    schedule:" >> ${DEPENDABOT_PATH};
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH};
 
+# This target should run on /bin/bash since the syntax DIR=$${dir:1} is not supported by /bin/sh.
 .PHONY: gendependabot
 gendependabot: $(eval SHELL:=/bin/bash)
 	@echo "Recreating ${DEPENDABOT_PATH} file"
