@@ -386,14 +386,16 @@ type Span struct {
 	//
 	// This field is semantically required and it is expected that end_time >= start_time.
 	EndTimeUnixNano uint64 `protobuf:"fixed64,8,opt,name=end_time_unix_nano,json=endTimeUnixNano,proto3" json:"end_time_unix_nano,omitempty"`
-	// attributes is a collection of key/value pairs. The value can be a string,
-	// an integer, a double or the Boolean values `true` or `false`. Note, global attributes
+	// attributes is a collection of key/value pairs. Note, global attributes
 	// like server name can be set using the resource API. Examples of attributes:
 	//
 	//     "/http/user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
 	//     "/http/server_latency": 300
 	//     "abc.com/myattribute": true
 	//     "abc.com/score": 10.239
+	//
+	// The OpenTelemetry API specification further restricts the allowed value types:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/common.md#attributes
 	Attributes []v11.KeyValue `protobuf:"bytes,9,rep,name=attributes,proto3" json:"attributes"`
 	// dropped_attributes_count is the number of attributes that were discarded. Attributes
 	// can be discarded because their keys are too long or because there are too many
