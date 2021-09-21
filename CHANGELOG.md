@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
+
 ## v0.36.0 Beta
 
 ## 🛑 Breaking changes 🛑
