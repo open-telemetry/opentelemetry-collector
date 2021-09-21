@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -143,13 +142,12 @@ type exportersRequiredDataTypes map[config.ComponentID]dataTypeRequirements
 
 // BuildExporters builds Exporters from config.
 func BuildExporters(
-	logger *zap.Logger,
-	tracerProvider trace.TracerProvider,
+	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfg *config.Config,
 	factories map[config.Type]component.ExporterFactory,
 ) (Exporters, error) {
-	logger = logger.With(zap.String(zapKindKey, zapKindLogExporter))
+	logger := settings.Logger.With(zap.String(zapKindKey, zapKindLogExporter))
 
 	// We need to calculate required input data types for each exporter so that we know
 	// which data type must be started for each exporter.
@@ -160,9 +158,12 @@ func BuildExporters(
 	// Build exporters exporters based on configuration and required input data types.
 	for expID, expCfg := range cfg.Exporters {
 		set := component.ExporterCreateSettings{
-			Logger:         logger.With(zap.String(zapNameKey, expID.String())),
-			TracerProvider: tracerProvider,
-			BuildInfo:      buildInfo,
+			TelemetrySettings: component.TelemetrySettings{
+				Logger:         logger.With(zap.String(zapNameKey, expID.String())),
+				TracerProvider: settings.TracerProvider,
+				MeterProvider:  settings.MeterProvider,
+			},
+			BuildInfo: buildInfo,
 		}
 
 		factory, exists := factories[expID.Type()]
@@ -250,7 +251,7 @@ func buildExporter(
 				// Could not create because this exporter does not support this data type.
 				return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
 			}
-			return nil, fmt.Errorf("error creating %v exporter: %v", cfg.ID(), err)
+			return nil, fmt.Errorf("error creating %v exporter: %w", cfg.ID(), err)
 		}
 
 		// Check if the factory really created the exporter.

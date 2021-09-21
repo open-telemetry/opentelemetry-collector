@@ -73,7 +73,7 @@ type GRPCClientSettings struct {
 	Compression string `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -134,7 +134,7 @@ type GRPCServerSettings struct {
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings,omitempty"`
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
@@ -179,7 +179,7 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 }
 
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
-func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]component.Extension) ([]grpc.DialOption, error) {
+func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
@@ -219,7 +219,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 	}
 
 	if gcs.Auth != nil {
-		if ext == nil {
+		if host.GetExtensions() == nil {
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
@@ -228,7 +228,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(ext map[config.ComponentID]componen
 			return nil, cperr
 		}
 
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(ext, componentID)
+		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(host.GetExtensions(), componentID)
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -270,7 +270,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
-func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]component.Extension) ([]grpc.ServerOption, error) {
+func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -334,7 +334,7 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 			return nil, cperr
 		}
 
-		authenticator, err := configauth.GetServerAuthenticator(ext, componentID)
+		authenticator, err := configauth.GetServerAuthenticator(host.GetExtensions(), componentID)
 		if err != nil {
 			return nil, err
 		}
@@ -346,11 +346,15 @@ func (gss *GRPCServerSettings) ToServerOption(ext map[config.ComponentID]compone
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Pass construct settings to have access to Tracer.
 	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(
-		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
+		// otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(
-		otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
+		// otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 

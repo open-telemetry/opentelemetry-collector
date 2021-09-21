@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -45,7 +44,8 @@ func New(id config.ComponentID, nextConsumer consumer.Logs) *Receiver {
 }
 
 // Export implements the service Export logs func.
-func (r *Receiver) Export(ctx context.Context, ld pdata.Logs) (otlpgrpc.LogsResponse, error) {
+func (r *Receiver) Export(ctx context.Context, req otlpgrpc.LogsRequest) (otlpgrpc.LogsResponse, error) {
+	ld := req.Logs()
 	numSpans := ld.LogRecordCount()
 	if numSpans == 0 {
 		return otlpgrpc.NewLogsResponse(), nil

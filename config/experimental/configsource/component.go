@@ -54,16 +54,9 @@ type ConfigSource interface {
 	// implementation handles the generic params according to their requirements.
 	Retrieve(ctx context.Context, selector string, params interface{}) (Retrieved, error)
 
-	// RetrieveEnd signals that the Session must not be used to retrieve any new values from the
-	// source, ie.: all values from this source were retrieved for the configuration. It should
-	// be used to release resources that are only needed to retrieve configuration data.
-	RetrieveEnd(ctx context.Context) error
-
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.
-	// This method must be called when the configuration session ends, either in case of success
-	// or error. Each Session object should use this call according to their needs: release resources,
-	// close communication channels, etc.
+	// This method must be called when the configuration session ends, either in case of success or error.
 	Close(ctx context.Context) error
 }
 
@@ -88,8 +81,5 @@ type Watchable interface {
 	// 3. An error happens while watching for updates. The method should not return
 	//    on first instances of transient errors, optionally there should be
 	//    configurable thresholds to control for how long such errors can be ignored.
-	//
-	// This method must only be called when the RetrieveEnd method of the Session that
-	// retrieved the value was successfully completed.
 	WatchForUpdate() error
 }

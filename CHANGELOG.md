@@ -2,6 +2,49 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
+
+## v0.36.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Remove deprecated pdata.AttributeMapToMap (#3994)
+- Move ValidateConfig from configcheck to configtest (#3956)
+- Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005)
+- Remove `semconv.AttributeMessageType` (#4020)
+- Remove `semconv.AttributeHTTPStatusText` (#4015)
+- Remove squash on `configtls.TLSClientSetting` and move TLS client configs under `tls` (#4063)
+- Rename TLS server config `*configtls.TLSServerSetting` from `tls_settings` to `tls` (#4063)
+- Split `service.Collector` from the `cobra.Command` (#4074)
+
+## 💡 Enhancements 💡
+
+- Create new semconv package for v1.6.1 (#3948)
+- Add AttributeValueBytes support to AsString (#4002)
+- Add AttributeValueTypeBytes support to AttributeMap.AsRaw (#4003)
+- Add MeterProvider to TelemetrySettings (#4031)
+- Add configuration to setup collector logs via config file. (#4009)
+
+## v0.35.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Remove the legacy gRPC port(`55680`) support in OTLP receiver (#3966)
+- Rename configparser.Parser to configparser.ConfigMap (#3964)
+- Remove obsreport.ScraperContext, embed into StartMetricsOp (#3969)
+- Remove dependency on deprecated go.opentelemetry.io/otel/oteltest (#3979)
+- Remove deprecated pdata.AttributeValueToString (#3953)
+- Remove deprecated pdata.TimestampFromTime. Closes: #3925 (#3935)
+
+## 💡 Enhancements 💡
+
+- Add TelemetryCreateSettings (#3984)
+- Only initialize collector telemetry once (#3918)
+- Add trace context info to LogRecord log (#3959)
+- Add new view for AWS ECS health check extension. (#3776)
+
 ## v0.34.0 Beta
 
 ## 🛑 Breaking changes 🛑

@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -390,7 +391,7 @@ func TestHttpReception(t *testing.T) {
 			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				_, errWrite := fmt.Fprint(w, "test")
 				assert.NoError(t, errWrite)
-			}))
+			}), componenttest.NewNopTelemetrySettings())
 
 			go func() {
 				_ = s.Serve(ln)
@@ -469,7 +470,7 @@ func TestHttpCors(t *testing.T) {
 			assert.NoError(t, err)
 			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-			}))
+			}), componenttest.NewNopTelemetrySettings())
 			go func() {
 				_ = s.Serve(ln)
 			}()
@@ -505,7 +506,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
-	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, s)
 	require.NoError(t, s.Close())
 }
@@ -547,7 +548,7 @@ func ExampleHTTPServerSettings() {
 	settings := HTTPServerSettings{
 		Endpoint: ":443",
 	}
-	s := settings.ToServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	s := settings.ToServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), componenttest.NewNopTelemetrySettings())
 	l, err := settings.ToListener()
 	if err != nil {
 		panic(err)

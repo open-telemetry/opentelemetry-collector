@@ -17,9 +17,6 @@ package component
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -49,12 +46,7 @@ type PipelineWatcher interface {
 
 // ExtensionCreateSettings is passed to ExtensionFactory.Create* functions.
 type ExtensionCreateSettings struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// TracerProvider that the factory can pass to other instrumented third-party libraries.
-	TracerProvider trace.TracerProvider
+	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo BuildInfo
@@ -69,7 +61,7 @@ type ExtensionFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Extension.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have these checks in the
+	// 'configtest.CheckConfigStruct'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Extension
 

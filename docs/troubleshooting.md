@@ -211,7 +211,7 @@ or to find only errors:
 The Collector may exit/restart because:
 
 - Memory pressure due to missing or misconfigured
-  [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiter/README.md)
+  [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
   processor.
 - [Improperly sized](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md)
   for load.

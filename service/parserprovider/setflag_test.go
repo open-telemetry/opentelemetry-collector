@@ -15,6 +15,7 @@
 package parserprovider
 
 import (
+	"context"
 	"flag"
 	"testing"
 
@@ -36,7 +37,7 @@ func TestSetFlags(t *testing.T) {
 	require.NoError(t, err)
 
 	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get()
+	cp, err := sfl.Get(context.Background())
 	require.NoError(t, err)
 
 	keys := cp.AllKeys()
@@ -52,13 +53,17 @@ func TestSetFlags_empty(t *testing.T) {
 	Flags(flags)
 
 	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get()
+	cp, err := sfl.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(cp.AllKeys()))
 }
 
 type emptyProvider struct{}
 
-func (el *emptyProvider) Get() (*configparser.Parser, error) {
-	return configparser.NewParser(), nil
+func (el *emptyProvider) Get(context.Context) (*configparser.ConfigMap, error) {
+	return configparser.NewConfigMap(), nil
+}
+
+func (el *emptyProvider) Close(context.Context) error {
+	return nil
 }

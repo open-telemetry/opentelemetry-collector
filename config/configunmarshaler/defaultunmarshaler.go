@@ -19,6 +19,8 @@ import (
 	"os"
 	"reflect"
 
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
@@ -33,6 +35,7 @@ const (
 	_ configErrorCode = iota
 
 	errInvalidTypeAndNameKey
+	errInvalidLogsLevel
 	errUnknownType
 	errDuplicateName
 	errUnmarshalTopLevelStructureError
@@ -77,8 +80,19 @@ type configSettings struct {
 }
 
 type serviceSettings struct {
+	Telemetry  serviceTelemetrySettings    `mapstructure:"telemetry"`
 	Extensions []string                    `mapstructure:"extensions"`
 	Pipelines  map[string]pipelineSettings `mapstructure:"pipelines"`
+}
+
+type serviceTelemetrySettings struct {
+	Logs serviceTelemetryLogsSettings `mapstructure:"logs"`
+}
+
+type serviceTelemetryLogsSettings struct {
+	Level       string `mapstructure:"level"`
+	Development bool   `mapstructure:"development"`
+	Encoding    string `mapstructure:"encoding"`
 }
 
 type pipelineSettings struct {
@@ -96,14 +110,26 @@ func NewDefault() ConfigUnmarshaler {
 }
 
 // Unmarshal the Config from a Parser.
-// After the config is unmarshalled, `Validate()` must be called to validate.
-func (*defaultUnmarshaler) Unmarshal(v *configparser.Parser, factories component.Factories) (*config.Config, error) {
+// After the config is unmarshaled, `Validate()` must be called to validate.
+func (*defaultUnmarshaler) Unmarshal(v *configparser.ConfigMap, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
 	// Unmarshal the config.
 
 	// Struct to validate top level sections.
-	var rawCfg configSettings
+	rawCfg := configSettings{
+		// Setup default telemetry values as in service/logger.go.
+		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
+		Service: serviceSettings{
+			Telemetry: serviceTelemetrySettings{
+				Logs: serviceTelemetryLogsSettings{
+					Level:       "INFO",
+					Development: false,
+					Encoding:    "console",
+				},
+			},
+		},
+	}
 	if err := v.UnmarshalExact(&rawCfg); err != nil {
 		return nil, &configError{
 			code: errUnmarshalTopLevelStructureError,
@@ -183,7 +209,7 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -221,6 +247,21 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 
 func unmarshalService(rawService serviceSettings) (config.Service, error) {
 	var ret config.Service
+
+	var lvl zapcore.Level
+	if err := lvl.UnmarshalText([]byte(rawService.Telemetry.Logs.Level)); err != nil {
+		return ret, &configError{
+			msg:  fmt.Sprintf(`service telemetry logs invalid level: %q, valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`, rawService.Telemetry.Logs.Level),
+			code: errInvalidLogsLevel,
+		}
+	}
+
+	ret.Telemetry.Logs = config.ServiceTelemetryLogs{
+		Level:       lvl,
+		Development: rawService.Telemetry.Logs.Development,
+		Encoding:    rawService.Telemetry.Logs.Encoding,
+	}
+
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))
 	for _, extIDStr := range rawService.Extensions {
 		id, err := config.NewIDFromString(extIDStr)
@@ -239,7 +280,7 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *configparser.Parser, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
+func LoadReceiver(componentConfig *configparser.ConfigMap, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(id.Name())
@@ -260,7 +301,7 @@ func unmarshalReceivers(recvs map[string]map[string]interface{}, factories map[c
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -297,7 +338,7 @@ func unmarshalExporters(exps map[string]map[string]interface{}, factories map[co
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -339,7 +380,7 @@ func unmarshalProcessors(procs map[string]map[string]interface{}, factories map[
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
-		componentConfig := configparser.NewParserFromStringMap(value)
+		componentConfig := configparser.NewConfigMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -434,9 +475,9 @@ func parseIDNames(pipelineID config.ComponentID, componentType string, names []s
 	return ret, nil
 }
 
-// expandEnvConfig updates a configparser.Parser with expanded values for all the values (simple, list or map value).
+// expandEnvConfig updates a configparser.ConfigMap with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
-func expandEnvConfig(v *configparser.Parser) {
+func expandEnvConfig(v *configparser.ConfigMap) {
 	for _, k := range v.AllKeys() {
 		v.Set(k, expandStringValues(v.Get(k)))
 	}
@@ -527,7 +568,7 @@ func expandEnv(s string) string {
 	})
 }
 
-func unmarshal(componentSection *configparser.Parser, intoCfg interface{}) error {
+func unmarshal(componentSection *configparser.ConfigMap, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.Unmarshallable); ok {
 		return cu.Unmarshal(componentSection)
 	}

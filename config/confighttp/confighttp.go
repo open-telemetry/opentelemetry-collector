@@ -39,7 +39,7 @@ type HTTPClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
@@ -156,7 +156,7 @@ type HTTPServerSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings, omitempty"`
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls, omitempty"`
 
 	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
 	// for the OTLP receiver. See github.com/rs/cors
@@ -208,7 +208,7 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOption) *http.Server {
+func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component.TelemetrySettings, opts ...ToServerOption) *http.Server {
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
@@ -234,7 +234,8 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOp
 	handler = otelhttp.NewHandler(
 		handler,
 		"",
-		otelhttp.WithTracerProvider(otel.GetTracerProvider()),
+		otelhttp.WithTracerProvider(settings.TracerProvider),
+		otelhttp.WithMeterProvider(settings.MeterProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
 			return r.URL.Path

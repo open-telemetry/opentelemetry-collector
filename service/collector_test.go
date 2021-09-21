@@ -58,11 +58,11 @@ func TestCollector_Start(t *testing.T) {
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, col.rootCmd, col.Command())
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
-	col.rootCmd.SetArgs([]string{
+	cmd := NewCommand(col)
+	cmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
@@ -71,7 +71,7 @@ func TestCollector_Start(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.NoError(t, col.Run())
+		assert.NoError(t, cmd.Execute())
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -123,12 +123,13 @@ func TestCollector_ReportError(t *testing.T) {
 	col, err := New(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
 	require.NoError(t, err)
 
-	col.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
+	cmd := NewCommand(col)
+	cmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
 
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.EqualError(t, col.Run(), "failed to shutdown collector telemetry: err1")
+		assert.EqualError(t, cmd.Execute(), "failed to shutdown collector telemetry: err1")
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -154,7 +155,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		colErr := col.Run()
+		colErr := col.Run(context.Background())
 		if colErr != nil {
 			err = colErr
 		}
@@ -234,7 +235,7 @@ func assertZPages(t *testing.T) {
 
 type minimalParserLoader struct{}
 
-func (*minimalParserLoader) Get() (*configparser.Parser, error) {
+func (*minimalParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
 	configStr := `
 receivers:
   otlp:
@@ -258,15 +259,23 @@ service:
       processors: [batch]
       exporters: [otlp]
 `
-	return configparser.NewParserFromBuffer(strings.NewReader(configStr))
+	return configparser.NewConfigMapFromBuffer(strings.NewReader(configStr))
+}
+
+func (*minimalParserLoader) Close(context.Context) error {
+	return nil
 }
 
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get() (*configparser.Parser, error) {
+func (epl *errParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
 	return nil, epl.err
+}
+
+func (epl *errParserLoader) Close(context.Context) error {
+	return nil
 }
 
 func TestCollector_reloadService(t *testing.T) {
@@ -310,12 +319,14 @@ func TestCollector_reloadService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			col := Collector{
-				logger:            zap.NewNop(),
-				tracerProvider:    trace.NewNoopTracerProvider(),
-				parserProvider:    tt.parserProvider,
-				configUnmarshaler: configunmarshaler.NewDefault(),
-				factories:         factories,
-				service:           tt.service,
+				set: CollectorSettings{
+					ParserProvider:    tt.parserProvider,
+					ConfigUnmarshaler: configunmarshaler.NewDefault(),
+					Factories:         factories,
+				},
+				logger:         zap.NewNop(),
+				tracerProvider: trace.NewNoopTracerProvider(),
+				service:        tt.service,
 			}
 
 			err := col.reloadService(ctx)

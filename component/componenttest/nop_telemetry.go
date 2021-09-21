@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configcheck has checks to be applied to configuration
-// objects implemented by factories of components used in the OpenTelemetry
-// collector. It is recommended for implementers of components to run the
-// validations available on this package.
-package configcheck
+package componenttest
+
+import (
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component"
+)
+
+// NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.
+func NewNopTelemetrySettings() component.TelemetrySettings {
+	return component.TelemetrySettings{
+		Logger:         zap.NewNop(),
+		TracerProvider: trace.NewNoopTracerProvider(),
+		MeterProvider:  metric.NoopMeterProvider{},
+	}
+}

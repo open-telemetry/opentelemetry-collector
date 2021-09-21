@@ -21,7 +21,6 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
@@ -53,16 +52,16 @@ type otlpReceiver struct {
 	logReceiver     *logs.Receiver
 	shutdownWG      sync.WaitGroup
 
-	logger *zap.Logger
+	settings component.ReceiverCreateSettings
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
+func newOtlpReceiver(cfg *Config, settings component.ReceiverCreateSettings) *otlpReceiver {
 	r := &otlpReceiver{
-		cfg:    cfg,
-		logger: logger,
+		cfg:      cfg,
+		settings: settings,
 	}
 	if cfg.HTTP != nil {
 		r.httpMux = mux.NewRouter()
@@ -72,7 +71,7 @@ func newOtlpReceiver(cfg *Config, logger *zap.Logger) *otlpReceiver {
 }
 
 func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host component.Host) error {
-	r.logger.Info("Starting GRPC server on endpoint " + cfg.NetAddr.Endpoint)
+	r.settings.Logger.Info("Starting GRPC server on endpoint " + cfg.NetAddr.Endpoint)
 
 	gln, err := cfg.ToListener()
 	if err != nil {
@@ -90,7 +89,7 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 }
 
 func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host component.Host) error {
-	r.logger.Info("Starting HTTP server on endpoint " + cfg.Endpoint)
+	r.settings.Logger.Info("Starting HTTP server on endpoint " + cfg.Endpoint)
 	var hln net.Listener
 	hln, err := r.cfg.HTTP.ToListener()
 	if err != nil {
@@ -111,7 +110,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 	var err error
 	if r.cfg.GRPC != nil {
 		var opts []grpc.ServerOption
-		opts, err = r.cfg.GRPC.ToServerOption(host.GetExtensions())
+		opts, err = r.cfg.GRPC.ToServerOption(host, r.settings.TelemetrySettings)
 		if err != nil {
 			return err
 		}
@@ -133,22 +132,11 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 		if err != nil {
 			return err
 		}
-		if r.cfg.GRPC.NetAddr.Endpoint == defaultGRPCEndpoint {
-			r.logger.Info("Setting up a second GRPC listener on legacy endpoint " + legacyGRPCEndpoint)
-
-			// Copy the config.
-			cfgLegacyGRPC := r.cfg.GRPC
-			// And use the legacy endpoint.
-			cfgLegacyGRPC.NetAddr.Endpoint = legacyGRPCEndpoint
-			err = r.startGRPCServer(cfgLegacyGRPC, host)
-			if err != nil {
-				return err
-			}
-		}
 	}
 	if r.cfg.HTTP != nil {
 		r.serverHTTP = r.cfg.HTTP.ToServer(
 			r.httpMux,
+			r.settings.TelemetrySettings,
 			confighttp.WithErrorHandler(errorHandler),
 		)
 		err = r.startHTTPServer(r.cfg.HTTP, host)
@@ -156,7 +144,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			return err
 		}
 		if r.cfg.HTTP.Endpoint == defaultHTTPEndpoint {
-			r.logger.Info("Setting up a second HTTP listener on legacy endpoint " + legacyHTTPEndpoint)
+			r.settings.Logger.Info("Setting up a second HTTP listener on legacy endpoint " + legacyHTTPEndpoint)
 
 			// Copy the config.
 			cfgLegacyHTTP := r.cfg.HTTP
