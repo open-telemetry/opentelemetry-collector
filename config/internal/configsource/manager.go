@@ -388,11 +388,11 @@ func (m *Manager) parseStringValue(ctx context.Context, s string) (interface{}, 
 
 				// Peek next char after name, if it is a config source name delimiter treat the remaining of the
 				// string as a config source.
-				possibleDelimCharIndex := j+w+1
+				possibleDelimCharIndex := j + w + 1
 				if possibleDelimCharIndex < len(s) && s[possibleDelimCharIndex] == configSourceNameDelimChar {
 					// This is a config source, since it is not delimited it will consume until end of the string.
 					cfgSrcName = name
-					expandableContent = s[possibleDelimCharIndex+1:]
+					expandableContent = s[j+1:]
 					w = len(expandableContent) // Set consumed bytes to the length of expandableContent
 				}
 			}
@@ -469,7 +469,7 @@ func (m *Manager) retrieveConfigSourceData(ctx context.Context, cfgSrcName, cfgS
 		return nil, newErrUnknownConfigSource(cfgSrcName)
 	}
 
-	cfgSrcName, selector, paramsParser, err := parseCfgSrcInvocation(cfgSrcInvocation)
+	cfgSrcName, selector, paramsConfigMap, err := parseCfgSrcInvocation(cfgSrcInvocation)
 	if err != nil {
 		return nil, err
 	}
@@ -485,14 +485,14 @@ func (m *Manager) retrieveConfigSourceData(ctx context.Context, cfgSrcName, cfgS
 	}
 
 	// Recursively resolve/parse any config source on the parameters.
-	if paramsParser != nil {
-		paramsParser, err = m.Resolve(ctx, paramsParser)
+	if paramsConfigMap != nil {
+		paramsConfigMap, err = m.Resolve(ctx, paramsConfigMap)
 		if err != nil {
 			return nil, fmt.Errorf("failed to process parameters for config source %q invocation %q: %w", cfgSrcName, cfgSrcInvocation, err)
 		}
 	}
 
-	retrieved, err := cfgSrc.Retrieve(ctx, selector, paramsParser)
+	retrieved, err := cfgSrc.Retrieve(ctx, selector, paramsConfigMap)
 	if err != nil {
 		return nil, fmt.Errorf("config source %q failed to retrieve value: %w", cfgSrcName, err)
 	}
