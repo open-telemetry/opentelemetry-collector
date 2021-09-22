@@ -581,19 +581,32 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.GRPC.MaxRecvMsgSizeMiB = 100
 	cfg.HTTP = nil
 	ocr := newReceiver(t, factory, cfg, sink, nil)
 
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 	require.NoError(t, err)
-	defer cc.Close()
 
 	td := testdata.GenerateTracesManySpansSameResource(500000)
+	require.Error(t, exportTraces(cc, td))
+	cc.Close()
+	require.NoError(t, ocr.Shutdown(context.Background()))
+
+	cfg.GRPC.MaxRecvMsgSizeMiB = 100
+	ocr = newReceiver(t, factory, cfg, sink, nil)
+
+	require.NotNil(t, ocr)
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+
+	cc, err = grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+	require.NoError(t, err)
+	defer cc.Close()
+
+	td = testdata.GenerateTracesManySpansSameResource(500000)
 	require.NoError(t, exportTraces(cc, td))
 	require.Len(t, sink.AllTraces(), 1)
 	assert.Equal(t, td, sink.AllTraces()[0])
