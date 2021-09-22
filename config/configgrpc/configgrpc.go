@@ -21,6 +21,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mostynb/go-grpc-compression/lz4"
+	"github.com/mostynb/go-grpc-compression/snappy"
+	"github.com/mostynb/go-grpc-compression/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -40,12 +43,18 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
+	CompressionLz4         = "lz4"
+	CompressionSnappy      = "snappy"
+	CompressionZstd        = "zstd"
 )
 
 var (
 	// Map of opentelemetry compression types to grpc registered compression types.
 	gRPCCompressionKeyMap = map[string]string{
-		CompressionGzip: gzip.Name,
+		CompressionGzip:   gzip.Name,
+		CompressionLz4:    lz4.Name,
+		CompressionSnappy: snappy.Name,
+		CompressionZstd:   zstd.Name,
 	}
 )
 
@@ -68,8 +77,7 @@ type GRPCClientSettings struct {
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// The compression key for supported compression types within
-	// collector. Currently the only supported mode is `gzip`.
+	// The compression key for supported compression types within collector.
 	Compression string `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.

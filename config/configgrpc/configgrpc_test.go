@@ -340,6 +340,30 @@ func TestGetGRPCCompressionKey(t *testing.T) {
 		t.Error("Capitalization of CompressionGzip should not matter")
 	}
 
+	if GetGRPCCompressionKey("lz4") != CompressionLz4 {
+		t.Error("lz4 is marked as supported but returned unsupported")
+	}
+
+	if GetGRPCCompressionKey("Lz4") != CompressionLz4 {
+		t.Error("Capitalization of CompressionLz4 should not matter")
+	}
+
+	if GetGRPCCompressionKey("snappy") != CompressionSnappy {
+		t.Error("snappy is marked as supported but returned unsupported")
+	}
+
+	if GetGRPCCompressionKey("Snappy") != CompressionSnappy {
+		t.Error("Capitalization of CompressionSnappy should not matter")
+	}
+
+	if GetGRPCCompressionKey("zstd") != CompressionZstd {
+		t.Error("zstd is marked as supported but returned unsupported")
+	}
+
+	if GetGRPCCompressionKey("Zstd") != CompressionZstd {
+		t.Error("Capitalization of CompressionZstd should not matter")
+	}
+
 	if GetGRPCCompressionKey("badType") != CompressionUnsupported {
 		t.Error("badType is not supported but was returned as supported")
 	}
