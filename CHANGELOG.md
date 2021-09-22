@@ -3,9 +3,9 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
- 
+
 - Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
-- Rename `configparser` package to `configmap` (#4075)
+- Rename `configparser.Parser` as `config.Map` (#4075)
 
 ## 💡 Enhancements 💡
 

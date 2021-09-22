@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmap
+package config
 
 import (
 	"testing"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestToStringMap_WithSet(t *testing.T) {
-	parser := NewConfigMap()
+	parser := NewMap()
 	parser.Set("key::embedded", int64(123))
 	assert.Equal(t, map[string]interface{}{"key": map[string]interface{}{"embedded": int64(123)}}, parser.ToStringMap())
 }
@@ -98,7 +98,7 @@ func TestToStringMap(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			parser, err := NewConfigMapFromFile(test.fileName)
+			parser, err := NewMapFromFile(test.fileName)
 			require.NoError(t, err, "Unable to read configuration file '%s'", test.fileName)
 			assert.Equal(t, test.stringMap, parser.ToStringMap())
 		})

@@ -17,7 +17,7 @@ package parserprovider
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -34,8 +34,8 @@ func NewMergeProvider(ps ...ParserProvider) ParserProvider {
 	return &mergeProvider{providers: ps}
 }
 
-func (mp *mergeProvider) Get(ctx context.Context) (*configparser.ConfigMap, error) {
-	ret := configparser.NewConfigMap()
+func (mp *mergeProvider) Get(ctx context.Context) (*config.Map, error) {
+	ret := config.NewMap()
 	for _, p := range mp.providers {
 		cfgMap, err := p.Get(ctx)
 		if err != nil {

@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmap"
 )
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part
@@ -109,9 +108,9 @@ func NewDefault() ConfigUnmarshaler {
 	return &defaultUnmarshaler{}
 }
 
-// Unmarshal the Config from a Parser.
+// Unmarshal the Config from a config.Map.
 // After the config is unmarshaled, `Validate()` must be called to validate.
-func (*defaultUnmarshaler) Unmarshal(v *configmap.ConfigMap, factories component.Factories) (*config.Config, error) {
+func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
 	// Unmarshal the config.
@@ -209,7 +208,7 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
-		componentConfig := configmap.NewConfigMapFromStringMap(value)
+		componentConfig := config.NewMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -280,7 +279,7 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *configmap.ConfigMap, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
+func LoadReceiver(componentConfig *config.Map, id config.ComponentID, factory component.ReceiverFactory) (config.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(id.Name())
@@ -301,7 +300,7 @@ func unmarshalReceivers(recvs map[string]map[string]interface{}, factories map[c
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
-		componentConfig := configmap.NewConfigMapFromStringMap(value)
+		componentConfig := config.NewMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -338,7 +337,7 @@ func unmarshalExporters(exps map[string]map[string]interface{}, factories map[co
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
-		componentConfig := configmap.NewConfigMapFromStringMap(value)
+		componentConfig := config.NewMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -380,7 +379,7 @@ func unmarshalProcessors(procs map[string]map[string]interface{}, factories map[
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
-		componentConfig := configmap.NewConfigMapFromStringMap(value)
+		componentConfig := config.NewMapFromStringMap(value)
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -475,9 +474,9 @@ func parseIDNames(pipelineID config.ComponentID, componentType string, names []s
 	return ret, nil
 }
 
-// expandEnvConfig updates a configmap.ConfigMap with expanded values for all the values (simple, list or map value).
+// expandEnvConfig updates a config.Map with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
-func expandEnvConfig(v *configmap.ConfigMap) {
+func expandEnvConfig(v *config.Map) {
 	for _, k := range v.AllKeys() {
 		v.Set(k, expandStringValues(v.Get(k)))
 	}
@@ -568,7 +567,7 @@ func expandEnv(s string) string {
 	})
 }
 
-func unmarshal(componentSection *configmap.ConfigMap, intoCfg interface{}) error {
+func unmarshal(componentSection *config.Map, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.Unmarshallable); ok {
 		return cu.Unmarshal(componentSection)
 	}

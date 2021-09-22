@@ -34,7 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmap"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
@@ -257,7 +257,7 @@ type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get(context.Context) (*configmap.ConfigMap, error) {
+func (epl *errParserLoader) Get(context.Context) (*config.Map, error) {
 	return nil, epl.err
 }
 

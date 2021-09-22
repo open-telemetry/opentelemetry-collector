@@ -17,11 +17,10 @@ package configunmarshaler
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmap"
 )
 
-// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the configmap.ConfigMap.
+// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the config.Map.
 type ConfigUnmarshaler interface {
 	// Unmarshal the configuration from the given parser and factories.
-	Unmarshal(v *configmap.ConfigMap, factories component.Factories) (*config.Config, error)
+	Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error)
 }

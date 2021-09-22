@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmap"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -45,7 +44,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configmap.ConfigMap
+		var cp *config.Map
 		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -65,7 +64,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configmap.ConfigMap
+		var cp *config.Map
 		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -96,7 +95,7 @@ func TestDefault(t *testing.T) {
 		require.NoError(t, err)
 		pl := Default()
 		require.NotNil(t, pl)
-		var cp *configmap.ConfigMap
+		var cp *config.Map
 		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
