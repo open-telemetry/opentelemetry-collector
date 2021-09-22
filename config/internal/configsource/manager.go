@@ -510,7 +510,10 @@ func newErrUnknownConfigSource(cfgSrcName string) error {
 	}
 }
 
-// parseCfgSrcInvocation extracts the reference to a config source from a string value.
+// parseCfgSrcInvocation parses the original string in the configuration that has a config source
+// retrieve operation and return its "logical components": the config source name, the selector, and
+// a configparser.ConfigMap to be used in this invocation of the config source. See Test_parseCfgSrcInvocation
+// for some examples of input and output.
 // The caller should check for error explicitly since it is possible for the
 // other values to have been partially set.
 func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigMap *configparser.ConfigMap, err error) {

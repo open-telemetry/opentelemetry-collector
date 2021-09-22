@@ -67,7 +67,7 @@ that can be used by code that is oblivious to the usage of config sources.
                                                      |                                                        
                                                      v                                                        
                           +-----------------------------------------------------+                             
-                          |                 configparser.Parser                 |                             
+                          |             configparser.ConfigMap                  |                             
                           |-----------------------------------------------------|                             
                           |                                                     |                             
                           | logica  YAML config:                                |                             
@@ -95,7 +95,7 @@ The `Resolve` method proceeds in the following steps:
 
 1. Create the `configsource.ConfigSource` objects defined the `config_sources` section of the initial configuration;
 2. For each config node (key) of the initial configuration:
-    1. Skip config node if it is under the `config_sources` section; 
+    1. Skip config node if it is under the `config_sources` section (this excludes `config_sources` from the resulting config); 
     2. Parse the node value transforming any config source invocation, or environment variable, into the retrieved data;
     3. Add the key and the value retrieved above into the resulting configuration;
 3. Return the resulting, aka effective, configuration.
@@ -104,39 +104,28 @@ The `Resolve` method proceeds in the following steps:
 
 For each config source invocation, e.g. `${include:/cfgs/rcvrs/use.yaml}`, the code proceeds as in the following steps:
 
-1. Find the corresponding `configsource.ConfigSource` object by its name, given in the initial configuration under the `config_sources` section;
-2. Get, or create a new, `configsource.Session` from the `configsource.ConfigSource` object;
-3. Use the `configsource.Session` to retrieve the data according to the parameters given in the invocation;
+1. Get the corresponding `configsource.ConfigSource` object by its name, given in the initial configuration under the `config_sources` section;
+2. Calls the `Retrieve` method, of the selected `configsource.ConfigSource`, according to the selector and parameters given in the invocation;
 
 ```terminal
-+---------+         +--------------+         +---------+          +-----------+
-| Manager |         | ConfigSource |         | Session |          | Retrieved |
-+---------+         +--------------+         +---------+          +-----------+
-    |                      |                      |                     |      
-    |      NewSession      |                      |                     |      
-    |--------------------->+--+                   |                     |      
-    |                      |  |                   |                     |      
-    |                      |  |------------------>+--+                  |      
-    |                      |  |                   |  |                  |      
-    |                      |  |                   |  |                  |      
-    |                      |  |<------------------+--+                  |      
-    |                      |  |                   |                     |      
-    |<---------------------+--+                   |                     |      
-    |  "Session object"    |                      |                     |      
-    |                      |                      |                     |      
-    |                      |       Retrieve       |                     |      
-    |-------------------------------------------->+--+                  |      
-    |                      |                      |  |   NewRetrieved   |      
-    |                      |                      |  |----------------->+--+   
-    |                      |                      |  |                  |  |   
-    |                      |                      |  |                  |  |   
-    |                      |                      |  |                  |  |   
-    |                      |                      |  |                  |  |   
-    |                      |                      |  |<-----------------+--+   
-    |                      |                      |  |                  |      
-    |<--------------------------------------------+--+                  |      
-    |  "Retrieved object"  |                      |                     |      
-    |                      |                      |                     |      
++---------+         +--------------+         +-----------+
+| Manager |         | ConfigSource |         | Retrieved |
++---------+         +--------------+         +-----------+
+    |                      |                      |      
+    |                      |                      |      
+    |                      |       Retrieve       |      
+    |-------------------------------------------->+--+   
+    |                      |                      |  |   
+    |                      |                      |  |   
+    |                      |                      |  |   
+    |                      |                      |  |   
+    |                      |                      |  |   
+    |                      |                      |  |   
+    |                      |                      |  |   
+    |                      |                      |  |   
+    |<--------------------------------------------+--+   
+    |  "Retrieved object"  |                      |      
+    |                      |                      |      
 ```
 
 ## Watching for Updates
@@ -145,5 +134,4 @@ the configuration data retrieved via the config sources used to process the “i
 the“effective” one.
 
 The `configsource.Manager` does that by wrapping calls to the `WatchForUpdate()` method of each `configsource.Retreived`
-object that was used during the configuration processing. It also controls the lifecycle of all `configsource.Session`
-objects created to get the `configsource.Retrieved` objects. 
+instance that also implements the `configsource.Watchable` interface. 
