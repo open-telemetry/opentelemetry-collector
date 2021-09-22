@@ -17,12 +17,10 @@ The following configuration options can be modified:
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory or on disk (for persistent storage) before dropping; ignored if `enabled` is `false`
+  - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping; ignored if `enabled` is `false`
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
-  - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension 
-    (note, `enable_unstable` build tag needs to be enabled first, see below for more details)
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend.
@@ -35,6 +33,15 @@ The full list of settings exposed for this helper exporter are documented [here]
 
 > :warning: The capability is under development and currently can be enabled only in OpenTelemetry
 > Collector Contrib with `enable_unstable` build tag set. 
+
+With this build tag set, additional configuration option can be enabled:
+
+- `sending_queue`
+  - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension
+    (note, `enable_unstable` build tag needs to be enabled first, see below for more details)
+
+The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which,
+similarly as for in-memory buffering, defaults to 5000 batches).
 
 When `persistent_storage_enabled` is set to true, the queue is being buffered to disk using 
 [file storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage).
