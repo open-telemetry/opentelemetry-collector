@@ -1,0 +1,24 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  otlp:
+    endpoint: "locahost:55678"
+
+processors:
+  batch:
+
+extensions:
+  memory_ballast:
+    size_mib: 512
+  zpages:
+
+service:
+  extensions: [memory_ballast, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]

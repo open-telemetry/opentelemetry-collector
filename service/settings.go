@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/service/parserprovider"
+	"go.opentelemetry.io/collector/service/configmapprovider"
 )
 
 // svcSettings holds configuration for building a new service.
@@ -67,13 +67,13 @@ type CollectorSettings struct {
 	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
 
-	// ParserProvider provides the configuration's Parser.
-	// If it is not provided a default provider is used. The default provider loads the configuration
-	// from a config file define by the --config command line flag and overrides component's configuration
-	// properties supplied via --set command line flag.
-	// If the provider is parserprovider.Watchable, collector
-	// may reload the configuration upon error.
-	ParserProvider parserprovider.ParserProvider
+	// ConfigMapProvider provides the configuration's ConfigMap. If it is not
+	// provided a default provider is used. The default provider loads the
+	// configuration from a config file define by the --config command line flag and
+	// overrides component's configuration properties supplied via --set command
+	// line flag. If the provider is configmapprovider.Watchable, the collector may
+	// reload the configuration upon error.
+	ConfigMapProvider configmapprovider.ConfigMapProvider
 
 	// ConfigUnmarshaler unmarshalls the configuration's Parser into the service configuration.
 	// If it is not provided a default unmarshaler is used.

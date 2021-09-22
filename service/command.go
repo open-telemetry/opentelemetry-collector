@@ -21,8 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/service/configmapprovider"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // NewCommand constructs a new cobra.Command using the given Collector.
@@ -41,7 +41,7 @@ func NewCommand(col *Collector) *cobra.Command {
 	flagSet := new(flag.FlagSet)
 	addFlagsFns := []func(*flag.FlagSet){
 		configtelemetry.Flags,
-		parserprovider.Flags,
+		configmapprovider.Flags,
 		telemetry.Flags,
 		telemetrylogs.Flags,
 	}

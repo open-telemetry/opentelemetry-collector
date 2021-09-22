@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider
+package configmapprovider
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 
 type fileProvider struct{}
 
-// NewFile returns a new ParserProvider that reads the configuration from a file configured
-// via the --config command line flag.
-func NewFile() ParserProvider {
+// NewFile returns a new ConfigMapProvider that reads the configuration from a
+// file configured via the --config command line flag.
+func NewFile() ConfigMapProvider {
 	return &fileProvider{}
 }
 

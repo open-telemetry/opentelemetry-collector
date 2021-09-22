@@ -12,28 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider
+package configmapprovider
 
-import (
-	"context"
-	"io"
-
-	"go.opentelemetry.io/collector/config/configparser"
-)
-
-type inMemoryProvider struct {
-	buf io.Reader
-}
-
-// NewInMemory returns a new ParserProvider that reads the configuration from the provided buffer as YAML.
-func NewInMemory(buf io.Reader) ParserProvider {
-	return &inMemoryProvider{buf: buf}
-}
-
-func (inp *inMemoryProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	return configparser.NewConfigMapFromBuffer(inp.buf)
-}
-
-func (inp *inMemoryProvider) Close(context.Context) error {
-	return nil
+// Default is the default ConfigMapProvider. It creates a configuration from a
+// file defined by the --config command line flag and overwrites properties from
+// --set command line flag (if the flag is present).
+func Default() ConfigMapProvider {
+	return NewSetFlag(NewFile())
 }

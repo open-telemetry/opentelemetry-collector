@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider
+package configmapprovider
 
 import (
 	"bytes"
@@ -27,15 +27,15 @@ import (
 )
 
 type setFlagProvider struct {
-	base ParserProvider
+	base ConfigMapProvider
 }
 
-// NewSetFlag returns a config.ParserProvider, that wraps a "base" config.ParserProvider, then
+// NewSetFlag returns a ConfigMapProvider that wraps a "base" ConfigMapProvider, then
 // overrides properties from set flag(s) in the loaded Parser.
 //
 // The implementation reads set flag(s) from the cmd and concatenates them as a "properties" file.
 // Then the properties file is read and properties are set to the loaded Parser.
-func NewSetFlag(base ParserProvider) ParserProvider {
+func NewSetFlag(base ConfigMapProvider) ConfigMapProvider {
 	return &setFlagProvider{
 		base: base,
 	}

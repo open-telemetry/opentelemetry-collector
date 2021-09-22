@@ -37,9 +37,9 @@ import (
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/service/configmapprovider"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 func TestCollector_Start(t *testing.T) {
@@ -145,9 +145,9 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
-		Factories:      factories,
-		ParserProvider: new(minimalParserLoader),
+		BuildInfo:         component.DefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: new(minimalParserLoader),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -285,17 +285,17 @@ func TestCollector_reloadService(t *testing.T) {
 	sentinelError := errors.New("sentinel error")
 
 	tests := []struct {
-		name           string
-		parserProvider parserprovider.ParserProvider
-		service        *service
+		name              string
+		configMapProvider configmapprovider.ConfigMapProvider
+		service           *service
 	}{
 		{
-			name:           "first_load_err",
-			parserProvider: &errParserLoader{err: sentinelError},
+			name:              "first_load_err",
+			configMapProvider: &errParserLoader{err: sentinelError},
 		},
 		{
-			name:           "retire_service_ok_load_err",
-			parserProvider: &errParserLoader{err: sentinelError},
+			name:              "retire_service_ok_load_err",
+			configMapProvider: &errParserLoader{err: sentinelError},
 			service: &service{
 				logger:          zap.NewNop(),
 				builtExporters:  builder.Exporters{},
@@ -305,8 +305,8 @@ func TestCollector_reloadService(t *testing.T) {
 			},
 		},
 		{
-			name:           "retire_service_ok_load_ok",
-			parserProvider: new(minimalParserLoader),
+			name:              "retire_service_ok_load_ok",
+			configMapProvider: new(minimalParserLoader),
 			service: &service{
 				logger:          zap.NewNop(),
 				builtExporters:  builder.Exporters{},
@@ -320,7 +320,7 @@ func TestCollector_reloadService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			col := Collector{
 				set: CollectorSettings{
-					ParserProvider:    tt.parserProvider,
+					ConfigMapProvider: tt.configMapProvider,
 					ConfigUnmarshaler: configunmarshaler.NewDefault(),
 					Factories:         factories,
 				},
