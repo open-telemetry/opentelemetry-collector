@@ -4,7 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Move extension/storage to extension/experimental/storageextension (#4082).
+- Move `extension/storage` to `extension/experimental/storageextension` (#4082).
 - Move ValidateConfig from configcheck to configtest (#3956)
 - Remove AttributeMessageType (#4020)
 - Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005).
