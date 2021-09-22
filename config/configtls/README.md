@@ -48,8 +48,8 @@ See below for examples.
 [Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md)
 leverage client configuration.
 
-Note that client configuration supports TLS configuration, however
-configuration parameters are not defined under `tls_settings` like server
+Note that client configuration supports TLS configuration, the
+configuration parameters are also defined under `tls` like server
 configuration. For more information, see [configtls
 README](../configtls/README.md).
 
@@ -66,11 +66,12 @@ exporters:
   otlp:
     endpoint: myserver.local:55690
     insecure: false
-    ca_file: server.crt
-    cert_file: client.crt
-    key_file: client.key
-    min_version: "1.1"
-    max_version: "1.2"
+    tls:
+      ca_file: server.crt
+      cert_file: client.crt
+      key_file: client.key
+      min_version: "1.1"
+      max_version: "1.2"
   otlp/insecure:
     endpoint: myserver.local:55690
     insecure: true
@@ -101,14 +102,14 @@ receivers:
     protocols:
       grpc:
         endpoint: mysite.local:55690
-        tls_settings:
+        tls:
           cert_file: server.crt
           key_file: server.key
   otlp/mtls:
     protocols:
       grpc:
         endpoint: mysite.local:55690
-        tls_settings:
+        tls:
           client_ca_file: client.pem
           cert_file: server.crt
           key_file: server.key
