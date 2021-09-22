@@ -191,22 +191,22 @@ func NewManager(_ *configparser.ConfigMap) (*Manager, error) {
 	}, nil
 }
 
-// Resolve inspects the given configparser.Parser and resolves all config sources referenced
-// in the configuration, returning a configparser.Parser in which all env vars and config sources on
-// the given input parser are resolved to actual literal values of the env vars or config sources.
+// Resolve inspects the given configparser.ConfigMap and resolves all config sources referenced
+// in the configuration, returning a configparser.ConfigMap in which all env vars and config sources on
+// the given input config map are resolved to actual literal values of the env vars or config sources.
 // This method must be called only once per lifetime of a Manager object.
-func (m *Manager) Resolve(ctx context.Context, parser *configparser.ConfigMap) (*configparser.ConfigMap, error) {
+func (m *Manager) Resolve(ctx context.Context, configMap *configparser.ConfigMap) (*configparser.ConfigMap, error) {
 	res := configparser.NewConfigMap()
-	allKeys := parser.AllKeys()
+	allKeys := configMap.AllKeys()
 	for _, k := range allKeys {
 		if strings.HasPrefix(k, configSourcesKey) {
 			// Remove everything under the config_sources section. The `config_sources` section
-			// is read when loading the config sources used in the configuration but it is not
-			// part of the resulting configuration returned via *configparser.Parser.
+			// is read when loading the config sources used in the configuration, but it is not
+			// part of the resulting configuration returned via *configparser.ConfigMap.
 			continue
 		}
 
-		value, err := m.parseConfigValue(ctx, parser.Get(k))
+		value, err := m.parseConfigValue(ctx, configMap.Get(k))
 		if err != nil {
 			return nil, err
 		}
@@ -288,7 +288,7 @@ func (m *Manager) Close(ctx context.Context) error {
 
 // parseConfigValue takes the value of a "config node" and process it recursively. The processing consists
 // in transforming invocations of config sources and/or environment variables into literal data that can be
-// used directly from a `configparser.Parser` object.
+// used directly from a `configparser.ConfigMap` object.
 func (m *Manager) parseConfigValue(ctx context.Context, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
@@ -430,7 +430,7 @@ func (m *Manager) parseStringValue(ctx context.Context, s string) (interface{}, 
 
 					if mapIFace, ok := retrieved.(map[interface{}]interface{}); ok {
 						// yaml.Unmarshal returns map[interface{}]interface{} but config
-						// parser uses map[string]interface{}, fix it with a cast.
+						// map uses map[string]interface{}, fix it with a cast.
 						retrieved = cast.ToStringMap(mapIFace)
 					}
 

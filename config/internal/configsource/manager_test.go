@@ -165,9 +165,9 @@ map:
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "yaml_injection_expected.yaml")
-	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
+	expectedConfigMap, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
-	expectedCfg := expectedParser.ToStringMap()
+	expectedCfg := expectedConfigMap.ToStringMap()
 
 	res, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
@@ -194,12 +194,12 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "arrays_and_maps_expected.yaml")
-	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
+	expectedConfigMap, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	res, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
-	assert.Equal(t, expectedParser.ToStringMap(), res.ToStringMap())
+	assert.Equal(t, expectedConfigMap.ToStringMap(), res.ToStringMap())
 	assert.NoError(t, manager.Close(ctx))
 }
 
@@ -248,12 +248,12 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "params_handling_expected.yaml")
-	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
+	expectedConfigMap, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	res, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
-	assert.Equal(t, expectedParser.ToStringMap(), res.ToStringMap())
+	assert.Equal(t, expectedConfigMap.ToStringMap(), res.ToStringMap())
 	assert.NoError(t, manager.Close(ctx))
 }
 
@@ -387,12 +387,12 @@ func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "envvar_cfgsrc_mix_expected.yaml")
-	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
+	expectedConfigMap, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	res, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
-	assert.Equal(t, expectedParser.ToStringMap(), res.ToStringMap())
+	assert.Equal(t, expectedConfigMap.ToStringMap(), res.ToStringMap())
 	assert.NoError(t, manager.Close(ctx))
 }
 
