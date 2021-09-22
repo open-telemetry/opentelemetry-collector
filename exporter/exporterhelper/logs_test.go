@@ -125,7 +125,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -134,7 +134,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewLogsExporter(&fakeLogsExporterConfig, set.ExporterCreateSettings, newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -205,7 +205,7 @@ func newPushLogsData(retError error) consumerhelper.ConsumeLogsFunc {
 }
 
 func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter, wantError error) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 

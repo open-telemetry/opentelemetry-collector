@@ -24,7 +24,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
@@ -32,7 +31,7 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -41,7 +40,8 @@ func TestExportEnqueueFailure(t *testing.T) {
 	obsrep := newObsExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings()})
+		ExporterCreateSettings: set.ExporterCreateSettings,
+	})
 
 	logRecords := 7
 	obsrep.recordLogsEnqueueFailure(context.Background(), logRecords)

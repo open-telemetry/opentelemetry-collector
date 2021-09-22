@@ -22,9 +22,13 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
 
 var (
@@ -41,17 +45,35 @@ var (
 	processorTag, _ = tag.NewKey("processor")
 )
 
+type TestTelemetrySettings struct {
+	component.TelemetrySettings
+	SpanRecorder           *tracetest.SpanRecorder
+	ExporterCreateSettings component.ExporterCreateSettings
+}
+
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
 // The returned function should be deferred.
-func SetupRecordedMetricsTest() (func(), error) {
+func SetupRecordedMetricsTest() (TestTelemetrySettings, func(), error) {
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+
+	exporterSettings := componenttest.NewNopExporterCreateSettings()
+	exporterSettings.TracerProvider = tp
+
+	settings := TestTelemetrySettings{
+		TelemetrySettings:      componenttest.NewNopTelemetrySettings(),
+		SpanRecorder:           sr,
+		ExporterCreateSettings: exporterSettings,
+	}
+	settings.TelemetrySettings.TracerProvider = tp
 	obsMetrics := obsreportconfig.Configure(configtelemetry.LevelNormal)
 	views := obsMetrics.Views
 	err := view.Register(views...)
 	if err != nil {
-		return nil, err
+		return settings, nil, err
 	}
 
-	return func() {
+	return settings, func() {
 		view.Unregister(views...)
 	}, err
 }

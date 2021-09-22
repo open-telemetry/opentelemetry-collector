@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
@@ -39,7 +38,7 @@ var (
 )
 
 func TestCheckReceiverTracesViews(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -56,7 +55,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -69,7 +68,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -82,14 +81,14 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 }
 
 func TestCheckExporterTracesViews(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings(),
+		ExporterCreateSettings: set.ExporterCreateSettings,
 	})
 	ctx := obsrep.StartTracesOp(context.Background())
 	assert.NotNil(t, ctx)
@@ -100,14 +99,14 @@ func TestCheckExporterTracesViews(t *testing.T) {
 }
 
 func TestCheckExporterMetricsViews(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings(),
+		ExporterCreateSettings: set.ExporterCreateSettings,
 	})
 	ctx := obsrep.StartMetricsOp(context.Background())
 	assert.NotNil(t, ctx)
@@ -118,14 +117,14 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 }
 
 func TestCheckExporterLogsViews(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings(),
+		ExporterCreateSettings: set.ExporterCreateSettings,
 	})
 	ctx := obsrep.StartLogsOp(context.Background())
 	assert.NotNil(t, ctx)
