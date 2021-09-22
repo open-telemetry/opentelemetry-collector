@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -87,8 +86,7 @@ type receiversBuilder struct {
 
 // BuildReceivers builds Receivers from config.
 func BuildReceivers(
-	logger *zap.Logger,
-	tracerProvider trace.TracerProvider,
+	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfg *config.Config,
 	builtPipelines BuiltPipelines,
@@ -100,8 +98,9 @@ func BuildReceivers(
 	for recvID, recvCfg := range cfg.Receivers {
 		set := component.ReceiverCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
-				Logger:         logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
-				TracerProvider: tracerProvider,
+				Logger:         settings.Logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
+				TracerProvider: settings.TracerProvider,
+				MeterProvider:  settings.MeterProvider,
 			},
 			BuildInfo: buildInfo,
 		}
@@ -257,8 +256,7 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, set component.Rec
 
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		err := attachReceiverToPipelines(ctx, set, factory, dataType, cfg, rcv, pipelines)
-		if err != nil {
+		if err = attachReceiverToPipelines(ctx, set, factory, dataType, cfg, rcv, pipelines); err != nil {
 			return nil, err
 		}
 	}
@@ -277,21 +275,18 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.Traces {
 	}
 
 	var pipelineConsumers []consumer.Traces
-	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
+		// Some consumers may not correctly implement the Capabilities,
+		// and ignore the next consumer when calculated the Capabilities.
+		// Because of this wrap the first consumer if any consumers in the pipeline
+		// mutate the data and the first says that it doesn't.
+		if pipeline.MutatesData && !pipeline.firstTC.Capabilities().MutatesData {
+			pipeline.firstTC = mutatingTraces{Traces: pipeline.firstTC}
+		}
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)
-		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesData
 	}
 
 	// Create a junction point that fans out to all pipelines.
-	if anyPipelineMutatesData {
-		// If any pipeline mutates data use a cloning fan out connector
-		// so that it is safe to modify fanned out data.
-		// TODO: if there are more than 2 pipelines only clone data for pipelines that
-		// declare the intent to mutate the data. Pipelines that do not mutate the data
-		// can consume shared data.
-		return fanoutconsumer.NewTracesCloning(pipelineConsumers)
-	}
 	return fanoutconsumer.NewTraces(pipelineConsumers)
 }
 
@@ -302,21 +297,18 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.Metrics {
 	}
 
 	var pipelineConsumers []consumer.Metrics
-	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
+		// Some consumers may not correctly implement the Capabilities,
+		// and ignore the next consumer when calculated the Capabilities.
+		// Because of this wrap the first consumer if any consumers in the pipeline
+		// mutate the data and the first says that it doesn't.
+		if pipeline.MutatesData && !pipeline.firstMC.Capabilities().MutatesData {
+			pipeline.firstMC = mutatingMetrics{Metrics: pipeline.firstMC}
+		}
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstMC)
-		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesData
 	}
 
 	// Create a junction point that fans out to all pipelines.
-	if anyPipelineMutatesData {
-		// If any pipeline mutates data use a cloning fan out connector
-		// so that it is safe to modify fanned out data.
-		// TODO: if there are more than 2 pipelines only clone data for pipelines that
-		// declare the intent to mutate the data. Pipelines that do not mutate the data
-		// can consume shared data.
-		return fanoutconsumer.NewMetricsCloning(pipelineConsumers)
-	}
 	return fanoutconsumer.NewMetrics(pipelineConsumers)
 }
 
@@ -327,20 +319,41 @@ func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.Logs {
 	}
 
 	var pipelineConsumers []consumer.Logs
-	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
+		// Some consumers may not correctly implement the Capabilities,
+		// and ignore the next consumer when calculated the Capabilities.
+		// Because of this wrap the first consumer if any consumers in the pipeline
+		// mutate the data and the first says that it doesn't.
+		if pipeline.MutatesData && !pipeline.firstLC.Capabilities().MutatesData {
+			pipeline.firstLC = mutatingLogs{Logs: pipeline.firstLC}
+		}
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstLC)
-		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesData
 	}
 
 	// Create a junction point that fans out to all pipelines.
-	if anyPipelineMutatesData {
-		// If any pipeline mutates data use a cloning fan out connector
-		// so that it is safe to modify fanned out data.
-		// TODO: if there are more than 2 pipelines only clone data for pipelines that
-		// declare the intent to mutate the data. Pipelines that do not mutate the data
-		// can consume shared data.
-		return fanoutconsumer.NewLogsCloning(pipelineConsumers)
-	}
 	return fanoutconsumer.NewLogs(pipelineConsumers)
+}
+
+type mutatingLogs struct {
+	consumer.Logs
+}
+
+func (mts mutatingLogs) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+type mutatingMetrics struct {
+	consumer.Metrics
+}
+
+func (mts mutatingMetrics) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+type mutatingTraces struct {
+	consumer.Traces
+}
+
+func (mts mutatingTraces) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }

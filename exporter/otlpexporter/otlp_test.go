@@ -58,8 +58,9 @@ type mockTracesReceiver struct {
 	lastRequest pdata.Traces
 }
 
-func (r *mockTracesReceiver) Export(ctx context.Context, td pdata.Traces) (otlpgrpc.TracesResponse, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, req otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
+	td := req.Traces()
 	atomic.AddInt32(&r.totalItems, int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -110,8 +111,9 @@ type mockLogsReceiver struct {
 	lastRequest pdata.Logs
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, ld pdata.Logs) (otlpgrpc.LogsResponse, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, req otlpgrpc.LogsRequest) (otlpgrpc.LogsResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
+	ld := req.Logs()
 	atomic.AddInt32(&r.totalItems, int32(ld.LogRecordCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -147,7 +149,8 @@ type mockMetricsReceiver struct {
 	lastRequest pdata.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(ctx context.Context, md pdata.Metrics) (otlpgrpc.MetricsResponse, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, req otlpgrpc.MetricsRequest) (otlpgrpc.MetricsResponse, error) {
+	md := req.Metrics()
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(md.DataPointCount()))
 	r.mux.Lock()

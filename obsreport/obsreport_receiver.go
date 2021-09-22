@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-// Receiver is a helper to add obersvability to a component.Receiver.
+// Receiver is a helper to add observability to a component.Receiver.
 type Receiver struct {
 	spanNamePrefix string
 	transport      string

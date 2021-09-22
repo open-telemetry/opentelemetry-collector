@@ -36,6 +36,24 @@ func NewLogsResponse() LogsResponse {
 	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
 }
 
+// LogsRequest represents the response for gRPC client/server.
+type LogsRequest struct {
+	orig *otlpcollectorlog.ExportLogsServiceRequest
+}
+
+// NewLogsRequest returns an empty LogsRequest.
+func NewLogsRequest() LogsRequest {
+	return LogsRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+}
+
+func (lr LogsRequest) SetLogs(ld pdata.Logs) {
+	lr.orig.ResourceLogs = internal.LogsToOtlp(ld.InternalRep()).ResourceLogs
+}
+
+func (lr LogsRequest) Logs() pdata.Logs {
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(lr.orig))
+}
+
 // LogsClient is the client API for OTLP-GRPC Logs service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -44,7 +62,7 @@ type LogsClient interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(ctx context.Context, in pdata.Logs, opts ...grpc.CallOption) (LogsResponse, error)
+	Export(ctx context.Context, request LogsRequest, opts ...grpc.CallOption) (LogsResponse, error)
 }
 
 type logsClient struct {
@@ -56,8 +74,8 @@ func NewLogsClient(cc *grpc.ClientConn) LogsClient {
 	return &logsClient{rawClient: otlpcollectorlog.NewLogsServiceClient(cc)}
 }
 
-func (c *logsClient) Export(ctx context.Context, in pdata.Logs, opts ...grpc.CallOption) (LogsResponse, error) {
-	rsp, err := c.rawClient.Export(ctx, internal.LogsToOtlp(in.InternalRep()), opts...)
+func (c *logsClient) Export(ctx context.Context, request LogsRequest, opts ...grpc.CallOption) (LogsResponse, error) {
+	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
 	return LogsResponse{orig: rsp}, err
 }
 
@@ -67,7 +85,7 @@ type LogsServer interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(context.Context, pdata.Logs) (LogsResponse, error)
+	Export(context.Context, LogsRequest) (LogsResponse, error)
 }
 
 // RegisterLogsServer registers the LogsServer to the grpc.Server.
@@ -80,6 +98,6 @@ type rawLogsServer struct {
 }
 
 func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {
-	rsp, err := s.srv.Export(ctx, pdata.LogsFromInternalRep(internal.LogsFromOtlp(request)))
+	rsp, err := s.srv.Export(ctx, LogsRequest{orig: request})
 	return rsp.orig, err
 }

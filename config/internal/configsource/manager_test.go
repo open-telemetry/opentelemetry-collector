@@ -54,7 +54,7 @@ func TestConfigSourceManager_Simple(t *testing.T) {
 		},
 	}
 
-	cp := configparser.NewParserFromStringMap(originalCfg)
+	cp := configparser.NewConfigMapFromStringMap(originalCfg)
 
 	actualParser, err := manager.Resolve(ctx, cp)
 	require.NoError(t, err)
@@ -100,20 +100,6 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 				"tstcfgsrc": &testConfigSource{ErrOnRetrieve: testErr},
 			},
 		},
-		{
-			name: "error_on_retrieve_end",
-			config: map[string]interface{}{
-				"cfgsrc": "$tstcfgsrc:selector",
-			},
-			configSourceMap: map[string]configsource.ConfigSource{
-				"tstcfgsrc": &testConfigSource{
-					ErrOnRetrieveEnd: testErr,
-					ValueMap: map[string]valueEntry{
-						"selector": {Value: "test_value"},
-					},
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -121,7 +107,7 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 			require.NoError(t, err)
 			manager.configSources = tt.configSourceMap
 
-			res, err := manager.Resolve(ctx, configparser.NewParserFromStringMap(tt.config))
+			res, err := manager.Resolve(ctx, configparser.NewConfigMapFromStringMap(tt.config))
 			require.Error(t, err)
 			require.Nil(t, res)
 			require.NoError(t, manager.Close(ctx))
@@ -145,11 +131,11 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 	}
 
 	file := path.Join("testdata", "arrays_and_maps.yaml")
-	cp, err := configparser.NewParserFromFile(file)
+	cp, err := configparser.NewConfigMapFromFile(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "arrays_and_maps_expected.yaml")
-	expectedParser, err := configparser.NewParserFromFile(expectedFile)
+	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	actualParser, err := manager.Resolve(ctx, cp)
@@ -197,11 +183,11 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 	}
 
 	file := path.Join("testdata", "params_handling.yaml")
-	cp, err := configparser.NewParserFromFile(file)
+	cp, err := configparser.NewConfigMapFromFile(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "params_handling_expected.yaml")
-	expectedParser, err := configparser.NewParserFromFile(expectedFile)
+	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	actualParser, err := manager.Resolve(ctx, cp)
@@ -235,7 +221,7 @@ func TestConfigSourceManager_WatchForUpdate(t *testing.T) {
 		},
 	}
 
-	cp := configparser.NewParserFromStringMap(originalCfg)
+	cp := configparser.NewConfigMapFromStringMap(originalCfg)
 	_, err = manager.Resolve(ctx, cp)
 	require.NoError(t, err)
 
@@ -291,7 +277,7 @@ func TestConfigSourceManager_MultipleWatchForUpdate(t *testing.T) {
 		},
 	}
 
-	cp := configparser.NewParserFromStringMap(originalCfg)
+	cp := configparser.NewConfigMapFromStringMap(originalCfg)
 	_, err = manager.Resolve(ctx, cp)
 	require.NoError(t, err)
 
@@ -342,11 +328,11 @@ func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
 	}
 
 	file := path.Join("testdata", "envvar_cfgsrc_mix.yaml")
-	cp, err := configparser.NewParserFromFile(file)
+	cp, err := configparser.NewConfigMapFromFile(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "envvar_cfgsrc_mix_expected.yaml")
-	expectedParser, err := configparser.NewParserFromFile(expectedFile)
+	expectedParser, err := configparser.NewConfigMapFromFile(expectedFile)
 	require.NoError(t, err)
 
 	actualParser, err := manager.Resolve(ctx, cp)
@@ -554,9 +540,8 @@ func Test_parseCfgSrc(t *testing.T) {
 type testConfigSource struct {
 	ValueMap map[string]valueEntry
 
-	ErrOnRetrieve    error
-	ErrOnRetrieveEnd error
-	ErrOnClose       error
+	ErrOnRetrieve error
+	ErrOnClose    error
 
 	OnRetrieve func(ctx context.Context, selector string, params interface{}) error
 }
@@ -596,10 +581,6 @@ func (t *testConfigSource) Retrieve(ctx context.Context, selector string, params
 	return &retrieved{
 		value: entry.Value,
 	}, nil
-}
-
-func (t *testConfigSource) RetrieveEnd(context.Context) error {
-	return t.ErrOnRetrieveEnd
 }
 
 func (t *testConfigSource) Close(context.Context) error {

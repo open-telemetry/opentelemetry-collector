@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -40,11 +41,6 @@ func TestDecodeConfig(t *testing.T) {
 	// Verify extensions.
 	assert.Equal(t, 3, len(cfg.Extensions))
 	assert.Equal(t, "some string", cfg.Extensions[config.NewIDWithName("exampleextension", "1")].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
-
-	// Verify service.
-	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
-	assert.Equal(t, config.NewIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
 
 	// Verify receivers
 	assert.Equal(t, 2, len(cfg.Receivers), "Incorrect receivers count")
@@ -101,7 +97,15 @@ func TestDecodeConfig(t *testing.T) {
 		cfg.Processors[config.NewID("exampleprocessor")],
 		"Did not load processor config correctly")
 
-	// Verify Pipelines
+	// Verify Service Telemetry
+	assert.Equal(t, config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}}, cfg.Service.Telemetry)
+
+	// Verify Service Extensions
+	assert.Equal(t, 2, len(cfg.Service.Extensions))
+	assert.Equal(t, config.NewIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
+
+	// Verify Service Pipelines
 	assert.Equal(t, 1, len(cfg.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,
@@ -414,6 +418,8 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "invalid-processor-sub-config", expected: errUnmarshalTopLevelStructureError},
 		{name: "invalid-receiver-sub-config", expected: errUnmarshalTopLevelStructureError},
 		{name: "invalid-pipeline-sub-config", expected: errUnmarshalTopLevelStructureError},
+
+		{name: "invalid-logs-level", expected: errInvalidLogsLevel},
 	}
 
 	factories, err := testcomponents.ExampleComponents()
@@ -456,7 +462,7 @@ func TestLoadEmptyAllSections(t *testing.T) {
 }
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
-	v, err := configparser.NewParserFromFile(fileName)
+	v, err := configparser.NewConfigMapFromFile(fileName)
 	require.NoError(t, err)
 
 	// Unmarshal the config from the configparser.ConfigMap using the given factories.

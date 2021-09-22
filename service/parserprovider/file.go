@@ -36,9 +36,9 @@ func (fl *fileProvider) Get(context.Context) (*configparser.ConfigMap, error) {
 		return nil, errors.New("config file not specified")
 	}
 
-	cp, err := configparser.NewParserFromFile(fileName)
+	cp, err := configparser.NewConfigMapFromFile(fileName)
 	if err != nil {
-		return nil, fmt.Errorf("error loading config file %q: %v", fileName, err)
+		return nil, fmt.Errorf("error loading config file %q: %w", fileName, err)
 	}
 
 	return cp, nil

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -82,25 +81,23 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 
 // pipelinesBuilder builds Pipelines from config.
 type pipelinesBuilder struct {
-	logger         *zap.Logger
-	tracerProvider trace.TracerProvider
-	buildInfo      component.BuildInfo
-	config         *config.Config
-	exporters      Exporters
-	factories      map[config.Type]component.ProcessorFactory
+	settings  component.TelemetrySettings
+	buildInfo component.BuildInfo
+	config    *config.Config
+	exporters Exporters
+	factories map[config.Type]component.ProcessorFactory
 }
 
 // BuildPipelines builds pipeline processors from config. Requires exporters to be already
 // built via BuildExporters.
 func BuildPipelines(
-	logger *zap.Logger,
-	tracerProvider trace.TracerProvider,
+	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	config *config.Config,
 	exporters Exporters,
 	factories map[config.Type]component.ProcessorFactory,
 ) (BuiltPipelines, error) {
-	pb := &pipelinesBuilder{logger, tracerProvider, buildInfo, config, exporters, factories}
+	pb := &pipelinesBuilder{settings, buildInfo, config, exporters, factories}
 
 	pipelineProcessors := make(BuiltPipelines)
 	for _, pipeline := range pb.config.Service.Pipelines {
@@ -126,16 +123,19 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	var mc consumer.Metrics
 	var lc consumer.Logs
 
+	// Take into consideration the Capabilities for the exporter as well.
+	mutatesConsumedData := false
 	switch pipelineCfg.InputType {
 	case config.TracesDataType:
 		tc = pb.buildFanoutExportersTracesConsumer(pipelineCfg.Exporters)
+		mutatesConsumedData = tc.Capabilities().MutatesData
 	case config.MetricsDataType:
 		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
+		mutatesConsumedData = mc.Capabilities().MutatesData
 	case config.LogsDataType:
 		lc = pb.buildFanoutExportersLogsConsumer(pipelineCfg.Exporters)
+		mutatesConsumedData = lc.Capabilities().MutatesData
 	}
-
-	mutatesConsumedData := false
 
 	processors := make([]component.Processor, len(pipelineCfg.Processors))
 
@@ -162,8 +162,9 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		var err error
 		set := component.ProcessorCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
-				Logger:         pb.logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
-				TracerProvider: pb.tracerProvider,
+				Logger:         pb.settings.Logger.With(zap.String(zapKindKey, zapKindProcessor), zap.String(zapNameKey, procID.String())),
+				TracerProvider: pb.settings.TracerProvider,
+				MeterProvider:  pb.settings.MeterProvider,
 			},
 			BuildInfo: pb.buildInfo,
 		}
@@ -171,27 +172,39 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		switch pipelineCfg.InputType {
 		case config.TracesDataType:
 			var proc component.TracesProcessor
-			proc, err = factory.CreateTracesProcessor(ctx, set, procCfg, tc)
-			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
+			if proc, err = factory.CreateTracesProcessor(ctx, set, procCfg, tc); err != nil {
+				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineCfg.Name, err)
 			}
+			// Check if the factory really created the processor.
+			if proc == nil {
+				return nil, fmt.Errorf("factory for %v produced a nil processor", procID)
+			}
+			mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			processors[i] = proc
 			tc = proc
 		case config.MetricsDataType:
 			var proc component.MetricsProcessor
-			proc, err = factory.CreateMetricsProcessor(ctx, set, procCfg, mc)
-			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
+			if proc, err = factory.CreateMetricsProcessor(ctx, set, procCfg, mc); err != nil {
+				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineCfg.Name, err)
 			}
+			// Check if the factory really created the processor.
+			if proc == nil {
+				return nil, fmt.Errorf("factory for %v produced a nil processor", procID)
+			}
+			mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			processors[i] = proc
 			mc = proc
 
 		case config.LogsDataType:
 			var proc component.LogsProcessor
-			proc, err = factory.CreateLogsProcessor(ctx, set, procCfg, lc)
-			if proc != nil {
-				mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
+			if proc, err = factory.CreateLogsProcessor(ctx, set, procCfg, lc); err != nil {
+				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineCfg.Name, err)
 			}
+			// Check if the factory really created the processor.
+			if proc == nil {
+				return nil, fmt.Errorf("factory for %v produced a nil processor", procID)
+			}
+			mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			processors[i] = proc
 			lc = proc
 
@@ -199,19 +212,9 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %s is not supported",
 				procID, pipelineCfg.Name, pipelineCfg.InputType)
 		}
-
-		if err != nil {
-			return nil, fmt.Errorf("error creating processor %q in pipeline %q: %v",
-				procID, pipelineCfg.Name, err)
-		}
-
-		// Check if the factory really created the processor.
-		if tc == nil && mc == nil && lc == nil {
-			return nil, fmt.Errorf("factory for %v produced a nil processor", procID)
-		}
 	}
 
-	pipelineLogger := pb.logger.With(zap.String("pipeline_name", pipelineCfg.Name),
+	pipelineLogger := pb.settings.Logger.With(zap.String("pipeline_name", pipelineCfg.Name),
 		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
 	pipelineLogger.Info("Pipeline was built.")
 
