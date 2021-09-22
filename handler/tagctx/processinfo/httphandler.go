@@ -6,7 +6,6 @@ import (
 	"net"
 )
 
-
 func Handler(ctx context.Context, n net.Conn) context.Context {
-	return handleAddr(ctx, n.RemoteAddr(), zap.NewNop())
+	return handleAddr(ctx, n.LocalAddr(), zap.NewNop())
 }
