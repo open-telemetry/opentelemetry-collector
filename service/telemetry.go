@@ -24,6 +24,7 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/collector/config/configgates"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/global"
 	export "go.opentelemetry.io/otel/sdk/export/metric"
@@ -43,6 +44,19 @@ import (
 
 // collectorTelemetry is collector's own telemetry.
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
+
+var otelMetricsGate = &configgates.Gate{
+	Id:          "telemetry.OTelMetrics",
+	Description: "Use OpenTelemetry metrics instead of OpenCensus",
+	Enabled:     false,
+}
+
+func init() {
+	err := configgates.GetRegistry().Add(otelMetricsGate)
+	if err != nil {
+		panic(err)
+	}
+}
 
 type collectorTelemetryExporter interface {
 	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
@@ -85,18 +99,21 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	}
 
 	var pe http.Handler
-	if configtelemetry.UseOpenTelemetryForInternalMetrics {
+	var provider string
+	if otelMetricsGate.Enabled {
 		otelHandler, err := tel.initOpenTelemetry()
 		if err != nil {
 			return err
 		}
 		pe = otelHandler
+		provider = "OpenTelemetry"
 	} else {
 		ocHandler, err := tel.initOpenCensus(level, instanceID, ballastSizeBytes)
 		if err != nil {
 			return err
 		}
 		pe = ocHandler
+		provider = "OpenCensus"
 	}
 
 	logger.Info(
@@ -104,6 +121,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 		zap.String("address", metricsAddr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
 		zap.String(semconv.AttributeServiceInstanceID, instanceID),
+		zap.String("provider", provider),
 	)
 
 	mux := http.NewServeMux()

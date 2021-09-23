@@ -164,6 +164,7 @@ func BuildExporters(
 				MeterProvider:  settings.MeterProvider,
 			},
 			BuildInfo: buildInfo,
+			Features:  cfg.Features,
 		}
 
 		factory, exists := factories[expID.Type()]

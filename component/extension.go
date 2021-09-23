@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgates"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -50,6 +51,9 @@ type ExtensionCreateSettings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo BuildInfo
+
+	// Features can be used to query feature gate status
+	Features configgates.Gates
 }
 
 // ExtensionFactory is a factory interface for extensions to the service.

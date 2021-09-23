@@ -103,6 +103,7 @@ func BuildReceivers(
 				MeterProvider:  settings.MeterProvider,
 			},
 			BuildInfo: buildInfo,
+			Features:  cfg.Features,
 		}
 
 		rcv, err := rb.buildReceiver(context.Background(), set, recvCfg)

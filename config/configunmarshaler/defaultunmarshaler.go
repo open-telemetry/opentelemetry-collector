@@ -19,6 +19,7 @@ import (
 	"os"
 	"reflect"
 
+	"go.opentelemetry.io/collector/config/configgates"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -38,6 +39,7 @@ const (
 	errUnknownType
 	errDuplicateName
 	errUnmarshalTopLevelStructureError
+	errInvalidFeatureFlags
 )
 
 type configError struct {
@@ -82,6 +84,7 @@ type serviceSettings struct {
 	Telemetry  serviceTelemetrySettings    `mapstructure:"telemetry"`
 	Extensions []string                    `mapstructure:"extensions"`
 	Pipelines  map[string]pipelineSettings `mapstructure:"pipelines"`
+	Features   []string                    `mapstructure:"features"`
 }
 
 type serviceTelemetrySettings struct {
@@ -254,6 +257,20 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 			code: errInvalidLogsLevel,
 		}
 	}
+
+	if err := configgates.GetFlags().SetSlice(rawService.Features); err != nil {
+		return ret, &configError{
+			msg:  fmt.Sprintf("service flags invalid: %s", err.Error()),
+			code: errInvalidFeatureFlags,
+		}
+	}
+	if err := configgates.GetFlags().Apply(configgates.GetRegistry()); err != nil {
+		return ret, &configError{
+			msg:  fmt.Sprintf("service flags invalid: %s", err.Error()),
+			code: errInvalidFeatureFlags,
+		}
+	}
+	ret.Features = configgates.GetRegistry().Frozen()
 
 	ret.Telemetry.Logs = config.ServiceTelemetryLogs{
 		Level:       lvl,

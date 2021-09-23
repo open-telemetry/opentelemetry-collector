@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgates"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -50,6 +51,9 @@ type ExporterCreateSettings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo BuildInfo
+
+	// Features can be used to query feature gate status
+	Features configgates.Gates
 }
 
 // ExporterFactory can create MetricsExporter, TracesExporter and

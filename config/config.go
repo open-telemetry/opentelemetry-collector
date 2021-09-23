@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/config/configgates"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -155,6 +156,9 @@ type Service struct {
 
 	// Pipelines are the set of data pipelines configured for the service.
 	Pipelines Pipelines
+
+	// Features are the set of feature gates configured for the service.
+	Features configgates.Gates
 }
 
 // ServiceTelemetry defines the configurable settings for service telemetry.
