@@ -24,7 +24,6 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/config/configgates"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/global"
 	export "go.opentelemetry.io/otel/sdk/export/metric"
@@ -34,6 +33,7 @@ import (
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configgates"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"

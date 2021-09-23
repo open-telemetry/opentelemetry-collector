@@ -18,6 +18,7 @@ import (
 	"flag"
 
 	"github.com/spf13/cobra"
+
 	"go.opentelemetry.io/collector/config/configgates"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
