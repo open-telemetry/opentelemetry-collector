@@ -28,24 +28,24 @@ func TestRegistry(t *testing.T) {
 	r := &Registry{gates: map[string]*Gate{}}
 
 	gate := &Gate{
-		Id:          "foo",
+		ID:          "foo",
 		Description: "Test Gate",
 		Enabled:     true,
 	}
 
 	assert.Empty(t, r.List())
-	assert.False(t, r.IsEnabled(gate.Id))
-	assert.Error(t, r.Set(gate.Id, true))
+	assert.False(t, r.IsEnabled(gate.ID))
+	assert.Error(t, r.Set(gate.ID, true))
 
 	assert.NoError(t, r.Add(gate))
 	assert.Len(t, r.List(), 1)
-	assert.True(t, r.IsEnabled(gate.Id))
+	assert.True(t, r.IsEnabled(gate.ID))
 
 	frozen := r.Frozen()
-	assert.True(t, frozen.IsEnabled(gate.Id))
-	assert.NoError(t, r.Set(gate.Id, false))
-	assert.False(t, r.IsEnabled(gate.Id))
-	assert.True(t, frozen.IsEnabled(gate.Id))
+	assert.True(t, frozen.IsEnabled(gate.ID))
+	assert.NoError(t, r.Set(gate.ID, false))
+	assert.False(t, r.IsEnabled(gate.ID))
+	assert.True(t, frozen.IsEnabled(gate.ID))
 
 	assert.Error(t, r.Add(gate))
 }

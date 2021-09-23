@@ -46,7 +46,7 @@ import (
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
 var otelMetricsGate = &configgates.Gate{
-	Id:          "telemetry.OTelMetrics",
+	ID:          "telemetry.OTelMetrics",
 	Description: "Use OpenTelemetry metrics instead of OpenCensus",
 	Enabled:     false,
 }

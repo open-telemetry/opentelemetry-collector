@@ -96,14 +96,14 @@ func TestFlagValue_Apply(t *testing.T) {
 	f := FlagValue{"foo": false}
 	r := &Registry{gates: map[string]*Gate{}}
 	gate := &Gate{
-		Id:          "foo",
+		ID:          "foo",
 		Description: "Test Gate",
 		Enabled:     true,
 	}
 
 	assert.Error(t, f.Apply(r))
 	assert.NoError(t, r.Add(gate))
-	assert.True(t, r.IsEnabled(gate.Id))
+	assert.True(t, r.IsEnabled(gate.ID))
 	assert.NoError(t, f.Apply(r))
-	assert.False(t, r.IsEnabled(gate.Id))
+	assert.False(t, r.IsEnabled(gate.ID))
 }

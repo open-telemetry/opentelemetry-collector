@@ -19,11 +19,11 @@ import (
 	"os"
 	"reflect"
 
-	"go.opentelemetry.io/collector/config/configgates"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgates"
 )
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part

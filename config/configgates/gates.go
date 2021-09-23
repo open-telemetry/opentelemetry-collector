@@ -28,7 +28,7 @@ type Gates interface {
 // Gate represents an individual feature that may be enabled or disabled based
 // on the lifecycle state of the feature and CLI flags specified by the user.
 type Gate struct {
-	Id          string
+	ID          string
 	Description string
 	Enabled     bool
 }
@@ -79,11 +79,11 @@ func (r *Registry) Add(g *Gate) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if _, ok := r.gates[g.Id]; ok {
-		return fmt.Errorf("attempted to add pre-existing gate %q", g.Id)
+	if _, ok := r.gates[g.ID]; ok {
+		return fmt.Errorf("attempted to add pre-existing gate %q", g.ID)
 	}
 
-	r.gates[g.Id] = g
+	r.gates[g.ID] = g
 	return nil
 }
 
@@ -110,7 +110,7 @@ func (r *Registry) Frozen() Gates {
 
 	ret := make(map[string]Gate, len(r.gates))
 	for _, gate := range r.gates {
-		ret[gate.Id] = *gate
+		ret[gate.ID] = *gate
 	}
 
 	return &frozenRegistry{gates: ret}
