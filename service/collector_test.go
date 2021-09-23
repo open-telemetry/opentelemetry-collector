@@ -165,9 +165,9 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
-		Factories:      factories,
-		ParserProvider: parserprovider.NewInMemory(strings.NewReader(configStr)),
+		BuildInfo:         component.DefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -273,7 +273,7 @@ func TestCollector_reloadService(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		parserProvider parserprovider.ParserProvider
+		parserProvider parserprovider.MapProvider
 		service        *service
 	}{
 		{
@@ -293,7 +293,7 @@ func TestCollector_reloadService(t *testing.T) {
 		},
 		{
 			name:           "retire_service_ok_load_ok",
-			parserProvider: parserprovider.NewInMemory(strings.NewReader(configStr)),
+			parserProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 			service: &service{
 				logger:          zap.NewNop(),
 				builtExporters:  builder.Exporters{},
@@ -307,7 +307,7 @@ func TestCollector_reloadService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			col := Collector{
 				set: CollectorSettings{
-					ParserProvider:    tt.parserProvider,
+					ConfigMapProvider: tt.parserProvider,
 					ConfigUnmarshaler: configunmarshaler.NewDefault(),
 					Factories:         factories,
 				},
