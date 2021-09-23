@@ -209,7 +209,6 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
 		componentConfig := config.NewMapFromStringMap(value)
-		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
 		id, err := config.NewIDFromString(key)
@@ -301,7 +300,6 @@ func unmarshalReceivers(recvs map[string]map[string]interface{}, factories map[c
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
 		componentConfig := config.NewMapFromStringMap(value)
-		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
 		id, err := config.NewIDFromString(key)
@@ -338,7 +336,6 @@ func unmarshalExporters(exps map[string]map[string]interface{}, factories map[co
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
 		componentConfig := config.NewMapFromStringMap(value)
-		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
 		id, err := config.NewIDFromString(key)
@@ -380,7 +377,6 @@ func unmarshalProcessors(procs map[string]map[string]interface{}, factories map[
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
 		componentConfig := config.NewMapFromStringMap(value)
-		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
 		id, err := config.NewIDFromString(key)
@@ -472,41 +468,6 @@ func parseIDNames(pipelineID config.ComponentID, componentType string, names []s
 		ret = append(ret, idRecv)
 	}
 	return ret, nil
-}
-
-// expandEnvConfig updates a config.Map with expanded values for all the values (simple, list or map value).
-// It does not expand the keys.
-func expandEnvConfig(v *config.Map) {
-	for _, k := range v.AllKeys() {
-		v.Set(k, expandStringValues(v.Get(k)))
-	}
-}
-
-func expandStringValues(value interface{}) interface{} {
-	switch v := value.(type) {
-	default:
-		return v
-	case string:
-		return expandEnv(v)
-	case []interface{}:
-		nslice := make([]interface{}, 0, len(v))
-		for _, vint := range v {
-			nslice = append(nslice, expandStringValues(vint))
-		}
-		return nslice
-	case map[string]interface{}:
-		nmap := make(map[interface{}]interface{}, len(v))
-		for k, vint := range v {
-			nmap[k] = expandStringValues(vint)
-		}
-		return nmap
-	case map[interface{}]interface{}:
-		nmap := make(map[interface{}]interface{}, len(v))
-		for k, vint := range v {
-			nmap[k] = expandStringValues(vint)
-		}
-		return nmap
-	}
 }
 
 // expandEnvLoadedConfig is a utility function that goes recursively through a config object
