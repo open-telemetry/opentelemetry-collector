@@ -64,13 +64,27 @@ func (f FlagValue) Set(s string) error {
 // SetSlice applies the feature gate statuses in the input slice to the FlagValue
 func (f FlagValue) SetSlice(s []string) error {
 	for _, v := range s {
-		if strings.HasPrefix(v, "-") {
-			f[v[1:]] = false
-		} else if strings.HasPrefix(v, "+") {
-			f[v[1:]] = true
-		} else {
-			f[v] = true
+		var id string
+		var val bool
+		switch v[0] {
+		case '-':
+			id = v[1:]
+			val = false
+		case '+':
+			id = v[1:]
+			val = true
+		default:
+			id = v
+			val = true
 		}
+
+		if _, exists := f[id]; exists {
+			// If the status has already been set, ignore it
+			// This allows CLI flags, which are processed first
+			// to take precedence over config settings
+			continue
+		}
+		f[id] = val
 	}
 
 	return nil
