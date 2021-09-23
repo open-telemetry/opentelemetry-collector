@@ -12,13 +12,13 @@ Below is an overview of its usage, which consists of two separate phases:
 2. Watching for Updates
 
 ## Configuration Processing
-The `configsource.Manager` receives as input a set of config source factories and a local `configparser.ConfigMap` that
-will be used to generate the resulting, or effective, configuration also in the form of a `configparser.ConfigMap`,
+The `configsource.Manager` receives as input a set of config source factories and a local `config.Map` that
+will be used to generate the resulting, or effective, configuration also in the form of a `config.Map`,
 that can be used by code that is oblivious to the usage of config sources.
 
 ```terminal
 +-----------------------------------------------------+                                                       
-|            configparser.ConfigMap                   |                                                       
+|                     config.Map                      |                                                       
 |-----------------------------------------------------|                                                       
 |                                                     |                                                       
 | logical YAML config:                                |                                                       
@@ -67,7 +67,7 @@ that can be used by code that is oblivious to the usage of config sources.
                                                      |                                                        
                                                      v                                                        
                           +-----------------------------------------------------+                             
-                          |             configparser.ConfigMap                  |                             
+                          |                      config.Map                     |                             
                           |-----------------------------------------------------|                             
                           |                                                     |                             
                           | logica  YAML config:                                |                             
