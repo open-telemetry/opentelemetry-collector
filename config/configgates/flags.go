@@ -17,6 +17,7 @@ package configgates
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -45,7 +46,7 @@ type FlagValue map[string]bool
 
 // String returns a string representing the FlagValue
 func (f FlagValue) String() string {
-	t := []string{}
+	var t []string
 	for k, v := range f {
 		if v {
 			t = append(t, k)
@@ -53,6 +54,9 @@ func (f FlagValue) String() string {
 			t = append(t, "-"+k)
 		}
 	}
+
+	// Sort the list of identifiers for consistent results
+	sort.Strings(t)
 	return strings.Join(t, ",")
 }
 

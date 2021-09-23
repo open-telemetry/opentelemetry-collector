@@ -18,8 +18,9 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config/configgates"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/config/configgates"
 )
 
 var (
