@@ -38,7 +38,7 @@ func NewLogsResponse() LogsResponse {
 	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
 }
 
-// Marshal marshals LogsResponse into JSON bytes.
+// Marshal marshals LogsResponse into proto bytes.
 func (lr LogsResponse) Marshal() ([]byte, error) {
 	return lr.orig.Marshal()
 }
