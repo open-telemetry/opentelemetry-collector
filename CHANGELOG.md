@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove `defaultcomponents` from core (#4087). 
 - Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
 
 ## v0.36.0 Beta
