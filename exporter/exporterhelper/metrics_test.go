@@ -219,9 +219,9 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
 	if wantError != nil {
-		obsreporttest.CheckExporterMetrics(t, fakeMetricsExporterName, 0, numPoints)
+		require.NoError(t, obsreporttest.CheckExporterMetrics(fakeMetricsExporterName, 0, numPoints))
 	} else {
-		obsreporttest.CheckExporterMetrics(t, fakeMetricsExporterName, numPoints, 0)
+		require.NoError(t, obsreporttest.CheckExporterMetrics(fakeMetricsExporterName, numPoints, 0))
 	}
 }
 

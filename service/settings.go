@@ -67,13 +67,12 @@ type CollectorSettings struct {
 	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
 
-	// ParserProvider provides the configuration's Parser.
+	// ConfigMapProvider provides the configuration's config.Map.
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
-	// If the provider is parserprovider.Watchable, collector
-	// may reload the configuration upon error.
-	ParserProvider parserprovider.ParserProvider
+	// If the provider is parserprovider.Watchable, collector may reload the configuration upon error.
+	ConfigMapProvider parserprovider.MapProvider
 
 	// ConfigUnmarshaler unmarshalls the configuration's Parser into the service configuration.
 	// If it is not provided a default unmarshaler is used.

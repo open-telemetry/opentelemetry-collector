@@ -34,7 +34,7 @@ func TestSetFlags(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	sfl := NewSetFlag()
+	sfl := NewPropertiesMapProvider()
 	cp, err := sfl.Get(context.Background())
 	require.NoError(t, err)
 	keys := cp.AllKeys()
@@ -50,7 +50,7 @@ func TestSetFlags_empty(t *testing.T) {
 	flags := new(flag.FlagSet)
 	Flags(flags)
 
-	sfl := NewSetFlag()
+	sfl := NewPropertiesMapProvider()
 	cp, err := sfl.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(cp.AllKeys()))

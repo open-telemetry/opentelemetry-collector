@@ -42,7 +42,7 @@ func TestDefault(t *testing.T) {
 			"--set=processors.doesnotexist.timeout=2s",
 		})
 		require.NoError(t, err)
-		pl := Default()
+		pl := NewDefaultMapProvider()
 		require.NotNil(t, pl)
 		var cp *config.Map
 		cp, err = pl.Get(context.Background())
@@ -62,7 +62,7 @@ func TestDefault(t *testing.T) {
 			"--set=processors.batch/foo.timeout=2s",
 		})
 		require.NoError(t, err)
-		pl := Default()
+		pl := NewDefaultMapProvider()
 		require.NotNil(t, pl)
 		var cp *config.Map
 		cp, err = pl.Get(context.Background())
@@ -93,7 +93,7 @@ func TestDefault(t *testing.T) {
 			"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
 		})
 		require.NoError(t, err)
-		pl := Default()
+		pl := NewDefaultMapProvider()
 		require.NotNil(t, pl)
 		var cp *config.Map
 		cp, err = pl.Get(context.Background())
@@ -128,7 +128,7 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	pl := Default()
+	pl := NewDefaultMapProvider()
 	require.NotNil(t, pl)
 	cp, err := pl.Get(context.Background())
 	require.NoError(t, err)

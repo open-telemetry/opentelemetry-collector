@@ -26,17 +26,17 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-type setFlagProvider struct{}
+type setFlagMapProvider struct{}
 
-// NewSetFlag returns a ParserProvider, that provides a config.Map from set flag(s) properties.
+// NewPropertiesMapProvider returns a MapProvider, that provides a config.Map from set flag(s) properties.
 //
-// The implementation reads set flag(s) from the cmd and concatenates them as a "properties" file.
+// The implementation reads --set flag(s) from the cmd and concatenates them as a "properties" file.
 // Then the properties file is read and properties are set to the loaded Parser.
-func NewSetFlag() ParserProvider {
-	return &setFlagProvider{}
+func NewPropertiesMapProvider() MapProvider {
+	return &setFlagMapProvider{}
 }
 
-func (sfl *setFlagProvider) Get(context.Context) (*config.Map, error) {
+func (sfl *setFlagMapProvider) Get(context.Context) (*config.Map, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
 		return config.NewMap(), nil
@@ -68,6 +68,6 @@ func (sfl *setFlagProvider) Get(context.Context) (*config.Map, error) {
 	return config.NewMapFromStringMap(prop), nil
 }
 
-func (sfl *setFlagProvider) Close(context.Context) error {
+func (sfl *setFlagMapProvider) Close(context.Context) error {
 	return nil
 }
