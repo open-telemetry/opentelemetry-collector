@@ -91,9 +91,9 @@ func New(set CollectorSettings) (*Collector, error) {
 		return nil, err
 	}
 
-	if set.ParserProvider == nil {
+	if set.ConfigMapProvider == nil {
 		// use default provider.
-		set.ParserProvider = parserprovider.Default()
+		set.ConfigMapProvider = parserprovider.Default()
 	}
 
 	if set.ConfigUnmarshaler == nil {
@@ -154,7 +154,7 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	cp, err := col.set.ParserProvider.Get(ctx)
+	cp, err := col.set.ConfigMapProvider.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
@@ -193,7 +193,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := col.set.ParserProvider.(parserprovider.Watchable); ok {
+	if watchable, ok := col.set.ConfigMapProvider.(parserprovider.Watchable); ok {
 		go col.watchForConfigUpdates(watchable)
 	}
 
@@ -240,7 +240,7 @@ func (col *Collector) Run(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.set.ParserProvider.Close(ctx); err != nil {
+	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
 		errs = append(errs, fmt.Errorf("failed to close config: %w", err))
 	}
 
@@ -265,7 +265,7 @@ func (col *Collector) Run(ctx context.Context) error {
 // to the latest configuration. It requires that col.parserProvider and col.factories
 // are properly populated to finish successfully.
 func (col *Collector) reloadService(ctx context.Context) error {
-	if err := col.set.ParserProvider.Close(ctx); err != nil {
+	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
 		return fmt.Errorf("failed close current config provider: %w", err)
 	}
 

@@ -23,18 +23,18 @@ import (
 
 // TODO: Add support to "merge" watchable interface.
 
-type mergeProvider struct {
-	providers []ParserProvider
+type mergeMapProvider struct {
+	providers []MapProvider
 }
 
-// NewMergeProvider returns a config.ParserProvider, that merges the result from multiple ParserProvider.
+// NewMergeMapProvider returns a config.MapProvider, that merges the result from multiple MapProvider.
 //
 // The ConfigMaps are merged in the given order, by merging all of them in order into an initial empty map.
-func NewMergeProvider(ps ...ParserProvider) ParserProvider {
-	return &mergeProvider{providers: ps}
+func NewMergeMapProvider(ps ...MapProvider) MapProvider {
+	return &mergeMapProvider{providers: ps}
 }
 
-func (mp *mergeProvider) Get(ctx context.Context) (*config.Map, error) {
+func (mp *mergeMapProvider) Get(ctx context.Context) (*config.Map, error) {
 	ret := config.NewMap()
 	for _, p := range mp.providers {
 		cfgMap, err := p.Get(ctx)
@@ -48,7 +48,7 @@ func (mp *mergeProvider) Get(ctx context.Context) (*config.Map, error) {
 	return ret, nil
 }
 
-func (mp *mergeProvider) Close(ctx context.Context) error {
+func (mp *mergeMapProvider) Close(ctx context.Context) error {
 	var errs []error
 	for _, p := range mp.providers {
 		if err := p.Close(ctx); err != nil {
