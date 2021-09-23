@@ -381,7 +381,24 @@ func TestHttpReception(t *testing.T) {
 			hasError: true,
 		},
 	}
+
 	// prepare
+	runServer := func(t *testing.T, hss *HTTPServerSettings) (s *http.Server, addr string) {
+		ln, err := hss.ToListener()
+		assert.NoError(t, err)
+		s = hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, errWrite := fmt.Fprint(w, "test")
+			assert.NoError(t, errWrite)
+		}), componenttest.NewNopTelemetrySettings())
+
+		go func() {
+			_ = s.Serve(ln)
+		}()
+
+		// Wait for the servers to start
+		<-time.After(10 * time.Millisecond)
+		return s, ln.Addr().String()
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -389,19 +406,8 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   "localhost:0",
 				TLSSetting: tt.tlsServerCreds,
 			}
-			ln, err := hss.ToListener()
-			assert.NoError(t, err)
-			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				_, errWrite := fmt.Fprint(w, "test")
-				assert.NoError(t, errWrite)
-			}), componenttest.NewNopTelemetrySettings())
 
-			go func() {
-				_ = s.Serve(ln)
-			}()
-
-			// Wait for the servers to start
-			<-time.After(10 * time.Millisecond)
+			s, addr := runServer(t, hss)
 
 			prefix := "https://"
 			if tt.tlsClientCreds.Insecure {
@@ -409,7 +415,7 @@ func TestHttpReception(t *testing.T) {
 			}
 
 			hcs := &HTTPClientSettings{
-				Endpoint:   prefix + ln.Addr().String(),
+				Endpoint:   prefix + addr,
 				TLSSetting: *tt.tlsClientCreds,
 			}
 			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
@@ -424,33 +430,40 @@ func TestHttpReception(t *testing.T) {
 				assert.Equal(t, "test", string(body))
 			}
 
-			// Check that h2c payloads are handled when serving insecure traffic
-			if tt.tlsClientCreds.Insecure {
-				client := http.Client{
-					Transport: &http2.Transport{
-						// So http2.Transport doesn't complain the URL scheme isn't 'https'
-						AllowHTTP: true,
-						// Pretend we are dialing a TLS endpoint.
-						// Note, we ignore the passed tls.Config
-						DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-							return net.Dial(network, addr)
-						},
-					},
-				}
-
-				resp, errResp := client.Get(hcs.Endpoint)
-				if tt.hasError {
-					assert.Error(t, errResp)
-				} else {
-					assert.NoError(t, errResp)
-					body, errRead := ioutil.ReadAll(resp.Body)
-					assert.NoError(t, errRead)
-					assert.Equal(t, "test", string(body))
-				}
-			}
 			require.NoError(t, s.Close())
 		})
 	}
+
+	t.Run("h2c", func(t *testing.T) {
+		hss := &HTTPServerSettings{
+			Endpoint: "localhost:0",
+		}
+
+		s, addr := runServer(t, hss)
+		// Check that h2c payloads are handled when serving insecure traffic
+		client := http.Client{
+			Transport: &http2.Transport{
+				// So http2.Transport doesn't complain the URL scheme isn't 'https'
+				AllowHTTP: true,
+				// Pretend we are dialing a TLS endpoint.
+				// Note, we ignore the passed tls.Config
+				DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return net.Dial(network, addr)
+				},
+			},
+		}
+
+		hcs := &HTTPClientSettings{
+			Endpoint: "http://" + addr,
+		}
+		resp, errResp := client.Get(hcs.Endpoint)
+		assert.NoError(t, errResp)
+		body, errRead := ioutil.ReadAll(resp.Body)
+		assert.NoError(t, errRead)
+		assert.Equal(t, "test", string(body))
+		require.NoError(t, s.Close())
+
+	})
 }
 
 func TestHttpCors(t *testing.T) {
