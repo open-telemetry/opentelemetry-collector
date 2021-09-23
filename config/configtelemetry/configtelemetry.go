@@ -38,8 +38,6 @@ const (
 	metricsLevelCfg = "metrics-level"
 )
 
-const UseOpenTelemetryForInternalMetrics = false
-
 var metricsLevelPtr = new(Level)
 
 // Flags is a helper function to add telemetry config flags to the service that exposes
