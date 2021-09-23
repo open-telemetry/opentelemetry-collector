@@ -2,13 +2,16 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Move `extension/storage` to `extension/experimental/storageextension` (#4082).
+- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
+
 ## v0.36.0 Beta
 
 ## 🛑 Breaking changes 🛑
 
 - Remove deprecated pdata.AttributeMapToMap (#3994)
-- Move `extension/storage` to `extension/experimental/storageextension` (#4082).
-- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
 - Move ValidateConfig from configcheck to configtest (#3956)
 - Remove `mem-ballast-size-mib`, already deprecated and no-op (#4005)
 - Remove `semconv.AttributeMessageType` (#4020)
