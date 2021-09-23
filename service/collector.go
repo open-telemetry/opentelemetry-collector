@@ -93,7 +93,7 @@ func New(set CollectorSettings) (*Collector, error) {
 
 	if set.ConfigMapProvider == nil {
 		// use default provider.
-		set.ConfigMapProvider = parserprovider.Default()
+		set.ConfigMapProvider = parserprovider.NewDefaultMapProvider()
 	}
 
 	if set.ConfigUnmarshaler == nil {
