@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -43,9 +42,9 @@ func TestDefault(t *testing.T) {
 			"--set=processors.doesnotexist.timeout=2s",
 		})
 		require.NoError(t, err)
-		pl := Default()
+		pl := NewDefaultMapProvider()
 		require.NotNil(t, pl)
-		var cp *configparser.ConfigMap
+		var cp *config.Map
 		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -63,9 +62,9 @@ func TestDefault(t *testing.T) {
 			"--set=processors.batch/foo.timeout=2s",
 		})
 		require.NoError(t, err)
-		pl := Default()
+		pl := NewDefaultMapProvider()
 		require.NotNil(t, pl)
-		var cp *configparser.ConfigMap
+		var cp *config.Map
 		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -94,9 +93,9 @@ func TestDefault(t *testing.T) {
 			"--set=receivers.otlp.protocols.grpc.endpoint=localhost:12345",
 		})
 		require.NoError(t, err)
-		pl := Default()
+		pl := NewDefaultMapProvider()
 		require.NotNil(t, pl)
-		var cp *configparser.ConfigMap
+		var cp *config.Map
 		cp, err = pl.Get(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, cp)
@@ -129,7 +128,7 @@ func TestDefault_ComponentDoesNotExist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	pl := Default()
+	pl := NewDefaultMapProvider()
 	require.NotNil(t, pl)
 	cp, err := pl.Get(context.Background())
 	require.NoError(t, err)

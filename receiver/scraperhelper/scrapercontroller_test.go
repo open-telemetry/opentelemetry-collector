@@ -362,7 +362,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	obsreporttest.CheckReceiverMetrics(t, config.NewID("receiver"), "", int64(dataPointCount), 0)
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(config.NewID("receiver"), "", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -397,7 +397,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	obsreporttest.CheckScraperMetrics(t, config.NewID("receiver"), config.NewID("scraper"), expectedScraped, expectedErrored)
+	require.NoError(t, obsreporttest.CheckScraperMetrics(config.NewID("receiver"), config.NewID("scraper"), expectedScraped, expectedErrored))
 }
 
 func singleMetric() pdata.MetricSlice {

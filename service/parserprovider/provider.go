@@ -17,14 +17,14 @@ package parserprovider
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 )
 
-// ParserProvider is an interface that helps providing configuration's parser.
+// MapProvider is an interface that helps providing configuration's parser.
 // Implementations may load the parser from a file, a database or any other source.
-type ParserProvider interface {
-	// Get returns the config.Parser if succeed or error otherwise.
-	Get(ctx context.Context) (*configparser.ConfigMap, error)
+type MapProvider interface {
+	// Get returns the config.Map if succeed or error otherwise.
+	Get(ctx context.Context) (*config.Map, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.
@@ -32,7 +32,7 @@ type ParserProvider interface {
 	Close(ctx context.Context) error
 }
 
-// Watchable is an extension for ParserProvider that is implemented if the given provider
+// Watchable is an extension for MapProvider that is implemented if the given provider
 // supports monitoring of configuration updates.
 type Watchable interface {
 	// WatchForUpdate waits for updates on any of the values retrieved from config sources.

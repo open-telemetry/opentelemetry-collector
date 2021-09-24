@@ -5,6 +5,11 @@
 ## 🛑 Breaking changes 🛑
 
 - Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
+- Rename `configparser.Parser` as `config.Map` (#4075)
+
+## 💡 Enhancements 💡
+
+- Add Gen dependabot into CI (#4083)
 
 ## v0.36.0 Beta
 
@@ -18,6 +23,7 @@
 - Remove squash on `configtls.TLSClientSetting` and move TLS client configs under `tls` (#4063)
 - Rename TLS server config `*configtls.TLSServerSetting` from `tls_settings` to `tls` (#4063)
 - Split `service.Collector` from the `cobra.Command` (#4074)
+- Rename `memorylimiter` to `memorylimiterprocessor` (#4064)
 
 ## 💡 Enhancements 💡
 

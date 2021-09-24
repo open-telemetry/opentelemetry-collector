@@ -34,13 +34,33 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
+
+const configStr = `
+receivers:
+  otlp:
+    protocols:
+      grpc:
+exporters:
+  otlp:
+    endpoint: "localhost:4317"
+processors:
+  batch:
+extensions:
+service:
+  extensions:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]
+`
 
 func TestCollector_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
@@ -145,9 +165,9 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
-		Factories:      factories,
-		ParserProvider: new(minimalParserLoader),
+		BuildInfo:         component.DefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -233,44 +253,11 @@ func assertZPages(t *testing.T) {
 	}
 }
 
-type minimalParserLoader struct{}
-
-func (*minimalParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
-	configStr := `
-receivers:
-  otlp:
-    protocols:
-      grpc:
-
-exporters:
-  otlp:
-    endpoint: "localhost:4317"
-
-processors:
-  batch:
-
-extensions:
-
-service:
-  extensions:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp]
-`
-	return configparser.NewConfigMapFromBuffer(strings.NewReader(configStr))
-}
-
-func (*minimalParserLoader) Close(context.Context) error {
-	return nil
-}
-
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
+func (epl *errParserLoader) Get(context.Context) (*config.Map, error) {
 	return nil, epl.err
 }
 
@@ -286,7 +273,7 @@ func TestCollector_reloadService(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		parserProvider parserprovider.ParserProvider
+		parserProvider parserprovider.MapProvider
 		service        *service
 	}{
 		{
@@ -306,7 +293,7 @@ func TestCollector_reloadService(t *testing.T) {
 		},
 		{
 			name:           "retire_service_ok_load_ok",
-			parserProvider: new(minimalParserLoader),
+			parserProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 			service: &service{
 				logger:          zap.NewNop(),
 				builtExporters:  builder.Exporters{},
@@ -320,7 +307,7 @@ func TestCollector_reloadService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			col := Collector{
 				set: CollectorSettings{
-					ParserProvider:    tt.parserProvider,
+					ConfigMapProvider: tt.parserProvider,
 					ConfigUnmarshaler: configunmarshaler.NewDefault(),
 					Factories:         factories,
 				},

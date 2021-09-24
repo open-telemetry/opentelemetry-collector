@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/middleware"
-	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -50,12 +50,6 @@ type exporter struct {
 	logsURL    string
 	logger     *zap.Logger
 }
-
-var (
-	tracesMarshaler  = otlp.NewProtobufTracesMarshaler()
-	metricsMarshaler = otlp.NewProtobufMetricsMarshaler()
-	logsMarshaler    = otlp.NewProtobufLogsMarshaler()
-)
 
 const (
 	headerRetryAfter         = "Retry-After"
@@ -100,7 +94,9 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	request, err := tracesMarshaler.MarshalTraces(td)
+	tr := otlpgrpc.NewTracesRequest()
+	tr.SetTraces(td)
+	request, err := tr.Marshal()
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -109,7 +105,9 @@ func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
-	request, err := metricsMarshaler.MarshalMetrics(md)
+	tr := otlpgrpc.NewMetricsRequest()
+	tr.SetMetrics(md)
+	request, err := tr.Marshal()
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -117,7 +115,9 @@ func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 }
 
 func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
-	request, err := logsMarshaler.MarshalLogs(ld)
+	tr := otlpgrpc.NewLogsRequest()
+	tr.SetLogs(ld)
+	request, err := tr.Marshal()
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
