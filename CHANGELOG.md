@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Supports more compression methods for configgrpc (#4088)
 - Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
 - Rename `configparser.Parser` as `config.Map` (#4075)
 
