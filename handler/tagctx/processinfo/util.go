@@ -77,7 +77,7 @@ func isLocalIp(remoteIp string) bool {
 }
 
 func getCommandCmd(ctx context.Context, port uint32) (cmd string, id int32, err error) {
-	conns, err := netutil.ConnectionsPidWithContext(ctx, "tcp4", 0)
+	conns, err := netutil.ConnectionsPidWithContext(ctx, "tcp", 0)
 	if err != nil {
 		return
 	}
