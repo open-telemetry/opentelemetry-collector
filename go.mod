@@ -19,14 +19,14 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/model v0.35.0
+	go.opentelemetry.io/collector/model v0.36.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.23.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.23.0
 	go.opentelemetry.io/contrib/zpages v0.23.0
-	go.opentelemetry.io/otel v1.0.0-RC3
+	go.opentelemetry.io/otel v1.0.0
 	go.opentelemetry.io/otel/metric v0.23.0
-	go.opentelemetry.io/otel/sdk v1.0.0-RC3
-	go.opentelemetry.io/otel/trace v1.0.0-RC3
+	go.opentelemetry.io/otel/sdk v1.0.0
+	go.opentelemetry.io/otel/trace v1.0.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
