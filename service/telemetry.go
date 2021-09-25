@@ -72,7 +72,10 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, processor.MetricViews()...)
 
 	tel.views = views
-	if err = view.Register(views...); err != nil {
+	// 报错关键字；a different view with the same name is already registered
+	// 启用多个协程的时候会多次注册公共view，导致报错，暂时屏蔽该报错
+	// 以后有时间再修 TODO
+	if err = view.Register(views...); err != nil && !strings.Contains(err.Error(), "a different view with the same name is already registered") {
 		return err
 	}
 
