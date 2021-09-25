@@ -116,12 +116,12 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	//	Handler: mux,
 	//}
 
-	go func() {
-		serveErr := tel.server.ListenAndServe()
-		if serveErr != nil && serveErr != http.ErrServerClosed {
-			asyncErrorChannel <- serveErr
-		}
-	}()
+	//go func() {
+	//	serveErr := tel.server.ListenAndServe()
+	//	if serveErr != nil && serveErr != http.ErrServerClosed {
+	//		asyncErrorChannel <- serveErr
+	//	}
+	//}()
 
 	return nil
 }
