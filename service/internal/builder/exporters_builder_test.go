@@ -40,8 +40,8 @@ func TestBuildExporters(t *testing.T) {
 	factories.Exporters[otlpFactory.Type()] = otlpFactory
 	cfg := &config.Config{
 		Exporters: map[config.ComponentID]config.Exporter{
-			config.NewID("otlp"): &otlpexporter.Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
+			config.NewComponentID("otlp"): &otlpexporter.Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "0.0.0.0:12345",
 				},
@@ -53,7 +53,7 @@ func TestBuildExporters(t *testing.T) {
 				"trace": {
 					Name:      "trace",
 					InputType: config.TracesDataType,
-					Exporters: []config.ComponentID{config.NewID("otlp")},
+					Exporters: []config.ComponentID{config.NewComponentID("otlp")},
 				},
 			},
 		},
@@ -64,7 +64,7 @@ func TestBuildExporters(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[config.NewID("otlp")]
+	e1 := exporters[config.NewComponentID("otlp")]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -92,7 +92,7 @@ func TestBuildExporters(t *testing.T) {
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
-	e1 = exporters[config.NewID("otlp")]
+	e1 = exporters[config.NewComponentID("otlp")]
 
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
@@ -110,8 +110,8 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 
 	cfg := &config.Config{
 		Exporters: map[config.ComponentID]config.Exporter{
-			config.NewID("exampleexporter"): &testcomponents.ExampleExporter{
-				ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
+			config.NewComponentID("exampleexporter"): &testcomponents.ExampleExporter{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID("exampleexporter")),
 			},
 		},
 
@@ -120,7 +120,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 				"logs": {
 					Name:      "logs",
 					InputType: "logs",
-					Exporters: []config.ComponentID{config.NewID("exampleexporter")},
+					Exporters: []config.ComponentID{config.NewComponentID("exampleexporter")},
 				},
 			},
 		},
@@ -131,7 +131,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[config.NewID("exampleexporter")]
+	e1 := exporters[config.NewComponentID("exampleexporter")]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -155,7 +155,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
-	e1 = exporters[config.NewID("exampleexporter")]
+	e1 = exporters[config.NewComponentID("exampleexporter")]
 
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
@@ -170,7 +170,7 @@ func TestBuildExporters_StartStopAll(t *testing.T) {
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
-	exporters[config.NewID("example")] = &builtExporter{
+	exporters[config.NewComponentID("example")] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[config.DataType]component.Exporter{
 			config.TracesDataType:  traceExporter,

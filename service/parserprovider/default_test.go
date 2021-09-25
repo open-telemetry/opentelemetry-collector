@@ -82,7 +82,7 @@ func TestDefault(t *testing.T) {
 		sort.Strings(processors)
 		// batch/foo is not added to the pipeline
 		assert.Equal(t, []string{"batch", "batch/foo"}, processors)
-		assert.Equal(t, []config.ComponentID{config.NewID("batch")}, cfg.Service.Pipelines["traces"].Processors)
+		assert.Equal(t, []config.ComponentID{config.NewComponentID("batch")}, cfg.Service.Pipelines["traces"].Processors)
 	})
 	t.Run("ok", func(t *testing.T) {
 		flags := new(flag.FlagSet)
@@ -106,10 +106,10 @@ func TestDefault(t *testing.T) {
 		err = cfg.Validate()
 		require.NoError(t, err)
 
-		batch, hasBatch := cfg.Processors[config.NewID("batch")].(*batchprocessor.Config)
+		batch, hasBatch := cfg.Processors[config.NewComponentID("batch")].(*batchprocessor.Config)
 		require.True(t, hasBatch)
 		assert.Equal(t, time.Second*2, batch.Timeout)
-		otlp, hasOTLP := cfg.Receivers[config.NewID("otlp")].(*otlpreceiver.Config)
+		otlp, hasOTLP := cfg.Receivers[config.NewComponentID("otlp")].(*otlpreceiver.Config)
 		require.True(t, hasOTLP)
 		assert.Equal(t, "localhost:12345", otlp.GRPC.NetAddr.Endpoint)
 	})

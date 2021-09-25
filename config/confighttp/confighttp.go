@@ -90,7 +90,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 			return nil, fmt.Errorf("extensions configuration not found")
 		}
 
-		componentID, cperr := config.NewIDFromString(hcs.Auth.AuthenticatorName)
+		componentID, cperr := config.NewComponentIDFromString(hcs.Auth.AuthenticatorName)
 		if cperr != nil {
 			return nil, cperr
 		}

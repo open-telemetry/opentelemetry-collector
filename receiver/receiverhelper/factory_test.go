@@ -28,7 +28,7 @@ import (
 
 const typeStr = "test"
 
-var defaultCfg = config.NewReceiverSettings(config.NewID(typeStr))
+var defaultCfg = config.NewReceiverSettings(config.NewComponentID(typeStr))
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory(

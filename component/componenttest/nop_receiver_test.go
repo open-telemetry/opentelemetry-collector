@@ -30,7 +30,7 @@ func TestNewNopReceiverFactory(t *testing.T) {
 	require.NotNil(t, factory)
 	assert.Equal(t, config.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &nopReceiverConfig{ReceiverSettings: config.NewReceiverSettings(config.NewID("nop"))}, cfg)
+	assert.Equal(t, &nopReceiverConfig{ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop"))}, cfg)
 
 	traces, err := factory.CreateTracesReceiver(context.Background(), NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)

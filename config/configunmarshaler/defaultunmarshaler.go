@@ -212,7 +212,7 @@ func unmarshalExtensions(exts map[string]map[string]interface{}, factories map[c
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		id, err := config.NewIDFromString(key)
+		id, err := config.NewComponentIDFromString(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(extensionsKeyName, key, err)
 		}
@@ -263,7 +263,7 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 
 	ret.Extensions = make([]config.ComponentID, 0, len(rawService.Extensions))
 	for _, extIDStr := range rawService.Extensions {
-		id, err := config.NewIDFromString(extIDStr)
+		id, err := config.NewComponentIDFromString(extIDStr)
 		if err != nil {
 			return ret, err
 		}
@@ -304,7 +304,7 @@ func unmarshalReceivers(recvs map[string]map[string]interface{}, factories map[c
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		id, err := config.NewIDFromString(key)
+		id, err := config.NewComponentIDFromString(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(receiversKeyName, key, err)
 		}
@@ -341,7 +341,7 @@ func unmarshalExporters(exps map[string]map[string]interface{}, factories map[co
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		id, err := config.NewIDFromString(key)
+		id, err := config.NewComponentIDFromString(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(exportersKeyName, key, err)
 		}
@@ -383,7 +383,7 @@ func unmarshalProcessors(procs map[string]map[string]interface{}, factories map[
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		id, err := config.NewIDFromString(key)
+		id, err := config.NewComponentIDFromString(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(processorsKeyName, key, err)
 		}
@@ -422,7 +422,7 @@ func unmarshalPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pip
 	// Iterate over input map and create a config for each.
 	for key, rawPipeline := range pipelinesConfig {
 		// Decode the key into type and name components.
-		id, err := config.NewIDFromString(key)
+		id, err := config.NewComponentIDFromString(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(pipelinesKeyName, key, err)
 		}
@@ -465,7 +465,7 @@ func unmarshalPipelines(pipelinesConfig map[string]pipelineSettings) (config.Pip
 func parseIDNames(pipelineID config.ComponentID, componentType string, names []string) ([]config.ComponentID, error) {
 	var ret []config.ComponentID
 	for _, idProcStr := range names {
-		idRecv, err := config.NewIDFromString(idProcStr)
+		idRecv, err := config.NewComponentIDFromString(idProcStr)
 		if err != nil {
 			return nil, fmt.Errorf("pipelines: config for %v contains invalid %s name %s : %w", pipelineID, componentType, idProcStr, err)
 		}

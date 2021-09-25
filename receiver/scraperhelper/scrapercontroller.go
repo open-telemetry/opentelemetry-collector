@@ -43,7 +43,7 @@ type ScraperControllerSettings struct {
 // settings with a collection interval of one minute.
 func DefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(cfgType)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(cfgType)),
 		CollectionInterval: time.Minute,
 	}
 }

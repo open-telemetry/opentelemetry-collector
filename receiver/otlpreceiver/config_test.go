@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 10)
 
-	assert.Equal(t, cfg.Receivers[config.NewID(typeStr)], factory.CreateDefaultConfig())
+	assert.Equal(t, cfg.Receivers[config.NewComponentID(typeStr)], factory.CreateDefaultConfig())
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
 	defaultOnlyGRPC.SetIDName("only_grpc")
