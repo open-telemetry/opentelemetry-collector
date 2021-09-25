@@ -19,8 +19,6 @@ import (
 	"strings"
 	"unicode"
 
-	"contrib.go.opencensus.io/exporter/prometheus"
-	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
@@ -33,7 +31,6 @@ import (
 	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
-	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 // applicationTelemetry is application's own telemetry.
@@ -81,41 +78,43 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 	processMetricsViews.StartCollection()
 
+	// 因为启动多个application,这里可能会重复监听prometheus端口
+	// TODO 以后有时间处理
 	// Until we can use a generic metrics exporter, default to Prometheus.
-	opts := prometheus.Options{
-		Namespace: telemetry.GetMetricsPrefix(),
-	}
+	//opts := prometheus.Options{
+	//	Namespace: telemetry.GetMetricsPrefix(),
+	//}
+	//
+	//var instanceID string
+	//if telemetry.GetAddInstanceID() {
+	//	instanceUUID, _ := uuid.NewRandom()
+	//	instanceID = instanceUUID.String()
+	//	opts.ConstLabels = map[string]string{
+	//		sanitizePrometheusKey(conventions.AttributeServiceInstance): instanceID,
+	//	}
+	//}
 
-	var instanceID string
-	if telemetry.GetAddInstanceID() {
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID = instanceUUID.String()
-		opts.ConstLabels = map[string]string{
-			sanitizePrometheusKey(conventions.AttributeServiceInstance): instanceID,
-		}
-	}
+	//pe, err := prometheus.NewExporter(opts)
+	//if err != nil {
+	//	return err
+	//}
 
-	pe, err := prometheus.NewExporter(opts)
-	if err != nil {
-		return err
-	}
+	//view.RegisterExporter(pe)
 
-	view.RegisterExporter(pe)
+	//logger.Info(
+	//	"Serving Prometheus metrics",
+	//	zap.String("address", metricsAddr),
+	//	zap.Int8("level", int8(level)), // TODO: make it human friendly
+	//	zap.String(conventions.AttributeServiceInstance, instanceID),
+	//)
 
-	logger.Info(
-		"Serving Prometheus metrics",
-		zap.String("address", metricsAddr),
-		zap.Int8("level", int8(level)), // TODO: make it human friendly
-		zap.String(conventions.AttributeServiceInstance, instanceID),
-	)
+	//mux := http.NewServeMux()
+	//mux.Handle("/metrics", pe)
 
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", pe)
-
-	tel.server = &http.Server{
-		Addr:    metricsAddr,
-		Handler: mux,
-	}
+	//tel.server = &http.Server{
+	//	Addr:    metricsAddr,
+	//	Handler: mux,
+	//}
 
 	go func() {
 		serveErr := tel.server.ListenAndServe()
