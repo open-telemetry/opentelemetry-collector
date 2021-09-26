@@ -25,7 +25,7 @@ func (g GrpcStatsHandler) TagRPC(c context.Context, _ *stats.RPCTagInfo) context
 func (g GrpcStatsHandler) HandleRPC(context.Context, stats.RPCStats) {}
 
 func (g GrpcStatsHandler) TagConn(ctx context.Context, c *stats.ConnTagInfo) context.Context {
-	return handleAddr(ctx, c.LocalAddr, g.logger)
+	return handleAddr(ctx, c.RemoteAddr, g.logger)
 }
 
 func (g GrpcStatsHandler) HandleConn(context.Context, stats.ConnStats) {}
