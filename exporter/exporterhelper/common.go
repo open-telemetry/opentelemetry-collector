@@ -40,6 +40,19 @@ func DefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
+// ObsReporterSettings is for obsreport related settings.
+type ObsReporterSettings struct {
+	// enabled indicates whether an obsReporter will be included in the exporter.
+	enabled bool
+}
+
+// DefaultObsReporterSettings returns the default settings for ObsReporterSettings
+func DefaultObsReporterSettings() ObsReporterSettings {
+	return ObsReporterSettings{
+		enabled: true,
+	}
+}
+
 // request is an abstraction of an individual request (batch of data) independent of the type of the data (traces, metrics, logs).
 type request interface {
 	// context returns the Context of the requests.
@@ -99,6 +112,7 @@ type baseSettings struct {
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
+	ObsReporterSettings
 }
 
 // fromOptions returns the internal options starting from the default and applying all configured options.
@@ -110,12 +124,12 @@ func fromOptions(options ...Option) *baseSettings {
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
 		RetrySettings: RetrySettings{Enabled: false},
+		ObsReporterSettings: DefaultObsReporterSettings(),
 	}
 
 	for _, op := range options {
 		op(opts)
 	}
-
 	return opts
 }
 
@@ -168,6 +182,15 @@ func WithQueue(queueSettings QueueSettings) Option {
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
 		o.consumerOptions = append(o.consumerOptions, consumerhelper.WithCapabilities(capabilities))
+	}
+}
+
+// WithObsReporterEnabled overrides the default obsReportSettings.enabled settings to indicate whether an default
+// obsReporter should be used.
+// The default is true.
+func WithObsReporterEnabled(enabled bool) Option {
+	return func(o *baseSettings) {
+		o.ObsReporterSettings.enabled = enabled
 	}
 }
 

@@ -101,10 +101,13 @@ func NewMetricsExporter(
 	bs := fromOptions(options...)
 	be := newBaseExporter(cfg, set, bs, config.MetricsDataType, newMetricsRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &metricsSenderWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
+		if bs.ObsReporterSettings.enabled {
+			return &metricsSenderWithObservability{
+				obsrep:     be.obsrep,
+				nextSender: nextSender,
+			}
 		}
+		return nextSender
 	})
 
 	mc, err := consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {

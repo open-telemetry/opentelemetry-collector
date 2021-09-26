@@ -101,10 +101,13 @@ func NewLogsExporter(
 	bs := fromOptions(options...)
 	be := newBaseExporter(cfg, set, bs, config.LogsDataType, newLogsRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &logsExporterWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
+		if bs.ObsReporterSettings.enabled {
+			return &logsExporterWithObservability{
+				obsrep:     be.obsrep,
+				nextSender: nextSender,
+			}
 		}
+		return nextSender
 	})
 
 	lc, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {

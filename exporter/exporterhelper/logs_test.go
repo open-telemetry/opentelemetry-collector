@@ -107,7 +107,7 @@ func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
-func TestLogsExporter_WithRecordLogs(t *testing.T) {
+func TestLogsExporter_WithRecordMetric(t *testing.T) {
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
@@ -115,13 +115,30 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 	checkRecordedMetricsForLogsExporter(t, le, nil)
 }
 
-func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
+func TestLogsExporter_WithRecordLogsDisabled(t *testing.T) {
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
+	require.NoError(t, err)
+	require.NotNil(t, le)
+
+	checkNoRecordedMetricsForLogsExporter(t, le, nil)
+}
+
+func TestLogsExporter_WithRecordMetric_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
 	checkRecordedMetricsForLogsExporter(t, le, want)
+}
+
+func TestLogsExporter_WithRecordMetricDisabled_ReturnError(t *testing.T) {
+	want := errors.New("my_error")
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
+	require.Nil(t, err)
+	require.NotNil(t, le)
+
+	checkNoRecordedMetricsForLogsExporter(t, le, want)
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
@@ -221,6 +238,22 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 	} else {
 		require.NoError(t, obsreporttest.CheckExporterLogs(fakeLogsExporterName, int64(numBatches*ld.LogRecordCount()), 0))
 	}
+}
+
+func checkNoRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter, wantError error) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		require.Equal(t, wantError, le.ConsumeLogs(context.Background(), ld))
+	}
+
+	err = obsreporttest.CheckExporterLogs(fakeTracesExporterName, 0, 0)
+	require.Error(t, err, "should error (tags not found)")
+	require.Containsf(t, err.Error(), "could not find tags", "expect error contains %q, got %q", "could not find tags", err)
 }
 
 func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le component.LogsExporter, numRequests int, wantError error) {

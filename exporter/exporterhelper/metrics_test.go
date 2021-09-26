@@ -114,6 +114,14 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 	checkRecordedMetricsForMetricsExporter(t, me, nil)
 }
 
+func TestMetricsExporter_WithRecordMetricsDisabled(t *testing.T) {
+	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(nil), WithObsReporterEnabled(false))
+	require.NoError(t, err)
+	require.NotNil(t, me)
+
+	checkNoRecordedMetricsForMetricsExporter(t, me, nil)
+}
+
 func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(want))
@@ -121,6 +129,15 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NotNil(t, me)
 
 	checkRecordedMetricsForMetricsExporter(t, me, want)
+}
+
+func TestMetricsExporter_WithRecordMetricsDisabled_ReturnError(t *testing.T) {
+	want := errors.New("my_error")
+	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(want))
+	require.NoError(t, err)
+	require.NotNil(t, me)
+
+	checkNoRecordedMetricsForMetricsExporter(t, me, want)
 }
 
 func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
@@ -223,6 +240,22 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	} else {
 		require.NoError(t, obsreporttest.CheckExporterMetrics(fakeMetricsExporterName, numPoints, 0))
 	}
+}
+
+func checkNoRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	md := testdata.GenerateMetricsTwoMetrics()
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), md))
+	}
+
+	err = obsreporttest.CheckExporterMetrics(fakeTracesExporterName, 0, 0)
+	require.Error(t, err, "should error (tags not found)")
+	require.Containsf(t, err.Error(), "could not find tags", "expect error contains %q, got %q", "could not find tags", err)
 }
 
 func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me component.MetricsExporter, numRequests int, wantError error) {

@@ -102,10 +102,13 @@ func NewTracesExporter(
 	bs := fromOptions(options...)
 	be := newBaseExporter(cfg, set, bs, config.TracesDataType, newTraceRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &tracesExporterWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
+		if bs.ObsReporterSettings.enabled {
+			return &tracesExporterWithObservability{
+				obsrep:     be.obsrep,
+				nextSender: nextSender,
+			}
 		}
+		return nextSender
 	})
 
 	tc, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
