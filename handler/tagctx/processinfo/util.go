@@ -83,7 +83,7 @@ func getCommandCmd(ctx context.Context, port uint32) (cmd string, id int32, err 
 	}
 	var p *process.Process
 	for _, conn := range conns {
-		if conn.Raddr.Port == port {
+		if conn.Laddr.Port == port {
 			p, err = process.NewProcess(conn.Pid)
 			if err != nil {
 				return
