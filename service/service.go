@@ -19,10 +19,10 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/contrib/zpages"
+	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/internal/builder"
 )
 
@@ -107,10 +107,10 @@ func (srv *service) Start(ctx context.Context) error {
 
 func (srv *service) Shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
-	var errs []error
+	var errs error
 
 	if err := srv.builtExtensions.NotifyPipelineNotReady(); err != nil {
-		errs = append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
 	// Pipeline shutdown order is the reverse of building/starting: first receivers, then flushing pipelines
@@ -119,25 +119,25 @@ func (srv *service) Shutdown(ctx context.Context) error {
 
 	srv.telemetry.Logger.Info("Stopping receivers...")
 	if err := srv.builtReceivers.ShutdownAll(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown receivers: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown receivers: %w", err))
 	}
 
 	srv.telemetry.Logger.Info("Stopping processors...")
 	if err := srv.builtPipelines.ShutdownProcessors(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown processors: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown processors: %w", err))
 	}
 
 	srv.telemetry.Logger.Info("Stopping exporters...")
 	if err := srv.builtExporters.ShutdownAll(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
 	}
 
 	srv.telemetry.Logger.Info("Stopping extensions...")
 	if err := srv.builtExtensions.ShutdownAll(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // ReportFatalError is used to report to the host that the receiver encountered

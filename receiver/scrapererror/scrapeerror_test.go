@@ -69,7 +69,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 				errs.AddPartial(1, fmt.Errorf("err: %s", errors.New("bad scrape")))
 				return errs
 			},
-			expectedErr:         "[bad scrapes; err: bad scrape]",
+			expectedErr:         "bad scrapes; err: bad scrape",
 			expectedFailedCount: 11,
 			expectedScrape:      true,
 		},
@@ -80,7 +80,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 				errs.Add(fmt.Errorf("err: %s", errors.New("bad reg")))
 				return errs
 			},
-			expectedErr: "[bad regular; err: bad reg]",
+			expectedErr: "bad regular; err: bad reg",
 		},
 		{
 			errs: func() ScrapeErrors {
@@ -91,7 +91,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 				errs.Add(fmt.Errorf("event: %s", errors.New("something happened")))
 				return errs
 			},
-			expectedErr:         "[bad two scrapes; 10 scrapes failed: bad things happened; bad event; event: something happened]",
+			expectedErr:         "bad two scrapes; 10 scrapes failed: bad things happened; bad event; event: something happened",
 			expectedFailedCount: 12,
 			expectedScrape:      true,
 		},
@@ -99,12 +99,11 @@ func TestScrapeErrorsCombine(t *testing.T) {
 
 	for _, tc := range testCases {
 		scrapeErrs := tc.errs()
-		if (scrapeErrs.Combine() == nil) != tc.expectNil {
-			t.Errorf("%+v.Combine() == nil? Got: %t. Want: %t", scrapeErrs, scrapeErrs.Combine() == nil, tc.expectNil)
+		if tc.expectNil {
+			assert.NoError(t, scrapeErrs.Combine())
+			continue
 		}
-		if scrapeErrs.Combine() != nil && tc.expectedErr != scrapeErrs.Combine().Error() {
-			t.Errorf("%+v.Combine() = %q. Want: %q", scrapeErrs, scrapeErrs.Combine(), tc.expectedErr)
-		}
+		assert.EqualError(t, scrapeErrs.Combine(), tc.expectedErr)
 		if tc.expectedScrape {
 			partialScrapeErr, ok := scrapeErrs.Combine().(PartialScrapeError)
 			if !ok {
