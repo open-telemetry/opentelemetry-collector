@@ -28,6 +28,7 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
+COMP_REL_PATH=internal/testcomponents/example_factories.go
 MOD_NAME=go.opentelemetry.io/collector
 
 GO_ACC=go-acc
@@ -397,6 +398,11 @@ certs:
 .PHONY: certs-dryrun
 certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
+
+# Verify existence of READMEs for components specified as default components in the collector.
+.PHONY: checkdoc
+checkdoc:
+	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
 # Construct new API state snapshots
 .PHONY: apidiff-build
