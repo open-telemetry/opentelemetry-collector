@@ -48,14 +48,9 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 
 // StartConsumers starts the given number of consumers which will be consuming items
 func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
-	pq.StartConsumersWithFactory(num, func() internal.Consumer {
+	factory := func() internal.Consumer {
 		return internal.ConsumerFunc(callback)
-	})
-}
-
-// StartConsumersWithFactory creates a given number of consumers consuming items
-// from the queue in separate goroutines.
-func (pq *persistentQueue) StartConsumersWithFactory(num int, factory func() internal.Consumer) {
+	}
 	pq.numWorkers = num
 
 	for i := 0; i < pq.numWorkers; i++ {
@@ -100,9 +95,4 @@ func (pq *persistentQueue) Size() int {
 // Currently, it is unlimited but in the future it can take into account available storage space or configured limits
 func (pq *persistentQueue) Capacity() int {
 	return pq.Size() + 1
-}
-
-// Resize changes the size of the queue. It has no effect in case of the Persistent Queue
-func (pq *persistentQueue) Resize(_ int) bool {
-	return true
 }

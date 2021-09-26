@@ -6,7 +6,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-// http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package internal
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -26,7 +25,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	uatomic "go.uber.org/atomic"
 )
 
 // In this test we run a queue with capacity 1 and a single consumer.
@@ -97,12 +95,6 @@ func TestBoundedQueue(t *testing.T) {
 	})
 }
 
-func TestBoundedQueueWithFactory(t *testing.T) {
-	helper(t, func(q ProducerConsumerQueue, consumerFn func(item interface{})) {
-		q.StartConsumersWithFactory(1, func() Consumer { return ConsumerFunc(consumerFn) })
-	})
-}
-
 type consumerState struct {
 	sync.Mutex
 	t            *testing.T
@@ -152,154 +144,6 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 	assert.Equal(s.t, expected, s.snapshot())
 }
 
-func TestResizeUp(t *testing.T) {
-	q := NewBoundedMemoryQueue(2, func(item interface{}) {
-		fmt.Printf("dropped: %v\n", item)
-	})
-
-	var firstConsumer, secondConsumer, releaseConsumers sync.WaitGroup
-	firstConsumer.Add(1)
-	secondConsumer.Add(1)
-	releaseConsumers.Add(1)
-
-	released, resized := false, false
-	q.StartConsumers(1, func(item interface{}) {
-		if !resized { // we'll have a second consumer once the queue is resized
-			// signal that the worker is processing
-			firstConsumer.Done()
-		} else if !released {
-			// once we release the lock, we might end up with multiple calls to reach this
-			secondConsumer.Done()
-		}
-
-		// wait until we are signaled that we can finish
-		releaseConsumers.Wait()
-	})
-
-	assert.True(t, q.Produce("a")) // in process
-	firstConsumer.Wait()
-
-	assert.True(t, q.Produce("b"))  // in queue
-	assert.True(t, q.Produce("c"))  // in queue
-	assert.False(t, q.Produce("d")) // dropped
-	assert.EqualValues(t, 2, q.Capacity())
-	assert.EqualValues(t, q.Capacity(), q.Size())
-	assert.EqualValues(t, q.Capacity(), len(*q.(*boundedMemoryQueue).items))
-
-	resized = true
-	assert.True(t, q.Resize(4))
-	assert.True(t, q.Produce("e")) // in process by the second consumer
-	secondConsumer.Wait()
-
-	assert.True(t, q.Produce("f"))  // in the new queue
-	assert.True(t, q.Produce("g"))  // in the new queue
-	assert.False(t, q.Produce("h")) // the new queue has the capacity, but the sum of queues doesn't
-
-	assert.EqualValues(t, 4, q.Capacity())
-	assert.EqualValues(t, q.Capacity(), q.Size())                 // the combined queues are at the capacity right now
-	assert.EqualValues(t, 2, len(*q.(*boundedMemoryQueue).items)) // the new internal queue should have two items only
-
-	released = true
-	releaseConsumers.Done()
-}
-
-func TestResizeDown(t *testing.T) {
-	q := NewBoundedMemoryQueue(4, func(item interface{}) {
-		fmt.Printf("dropped: %v\n", item)
-	})
-
-	var consumer, releaseConsumers sync.WaitGroup
-	consumer.Add(1)
-	releaseConsumers.Add(1)
-
-	released := false
-	q.StartConsumers(1, func(item interface{}) {
-		// once we release the lock, we might end up with multiple calls to reach this
-		if !released {
-			// signal that the worker is processing
-			consumer.Done()
-		}
-
-		// wait until we are signaled that we can finish
-		releaseConsumers.Wait()
-	})
-
-	assert.True(t, q.Produce("a")) // in process
-	consumer.Wait()
-
-	assert.True(t, q.Produce("b")) // in queue
-	assert.True(t, q.Produce("c")) // in queue
-	assert.True(t, q.Produce("d")) // in queue
-	assert.True(t, q.Produce("e")) // dropped
-	assert.EqualValues(t, 4, q.Capacity())
-	assert.EqualValues(t, q.Capacity(), q.Size())
-	assert.EqualValues(t, q.Capacity(), len(*q.(*boundedMemoryQueue).items))
-
-	assert.True(t, q.Resize(2))
-	assert.False(t, q.Produce("f")) // dropped
-
-	assert.EqualValues(t, 2, q.Capacity())
-	assert.EqualValues(t, 4, q.Size())                            // the queue will eventually drain, but it will live for a while over capacity
-	assert.EqualValues(t, 0, len(*q.(*boundedMemoryQueue).items)) // the new queue is empty, as the old queue is still full and over capacity
-
-	released = true
-	releaseConsumers.Done()
-}
-
-func TestResizeOldQueueIsDrained(t *testing.T) {
-	q := NewBoundedMemoryQueue(2, func(item interface{}) {
-		fmt.Printf("dropped: %v\n", item)
-	})
-
-	var consumerReady, expected, readyToConsume sync.WaitGroup
-	consumerReady.Add(1)
-	readyToConsume.Add(1)
-	expected.Add(5) // we expect 5 items to be processed
-
-	consumed := uatomic.NewInt32(5)
-
-	first := true
-	q.StartConsumers(1, func(item interface{}) {
-		// first run only
-		if first {
-			first = false
-			consumerReady.Done()
-		}
-
-		readyToConsume.Wait()
-
-		if consumed.Sub(1) >= 0 {
-			// we mark only the first 5 items as done
-			// we *might* get one item more in the queue given the right conditions
-			// but this small difference is OK -- making sure we are processing *exactly* N items
-			// is costlier than just accept that there's a couple more items in the queue than expected
-			expected.Done()
-		}
-	})
-
-	assert.True(t, q.Produce("a"))
-	consumerReady.Wait()
-
-	assert.True(t, q.Produce("b"))
-	assert.True(t, q.Produce("c"))
-	assert.False(t, q.Produce("d"))
-
-	q.Resize(4)
-
-	assert.True(t, q.Produce("e"))
-	assert.True(t, q.Produce("f"))
-
-	readyToConsume.Done()
-	expected.Wait() // once this returns, we've consumed all items, meaning that both queues are drained
-}
-
-func TestNoopResize(t *testing.T) {
-	q := NewBoundedMemoryQueue(2, func(item interface{}) {
-	})
-
-	assert.False(t, q.Resize(2))
-}
-
 func TestZeroSize(t *testing.T) {
 	q := NewBoundedMemoryQueue(0, func(item interface{}) {
 	})
@@ -326,9 +170,7 @@ func BenchmarkBoundedQueueWithFactory(b *testing.B) {
 	q := NewBoundedMemoryQueue(1000, func(item interface{}) {
 	})
 
-	q.StartConsumersWithFactory(10, func() Consumer {
-		return ConsumerFunc(func(item interface{}) {})
-	})
+	q.StartConsumers(10, func(item interface{}) {})
 
 	for n := 0; n < b.N; n++ {
 		q.Produce(n)

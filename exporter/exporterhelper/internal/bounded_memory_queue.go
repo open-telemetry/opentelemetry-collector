@@ -6,7 +6,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-// http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,6 @@ package internal
 
 import (
 	"sync"
-	"sync/atomic"
-	"unsafe"
 
 	uatomic "go.uber.org/atomic"
 )
@@ -55,9 +53,12 @@ func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) P
 	}
 }
 
-// StartConsumersWithFactory creates a given number of consumers consuming items
-// from the queue in separate goroutines.
-func (q *boundedMemoryQueue) StartConsumersWithFactory(num int, factory func() Consumer) {
+// StartConsumers starts a given number of goroutines consuming items from the queue
+// and passing them into the consumer callback.
+func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interface{})) {
+	factory := func() Consumer {
+		return ConsumerFunc(callback)
+	}
 	q.workers = num
 	q.factory = factory
 	var startWG sync.WaitGroup
@@ -96,14 +97,6 @@ type ConsumerFunc func(item interface{})
 // Consume calls c(item)
 func (c ConsumerFunc) Consume(item interface{}) {
 	c(item)
-}
-
-// StartConsumers starts a given number of goroutines consuming items from the queue
-// and passing them into the consumer callback.
-func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interface{})) {
-	q.StartConsumersWithFactory(num, func() Consumer {
-		return ConsumerFunc(callback)
-	})
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
@@ -153,31 +146,4 @@ func (q *boundedMemoryQueue) Size() int {
 // Capacity returns capacity of the queue
 func (q *boundedMemoryQueue) Capacity() int {
 	return int(q.capacity.Load())
-}
-
-// Resize changes the capacity of the queue, returning whether the action was successful
-func (q *boundedMemoryQueue) Resize(capacity int) bool {
-	if capacity == q.Capacity() {
-		// noop
-		return false
-	}
-
-	previous := *q.items
-	queue := make(chan interface{}, capacity)
-
-	// swap queues
-	// #nosec
-	swapped := atomic.CompareAndSwapPointer((*unsafe.Pointer)(unsafe.Pointer(&q.items)), unsafe.Pointer(q.items), unsafe.Pointer(&queue))
-	if swapped {
-		// start a new set of consumers, based on the information given previously
-		q.StartConsumersWithFactory(q.workers, q.factory)
-
-		// gracefully drain the existing queue
-		close(previous)
-
-		// update the capacity
-		q.capacity.Store(uint32(capacity))
-	}
-
-	return swapped
 }
