@@ -123,7 +123,7 @@ func fromOptions(options ...Option) *baseSettings {
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
-		RetrySettings: RetrySettings{Enabled: false},
+		RetrySettings:       RetrySettings{Enabled: false},
 		ObsReporterSettings: DefaultObsReporterSettings(),
 	}
 
