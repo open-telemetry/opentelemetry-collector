@@ -32,8 +32,8 @@ import (
 // In this test we run a queue with capacity 1 and a single consumer.
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
-func helper(t *testing.T, startConsumers func(q *BoundedQueue, consumerFn func(item interface{}))) {
-	q := NewBoundedQueue(1, func(item interface{}) {})
+func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerFn func(item interface{}))) {
+	q := NewBoundedMemoryQueue(1, func(item interface{}) {})
 	assert.Equal(t, 1, q.Capacity())
 
 	var startLock sync.Mutex
@@ -92,13 +92,13 @@ func helper(t *testing.T, startConsumers func(q *BoundedQueue, consumerFn func(i
 }
 
 func TestBoundedQueue(t *testing.T) {
-	helper(t, func(q *BoundedQueue, consumerFn func(item interface{})) {
+	helper(t, func(q ProducerConsumerQueue, consumerFn func(item interface{})) {
 		q.StartConsumers(1, consumerFn)
 	})
 }
 
 func TestBoundedQueueWithFactory(t *testing.T) {
-	helper(t, func(q *BoundedQueue, consumerFn func(item interface{})) {
+	helper(t, func(q ProducerConsumerQueue, consumerFn func(item interface{})) {
 		q.StartConsumersWithFactory(1, func() Consumer { return ConsumerFunc(consumerFn) })
 	})
 }
@@ -153,7 +153,7 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 }
 
 func TestResizeUp(t *testing.T) {
-	q := NewBoundedQueue(2, func(item interface{}) {
+	q := NewBoundedMemoryQueue(2, func(item interface{}) {
 		fmt.Printf("dropped: %v\n", item)
 	})
 
@@ -184,7 +184,7 @@ func TestResizeUp(t *testing.T) {
 	assert.False(t, q.Produce("d")) // dropped
 	assert.EqualValues(t, 2, q.Capacity())
 	assert.EqualValues(t, q.Capacity(), q.Size())
-	assert.EqualValues(t, q.Capacity(), len(*q.items))
+	assert.EqualValues(t, q.Capacity(), len(*q.(*boundedMemoryQueue).items))
 
 	resized = true
 	assert.True(t, q.Resize(4))
@@ -196,15 +196,15 @@ func TestResizeUp(t *testing.T) {
 	assert.False(t, q.Produce("h")) // the new queue has the capacity, but the sum of queues doesn't
 
 	assert.EqualValues(t, 4, q.Capacity())
-	assert.EqualValues(t, q.Capacity(), q.Size()) // the combined queues are at the capacity right now
-	assert.EqualValues(t, 2, len(*q.items))       // the new internal queue should have two items only
+	assert.EqualValues(t, q.Capacity(), q.Size())                 // the combined queues are at the capacity right now
+	assert.EqualValues(t, 2, len(*q.(*boundedMemoryQueue).items)) // the new internal queue should have two items only
 
 	released = true
 	releaseConsumers.Done()
 }
 
 func TestResizeDown(t *testing.T) {
-	q := NewBoundedQueue(4, func(item interface{}) {
+	q := NewBoundedMemoryQueue(4, func(item interface{}) {
 		fmt.Printf("dropped: %v\n", item)
 	})
 
@@ -233,21 +233,21 @@ func TestResizeDown(t *testing.T) {
 	assert.True(t, q.Produce("e")) // dropped
 	assert.EqualValues(t, 4, q.Capacity())
 	assert.EqualValues(t, q.Capacity(), q.Size())
-	assert.EqualValues(t, q.Capacity(), len(*q.items))
+	assert.EqualValues(t, q.Capacity(), len(*q.(*boundedMemoryQueue).items))
 
 	assert.True(t, q.Resize(2))
 	assert.False(t, q.Produce("f")) // dropped
 
 	assert.EqualValues(t, 2, q.Capacity())
-	assert.EqualValues(t, 4, q.Size())      // the queue will eventually drain, but it will live for a while over capacity
-	assert.EqualValues(t, 0, len(*q.items)) // the new queue is empty, as the old queue is still full and over capacity
+	assert.EqualValues(t, 4, q.Size())                            // the queue will eventually drain, but it will live for a while over capacity
+	assert.EqualValues(t, 0, len(*q.(*boundedMemoryQueue).items)) // the new queue is empty, as the old queue is still full and over capacity
 
 	released = true
 	releaseConsumers.Done()
 }
 
 func TestResizeOldQueueIsDrained(t *testing.T) {
-	q := NewBoundedQueue(2, func(item interface{}) {
+	q := NewBoundedMemoryQueue(2, func(item interface{}) {
 		fmt.Printf("dropped: %v\n", item)
 	})
 
@@ -294,14 +294,14 @@ func TestResizeOldQueueIsDrained(t *testing.T) {
 }
 
 func TestNoopResize(t *testing.T) {
-	q := NewBoundedQueue(2, func(item interface{}) {
+	q := NewBoundedMemoryQueue(2, func(item interface{}) {
 	})
 
 	assert.False(t, q.Resize(2))
 }
 
 func TestZeroSize(t *testing.T) {
-	q := NewBoundedQueue(0, func(item interface{}) {
+	q := NewBoundedMemoryQueue(0, func(item interface{}) {
 	})
 
 	q.StartConsumers(1, func(item interface{}) {
@@ -311,7 +311,7 @@ func TestZeroSize(t *testing.T) {
 }
 
 func BenchmarkBoundedQueue(b *testing.B) {
-	q := NewBoundedQueue(1000, func(item interface{}) {
+	q := NewBoundedMemoryQueue(1000, func(item interface{}) {
 	})
 
 	q.StartConsumers(10, func(item interface{}) {
@@ -323,7 +323,7 @@ func BenchmarkBoundedQueue(b *testing.B) {
 }
 
 func BenchmarkBoundedQueueWithFactory(b *testing.B) {
-	q := NewBoundedQueue(1000, func(item interface{}) {
+	q := NewBoundedMemoryQueue(1000, func(item interface{}) {
 	})
 
 	q.StartConsumersWithFactory(10, func() Consumer {

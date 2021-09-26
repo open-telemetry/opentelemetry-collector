@@ -24,17 +24,12 @@ import (
 	uatomic "go.uber.org/atomic"
 )
 
-// Consumer consumes data from a bounded queue
-type Consumer interface {
-	Consume(item interface{})
-}
-
-// BoundedQueue implements a producer-consumer exchange similar to a ring buffer queue,
+// boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
 // where the queue is bounded and if it fills up due to slow consumers, the new items written by
 // the producer force the earliest items to be dropped. The implementation is actually based on
 // channels, with a special Reaper goroutine that wakes up when the queue is full and consumers
 // the items from the top of the queue until its size drops back to maxSize
-type BoundedQueue struct {
+type boundedMemoryQueue struct {
 	workers       int
 	stopWG        sync.WaitGroup
 	size          *uatomic.Uint32
@@ -46,11 +41,11 @@ type BoundedQueue struct {
 	stopCh        chan struct{}
 }
 
-// NewBoundedQueue constructs the new queue of specified capacity, and with an optional
+// NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedQueue(capacity int, onDroppedItem func(item interface{})) *BoundedQueue {
+func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) ProducerConsumerQueue {
 	queue := make(chan interface{}, capacity)
-	return &BoundedQueue{
+	return &boundedMemoryQueue{
 		onDroppedItem: onDroppedItem,
 		items:         &queue,
 		stopCh:        make(chan struct{}),
@@ -62,7 +57,7 @@ func NewBoundedQueue(capacity int, onDroppedItem func(item interface{})) *Bounde
 
 // StartConsumersWithFactory creates a given number of consumers consuming items
 // from the queue in separate goroutines.
-func (q *BoundedQueue) StartConsumersWithFactory(num int, factory func() Consumer) {
+func (q *boundedMemoryQueue) StartConsumersWithFactory(num int, factory func() Consumer) {
 	q.workers = num
 	q.factory = factory
 	var startWG sync.WaitGroup
@@ -105,14 +100,14 @@ func (c ConsumerFunc) Consume(item interface{}) {
 
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
-func (q *BoundedQueue) StartConsumers(num int, callback func(item interface{})) {
+func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interface{})) {
 	q.StartConsumersWithFactory(num, func() Consumer {
 		return ConsumerFunc(callback)
 	})
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *BoundedQueue) Produce(item interface{}) bool {
+func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	if q.stopped.Load() != 0 {
 		q.onDroppedItem(item)
 		return false
@@ -143,7 +138,7 @@ func (q *BoundedQueue) Produce(item interface{}) bool {
 
 // Stop stops all consumers, as well as the length reporter if started,
 // and releases the items channel. It blocks until all consumers have stopped.
-func (q *BoundedQueue) Stop() {
+func (q *boundedMemoryQueue) Stop() {
 	q.stopped.Store(1) // disable producer
 	close(q.stopCh)
 	q.stopWG.Wait()
@@ -151,17 +146,17 @@ func (q *BoundedQueue) Stop() {
 }
 
 // Size returns the current size of the queue
-func (q *BoundedQueue) Size() int {
+func (q *boundedMemoryQueue) Size() int {
 	return int(q.size.Load())
 }
 
 // Capacity returns capacity of the queue
-func (q *BoundedQueue) Capacity() int {
+func (q *boundedMemoryQueue) Capacity() int {
 	return int(q.capacity.Load())
 }
 
 // Resize changes the capacity of the queue, returning whether the action was successful
-func (q *BoundedQueue) Resize(capacity int) bool {
+func (q *boundedMemoryQueue) Resize(capacity int) bool {
 	if capacity == q.Capacity() {
 		// noop
 		return false

@@ -38,7 +38,7 @@ type persistentQueue struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
-func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentQueue {
+func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) internal.ProducerConsumerQueue {
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
@@ -48,11 +48,15 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 
 // StartConsumers starts the given number of consumers which will be consuming items
 func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
-	pq.numWorkers = num
-
-	factory := func() internal.Consumer {
+	pq.StartConsumersWithFactory(num, func() internal.Consumer {
 		return internal.ConsumerFunc(callback)
-	}
+	})
+}
+
+// StartConsumersWithFactory creates a given number of consumers consuming items
+// from the queue in separate goroutines.
+func (pq *persistentQueue) StartConsumersWithFactory(num int, factory func() internal.Consumer) {
+	pq.numWorkers = num
 
 	for i := 0; i < pq.numWorkers; i++ {
 		pq.stopWG.Add(1)
@@ -90,4 +94,15 @@ func (pq *persistentQueue) Stop() {
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
 func (pq *persistentQueue) Size() int {
 	return int(pq.storage.size())
+}
+
+// Capacity returns the current capacity of persistent queue.
+// Currently, it is unlimited but in the future it can take into account available storage space or configured limits
+func (pq *persistentQueue) Capacity() int {
+	return pq.Size() + 1
+}
+
+// Resize changes the size of the queue. It has no effect in case of the Persistent Queue
+func (pq *persistentQueue) Resize(_ int) bool {
+	return true
 }
