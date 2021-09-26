@@ -29,6 +29,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -167,6 +169,37 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 		require.NoError(t, err)
 		require.Nil(t, bb)
 	}
+}
+
+func TestPersistentStorage_MetricsReported(t *testing.T) {
+	path := createTemporaryDirectory()
+	defer os.RemoveAll(path)
+
+	traces := newTraces(5, 10)
+	req := newFakeTracesRequest(traces)
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+
+	RegisterMetrics()
+
+	for i := 0; i < 5; i++ {
+		err := ps.put(req)
+		require.NoError(t, err)
+	}
+
+	_ = getItemFromChannel(t, ps)
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
+
+	dd, err := view.RetrieveData("/currently_dispatched_batches")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(dd))
+	require.Equal(t, 1, len(dd[0].Tags))
+	require.Equal(t, tag.Tag{Key: queueNameKey, Value: "foo"}, dd[0].Tags[0])
+	require.Equal(t, int64(2), dd[0].Data.(*view.CountData).Value)
+
+	ps.stop()
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {

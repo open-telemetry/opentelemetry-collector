@@ -360,6 +360,8 @@ func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context
 		pcs.logger.Debug("Failed updating currently dispatched items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
+
+	recordCurrentlyDispatchedBatches(ctx, len(pcs.currentlyDispatchedItems), pcs.queueName)
 }
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
@@ -380,6 +382,8 @@ func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Contex
 		pcs.logger.Debug("Failed updating currently dispatched items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
+
+	recordBatchDispatched(ctx, pcs.queueName)
 }
 
 func (pcs *persistentContiguousStorage) updateReadIndex(ctx context.Context) {
