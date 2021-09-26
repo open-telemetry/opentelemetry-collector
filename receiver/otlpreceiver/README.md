@@ -6,8 +6,8 @@ format.
 
 Supported pipeline types: traces, metrics, logs
 
-:warning: OTLP metrics format is currently marked as "Alpha" and may change in
-incompatible way any time.
+:warning: OTLP logs format is currently marked as "Beta" and may change in
+incompatible ways.
 
 ## Getting Started
 
