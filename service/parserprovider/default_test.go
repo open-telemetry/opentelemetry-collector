@@ -125,7 +125,7 @@ func TestDefaultMapProvider_InvalidFile(t *testing.T) {
 	assert.NoError(t, mp.Close(context.Background()))
 }
 
-func TestDefaultMapProvider_EmptyFile(t *testing.T) {
+func TestDefaultMapProvider_EmptyFileName(t *testing.T) {
 	flags := new(flag.FlagSet)
 	Flags(flags)
 	err := flags.Parse([]string{})
