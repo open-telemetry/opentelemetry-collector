@@ -27,8 +27,8 @@ type BuildInfo struct {
 	Version string
 }
 
-// DefaultBuildInfo returns the default BuildInfo.
-func DefaultBuildInfo() BuildInfo {
+// NewDefaultBuildInfo returns a default BuildInfo.
+func NewDefaultBuildInfo() BuildInfo {
 	return BuildInfo{
 		Command:     "otelcol",
 		Description: "OpenTelemetry Collector",

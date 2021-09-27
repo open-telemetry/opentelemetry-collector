@@ -43,7 +43,7 @@ func createTestQueue(extension storageextension.Extension, capacity int) *persis
 	}
 
 	wq := newPersistentQueue(context.Background(), "foo", capacity, logger, client, newTraceRequestUnmarshalerFunc(nopTracePusher()))
-	return wq
+	return wq.(*persistentQueue)
 }
 
 func TestPersistentQueue_Capacity(t *testing.T) {

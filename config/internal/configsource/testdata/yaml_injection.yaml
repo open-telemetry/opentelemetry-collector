@@ -1,0 +1,3 @@
+yaml_00: $tstcfgsrc:valid_yaml_str
+yaml_01: $tstcfgsrc:invalid_yaml_str
+yaml_02: $tstcfgsrc:valid_yaml_byte_slice

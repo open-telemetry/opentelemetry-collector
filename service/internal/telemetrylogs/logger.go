@@ -16,7 +16,6 @@ package telemetrylogs
 
 import (
 	"flag"
-	"fmt"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -51,57 +50,17 @@ func Flags(flags *flag.FlagSet) {
 func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
-		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development: false,
+		Level:       zap.NewAtomicLevelAt(cfg.Level),
+		Development: cfg.Development,
 		Sampling: &zap.SamplingConfig{
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding:         "json",
+		Encoding:         cfg.Encoding,
 		EncoderConfig:    zap.NewProductionEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
-
-	// Check flags in the same order as before, the default configuration starts from "prod" profile.
-	if *loggerProfilePtr != "deprecated" {
-		switch *loggerProfilePtr {
-		case "dev":
-			cfg.Level = zap.DebugLevel
-			cfg.Development = true
-			// Copied from NewDevelopmentConfig.
-			zapCfg = &zap.Config{
-				Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
-				Development:      true,
-				Encoding:         "console",
-				EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
-				OutputPaths:      []string{"stderr"},
-				ErrorOutputPaths: []string{"stderr"},
-			}
-		case "prod":
-			cfg.Level = zap.InfoLevel
-			cfg.Development = false
-		default:
-			return nil, fmt.Errorf("invalid value %s for %s flag", *loggerProfilePtr, logProfileCfg)
-		}
-	}
-
-	if *loggerFormatPtr != "deprecated" {
-		cfg.Encoding = *loggerFormatPtr
-	}
-
-	if *loggerLevelPtr != "deprecated" {
-		lvl, err := parseLogLevel(*loggerLevelPtr)
-		if err != nil {
-			return nil, err
-		}
-		cfg.Level = lvl
-	}
-
-	// Now set user configurations:
-	zapCfg.Level.SetLevel(cfg.Level)
-	zapCfg.Development = cfg.Development
-	zapCfg.Encoding = cfg.Encoding
 
 	if zapCfg.Encoding == "console" {
 		// Human-readable timestamps for console format of logs.
@@ -128,12 +87,4 @@ func logDeprecatedMessages(logger *zap.Logger) {
 	if *loggerFormatPtr != "deprecated" {
 		logger.Warn("`log-format` command line option has been deprecated. Use `service::telemetry::logs` in config instead!")
 	}
-}
-
-func parseLogLevel(level string) (zapcore.Level, error) {
-	var lvl zapcore.Level
-	if err := lvl.UnmarshalText([]byte(level)); err != nil {
-		return lvl, fmt.Errorf(`invalid logger level: %q, valid values are "DEBUG", "INFO", "WARN", "ERROR", "DPANIC", "PANIC", "FATAL"`, lvl)
-	}
-	return lvl, nil
 }

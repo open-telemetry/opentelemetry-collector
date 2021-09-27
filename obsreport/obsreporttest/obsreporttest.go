@@ -15,11 +15,10 @@
 package obsreporttest
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
-	"testing"
 
-	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
@@ -59,107 +58,136 @@ func SetupRecordedMetricsTest() (func(), error) {
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterTraces(t *testing.T, exporter config.ComponentID, acceptedSpans, droppedSpans int64) {
+func CheckExporterTraces(exporter config.ComponentID, acceptedSpans, droppedSpans int64) error {
 	exporterTags := tagsForExporterView(exporter)
-	checkValueForView(t, exporterTags, acceptedSpans, "exporter/sent_spans")
-	checkValueForView(t, exporterTags, droppedSpans, "exporter/send_failed_spans")
+	if err := checkValueForView(exporterTags, acceptedSpans, "exporter/sent_spans"); err != nil {
+		return err
+	}
+	return checkValueForView(exporterTags, droppedSpans, "exporter/send_failed_spans")
 }
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterMetrics(t *testing.T, exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) {
+func CheckExporterMetrics(exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) error {
 	exporterTags := tagsForExporterView(exporter)
-	checkValueForView(t, exporterTags, acceptedMetricsPoints, "exporter/sent_metric_points")
-	checkValueForView(t, exporterTags, droppedMetricsPoints, "exporter/send_failed_metric_points")
+	if err := checkValueForView(exporterTags, acceptedMetricsPoints, "exporter/sent_metric_points"); err != nil {
+		return err
+	}
+	return checkValueForView(exporterTags, droppedMetricsPoints, "exporter/send_failed_metric_points")
 }
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckExporterLogs(t *testing.T, exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) {
+func CheckExporterLogs(exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) error {
 	exporterTags := tagsForExporterView(exporter)
-	checkValueForView(t, exporterTags, acceptedLogRecords, "exporter/sent_log_records")
-	checkValueForView(t, exporterTags, droppedLogRecords, "exporter/send_failed_log_records")
+	if err := checkValueForView(exporterTags, acceptedLogRecords, "exporter/sent_log_records"); err != nil {
+		return err
+	}
+	return checkValueForView(exporterTags, droppedLogRecords, "exporter/send_failed_log_records")
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorTraces(t *testing.T, processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) {
+func CheckProcessorTraces(processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) error {
 	processorTags := tagsForProcessorView(processor)
-	checkValueForView(t, processorTags, acceptedSpans, "processor/accepted_spans")
-	checkValueForView(t, processorTags, refusedSpans, "processor/refused_spans")
-	checkValueForView(t, processorTags, droppedSpans, "processor/dropped_spans")
+	if err := checkValueForView(processorTags, acceptedSpans, "processor/accepted_spans"); err != nil {
+		return err
+	}
+	if err := checkValueForView(processorTags, refusedSpans, "processor/refused_spans"); err != nil {
+		return err
+	}
+	return checkValueForView(processorTags, droppedSpans, "processor/dropped_spans")
 }
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorMetrics(t *testing.T, processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) {
+func CheckProcessorMetrics(processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
 	processorTags := tagsForProcessorView(processor)
-	checkValueForView(t, processorTags, acceptedMetricPoints, "processor/accepted_metric_points")
-	checkValueForView(t, processorTags, refusedMetricPoints, "processor/refused_metric_points")
-	checkValueForView(t, processorTags, droppedMetricPoints, "processor/dropped_metric_points")
+	if err := checkValueForView(processorTags, acceptedMetricPoints, "processor/accepted_metric_points"); err != nil {
+		return err
+	}
+	if err := checkValueForView(processorTags, refusedMetricPoints, "processor/refused_metric_points"); err != nil {
+		return err
+	}
+	return checkValueForView(processorTags, droppedMetricPoints, "processor/dropped_metric_points")
 }
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckProcessorLogs(t *testing.T, processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) {
+func CheckProcessorLogs(processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
 	processorTags := tagsForProcessorView(processor)
-	checkValueForView(t, processorTags, acceptedLogRecords, "processor/accepted_log_records")
-	checkValueForView(t, processorTags, refusedLogRecords, "processor/refused_log_records")
-	checkValueForView(t, processorTags, droppedLogRecords, "processor/dropped_log_records")
+	if err := checkValueForView(processorTags, acceptedLogRecords, "processor/accepted_log_records"); err != nil {
+		return err
+	}
+	if err := checkValueForView(processorTags, refusedLogRecords, "processor/refused_log_records"); err != nil {
+		return err
+	}
+	return checkValueForView(processorTags, droppedLogRecords, "processor/dropped_log_records")
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverTraces(t *testing.T, receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) {
+func CheckReceiverTraces(receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
-	checkValueForView(t, receiverTags, acceptedSpans, "receiver/accepted_spans")
-	checkValueForView(t, receiverTags, droppedSpans, "receiver/refused_spans")
+	if err := checkValueForView(receiverTags, acceptedSpans, "receiver/accepted_spans"); err != nil {
+		return err
+	}
+	return checkValueForView(receiverTags, droppedSpans, "receiver/refused_spans")
 }
 
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverLogs(t *testing.T, receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) {
+func CheckReceiverLogs(receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
-	checkValueForView(t, receiverTags, acceptedLogRecords, "receiver/accepted_log_records")
-	checkValueForView(t, receiverTags, droppedLogRecords, "receiver/refused_log_records")
+	if err := checkValueForView(receiverTags, acceptedLogRecords, "receiver/accepted_log_records"); err != nil {
+		return err
+	}
+	return checkValueForView(receiverTags, droppedLogRecords, "receiver/refused_log_records")
 }
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverMetrics(t *testing.T, receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) {
+func CheckReceiverMetrics(receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
-	checkValueForView(t, receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points")
-	checkValueForView(t, receiverTags, droppedMetricPoints, "receiver/refused_metric_points")
+	if err := checkValueForView(receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points"); err != nil {
+		return err
+	}
+	return checkValueForView(receiverTags, droppedMetricPoints, "receiver/refused_metric_points")
 }
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckScraperMetrics(t *testing.T, receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) {
+func CheckScraperMetrics(receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperTags := tagsForScraperView(receiver, scraper)
-	checkValueForView(t, scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points")
-	checkValueForView(t, scraperTags, erroredMetricPoints, "scraper/errored_metric_points")
+	if err := checkValueForView(scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points"); err != nil {
+		return err
+	}
+	return checkValueForView(scraperTags, erroredMetricPoints, "scraper/errored_metric_points")
 }
 
 // checkValueForView checks that for the current exported value in the view with the given name
 // for {LegacyTagKeyReceiver: receiverName} is equal to "value".
-func checkValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
+func checkValueForView(wantTags []tag.Tag, value int64, vName string) error {
 	// Make sure the tags slice is sorted by tag keys.
 	sortTags(wantTags)
 
 	rows, err := view.RetrieveData(vName)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
 	for _, row := range rows {
 		// Make sure the tags slice is sorted by tag keys.
 		sortTags(row.Tags)
 		if reflect.DeepEqual(wantTags, row.Tags) {
 			sum := row.Data.(*view.SumData)
-			require.Equal(t, float64(value), sum.Value)
-			return
+			if float64(value) != sum.Value {
+				return fmt.Errorf("values did no match, wanted %f got %f", float64(value), sum.Value)
+			}
+			return nil
 		}
 	}
-
-	require.Failf(t, "could not find tags", "wantTags: %s in rows %v", wantTags, rows)
+	return fmt.Errorf("could not find tags, wantTags: %s in rows %v", wantTags, rows)
 }
 
 // tagsForReceiverView returns the tags that are needed for the receiver views.

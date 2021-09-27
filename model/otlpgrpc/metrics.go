@@ -15,6 +15,7 @@
 package otlpgrpc
 
 import (
+	"bytes"
 	"context"
 
 	"google.golang.org/grpc"
@@ -36,6 +37,20 @@ func NewMetricsResponse() MetricsResponse {
 	return MetricsResponse{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
 }
 
+// Marshal marshals MetricsResponse into proto bytes.
+func (mr MetricsResponse) Marshal() ([]byte, error) {
+	return mr.orig.Marshal()
+}
+
+// MarshalJSON marshals MetricsResponse into JSON bytes.
+func (mr MetricsResponse) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := jsonMarshaler.Marshal(&buf, mr.orig); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // MetricsRequest represents the response for gRPC client/server.
 type MetricsRequest struct {
 	orig *otlpcollectormetrics.ExportMetricsServiceRequest
@@ -46,12 +61,26 @@ func NewMetricsRequest() MetricsRequest {
 	return MetricsRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
 }
 
-func (lr MetricsRequest) SetMetrics(ld pdata.Metrics) {
-	lr.orig.ResourceMetrics = internal.MetricsToOtlp(ld.InternalRep()).ResourceMetrics
+// Marshal marshals MetricsRequest into proto bytes.
+func (mr MetricsRequest) Marshal() ([]byte, error) {
+	return mr.orig.Marshal()
 }
 
-func (lr MetricsRequest) Metrics() pdata.Metrics {
-	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(lr.orig))
+// MarshalJSON marshals LogsRequest into JSON bytes.
+func (mr MetricsRequest) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := jsonMarshaler.Marshal(&buf, mr.orig); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (mr MetricsRequest) SetMetrics(ld pdata.Metrics) {
+	mr.orig.ResourceMetrics = internal.MetricsToOtlp(ld.InternalRep()).ResourceMetrics
+}
+
+func (mr MetricsRequest) Metrics() pdata.Metrics {
+	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(mr.orig))
 }
 
 // MetricsClient is the client API for OTLP-GRPC Metrics service.

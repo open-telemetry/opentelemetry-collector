@@ -79,7 +79,7 @@ type queuedRetrySender struct {
 	signal             config.DataType
 	cfg                QueueSettings
 	consumerSender     requestSender
-	queue              consumersQueue
+	queue              internal.ProducerConsumerQueue
 	retryStopCh        chan struct{}
 	traceAttributes    []attribute.KeyValue
 	logger             *zap.Logger
@@ -120,7 +120,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 	}
 
 	if !qCfg.PersistentStorageEnabled {
-		qrs.queue = internal.NewBoundedQueue(qrs.cfg.QueueSize, func(item interface{}) {})
+		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize, func(item interface{}) {})
 	}
 	// The Persistent Queue is initialized separately as it needs extra information about the component
 

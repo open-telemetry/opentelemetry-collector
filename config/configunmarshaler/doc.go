@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configunmarshaler implements configuration unmarshalling from a config.Parser.
+// Package configunmarshaler implements configuration unmarshalling from a config.Map.
 // The implementation relies on registered factories that allow creating
 // default configuration for each type of receiver/exporter/processor.
 package configunmarshaler

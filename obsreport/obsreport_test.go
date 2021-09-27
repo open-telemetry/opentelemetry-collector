@@ -102,7 +102,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			t.Fatalf("unexpected param: %v", params[i])
 		}
 	}
-	obsreporttest.CheckReceiverTraces(t, receiver, transport, int64(acceptedSpans), int64(refusedSpans))
+	require.NoError(t, obsreporttest.CheckReceiverTraces(receiver, transport, int64(acceptedSpans), int64(refusedSpans)))
 }
 
 func TestReceiveLogsOp(t *testing.T) {
@@ -151,7 +151,7 @@ func TestReceiveLogsOp(t *testing.T) {
 			t.Fatalf("unexpected param: %v", params[i])
 		}
 	}
-	obsreporttest.CheckReceiverLogs(t, receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords))
+	require.NoError(t, obsreporttest.CheckReceiverLogs(receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords)))
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
@@ -201,7 +201,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 		}
 	}
 
-	obsreporttest.CheckReceiverMetrics(t, receiver, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints))
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(receiver, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints)))
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
@@ -260,7 +260,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		}
 	}
 
-	obsreporttest.CheckScraperMetrics(t, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints))
+	require.NoError(t, obsreporttest.CheckScraperMetrics(receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
 }
 
 func TestExportTraceDataOp(t *testing.T) {
@@ -314,7 +314,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		}
 	}
 
-	obsreporttest.CheckExporterTraces(t, exporter, int64(sentSpans), int64(failedToSendSpans))
+	require.NoError(t, obsreporttest.CheckExporterTraces(exporter, int64(sentSpans), int64(failedToSendSpans)))
 }
 
 func TestExportMetricsOp(t *testing.T) {
@@ -369,7 +369,7 @@ func TestExportMetricsOp(t *testing.T) {
 		}
 	}
 
-	obsreporttest.CheckExporterMetrics(t, exporter, int64(sentMetricPoints), int64(failedToSendMetricPoints))
+	require.NoError(t, obsreporttest.CheckExporterMetrics(exporter, int64(sentMetricPoints), int64(failedToSendMetricPoints)))
 }
 
 func TestExportLogsOp(t *testing.T) {
@@ -424,7 +424,7 @@ func TestExportLogsOp(t *testing.T) {
 		}
 	}
 
-	obsreporttest.CheckExporterLogs(t, exporter, int64(sentLogRecords), int64(failedToSendLogRecords))
+	require.NoError(t, obsreporttest.CheckExporterLogs(exporter, int64(sentLogRecords), int64(failedToSendLogRecords)))
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
@@ -490,7 +490,7 @@ func TestProcessorTraceData(t *testing.T) {
 	obsrep.TracesRefused(context.Background(), refusedSpans)
 	obsrep.TracesDropped(context.Background(), droppedSpans)
 
-	obsreporttest.CheckProcessorTraces(t, processor, acceptedSpans, refusedSpans, droppedSpans)
+	require.NoError(t, obsreporttest.CheckProcessorTraces(processor, acceptedSpans, refusedSpans, droppedSpans))
 }
 
 func TestProcessorMetricsData(t *testing.T) {
@@ -507,7 +507,7 @@ func TestProcessorMetricsData(t *testing.T) {
 	obsrep.MetricsRefused(context.Background(), refusedPoints)
 	obsrep.MetricsDropped(context.Background(), droppedPoints)
 
-	obsreporttest.CheckProcessorMetrics(t, processor, acceptedPoints, refusedPoints, droppedPoints)
+	require.NoError(t, obsreporttest.CheckProcessorMetrics(processor, acceptedPoints, refusedPoints, droppedPoints))
 }
 
 func TestBuildProcessorCustomMetricName(t *testing.T) {
@@ -546,5 +546,5 @@ func TestProcessorLogRecords(t *testing.T) {
 	obsrep.LogsRefused(context.Background(), refusedRecords)
 	obsrep.LogsDropped(context.Background(), droppedRecords)
 
-	obsreporttest.CheckProcessorLogs(t, processor, acceptedRecords, refusedRecords, droppedRecords)
+	require.NoError(t, obsreporttest.CheckProcessorLogs(processor, acceptedRecords, refusedRecords, droppedRecords))
 }
