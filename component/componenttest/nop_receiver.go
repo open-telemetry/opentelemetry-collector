@@ -27,7 +27,7 @@ import (
 func NewNopReceiverCreateSettings() component.ReceiverCreateSettings {
 	return component.ReceiverCreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 
