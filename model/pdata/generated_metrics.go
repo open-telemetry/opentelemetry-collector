@@ -976,12 +976,12 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) Flags() DataPointFlags {
-	return DataPointFlags((*ms.orig).Flags)
+func (ms NumberDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
+func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
@@ -1232,12 +1232,12 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Flags() DataPointFlags {
-	return DataPointFlags((*ms.orig).Flags)
+func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
+func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
@@ -1465,12 +1465,12 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Flags() DataPointFlags {
-	return DataPointFlags((*ms.orig).Flags)
+func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
+func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 

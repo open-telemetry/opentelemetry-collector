@@ -405,8 +405,8 @@ var oneofDataField = &oneofField{
 var dataPointFlagsField = &primitiveTypedField{
 	fieldName:       "Flags",
 	originFieldName: "Flags",
-	returnType:      "DataPointFlags",
+	returnType:      "MetricDataPointFlags",
 	rawType:         "uint32",
-	defaultVal:      "DataPointFlagsNone",
-	testVal:         "DataPointFlagsNoRecordedValue",
+	defaultVal:      "MetricDataPointFlagsNone",
+	testVal:         "MetricDataPointFlagsNoRecordedValue",
 }
