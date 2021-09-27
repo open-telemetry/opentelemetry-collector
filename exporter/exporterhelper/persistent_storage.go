@@ -27,7 +27,7 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/extension/experimental/storageextension"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 // persistentStorage provides an interface for request storage operations
@@ -69,7 +69,7 @@ type persistentStorage interface {
 type persistentContiguousStorage struct {
 	logger      *zap.Logger
 	queueName   string
-	client      storageextension.Client
+	client      storage.Client
 	unmarshaler requestUnmarshaler
 
 	putChan  chan struct{}
@@ -109,7 +109,7 @@ var (
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
 // The queue needs to be initialized separately using initPersistentContiguousStorage.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storageextension.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
 		logger:      logger,
 		client:      client,
