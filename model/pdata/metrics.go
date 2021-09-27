@@ -229,21 +229,21 @@ func copyData(src, dest *otlpmetrics.Metric) {
 	}
 }
 
-// AggregationTemporality defines how a metric aggregator reports aggregated values.
+// MetricAggregationTemporality defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
-type AggregationTemporality int32
+type MetricAggregationTemporality int32
 
 const (
-	// AggregationTemporalityUnspecified is the default AggregationTemporality, it MUST NOT be used.
-	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
-	// AggregationTemporalityDelta is an AggregationTemporality for a metric aggregator which reports changes since last report time.
-	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
-	// AggregationTemporalityCumulative is an AggregationTemporality for a metric aggregator which reports changes since a fixed start time.
-	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
+	// MetricAggregationTemporalityUnspecified is the default MetricAggregationTemporality, it MUST NOT be used.
+	MetricAggregationTemporalityUnspecified = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
+	// MetricAggregationTemporalityDelta is a MetricAggregationTemporality for a metric aggregator which reports changes since last report time.
+	MetricAggregationTemporalityDelta = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
+	// MetricAggregationTemporalityCumulative is a MetricAggregationTemporality for a metric aggregator which reports changes since a fixed start time.
+	MetricAggregationTemporalityCumulative = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
 )
 
-// String returns the string representation of the AggregationTemporality.
-func (at AggregationTemporality) String() string {
+// String returns the string representation of the MetricAggregationTemporality.
+func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
