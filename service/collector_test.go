@@ -73,7 +73,7 @@ func TestCollector_Start(t *testing.T) {
 	}
 
 	col, err := New(CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
+		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
@@ -140,7 +140,7 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
+	col, err := New(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
 	require.NoError(t, err)
 
 	cmd := NewCommand(col)
@@ -165,7 +165,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
 		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 	}

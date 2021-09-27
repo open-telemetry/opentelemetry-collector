@@ -105,7 +105,7 @@ func createExampleService(t *testing.T) *service {
 	require.NoError(t, err)
 
 	srv, err := newService(&svcSettings{
-		BuildInfo: component.DefaultBuildInfo(),
+		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		Logger:    zap.NewNop(),
 		Config:    cfg,
