@@ -653,12 +653,12 @@ func NewSum() Sum {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
-func (ms Sum) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality((*ms.orig).AggregationTemporality)
+func (ms Sum) AggregationTemporality() MetricAggregationTemporality {
+	return MetricAggregationTemporality((*ms.orig).AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
-func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
+func (ms Sum) SetAggregationTemporality(v MetricAggregationTemporality) {
 	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -708,12 +708,12 @@ func NewHistogram() Histogram {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
-func (ms Histogram) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality((*ms.orig).AggregationTemporality)
+func (ms Histogram) AggregationTemporality() MetricAggregationTemporality {
+	return MetricAggregationTemporality((*ms.orig).AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
-func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
+func (ms Histogram) SetAggregationTemporality(v MetricAggregationTemporality) {
 	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
