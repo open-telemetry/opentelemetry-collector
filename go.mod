@@ -11,12 +11,8 @@ require (
 	github.com/knadh/koanf v1.2.3
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.2
-<<<<<<< HEAD
 	github.com/mostynb/go-grpc-compression v1.1.13
-	github.com/prometheus/common v0.30.0
-=======
 	github.com/prometheus/common v0.31.0
->>>>>>> d79859bbbed61d88a7ead8c7ee159e8905cedf91
 	github.com/rs/cors v1.8.0
 	github.com/shirou/gopsutil v3.21.8+incompatible
 	github.com/spf13/cast v1.4.1
