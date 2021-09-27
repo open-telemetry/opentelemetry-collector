@@ -5,7 +5,7 @@ receivers:
 
 exporters:
   otlp:
-    endpoint: "locahost:55678"
+    endpoint: "locahost:4317"
 
 processors:
   batch:
