@@ -251,17 +251,35 @@ func (at MetricAggregationTemporality) String() string {
 // It describes how those values relate to the time interval over which they are aggregated.
 type MetricDataPointFlags uint32
 
+// NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
+// in as parameters.
+func NewMetricDataPointFlags(flags ...MetricDataPointFlags) MetricDataPointFlags {
+	var flag MetricDataPointFlags
+	for _, f := range flags {
+		flag = flag | f
+	}
+	return flag
+}
+
+// HasFlag returns true if the MetricDataPointFlags contains the specified flag
+func (d MetricDataPointFlags) HasFlag(flag MetricDataPointFlags) bool {
+	if flag == MetricDataPointFlagsNone {
+		return d == 0
+	}
+	return d&flag != 0
+}
+
+// String returns the string representation of the MetricDataPointFlags.
+func (d MetricDataPointFlags) String() string {
+	return otlpmetrics.DataPointFlags(d).String()
+}
+
 const (
 	// MetricDataPointFlagsNone is the default MetricDataPointFlags.
 	MetricDataPointFlagsNone = MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
 	// MetricDataPointFlagsNoRecordedValue is a MetricDataPointFlags for a metric aggregator which reports changes since last report time.
 	MetricDataPointFlagsNoRecordedValue = MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 )
-
-// String returns the string representation of the MetricDataPointFlags.
-func (d MetricDataPointFlags) String() string {
-	return otlpmetrics.DataPointFlags(d).String()
-}
 
 // MetricValueType specifies the type of NumberDataPoint.
 type MetricValueType int32
