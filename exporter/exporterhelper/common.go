@@ -36,7 +36,7 @@ type TimeoutSettings struct {
 // DefaultTimeoutSettings returns the default settings for TimeoutSettings.
 func DefaultTimeoutSettings() TimeoutSettings {
 	return TimeoutSettings{
-		Timeout: 5 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 }
 
