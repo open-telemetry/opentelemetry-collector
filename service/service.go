@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/internal/extensions"
 )
 
 // service represents the implementation of a component.Host.
@@ -38,7 +39,7 @@ type service struct {
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers
 	builtPipelines  builder.BuiltPipelines
-	builtExtensions builder.Extensions
+	builtExtensions extensions.Extensions
 }
 
 func newService(set *svcSettings) (*service, error) {
@@ -56,7 +57,7 @@ func newService(set *svcSettings) (*service, error) {
 	}
 
 	var err error
-	if srv.builtExtensions, err = builder.BuildExtensions(srv.telemetry, srv.buildInfo, srv.config, srv.factories.Extensions); err != nil {
+	if srv.builtExtensions, err = extensions.Build(srv.telemetry, srv.buildInfo, srv.config, srv.factories.Extensions); err != nil {
 		return nil, fmt.Errorf("cannot build extensions: %w", err)
 	}
 
