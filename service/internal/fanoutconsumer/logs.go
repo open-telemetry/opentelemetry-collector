@@ -19,8 +19,9 @@ package fanoutconsumer
 import (
 	"context"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -65,19 +66,15 @@ func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
 
 // ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
 func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	var errs []error
+	var errs error
 	// Initially pass to clone exporter to avoid the case where the optimization of sending
 	// the incoming data to a mutating consumer is used that may change the incoming data before
 	// cloning.
 	for _, lc := range lsc.clone {
-		if err := lc.ConsumeLogs(ctx, ld.Clone()); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld.Clone()))
 	}
 	for _, lc := range lsc.pass {
-		if err := lc.ConsumeLogs(ctx, ld); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld))
 	}
-	return consumererror.Combine(errs)
+	return errs
 }

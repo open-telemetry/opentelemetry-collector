@@ -27,7 +27,7 @@ import (
 func NewNopExporterCreateSettings() component.ExporterCreateSettings {
 	return component.ExporterCreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 

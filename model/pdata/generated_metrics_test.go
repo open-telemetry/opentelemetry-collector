@@ -463,8 +463,8 @@ func TestSum_CopyTo(t *testing.T) {
 
 func TestSum_AggregationTemporality(t *testing.T) {
 	ms := NewSum()
-	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporalityCumulative
+	assert.EqualValues(t, MetricAggregationTemporalityUnspecified, ms.AggregationTemporality())
+	testValAggregationTemporality := MetricAggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -493,8 +493,8 @@ func TestHistogram_CopyTo(t *testing.T) {
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
-	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporalityCumulative
+	assert.EqualValues(t, MetricAggregationTemporalityUnspecified, ms.AggregationTemporality())
+	testValAggregationTemporality := MetricAggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -1411,7 +1411,7 @@ func generateTestSum() Sum {
 }
 
 func fillTestSum(tv Sum) {
-	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
+	tv.SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	tv.SetIsMonotonic(true)
 	fillTestNumberDataPointSlice(tv.DataPoints())
 }
@@ -1423,7 +1423,7 @@ func generateTestHistogram() Histogram {
 }
 
 func fillTestHistogram(tv Histogram) {
-	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
+	tv.SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	fillTestHistogramDataPointSlice(tv.DataPoints())
 }
 

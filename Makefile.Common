@@ -3,18 +3,23 @@ ALL_PKGS := $(sort $(shell go list ./...))
 
 # Use a single process (-p 1) on go test to avoid tests clashing on machine
 # wide resources, e.g. ports.
-GOTEST_OPT?= -v -p 1 -race -timeout 180s
+GOTEST_OPT?= -v -p 1 -race -timeout 60s
 GOTEST=go test
+GO_ACC=go-acc
 LINT=golangci-lint
 IMPI=impi
 
 .PHONY: test
 test:
-	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
+	$(GOTEST) $(GOTEST_OPT) ./...
 
 .PHONY: test-unstable
 test-unstable:
-	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT) -tags enable_unstable
+	$(GOTEST) $(GOTEST_OPT) -tags enable_unstable ./...
+
+.PHONY: test-with-cover
+test-with-cover:
+	$(GO_ACC) --output=coverage.out ./...
 
 .PHONY: benchmark
 benchmark:

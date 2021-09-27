@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -73,7 +74,7 @@ func TestCollector_Start(t *testing.T) {
 	}
 
 	col, err := New(CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
+		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
@@ -140,11 +141,11 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
+	col, err := New(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
 	require.NoError(t, err)
 
 	cmd := NewCommand(col)
-	cmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
+	cmd.SetArgs([]string{"--config=testdata/otelcol-config.yaml"})
 
 	colDone := make(chan struct{})
 	go func() {
@@ -165,7 +166,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
 		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 	}
@@ -284,7 +285,7 @@ func TestCollector_reloadService(t *testing.T) {
 			name:           "retire_service_ok_load_err",
 			parserProvider: &errParserLoader{err: sentinelError},
 			service: &service{
-				logger:          zap.NewNop(),
+				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
@@ -295,7 +296,7 @@ func TestCollector_reloadService(t *testing.T) {
 			name:           "retire_service_ok_load_ok",
 			parserProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 			service: &service{
-				logger:          zap.NewNop(),
+				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},

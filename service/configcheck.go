@@ -15,36 +15,29 @@
 package service
 
 import (
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // validateConfigFromFactories checks if all configurations for the given factories
 // are satisfying the patterns used by the collector.
 func validateConfigFromFactories(factories component.Factories) error {
-	var errs []error
+	var errs error
 
 	for _, factory := range factories.Receivers {
-		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 	for _, factory := range factories.Processors {
-		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 	for _, factory := range factories.Exporters {
-		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 	for _, factory := range factories.Extensions {
-		if err := configtest.CheckConfigStruct(factory.CreateDefaultConfig()); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }

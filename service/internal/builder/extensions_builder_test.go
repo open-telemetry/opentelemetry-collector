@@ -115,7 +115,7 @@ func TestService_setupExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ext, err := BuildExtensions(componenttest.NewNopTelemetrySettings(), component.DefaultBuildInfo(), tt.config, tt.factories.Extensions)
+			ext, err := BuildExtensions(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), tt.config, tt.factories.Extensions)
 
 			assert.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)

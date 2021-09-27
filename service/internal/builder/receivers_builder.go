@@ -19,13 +19,13 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -53,15 +53,12 @@ type Receivers map[config.ComponentID]*builtReceiver
 
 // ShutdownAll stops all receivers.
 func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
-	var errs []error
+	var err error
 	for _, rcv := range rcvs {
-		err := rcv.Shutdown(ctx)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		err = multierr.Append(err, rcv.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return err
 }
 
 // StartAll starts all receivers.

@@ -28,7 +28,7 @@ import (
 func NewNopProcessorCreateSettings() component.ProcessorCreateSettings {
 	return component.ProcessorCreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 
