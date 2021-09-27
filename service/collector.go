@@ -175,12 +175,14 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.logger.Info("Applying configuration...")
 
 	col.service, err = newService(&svcSettings{
-		BuildInfo:           col.set.BuildInfo,
-		Factories:           col.set.Factories,
-		Config:              cfg,
-		Logger:              col.logger,
-		TracerProvider:      col.tracerProvider,
-		MeterProvider:       col.meterProvider,
+		BuildInfo: col.set.BuildInfo,
+		Factories: col.set.Factories,
+		Config:    cfg,
+		Telemetry: component.TelemetrySettings{
+			Logger:         col.logger,
+			TracerProvider: col.tracerProvider,
+			MeterProvider:  col.meterProvider,
+		},
 		ZPagesSpanProcessor: col.zPagesSpanProcessor,
 		AsyncErrorChannel:   col.asyncErrorChannel,
 	})

@@ -5,8 +5,6 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
-env:
-  TEST_RESULTS: testbed/tests/results/junit/results.xml
 
 jobs:
   setup-environment:
@@ -34,9 +32,7 @@ jobs:
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.cache-hit != 'true'
-        run: |
-          make gomoddownload
-          make gotestinstall
+        run: make gomoddownload
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -127,17 +123,7 @@ jobs:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Run Unit Tests
-        run: |
-          mkdir -p test-results/junit
-          trap "go-junit-report -set-exit-code < test-results/junit/unittests.out > test-results/junit/unittests.xml" EXIT
-          # some hostmetrics scraping tests require access to /proc.
-          sudo make gotest | tee test-results/junit/unittests.out
-      - name: Upload Unit Test Results
-        if: always()
-        uses: actions/upload-artifact@v2.2.4
-        with:
-          name: unittests-results
-          path: test-results/junit/unittests.xml
+        run: make gotest
   cross-compile:
     runs-on: ubuntu-latest
     needs: [setup-environment]

@@ -60,10 +60,6 @@ all-modules:
 gomoddownload:
 	@$(MAKE) for-all CMD="go mod download"
 
-.PHONY: gotestinstall
-gotestinstall:
-	@$(MAKE) for-all CMD="make test GOTEST_OPT=\"-i\""
-
 .PHONY: gotest
 gotest:
 	@$(MAKE) for-all CMD="make test test-unstable"
@@ -133,7 +129,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
 	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
 	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi

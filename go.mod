@@ -11,8 +11,12 @@ require (
 	github.com/knadh/koanf v1.2.3
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.2
+<<<<<<< HEAD
 	github.com/mostynb/go-grpc-compression v1.1.13
 	github.com/prometheus/common v0.30.0
+=======
+	github.com/prometheus/common v0.31.0
+>>>>>>> d79859bbbed61d88a7ead8c7ee159e8905cedf91
 	github.com/rs/cors v1.8.0
 	github.com/shirou/gopsutil v3.21.8+incompatible
 	github.com/spf13/cast v1.4.1
@@ -22,7 +26,7 @@ require (
 	go.opentelemetry.io/collector/model v0.36.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.24.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.24.0
-	go.opentelemetry.io/contrib/zpages v0.23.0
+	go.opentelemetry.io/contrib/zpages v0.24.0
 	go.opentelemetry.io/otel v1.0.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.23.0
 	go.opentelemetry.io/otel/metric v0.23.0
@@ -34,7 +38,7 @@ require (
 	go.uber.org/zap v1.19.1
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08
-	google.golang.org/grpc v1.40.0
+	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
