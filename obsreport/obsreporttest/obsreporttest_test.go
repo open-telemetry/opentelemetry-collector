@@ -88,7 +88,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ExporterCreateSettings,
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
 	})
 	ctx := obsrep.StartTracesOp(context.Background())
 	assert.NotNil(t, ctx)
@@ -106,7 +106,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ExporterCreateSettings,
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
 	})
 	ctx := obsrep.StartMetricsOp(context.Background())
 	assert.NotNil(t, ctx)
@@ -124,7 +124,7 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ExporterCreateSettings,
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
 	})
 	ctx := obsrep.StartLogsOp(context.Background())
 	assert.NotNil(t, ctx)

@@ -40,7 +40,7 @@ func TestExportEnqueueFailure(t *testing.T) {
 	obsrep := newObsExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ExporterCreateSettings,
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
 	})
 
 	logRecords := 7

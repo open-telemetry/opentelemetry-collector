@@ -47,8 +47,19 @@ var (
 
 type TestTelemetrySettings struct {
 	component.TelemetrySettings
-	SpanRecorder           *tracetest.SpanRecorder
-	ExporterCreateSettings component.ExporterCreateSettings
+	SpanRecorder *tracetest.SpanRecorder
+}
+
+func (tts *TestTelemetrySettings) ToExporterCreateSettings() component.ExporterCreateSettings {
+	exporterSettings := componenttest.NewNopExporterCreateSettings()
+	exporterSettings.TracerProvider = tts.TelemetrySettings.TracerProvider
+	return exporterSettings
+}
+
+func (tts *TestTelemetrySettings) ToReceiverCreateSettings() component.ReceiverCreateSettings {
+	receiverSettings := componenttest.NewNopReceiverCreateSettings()
+	receiverSettings.TracerProvider = tts.TelemetrySettings.TracerProvider
+	return receiverSettings
 }
 
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
@@ -57,13 +68,9 @@ func SetupRecordedMetricsTest() (TestTelemetrySettings, func(), error) {
 	sr := new(tracetest.SpanRecorder)
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
-	exporterSettings := componenttest.NewNopExporterCreateSettings()
-	exporterSettings.TracerProvider = tp
-
 	settings := TestTelemetrySettings{
-		TelemetrySettings:      componenttest.NewNopTelemetrySettings(),
-		SpanRecorder:           sr,
-		ExporterCreateSettings: exporterSettings,
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		SpanRecorder:      sr,
 	}
 	settings.TelemetrySettings.TracerProvider = tp
 	obsMetrics := obsreportconfig.Configure(configtelemetry.LevelNormal)

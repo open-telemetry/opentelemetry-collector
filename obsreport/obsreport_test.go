@@ -58,10 +58,10 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	otel.SetTracerProvider(set.TracerProvider)
+	otel.SetTracerProvider(set.TelemetrySettings.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TelemetrySettings.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -257,13 +257,13 @@ func TestExportTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := set.TelemetrySettings.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ExporterCreateSettings,
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
 	})
 
 	params := []testParams{
@@ -313,7 +313,7 @@ func TestExportMetricsOp(t *testing.T) {
 	obsrep := NewExporter(ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ExporterCreateSettings,
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
 	})
 
 	params := []testParams{
@@ -364,7 +364,7 @@ func TestExportLogsOp(t *testing.T) {
 	obsrep := NewExporter(ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ExporterCreateSettings,
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
 	})
 
 	params := []testParams{
