@@ -30,7 +30,7 @@ import (
 )
 
 func TestWindowsService_Execute(t *testing.T) {
-	os.Args = []string{"otelcol", "--config", "testdata/otelcol-config-minimal.yaml"}
+	os.Args = []string{"otelcol", "--config", "testdata/otelcol-config.yaml"}
 
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)

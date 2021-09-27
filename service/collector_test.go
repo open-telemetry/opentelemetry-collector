@@ -144,7 +144,7 @@ func TestCollector_ReportError(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := NewCommand(col)
-	cmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
+	cmd.SetArgs([]string{"--config=testdata/otelcol-config.yaml"})
 
 	colDone := make(chan struct{})
 	go func() {
