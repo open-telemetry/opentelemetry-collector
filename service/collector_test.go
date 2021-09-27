@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -284,7 +285,7 @@ func TestCollector_reloadService(t *testing.T) {
 			name:           "retire_service_ok_load_err",
 			parserProvider: &errParserLoader{err: sentinelError},
 			service: &service{
-				logger:          zap.NewNop(),
+				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
@@ -295,7 +296,7 @@ func TestCollector_reloadService(t *testing.T) {
 			name:           "retire_service_ok_load_ok",
 			parserProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 			service: &service{
-				logger:          zap.NewNop(),
+				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},

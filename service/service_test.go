@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -107,7 +106,7 @@ func createExampleService(t *testing.T) *service {
 	srv, err := newService(&svcSettings{
 		BuildInfo: component.DefaultBuildInfo(),
 		Factories: factories,
-		Logger:    zap.NewNop(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		Config:    cfg,
 	})
 	require.NoError(t, err)
