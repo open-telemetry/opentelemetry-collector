@@ -17,8 +17,9 @@ package parserprovider
 import (
 	"context"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // TODO: Add support to "merge" watchable interface.
@@ -49,12 +50,10 @@ func (mp *mergeMapProvider) Get(ctx context.Context) (*config.Map, error) {
 }
 
 func (mp *mergeMapProvider) Close(ctx context.Context) error {
-	var errs []error
+	var errs error
 	for _, p := range mp.providers {
-		if err := p.Close(ctx); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, p.Close(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
