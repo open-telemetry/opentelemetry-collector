@@ -34,9 +34,7 @@ jobs:
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.cache-hit != 'true'
-        run: |
-          make gomoddownload
-          make gotestinstall
+        run: make gomoddownload
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
