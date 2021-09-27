@@ -256,7 +256,7 @@ type MetricDataPointFlags uint32
 func NewMetricDataPointFlags(flags ...MetricDataPointFlags) MetricDataPointFlags {
 	var flag MetricDataPointFlags
 	for _, f := range flags {
-		flag = flag | f
+		flag |= f
 	}
 	return flag
 }
