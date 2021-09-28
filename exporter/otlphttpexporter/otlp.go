@@ -98,7 +98,7 @@ func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	tr.SetTraces(td)
 	request, err := tr.Marshal()
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	return e.export(ctx, e.tracesURL, request)
@@ -109,7 +109,7 @@ func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 	tr.SetMetrics(md)
 	request, err := tr.Marshal()
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	return e.export(ctx, e.metricsURL, request)
 }
@@ -119,7 +119,7 @@ func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 	tr.SetLogs(ld)
 	request, err := tr.Marshal()
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	return e.export(ctx, e.logsURL, request)
@@ -129,7 +129,7 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
@@ -180,10 +180,10 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 
 	if resp.StatusCode == http.StatusBadRequest {
 		// Report the failure as permanent if the server thinks the request is malformed.
-		return consumererror.Permanent(formattedErr)
+		return consumererror.NewPermanent(formattedErr)
 	}
 
-	// All other errors are retryable, so don't wrap them in consumererror.Permanent().
+	// All other errors are retryable, so don't wrap them in consumererror.NewPermanent().
 	return formattedErr
 }
 

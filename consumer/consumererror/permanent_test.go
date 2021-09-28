@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,20 +31,18 @@ func (t testErrorType) Error() string {
 	return ""
 }
 
-func TestPermanent(t *testing.T) {
-	err := errors.New("testError")
-	require.False(t, IsPermanent(err))
+func TestIsPermanent(t *testing.T) {
+	var err error
+	assert.False(t, IsPermanent(err))
 
-	err = Permanent(err)
-	require.True(t, IsPermanent(err))
+	err = errors.New("testError")
+	assert.False(t, IsPermanent(err))
+
+	err = NewPermanent(err)
+	assert.True(t, IsPermanent(err))
 
 	err = fmt.Errorf("%w", err)
-	require.True(t, IsPermanent(err))
-}
-
-func TestIsPermanent_NilError(t *testing.T) {
-	var err error
-	require.False(t, IsPermanent(err))
+	assert.True(t, IsPermanent(err))
 }
 
 func TestPermanent_Unwrap(t *testing.T) {
@@ -51,7 +50,7 @@ func TestPermanent_Unwrap(t *testing.T) {
 	require.False(t, IsPermanent(err))
 
 	// Wrapping testErrorType err with permanent error.
-	permanentErr := Permanent(err)
+	permanentErr := NewPermanent(err)
 	require.True(t, IsPermanent(permanentErr))
 
 	target := testErrorType{}
