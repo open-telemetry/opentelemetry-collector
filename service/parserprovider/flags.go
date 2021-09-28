@@ -25,8 +25,10 @@ const (
 )
 
 var (
-	configFlag *string
-	setFlag    *stringArrayValue
+	defaultConfig = ""
+
+	configFlag = &defaultConfig
+	setFlag    = new(stringArrayValue)
 )
 
 type stringArrayValue struct {
@@ -44,7 +46,7 @@ func (s *stringArrayValue) String() string {
 
 // Flags adds flags related to basic configuration's parser loader to the flags.
 func Flags(flags *flag.FlagSet) {
-	configFlag = flags.String(configFlagName, "", "Path to the config file")
+	configFlag = flags.String(configFlagName, defaultConfig, "Path to the config file")
 	setFlag = new(stringArrayValue)
 	flags.Var(setFlag, setFlagName,
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
