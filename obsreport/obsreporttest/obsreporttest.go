@@ -15,6 +15,7 @@
 package obsreporttest
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -48,23 +49,32 @@ var (
 type TestTelemetrySettings struct {
 	component.TelemetrySettings
 	SpanRecorder *tracetest.SpanRecorder
+	views        []*view.View
 }
 
+// ToExporterCreateSettings returns ExporterCreateSettings with configured TelemetrySettings
 func (tts *TestTelemetrySettings) ToExporterCreateSettings() component.ExporterCreateSettings {
 	exporterSettings := componenttest.NewNopExporterCreateSettings()
-	exporterSettings.TracerProvider = tts.TelemetrySettings.TracerProvider
+	exporterSettings.TelemetrySettings = tts.TelemetrySettings
 	return exporterSettings
 }
 
+// ToReceiverCreateSettings returns ReceiverCreateSettings with configured TelemetrySettings
 func (tts *TestTelemetrySettings) ToReceiverCreateSettings() component.ReceiverCreateSettings {
 	receiverSettings := componenttest.NewNopReceiverCreateSettings()
-	receiverSettings.TracerProvider = tts.TelemetrySettings.TracerProvider
+	receiverSettings.TelemetrySettings = tts.TelemetrySettings
 	return receiverSettings
 }
 
+// Shutdown unregisters any views and shuts down the SpanRecorder
+func (tts *TestTelemetrySettings) Shutdown() {
+	view.Unregister(tts.views...)
+	tts.SpanRecorder.Shutdown(context.Background())
+}
+
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
-// The returned function should be deferred.
-func SetupRecordedMetricsTest() (TestTelemetrySettings, func(), error) {
+// The caller should defer a call to Shutdown the returned TestTelemetrySettings.
+func SetupRecordedMetricsTest() (TestTelemetrySettings, error) {
 	sr := new(tracetest.SpanRecorder)
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
@@ -72,17 +82,15 @@ func SetupRecordedMetricsTest() (TestTelemetrySettings, func(), error) {
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		SpanRecorder:      sr,
 	}
-	settings.TelemetrySettings.TracerProvider = tp
+	settings.TracerProvider = tp
 	obsMetrics := obsreportconfig.Configure(configtelemetry.LevelNormal)
-	views := obsMetrics.Views
-	err := view.Register(views...)
+	settings.views = obsMetrics.Views
+	err := view.Register(settings.views...)
 	if err != nil {
-		return settings, nil, err
+		return settings, err
 	}
 
-	return settings, func() {
-		view.Unregister(views...)
-	}, err
+	return settings, err
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.

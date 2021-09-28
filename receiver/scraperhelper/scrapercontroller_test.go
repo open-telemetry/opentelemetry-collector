@@ -191,9 +191,9 @@ func TestScrapeController(t *testing.T) {
 			otel.SetTracerProvider(tp)
 			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-			_, done, err := obsreporttest.SetupRecordedMetricsTest()
+			set, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
-			defer done()
+			defer set.Shutdown()
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)

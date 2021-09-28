@@ -124,9 +124,9 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	set, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown()
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
@@ -206,9 +206,9 @@ func newPushMetricsData(retError error) consumerhelper.ConsumeMetricsFunc {
 }
 
 func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error) {
-	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown()
 
 	md := testdata.GenerateMetricsTwoMetrics()
 	const numBatches = 7

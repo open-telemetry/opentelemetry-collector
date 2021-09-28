@@ -31,9 +31,9 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	set, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown()
 
 	exporter := config.NewID("fakeExporter")
 
