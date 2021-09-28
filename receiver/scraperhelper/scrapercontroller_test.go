@@ -27,13 +27,13 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -321,15 +321,15 @@ func getExpectedStartErr(test metricsTestCase) error {
 }
 
 func getExpectedShutdownErr(test metricsTestCase) error {
-	var errs []error
+	var errs error
 
 	if test.closeErr != nil {
 		for i := 0; i < test.scrapers; i++ {
-			errs = append(errs, test.closeErr)
+			errs = multierr.Append(errs, test.closeErr)
 		}
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {
@@ -362,7 +362,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	obsreporttest.CheckReceiverMetrics(t, config.NewID("receiver"), "", int64(dataPointCount), 0)
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(config.NewID("receiver"), "", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -397,7 +397,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	obsreporttest.CheckScraperMetrics(t, config.NewID("receiver"), config.NewID("scraper"), expectedScraped, expectedErrored)
+	require.NoError(t, obsreporttest.CheckScraperMetrics(config.NewID("receiver"), config.NewID("scraper"), expectedScraped, expectedErrored))
 }
 
 func singleMetric() pdata.MetricSlice {

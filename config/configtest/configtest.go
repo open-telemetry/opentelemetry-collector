@@ -20,11 +20,11 @@ import (
 	"regexp"
 	"strings"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // The regular expression for valid config field tag.
@@ -33,7 +33,7 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 // LoadConfig loads a config from file, and does NOT validate the configuration.
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
-	cp, err := configparser.NewConfigMapFromFile(fileName)
+	cp, err := config.NewMapFromFile(fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -72,21 +72,17 @@ func CheckConfigStruct(config interface{}) error {
 // If the type is a struct it goes to each of its fields to check for the proper
 // tags.
 func validateConfigDataType(t reflect.Type) error {
-	var errs []error
+	var errs error
 
 	switch t.Kind() {
 	case reflect.Ptr:
-		if err := validateConfigDataType(t.Elem()); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, validateConfigDataType(t.Elem()))
 	case reflect.Struct:
 		// Reflect on the pointed data and check each of its fields.
 		nf := t.NumField()
 		for i := 0; i < nf; i++ {
 			f := t.Field(i)
-			if err := checkStructFieldTags(f); err != nil {
-				errs = append(errs, err)
-			}
+			errs = multierr.Append(errs, checkStructFieldTags(f))
 		}
 	default:
 		// The config object can carry other types but they are not used when
@@ -95,12 +91,8 @@ func validateConfigDataType(t reflect.Type) error {
 		// reflect.UnsafePointer.
 	}
 
-	if err := consumererror.Combine(errs); err != nil {
-		return fmt.Errorf(
-			"type %q from package %q has invalid config settings: %v",
-			t.Name(),
-			t.PkgPath(),
-			err)
+	if errs != nil {
+		return fmt.Errorf("type %q from package %q has invalid config settings: %w", t.Name(), t.PkgPath(), errs)
 	}
 
 	return nil

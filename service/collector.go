@@ -30,13 +30,12 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
@@ -88,13 +87,13 @@ type Collector struct {
 
 // New creates and returns a new instance of Collector.
 func New(set CollectorSettings) (*Collector, error) {
-	if err := configcheck.ValidateConfigFromFactories(set.Factories); err != nil {
+	if err := validateConfigFromFactories(set.Factories); err != nil {
 		return nil, err
 	}
 
-	if set.ParserProvider == nil {
+	if set.ConfigMapProvider == nil {
 		// use default provider.
-		set.ParserProvider = parserprovider.Default()
+		set.ConfigMapProvider = parserprovider.NewDefaultMapProvider()
 	}
 
 	if set.ConfigUnmarshaler == nil {
@@ -155,7 +154,7 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	cp, err := col.set.ParserProvider.Get(ctx)
+	cp, err := col.set.ConfigMapProvider.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration's parser: %w", err)
 	}
@@ -176,12 +175,14 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.logger.Info("Applying configuration...")
 
 	col.service, err = newService(&svcSettings{
-		BuildInfo:           col.set.BuildInfo,
-		Factories:           col.set.Factories,
-		Config:              cfg,
-		Logger:              col.logger,
-		TracerProvider:      col.tracerProvider,
-		MeterProvider:       col.meterProvider,
+		BuildInfo: col.set.BuildInfo,
+		Factories: col.set.Factories,
+		Config:    cfg,
+		Telemetry: component.TelemetrySettings{
+			Logger:         col.logger,
+			TracerProvider: col.tracerProvider,
+			MeterProvider:  col.meterProvider,
+		},
 		ZPagesSpanProcessor: col.zPagesSpanProcessor,
 		AsyncErrorChannel:   col.asyncErrorChannel,
 	})
@@ -194,7 +195,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := col.set.ParserProvider.(parserprovider.Watchable); ok {
+	if watchable, ok := col.set.ConfigMapProvider.(parserprovider.Watchable); ok {
 		go col.watchForConfigUpdates(watchable)
 	}
 
@@ -236,37 +237,37 @@ func (col *Collector) Run(ctx context.Context) error {
 	col.runAndWaitForShutdownEvent()
 
 	// Accumulate errors and proceed with shutting down remaining components.
-	var errs []error
+	var errs error
 
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.set.ParserProvider.Close(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to close config: %w", err))
+	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to close config: %w", err))
 	}
 
 	if col.service != nil {
 		if err := col.service.Shutdown(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
+			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 		}
 	}
 
 	if err := collectorTelemetry.shutdown(); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 
 	col.logger.Info("Shutdown complete.")
 	col.stateChannel <- Closed
 	close(col.stateChannel)
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // reloadService shutdowns the current col.service and setups a new one according
 // to the latest configuration. It requires that col.parserProvider and col.factories
 // are properly populated to finish successfully.
 func (col *Collector) reloadService(ctx context.Context) error {
-	if err := col.set.ParserProvider.Close(ctx); err != nil {
+	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
 		return fmt.Errorf("failed close current config provider: %w", err)
 	}
 

@@ -23,28 +23,23 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/magiconair/properties"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 )
 
-type setFlagProvider struct {
-	base ParserProvider
-}
+type setFlagMapProvider struct{}
 
-// NewSetFlag returns a config.ParserProvider, that wraps a "base" config.ParserProvider, then
-// overrides properties from set flag(s) in the loaded Parser.
+// NewPropertiesMapProvider returns a MapProvider, that provides a config.Map from set flag(s) properties.
 //
-// The implementation reads set flag(s) from the cmd and concatenates them as a "properties" file.
+// The implementation reads --set flag(s) from the cmd and concatenates them as a "properties" file.
 // Then the properties file is read and properties are set to the loaded Parser.
-func NewSetFlag(base ParserProvider) ParserProvider {
-	return &setFlagProvider{
-		base: base,
-	}
+func NewPropertiesMapProvider() MapProvider {
+	return &setFlagMapProvider{}
 }
 
-func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, error) {
+func (sfl *setFlagMapProvider) Get(context.Context) (*config.Map, error) {
 	flagProperties := getSetFlag()
 	if len(flagProperties) == 0 {
-		return sfl.base.Get(ctx)
+		return config.NewMap(), nil
 	}
 
 	b := &bytes.Buffer{}
@@ -62,7 +57,7 @@ func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, e
 	}
 
 	// Create a map manually instead of using props.Map() to allow env var expansion
-	// as used by original Viper-based configparser.ConfigMap.
+	// as used by original Viper-based config.Map.
 	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
@@ -70,13 +65,9 @@ func (sfl *setFlagProvider) Get(ctx context.Context) (*configparser.ConfigMap, e
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	var cp *configparser.ConfigMap
-	if cp, err = sfl.base.Get(ctx); err != nil {
-		return nil, err
-	}
-	return cp, cp.Merge(configparser.NewConfigMapFromStringMap(prop))
+	return config.NewMapFromStringMap(prop), nil
 }
 
-func (sfl *setFlagProvider) Close(context.Context) error {
+func (sfl *setFlagMapProvider) Close(context.Context) error {
 	return nil
 }

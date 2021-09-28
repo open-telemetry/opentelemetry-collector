@@ -21,8 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/config/configparser"
 )
 
 func TestSetFlags(t *testing.T) {
@@ -36,34 +34,25 @@ func TestSetFlags(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	sfl := NewSetFlag(new(emptyProvider))
+	sfl := NewPropertiesMapProvider()
 	cp, err := sfl.Get(context.Background())
 	require.NoError(t, err)
-
 	keys := cp.AllKeys()
 	assert.Len(t, keys, 4)
 	assert.Equal(t, "2s", cp.Get("processors::batch::timeout"))
 	assert.Equal(t, "3s", cp.Get("processors::batch/foo::timeout"))
 	assert.Equal(t, "foo:9200,foo2:9200", cp.Get("exporters::kafka::brokers"))
 	assert.Equal(t, "localhost:1818", cp.Get("receivers::otlp::protocols::grpc::endpoint"))
+	require.NoError(t, sfl.Close(context.Background()))
 }
 
 func TestSetFlags_empty(t *testing.T) {
 	flags := new(flag.FlagSet)
 	Flags(flags)
 
-	sfl := NewSetFlag(new(emptyProvider))
+	sfl := NewPropertiesMapProvider()
 	cp, err := sfl.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(cp.AllKeys()))
-}
-
-type emptyProvider struct{}
-
-func (el *emptyProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	return configparser.NewConfigMap(), nil
-}
-
-func (el *emptyProvider) Close(context.Context) error {
-	return nil
+	require.NoError(t, sfl.Close(context.Background()))
 }

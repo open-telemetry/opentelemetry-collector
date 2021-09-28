@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configcheck
+package service
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func TestValidateConfigFromFactories_Success(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	err = ValidateConfigFromFactories(factories)
+	err = validateConfigFromFactories(factories)
 	require.NoError(t, err)
 }
 
@@ -41,7 +41,7 @@ func TestValidateConfigFromFactories_Failure(t *testing.T) {
 	f := &badConfigExtensionFactory{}
 	factories.Extensions[f.Type()] = f
 
-	err = ValidateConfigFromFactories(factories)
+	err = validateConfigFromFactories(factories)
 	require.Error(t, err)
 }
 

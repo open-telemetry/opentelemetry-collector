@@ -16,7 +16,8 @@ data:
     exporters:
       otlp:
         endpoint: "otel-collector.default:4317"
-        insecure: true
+        tls:
+          insecure: true
         sending_queue:
           num_consumers: 4
           queue_size: 100
@@ -82,14 +83,6 @@ spec:
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
       volumes:
         - configMap:
             name: otel-agent-conf
@@ -127,7 +120,8 @@ data:
     exporters:
       otlp:
         endpoint: "http://someotlp.target.com:4317" # Replace with a real endpoint.
-        insecure: true
+        tls:
+          insecure: true
     service:
       extensions: [zpages]
       pipelines:
@@ -206,14 +200,6 @@ spec:
           mountPath: /conf
 #        - name: otel-collector-secrets
 #          mountPath: /secrets
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 13133 # Health Check extension default port.
       volumes:
         - configMap:
             name: otel-collector-conf
