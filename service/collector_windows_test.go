@@ -30,12 +30,12 @@ import (
 )
 
 func TestWindowsService_Execute(t *testing.T) {
-	os.Args = []string{"otelcol", "--config", "testdata/otelcol-config-minimal.yaml"}
+	os.Args = []string{"otelcol", "--config", "testdata/otelcol-config.yaml"}
 
 	factories, err := testcomponents.DefaultComponents()
 	require.NoError(t, err)
 
-	s := NewWindowsService(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
+	s := NewWindowsService(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
 
 	colDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)

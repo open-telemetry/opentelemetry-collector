@@ -21,18 +21,19 @@ import (
 
 type combined []error
 
-var _ error = (*combined)(nil)
-
 func (c combined) Error() string {
-	var sb strings.Builder
-	length := len(c)
-	for i, err := range c {
-		sb.WriteString(err.Error())
-		if i != length-1 {
-			sb.WriteString("; ")
-		}
+	if len(c) == 0 {
+		return "[]"
 	}
-	return "[" + sb.String() + "]"
+	var sb strings.Builder
+	sb.WriteString("[")
+	sb.WriteString(c[0].Error())
+	for _, err := range c[1:] {
+		sb.WriteString("; ")
+		sb.WriteString(err.Error())
+	}
+	sb.WriteString("]")
+	return sb.String()
 }
 
 func (c combined) Is(target error) bool {
@@ -55,8 +56,7 @@ func (c combined) As(target interface{}) bool {
 
 // Combine converts a list of errors into one error.
 //
-// If any of the errors in errs are Permanent then the returned
-// error will also be Permanent.
+// Deprecated: Use alternative modules like "go.uber.org/multierr"
 func Combine(errs []error) error {
 	switch len(errs) {
 	case 0:

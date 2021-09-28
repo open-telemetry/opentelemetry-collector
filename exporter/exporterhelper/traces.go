@@ -60,7 +60,7 @@ func (req *tracesRequest) marshal() ([]byte, error) {
 
 func (req *tracesRequest) onError(err error) request {
 	var traceError consumererror.Traces
-	if consumererror.AsTraces(err, &traceError) {
+	if errors.As(err, &traceError) {
 		return newTracesRequest(req.ctx, traceError.GetTraces(), req.pusher)
 	}
 	return req

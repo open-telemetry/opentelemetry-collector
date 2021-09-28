@@ -386,10 +386,10 @@ var isMonotonicField = &primitiveField{
 var aggregationTemporalityField = &primitiveTypedField{
 	fieldName:       "AggregationTemporality",
 	originFieldName: "AggregationTemporality",
-	returnType:      "AggregationTemporality",
+	returnType:      "MetricAggregationTemporality",
 	rawType:         "otlpmetrics.AggregationTemporality",
-	defaultVal:      "AggregationTemporalityUnspecified",
-	testVal:         "AggregationTemporalityCumulative",
+	defaultVal:      "MetricAggregationTemporalityUnspecified",
+	testVal:         "MetricAggregationTemporalityCumulative",
 }
 
 var oneofDataField = &oneofField{

@@ -37,6 +37,7 @@ func NewTraces(err error, failed pdata.Traces) error {
 
 // AsTraces finds the first error in err's chain that can be assigned to target. If such an error is found,
 // it is assigned to target and true is returned, otherwise false is returned.
+// Deprecated: Use `errors.As(err, target)` instead.
 func AsTraces(err error, target *Traces) bool {
 	if err == nil {
 		return false
@@ -71,6 +72,7 @@ func NewLogs(err error, failed pdata.Logs) error {
 
 // AsLogs finds the first error in err's chain that can be assigned to target. If such an error is found,
 // it is assigned to target and true is returned, otherwise false is returned.
+// Deprecated: Use `errors.As(err, target)` instead.
 func AsLogs(err error, target *Logs) bool {
 	if err == nil {
 		return false
@@ -105,6 +107,7 @@ func NewMetrics(err error, failed pdata.Metrics) error {
 
 // AsMetrics finds the first error in err's chain that can be assigned to target. If such an error is found,
 // it is assigned to target and true is returned, otherwise false is returned.
+// Deprecated: Use `errors.As(err, target)` instead.
 func AsMetrics(err error, target *Metrics) bool {
 	if err == nil {
 		return false
