@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configgates
+package featuregate
 
 import (
 	"testing"
@@ -20,14 +20,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetRegistry(t *testing.T) {
-	assert.Equal(t, registry, GetRegistry())
-}
-
 func TestRegistry(t *testing.T) {
-	r := &Registry{gates: map[string]*Gate{}}
+	r := registry{gates: map[string]Gate{}}
 
-	gate := &Gate{
+	gate := Gate{
 		ID:          "foo",
 		Description: "Test Gate",
 		Enabled:     true,
@@ -35,23 +31,20 @@ func TestRegistry(t *testing.T) {
 
 	assert.Empty(t, r.List())
 	assert.False(t, r.IsEnabled(gate.ID))
-	assert.Error(t, r.Set(gate.ID, true))
 
-	assert.NoError(t, r.Add(gate))
+	assert.NoError(t, r.add(gate))
 	assert.Len(t, r.List(), 1)
 	assert.True(t, r.IsEnabled(gate.ID))
 
-	frozen := r.Frozen()
-	assert.True(t, frozen.IsEnabled(gate.ID))
-	assert.NoError(t, r.Set(gate.ID, false))
-	assert.False(t, r.IsEnabled(gate.ID))
-	assert.True(t, frozen.IsEnabled(gate.ID))
+	frozen := r.apply(map[string]bool{gate.ID: false})
+	assert.False(t, frozen.IsEnabled(gate.ID))
+	assert.True(t, r.IsEnabled(gate.ID))
 
-	assert.Error(t, r.Add(gate))
+	assert.Error(t, r.add(gate))
 }
 
 func BenchmarkFrozenRegistry_IsEnabled(b *testing.B) {
-	frozen := frozenRegistry{gates: map[string]Gate{"foo": {
+	frozen := registry{gates: map[string]Gate{"foo": {
 		ID:          "foo",
 		Description: "Test Gate",
 		Enabled:     true,

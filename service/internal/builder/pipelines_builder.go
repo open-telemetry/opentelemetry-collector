@@ -167,6 +167,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 				MeterProvider:  pb.settings.MeterProvider,
 			},
 			BuildInfo: pb.buildInfo,
+			Gates:     pb.config.Gates,
 		}
 
 		switch pipelineCfg.InputType {

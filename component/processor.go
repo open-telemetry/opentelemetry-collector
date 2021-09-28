@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 // Processor defines the common functions that must be implemented by TracesProcessor
@@ -52,6 +53,9 @@ type ProcessorCreateSettings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo BuildInfo
+
+	// Gates can be used to query feature gate status
+	Gates featuregate.Gates
 }
 
 // ProcessorFactory is factory interface for processors. This is the

@@ -22,11 +22,13 @@ import (
 const (
 	configFlagName = "config"
 	setFlagName    = "set"
+	gateFlagName   = "feature-gates"
 )
 
 var (
 	configFlag *string
 	setFlag    *stringArrayValue
+	gateFlag   FlagValue
 )
 
 type stringArrayValue struct {
@@ -45,11 +47,16 @@ func (s *stringArrayValue) String() string {
 // Flags adds flags related to basic configuration's parser loader to the flags.
 func Flags(flags *flag.FlagSet) {
 	configFlag = flags.String(configFlagName, "", "Path to the config file")
+
 	setFlag = new(stringArrayValue)
 	flags.Var(setFlag, setFlagName,
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
 			" has a higher precedence. Array config properties are overridden and maps are joined, note that only a single"+
 			" (first) array property can be set e.g. -set=processors.attributes.actions.key=some_key. Example --set=processors.batch.timeout=2s")
+
+	gateFlag = FlagValue{}
+	flags.Var(gateFlag, gateFlagName,
+		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature.  '+' or no prefix will enable the feature.")
 }
 
 func getConfigFlag() string {
@@ -58,4 +65,8 @@ func getConfigFlag() string {
 
 func getSetFlag() []string {
 	return setFlag.values
+}
+
+func getGateFlag() map[string]bool {
+	return gateFlag
 }

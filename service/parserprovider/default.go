@@ -18,5 +18,5 @@ package parserprovider
 // defined by the --config command line flag and overwrites properties from --set
 // command line flag (if the flag is present).
 func NewDefaultMapProvider() MapProvider {
-	return NewMergeMapProvider(NewFileMapProvider(), NewPropertiesMapProvider())
+	return NewMergeMapProvider(NewFileMapProvider(), NewPropertiesMapProvider(), NewGatesMapProvider())
 }

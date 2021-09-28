@@ -38,14 +38,25 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/service/featuregate"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 // collectorTelemetry is collector's own telemetry.
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
+var otelMetricsGate = featuregate.Gate{
+	ID:          "telemetry.OTelMetrics",
+	Description: "Use OpenTelemetry metrics instead of OpenCensus",
+	Enabled:     false,
+}
+
+func init() {
+	featuregate.Register(otelMetricsGate)
+}
+
 type collectorTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
+	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, gates featuregate.Gates) error
 	shutdown() error
 }
 
@@ -55,11 +66,11 @@ type colTelemetry struct {
 	doInitOnce sync.Once
 }
 
-func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, gates featuregate.Gates) error {
 	var err error
 	tel.doInitOnce.Do(
 		func() {
-			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger)
+			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger, gates)
 		},
 	)
 	if err != nil {
@@ -68,7 +79,7 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, gates featuregate.Gates) error {
 	logger.Info("Setting up own telemetry...")
 
 	level := configtelemetry.GetMetricsLevelFlagValue()
@@ -85,18 +96,21 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	}
 
 	var pe http.Handler
-	if configtelemetry.UseOpenTelemetryForInternalMetrics {
+	var provider string
+	if gates.IsEnabled(otelMetricsGate.ID) {
 		otelHandler, err := tel.initOpenTelemetry()
 		if err != nil {
 			return err
 		}
 		pe = otelHandler
+		provider = "OpenTelemetry"
 	} else {
 		ocHandler, err := tel.initOpenCensus(level, instanceID, ballastSizeBytes)
 		if err != nil {
 			return err
 		}
 		pe = ocHandler
+		provider = "OpenCensus"
 	}
 
 	logger.Info(
@@ -104,6 +118,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 		zap.String("address", metricsAddr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
 		zap.String(semconv.AttributeServiceInstanceID, instanceID),
+		zap.String("provider", provider),
 	)
 
 	mux := http.NewServeMux()

@@ -12,31 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configgates
+package parserprovider
 
 import (
+	"context"
 	"flag"
-	"fmt"
 	"sort"
 	"strings"
+
+	"go.opentelemetry.io/collector/config"
 )
-
-const gatesListCfg = "feature-gates"
-
-var gatesList = FlagValue{}
-
-// Flags adds CLI flags for managing feature gates to the provided FlagSet.
-func Flags(flags *flag.FlagSet) {
-	flags.Var(
-		gatesList,
-		gatesListCfg,
-		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature.  '+' or no prefix will enable the feature.")
-}
-
-// GetFlags returns the FlagValue used with Flags().
-func GetFlags() FlagValue {
-	return gatesList
-}
 
 var _ flag.Value = (*FlagValue)(nil)
 
@@ -62,12 +47,41 @@ func (f FlagValue) String() string {
 
 // Set applies the FlagValue encoded in the input string.
 func (f FlagValue) Set(s string) error {
-	return f.SetSlice(strings.Split(s, ","))
+	for id, state := range unmarshalGates(strings.Split(s, ",")) {
+		f[id] = state
+	}
+	return nil
 }
 
-// SetSlice applies the feature gate statuses in the input slice to the FlagValue.
-func (f FlagValue) SetSlice(s []string) error {
-	for _, v := range s {
+type gatesFlagMapProvider struct{}
+
+// NewGatesMapProvider returns a MapProvider, that provides a config.Map from feature gate properties.
+//
+// The implementation reads --feature-gates flag(s) from the cmd and sets them in a config.Map
+func NewGatesMapProvider() MapProvider {
+	return &gatesFlagMapProvider{}
+}
+
+func (g *gatesFlagMapProvider) Get(context.Context) (*config.Map, error) {
+	gates := getGateFlag()
+	if len(gates) == 0 {
+		return config.NewMap(), nil
+	}
+
+	cfg := map[string]interface{}{}
+	for id, state := range gates {
+		cfg["service::gates::"+id] = state
+	}
+	return config.NewMapFromStringMap(cfg), nil
+}
+
+func (g *gatesFlagMapProvider) Close(context.Context) error {
+	return nil
+}
+
+func unmarshalGates(gates []string) map[string]bool {
+	ret := make(map[string]bool)
+	for _, v := range gates {
 		var id string
 		var val bool
 		switch v[0] {
@@ -82,26 +96,11 @@ func (f FlagValue) SetSlice(s []string) error {
 			val = true
 		}
 
-		if _, exists := f[id]; exists {
-			// If the status has already been set, ignore it
-			// This allows CLI flags, which are processed first
-			// to take precedence over config settings
+		if _, exists := ret[id]; exists {
 			continue
 		}
-		f[id] = val
+		ret[id] = val
 	}
 
-	return nil
-}
-
-// Apply sets the feature gate statuses encoded in FlagValue on the provided Registry.
-func (f FlagValue) Apply(r *Registry) error {
-	for k, v := range f {
-		err := r.Set(k, v)
-		if err != nil {
-			return fmt.Errorf("unable to apply feature gate flags: %w", err)
-		}
-	}
-
-	return nil
+	return ret
 }
