@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.24.0
 	go.opentelemetry.io/contrib/zpages v0.24.0
 	go.opentelemetry.io/otel v1.0.0
+	go.opentelemetry.io/otel/bridge/opencensus v0.23.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.23.0
 	go.opentelemetry.io/otel/metric v0.23.0
 	go.opentelemetry.io/otel/sdk v1.0.0

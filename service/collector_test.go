@@ -16,17 +16,14 @@
 package service
 
 import (
-	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"syscall"
 	"testing"
 
-	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
@@ -190,41 +187,6 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	<-colDone
 	assert.Equal(t, Closing, <-col.GetStateChannel())
 	assert.Equal(t, Closed, <-col.GetStateChannel())
-}
-
-func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLabels []string) {
-	client := &http.Client{}
-	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))
-	require.NoError(t, err)
-
-	defer resp.Body.Close()
-	reader := bufio.NewReader(resp.Body)
-
-	var parser expfmt.TextParser
-	parsed, err := parser.TextToMetricFamilies(reader)
-	require.NoError(t, err)
-
-	for metricName, metricFamily := range parsed {
-		// require is used here so test fails with a single message.
-		require.True(
-			t,
-			strings.HasPrefix(metricName, prefix),
-			"expected prefix %q but string starts with %q",
-			prefix,
-			metricName[:len(prefix)+1]+"...")
-
-		for _, metric := range metricFamily.Metric {
-			var labelNames []string
-			for _, labelPair := range metric.Label {
-				labelNames = append(labelNames, *labelPair.Name)
-			}
-
-			for _, mandatoryLabel := range mandatoryLabels {
-				// require is used here so test fails with a single message.
-				require.Contains(t, labelNames, mandatoryLabel, "mandatory label %q not present", mandatoryLabel)
-			}
-		}
-	}
 }
 
 func assertZPages(t *testing.T) {

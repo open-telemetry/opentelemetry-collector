@@ -15,7 +15,6 @@
 package service
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -41,6 +40,8 @@ import (
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
+var UseOpenTelemetryForInternalMetrics = false
+
 // collectorTelemetry is collector's own telemetry.
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
@@ -56,19 +57,6 @@ type colTelemetry struct {
 }
 
 func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
-	var err error
-	tel.doInitOnce.Do(
-		func() {
-			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger)
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to initialize telemetry: %w", err)
-	}
-	return nil
-}
-
-func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	logger.Info("Setting up own telemetry...")
 
 	level := configtelemetry.GetMetricsLevelFlagValue()
@@ -85,7 +73,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	}
 
 	var pe http.Handler
-	if configtelemetry.UseOpenTelemetryForInternalMetrics {
+	if UseOpenTelemetryForInternalMetrics {
 		otelHandler, err := tel.initOpenTelemetry()
 		if err != nil {
 			return err
