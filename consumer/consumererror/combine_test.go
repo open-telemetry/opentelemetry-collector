@@ -53,7 +53,7 @@ func TestCombine(t *testing.T) {
 			errors: []error{
 				fmt.Errorf("foo"),
 				fmt.Errorf("bar"),
-				Permanent(fmt.Errorf("permanent"))},
+				NewPermanent(fmt.Errorf("permanent"))},
 			expected: "[foo; bar; Permanent error: permanent]",
 		},
 		{
@@ -99,7 +99,7 @@ func TestCombineContainsError(t *testing.T) {
 		err      error
 	}{
 		{contains: io.EOF, err: Combine([]error{errors.New("invalid entry"), io.EOF})},
-		{contains: io.EOF, err: Combine([]error{errors.New("invalid entry"), Permanent(io.EOF)})},
+		{contains: io.EOF, err: Combine([]error{errors.New("invalid entry"), NewPermanent(io.EOF)})},
 		{contains: io.EOF, err: Combine([]error{errors.New("foo"), errors.New("bar"), Combine([]error{errors.New("xyz"), io.EOF})})},
 	}
 
