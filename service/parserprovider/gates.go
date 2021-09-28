@@ -23,14 +23,14 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-var _ flag.Value = (*FlagValue)(nil)
+var _ flag.Value = (*gateFlagValue)(nil)
 
-// FlagValue implements the flag.Value interface and provides a mechanism for applying feature
+// gateFlagValue implements the flag.Value interface and provides a mechanism for applying feature
 // gate statuses to a Registry.
-type FlagValue map[string]bool
+type gateFlagValue map[string]bool
 
-// String returns a string representing the FlagValue.
-func (f FlagValue) String() string {
+// String returns a string representing the gateFlagValue.
+func (f gateFlagValue) String() string {
 	var t []string
 	for k, v := range f {
 		if v {
@@ -45,8 +45,8 @@ func (f FlagValue) String() string {
 	return strings.Join(t, ",")
 }
 
-// Set applies the FlagValue encoded in the input string.
-func (f FlagValue) Set(s string) error {
+// Set applies the gateFlagValue encoded in the input string.
+func (f gateFlagValue) Set(s string) error {
 	for id, state := range unmarshalGates(strings.Split(s, ",")) {
 		f[id] = state
 	}
