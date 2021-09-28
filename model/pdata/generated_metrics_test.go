@@ -687,7 +687,7 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 func TestNumberDataPoint_Flags(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNoRecordedValue
+	testValFlags := MetricDataPointFlagsNone
 	ms.SetFlags(testValFlags)
 	assert.EqualValues(t, testValFlags, ms.Flags())
 }
@@ -875,7 +875,7 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 func TestHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNoRecordedValue
+	testValFlags := MetricDataPointFlagsNone
 	ms.SetFlags(testValFlags)
 	assert.EqualValues(t, testValFlags, ms.Flags())
 }
@@ -1047,7 +1047,7 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 func TestSummaryDataPoint_Flags(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNoRecordedValue
+	testValFlags := MetricDataPointFlagsNone
 	ms.SetFlags(testValFlags)
 	assert.EqualValues(t, testValFlags, ms.Flags())
 }
@@ -1488,7 +1488,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.SetDoubleVal(float64(17.13))
 
 	fillTestExemplarSlice(tv.Exemplars())
-	tv.SetFlags(MetricDataPointFlagsNoRecordedValue)
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
@@ -1520,7 +1520,7 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetBucketCounts([]uint64{1, 2, 3})
 	tv.SetExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
-	tv.SetFlags(MetricDataPointFlagsNoRecordedValue)
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
@@ -1550,7 +1550,7 @@ func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
 	fillTestValueAtQuantileSlice(tv.QuantileValues())
-	tv.SetFlags(MetricDataPointFlagsNoRecordedValue)
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestValueAtQuantileSlice() ValueAtQuantileSlice {

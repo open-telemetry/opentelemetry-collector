@@ -592,21 +592,17 @@ func TestMetricsClone(t *testing.T) {
 }
 
 func TestMetricsDataPointFlags(t *testing.T) {
-	flag := NewMetricDataPointFlags()
-	assert.True(t, flag.HasFlag(MetricDataPointFlagsNone))
-	assert.False(t, flag.HasFlag(MetricDataPointFlagsNoRecordedValue))
+	gauge := generateTestGauge()
 
-	flag = NewMetricDataPointFlags(MetricDataPointFlagsNone)
-	assert.True(t, flag.HasFlag(MetricDataPointFlagsNone))
-	assert.False(t, flag.HasFlag(MetricDataPointFlagsNoRecordedValue))
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags())
+	assert.True(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
+	assert.False(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
 
-	flag = NewMetricDataPointFlags(MetricDataPointFlagsNoRecordedValue)
-	assert.False(t, flag.HasFlag(MetricDataPointFlagsNone))
-	assert.True(t, flag.HasFlag(MetricDataPointFlagsNoRecordedValue))
-
-	flag = NewMetricDataPointFlags(MetricDataPointFlagsNone, MetricDataPointFlagsNoRecordedValue)
-	assert.True(t, flag.HasFlag(MetricDataPointFlagsNoRecordedValue))
-	assert.False(t, flag.HasFlag(MetricDataPointFlagsNone))
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags(MetricDataPointFlagNoRecordedValue))
+	assert.False(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
+	assert.True(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
 }
 
 func BenchmarkMetricsClone(b *testing.B) {
