@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/config"
@@ -114,7 +115,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func
 		}
 	}
 
-	r := New(config.NewIDWithName("otlp", "metrics"), mc)
+	r := New(config.NewIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	otlpgrpc.RegisterMetricsServer(srv, r)
