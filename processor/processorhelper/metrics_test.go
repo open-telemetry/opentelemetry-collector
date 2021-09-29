@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-var testMetricsCfg = config.NewProcessorSettings(config.NewID(typeStr))
+var testMetricsCfg = config.NewProcessorSettings(config.NewComponentID(typeStr))
 
 func TestNewMetricsProcessor(t *testing.T) {
 	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil))

@@ -42,10 +42,10 @@ const (
 )
 
 var (
-	receiver  = config.NewID("fakeReicever")
-	scraper   = config.NewID("fakeScraper")
-	processor = config.NewID("fakeProcessor")
-	exporter  = config.NewID("fakeExporter")
+	receiver  = config.NewComponentID("fakeReicever")
+	scraper   = config.NewComponentID("fakeScraper")
+	processor = config.NewComponentID("fakeProcessor")
+	exporter  = config.NewComponentID("fakeExporter")
 
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
