@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package exporterhelper
+package internal
 
 import (
 	"context"
@@ -24,7 +24,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"go.opencensus.io/metric/metricdata"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -33,9 +32,9 @@ import (
 // persistentStorage provides an interface for request storage operations
 type persistentStorage interface {
 	// put appends the request to the storage
-	put(req request) error
+	put(req PersistentRequest) error
 	// get returns the next available request; note that the channel is unbuffered
-	get() <-chan request
+	get() <-chan PersistentRequest
 	// size returns the current size of the persistent storage with items waiting for processing
 	size() uint64
 	// stop gracefully stops the storage
@@ -70,14 +69,14 @@ type persistentContiguousStorage struct {
 	logger      *zap.Logger
 	queueName   string
 	client      storage.Client
-	unmarshaler requestUnmarshaler
+	unmarshaler RequestUnmarshaler
 
 	putChan  chan struct{}
 	stopChan chan struct{}
 	stopOnce sync.Once
 	capacity uint64
 
-	reqChan chan request
+	reqChan chan PersistentRequest
 
 	mu                       sync.Mutex
 	readIndex                itemIndex
@@ -109,7 +108,7 @@ var (
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
 // The queue needs to be initialized separately using initPersistentContiguousStorage.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
 		logger:      logger,
 		client:      client,
@@ -117,19 +116,12 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 		unmarshaler: unmarshaler,
 		capacity:    capacity,
 		putChan:     make(chan struct{}, capacity),
-		reqChan:     make(chan request),
+		reqChan:     make(chan PersistentRequest),
 		stopChan:    make(chan struct{}),
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
 	notDispatchedReqs := pcs.retrieveNotDispatchedReqs(context.Background())
-
-	err := currentlyDispatchedBatchesGauge.UpsertEntry(func() int64 {
-		return int64(pcs.numberOfCurrentlyDispatchedItems())
-	}, metricdata.NewLabelValue(pcs.queueName))
-	if err != nil {
-		logger.Error("failed to create number of currently dispatched items metric", zap.Error(err))
-	}
 
 	// We start the loop first so in case there are more elements in the persistent storage than the capacity,
 	// it does not get blocked on initialization
@@ -177,7 +169,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
 }
 
-func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []request) {
+func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []PersistentRequest) {
 	if len(reqs) > 0 {
 		errCount := 0
 		for _, req := range reqs {
@@ -215,7 +207,7 @@ func (pcs *persistentContiguousStorage) loop() {
 }
 
 // get returns the request channel that all the requests will be send on
-func (pcs *persistentContiguousStorage) get() <-chan request {
+func (pcs *persistentContiguousStorage) get() <-chan PersistentRequest {
 	return pcs.reqChan
 }
 
@@ -224,25 +216,15 @@ func (pcs *persistentContiguousStorage) size() uint64 {
 	return atomic.LoadUint64(&pcs.itemsCount)
 }
 
-// numberOfCurrentlyDispatchedItems returns the count of batches for which processing started but hasn't finished yet
-func (pcs *persistentContiguousStorage) numberOfCurrentlyDispatchedItems() int {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	return len(pcs.currentlyDispatchedItems)
-}
-
 func (pcs *persistentContiguousStorage) stop() {
 	pcs.logger.Debug("Stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
 	pcs.stopOnce.Do(func() {
 		close(pcs.stopChan)
-		_ = currentlyDispatchedBatchesGauge.UpsertEntry(func() int64 {
-			return int64(pcs.numberOfCurrentlyDispatchedItems())
-		}, metricdata.NewLabelValue(pcs.queueName))
 	})
 }
 
 // put marshals the request and puts it into the persistent queue
-func (pcs *persistentContiguousStorage) put(req request) error {
+func (pcs *persistentContiguousStorage) put(req PersistentRequest) error {
 	// Nil requests are ignored
 	if req == nil {
 		return nil
@@ -270,7 +252,7 @@ func (pcs *persistentContiguousStorage) put(req request) error {
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
-func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (request, bool) {
+func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (PersistentRequest, bool) {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
@@ -293,7 +275,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 			return nil, false
 		}
 
-		req.setOnProcessingFinished(func() {
+		req.SetOnProcessingFinished(func() {
 			pcs.mu.Lock()
 			defer pcs.mu.Unlock()
 			pcs.itemDispatchingFinish(ctx, index)
@@ -306,8 +288,8 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (reques
 
 // retrieveNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items back to the queue
-func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []request {
-	var reqs []request
+func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []PersistentRequest {
+	var reqs []PersistentRequest
 	var dispatchedItems []itemIndex
 
 	pcs.mu.Lock()
@@ -330,7 +312,7 @@ func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Co
 		pcs.logger.Debug("No items left for dispatch by consumers")
 	}
 
-	reqs = make([]request, len(dispatchedItems))
+	reqs = make([]PersistentRequest, len(dispatchedItems))
 	keys := make([]string, len(dispatchedItems))
 	retrieveBatch := newBatch(pcs)
 	cleanupBatch := newBatch(pcs)
