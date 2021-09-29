@@ -16,7 +16,6 @@ package parserprovider
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -57,7 +56,7 @@ func TestExpand(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			// Retrieve the config
-			emp := NewExpandMapProvider(&testFileProvider{fileName: path.Join("testdata", test.name)})
+			emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", test.name)))
 			cfgMap, err := emp.Get(context.Background())
 			require.NoError(t, err, "Unable to get config")
 
@@ -75,7 +74,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 	}()
 
 	// Retrieve the config
-	emp := NewExpandMapProvider(&testFileProvider{fileName: path.Join("testdata", "expand-escaped-env.yaml")})
+	emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", "expand-escaped-env.yaml")))
 	cfgMap, err := emp.Get(context.Background())
 	require.NoError(t, err, "Unable to get config")
 
@@ -97,23 +96,4 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 			"recv.7": "$",
 		}}
 	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
-}
-
-// TODO: When FileProvider supports passing the file name remove this.
-
-type testFileProvider struct {
-	fileName string
-}
-
-func (tfp *testFileProvider) Get(context.Context) (*config.Map, error) {
-	cp, err := config.NewMapFromFile(tfp.fileName)
-	if err != nil {
-		return nil, fmt.Errorf("error loading config file %q: %w", tfp.fileName, err)
-	}
-
-	return cp, nil
-}
-
-func (tfp *testFileProvider) Close(context.Context) error {
-	return nil
 }

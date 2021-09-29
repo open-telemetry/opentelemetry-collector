@@ -67,7 +67,7 @@ type queuedRetrySender struct {
 	logger          *zap.Logger
 }
 
-func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSettings, rCfg RetrySettings, _ requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSettings, rCfg RetrySettings, _ internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
@@ -103,7 +103,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
-		req.onProcessingFinished()
+		req.OnProcessingFinished()
 	})
 
 	// Start reporting queue length metric
