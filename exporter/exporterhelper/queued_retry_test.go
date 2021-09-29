@@ -31,14 +31,15 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
-func mockRequestUnmarshaler(mr *mockRequest) requestUnmarshaler {
-	return func(bytes []byte) (request, error) {
+func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
+	return func(bytes []byte) (internal.PersistentRequest, error) {
 		return mr, nil
 	}
 }
@@ -379,7 +380,7 @@ func (mer *mockErrorRequest) onError(error) request {
 	return mer
 }
 
-func (mer *mockErrorRequest) marshal() ([]byte, error) {
+func (mer *mockErrorRequest) Marshal() ([]byte, error) {
 	return nil, nil
 }
 
@@ -414,7 +415,7 @@ func (m *mockRequest) export(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *mockRequest) marshal() ([]byte, error) {
+func (m *mockRequest) Marshal() ([]byte, error) {
 	return otlp.NewProtobufTracesMarshaler().MarshalTraces(pdata.NewTraces())
 }
 

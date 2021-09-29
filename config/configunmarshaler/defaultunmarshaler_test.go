@@ -46,13 +46,13 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID("examplereceiver")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("examplereceiver")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1000",
 			},
 			ExtraSetting: "some string",
 		},
-		cfg.Receivers[config.NewID("examplereceiver")],
+		cfg.Receivers[config.NewComponentID("examplereceiver")],
 		"Did not load receiver config correctly")
 
 	assert.Equal(t,
@@ -71,10 +71,10 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.NewExporterSettings(config.NewID("exampleexporter")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID("exampleexporter")),
 			ExtraSetting:     "some export string",
 		},
-		cfg.Exporters[config.NewID("exampleexporter")],
+		cfg.Exporters[config.NewComponentID("exampleexporter")],
 		"Did not load exporter config correctly")
 
 	assert.Equal(t,
@@ -90,10 +90,10 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleProcessorCfg{
-			ProcessorSettings: config.NewProcessorSettings(config.NewID("exampleprocessor")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("exampleprocessor")),
 			ExtraSetting:      "some export string",
 		},
-		cfg.Processors[config.NewID("exampleprocessor")],
+		cfg.Processors[config.NewComponentID("exampleprocessor")],
 		"Did not load processor config correctly")
 
 	// Verify Service Telemetry
@@ -111,9 +111,9 @@ func TestDecodeConfig(t *testing.T) {
 		&config.Pipeline{
 			Name:       "traces",
 			InputType:  config.TracesDataType,
-			Receivers:  []config.ComponentID{config.NewID("examplereceiver")},
-			Processors: []config.ComponentID{config.NewID("exampleprocessor")},
-			Exporters:  []config.ComponentID{config.NewID("exampleexporter")},
+			Receivers:  []config.ComponentID{config.NewComponentID("examplereceiver")},
+			Processors: []config.ComponentID{config.NewComponentID("exampleprocessor")},
+			Exporters:  []config.ComponentID{config.NewComponentID("exampleexporter")},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
@@ -245,7 +245,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -264,7 +264,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	replacedTestString := "replaced_ptr_value"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
@@ -293,7 +293,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	testString := "$$ESCAPED_PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -312,7 +312,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	replacedTestString := "$ESCAPED_PTR_VALUE"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
@@ -337,7 +337,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
 			NestedIntValue:    1,
@@ -356,7 +356,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	replacedTestString := ""
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("test")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("test")),
 		NestedConfigPtr: &nestedConfig{
 			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
