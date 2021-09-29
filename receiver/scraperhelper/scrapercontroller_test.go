@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -215,7 +214,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, zap.NewNop(), nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, set.ToReceiverCreateSettings(), nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -429,7 +428,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(NewMetricsScraper("", tsm.scrape)),
 		AddScraper(NewResourceMetricsScraper(config.NewComponentID("scraper"), tsrm.scrape)),

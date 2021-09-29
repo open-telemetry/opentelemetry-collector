@@ -91,7 +91,7 @@ type controller struct {
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
 func NewScraperControllerReceiver(
 	cfg *ScraperControllerSettings,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Receiver, error) {
@@ -105,12 +105,16 @@ func NewScraperControllerReceiver(
 
 	sc := &controller{
 		id:                 cfg.ID(),
-		logger:             logger,
+		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
-		obsrecv:            obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ID(), Transport: ""}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             cfg.ID(),
+			Transport:              "",
+			ReceiverCreateSettings: set,
+		}),
 	}
 
 	for _, op := range options {
