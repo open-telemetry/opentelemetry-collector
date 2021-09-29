@@ -22,8 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
@@ -184,6 +186,8 @@ func TestScrapeController(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			set, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
+			otel.SetTracerProvider(set.TracerProvider)
+			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 			defer set.Shutdown(context.Background())
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
