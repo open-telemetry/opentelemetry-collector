@@ -40,7 +40,7 @@ var (
 func TestCheckReceiverTracesViews(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
 	ctx := rec.StartTracesOp(context.Background())
@@ -57,7 +57,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 func TestCheckReceiverMetricsViews(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
 	ctx := rec.StartMetricsOp(context.Background())
@@ -70,7 +70,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 func TestCheckReceiverLogsViews(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiver, Transport: transport})
 	ctx := rec.StartLogsOp(context.Background())
@@ -83,7 +83,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 func TestCheckExporterTracesViews(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
@@ -101,7 +101,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 func TestCheckExporterMetricsViews(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
@@ -119,7 +119,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 func TestCheckExporterLogsViews(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,

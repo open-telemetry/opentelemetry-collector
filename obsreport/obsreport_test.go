@@ -56,7 +56,7 @@ type testParams struct {
 func TestReceiveTraceDataOp(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
@@ -103,7 +103,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 func TestReceiveLogsOp(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
@@ -150,7 +150,7 @@ func TestReceiveLogsOp(t *testing.T) {
 func TestReceiveMetricsOp(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
@@ -198,7 +198,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 func TestScrapeMetricsDataOp(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
@@ -255,7 +255,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 func TestExportTraceDataOp(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -305,7 +305,7 @@ func TestExportTraceDataOp(t *testing.T) {
 func TestExportMetricsOp(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -356,7 +356,7 @@ func TestExportMetricsOp(t *testing.T) {
 func TestExportLogsOp(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -407,7 +407,7 @@ func TestExportLogsOp(t *testing.T) {
 func TestReceiveWithLongLivedCtx(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
@@ -458,7 +458,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 func TestProcessorTraceData(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	const acceptedSpans = 27
 	const refusedSpans = 19
@@ -475,7 +475,7 @@ func TestProcessorTraceData(t *testing.T) {
 func TestProcessorMetricsData(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	const acceptedPoints = 29
 	const refusedPoints = 11
@@ -514,7 +514,7 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 func TestProcessorLogRecords(t *testing.T) {
 	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer set.Shutdown()
+	defer set.Shutdown(context.Background())
 
 	const acceptedRecords = 29
 	const refusedRecords = 11

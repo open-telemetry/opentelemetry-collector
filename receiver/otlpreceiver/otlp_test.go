@@ -508,7 +508,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
 				set, err := obsreporttest.SetupRecordedMetricsTest()
 				require.NoError(t, err)
-				defer set.Shutdown()
+				defer set.Shutdown(context.Background())
 
 				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 

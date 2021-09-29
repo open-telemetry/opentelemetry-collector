@@ -67,9 +67,9 @@ func (tts *TestTelemetrySettings) ToReceiverCreateSettings() component.ReceiverC
 }
 
 // Shutdown unregisters any views and shuts down the SpanRecorder
-func (tts *TestTelemetrySettings) Shutdown() {
+func (tts *TestTelemetrySettings) Shutdown(ctx context.Context) error {
 	view.Unregister(tts.views...)
-	tts.SpanRecorder.Shutdown(context.Background())
+	return tts.SpanRecorder.Shutdown(ctx)
 }
 
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.

@@ -193,7 +193,7 @@ func TestScrapeController(t *testing.T) {
 
 			set, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
-			defer set.Shutdown()
+			defer set.Shutdown(context.Background())
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
