@@ -19,10 +19,10 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -40,8 +40,9 @@ type Scraper struct {
 
 // ScraperSettings are settings for creating a Scraper.
 type ScraperSettings struct {
-	ReceiverID config.ComponentID
-	Scraper    config.ComponentID
+	ReceiverID             config.ComponentID
+	Scraper                config.ComponentID
+	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
 // NewScraper creates a new Scraper.
@@ -52,7 +53,7 @@ func NewScraper(cfg ScraperSettings) *Scraper {
 		mutators: []tag.Mutator{
 			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 			tag.Upsert(obsmetrics.TagKeyScraper, cfg.Scraper.String(), tag.WithTTL(tag.TTLNoPropagation))},
-		tracer: otel.GetTracerProvider().Tracer(cfg.Scraper.String()),
+		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
 	}
 }
 

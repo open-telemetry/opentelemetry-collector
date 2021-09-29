@@ -22,11 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
@@ -185,11 +182,6 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sr := new(tracetest.SpanRecorder)
-			tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-			otel.SetTracerProvider(tp)
-			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
 			set, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
 			defer set.Shutdown(context.Background())
@@ -255,7 +247,7 @@ func TestScrapeController(t *testing.T) {
 					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
-				spans := sr.Ended()
+				spans := set.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
 				assertReceiverViews(t, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)

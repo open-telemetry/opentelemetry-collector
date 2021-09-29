@@ -85,7 +85,8 @@ type controller struct {
 	done        chan struct{}
 	terminated  chan struct{}
 
-	obsrecv *obsreport.Receiver
+	obsrecv      *obsreport.Receiver
+	recvSettings component.ReceiverCreateSettings
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
@@ -115,6 +116,7 @@ func NewScraperControllerReceiver(
 			Transport:              "",
 			ReceiverCreateSettings: set,
 		}),
+		recvSettings: set,
 	}
 
 	for _, op := range options {
@@ -184,7 +186,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 	metrics := pdata.NewMetrics()
 
 	for _, scraper := range sc.scrapers {
-		md, err := scraper.Scrape(ctx, sc.id)
+		md, err := scraper.Scrape(ctx, sc.id, sc.recvSettings)
 		if err != nil {
 			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.ID()))
 
