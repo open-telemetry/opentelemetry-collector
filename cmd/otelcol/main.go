@@ -21,13 +21,13 @@ import (
 	"log"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/internal/collector/defaultcomponents"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
 )
 
 func main() {
-	factories, err := testcomponents.DefaultComponents()
+	factories, err := defaultcomponents.Components()
 	if err != nil {
 		log.Fatalf("failed to build default components: %v", err)
 	}

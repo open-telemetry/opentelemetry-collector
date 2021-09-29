@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/internal/collector/defaultcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -64,7 +64,7 @@ service:
 `
 
 func TestCollector_Start(t *testing.T) {
-	factories, err := testcomponents.DefaultComponents()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	loggingHookCalled := false
@@ -137,7 +137,7 @@ func TestCollector_ReportError(t *testing.T) {
 	collectorTelemetry = &mockColTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := testcomponents.DefaultComponents()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
@@ -162,7 +162,7 @@ func TestCollector_ReportError(t *testing.T) {
 }
 
 func TestCollector_StartAsGoRoutine(t *testing.T) {
-	factories, err := testcomponents.DefaultComponents()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	set := CollectorSettings{
@@ -267,7 +267,7 @@ func (epl *errParserLoader) Close(context.Context) error {
 }
 
 func TestCollector_reloadService(t *testing.T) {
-	factories, err := testcomponents.DefaultComponents()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 	ctx := context.Background()
 	sentinelError := errors.New("sentinel error")
