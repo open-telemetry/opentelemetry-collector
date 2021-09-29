@@ -200,9 +200,6 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
-	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -212,7 +209,11 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp := NewScraper(ScraperSettings{ReceiverID: receiver, Scraper: scraper})
+		scrp := NewScraper(ScraperSettings{
+			ReceiverID:             receiver,
+			Scraper:                scraper,
+			ReceiverCreateSettings: set.ToReceiverCreateSettings(),
+		})
 		ctx := scrp.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
