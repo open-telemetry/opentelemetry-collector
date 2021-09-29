@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package defaultcomponents composes the default set of components used by the otel service
 package defaultcomponents
 
 import (
