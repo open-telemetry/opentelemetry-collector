@@ -20,6 +20,7 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+	"go.opentelemetry.io/collector/component"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -48,8 +49,9 @@ type Processor struct {
 
 // ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
-	Level       configtelemetry.Level
-	ProcessorID config.ComponentID
+	Level                   configtelemetry.Level
+	ProcessorID             config.ComponentID
+	ProcessorCreateSettings component.ProcessorCreateSettings
 }
 
 // NewProcessor creates a new Processor.
