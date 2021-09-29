@@ -36,7 +36,7 @@ func TestExportEnqueueFailure(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	exporter := config.NewID("fakeExporter")
+	exporter := config.NewComponentID("fakeExporter")
 
 	obsrep := newObsExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,

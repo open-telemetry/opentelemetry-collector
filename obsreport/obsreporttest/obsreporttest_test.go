@@ -34,8 +34,8 @@ const (
 )
 
 var (
-	receiver = config.NewID("fakeReicever")
-	exporter = config.NewID("fakeExporter")
+	receiver = config.NewComponentID("fakeReicever")
+	exporter = config.NewComponentID("fakeExporter")
 )
 
 func TestCheckReceiverTracesViews(t *testing.T) {

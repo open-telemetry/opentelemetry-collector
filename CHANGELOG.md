@@ -8,6 +8,7 @@
 - Rename `configparser.Parser` as `config.Map` (#4075)
 - Rename `component.DefaultBuildInfo()` to `component.NewDefaultBuildInfo()` (#4129)
 - Rename consumererror.Permanent to consumererror.NewPermanent (#4118)
+- Rename `config.NewID` to `config.NewComponentID` and `config.NewIDFromString` to `config.NewComponentIDFromString` (#4137)
 - Remove `defaultcomponents` from core (#4087).
 
 ## 💡 Enhancements 💡

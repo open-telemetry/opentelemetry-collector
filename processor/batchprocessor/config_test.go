@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors[config.NewID(typeStr)]
+	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
 	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]

@@ -47,13 +47,13 @@ func NewNopReceiverFactory() component.ReceiverFactory {
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *nopReceiverFactory) Type() config.Type {
-	return config.NewID("nop").Type()
+	return config.NewComponentID("nop").Type()
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *nopReceiverFactory) CreateDefaultConfig() config.Receiver {
 	return &nopReceiverConfig{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID("nop")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
 	}
 }
 
