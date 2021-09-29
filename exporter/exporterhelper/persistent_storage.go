@@ -27,7 +27,7 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 // persistentStorage provides an interface for request storage operations
