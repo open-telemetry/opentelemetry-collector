@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -30,20 +29,40 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 // queued_retry_experimental includes the code for both memory-backed and persistent-storage backed queued retry helpers
 // enabled by setting "enable_unstable" build tag
 
-var (
-	currentlyDispatchedBatchesGauge, _ = r.AddInt64DerivedGauge(
-		obsmetrics.ExporterKey+"/currently_dispatched_batches",
-		metric.WithDescription("Number of batches that are currently being sent"),
-		metric.WithLabelKeys(obsmetrics.ExporterKey),
-		metric.WithUnit(metricdata.UnitDimensionless))
+// QueueSettings defines configuration for queueing batches before sending to the consumerSender.
+type QueueSettings struct {
+	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
+	Enabled bool `mapstructure:"enabled"`
+	// NumConsumers is the number of consumers from the queue.
+	NumConsumers int `mapstructure:"num_consumers"`
+	// QueueSize is the maximum number of batches allowed in queue at a given time.
+	QueueSize int `mapstructure:"queue_size"`
+	// PersistentStorageEnabled describes whether persistence via a file storage extension is enabled
+	PersistentStorageEnabled bool `mapstructure:"persistent_storage_enabled"`
+}
 
+// DefaultQueueSettings returns the default settings for QueueSettings.
+func DefaultQueueSettings() QueueSettings {
+	return QueueSettings{
+		Enabled:      true,
+		NumConsumers: 10,
+		// For 5000 queue elements at 100 requests/sec gives about 50 sec of survival of destination outage.
+		// This is a pretty decent value for production.
+		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
+		// multiply that by the number of requests per seconds.
+		QueueSize:                5000,
+		PersistentStorageEnabled: false,
+	}
+}
+
+var (
 	errNoStorageClient        = errors.New("no storage client extension found")
 	errMultipleStorageClients = errors.New("multiple storage extensions found")
 )
@@ -53,12 +72,12 @@ type queuedRetrySender struct {
 	signal             config.DataType
 	cfg                QueueSettings
 	consumerSender     requestSender
-	queue              consumersQueue
+	queue              internal.ProducerConsumerQueue
 	retryStopCh        chan struct{}
 	traceAttributes    []attribute.KeyValue
 	logger             *zap.Logger
 	requeuingEnabled   bool
-	requestUnmarshaler requestUnmarshaler
+	requestUnmarshaler internal.RequestUnmarshaler
 }
 
 func (qrs *queuedRetrySender) fullName() string {
@@ -68,7 +87,7 @@ func (qrs *queuedRetrySender) fullName() string {
 	return fmt.Sprintf("%s-%s", qrs.id.String(), qrs.signal)
 }
 
-func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
@@ -94,7 +113,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 	}
 
 	if !qCfg.PersistentStorageEnabled {
-		qrs.queue = internal.NewBoundedQueue(qrs.cfg.QueueSize, func(item interface{}) {})
+		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize, func(item interface{}) {})
 	}
 	// The Persistent Queue is initialized separately as it needs extra information about the component
 
@@ -132,7 +151,7 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 			return err
 		}
 
-		qrs.queue = newPersistentQueue(ctx, qrs.fullName(), qrs.cfg.QueueSize, qrs.logger, *storageClient, qrs.requestUnmarshaler)
+		qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName(), qrs.cfg.QueueSize, qrs.logger, *storageClient, qrs.requestUnmarshaler)
 
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		qrs.requeuingEnabled = true
@@ -176,7 +195,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
-		req.onProcessingFinished()
+		req.OnProcessingFinished()
 	})
 
 	// Start reporting queue length metric

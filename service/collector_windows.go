@@ -18,13 +18,17 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"syscall"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
+
+	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 type WindowsService struct {
@@ -65,7 +69,7 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 
 		case svc.Stop, svc.Shutdown:
 			changes <- svc.Status{State: svc.StopPending}
-			if err := s.stop(colErrorChannel); err != nil {
+			if err = s.stop(colErrorChannel); err != nil {
 				elog.Error(3, fmt.Sprintf("errors occurred while shutting down the service: %v", err))
 			}
 			changes <- svc.Status{State: svc.Stopped}
@@ -81,15 +85,21 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 }
 
 func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
+	// Parse all the flags manually.
+	if err := flags().Parse(os.Args[1:]); err != nil {
+		return err
+	}
 	var err error
 	s.col, err = newWithWindowsEventLogCore(s.settings, elog)
 	if err != nil {
 		return err
 	}
 
-	// col.Start blocks until receiving a SIGTERM signal, so needs to be started
+	// col.Run blocks until receiving a SIGTERM signal, so needs to be started
 	// asynchronously, but it will exit early if an error occurs on startup
-	go func() { colErrorChannel <- s.col.Run() }()
+	go func() {
+		colErrorChannel <- s.col.Run(context.Background())
+	}()
 
 	// wait until the collector server is in the Running state
 	go func() {
@@ -122,6 +132,9 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 }
 
 func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
+	if set.ConfigMapProvider == nil {
+		set.ConfigMapProvider = parserprovider.NewDefaultMapProvider(getConfigFlag(), getSetFlag())
+	}
 	set.LoggingOptions = append(
 		set.LoggingOptions,
 		zap.WrapCore(withWindowsCore(elog)),

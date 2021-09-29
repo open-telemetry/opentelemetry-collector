@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -38,7 +37,7 @@ type ExampleExporter struct {
 }
 
 // Unmarshal a viper data into the config struct
-func (cfg *ExampleExporter) Unmarshal(componentParser *configparser.ConfigMap) error {
+func (cfg *ExampleExporter) Unmarshal(componentParser *config.Map) error {
 	return componentParser.UnmarshalExact(cfg)
 }
 
@@ -55,7 +54,7 @@ var ExampleExporterFactory = exporterhelper.NewFactory(
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporter{
-		ExporterSettings: config.NewExporterSettings(config.NewID(expType)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(expType)),
 		ExtraSetting:     "some export string",
 		ExtraMapSetting:  nil,
 		ExtraListSetting: nil,

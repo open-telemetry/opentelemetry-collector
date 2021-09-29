@@ -31,7 +31,7 @@ func TestService_setupExtensions(t *testing.T) {
 	errExtensionFactory := extensionhelper.NewFactory(
 		"err",
 		func() config.Extension {
-			cfg := config.NewExtensionSettings(config.NewID("err"))
+			cfg := config.NewExtensionSettings(config.NewComponentID("err"))
 			return &cfg
 		},
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
@@ -53,7 +53,7 @@ func TestService_setupExtensions(t *testing.T) {
 			config: &config.Config{
 				Service: config.Service{
 					Extensions: []config.ComponentID{
-						config.NewID("myextension"),
+						config.NewComponentID("myextension"),
 					},
 				},
 			},
@@ -63,11 +63,11 @@ func TestService_setupExtensions(t *testing.T) {
 			name: "missing_extension_factory",
 			config: &config.Config{
 				Extensions: map[config.ComponentID]config.Extension{
-					config.NewID(errExtensionFactory.Type()): errExtensionConfig,
+					config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
 				},
 				Service: config.Service{
 					Extensions: []config.ComponentID{
-						config.NewID(errExtensionFactory.Type()),
+						config.NewComponentID(errExtensionFactory.Type()),
 					},
 				},
 			},
@@ -82,11 +82,11 @@ func TestService_setupExtensions(t *testing.T) {
 			},
 			config: &config.Config{
 				Extensions: map[config.ComponentID]config.Extension{
-					config.NewID(errExtensionFactory.Type()): errExtensionConfig,
+					config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
 				},
 				Service: config.Service{
 					Extensions: []config.ComponentID{
-						config.NewID(errExtensionFactory.Type()),
+						config.NewComponentID(errExtensionFactory.Type()),
 					},
 				},
 			},
@@ -101,11 +101,11 @@ func TestService_setupExtensions(t *testing.T) {
 			},
 			config: &config.Config{
 				Extensions: map[config.ComponentID]config.Extension{
-					config.NewID(badExtensionFactory.Type()): badExtensionCfg,
+					config.NewComponentID(badExtensionFactory.Type()): badExtensionCfg,
 				},
 				Service: config.Service{
 					Extensions: []config.ComponentID{
-						config.NewID(badExtensionFactory.Type()),
+						config.NewComponentID(badExtensionFactory.Type()),
 					},
 				},
 			},
@@ -115,7 +115,7 @@ func TestService_setupExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ext, err := BuildExtensions(componenttest.NewNopTelemetrySettings(), component.DefaultBuildInfo(), tt.config, tt.factories.Extensions)
+			ext, err := BuildExtensions(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), tt.config, tt.factories.Extensions)
 
 			assert.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)

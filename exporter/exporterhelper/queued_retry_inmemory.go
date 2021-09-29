@@ -34,17 +34,40 @@ import (
 // queued_retry_inmemory includes the code for memory-backed (original) queued retry helper only
 // enabled when "enable_unstable" build tag is not set
 
+// QueueSettings defines configuration for queueing batches before sending to the consumerSender.
+type QueueSettings struct {
+	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
+	Enabled bool `mapstructure:"enabled"`
+	// NumConsumers is the number of consumers from the queue.
+	NumConsumers int `mapstructure:"num_consumers"`
+	// QueueSize is the maximum number of batches allowed in queue at a given time.
+	QueueSize int `mapstructure:"queue_size"`
+}
+
+// DefaultQueueSettings returns the default settings for QueueSettings.
+func DefaultQueueSettings() QueueSettings {
+	return QueueSettings{
+		Enabled:      true,
+		NumConsumers: 10,
+		// For 5000 queue elements at 100 requests/sec gives about 50 sec of survival of destination outage.
+		// This is a pretty decent value for production.
+		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
+		// multiply that by the number of requests per seconds.
+		QueueSize: 5000,
+	}
+}
+
 type queuedRetrySender struct {
 	fullName        string
 	cfg             QueueSettings
 	consumerSender  requestSender
-	queue           consumersQueue
+	queue           internal.ProducerConsumerQueue
 	retryStopCh     chan struct{}
 	traceAttributes []attribute.KeyValue
 	logger          *zap.Logger
 }
 
-func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSettings, rCfg RetrySettings, _ requestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSettings, rCfg RetrySettings, _ internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
@@ -59,7 +82,7 @@ func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSe
 			logger:             sampledLogger,
 			onTemporaryFailure: onTemporaryFailure,
 		},
-		queue:           internal.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
+		queue:           internal.NewBoundedMemoryQueue(qCfg.QueueSize, func(item interface{}) {}),
 		retryStopCh:     retryStopCh,
 		traceAttributes: []attribute.KeyValue{traceAttr},
 		logger:          sampledLogger,
@@ -80,7 +103,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
-		req.onProcessingFinished()
+		req.OnProcessingFinished()
 	})
 
 	// Start reporting queue length metric

@@ -1,0 +1,15 @@
+test_map:
+  # $$ -> escaped $
+  recv.1: "$$MAP_VALUE_1"
+  # $$$ -> escaped $ + substituted env var
+  recv.2: "$$$MAP_VALUE_2"
+  # $$$$ -> two escaped $
+  recv.3: "$$$$MAP_VALUE_3"
+  # escaped $ in the middle
+  recv.4: "some$${MAP_VALUE_4}text"
+  # two escaped $
+  recv.5: "$${ONE}$${TWO}"
+  # trailing escaped $
+  recv.6: "text$$"
+  # escaped $ alone
+  recv.7: "$$"

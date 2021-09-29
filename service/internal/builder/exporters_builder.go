@@ -18,12 +18,12 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -35,28 +35,22 @@ type builtExporter struct {
 
 // Start the exporter.
 func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error {
-	var errors []error
+	var errs error
 	for _, exporter := range bexp.expByDataType {
-		err := exporter.Start(ctx, host)
-		if err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, exporter.Start(ctx, host))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
 func (bexp *builtExporter) Shutdown(ctx context.Context) error {
-	var errors []error
+	var errs error
 	for _, exporter := range bexp.expByDataType {
-		err := exporter.Shutdown(ctx)
-		if err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, exporter.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (bexp *builtExporter) getTracesExporter() component.TracesExporter {
@@ -101,15 +95,12 @@ func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
 
 // ShutdownAll stops all exporters.
 func (exps Exporters) ShutdownAll(ctx context.Context) error {
-	var errs []error
+	var errs error
 	for _, exp := range exps {
-		err := exp.Shutdown(ctx)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, exp.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func (exps Exporters) ToMapByDataType() map[config.DataType]map[config.ComponentID]component.Exporter {
@@ -251,7 +242,7 @@ func buildExporter(
 				// Could not create because this exporter does not support this data type.
 				return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
 			}
-			return nil, fmt.Errorf("error creating %v exporter: %v", cfg.ID(), err)
+			return nil, fmt.Errorf("error creating %v exporter: %w", cfg.ID(), err)
 		}
 
 		// Check if the factory really created the exporter.

@@ -28,7 +28,7 @@ import (
 func NewNopProcessorCreateSettings() component.ProcessorCreateSettings {
 	return component.ProcessorCreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 
@@ -56,7 +56,7 @@ func (f *nopProcessorFactory) Type() config.Type {
 // CreateDefaultConfig creates the default configuration for the Processor.
 func (f *nopProcessorFactory) CreateDefaultConfig() config.Processor {
 	return &nopProcessorConfig{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID("nop")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop")),
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -44,8 +45,8 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumerhelpe
 	}
 }
 
-func newTraceRequestUnmarshalerFunc(pusher consumerhelper.ConsumeTracesFunc) requestUnmarshaler {
-	return func(bytes []byte) (request, error) {
+func newTraceRequestUnmarshalerFunc(pusher consumerhelper.ConsumeTracesFunc) internal.RequestUnmarshaler {
+	return func(bytes []byte) (internal.PersistentRequest, error) {
 		traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
 		if err != nil {
 			return nil, err
@@ -54,13 +55,14 @@ func newTraceRequestUnmarshalerFunc(pusher consumerhelper.ConsumeTracesFunc) req
 	}
 }
 
-func (req *tracesRequest) marshal() ([]byte, error) {
+// Marshal provides serialization capabilities required by persistent queue
+func (req *tracesRequest) Marshal() ([]byte, error) {
 	return tracesMarshaler.MarshalTraces(req.td)
 }
 
 func (req *tracesRequest) onError(err error) request {
 	var traceError consumererror.Traces
-	if consumererror.AsTraces(err, &traceError) {
+	if errors.As(err, &traceError) {
 		return newTracesRequest(req.ctx, traceError.GetTraces(), req.pusher)
 	}
 	return req

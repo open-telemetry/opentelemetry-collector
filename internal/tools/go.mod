@@ -6,15 +6,15 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.42.1
 	github.com/google/addlicense v1.0.0
-	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.14.0
+	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c
 	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20210813222030-0139980e9794
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
-	golang.org/x/tools v0.1.5
+	golang.org/x/tools v0.1.6
 )
 
 require (
@@ -155,10 +155,10 @@ require (
 	github.com/yeya24/promlinter v0.1.0 // indirect
 	go.opentelemetry.io/build-tools v0.0.0-20210719163622-92017e64f35b // indirect
 	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
+	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

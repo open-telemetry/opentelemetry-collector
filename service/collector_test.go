@@ -34,13 +34,34 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
+
+const configStr = `
+receivers:
+  otlp:
+    protocols:
+      grpc:
+exporters:
+  otlp:
+    endpoint: "localhost:4317"
+processors:
+  batch:
+extensions:
+service:
+  extensions:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]
+`
 
 func TestCollector_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
@@ -53,25 +74,24 @@ func TestCollector_Start(t *testing.T) {
 	}
 
 	col, err := New(CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
-		Factories:      factories,
-		LoggingOptions: []zap.Option{zap.Hooks(hook)},
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		LoggingOptions:    []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, col.rootCmd, col.Command())
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
-	col.rootCmd.SetArgs([]string{
-		"--config=testdata/otelcol-config.yaml",
+	require.NoError(t, flags().Parse([]string{
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
-	})
+	}))
 
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.NoError(t, col.Run())
+		assert.NoError(t, col.Run(context.Background()))
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -120,15 +140,17 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{BuildInfo: component.DefaultBuildInfo(), Factories: factories})
+	col, err := New(CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+	})
 	require.NoError(t, err)
-
-	col.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
 
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.EqualError(t, col.Run(), "failed to shutdown collector telemetry: err1")
+		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -144,9 +166,9 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
-		Factories:      factories,
-		ParserProvider: new(minimalParserLoader),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -154,7 +176,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		colErr := col.Run()
+		colErr := col.Run(context.Background())
 		if colErr != nil {
 			err = colErr
 		}
@@ -232,44 +254,11 @@ func assertZPages(t *testing.T) {
 	}
 }
 
-type minimalParserLoader struct{}
-
-func (*minimalParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
-	configStr := `
-receivers:
-  otlp:
-    protocols:
-      grpc:
-
-exporters:
-  otlp:
-    endpoint: "localhost:4317"
-
-processors:
-  batch:
-
-extensions:
-
-service:
-  extensions:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp]
-`
-	return configparser.NewConfigMapFromBuffer(strings.NewReader(configStr))
-}
-
-func (*minimalParserLoader) Close(context.Context) error {
-	return nil
-}
-
 type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get(context.Context) (*configparser.ConfigMap, error) {
+func (epl *errParserLoader) Get(context.Context) (*config.Map, error) {
 	return nil, epl.err
 }
 
@@ -285,7 +274,7 @@ func TestCollector_reloadService(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		parserProvider parserprovider.ParserProvider
+		parserProvider parserprovider.MapProvider
 		service        *service
 	}{
 		{
@@ -296,7 +285,7 @@ func TestCollector_reloadService(t *testing.T) {
 			name:           "retire_service_ok_load_err",
 			parserProvider: &errParserLoader{err: sentinelError},
 			service: &service{
-				logger:          zap.NewNop(),
+				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
@@ -305,9 +294,9 @@ func TestCollector_reloadService(t *testing.T) {
 		},
 		{
 			name:           "retire_service_ok_load_ok",
-			parserProvider: new(minimalParserLoader),
+			parserProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 			service: &service{
-				logger:          zap.NewNop(),
+				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
@@ -319,7 +308,7 @@ func TestCollector_reloadService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			col := Collector{
 				set: CollectorSettings{
-					ParserProvider:    tt.parserProvider,
+					ConfigMapProvider: tt.parserProvider,
 					ConfigUnmarshaler: configunmarshaler.NewDefault(),
 					Factories:         factories,
 				},
@@ -328,9 +317,7 @@ func TestCollector_reloadService(t *testing.T) {
 				service:        tt.service,
 			}
 
-			err := col.reloadService(ctx)
-
-			if err != nil {
+			if err = col.reloadService(ctx); err != nil {
 				assert.ErrorIs(t, err, sentinelError)
 				return
 			}

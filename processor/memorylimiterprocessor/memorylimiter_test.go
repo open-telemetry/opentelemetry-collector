@@ -114,14 +114,14 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		},
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
 			Level:       configtelemetry.LevelNone,
-			ProcessorID: config.NewID(typeStr),
+			ProcessorID: config.NewComponentID(typeStr),
 		}),
 
 		logger: zap.NewNop(),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processMetrics,
@@ -186,13 +186,13 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		},
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
 			Level:       configtelemetry.LevelNone,
-			ProcessorID: config.NewID(typeStr),
+			ProcessorID: config.NewComponentID(typeStr),
 		}),
 		logger: zap.NewNop(),
 	}
 	tp, err := processorhelper.NewTracesProcessor(
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processTraces,
@@ -257,13 +257,13 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		},
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
 			Level:       configtelemetry.LevelNone,
-			ProcessorID: config.NewID(typeStr),
+			ProcessorID: config.NewComponentID(typeStr),
 		}),
 		logger: zap.NewNop(),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processLogs,

@@ -38,7 +38,7 @@ type HTTPClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
+	TLSSetting *configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
@@ -62,14 +62,19 @@ type HTTPClientSettings struct {
 
 // ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
-	if err != nil {
-		return nil, err
-	}
+	var err error
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if tlsCfg != nil {
-		transport.TLSClientConfig = tlsCfg
+
+	if hcs.TLSSetting != nil {
+		tlsCfg, terr := hcs.TLSSetting.LoadTLSConfig()
+		if terr != nil {
+			return nil, terr
+		}
+		if tlsCfg != nil {
+			transport.TLSClientConfig = tlsCfg
+		}
 	}
+
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize
 	}
@@ -90,7 +95,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 			return nil, fmt.Errorf("extensions configuration not found")
 		}
 
-		componentID, cperr := config.NewIDFromString(hcs.Auth.AuthenticatorName)
+		componentID, cperr := config.NewComponentIDFromString(hcs.Auth.AuthenticatorName)
 		if cperr != nil {
 			return nil, cperr
 		}
@@ -140,7 +145,7 @@ type HTTPServerSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings, omitempty"`
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls, omitempty"`
 
 	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
 	// for the OTLP receiver. See github.com/rs/cors

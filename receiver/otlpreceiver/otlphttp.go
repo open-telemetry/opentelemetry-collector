@@ -15,177 +15,159 @@
 package otlpreceiver
 
 import (
-	"bytes"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 )
-
-var jsonMarshaler = &jsonpb.Marshaler{}
-
-func handleTraces(
-	resp http.ResponseWriter,
-	req *http.Request,
-	contentType string,
-	tracesReceiver *trace.Receiver,
-	tracesUnmarshaler pdata.TracesUnmarshaler) {
-	body, ok := readAndCloseBody(resp, req, contentType)
-	if !ok {
-		return
-	}
-
-	td, err := tracesUnmarshaler.UnmarshalTraces(body)
-	if err != nil {
-		writeError(resp, contentType, err, http.StatusBadRequest)
-		return
-	}
-
-	otlpReq := otlpgrpc.NewTracesRequest()
-	otlpReq.SetTraces(td)
-	_, err = tracesReceiver.Export(req.Context(), otlpReq)
-	if err != nil {
-		writeError(resp, contentType, err, http.StatusInternalServerError)
-		return
-	}
-
-	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
-	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
-}
-
-func handleMetrics(
-	resp http.ResponseWriter,
-	req *http.Request,
-	contentType string,
-	metricsReceiver *metrics.Receiver,
-	metricsUnmarshaler pdata.MetricsUnmarshaler) {
-	body, ok := readAndCloseBody(resp, req, contentType)
-	if !ok {
-		return
-	}
-
-	md, err := metricsUnmarshaler.UnmarshalMetrics(body)
-	if err != nil {
-		writeError(resp, contentType, err, http.StatusBadRequest)
-		return
-	}
-
-	otlpReq := otlpgrpc.NewMetricsRequest()
-	otlpReq.SetMetrics(md)
-	_, err = metricsReceiver.Export(req.Context(), otlpReq)
-	if err != nil {
-		writeError(resp, contentType, err, http.StatusInternalServerError)
-		return
-	}
-
-	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
-	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
-}
-
-func handleLogs(
-	resp http.ResponseWriter,
-	req *http.Request,
-	contentType string,
-	logsReceiver *logs.Receiver,
-	logsUnmarshaler pdata.LogsUnmarshaler) {
-	body, ok := readAndCloseBody(resp, req, contentType)
-	if !ok {
-		return
-	}
-
-	ld, err := logsUnmarshaler.UnmarshalLogs(body)
-	if err != nil {
-		writeError(resp, contentType, err, http.StatusBadRequest)
-		return
-	}
-
-	otlpReq := otlpgrpc.NewLogsRequest()
-	otlpReq.SetLogs(ld)
-	_, err = logsReceiver.Export(req.Context(), otlpReq)
-	if err != nil {
-		writeError(resp, contentType, err, http.StatusInternalServerError)
-		return
-	}
-
-	// TODO: Pass response from grpc handler when otlpgrpc returns concrete type.
-	writeResponse(resp, contentType, http.StatusOK, &types.Empty{})
-}
-
-func readAndCloseBody(resp http.ResponseWriter, req *http.Request, contentType string) ([]byte, bool) {
-	body, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		writeError(resp, contentType, err, http.StatusBadRequest)
-		return nil, false
-	}
-	if err = req.Body.Close(); err != nil {
-		writeError(resp, contentType, err, http.StatusBadRequest)
-		return nil, false
-	}
-	return body, true
-}
-
-// writeError encodes the HTTP error inside a rpc.Status message as required by the OTLP protocol.
-func writeError(w http.ResponseWriter, contentType string, err error, statusCode int) {
-	s, ok := status.FromError(err)
-	if ok {
-		writeResponse(w, contentType, statusCode, s.Proto())
-	} else {
-		writeErrorMsg(w, contentType, err.Error(), statusCode)
-	}
-}
-
-// writeErrorMsg encodes the HTTP error message inside a rpc.Status message as required
-// by the OTLP protocol.
-func writeErrorMsg(w http.ResponseWriter, contentType string, errMsg string, statusCode int) {
-	var s *status.Status
-	if statusCode == http.StatusBadRequest {
-		s = status.New(codes.InvalidArgument, errMsg)
-	} else {
-		s = status.New(codes.Unknown, errMsg)
-	}
-
-	writeResponse(w, contentType, statusCode, s.Proto())
-}
-
-// errorHandler encodes the HTTP error message inside a rpc.Status message as required
-// by the OTLP protocol.
-func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
-	writeErrorMsg(w, r.Header.Get("Content-Type"), errMsg, statusCode)
-}
 
 // Pre-computed status with code=Internal to be used in case of a marshaling error.
 var fallbackMsg = []byte(`{"code": 13, "message": "failed to marshal error message"}`)
 
 const fallbackContentType = "application/json"
 
-func writeResponse(w http.ResponseWriter, contentType string, statusCode int, rsp proto.Message) {
-	var err error
-	var msg []byte
-	if contentType == "application/json" {
-		buf := new(bytes.Buffer)
-		err = jsonMarshaler.Marshal(buf, rsp)
-		msg = buf.Bytes()
-	} else {
-		msg, err = proto.Marshal(rsp)
+func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *trace.Receiver, encoder encoder) {
+	body, ok := readAndCloseBody(resp, req, encoder)
+	if !ok {
+		return
 	}
 
+	otlpReq, err := encoder.unmarshalTracesRequest(body)
 	if err != nil {
-		msg = fallbackMsg
-		contentType = fallbackContentType
-		statusCode = http.StatusInternalServerError
+		writeError(resp, encoder, err, http.StatusBadRequest)
+		return
 	}
+
+	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusInternalServerError)
+		return
+	}
+
+	msg, err := encoder.marshalTracesResponse(otlpResp)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusInternalServerError)
+		return
+	}
+	writeResponse(resp, encoder.contentType(), http.StatusOK, msg)
+}
+
+func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver *metrics.Receiver, encoder encoder) {
+	body, ok := readAndCloseBody(resp, req, encoder)
+	if !ok {
+		return
+	}
+
+	otlpReq, err := encoder.unmarshalMetricsRequest(body)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusBadRequest)
+		return
+	}
+
+	otlpResp, err := metricsReceiver.Export(req.Context(), otlpReq)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusInternalServerError)
+		return
+	}
+
+	msg, err := encoder.marshalMetricsResponse(otlpResp)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusInternalServerError)
+		return
+	}
+	writeResponse(resp, encoder.contentType(), http.StatusOK, msg)
+}
+
+func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.Receiver, encoder encoder) {
+	body, ok := readAndCloseBody(resp, req, encoder)
+	if !ok {
+		return
+	}
+
+	otlpReq, err := encoder.unmarshalLogsRequest(body)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusBadRequest)
+		return
+	}
+
+	otlpResp, err := logsReceiver.Export(req.Context(), otlpReq)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusInternalServerError)
+		return
+	}
+
+	msg, err := encoder.marshalLogsResponse(otlpResp)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusInternalServerError)
+		return
+	}
+	writeResponse(resp, encoder.contentType(), http.StatusOK, msg)
+}
+
+func readAndCloseBody(resp http.ResponseWriter, req *http.Request, encoder encoder) ([]byte, bool) {
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		writeError(resp, encoder, err, http.StatusBadRequest)
+		return nil, false
+	}
+	if err = req.Body.Close(); err != nil {
+		writeError(resp, encoder, err, http.StatusBadRequest)
+		return nil, false
+	}
+	return body, true
+}
+
+// writeError encodes the HTTP error inside a rpc.Status message as required by the OTLP protocol.
+func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode int) {
+	s, ok := status.FromError(err)
+	if !ok {
+		s = errorMsgToStatus(err.Error(), statusCode)
+	}
+	writeStatusResponse(w, encoder, statusCode, s.Proto())
+}
+
+// errorHandler encodes the HTTP error message inside a rpc.Status message as required
+// by the OTLP protocol.
+func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
+	s := errorMsgToStatus(errMsg, statusCode)
+	contentType := r.Header.Get("Content-Type")
+	switch contentType {
+	case pbContentType:
+		writeStatusResponse(w, pbEncoder, statusCode, s.Proto())
+		return
+	case jsonContentType:
+		writeStatusResponse(w, jsEncoder, statusCode, s.Proto())
+		return
+	}
+	writeResponse(w, fallbackContentType, http.StatusInternalServerError, fallbackMsg)
+}
+
+func writeStatusResponse(w http.ResponseWriter, encoder encoder, statusCode int, rsp *spb.Status) {
+	msg, err := encoder.marshalStatus(rsp)
+	if err != nil {
+		writeResponse(w, fallbackContentType, http.StatusInternalServerError, fallbackMsg)
+		return
+	}
+
+	writeResponse(w, encoder.contentType(), statusCode, msg)
+}
+
+func writeResponse(w http.ResponseWriter, contentType string, statusCode int, msg []byte) {
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(statusCode)
 	// Nothing we can do with the error if we cannot write to the response.
 	_, _ = w.Write(msg)
+}
+
+func errorMsgToStatus(errMsg string, statusCode int) *status.Status {
+	if statusCode == http.StatusBadRequest {
+		return status.New(codes.InvalidArgument, errMsg)
+	}
+	return status.New(codes.Unknown, errMsg)
 }

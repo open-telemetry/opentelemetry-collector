@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -76,7 +75,7 @@ func TestService_GetExtensions(t *testing.T) {
 	extMap := srv.GetExtensions()
 
 	assert.Len(t, extMap, 1)
-	assert.Contains(t, extMap, config.NewID("nop"))
+	assert.Contains(t, extMap, config.NewComponentID("nop"))
 }
 
 func TestService_GetExporters(t *testing.T) {
@@ -90,11 +89,11 @@ func TestService_GetExporters(t *testing.T) {
 	expMap := srv.GetExporters()
 	assert.Len(t, expMap, 3)
 	assert.Len(t, expMap[config.TracesDataType], 1)
-	assert.Contains(t, expMap[config.TracesDataType], config.NewID("nop"))
+	assert.Contains(t, expMap[config.TracesDataType], config.NewComponentID("nop"))
 	assert.Len(t, expMap[config.MetricsDataType], 1)
-	assert.Contains(t, expMap[config.MetricsDataType], config.NewID("nop"))
+	assert.Contains(t, expMap[config.MetricsDataType], config.NewComponentID("nop"))
 	assert.Len(t, expMap[config.LogsDataType], 1)
-	assert.Contains(t, expMap[config.LogsDataType], config.NewID("nop"))
+	assert.Contains(t, expMap[config.LogsDataType], config.NewComponentID("nop"))
 }
 
 func createExampleService(t *testing.T) *service {
@@ -105,9 +104,9 @@ func createExampleService(t *testing.T) *service {
 	require.NoError(t, err)
 
 	srv, err := newService(&svcSettings{
-		BuildInfo: component.DefaultBuildInfo(),
+		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
-		Logger:    zap.NewNop(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		Config:    cfg,
 	})
 	require.NoError(t, err)
