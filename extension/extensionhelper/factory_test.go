@@ -28,7 +28,7 @@ import (
 const typeStr = "test"
 
 var (
-	defaultCfg           = config.NewExtensionSettings(config.NewID(typeStr))
+	defaultCfg           = config.NewExtensionSettings(config.NewComponentID(typeStr))
 	nopExtensionInstance = new(nopExtension)
 )
 

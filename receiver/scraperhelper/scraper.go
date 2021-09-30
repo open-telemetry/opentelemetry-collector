@@ -93,7 +93,7 @@ func NewMetricsScraper(
 	ms := &metricsScraper{
 		baseScraper: baseScraper{
 			Component: componenthelper.New(set.componentOptions...),
-			id:        config.NewID(config.Type(name)),
+			id:        config.NewComponentID(config.Type(name)),
 		},
 		ScrapeMetrics: scrape,
 	}

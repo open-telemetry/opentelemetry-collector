@@ -16,9 +16,9 @@
 
 package internal
 
-// Consumer consumes data from a bounded queue
-type Consumer interface {
-	Consume(item interface{})
+// consumer consumes data from a bounded queue
+type consumer interface {
+	consume(item interface{})
 }
 
 // ProducerConsumerQueue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue

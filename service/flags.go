@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider
+package service
 
 import (
 	"flag"
 	"strings"
-)
 
-const (
-	configFlagName = "config"
-	setFlagName    = "set"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
 var (
-	configFlag *string
-	setFlag    *stringArrayValue
+	defaultConfig = ""
+
+	configFlag = &defaultConfig
+	setFlag    = new(stringArrayValue)
 )
 
 type stringArrayValue struct {
@@ -42,14 +43,22 @@ func (s *stringArrayValue) String() string {
 	return "[" + strings.Join(s.values, ",") + "]"
 }
 
-// Flags adds flags related to basic configuration's parser loader to the flags.
-func Flags(flags *flag.FlagSet) {
-	configFlag = flags.String(configFlagName, "", "Path to the config file")
-	setFlag = new(stringArrayValue)
-	flags.Var(setFlag, setFlagName,
+func flags() *flag.FlagSet {
+	flagSet := new(flag.FlagSet)
+	addFlagsFns := []func(*flag.FlagSet){
+		configtelemetry.Flags,
+		telemetry.Flags,
+		telemetrylogs.Flags,
+	}
+	for _, addFlags := range addFlagsFns {
+		addFlags(flagSet)
+	}
+	configFlag = flagSet.String("config", defaultConfig, "Path to the config file")
+	flagSet.Var(setFlag, "set",
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
 			" has a higher precedence. Array config properties are overridden and maps are joined, note that only a single"+
 			" (first) array property can be set e.g. -set=processors.attributes.actions.key=some_key. Example --set=processors.batch.timeout=2s")
+	return flagSet
 }
 
 func getConfigFlag() string {

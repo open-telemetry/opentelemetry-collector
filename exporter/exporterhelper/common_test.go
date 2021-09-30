@@ -27,11 +27,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (
-	defaultExporterCfg  = config.NewExporterSettings(config.NewID(typeStr))
+	defaultExporterCfg  = config.NewExporterSettings(config.NewComponentID(typeStr))
 	exporterTag, _      = tag.NewKey("exporter")
 	defaultExporterTags = []tag.Tag{
 		{Key: exporterTag, Value: "test"},
@@ -75,6 +76,6 @@ func nopTracePusher() consumerhelper.ConsumeTracesFunc {
 	}
 }
 
-func nopRequestUnmarshaler() requestUnmarshaler {
+func nopRequestUnmarshaler() internal.RequestUnmarshaler {
 	return newTraceRequestUnmarshalerFunc(nopTracePusher())
 }

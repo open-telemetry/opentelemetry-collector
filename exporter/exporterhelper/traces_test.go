@@ -43,7 +43,7 @@ const (
 )
 
 var (
-	fakeTracesExporterName   = config.NewIDWithName("fake_traces_exporter", "with_name")
+	fakeTracesExporterName   = config.NewComponentIDWithName("fake_traces_exporter", "with_name")
 	fakeTracesExporterConfig = config.NewExporterSettings(fakeTracesExporterName)
 )
 
@@ -122,16 +122,16 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown(context.Background())
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, set.ToExporterCreateSettings(), newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -206,9 +206,9 @@ func newTraceDataPusher(retError error) consumerhelper.ConsumeTracesFunc {
 }
 
 func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExporter, wantError error) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown(context.Background())
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	const numBatches = 7

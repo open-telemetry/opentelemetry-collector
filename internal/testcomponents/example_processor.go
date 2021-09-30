@@ -45,7 +45,7 @@ var ExampleProcessorFactory = processorhelper.NewFactory(
 // CreateDefaultConfig creates the default configuration for the Processor.
 func createDefaultConfig() config.Processor {
 	return &ExampleProcessorCfg{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(procType)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(procType)),
 		ExtraSetting:      "some export string",
 		ExtraMapSetting:   nil,
 		ExtraListSetting:  nil,

@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package exporterhelper
+package internal
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 var errItemIndexArrInvalidDataType = errors.New("invalid data type, expected []itemIndex")
@@ -106,13 +106,13 @@ func (bof *batchStruct) getResult(key string, unmarshal func([]byte) (interface{
 }
 
 // getRequestResult returns the result of a Get operation as a request
-func (bof *batchStruct) getRequestResult(key string) (request, error) {
+func (bof *batchStruct) getRequestResult(key string) (PersistentRequest, error) {
 	reqIf, err := bof.getResult(key, bof.bytesToRequest)
 	if err != nil {
 		return nil, err
 	}
 
-	return reqIf.(request), nil
+	return reqIf.(PersistentRequest), nil
 }
 
 // getItemIndexResult returns the result of a Get operation as an itemIndex
@@ -144,7 +144,7 @@ func (bof *batchStruct) getItemIndexArrayResult(key string) ([]itemIndex, error)
 }
 
 // setRequest adds Set operation over a given request to the batch
-func (bof *batchStruct) setRequest(key string, value request) *batchStruct {
+func (bof *batchStruct) setRequest(key string, value PersistentRequest) *batchStruct {
 	return bof.set(key, value, requestToBytes)
 }
 
@@ -215,7 +215,7 @@ func bytesToItemIndexArray(b []byte) (interface{}, error) {
 }
 
 func requestToBytes(req interface{}) ([]byte, error) {
-	return req.(request).marshal()
+	return req.(PersistentRequest).Marshal()
 }
 
 func (bof *batchStruct) bytesToRequest(b []byte) (interface{}, error) {

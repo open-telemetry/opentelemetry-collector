@@ -71,7 +71,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
-			config.NewID("testauth"): &configauth.MockClientAuthenticator{},
+			config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
 		},
 	}
 
@@ -137,7 +137,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	}
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
-			config.NewID("mock"): &configauth.MockAuthenticator{},
+			config.NewComponentID("mock"): &configauth.MockAuthenticator{},
 		},
 	}
 	opts, err := gss.ToServerOption(host, componenttest.NewNopTelemetrySettings())
@@ -215,7 +215,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Auth:     &configauth.Authentication{},
 			},
 			host: &mockHost{ext: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{},
+				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{},
 			}},
 		},
 		{

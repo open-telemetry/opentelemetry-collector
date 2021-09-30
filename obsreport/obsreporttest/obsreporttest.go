@@ -15,13 +15,18 @@
 package obsreporttest
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
 
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -41,19 +46,51 @@ var (
 	processorTag, _ = tag.NewKey("processor")
 )
 
+type TestTelemetrySettings struct {
+	component.TelemetrySettings
+	SpanRecorder *tracetest.SpanRecorder
+	views        []*view.View
+}
+
+// ToExporterCreateSettings returns ExporterCreateSettings with configured TelemetrySettings
+func (tts *TestTelemetrySettings) ToExporterCreateSettings() component.ExporterCreateSettings {
+	exporterSettings := componenttest.NewNopExporterCreateSettings()
+	exporterSettings.TelemetrySettings = tts.TelemetrySettings
+	return exporterSettings
+}
+
+// ToReceiverCreateSettings returns ReceiverCreateSettings with configured TelemetrySettings
+func (tts *TestTelemetrySettings) ToReceiverCreateSettings() component.ReceiverCreateSettings {
+	receiverSettings := componenttest.NewNopReceiverCreateSettings()
+	receiverSettings.TelemetrySettings = tts.TelemetrySettings
+	return receiverSettings
+}
+
+// Shutdown unregisters any views and shuts down the SpanRecorder
+func (tts *TestTelemetrySettings) Shutdown(ctx context.Context) error {
+	view.Unregister(tts.views...)
+	return tts.SpanRecorder.Shutdown(ctx)
+}
+
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
-// The returned function should be deferred.
-func SetupRecordedMetricsTest() (func(), error) {
+// The caller should defer a call to Shutdown the returned TestTelemetrySettings.
+func SetupRecordedMetricsTest() (TestTelemetrySettings, error) {
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+
+	settings := TestTelemetrySettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		SpanRecorder:      sr,
+	}
+	settings.TracerProvider = tp
 	obsMetrics := obsreportconfig.Configure(configtelemetry.LevelNormal)
-	views := obsMetrics.Views
-	err := view.Register(views...)
+	settings.views = obsMetrics.Views
+	err := view.Register(settings.views...)
 	if err != nil {
-		return nil, err
+		return settings, err
 	}
 
-	return func() {
-		view.Unregister(views...)
-	}, err
+	return settings, err
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.

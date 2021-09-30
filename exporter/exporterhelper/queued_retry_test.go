@@ -31,14 +31,15 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
-func mockRequestUnmarshaler(mr *mockRequest) requestUnmarshaler {
-	return func(bytes []byte) (request, error) {
+func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
+	return func(bytes []byte) (internal.PersistentRequest, error) {
 		return mr, nil
 	}
 }
@@ -299,13 +300,13 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown(context.Background())
 
 	qCfg := DefaultQueueSettings()
 	rCfg := DefaultRetrySettings()
-	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	be := newBaseExporter(&defaultExporterCfg, set.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -379,7 +380,7 @@ func (mer *mockErrorRequest) onError(error) request {
 	return mer
 }
 
-func (mer *mockErrorRequest) marshal() ([]byte, error) {
+func (mer *mockErrorRequest) Marshal() ([]byte, error) {
 	return nil, nil
 }
 
@@ -414,7 +415,7 @@ func (m *mockRequest) export(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *mockRequest) marshal() ([]byte, error) {
+func (m *mockRequest) Marshal() ([]byte, error) {
 	return otlp.NewProtobufTracesMarshaler().MarshalTraces(pdata.NewTraces())
 }
 

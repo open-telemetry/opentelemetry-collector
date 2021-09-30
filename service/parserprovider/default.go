@@ -14,9 +14,11 @@
 
 package parserprovider
 
-// NewDefaultMapProvider is the default MapProvider and it creates configuration from a file
-// defined by the --config command line flag and overwrites properties from --set
-// command line flag (if the flag is present).
-func NewDefaultMapProvider() MapProvider {
-	return NewMergeMapProvider(NewFileMapProvider(), NewPropertiesMapProvider())
+// NewDefaultMapProvider returns the default MapProvider, and it creates configuration from a file
+// defined by the given configFile and overwrites fields using properties.
+func NewDefaultMapProvider(configFileName string, properties []string) MapProvider {
+	return NewExpandMapProvider(
+		NewMergeMapProvider(
+			NewFileMapProvider(configFileName),
+			NewPropertiesMapProvider(properties)))
 }
