@@ -63,24 +63,12 @@ service:
       exporters: [otlp]
 `
 
-// colTelemetryTest initializes telemetry without affecting the global sync.Once.
-type colTelemetryTest struct {
-	c colTelemetry
-}
-
-func (c *colTelemetryTest) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
-	return c.c.initOnce(asyncErrorChannel, ballastSizeBytes, logger)
-}
-func (c *colTelemetryTest) shutdown() error {
-	return c.c.shutdown()
-}
-
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
 // to test for initialization without setting CLI flags.
 func TestCollector_StartAsGoRoutine(t *testing.T) {
 	// use a mock AppTelemetry struct to return an error on shutdown
 	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetryTest{}
+	collectorTelemetry = &colTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
 	factories, err := defaultcomponents.Components()
