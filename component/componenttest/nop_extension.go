@@ -52,7 +52,7 @@ func (f *nopExtensionFactory) Type() config.Type {
 // CreateDefaultConfig creates the default configuration for the Extension.
 func (f *nopExtensionFactory) CreateDefaultConfig() config.Extension {
 	return &nopExtensionConfig{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID("nop")),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("nop")),
 	}
 }
 

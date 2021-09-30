@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -44,8 +45,8 @@ func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher consumerhel
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeMetricsFunc) requestUnmarshaler {
-	return func(bytes []byte) (request, error) {
+func newMetricsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeMetricsFunc) internal.RequestUnmarshaler {
+	return func(bytes []byte) (internal.PersistentRequest, error) {
 		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 		if err != nil {
 			return nil, err
@@ -66,7 +67,8 @@ func (req *metricsRequest) export(ctx context.Context) error {
 	return req.pusher(ctx, req.md)
 }
 
-func (req *metricsRequest) marshal() ([]byte, error) {
+// Marshal provides serialization capabilities required by persistent queue
+func (req *metricsRequest) Marshal() ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.md)
 }
 

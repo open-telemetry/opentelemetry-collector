@@ -191,9 +191,9 @@ func TestScrapeController(t *testing.T) {
 			otel.SetTracerProvider(tp)
 			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-			done, err := obsreporttest.SetupRecordedMetricsTest()
+			set, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
-			defer done()
+			defer set.Shutdown(context.Background())
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
@@ -310,7 +310,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		testScrapeResourceMetricsChs[i] = make(chan int)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddScraper(NewResourceMetricsScraper(config.NewComponentID("scraper"), tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
@@ -362,7 +362,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(config.NewID("receiver"), "", int64(dataPointCount), 0))
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(config.NewComponentID("receiver"), "", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -397,7 +397,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	require.NoError(t, obsreporttest.CheckScraperMetrics(config.NewID("receiver"), config.NewID("scraper"), expectedScraped, expectedErrored))
+	require.NoError(t, obsreporttest.CheckScraperMetrics(config.NewComponentID("receiver"), config.NewComponentID("scraper"), expectedScraped, expectedErrored))
 }
 
 func singleMetric() pdata.MetricSlice {
@@ -432,7 +432,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 		zap.NewNop(),
 		new(consumertest.MetricsSink),
 		AddScraper(NewMetricsScraper("", tsm.scrape)),
-		AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
+		AddScraper(NewResourceMetricsScraper(config.NewComponentID("scraper"), tsrm.scrape)),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)

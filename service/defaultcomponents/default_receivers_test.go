@@ -58,7 +58,7 @@ func TestDefaultReceivers(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
-			assert.Equal(t, config.NewID(tt.receiver), factory.CreateDefaultConfig().ID())
+			assert.Equal(t, config.NewComponentID(tt.receiver), factory.CreateDefaultConfig().ID())
 
 			verifyReceiverLifecycle(t, factory, tt.getConfigFn)
 		})

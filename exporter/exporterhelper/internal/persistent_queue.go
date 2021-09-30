@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package exporterhelper
+package internal
 
 import (
 	"context"
@@ -23,8 +23,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 // persistentQueue holds the queue backed by file storage
@@ -37,8 +36,8 @@ type persistentQueue struct {
 	storage    persistentStorage
 }
 
-// newPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
-func newPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler requestUnmarshaler) internal.ProducerConsumerQueue {
+// NewPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
+func NewPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
@@ -48,8 +47,8 @@ func newPersistentQueue(ctx context.Context, name string, capacity int, logger *
 
 // StartConsumers starts the given number of consumers which will be consuming items
 func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
-	factory := func() internal.Consumer {
-		return internal.ConsumerFunc(callback)
+	factory := func() consumer {
+		return consumerFunc(callback)
 	}
 	pq.numWorkers = num
 
@@ -57,12 +56,12 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 		pq.stopWG.Add(1)
 		go func() {
 			defer pq.stopWG.Done()
-			consumer := factory()
+			itemConsumer := factory()
 
 			for {
 				select {
 				case req := <-pq.storage.get():
-					consumer.Consume(req)
+					itemConsumer.consume(req)
 				case <-pq.stopChan:
 					return
 				}
@@ -73,7 +72,7 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 
 // Produce adds an item to the queue and returns true if it was accepted
 func (pq *persistentQueue) Produce(item interface{}) bool {
-	err := pq.storage.put(item.(request))
+	err := pq.storage.put(item.(PersistentRequest))
 	return err == nil
 }
 

@@ -35,35 +35,35 @@ func TestLoadConfig(t *testing.T) {
 
 	// Verify extensions.
 	require.Len(t, cfg.Extensions, 2)
-	assert.Contains(t, cfg.Extensions, config.NewID("nop"))
-	assert.Contains(t, cfg.Extensions, config.NewIDWithName("nop", "myextension"))
+	assert.Contains(t, cfg.Extensions, config.NewComponentID("nop"))
+	assert.Contains(t, cfg.Extensions, config.NewComponentIDWithName("nop", "myextension"))
 
 	// Verify receivers
 	require.Len(t, cfg.Receivers, 2)
-	assert.Contains(t, cfg.Receivers, config.NewID("nop"))
-	assert.Contains(t, cfg.Receivers, config.NewIDWithName("nop", "myreceiver"))
+	assert.Contains(t, cfg.Receivers, config.NewComponentID("nop"))
+	assert.Contains(t, cfg.Receivers, config.NewComponentIDWithName("nop", "myreceiver"))
 
 	// Verify exporters
 	assert.Len(t, cfg.Exporters, 2)
-	assert.Contains(t, cfg.Exporters, config.NewID("nop"))
-	assert.Contains(t, cfg.Exporters, config.NewIDWithName("nop", "myexporter"))
+	assert.Contains(t, cfg.Exporters, config.NewComponentID("nop"))
+	assert.Contains(t, cfg.Exporters, config.NewComponentIDWithName("nop", "myexporter"))
 
 	// Verify Processors
 	assert.Len(t, cfg.Processors, 2)
-	assert.Contains(t, cfg.Processors, config.NewID("nop"))
-	assert.Contains(t, cfg.Processors, config.NewIDWithName("nop", "myprocessor"))
+	assert.Contains(t, cfg.Processors, config.NewComponentID("nop"))
+	assert.Contains(t, cfg.Processors, config.NewComponentIDWithName("nop", "myprocessor"))
 
 	// Verify service.
 	require.Len(t, cfg.Service.Extensions, 1)
-	assert.Contains(t, cfg.Service.Extensions, config.NewID("nop"))
+	assert.Contains(t, cfg.Service.Extensions, config.NewComponentID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
 		&config.Pipeline{
 			Name:       "traces",
 			InputType:  config.TracesDataType,
-			Receivers:  []config.ComponentID{config.NewID("nop")},
-			Processors: []config.ComponentID{config.NewID("nop")},
-			Exporters:  []config.ComponentID{config.NewID("nop")},
+			Receivers:  []config.ComponentID{config.NewComponentID("nop")},
+			Processors: []config.ComponentID{config.NewComponentID("nop")},
+			Exporters:  []config.ComponentID{config.NewComponentID("nop")},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")

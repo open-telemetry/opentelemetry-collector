@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -44,8 +45,8 @@ func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.Co
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeLogsFunc) requestUnmarshaler {
-	return func(bytes []byte) (request, error) {
+func newLogsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeLogsFunc) internal.RequestUnmarshaler {
+	return func(bytes []byte) (internal.PersistentRequest, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
 			return nil, err
@@ -66,7 +67,7 @@ func (req *logsRequest) export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
-func (req *logsRequest) marshal() ([]byte, error) {
+func (req *logsRequest) Marshal() ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.ld)
 }
 

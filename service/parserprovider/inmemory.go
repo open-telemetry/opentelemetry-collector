@@ -25,7 +25,7 @@ type inMemoryMapProvider struct {
 	buf io.Reader
 }
 
-// NewInMemoryMapProvider returns a new MapProvider that reads the configuration from the provided buffer as YAML.
+// NewInMemoryMapProvider returns a new MapProvider that reads the configuration, from the provided buffer, as YAML.
 func NewInMemoryMapProvider(buf io.Reader) MapProvider {
 	return &inMemoryMapProvider{buf: buf}
 }

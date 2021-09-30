@@ -35,7 +35,7 @@ type boundedMemoryQueue struct {
 	stopped       *uatomic.Uint32
 	items         *chan interface{}
 	onDroppedItem func(item interface{})
-	factory       func() Consumer
+	factory       func() consumer
 	stopCh        chan struct{}
 }
 
@@ -56,8 +56,8 @@ func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) P
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
 func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interface{})) {
-	factory := func() Consumer {
-		return ConsumerFunc(callback)
+	factory := func() consumer {
+		return consumerFunc(callback)
 	}
 	q.workers = num
 	q.factory = factory
@@ -68,14 +68,14 @@ func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interfac
 		go func() {
 			startWG.Done()
 			defer q.stopWG.Done()
-			consumer := q.factory()
+			itemConsumer := q.factory()
 			queue := *q.items
 			for {
 				select {
 				case item, ok := <-queue:
 					if ok {
 						q.size.Sub(1)
-						consumer.Consume(item)
+						itemConsumer.consume(item)
 					} else {
 						// channel closed, finish worker
 						return
@@ -90,12 +90,12 @@ func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interfac
 	startWG.Wait()
 }
 
-// ConsumerFunc is an adapter to allow the use of
-// a consume function callback as a Consumer.
-type ConsumerFunc func(item interface{})
+// consumerFunc is an adapter to allow the use of
+// a consume function callback as a consumer.
+type consumerFunc func(item interface{})
 
 // Consume calls c(item)
-func (c ConsumerFunc) Consume(item interface{}) {
+func (c consumerFunc) consume(item interface{}) {
 	c(item)
 }
 
