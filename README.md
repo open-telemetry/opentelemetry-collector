@@ -89,7 +89,6 @@ See more details about the status:
 
 * **Experimental** components are under design, and have not been added to the specification.
 * **Beta** components are released and available for beta testing.
-* **RC** components are released and available for final testing before being marked as stable.
 * **Stable** components are backwards compatible and covered under long term support.
 
 ## Contributing
