@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
+	p1 := cfg.Processors[config.NewComponentIDWithName(typeStr, "2")]
 
 	timeout := time.Second * 10
 	sendBatchSize := uint32(10000)
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
 			SendBatchSize:     sendBatchSize,
 			SendBatchMaxSize:  sendBatchMaxSize,
 			Timeout:           timeout,
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
 		SendBatchSize:     100,
 		SendBatchMaxSize:  0,
 	}
@@ -67,7 +67,7 @@ func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 
 func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
 		SendBatchSize:     100,
 		SendBatchMaxSize:  1000,
 	}
@@ -77,7 +77,7 @@ func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 
 func TestValidateConfig_InvalidBatchSize(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
 		SendBatchSize:     1000,
 		SendBatchMaxSize:  100,
 	}
