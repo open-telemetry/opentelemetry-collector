@@ -45,6 +45,9 @@ import (
 // collectorTelemetry is collector's own telemetry.
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
+// AddCollectorVersionTag indicates if the collector version tag should be added to all telemetry metrics
+const AddCollectorVersionTag = true
+
 type collectorTelemetryExporter interface {
 	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
 	shutdown() error
@@ -80,14 +83,10 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	}
 
 	var instanceID string
-	var collectorVersion string
+
 	if telemetry.GetAddInstanceID() {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
-	}
-
-	if configtelemetry.AddCollectorVersionTag {
-		collectorVersion = version.Version
 	}
 
 	var pe http.Handler
@@ -110,7 +109,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 		zap.String("address", metricsAddr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
 		zap.String(semconv.AttributeServiceInstanceID, instanceID),
-		zap.String(semconv.AttributeServiceVersion, collectorVersion),
+		zap.String(semconv.AttributeServiceVersion, version.Version),
 	)
 
 	mux := http.NewServeMux()
@@ -161,7 +160,7 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
 	}
 
-	if configtelemetry.AddCollectorVersionTag {
+	if AddCollectorVersionTag {
 		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version
 	}
 

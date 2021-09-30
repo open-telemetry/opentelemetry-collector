@@ -40,9 +40,6 @@ const (
 
 const UseOpenTelemetryForInternalMetrics = false
 
-// indicates if the collector version tag should be added to all telemetry metrics
-const AddCollectorVersionTag = true
-
 var metricsLevelPtr = new(Level)
 
 // Flags is a helper function to add telemetry config flags to the service that exposes
