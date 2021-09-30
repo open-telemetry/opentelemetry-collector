@@ -115,7 +115,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func
 		}
 	}
 
-	r := New(config.NewIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
+	r := New(config.NewComponentIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	otlpgrpc.RegisterMetricsServer(srv, r)

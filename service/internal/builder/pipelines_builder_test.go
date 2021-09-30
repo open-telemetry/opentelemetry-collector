@@ -45,7 +45,7 @@ func TestBuildPipelines(t *testing.T) {
 		{
 			name:          "multi-exporter",
 			pipelineName:  "traces/2",
-			exporterNames: []config.ComponentID{config.NewComponentID("exampleexporter"), config.NewIDWithName("exampleexporter", "2")},
+			exporterNames: []config.ComponentID{config.NewComponentID("exampleexporter"), config.NewComponentIDWithName("exampleexporter", "2")},
 		},
 	}
 

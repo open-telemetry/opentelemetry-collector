@@ -42,7 +42,7 @@ const (
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
-var fakeLogsExporterName = config.NewIDWithName("fake_logs_exporter", "with_name")
+var fakeLogsExporterName = config.NewComponentIDWithName("fake_logs_exporter", "with_name")
 
 var (
 	fakeLogsExporterConfig = config.NewExporterSettings(fakeLogsExporterName)

@@ -39,7 +39,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(cfg.Extensions))
-	assert.Equal(t, "some string", cfg.Extensions[config.NewIDWithName("exampleextension", "1")].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
+	assert.Equal(t, "some string", cfg.Extensions[config.NewComponentIDWithName("exampleextension", "1")].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
 
 	// Verify receivers
 	assert.Equal(t, 2, len(cfg.Receivers), "Incorrect receivers count")
@@ -57,13 +57,13 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName("examplereceiver", "myreceiver")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName("examplereceiver", "myreceiver")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:12345",
 			},
 			ExtraSetting: "some string",
 		},
-		cfg.Receivers[config.NewIDWithName("examplereceiver", "myreceiver")],
+		cfg.Receivers[config.NewComponentIDWithName("examplereceiver", "myreceiver")],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
@@ -79,10 +79,10 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName("exampleexporter", "myexporter")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName("exampleexporter", "myexporter")),
 			ExtraSetting:     "some export string 2",
 		},
-		cfg.Exporters[config.NewIDWithName("exampleexporter", "myexporter")],
+		cfg.Exporters[config.NewComponentIDWithName("exampleexporter", "myexporter")],
 		"Did not load exporter config correctly")
 
 	// Verify Processors
@@ -101,8 +101,8 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify Service Extensions
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
-	assert.Equal(t, config.NewIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
+	assert.Equal(t, config.NewComponentIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewComponentIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
 
 	// Verify Service Pipelines
 	assert.Equal(t, 1, len(cfg.Service.Pipelines), "Incorrect pipelines count")
