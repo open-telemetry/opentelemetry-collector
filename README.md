@@ -62,35 +62,28 @@ Objectives:
 The collector components and implementation are in different stages of stability, and usually split between
 functionality and configuration:
 
-| Component | Status |
-|---|---|
-| OTLP traces protocol | Stable |
-| OTLP metrics protocol | Stable |
-| OTLP logs protocol | Beta |
-| OTLP traces receiver functionality | Stable |
-| OTLP metrics receiver functionality | Stable |
-| OTLP logs receiver functionality | Beta |
-| OTLP traces receiver configuration | Beta |
-| OTLP metrics receiver configuration | Beta |
-| OTLP logs receiver configuration | Beta |
-| OTLP traces exporter functionality | Stable |
-| OTLP metrics exporter functionality | Stable |
-| OTLP logs exporter functionality | Beta |
-| OTLP traces exporter configuration | Beta |
-| OTLP metrics exporter configuration | Beta |
-| OTLP logs exporter configuration | Beta |
-| Logging exporter | Experimental |
-| Batch processor functionality | Beta |
-| Batch processor configuration | Beta |
-| MemoryLimiter processor functionality | Beta |
-| MemoryLimiter processor configuration | Beta |
-
-The collector public APIs are in different stages of stability (see more details about the [versioning](VERSIONING.md)):
-
-| Package | Status |
-|---|---|
-| go.opentelemetry.io/collector/model | RC |
-| go.opentelemetry.io/collector | Beta |
+| Signal | Component | Status |
+|--------|-----------|--------|
+|Trace   | OTLP protocol | Stable |
+|| OTLP receiver functionality | Stable |
+|| OTLP receiver configuration | Beta |
+|| OTLP exporter functionality | Stable |
+|| OTLP exporter configuration | Beta |
+|Metric  | OTLP protocol | Stable |
+|| OTLP receiver functionality | Stable |
+|| OTLP receiver configuration | Beta |
+|| OTLP exporter functionality | Stable |
+|| OTLP exporter configuration | Beta |
+|Logs    | OTLP protocol | Beta |
+|| OTLP receiver functionality | Beta |
+|| OTLP receiver configuration | Beta |
+|| OTLP exporter functionality | Beta |
+|| OTLP exporter configuration | Beta |
+|Common| Logging exporter | Experimental |
+|| Batch processor functionality | Beta |
+|| Batch processor configuration | Beta |
+|| MemoryLimiter processor functionality | Beta |
+|| MemoryLimiter processor configuration | Beta |
 
 See more details about the status:
 
