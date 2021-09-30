@@ -79,17 +79,13 @@ functionality and configuration:
 || OTLP receiver configuration | Beta |
 || OTLP exporter functionality | Beta |
 || OTLP exporter configuration | Beta |
-|Common| Logging exporter | Experimental |
+|Common| Logging exporter | unstable |
 || Batch processor functionality | Beta |
 || Batch processor configuration | Beta |
 || MemoryLimiter processor functionality | Beta |
 || MemoryLimiter processor configuration | Beta |
 
-See more details about the status:
-
-* **Experimental** components are under design, and have not been added to the specification.
-* **Beta** components are released and available for beta testing.
-* **Stable** components are backwards compatible and covered under long term support.
+We follow the production maturity level defined [here](https://github.com/open-telemetry/community/blob/47813530864b9fe5a5146f466a58bd2bb94edc72/maturity-matrix.yaml#L31)
 
 ## Contributing
 
