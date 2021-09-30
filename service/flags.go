@@ -24,7 +24,9 @@ import (
 )
 
 var (
-	configFlag *string
+	defaultConfig = ""
+
+	configFlag = &defaultConfig
 	setFlag    = new(stringArrayValue)
 )
 
@@ -51,7 +53,7 @@ func flags() *flag.FlagSet {
 	for _, addFlags := range addFlagsFns {
 		addFlags(flagSet)
 	}
-	configFlag = flagSet.String("config", "", "Path to the config file")
+	configFlag = flagSet.String("config", defaultConfig, "Path to the config file")
 	flagSet.Var(setFlag, "set",
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
 			" has a higher precedence. Array config properties are overridden and maps are joined, note that only a single"+
