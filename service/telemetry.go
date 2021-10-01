@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/version"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
@@ -43,6 +44,9 @@ import (
 
 // collectorTelemetry is collector's own telemetry.
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
+
+// AddCollectorVersionTag indicates if the collector version tag should be added to all telemetry metrics
+const AddCollectorVersionTag = true
 
 type collectorTelemetryExporter interface {
 	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
@@ -79,6 +83,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	}
 
 	var instanceID string
+
 	if telemetry.GetAddInstanceID() {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
@@ -104,6 +109,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 		zap.String("address", metricsAddr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
 		zap.String(semconv.AttributeServiceInstanceID, instanceID),
+		zap.String(semconv.AttributeServiceVersion, version.Version),
 	)
 
 	mux := http.NewServeMux()
@@ -148,10 +154,14 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 		Namespace: telemetry.GetMetricsPrefix(),
 	}
 
+	opts.ConstLabels = make(map[string]string)
+
 	if telemetry.GetAddInstanceID() {
-		opts.ConstLabels = map[string]string{
-			sanitizePrometheusKey(semconv.AttributeServiceInstanceID): instanceID,
-		}
+		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
+	}
+
+	if AddCollectorVersionTag {
+		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version
 	}
 
 	pe, err := prometheus.NewExporter(opts)
