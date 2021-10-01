@@ -58,8 +58,8 @@ func main() {
 		log.Fatalf("failed to construct the application: %v", err)
 	}
 
-	err = app.Run()
-	if err != nil {
+	cmd := service.NewCommand(app)
+	if err = cmd.Execute(); err != nil {
 		log.Fatalf("application run finished with error: %v", err)
 	}
 }
