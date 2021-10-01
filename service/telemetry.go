@@ -34,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/version"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
@@ -76,7 +75,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	logger.Info("Setting up own telemetry...")
 
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	metricsAddr := telemetry.GetMetricsAddr()
+	metricsAddr := getMetricsAddr()
 
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
 		return nil
@@ -84,7 +83,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 
 	var instanceID string
 
-	if telemetry.GetAddInstanceID() {
+	if getAddInstanceID() {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
 	}
@@ -151,12 +150,12 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
-		Namespace: telemetry.GetMetricsPrefix(),
+		Namespace: getMetricsPrefix(),
 	}
 
 	opts.ConstLabels = make(map[string]string)
 
-	if telemetry.GetAddInstanceID() {
+	if getAddInstanceID() {
 		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
 	}
 
