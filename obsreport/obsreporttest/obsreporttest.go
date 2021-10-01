@@ -46,46 +46,46 @@ var (
 	processorTag, _ = tag.NewKey("processor")
 )
 
-type TestTelemetrySettings struct {
+type TestTelemetry struct {
 	component.TelemetrySettings
 	SpanRecorder *tracetest.SpanRecorder
 	views        []*view.View
 }
 
 // ToExporterCreateSettings returns ExporterCreateSettings with configured TelemetrySettings
-func (tts *TestTelemetrySettings) ToExporterCreateSettings() component.ExporterCreateSettings {
+func (tts *TestTelemetry) ToExporterCreateSettings() component.ExporterCreateSettings {
 	exporterSettings := componenttest.NewNopExporterCreateSettings()
 	exporterSettings.TelemetrySettings = tts.TelemetrySettings
 	return exporterSettings
 }
 
 // ToProcessorCreateSettings returns ProcessorCreateSettings with configured TelemetrySettings
-func (tts *TestTelemetrySettings) ToProcessorCreateSettings() component.ProcessorCreateSettings {
+func (tts *TestTelemetry) ToProcessorCreateSettings() component.ProcessorCreateSettings {
 	processorSettings := componenttest.NewNopProcessorCreateSettings()
 	processorSettings.TelemetrySettings = tts.TelemetrySettings
 	return processorSettings
 }
 
 // ToReceiverCreateSettings returns ReceiverCreateSettings with configured TelemetrySettings
-func (tts *TestTelemetrySettings) ToReceiverCreateSettings() component.ReceiverCreateSettings {
+func (tts *TestTelemetry) ToReceiverCreateSettings() component.ReceiverCreateSettings {
 	receiverSettings := componenttest.NewNopReceiverCreateSettings()
 	receiverSettings.TelemetrySettings = tts.TelemetrySettings
 	return receiverSettings
 }
 
 // Shutdown unregisters any views and shuts down the SpanRecorder
-func (tts *TestTelemetrySettings) Shutdown(ctx context.Context) error {
+func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	view.Unregister(tts.views...)
 	return tts.SpanRecorder.Shutdown(ctx)
 }
 
 // SetupTelemetry does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
-// The caller should defer a call to Shutdown the returned TestTelemetrySettings.
-func SetupTelemetry() (TestTelemetrySettings, error) {
+// The caller should defer a call to Shutdown the returned TestTelemetry.
+func SetupTelemetry() (TestTelemetry, error) {
 	sr := new(tracetest.SpanRecorder)
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
-	settings := TestTelemetrySettings{
+	settings := TestTelemetry{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		SpanRecorder:      sr,
 	}
