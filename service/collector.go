@@ -213,7 +213,7 @@ func (col *Collector) Run(ctx context.Context) error {
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
 
-	col.meterProvider = metric.NoopMeterProvider{}
+	col.meterProvider = metric.NewNoopMeterProvider()
 
 	col.stateChannel <- Starting
 

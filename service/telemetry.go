@@ -175,7 +175,7 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 func (tel *colTelemetry) initOpenTelemetry() (http.Handler, error) {
 	config := otelprometheus.Config{}
 	c := controller.New(
-		processor.New(
+		processor.NewFactory(
 			selector.NewWithHistogramDistribution(
 				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
 			),
