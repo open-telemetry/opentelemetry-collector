@@ -191,7 +191,7 @@ func TestScrapeController(t *testing.T) {
 			otel.SetTracerProvider(tp)
 			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-			set, err := obsreporttest.SetupRecordedMetricsTest()
+			set, err := obsreporttest.SetupTelemetry()
 			require.NoError(t, err)
 			defer set.Shutdown(context.Background())
 

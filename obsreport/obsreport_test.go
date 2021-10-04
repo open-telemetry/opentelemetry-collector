@@ -54,7 +54,7 @@ type testParams struct {
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -101,7 +101,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -148,7 +148,7 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -196,7 +196,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -253,7 +253,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 }
 
 func TestExportTraceDataOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -303,7 +303,7 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -354,7 +354,7 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -405,7 +405,7 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -456,7 +456,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 }
 
 func TestProcessorTraceData(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -477,7 +477,7 @@ func TestProcessorTraceData(t *testing.T) {
 }
 
 func TestProcessorMetricsData(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -520,7 +520,7 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 }
 
 func TestProcessorLogRecords(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 

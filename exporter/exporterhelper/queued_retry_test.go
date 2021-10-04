@@ -300,7 +300,7 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 

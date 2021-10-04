@@ -38,7 +38,7 @@ var (
 )
 
 func TestCheckReceiverTracesViews(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -55,7 +55,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -68,7 +68,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -81,7 +81,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 }
 
 func TestCheckExporterTracesViews(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -99,7 +99,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 }
 
 func TestCheckExporterMetricsViews(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -117,7 +117,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 }
 
 func TestCheckExporterLogsViews(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
