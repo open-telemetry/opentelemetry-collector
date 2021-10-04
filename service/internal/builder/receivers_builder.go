@@ -214,8 +214,8 @@ func attachReceiverToPipelines(
 		if rcv.receiver != createdReceiver {
 			return fmt.Errorf(
 				"factory for %v is implemented incorrectly: "+
-					"CreateTracesReceiver and CreateMetricsReceiver must return the same "+
-					"receiver pointer when creating receivers of different data types",
+					"CreateTracesReceiver, CreateMetricsReceiver and CreateLogsReceiver must return "+
+					"the same receiver pointer when creating receivers of different data types",
 				cfg.ID(),
 			)
 		}

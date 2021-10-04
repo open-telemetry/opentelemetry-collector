@@ -14,6 +14,11 @@
 
 - Add Gen dependabot into CI (#4083)
 
+## 💡 Enhancements 💡
+
+- Update OTLP to v0.10.0 (#4045).
+- Add Flags field to NumberDataPoint, HistogramDataPoint, SummaryDataPoint (#4081).
+
 ## v0.36.0 Beta
 
 ## 🛑 Breaking changes 🛑

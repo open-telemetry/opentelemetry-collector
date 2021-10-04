@@ -1,4 +1,5 @@
 codecov:
+  branch: main
   strict_yaml_branch: main  # only use the latest copy on main branch
 
 coverage:
@@ -18,4 +19,3 @@ coverage:
 ignore:
   - "service/internal/zpages/tmplgen/**/*"
   - "model/internal/data/protogen/**/*"
-  - "*/**/third_party/**/*"

@@ -182,7 +182,7 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			set, err := obsreporttest.SetupRecordedMetricsTest()
+			set, err := obsreporttest.SetupTelemetry()
 			require.NoError(t, err)
 			defer set.Shutdown(context.Background())
 

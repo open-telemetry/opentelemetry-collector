@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	receiver  = config.NewComponentID("fakeReciever")
+	receiver  = config.NewComponentID("fakeReceiver")
 	scraper   = config.NewComponentID("fakeScraper")
 	processor = config.NewComponentID("fakeProcessor")
 	exporter  = config.NewComponentID("fakeExporter")
@@ -52,7 +52,7 @@ type testParams struct {
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -100,7 +100,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -148,7 +148,7 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -197,7 +197,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -255,7 +255,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 }
 
 func TestExportTraceDataOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -305,7 +305,7 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -356,7 +356,7 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -407,7 +407,7 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -460,7 +460,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 }
 
 func TestProcessorTraceData(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -468,7 +468,11 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	obsrep := NewProcessor(ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
+	obsrep := NewProcessor(ProcessorSettings{
+		Level:                   configtelemetry.LevelNormal,
+		ProcessorID:             processor,
+		ProcessorCreateSettings: set.ToProcessorCreateSettings(),
+	})
 	obsrep.TracesAccepted(context.Background(), acceptedSpans)
 	obsrep.TracesRefused(context.Background(), refusedSpans)
 	obsrep.TracesDropped(context.Background(), droppedSpans)
@@ -477,7 +481,7 @@ func TestProcessorTraceData(t *testing.T) {
 }
 
 func TestProcessorMetricsData(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -485,7 +489,11 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := NewProcessor(ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
+	obsrep := NewProcessor(ProcessorSettings{
+		Level:                   configtelemetry.LevelNormal,
+		ProcessorID:             processor,
+		ProcessorCreateSettings: set.ToProcessorCreateSettings(),
+	})
 	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 	obsrep.MetricsRefused(context.Background(), refusedPoints)
 	obsrep.MetricsDropped(context.Background(), droppedPoints)
@@ -516,7 +524,7 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 }
 
 func TestProcessorLogRecords(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -524,7 +532,11 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := NewProcessor(ProcessorSettings{Level: configtelemetry.LevelNormal, ProcessorID: processor})
+	obsrep := NewProcessor(ProcessorSettings{
+		Level:                   configtelemetry.LevelNormal,
+		ProcessorID:             processor,
+		ProcessorCreateSettings: set.ToProcessorCreateSettings(),
+	})
 	obsrep.LogsAccepted(context.Background(), acceptedRecords)
 	obsrep.LogsRefused(context.Background(), refusedRecords)
 	obsrep.LogsDropped(context.Background(), droppedRecords)

@@ -63,6 +63,44 @@ service:
       exporters: [otlp]
 `
 
+// TestCollector_StartAsGoRoutine must be the first unit test on the file,
+// to test for initialization without setting CLI flags.
+func TestCollector_StartAsGoRoutine(t *testing.T) {
+	// use a mock AppTelemetry struct to return an error on shutdown
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &colTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
+
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	colDone := make(chan struct{})
+	go func() {
+		defer close(colDone)
+		colErr := col.Run(context.Background())
+		if colErr != nil {
+			err = colErr
+		}
+	}()
+
+	assert.Equal(t, Starting, <-col.GetStateChannel())
+	assert.Equal(t, Running, <-col.GetStateChannel())
+
+	col.Shutdown()
+	col.Shutdown()
+	<-colDone
+	assert.Equal(t, Closing, <-col.GetStateChannel())
+	assert.Equal(t, Closed, <-col.GetStateChannel())
+}
+
 func TestCollector_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
@@ -156,37 +194,6 @@ func TestCollector_ReportError(t *testing.T) {
 	assert.Equal(t, Starting, <-col.GetStateChannel())
 	assert.Equal(t, Running, <-col.GetStateChannel())
 	col.service.ReportFatalError(errors.New("err2"))
-	<-colDone
-	assert.Equal(t, Closing, <-col.GetStateChannel())
-	assert.Equal(t, Closed, <-col.GetStateChannel())
-}
-
-func TestCollector_StartAsGoRoutine(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-
-	set := CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
-	}
-	col, err := New(set)
-	require.NoError(t, err)
-
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		colErr := col.Run(context.Background())
-		if colErr != nil {
-			err = colErr
-		}
-	}()
-
-	assert.Equal(t, Starting, <-col.GetStateChannel())
-	assert.Equal(t, Running, <-col.GetStateChannel())
-
-	col.Shutdown()
-	col.Shutdown()
 	<-colDone
 	assert.Equal(t, Closing, <-col.GetStateChannel())
 	assert.Equal(t, Closed, <-col.GetStateChannel())
