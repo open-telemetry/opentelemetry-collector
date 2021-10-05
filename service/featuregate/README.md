@@ -50,7 +50,7 @@ prefixed with `-` will disable the gate and prefixing with `+` or with no
 prefix will enable the gate.
 
 ```shell
-otelcol --config=config.yaml --feature-gates=gate1,-gate2
+otelcol --config=config.yaml --feature-gates=gate1,-gate2,+gate3
 ```
 
 This will enable `gate1` and disable `gate2`.
