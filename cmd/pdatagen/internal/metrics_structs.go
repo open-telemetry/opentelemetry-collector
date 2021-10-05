@@ -213,6 +213,7 @@ var numberDataPoint = &messageValueStruct{
 			},
 		},
 		exemplarsField,
+		dataPointFlagsField,
 	},
 }
 
@@ -234,6 +235,7 @@ var histogramDataPoint = &messageValueStruct{
 		bucketCountsField,
 		explicitBoundsField,
 		exemplarsField,
+		dataPointFlagsField,
 	},
 }
 
@@ -257,6 +259,7 @@ var summaryDataPoint = &messageValueStruct{
 			originFieldName: "QuantileValues",
 			returnSlice:     quantileValuesSlice,
 		},
+		dataPointFlagsField,
 	},
 }
 
@@ -397,4 +400,13 @@ var oneofDataField = &oneofField{
 	originFieldName: "Data",
 	testVal:         "&otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}",
 	fillTestName:    "Gauge",
+}
+
+var dataPointFlagsField = &primitiveTypedField{
+	fieldName:       "Flags",
+	originFieldName: "Flags",
+	returnType:      "MetricDataPointFlags",
+	rawType:         "uint32",
+	defaultVal:      "MetricDataPointFlagsNone",
+	testVal:         "MetricDataPointFlagsNone",
 }

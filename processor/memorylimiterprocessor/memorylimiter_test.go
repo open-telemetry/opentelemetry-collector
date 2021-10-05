@@ -89,7 +89,7 @@ func TestNew(t *testing.T) {
 			cfg.CheckInterval = tt.args.checkInterval
 			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
 			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
-			got, err := newMemoryLimiter(zap.NewNop(), cfg)
+			got, err := newMemoryLimiter(componenttest.NewNopProcessorCreateSettings(), cfg)
 			if err != tt.wantErr {
 				t.Errorf("newMemoryLimiter() error = %v, wantErr %v", err, tt.wantErr)
 				return

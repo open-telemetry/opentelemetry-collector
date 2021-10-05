@@ -92,8 +92,7 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	if set.ConfigMapProvider == nil {
-		// use default provider.
-		set.ConfigMapProvider = parserprovider.NewDefaultMapProvider()
+		return nil, errors.New("invalid nil config provider")
 	}
 
 	if set.ConfigUnmarshaler == nil {
@@ -214,7 +213,7 @@ func (col *Collector) Run(ctx context.Context) error {
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
 
-	col.meterProvider = metric.NoopMeterProvider{}
+	col.meterProvider = metric.NewNoopMeterProvider()
 
 	col.stateChannel <- Starting
 

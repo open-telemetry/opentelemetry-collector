@@ -45,10 +45,10 @@ func TestLoadConfig(t *testing.T) {
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		})
 
-	p1 := cfg.Processors[config.NewIDWithName(typeStr, "with-settings")]
+	p1 := cfg.Processors[config.NewComponentIDWithName(typeStr, "with-settings")]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings:   config.NewProcessorSettings(config.NewIDWithName(typeStr, "with-settings")),
+			ProcessorSettings:   config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "with-settings")),
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,

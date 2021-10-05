@@ -64,6 +64,44 @@ service:
       exporters: [otlp]
 `
 
+// TestCollector_StartAsGoRoutine must be the first unit test on the file,
+// to test for initialization without setting CLI flags.
+func TestCollector_StartAsGoRoutine(t *testing.T) {
+	// use a mock AppTelemetry struct to return an error on shutdown
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &colTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
+
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	colDone := make(chan struct{})
+	go func() {
+		defer close(colDone)
+		colErr := col.Run(context.Background())
+		if colErr != nil {
+			err = colErr
+		}
+	}()
+
+	assert.Equal(t, Starting, <-col.GetStateChannel())
+	assert.Equal(t, Running, <-col.GetStateChannel())
+
+	col.Shutdown()
+	col.Shutdown()
+	<-colDone
+	assert.Equal(t, Closing, <-col.GetStateChannel())
+	assert.Equal(t, Closed, <-col.GetStateChannel())
+}
+
 func TestCollector_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
@@ -75,25 +113,24 @@ func TestCollector_Start(t *testing.T) {
 	}
 
 	col, err := New(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		LoggingOptions: []zap.Option{zap.Hooks(hook)},
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		LoggingOptions:    []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
-	cmd := NewCommand(col)
-	cmd.SetArgs([]string{
-		"--config=testdata/otelcol-config.yaml",
+	require.NoError(t, flags().Parse([]string{
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
-	})
+	}))
 
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.NoError(t, cmd.Execute())
+		assert.NoError(t, col.Run(context.Background()))
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
@@ -142,52 +179,22 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
+	col, err := New(CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+	})
 	require.NoError(t, err)
-
-	cmd := NewCommand(col)
-	cmd.SetArgs([]string{"--config=testdata/otelcol-config.yaml"})
 
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.EqualError(t, cmd.Execute(), "failed to shutdown collector telemetry: err1")
+		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
 	}()
 
 	assert.Equal(t, Starting, <-col.GetStateChannel())
 	assert.Equal(t, Running, <-col.GetStateChannel())
 	col.service.ReportFatalError(errors.New("err2"))
-	<-colDone
-	assert.Equal(t, Closing, <-col.GetStateChannel())
-	assert.Equal(t, Closed, <-col.GetStateChannel())
-}
-
-func TestCollector_StartAsGoRoutine(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-
-	set := CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
-	}
-	col, err := New(set)
-	require.NoError(t, err)
-
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		colErr := col.Run(context.Background())
-		if colErr != nil {
-			err = colErr
-		}
-	}()
-
-	assert.Equal(t, Starting, <-col.GetStateChannel())
-	assert.Equal(t, Running, <-col.GetStateChannel())
-
-	col.Shutdown()
-	col.Shutdown()
 	<-colDone
 	assert.Equal(t, Closing, <-col.GetStateChannel())
 	assert.Equal(t, Closed, <-col.GetStateChannel())
@@ -318,9 +325,7 @@ func TestCollector_reloadService(t *testing.T) {
 				service:        tt.service,
 			}
 
-			err := col.reloadService(ctx)
-
-			if err != nil {
+			if err = col.reloadService(ctx); err != nil {
 				assert.ErrorIs(t, err, sentinelError)
 				return
 			}

@@ -684,6 +684,14 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
+func TestNumberDataPoint_Flags(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
 func TestHistogramDataPointSlice(t *testing.T) {
 	es := NewHistogramDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -864,6 +872,14 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
+func TestHistogramDataPoint_Flags(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -1026,6 +1042,14 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	fillTestValueAtQuantileSlice(ms.QuantileValues())
 	testValQuantileValues := generateTestValueAtQuantileSlice()
 	assert.EqualValues(t, testValQuantileValues, ms.QuantileValues())
+}
+
+func TestSummaryDataPoint_Flags(t *testing.T) {
+	ms := NewSummaryDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
 func TestValueAtQuantileSlice(t *testing.T) {
@@ -1464,6 +1488,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.SetDoubleVal(float64(17.13))
 
 	fillTestExemplarSlice(tv.Exemplars())
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
@@ -1495,6 +1520,7 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetBucketCounts([]uint64{1, 2, 3})
 	tv.SetExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
@@ -1524,6 +1550,7 @@ func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
 	fillTestValueAtQuantileSlice(tv.QuantileValues())
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestValueAtQuantileSlice() ValueAtQuantileSlice {

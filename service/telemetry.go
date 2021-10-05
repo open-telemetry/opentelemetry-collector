@@ -34,29 +34,21 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/version"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/service/featuregate"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 // collectorTelemetry is collector's own telemetry.
 var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 
-var otelMetricsGate = featuregate.Gate{
-	ID:          "telemetry.OTelMetrics",
-	Description: "Use OpenTelemetry metrics instead of OpenCensus",
-	Enabled:     false,
-}
-
-func init() {
-	featuregate.Register(otelMetricsGate)
-}
+// AddCollectorVersionTag indicates if the collector version tag should be added to all telemetry metrics
+const AddCollectorVersionTag = true
 
 type collectorTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, gates featuregate.Gates) error
+	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
 	shutdown() error
 }
 
@@ -66,11 +58,11 @@ type colTelemetry struct {
 	doInitOnce sync.Once
 }
 
-func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, gates featuregate.Gates) error {
+func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	var err error
 	tel.doInitOnce.Do(
 		func() {
-			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger, gates)
+			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger)
 		},
 	)
 	if err != nil {
@@ -79,38 +71,36 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, gates featuregate.Gates) error {
+func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	logger.Info("Setting up own telemetry...")
 
 	level := configtelemetry.GetMetricsLevelFlagValue()
-	metricsAddr := telemetry.GetMetricsAddr()
+	metricsAddr := getMetricsAddr()
 
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
 		return nil
 	}
 
 	var instanceID string
-	if telemetry.GetAddInstanceID() {
+
+	if getAddInstanceID() {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID = instanceUUID.String()
 	}
 
 	var pe http.Handler
-	var provider string
-	if gates.IsEnabled(otelMetricsGate.ID) {
+	if configtelemetry.UseOpenTelemetryForInternalMetrics {
 		otelHandler, err := tel.initOpenTelemetry()
 		if err != nil {
 			return err
 		}
 		pe = otelHandler
-		provider = "OpenTelemetry"
 	} else {
 		ocHandler, err := tel.initOpenCensus(level, instanceID, ballastSizeBytes)
 		if err != nil {
 			return err
 		}
 		pe = ocHandler
-		provider = "OpenCensus"
 	}
 
 	logger.Info(
@@ -118,7 +108,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 		zap.String("address", metricsAddr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
 		zap.String(semconv.AttributeServiceInstanceID, instanceID),
-		zap.String("provider", provider),
+		zap.String(semconv.AttributeServiceVersion, version.Version),
 	)
 
 	mux := http.NewServeMux()
@@ -160,13 +150,17 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
-		Namespace: telemetry.GetMetricsPrefix(),
+		Namespace: getMetricsPrefix(),
 	}
 
-	if telemetry.GetAddInstanceID() {
-		opts.ConstLabels = map[string]string{
-			sanitizePrometheusKey(semconv.AttributeServiceInstanceID): instanceID,
-		}
+	opts.ConstLabels = make(map[string]string)
+
+	if getAddInstanceID() {
+		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
+	}
+
+	if AddCollectorVersionTag {
+		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version
 	}
 
 	pe, err := prometheus.NewExporter(opts)
@@ -181,7 +175,7 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 func (tel *colTelemetry) initOpenTelemetry() (http.Handler, error) {
 	config := otelprometheus.Config{}
 	c := controller.New(
-		processor.New(
+		processor.NewFactory(
 			selector.NewWithHistogramDistribution(
 				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
 			),

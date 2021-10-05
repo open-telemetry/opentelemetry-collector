@@ -44,10 +44,10 @@ func TestLoadConfig(t *testing.T) {
 	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,

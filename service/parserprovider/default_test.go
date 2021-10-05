@@ -16,7 +16,6 @@ package parserprovider
 
 import (
 	"context"
-	"flag"
 	"strings"
 	"testing"
 
@@ -27,19 +26,9 @@ import (
 )
 
 func TestDefaultMapProvider(t *testing.T) {
-	flags := new(flag.FlagSet)
-	Flags(flags)
-	err := flags.Parse([]string{
-		"--config=testdata/default-config.yaml",
-		"",
-	})
+	mp := NewDefaultMapProvider("testdata/default-config.yaml", nil)
+	cm, err := mp.Get(context.Background())
 	require.NoError(t, err)
-	mp := NewDefaultMapProvider()
-	require.NotNil(t, mp)
-	var cm *config.Map
-	cm, err = mp.Get(context.Background())
-	require.NoError(t, err)
-	require.NotNil(t, cm)
 
 	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
 processors:
@@ -54,19 +43,9 @@ exporters:
 }
 
 func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
-	flags := new(flag.FlagSet)
-	Flags(flags)
-	err := flags.Parse([]string{
-		"--config=testdata/default-config.yaml",
-		"--set=processors.batch.timeout=2s",
-	})
+	mp := NewDefaultMapProvider("testdata/default-config.yaml", []string{"processors.batch.timeout=2s"})
+	cm, err := mp.Get(context.Background())
 	require.NoError(t, err)
-	mp := NewDefaultMapProvider()
-	require.NotNil(t, mp)
-	var cm *config.Map
-	cm, err = mp.Get(context.Background())
-	require.NoError(t, err)
-	require.NotNil(t, cm)
 
 	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
 processors:
@@ -82,20 +61,11 @@ exporters:
 }
 
 func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
-	flags := new(flag.FlagSet)
-	Flags(flags)
-	err := flags.Parse([]string{
-		"--config=testdata/default-config.yaml",
-		"--set=processors.batch.timeout=2s",
-		"--set=exporters.otlp.endpoint=localhost:1234",
-	})
+	mp := NewDefaultMapProvider(
+		"testdata/default-config.yaml",
+		[]string{"processors.batch.timeout=2s", "exporters.otlp.endpoint=localhost:1234"})
+	cm, err := mp.Get(context.Background())
 	require.NoError(t, err)
-	mp := NewDefaultMapProvider()
-	require.NotNil(t, mp)
-	var cm *config.Map
-	cm, err = mp.Get(context.Background())
-	require.NoError(t, err)
-	require.NotNil(t, cm)
 
 	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
 processors:
@@ -110,29 +80,18 @@ exporters:
 	assert.NoError(t, mp.Close(context.Background()))
 }
 
-func TestDefaultMapProvider_InvalidFile(t *testing.T) {
-	flags := new(flag.FlagSet)
-	Flags(flags)
-	err := flags.Parse([]string{
-		"--config=testdata/otelcol-config.yaml",
-	})
-	require.NoError(t, err)
-	mp := NewDefaultMapProvider()
+func TestDefaultMapProvider_InexistentFile(t *testing.T) {
+	mp := NewDefaultMapProvider("testdata/otelcol-config.yaml", nil)
 	require.NotNil(t, mp)
-	_, err = mp.Get(context.Background())
+	_, err := mp.Get(context.Background())
 	require.Error(t, err)
 
 	assert.NoError(t, mp.Close(context.Background()))
 }
 
 func TestDefaultMapProvider_EmptyFileName(t *testing.T) {
-	flags := new(flag.FlagSet)
-	Flags(flags)
-	err := flags.Parse([]string{})
-	require.NoError(t, err)
-	mp := NewDefaultMapProvider()
-	require.NotNil(t, mp)
-	_, err = mp.Get(context.Background())
+	mp := NewDefaultMapProvider("", nil)
+	_, err := mp.Get(context.Background())
 	require.Error(t, err)
 
 	assert.NoError(t, mp.Close(context.Background()))
