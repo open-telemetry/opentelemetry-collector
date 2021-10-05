@@ -135,7 +135,6 @@ func BuildExtensions(
 				MeterProvider:  settings.MeterProvider,
 			},
 			BuildInfo: buildInfo,
-			Gates:     config.Gates,
 		}
 		ext, err := buildExtension(context.Background(), factory, set, extCfg)
 		if err != nil {

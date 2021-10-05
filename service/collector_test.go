@@ -39,7 +39,6 @@ import (
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
@@ -162,7 +161,7 @@ func TestCollector_Start(t *testing.T) {
 
 type mockColTelemetry struct{}
 
-func (tel *mockColTelemetry) init(chan<- error, uint64, *zap.Logger, featuregate.Gates) error {
+func (tel *mockColTelemetry) init(chan<- error, uint64, *zap.Logger) error {
 	return nil
 }
 

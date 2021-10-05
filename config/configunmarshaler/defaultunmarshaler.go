@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part
@@ -83,7 +82,6 @@ type serviceSettings struct {
 	Telemetry  serviceTelemetrySettings    `mapstructure:"telemetry"`
 	Extensions []string                    `mapstructure:"extensions"`
 	Pipelines  map[string]pipelineSettings `mapstructure:"pipelines"`
-	Gates      map[string]bool             `mapstructure:"gates"`
 }
 
 type serviceTelemetrySettings struct {
@@ -270,8 +268,6 @@ func unmarshalService(rawService serviceSettings) (config.Service, error) {
 		}
 		ret.Extensions = append(ret.Extensions, id)
 	}
-
-	ret.Gates = featuregate.Apply(rawService.Gates)
 
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.

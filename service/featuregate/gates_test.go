@@ -29,28 +29,44 @@ func TestRegistry(t *testing.T) {
 		Enabled:     true,
 	}
 
-	assert.Empty(t, r.List())
-	assert.False(t, r.IsEnabled(gate.ID))
+	assert.Empty(t, r.list())
+	assert.False(t, r.isEnabled(gate.ID))
 
 	assert.NoError(t, r.add(gate))
-	assert.Len(t, r.List(), 1)
-	assert.True(t, r.IsEnabled(gate.ID))
+	assert.Len(t, r.list(), 1)
+	assert.True(t, r.isEnabled(gate.ID))
 
-	frozen := r.apply(map[string]bool{gate.ID: false})
-	assert.False(t, frozen.IsEnabled(gate.ID))
-	assert.True(t, r.IsEnabled(gate.ID))
+	r.apply(map[string]bool{gate.ID: false})
+	assert.False(t, r.isEnabled(gate.ID))
 
 	assert.Error(t, r.add(gate))
 }
 
-func BenchmarkFrozenRegistry_IsEnabled(b *testing.B) {
-	frozen := registry{gates: map[string]Gate{"foo": {
+func TestGlobalRegistry(t *testing.T) {
+	resetForTest()
+	gate := Gate{
 		ID:          "foo",
 		Description: "Test Gate",
 		Enabled:     true,
-	}}}
-
-	for i := 0; i < b.N; i++ {
-		assert.True(b, frozen.IsEnabled("foo"))
 	}
+
+	assert.Empty(t, List())
+	assert.False(t, IsEnabled(gate.ID))
+
+	assert.NotPanics(t, func() { Register(gate) })
+	assert.Len(t, List(), 1)
+	assert.True(t, IsEnabled(gate.ID))
+
+	Apply(map[string]bool{gate.ID: false})
+	assert.False(t, IsEnabled(gate.ID))
+
+	assert.Panics(t, func() { Register(gate) })
+}
+
+func resetForTest() *registry {
+	reg.Lock()
+	ret := reg
+	reg = registry{gates: make(map[string]Gate)}
+	ret.Unlock()
+	return &ret
 }

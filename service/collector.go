@@ -223,7 +223,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger, col.service.config.Gates); err != nil {
+	if err := collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger); err != nil {
 		return err
 	}
 

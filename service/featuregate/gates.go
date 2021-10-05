@@ -16,17 +16,8 @@ package featuregate
 
 import (
 	"fmt"
+	"sync"
 )
-
-// Gates is the interface used to query the status of feature gates. It can be
-// implemented by a read-only copy of the feature gate registry.
-type Gates interface {
-	// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
-	IsEnabled(id string) bool
-
-	// List returns a slice of copies of all registered Gates.
-	List() []Gate
-}
 
 // Gate represents an individual feature that may be enabled or disabled based
 // on the lifecycle state of the feature and CLI flags specified by the user.
@@ -38,7 +29,17 @@ type Gate struct {
 
 var reg = registry{gates: make(map[string]Gate)}
 
-// Register a Gate. May only be called in an init() function. Not thread-safe.
+// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
+func IsEnabled(id string) bool {
+	return reg.isEnabled(id)
+}
+
+// List returns a slice of copies of all registered Gates.
+func List() []Gate {
+	return reg.list()
+}
+
+// Register a Gate. May only be called in an init() function.
 // Will panic() if a Gate with the same ID is already registered.
 func Register(g Gate) {
 	if err := reg.add(g); err != nil {
@@ -47,29 +48,29 @@ func Register(g Gate) {
 }
 
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
-// Returns a copy of the global registry with the Gate Enabled properties set appropriately.
-func Apply(cfg map[string]bool) Gates {
-	return reg.apply(cfg)
+func Apply(cfg map[string]bool) {
+	reg.apply(cfg)
 }
 
 type registry struct {
+	sync.RWMutex
 	gates map[string]Gate
 }
 
-func (r registry) apply(cfg map[string]bool) Gates {
-	ret := registry{gates: make(map[string]Gate, len(reg.gates))}
-	for _, gate := range r.gates {
-		g := gate
-		if state, ok := cfg[g.ID]; ok {
-			g.Enabled = state
+func (r registry) apply(cfg map[string]bool) {
+	r.Lock()
+	defer r.Unlock()
+	for id, val := range cfg {
+		if g, ok := r.gates[id]; ok {
+			g.Enabled = val
+			r.gates[g.ID] = g
 		}
-		ret.gates[g.ID] = g
 	}
-
-	return ret
 }
 
 func (r registry) add(g Gate) error {
+	r.Lock()
+	defer r.Unlock()
 	if _, ok := r.gates[g.ID]; ok {
 		return fmt.Errorf("attempted to add pre-existing gate %q", g.ID)
 	}
@@ -78,12 +79,16 @@ func (r registry) add(g Gate) error {
 	return nil
 }
 
-func (r registry) IsEnabled(id string) bool {
+func (r registry) isEnabled(id string) bool {
+	r.RLock()
+	defer r.RUnlock()
 	g, ok := r.gates[id]
 	return ok && g.Enabled
 }
 
-func (r registry) List() []Gate {
+func (r registry) list() []Gate {
+	r.RLock()
+	defer r.RUnlock()
 	ret := make([]Gate, len(r.gates))
 	i := 0
 	for _, gate := range r.gates {

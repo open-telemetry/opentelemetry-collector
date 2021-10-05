@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 // Receiver allows the collector to receive metrics, traces and logs.
@@ -60,9 +59,6 @@ type ReceiverCreateSettings struct {
 
 	// BuildInfo can be used by components for informational purposes.
 	BuildInfo BuildInfo
-
-	// Gates can be used to query feature gate status
-	Gates featuregate.Gates
 }
 
 // ReceiverFactory can create TracesReceiver, MetricsReceiver and
