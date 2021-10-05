@@ -18,11 +18,11 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -63,15 +63,12 @@ func (exts Extensions) StartAll(ctx context.Context, host component.Host) error 
 
 // ShutdownAll stops all exporters.
 func (exts Extensions) ShutdownAll(ctx context.Context) error {
-	var errs []error
+	var errs error
 	for _, ext := range exts {
-		err := ext.Shutdown(ctx)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, ext.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func (exts Extensions) NotifyPipelineReady() error {
@@ -89,17 +86,17 @@ func (exts Extensions) NotifyPipelineReady() error {
 
 func (exts Extensions) NotifyPipelineNotReady() error {
 	// Notify extensions in reverse order.
-	var errs []error
+	var errs error
 	for _, ext := range exts {
 		if pw, ok := ext.extension.(component.PipelineWatcher); ok {
 			if err := pw.NotReady(); err != nil {
 				ext.logger.Error("Error notifying extension that the pipeline was shutdown.")
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 			}
 		}
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func (exts Extensions) ToMap() map[config.ComponentID]component.Extension {

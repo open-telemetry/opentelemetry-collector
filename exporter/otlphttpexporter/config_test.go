@@ -41,13 +41,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[config.NewID(typeStr)]
+	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -66,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 					"another":                "somevalue",
 				},
 				Endpoint: "https://1.2.3.4:1234",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: &configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile:   "/var/lib/mycert.pem",
 						CertFile: "certfile",

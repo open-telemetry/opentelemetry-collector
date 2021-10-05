@@ -32,7 +32,7 @@ func TestNewNopProcessorFactory(t *testing.T) {
 	require.NotNil(t, factory)
 	assert.Equal(t, config.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &nopProcessorConfig{ProcessorSettings: config.NewProcessorSettings(config.NewID("nop"))}, cfg)
+	assert.Equal(t, &nopProcessorConfig{ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop"))}, cfg)
 
 	traces, err := factory.CreateTracesProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)

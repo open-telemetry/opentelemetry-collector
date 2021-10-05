@@ -19,13 +19,13 @@ import (
 	"errors"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -43,7 +43,7 @@ type ScraperControllerSettings struct {
 // settings with a collection interval of one minute.
 func DefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(cfgType)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(cfgType)),
 		CollectionInterval: time.Minute,
 	}
 }
@@ -142,14 +142,12 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 		<-sc.terminated
 	}
 
-	var errs []error
+	var errs error
 	for _, scraper := range sc.scrapers {
-		if err := scraper.Shutdown(ctx); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, scraper.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // startScraping initiates a ticker that calls Scrape based on the configured

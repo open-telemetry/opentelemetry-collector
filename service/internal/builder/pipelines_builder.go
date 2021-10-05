@@ -18,12 +18,12 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -65,18 +65,16 @@ func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Ho
 }
 
 func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
-	var errs []error
+	var errs error
 	for _, bp := range bps {
 		bp.logger.Info("Pipeline is shutting down...")
 		for _, p := range bp.processors {
-			if err := p.Shutdown(ctx); err != nil {
-				errs = append(errs, err)
-			}
+			errs = multierr.Append(errs, p.Shutdown(ctx))
 		}
 		bp.logger.Info("Pipeline is shutdown.")
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // pipelinesBuilder builds Pipelines from config.

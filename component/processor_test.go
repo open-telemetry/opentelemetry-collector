@@ -85,7 +85,7 @@ func TestBaseProcessorFactory(t *testing.T) {
 		bpf.CreateDefaultConfig()
 	})
 	assert.NotPanics(t, bpf.unexportedProcessor)
-	defaultCfg := config.NewProcessorSettings(config.NewID("nop"))
+	defaultCfg := config.NewProcessorSettings(config.NewComponentID("nop"))
 	_, err := bpf.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	_, err = bpf.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, consumertest.NewNop())

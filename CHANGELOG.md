@@ -7,11 +7,18 @@
 - Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876)
 - Rename `configparser.Parser` as `config.Map` (#4075)
 - Rename `component.DefaultBuildInfo()` to `component.NewDefaultBuildInfo()` (#4129)
+- Rename consumererror.Permanent to consumererror.NewPermanent (#4118)
+- Rename `config.NewID` to `config.NewComponentID` and `config.NewIDFromString` to `config.NewComponentIDFromString` (#4137)
 
 ## 💡 Enhancements 💡
 
 - Supports more compression methods for configgrpc (#4088)
 - Add Gen dependabot into CI (#4083)
+
+## 💡 Enhancements 💡
+
+- Update OTLP to v0.10.0 (#4045).
+- Add Flags field to NumberDataPoint, HistogramDataPoint, SummaryDataPoint (#4081).
 
 ## v0.36.0 Beta
 

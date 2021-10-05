@@ -30,12 +30,12 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
@@ -92,8 +92,7 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	if set.ConfigMapProvider == nil {
-		// use default provider.
-		set.ConfigMapProvider = parserprovider.NewDefaultMapProvider()
+		return nil, errors.New("invalid nil config provider")
 	}
 
 	if set.ConfigUnmarshaler == nil {
@@ -214,7 +213,7 @@ func (col *Collector) Run(ctx context.Context) error {
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
 
-	col.meterProvider = metric.NoopMeterProvider{}
+	col.meterProvider = metric.NewNoopMeterProvider()
 
 	col.stateChannel <- Starting
 
@@ -237,30 +236,30 @@ func (col *Collector) Run(ctx context.Context) error {
 	col.runAndWaitForShutdownEvent()
 
 	// Accumulate errors and proceed with shutting down remaining components.
-	var errs []error
+	var errs error
 
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
 	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("failed to close config: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to close config: %w", err))
 	}
 
 	if col.service != nil {
 		if err := col.service.Shutdown(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
+			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 		}
 	}
 
 	if err := collectorTelemetry.shutdown(); err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 
 	col.logger.Info("Shutdown complete.")
 	col.stateChannel <- Closed
 	close(col.stateChannel)
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // reloadService shutdowns the current col.service and setups a new one according

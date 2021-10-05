@@ -25,11 +25,11 @@ import (
 	"sync"
 
 	"github.com/spf13/cast"
+	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 const (
@@ -273,17 +273,15 @@ func (m *Manager) WaitForWatcher() {
 // Close terminates the WatchForUpdate function and closes all Session objects used
 // in the configuration. It should be called
 func (m *Manager) Close(ctx context.Context) error {
-	var errs []error
+	var errs error
 	for _, source := range m.configSources {
-		if err := source.Close(ctx); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, source.Close(ctx))
 	}
 
 	close(m.closeCh)
 	m.watchersWG.Wait()
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // parseConfigValue takes the value of a "config node" and process it recursively. The processing consists

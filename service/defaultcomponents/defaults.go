@@ -16,8 +16,9 @@
 package defaultcomponents
 
 import (
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -34,39 +35,31 @@ func Components() (
 	component.Factories,
 	error,
 ) {
-	var errs []error
+	var errs error
 
 	extensions, err := component.MakeExtensionFactoryMap(
 		zpagesextension.NewFactory(),
 		ballastextension.NewFactory(),
 	)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	errs = multierr.Append(errs, err)
 
 	receivers, err := component.MakeReceiverFactoryMap(
 		otlpreceiver.NewFactory(),
 	)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	errs = multierr.Append(errs, err)
 
 	exporters, err := component.MakeExporterFactoryMap(
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 	)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	errs = multierr.Append(errs, err)
 
 	processors, err := component.MakeProcessorFactoryMap(
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 	)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	errs = multierr.Append(errs, err)
 
 	factories := component.Factories{
 		Extensions: extensions,
@@ -75,5 +68,5 @@ func Components() (
 		Exporters:  exporters,
 	}
 
-	return factories, consumererror.Combine(errs)
+	return factories, errs
 }

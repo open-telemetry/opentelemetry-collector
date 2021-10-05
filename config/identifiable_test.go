@@ -62,7 +62,7 @@ func TestIDFromString(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.idStr, func(t *testing.T) {
-			id, err := NewIDFromString(test.idStr)
+			id, err := NewComponentIDFromString(test.idStr)
 			if test.expectedErr {
 				assert.Error(t, err)
 				return

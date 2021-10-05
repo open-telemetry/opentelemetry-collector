@@ -265,7 +265,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "ms", metricDouble.Unit())
 	assert.EqualValues(t, MetricDataTypeSum, metricDouble.DataType())
 	dsd := metricDouble.Sum()
-	assert.EqualValues(t, AggregationTemporalityCumulative, dsd.AggregationTemporality())
+	assert.EqualValues(t, MetricAggregationTemporalityCumulative, dsd.AggregationTemporality())
 	sumDataPoints := dsd.DataPoints()
 	assert.EqualValues(t, 2, sumDataPoints.Len())
 	// First point
@@ -286,7 +286,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "ms", metricHistogram.Unit())
 	assert.EqualValues(t, MetricDataTypeHistogram, metricHistogram.DataType())
 	dhd := metricHistogram.Histogram()
-	assert.EqualValues(t, AggregationTemporalityDelta, dhd.AggregationTemporality())
+	assert.EqualValues(t, MetricAggregationTemporalityDelta, dhd.AggregationTemporality())
 	histogramDataPoints := dhd.DataPoints()
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
 	// First point
@@ -446,7 +446,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	assert.EqualValues(t, 2, dsd.DataPoints().Len())
 	metric.SetDataType(MetricDataTypeSum)
 	doubleDataPoints := metric.Sum().DataPoints()
-	metric.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
+	metric.Sum().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	doubleDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, doubleDataPoints.Len())
 	doubleDataPoints.At(0).SetStartTimestamp(Timestamp(startTime + 1))
@@ -530,7 +530,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
 	metric.SetDataType(MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(AggregationTemporalityDelta)
+	metric.Histogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
 	histogramDataPoints := metric.Histogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, histogramDataPoints.Len())
@@ -589,6 +589,20 @@ func TestMetricsClone(t *testing.T) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
 	assert.EqualValues(t, metrics, metrics.Clone())
+}
+
+func TestMetricsDataPointFlags(t *testing.T) {
+	gauge := generateTestGauge()
+
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags())
+	assert.True(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
+	assert.False(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
+
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags(MetricDataPointFlagNoRecordedValue))
+	assert.False(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
+	assert.True(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
 }
 
 func BenchmarkMetricsClone(b *testing.B) {

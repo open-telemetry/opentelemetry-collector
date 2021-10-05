@@ -2,9 +2,7 @@ include ./Makefile.Common
 
 # This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
-							-not -path './cmd/schemagen/*' \
 							-not -path './internal/tools/*' \
-							-not -path './examples/demo/app/*' \
 							-not -path './model/internal/data/protogen/*' \
 							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
@@ -31,8 +29,8 @@ CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 COMP_REL_PATH=service/defaultcomponents/defaults.go
 MOD_NAME=go.opentelemetry.io/collector
 
-GO_ACC=go-acc
 ADDLICENSE=addlicense
+GOCOVMERGE=gocovmerge
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 
@@ -70,10 +68,8 @@ gobenchmark:
 
 .PHONY: gotest-with-cover
 gotest-with-cover:
-	@echo pre-compiling tests
-	@time $(GOTEST) -i ./...
-	$(GO_ACC) ./...
-	go tool cover -html=coverage.txt -o coverage.html
+	@$(MAKE) for-all CMD="make test-with-cover"
+	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
 .PHONY: golint
 golint:
@@ -133,8 +129,9 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
+	cd $(TOOLS_MOD_DIR) && go install github.com/wadey/gocovmerge
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 

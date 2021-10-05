@@ -17,7 +17,6 @@ package parserprovider
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/knadh/koanf/maps"
@@ -26,28 +25,31 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-type setFlagMapProvider struct{}
-
-// NewPropertiesMapProvider returns a MapProvider, that provides a config.Map from set flag(s) properties.
-//
-// The implementation reads --set flag(s) from the cmd and concatenates them as a "properties" file.
-// Then the properties file is read and properties are set to the loaded Parser.
-func NewPropertiesMapProvider() MapProvider {
-	return &setFlagMapProvider{}
+type propertiesMapProvider struct {
+	properties []string
 }
 
-func (sfl *setFlagMapProvider) Get(context.Context) (*config.Map, error) {
-	flagProperties := getSetFlag()
-	if len(flagProperties) == 0 {
+// NewPropertiesMapProvider returns a MapProvider, that provides a config.Map from the given properties.
+//
+// Properties must follow the Java properties format, key-value list separated by equal sign with a "."
+// as key delimiter.
+//  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
+func NewPropertiesMapProvider(properties []string) MapProvider {
+	return &propertiesMapProvider{
+		properties: properties,
+	}
+}
+
+func (pmp *propertiesMapProvider) Get(context.Context) (*config.Map, error) {
+	if len(pmp.properties) == 0 {
 		return config.NewMap(), nil
 	}
 
 	b := &bytes.Buffer{}
-	for _, property := range flagProperties {
+	for _, property := range pmp.properties {
 		property = strings.TrimSpace(property)
-		if _, err := fmt.Fprintf(b, "%s\n", property); err != nil {
-			return nil, err
-		}
+		b.WriteString(property)
+		b.WriteString("\n")
 	}
 
 	var props *properties.Properties
@@ -56,7 +58,7 @@ func (sfl *setFlagMapProvider) Get(context.Context) (*config.Map, error) {
 		return nil, err
 	}
 
-	// Create a map manually instead of using props.Map() to allow env var expansion
+	// Create a map manually instead of using properties.Map() to allow env var expansion
 	// as used by original Viper-based config.Map.
 	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
@@ -68,6 +70,6 @@ func (sfl *setFlagMapProvider) Get(context.Context) (*config.Map, error) {
 	return config.NewMapFromStringMap(prop), nil
 }
 
-func (sfl *setFlagMapProvider) Close(context.Context) error {
+func (*propertiesMapProvider) Close(context.Context) error {
 	return nil
 }

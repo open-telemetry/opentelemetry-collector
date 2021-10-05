@@ -10,10 +10,11 @@ require (
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.14.0
+	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c
 	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20210813222030-0139980e9794
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
-	golang.org/x/tools v0.1.6
+	golang.org/x/tools v0.1.7
 )
 
 require (

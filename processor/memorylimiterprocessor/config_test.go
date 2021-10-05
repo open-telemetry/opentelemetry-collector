@@ -39,16 +39,16 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors[config.NewID(typeStr)]
+	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		})
 
-	p1 := cfg.Processors[config.NewIDWithName(typeStr, "with-settings")]
+	p1 := cfg.Processors[config.NewComponentIDWithName(typeStr, "with-settings")]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings:   config.NewProcessorSettings(config.NewIDWithName(typeStr, "with-settings")),
+			ProcessorSettings:   config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "with-settings")),
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,
