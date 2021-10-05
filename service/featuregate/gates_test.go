@@ -66,7 +66,7 @@ func TestGlobalRegistry(t *testing.T) {
 func resetForTest() *registry {
 	reg.Lock()
 	ret := reg
-	reg = registry{gates: make(map[string]Gate)}
+	reg = &registry{gates: make(map[string]Gate)}
 	ret.Unlock()
-	return &ret
+	return ret
 }
