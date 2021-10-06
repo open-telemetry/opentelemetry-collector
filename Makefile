@@ -138,6 +138,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-builder
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
