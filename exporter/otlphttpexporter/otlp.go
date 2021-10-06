@@ -219,7 +219,7 @@ func readResponse(resp *http.Response) *status.Status {
 }
 
 type UserAgentRoundTripper struct {
-	next http.RoundTripper
+	next      http.RoundTripper
 	userAgent string
 }
 
