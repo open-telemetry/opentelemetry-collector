@@ -71,8 +71,8 @@ gotest-with-cover:
 	@$(MAKE) for-all CMD="make test-with-cover"
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
-.PHONY: porto
-porto:
+.PHONY: goporto
+goporto:
 	@$(MAKE) for-all CMD="make porto"
 
 .PHONY: golint
