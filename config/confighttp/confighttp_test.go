@@ -562,32 +562,12 @@ func TestHttpHeaders(t *testing.T) {
 	tests := []struct {
 		name       string
 		headers    map[string]string
-		defaultUA  string
-		expectedUA string
 	}{
 		{
-			name: "with_headers_no_user_agent",
+			name: "with_headers",
 			headers: map[string]string{
 				"header1": "value1",
 			},
-		},
-		{
-			name: "with_custom_user_agent",
-			headers: map[string]string{
-				"header1":    "value1",
-				"User-Agent": "My Test Agent",
-			},
-			defaultUA:  "Collector/1.2.3test",
-			expectedUA: "My Test Agent",
-		},
-		{
-			name: "with_custom_user_agent_lowercase",
-			headers: map[string]string{
-				"header1":    "value1",
-				"user-agent": "My Test Agent",
-			},
-			defaultUA:  "Collector/1.2.3test",
-			expectedUA: "My Test Agent",
 		},
 	}
 	for _, tt := range tests {
@@ -595,9 +575,6 @@ func TestHttpHeaders(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				for k, v := range tt.headers {
 					assert.Equal(t, r.Header.Get(k), v)
-				}
-				if tt.expectedUA != "" {
-					assert.Equal(t, tt.expectedUA, r.Header.Get("user-agent"))
 				}
 				w.WriteHeader(200)
 			}))
@@ -609,10 +586,9 @@ func TestHttpHeaders(t *testing.T) {
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,
-				Headers:         tt.headers,
-			}
-			if tt.defaultUA != "" {
-				setting.WithDefaultUserAgent(tt.defaultUA)
+				Headers: map[string]string{
+					"header1": "value1",
+				},
 			}
 			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{})
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)

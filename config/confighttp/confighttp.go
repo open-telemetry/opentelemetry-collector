@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -118,22 +117,6 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
 	}, nil
-}
-
-// WithDefaultUserAgent adds a user-agent header to settings, unless one already exists.
-func (hcs *HTTPClientSettings) WithDefaultUserAgent(defaultUserAgent string) {
-	userAgentFound := false
-	for k := range hcs.Headers {
-		if strings.ToLower(k) == "user-agent" {
-			userAgentFound = true
-		}
-	}
-	if !userAgentFound {
-		if hcs.Headers == nil {
-			hcs.Headers = map[string]string{}
-		}
-		hcs.Headers["User-Agent"] = defaultUserAgent
-	}
 }
 
 // Custom RoundTripper that adds headers.
