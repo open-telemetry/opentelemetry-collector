@@ -13,7 +13,7 @@ an `init()` function.  This makes the `Gate` available to be configured and
 queried with a default value of its `Enabled` property.
 
 ```go
-var myFeatureGateID = "namespaced.uniqueIdentifier"
+const myFeatureGateID = "namespaced.uniqueIdentifier"
 
 func init() {
 	featuregate.Register(featuregate.Gate{
