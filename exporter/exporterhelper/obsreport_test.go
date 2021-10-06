@@ -24,7 +24,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
@@ -32,16 +31,17 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown(context.Background())
 
-	exporter := config.NewID("fakeExporter")
+	exporter := config.NewComponentID("fakeExporter")
 
 	obsrep := newObsExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: componenttest.NewNopExporterCreateSettings()})
+		ExporterCreateSettings: set.ToExporterCreateSettings(),
+	})
 
 	logRecords := 7
 	obsrep.recordLogsEnqueueFailure(context.Background(), logRecords)
@@ -57,21 +57,21 @@ func TestExportEnqueueFailure(t *testing.T) {
 }
 
 // checkExporterEnqueueFailedTracesStats checks that reported number of spans failed to enqueue match given values.
-// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+// When this function is called it is required to also call SetupTelemetry as first thing.
 func checkExporterEnqueueFailedTracesStats(t *testing.T, exporter config.ComponentID, spans int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, spans, "exporter/enqueue_failed_spans")
 }
 
 // checkExporterEnqueueFailedMetricsStats checks that reported number of metric points failed to enqueue match given values.
-// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+// When this function is called it is required to also call SetupTelemetry as first thing.
 func checkExporterEnqueueFailedMetricsStats(t *testing.T, exporter config.ComponentID, metricPoints int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, metricPoints, "exporter/enqueue_failed_metric_points")
 }
 
 // checkExporterEnqueueFailedLogsStats checks that reported number of log records failed to enqueue match given values.
-// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+// When this function is called it is required to also call SetupTelemetry as first thing.
 func checkExporterEnqueueFailedLogsStats(t *testing.T, exporter config.ComponentID, logRecords int64) {
 	exporterTags := tagsForExporterView(exporter)
 	checkValueForView(t, exporterTags, logRecords, "exporter/enqueue_failed_log_records")

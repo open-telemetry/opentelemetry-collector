@@ -64,7 +64,7 @@ func TestDefaultExtensions(t *testing.T) {
 			factory, ok := extFactories[tt.extension]
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
-			assert.Equal(t, config.NewID(tt.extension), factory.CreateDefaultConfig().ID())
+			assert.Equal(t, config.NewComponentID(tt.extension), factory.CreateDefaultConfig().ID())
 
 			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})

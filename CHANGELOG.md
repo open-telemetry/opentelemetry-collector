@@ -4,7 +4,20 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876).
+- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876)
+- Rename `configparser.Parser` as `config.Map` (#4075)
+- Rename `component.DefaultBuildInfo()` to `component.NewDefaultBuildInfo()` (#4129)
+- Rename consumererror.Permanent to consumererror.NewPermanent (#4118)
+- Rename `config.NewID` to `config.NewComponentID` and `config.NewIDFromString` to `config.NewComponentIDFromString` (#4137)
+
+## 💡 Enhancements 💡
+
+- Add Gen dependabot into CI (#4083)
+
+## 💡 Enhancements 💡
+
+- Update OTLP to v0.10.0 (#4045).
+- Add Flags field to NumberDataPoint, HistogramDataPoint, SummaryDataPoint (#4081).
 
 ## v0.36.0 Beta
 
@@ -18,6 +31,7 @@
 - Remove squash on `configtls.TLSClientSetting` and move TLS client configs under `tls` (#4063)
 - Rename TLS server config `*configtls.TLSServerSetting` from `tls_settings` to `tls` (#4063)
 - Split `service.Collector` from the `cobra.Command` (#4074)
+- Rename `memorylimiter` to `memorylimiterprocessor` (#4064)
 
 ## 💡 Enhancements 💡
 

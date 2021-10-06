@@ -444,7 +444,7 @@ func TestErrorResponses(t *testing.T) {
 			}()
 
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
@@ -521,7 +521,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 					TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -566,7 +566,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 					MetricsEndpoint:  fmt.Sprintf("http://%s/v1/metrics", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -611,7 +611,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 					LogsEndpoint:     fmt.Sprintf("http://%s/v1/logs", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,

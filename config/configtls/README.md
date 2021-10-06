@@ -65,8 +65,8 @@ Example:
 exporters:
   otlp:
     endpoint: myserver.local:55690
-    insecure: false
     tls:
+      insecure: false
       ca_file: server.crt
       cert_file: client.crt
       key_file: client.key
@@ -74,11 +74,13 @@ exporters:
       max_version: "1.2"
   otlp/insecure:
     endpoint: myserver.local:55690
-    insecure: true
+    tls:
+      insecure: true
   otlp/secure_no_verify:
     endpoint: myserver.local:55690
-    insecure: false
-    insecure_skip_verify: true
+    tls:
+      insecure: false
+      insecure_skip_verify: true
 ```
 
 ## Server Configuration

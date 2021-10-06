@@ -463,8 +463,8 @@ func TestSum_CopyTo(t *testing.T) {
 
 func TestSum_AggregationTemporality(t *testing.T) {
 	ms := NewSum()
-	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporalityCumulative
+	assert.EqualValues(t, MetricAggregationTemporalityUnspecified, ms.AggregationTemporality())
+	testValAggregationTemporality := MetricAggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -493,8 +493,8 @@ func TestHistogram_CopyTo(t *testing.T) {
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
-	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
-	testValAggregationTemporality := AggregationTemporalityCumulative
+	assert.EqualValues(t, MetricAggregationTemporalityUnspecified, ms.AggregationTemporality())
+	testValAggregationTemporality := MetricAggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.EqualValues(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -684,6 +684,14 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
+func TestNumberDataPoint_Flags(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
 func TestHistogramDataPointSlice(t *testing.T) {
 	es := NewHistogramDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -864,6 +872,14 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
+func TestHistogramDataPoint_Flags(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -1026,6 +1042,14 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	fillTestValueAtQuantileSlice(ms.QuantileValues())
 	testValQuantileValues := generateTestValueAtQuantileSlice()
 	assert.EqualValues(t, testValQuantileValues, ms.QuantileValues())
+}
+
+func TestSummaryDataPoint_Flags(t *testing.T) {
+	ms := NewSummaryDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
 func TestValueAtQuantileSlice(t *testing.T) {
@@ -1411,7 +1435,7 @@ func generateTestSum() Sum {
 }
 
 func fillTestSum(tv Sum) {
-	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
+	tv.SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	tv.SetIsMonotonic(true)
 	fillTestNumberDataPointSlice(tv.DataPoints())
 }
@@ -1423,7 +1447,7 @@ func generateTestHistogram() Histogram {
 }
 
 func fillTestHistogram(tv Histogram) {
-	tv.SetAggregationTemporality(AggregationTemporalityCumulative)
+	tv.SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	fillTestHistogramDataPointSlice(tv.DataPoints())
 }
 
@@ -1464,6 +1488,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.SetDoubleVal(float64(17.13))
 
 	fillTestExemplarSlice(tv.Exemplars())
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
@@ -1495,6 +1520,7 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetBucketCounts([]uint64{1, 2, 3})
 	tv.SetExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
@@ -1524,6 +1550,7 @@ func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
 	fillTestValueAtQuantileSlice(tv.QuantileValues())
+	tv.SetFlags(MetricDataPointFlagsNone)
 }
 
 func generateTestValueAtQuantileSlice() ValueAtQuantileSlice {

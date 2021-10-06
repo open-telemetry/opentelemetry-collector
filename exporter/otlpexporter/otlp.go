@@ -173,7 +173,7 @@ func processError(err error) error {
 
 	if !shouldRetry(st.Code()) {
 		// It is not a retryable error, we should not retry.
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	// Need to retry.

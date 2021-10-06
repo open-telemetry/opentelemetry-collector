@@ -19,31 +19,33 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 )
 
-type fileProvider struct{}
-
-// NewFile returns a new ParserProvider that reads the configuration from a file configured
-// via the --config command line flag.
-func NewFile() ParserProvider {
-	return &fileProvider{}
+type fileMapProvider struct {
+	fileName string
 }
 
-func (fl *fileProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	fileName := getConfigFlag()
-	if fileName == "" {
+// NewFileMapProvider returns a new MapProvider that reads the configuration from the given file.
+func NewFileMapProvider(fileName string) MapProvider {
+	return &fileMapProvider{
+		fileName: fileName,
+	}
+}
+
+func (fmp *fileMapProvider) Get(context.Context) (*config.Map, error) {
+	if fmp.fileName == "" {
 		return nil, errors.New("config file not specified")
 	}
 
-	cp, err := configparser.NewConfigMapFromFile(fileName)
+	cp, err := config.NewMapFromFile(fmp.fileName)
 	if err != nil {
-		return nil, fmt.Errorf("error loading config file %q: %w", fileName, err)
+		return nil, fmt.Errorf("error loading config file %q: %w", fmp.fileName, err)
 	}
 
 	return cp, nil
 }
 
-func (fl *fileProvider) Close(context.Context) error {
+func (*fileMapProvider) Close(context.Context) error {
 	return nil
 }

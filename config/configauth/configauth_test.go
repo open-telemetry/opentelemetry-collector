@@ -29,11 +29,11 @@ func TestGetAuthenticator(t *testing.T) {
 		AuthenticatorName: "mock",
 	}
 	ext := map[config.ComponentID]component.Extension{
-		config.NewID("mock"): &MockAuthenticator{},
+		config.NewComponentID("mock"): &MockAuthenticator{},
 	}
 
 	// test
-	componentID, err := config.NewIDFromString(cfg.AuthenticatorName)
+	componentID, err := config.NewComponentIDFromString(cfg.AuthenticatorName)
 	assert.NoError(t, err)
 
 	authenticator, err := GetServerAuthenticator(ext, componentID)
@@ -61,7 +61,7 @@ func TestGetAuthenticatorFails(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			componentID, err := config.NewIDFromString(tC.cfg.AuthenticatorName)
+			componentID, err := config.NewComponentIDFromString(tC.cfg.AuthenticatorName)
 			assert.NoError(t, err)
 			authenticator, err := GetServerAuthenticator(tC.ext, componentID)
 			assert.ErrorIs(t, err, tC.expected)
