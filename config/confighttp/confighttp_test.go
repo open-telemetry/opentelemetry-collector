@@ -564,8 +564,8 @@ func TestHttpHeaders(t *testing.T) {
 		headers map[string]string
 	}{
 		{
-			name: "with_headers",
-			headers: map[string]string{
+			"with_headers",
+			map[string]string{
 				"header1": "value1",
 			},
 		},
