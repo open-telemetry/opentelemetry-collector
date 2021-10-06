@@ -53,7 +53,7 @@ prefix will enable the gate.
 otelcol --config=config.yaml --feature-gates=gate1,-gate2,+gate3
 ```
 
-This will enable `gate1` and disable `gate2`.
+This will enable `gate1` and `gate3` and disable `gate2`.
 
 ## Feature Lifecycle
 
