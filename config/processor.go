@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "go.opentelemetry.io/collector/config"
 
 // Processor is the configuration of a component.Processor. Specific extensions must implement
 // this interface and must embed ProcessorSettings struct or a struct that extends it.

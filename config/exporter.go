@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "go.opentelemetry.io/collector/config"
 
 // Exporter is the configuration of a component.Exporter. Specific extensions must implement
 // this interface and must embed ExporterSettings struct or a struct that extends it.

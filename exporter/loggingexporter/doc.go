@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package loggingexporter exports data to console as logs.
-package loggingexporter
+package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggingexporter"

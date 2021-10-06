@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package client contains generic representations of clients connecting to different receivers
-package client
+package client // import "go.opentelemetry.io/collector/client"
 
 import (
 	"context"

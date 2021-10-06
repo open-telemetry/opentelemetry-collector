@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configtls
+package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
 	"crypto/tls"

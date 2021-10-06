@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package receiverhelper contains utilities for receivers.
-package receiverhelper
+package receiverhelper // import "go.opentelemetry.io/collector/receiver/receiverhelper"

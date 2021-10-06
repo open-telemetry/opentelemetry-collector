@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider
+package parserprovider // import "go.opentelemetry.io/collector/service/parserprovider"
 
 // NewDefaultMapProvider returns the default MapProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.

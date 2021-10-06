@@ -38,6 +38,10 @@ lint:
 lint-unstable:
 	$(LINT) run --allow-parallel-runners --build-tags enable_unstable
 
+.PHONY: porto
+porto:
+	porto -w ./
+
 .PHONY: impi
 impi:
 	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...

@@ -14,7 +14,7 @@
 
 // Code generated from semantic convention specification. DO NOT EDIT.
 
-package semconv
+package semconv // import "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 // A cloud environment (e.g. GCP, Azure, AWS)
 const (

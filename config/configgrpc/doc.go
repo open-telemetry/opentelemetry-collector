@@ -14,4 +14,4 @@
 
 // Package configgrpc defines the  configuration settings to create
 // a gRPC client and server.
-package configgrpc
+package configgrpc // import "go.opentelemetry.io/collector/config/configgrpc"

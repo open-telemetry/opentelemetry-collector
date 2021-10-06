@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"

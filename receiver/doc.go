@@ -15,4 +15,4 @@
 // Package receiver contains implementations of Receiver components.
 //
 // A receiver must be added as a default component to be included in the collector.
-package receiver
+package receiver // import "go.opentelemetry.io/collector/receiver"

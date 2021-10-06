@@ -1,9 +1,9 @@
 name: build-and-test
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "v[0-9]+.[0-9]+.[0-9]+*"
   pull_request:
 
 jobs:
@@ -77,7 +77,7 @@ jobs:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Lint
-        run: make -j5 checklicense misspell checkdoc goimpi golint
+        run: make -j5 checklicense misspell checkdoc goimpi golint porto
       - name: Gen Metadata
         run: |
           make genmdata
@@ -206,4 +206,3 @@ jobs:
         with:
           name: collector-binaries-unstable
           path: ./bin-unstable.tar
-

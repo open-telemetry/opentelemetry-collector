@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package loggingexporter
+package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggingexporter"
 
 import "golang.org/x/sys/windows"
 
