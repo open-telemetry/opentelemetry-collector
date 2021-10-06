@@ -560,8 +560,8 @@ func ExampleHTTPServerSettings() {
 
 func TestHttpHeaders(t *testing.T) {
 	tests := []struct {
-		name       string
-		headers    map[string]string
+		name    string
+		headers map[string]string
 	}{
 		{
 			name: "with_headers",
