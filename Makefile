@@ -138,6 +138,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install github.com/jcchavezs/porto/cmd/porto
 
 .PHONY: otelcol
 otelcol:
