@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package extensions
 
 import (
 	"context"
@@ -115,11 +115,27 @@ func TestService_setupExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ext, err := BuildExtensions(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), tt.config, tt.factories.Extensions)
+			ext, err := Build(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), tt.config, tt.factories.Extensions)
 
 			assert.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
 			assert.Equal(t, 0, len(ext))
 		})
 	}
+}
+
+func newBadExtensionFactory() component.ExtensionFactory {
+	return extensionhelper.NewFactory(
+		"bf",
+		func() config.Extension {
+			return &struct {
+				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			}{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("bf")),
+			}
+		},
+		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
+			return nil, nil
+		},
+	)
 }
