@@ -202,6 +202,11 @@ delete-tag:
 docker-otelcol:
 	COMPONENT=otelcol $(MAKE) docker-component
 
+# Builds a collector binary of the remove cmd/otelcol
+.PHONY: build-binary-cmd-otelcol
+build-binary-cmd-otelcol:
+	opentelemetry-collector-builder --config ./internal/buildscripts/builder-config.yaml --output-path ./bin/otelcol_$(GOOS)_$(GOARCH)
+
 .PHONY: genmdata
 genmdata:
 	$(MAKE) for-all CMD="go generate ./..."
