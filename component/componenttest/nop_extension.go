@@ -26,7 +26,7 @@ import (
 func NewNopExtensionCreateSettings() component.ExtensionCreateSettings {
 	return component.ExtensionCreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 
@@ -52,7 +52,7 @@ func (f *nopExtensionFactory) Type() config.Type {
 // CreateDefaultConfig creates the default configuration for the Extension.
 func (f *nopExtensionFactory) CreateDefaultConfig() config.Extension {
 	return &nopExtensionConfig{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID("nop")),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("nop")),
 	}
 }
 

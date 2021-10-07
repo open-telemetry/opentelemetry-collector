@@ -44,21 +44,21 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 10)
 
-	assert.Equal(t, cfg.Receivers[config.NewID(typeStr)], factory.CreateDefaultConfig())
+	assert.Equal(t, cfg.Receivers[config.NewComponentID(typeStr)], factory.CreateDefaultConfig())
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
 	defaultOnlyGRPC.SetIDName("only_grpc")
 	defaultOnlyGRPC.HTTP = nil
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "only_grpc")], defaultOnlyGRPC)
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_grpc")], defaultOnlyGRPC)
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
 	defaultOnlyHTTP.SetIDName("only_http")
 	defaultOnlyHTTP.GRPC = nil
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "only_http")], defaultOnlyHTTP)
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_http")], defaultOnlyHTTP)
 
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "customname")],
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")],
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -70,9 +70,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "keepalive")],
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "keepalive")],
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "keepalive")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "keepalive")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -97,9 +97,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle")],
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "msg-size-conc-connect-max-idle")],
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "msg-size-conc-connect-max-idle")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -121,9 +121,9 @@ func TestLoadConfig(t *testing.T) {
 
 	// NOTE: Once the config loader checks for the files existence, this test may fail and require
 	// 	use of fake cert/key for test purposes.
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "tlscredentials")],
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "tlscredentials")],
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tlscredentials")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tlscredentials")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -150,9 +150,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "cors")],
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "cors")],
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "cors")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "cors")),
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
 					Endpoint:    "0.0.0.0:4318",
@@ -161,9 +161,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "corsheader")],
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "corsheader")],
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "corsheader")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "corsheader")),
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
 					Endpoint:    "0.0.0.0:4318",
@@ -173,9 +173,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "uds")],
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "uds")],
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "uds")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "uds")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{

@@ -28,7 +28,7 @@ import (
 
 const typeStr = "test"
 
-var defaultCfg = config.NewProcessorSettings(config.NewID(typeStr))
+var defaultCfg = config.NewProcessorSettings(config.NewComponentID(typeStr))
 
 func TestNewTrace(t *testing.T) {
 	factory := NewFactory(

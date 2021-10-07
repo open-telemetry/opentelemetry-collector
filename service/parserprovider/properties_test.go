@@ -16,54 +16,36 @@ package parserprovider
 
 import (
 	"context"
-	"flag"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/config/configparser"
 )
 
-func TestSetFlags(t *testing.T) {
-	flags := new(flag.FlagSet)
-	Flags(flags)
-	err := flags.Parse([]string{
-		"--set=processors.batch.timeout=2s",
-		"--set=processors.batch/foo.timeout=3s",
-		"--set=receivers.otlp.protocols.grpc.endpoint=localhost:1818",
-		"--set=exporters.kafka.brokers=foo:9200,foo2:9200",
-	})
-	require.NoError(t, err)
+func TestPropertiesProvider(t *testing.T) {
+	setFlagStr := []string{
+		"processors.batch.timeout=2s",
+		"processors.batch/foo.timeout=3s",
+		"receivers.otlp.protocols.grpc.endpoint=localhost:1818",
+		"exporters.kafka.brokers=foo:9200,foo2:9200",
+	}
 
-	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get(context.Background())
+	pmp := NewPropertiesMapProvider(setFlagStr)
+	cp, err := pmp.Get(context.Background())
 	require.NoError(t, err)
-
 	keys := cp.AllKeys()
 	assert.Len(t, keys, 4)
 	assert.Equal(t, "2s", cp.Get("processors::batch::timeout"))
 	assert.Equal(t, "3s", cp.Get("processors::batch/foo::timeout"))
 	assert.Equal(t, "foo:9200,foo2:9200", cp.Get("exporters::kafka::brokers"))
 	assert.Equal(t, "localhost:1818", cp.Get("receivers::otlp::protocols::grpc::endpoint"))
+	require.NoError(t, pmp.Close(context.Background()))
 }
 
-func TestSetFlags_empty(t *testing.T) {
-	flags := new(flag.FlagSet)
-	Flags(flags)
-
-	sfl := NewSetFlag(new(emptyProvider))
-	cp, err := sfl.Get(context.Background())
+func TestPropertiesProvider_empty(t *testing.T) {
+	pmp := NewPropertiesMapProvider(nil)
+	cp, err := pmp.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(cp.AllKeys()))
-}
-
-type emptyProvider struct{}
-
-func (el *emptyProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	return configparser.NewConfigMap(), nil
-}
-
-func (el *emptyProvider) Close(context.Context) error {
-	return nil
+	require.NoError(t, pmp.Close(context.Background()))
 }

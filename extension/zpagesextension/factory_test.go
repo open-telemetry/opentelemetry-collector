@@ -31,7 +31,7 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:55679",
 		},

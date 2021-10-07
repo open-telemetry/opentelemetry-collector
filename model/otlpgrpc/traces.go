@@ -15,6 +15,7 @@
 package otlpgrpc
 
 import (
+	"bytes"
 	"context"
 
 	"google.golang.org/grpc"
@@ -36,6 +37,20 @@ func NewTracesResponse() TracesResponse {
 	return TracesResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
 }
 
+// Marshal marshals TracesResponse into proto bytes.
+func (tr TracesResponse) Marshal() ([]byte, error) {
+	return tr.orig.Marshal()
+}
+
+// MarshalJSON marshals TracesResponse into JSON bytes.
+func (tr TracesResponse) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := jsonMarshaler.Marshal(&buf, tr.orig); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // TracesRequest represents the response for gRPC client/server.
 type TracesRequest struct {
 	orig *otlpcollectortrace.ExportTraceServiceRequest
@@ -46,12 +61,26 @@ func NewTracesRequest() TracesRequest {
 	return TracesRequest{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
 
-func (lr TracesRequest) SetTraces(ld pdata.Traces) {
-	lr.orig.ResourceSpans = internal.TracesToOtlp(ld.InternalRep()).ResourceSpans
+// Marshal marshals TracesRequest into proto bytes.
+func (tr TracesRequest) Marshal() ([]byte, error) {
+	return tr.orig.Marshal()
 }
 
-func (lr TracesRequest) Traces() pdata.Traces {
-	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(lr.orig))
+// MarshalJSON marshals TracesRequest into JSON bytes.
+func (tr TracesRequest) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := jsonMarshaler.Marshal(&buf, tr.orig); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (tr TracesRequest) SetTraces(td pdata.Traces) {
+	tr.orig.ResourceSpans = internal.TracesToOtlp(td.InternalRep()).ResourceSpans
+}
+
+func (tr TracesRequest) Traces() pdata.Traces {
+	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(tr.orig))
 }
 
 // TracesClient is the client API for OTLP-GRPC Traces service.

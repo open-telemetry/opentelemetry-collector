@@ -39,21 +39,21 @@ type ComponentID struct {
 	nameVal string `mapstructure:"-"`
 }
 
-// NewID returns a new ComponentID with the given Type and empty name.
-func NewID(typeVal Type) ComponentID {
+// NewComponentID returns a new ComponentID with the given Type and empty name.
+func NewComponentID(typeVal Type) ComponentID {
 	return ComponentID{typeVal: typeVal}
 }
 
-// NewIDWithName returns a new ComponentID with the given Type and name.
-func NewIDWithName(typeVal Type, nameVal string) ComponentID {
+// NewComponentIDWithName returns a new ComponentID with the given Type and name.
+func NewComponentIDWithName(typeVal Type, nameVal string) ComponentID {
 	return ComponentID{typeVal: typeVal, nameVal: nameVal}
 }
 
-// NewIDFromString decodes a string in type[/name] format into ComponentID.
+// NewComponentIDFromString decodes a string in type[/name] format into ComponentID.
 // The type and name components will have spaces trimmed, the "type" part must be present,
 // the forward slash and "name" are optional.
 // The returned ComponentID will be invalid if err is not-nil.
-func NewIDFromString(idStr string) (ComponentID, error) {
+func NewComponentIDFromString(idStr string) (ComponentID, error) {
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
 
 	id := ComponentID{}

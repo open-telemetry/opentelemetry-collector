@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -52,16 +53,10 @@ type request interface {
 	onError(error) request
 	// Returns the count of spans/metric points or log records.
 	count() int
-	// marshal serializes the current request into a byte stream
-	marshal() ([]byte, error)
-	// onProcessingFinished calls the optional callback function to handle cleanup after all processing is finished
-	onProcessingFinished()
-	// setOnProcessingFinished allows to set an optional callback function to do the cleanup (e.g. remove the item from persistent queue)
-	setOnProcessingFinished(callback func())
-}
 
-// requestUnmarshaler defines a function which takes a byte slice and unmarshals it into a relevant request
-type requestUnmarshaler func([]byte) (request, error)
+	// PersistentRequest provides interface with additional capabilities required by persistent queue
+	internal.PersistentRequest
+}
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
@@ -82,11 +77,11 @@ func (req *baseRequest) setContext(ctx context.Context) {
 	req.ctx = ctx
 }
 
-func (req *baseRequest) setOnProcessingFinished(callback func()) {
+func (req *baseRequest) SetOnProcessingFinished(callback func()) {
 	req.processingFinishedCallback = callback
 }
 
-func (req *baseRequest) onProcessingFinished() {
+func (req *baseRequest) OnProcessingFinished() {
 	if req.processingFinishedCallback != nil {
 		req.processingFinishedCallback()
 	}
@@ -179,7 +174,7 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnmarshaler requestUnmarshaler) *baseExporter {
+func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnmarshaler internal.RequestUnmarshaler) *baseExporter {
 	be := &baseExporter{
 		Component: componenthelper.New(bs.componentOptions...),
 	}

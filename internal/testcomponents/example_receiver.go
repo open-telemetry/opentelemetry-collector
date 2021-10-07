@@ -48,7 +48,7 @@ var ExampleReceiverFactory = receiverhelper.NewFactory(
 
 func createReceiverDefaultConfig() config.Receiver {
 	return &ExampleReceiver{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(receiverType)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(receiverType)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:1000",
 		},

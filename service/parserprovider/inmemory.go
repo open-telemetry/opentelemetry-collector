@@ -18,22 +18,22 @@ import (
 	"context"
 	"io"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 )
 
-type inMemoryProvider struct {
+type inMemoryMapProvider struct {
 	buf io.Reader
 }
 
-// NewInMemory returns a new ParserProvider that reads the configuration from the provided buffer as YAML.
-func NewInMemory(buf io.Reader) ParserProvider {
-	return &inMemoryProvider{buf: buf}
+// NewInMemoryMapProvider returns a new MapProvider that reads the configuration, from the provided buffer, as YAML.
+func NewInMemoryMapProvider(buf io.Reader) MapProvider {
+	return &inMemoryMapProvider{buf: buf}
 }
 
-func (inp *inMemoryProvider) Get(context.Context) (*configparser.ConfigMap, error) {
-	return configparser.NewConfigMapFromBuffer(inp.buf)
+func (inp *inMemoryMapProvider) Get(context.Context) (*config.Map, error) {
+	return config.NewMapFromBuffer(inp.buf)
 }
 
-func (inp *inMemoryProvider) Close(context.Context) error {
+func (inp *inMemoryMapProvider) Close(context.Context) error {
 	return nil
 }

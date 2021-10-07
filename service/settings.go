@@ -16,8 +16,6 @@ package service
 
 import (
 	"go.opentelemetry.io/contrib/zpages"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -37,14 +35,8 @@ type svcSettings struct {
 	// Config represents the configuration of the service.
 	Config *config.Config
 
-	// Logger represents the logger used for all the components.
-	Logger *zap.Logger
-
-	// TracerProvider represents the TracerProvider used for all the components.
-	TracerProvider trace.TracerProvider
-
-	// MeterProvider represents the MeterProvider used for all the components.
-	MeterProvider metric.MeterProvider
+	// Telemetry represents the service configured telemetry for all the components.
+	Telemetry component.TelemetrySettings
 
 	// ZPagesSpanProcessor represents the SpanProcessor for tracez page.
 	ZPagesSpanProcessor *zpages.SpanProcessor
@@ -67,13 +59,12 @@ type CollectorSettings struct {
 	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
 
-	// ParserProvider provides the configuration's Parser.
+	// ConfigMapProvider provides the configuration's config.Map.
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
-	// If the provider is parserprovider.Watchable, collector
-	// may reload the configuration upon error.
-	ParserProvider parserprovider.ParserProvider
+	// If the provider is parserprovider.Watchable, collector may reload the configuration upon error.
+	ConfigMapProvider parserprovider.MapProvider
 
 	// ConfigUnmarshaler unmarshalls the configuration's Parser into the service configuration.
 	// If it is not provided a default unmarshaler is used.

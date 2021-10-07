@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-var id = config.NewID("test")
+var id = config.NewComponentID("test")
 
 func TestNewSharedComponents(t *testing.T) {
 	comps := NewSharedComponents()

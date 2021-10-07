@@ -22,7 +22,7 @@
 //
 // To satisfy these requirements we declare interfaces Receiver, Exporter, Processor,
 // which define the behavior. We also provide helper structs ReceiverSettings, ExporterSettings,
-// ProcessorSettings, which define the common settings and un-marshaling from config files.
+// ProcessorSettings, which define the common settings and unmarshaling from config files.
 //
 // Specific Receivers/Exporters/Processors are expected to at the minimum implement the
 // corresponding interface and if they have additional settings they must also extend

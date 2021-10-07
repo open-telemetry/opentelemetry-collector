@@ -6,7 +6,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-// http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,23 +18,16 @@ package internal
 
 import (
 	"sync"
-	"sync/atomic"
-	"unsafe"
 
 	uatomic "go.uber.org/atomic"
 )
 
-// Consumer consumes data from a bounded queue
-type Consumer interface {
-	Consume(item interface{})
-}
-
-// BoundedQueue implements a producer-consumer exchange similar to a ring buffer queue,
+// boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
 // where the queue is bounded and if it fills up due to slow consumers, the new items written by
 // the producer force the earliest items to be dropped. The implementation is actually based on
 // channels, with a special Reaper goroutine that wakes up when the queue is full and consumers
 // the items from the top of the queue until its size drops back to maxSize
-type BoundedQueue struct {
+type boundedMemoryQueue struct {
 	workers       int
 	stopWG        sync.WaitGroup
 	size          *uatomic.Uint32
@@ -42,15 +35,15 @@ type BoundedQueue struct {
 	stopped       *uatomic.Uint32
 	items         *chan interface{}
 	onDroppedItem func(item interface{})
-	factory       func() Consumer
+	factory       func() consumer
 	stopCh        chan struct{}
 }
 
-// NewBoundedQueue constructs the new queue of specified capacity, and with an optional
+// NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedQueue(capacity int, onDroppedItem func(item interface{})) *BoundedQueue {
+func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) ProducerConsumerQueue {
 	queue := make(chan interface{}, capacity)
-	return &BoundedQueue{
+	return &boundedMemoryQueue{
 		onDroppedItem: onDroppedItem,
 		items:         &queue,
 		stopCh:        make(chan struct{}),
@@ -60,9 +53,12 @@ func NewBoundedQueue(capacity int, onDroppedItem func(item interface{})) *Bounde
 	}
 }
 
-// StartConsumersWithFactory creates a given number of consumers consuming items
-// from the queue in separate goroutines.
-func (q *BoundedQueue) StartConsumersWithFactory(num int, factory func() Consumer) {
+// StartConsumers starts a given number of goroutines consuming items from the queue
+// and passing them into the consumer callback.
+func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interface{})) {
+	factory := func() consumer {
+		return consumerFunc(callback)
+	}
 	q.workers = num
 	q.factory = factory
 	var startWG sync.WaitGroup
@@ -72,14 +68,14 @@ func (q *BoundedQueue) StartConsumersWithFactory(num int, factory func() Consume
 		go func() {
 			startWG.Done()
 			defer q.stopWG.Done()
-			consumer := q.factory()
+			itemConsumer := q.factory()
 			queue := *q.items
 			for {
 				select {
 				case item, ok := <-queue:
 					if ok {
 						q.size.Sub(1)
-						consumer.Consume(item)
+						itemConsumer.consume(item)
 					} else {
 						// channel closed, finish worker
 						return
@@ -94,25 +90,17 @@ func (q *BoundedQueue) StartConsumersWithFactory(num int, factory func() Consume
 	startWG.Wait()
 }
 
-// ConsumerFunc is an adapter to allow the use of
-// a consume function callback as a Consumer.
-type ConsumerFunc func(item interface{})
+// consumerFunc is an adapter to allow the use of
+// a consume function callback as a consumer.
+type consumerFunc func(item interface{})
 
 // Consume calls c(item)
-func (c ConsumerFunc) Consume(item interface{}) {
+func (c consumerFunc) consume(item interface{}) {
 	c(item)
 }
 
-// StartConsumers starts a given number of goroutines consuming items from the queue
-// and passing them into the consumer callback.
-func (q *BoundedQueue) StartConsumers(num int, callback func(item interface{})) {
-	q.StartConsumersWithFactory(num, func() Consumer {
-		return ConsumerFunc(callback)
-	})
-}
-
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *BoundedQueue) Produce(item interface{}) bool {
+func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	if q.stopped.Load() != 0 {
 		q.onDroppedItem(item)
 		return false
@@ -143,7 +131,7 @@ func (q *BoundedQueue) Produce(item interface{}) bool {
 
 // Stop stops all consumers, as well as the length reporter if started,
 // and releases the items channel. It blocks until all consumers have stopped.
-func (q *BoundedQueue) Stop() {
+func (q *boundedMemoryQueue) Stop() {
 	q.stopped.Store(1) // disable producer
 	close(q.stopCh)
 	q.stopWG.Wait()
@@ -151,38 +139,11 @@ func (q *BoundedQueue) Stop() {
 }
 
 // Size returns the current size of the queue
-func (q *BoundedQueue) Size() int {
+func (q *boundedMemoryQueue) Size() int {
 	return int(q.size.Load())
 }
 
 // Capacity returns capacity of the queue
-func (q *BoundedQueue) Capacity() int {
+func (q *boundedMemoryQueue) Capacity() int {
 	return int(q.capacity.Load())
-}
-
-// Resize changes the capacity of the queue, returning whether the action was successful
-func (q *BoundedQueue) Resize(capacity int) bool {
-	if capacity == q.Capacity() {
-		// noop
-		return false
-	}
-
-	previous := *q.items
-	queue := make(chan interface{}, capacity)
-
-	// swap queues
-	// #nosec
-	swapped := atomic.CompareAndSwapPointer((*unsafe.Pointer)(unsafe.Pointer(&q.items)), unsafe.Pointer(q.items), unsafe.Pointer(&queue))
-	if swapped {
-		// start a new set of consumers, based on the information given previously
-		q.StartConsumersWithFactory(q.workers, q.factory)
-
-		// gracefully drain the existing queue
-		close(previous)
-
-		// update the capacity
-		q.capacity.Store(uint32(capacity))
-	}
-
-	return swapped
 }
