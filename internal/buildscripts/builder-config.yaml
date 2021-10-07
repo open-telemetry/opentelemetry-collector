@@ -5,15 +5,6 @@ dist:
   version: 0.36.0
   otelcol_version: 0.36.0
 
-receivers:
-  - gomod: github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver v0.36.0
-
-exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter v0.36.0
-
-extensions:
-  - gomod: github.com/open-telemetry/opentelemetry-collector/extension/ballastextension v0.36.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension v0.36.0
-
-processors:
-  - gomod: github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor v0.36.0
+replaces:
+  - go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.36.0
+  - go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.36.0
