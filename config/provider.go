@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider // import "go.opentelemetry.io/collector/service/parserprovider"
+package config // import "go.opentelemetry.io/collector/config"
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // MapProvider is an interface that helps providing configuration's parser.
 // Implementations may load the parser from a file, a database or any other source.
 type MapProvider interface {
-	// Get returns the config.Map if succeed or error otherwise.
-	Get(ctx context.Context) (*config.Map, error)
+	// Get returns the Map if succeed or error otherwise.
+	Get(ctx context.Context) (*Map, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.

@@ -26,8 +26,8 @@ type fileMapProvider struct {
 	fileName string
 }
 
-// NewFileMapProvider returns a new MapProvider that reads the configuration from the given file.
-func NewFileMapProvider(fileName string) MapProvider {
+// NewFileMapProvider returns a new config.MapProvider that reads the configuration from the given file.
+func NewFileMapProvider(fileName string) config.MapProvider {
 	return &fileMapProvider{
 		fileName: fileName,
 	}
