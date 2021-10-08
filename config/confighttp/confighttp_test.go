@@ -60,9 +60,12 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        50,
+				MaxIdleConnsPerHost: 40,
+				IdleConnTimeout:     30 * time.Second,
+				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 			},
 			shouldError: false,
 		},
@@ -92,6 +95,9 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
+			assert.EqualValues(t, 50, transport.MaxIdleConns)
+			assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
+			assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
 		})
 	}
 }
@@ -132,6 +138,59 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			settings: HTTPClientSettings{
 				Endpoint: "https://localhost:1234/v1/traces",
 				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
+			},
+		},
+		{
+			err: "cannot have a negative \"max_idle_conns\"",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: &configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				MaxIdleConns:       -10,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			},
+		},
+		{
+			err: "cannot have a negative \"max_idle_conns_per_host\"",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: &configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConnsPerHost: -10,
+				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			},
+		},
+		{
+			err: "\"max_idle_conns_per_host\" cannot be greater than \"max_idle_conns\"",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: &configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        40,
+				MaxIdleConnsPerHost: 50,
+				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			},
+		},
+		{
+			err: "cannot have a negative \"idle_conn_timeout\"",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: &configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				IdleConnTimeout:    -2 * time.Second,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 			},
 		},
 	}

@@ -20,6 +20,9 @@ README](../configtls/README.md).
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
+- [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
+- [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
+- [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport)
 
 Example:
 

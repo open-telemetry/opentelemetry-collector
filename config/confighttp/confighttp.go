@@ -16,6 +16,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -58,6 +59,15 @@ type HTTPClientSettings struct {
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// MaxIdleConns is used to set a limit to the maximum idle HTTP connection the client can keep open.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connection the host can keep open.
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
+
+	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
+	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
 // ToClient creates an HTTP client.
@@ -75,6 +85,27 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
+	}
+
+	if hcs.MaxIdleConns < 0 {
+		return nil, errors.New(`cannot have a negative "max_idle_conns"`)
+	} else if hcs.MaxIdleConns > 0 {
+		transport.MaxIdleConns = hcs.MaxIdleConns
+	}
+
+	if hcs.MaxIdleConnsPerHost < 0 {
+		return nil, errors.New(`cannot have a negative "max_idle_conns_per_host"`)
+	} else if hcs.MaxIdleConnsPerHost > 0 {
+		if hcs.MaxIdleConnsPerHost > hcs.MaxIdleConns {
+			return nil, errors.New(`"max_idle_conns_per_host" cannot be greater than "max_idle_conns"`)
+		}
+		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
+	}
+
+	if hcs.IdleConnTimeout < 0 {
+		return nil, errors.New(`cannot have a negative "idle_conn_timeout"`)
+	} else if hcs.IdleConnTimeout > 0 {
+		transport.IdleConnTimeout = hcs.IdleConnTimeout
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
