@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package extensions
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/internal/components"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -34,7 +35,12 @@ type builtExtension struct {
 
 // Start the receiver.
 func (ext *builtExtension) Start(ctx context.Context, host component.Host) error {
-	return ext.extension.Start(ctx, host)
+	ext.logger.Info("Extension is starting...")
+	if err := ext.extension.Start(ctx, components.NewHostWrapper(host, ext.logger)); err != nil {
+		return err
+	}
+	ext.logger.Info("Extension started.")
+	return nil
 }
 
 // Shutdown the receiver.
@@ -50,13 +56,9 @@ type Extensions map[config.ComponentID]*builtExtension
 // StartAll starts all exporters.
 func (exts Extensions) StartAll(ctx context.Context, host component.Host) error {
 	for _, ext := range exts {
-		ext.logger.Info("Extension is starting...")
-
-		if err := ext.Start(ctx, newHostWrapper(host, ext.logger)); err != nil {
+		if err := ext.Start(ctx, host); err != nil {
 			return err
 		}
-
-		ext.logger.Info("Extension started.")
 	}
 	return nil
 }
@@ -107,8 +109,8 @@ func (exts Extensions) ToMap() map[config.ComponentID]component.Extension {
 	return result
 }
 
-// BuildExtensions builds Extensions from config.
-func BuildExtensions(
+// Build builds Extensions from config.
+func Build(
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	config *config.Config,
@@ -129,8 +131,8 @@ func BuildExtensions(
 		set := component.ExtensionCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
 				Logger: settings.Logger.With(
-					zap.String(zapKindKey, zapKindExtension),
-					zap.String(zapNameKey, extID.String())),
+					zap.String(components.ZapKindKey, components.ZapKindExtension),
+					zap.String(components.ZapNameKey, extID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
 			},

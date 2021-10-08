@@ -20,7 +20,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )

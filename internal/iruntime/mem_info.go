@@ -15,7 +15,7 @@
 package iruntime
 
 import (
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 // readMemInfo returns the total memory

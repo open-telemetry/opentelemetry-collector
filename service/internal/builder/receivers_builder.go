@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -40,7 +41,7 @@ type builtReceiver struct {
 
 // Start starts the receiver.
 func (rcv *builtReceiver) Start(ctx context.Context, host component.Host) error {
-	return rcv.receiver.Start(ctx, host)
+	return rcv.receiver.Start(ctx, components.NewHostWrapper(host, rcv.logger))
 }
 
 // Shutdown stops the receiver.
@@ -66,7 +67,7 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 	for _, rcv := range rcvs {
 		rcv.logger.Info("Receiver is starting...")
 
-		if err := rcv.Start(ctx, newHostWrapper(host, rcv.logger)); err != nil {
+		if err := rcv.Start(ctx, host); err != nil {
 			return err
 		}
 		rcv.logger.Info("Receiver started.")
@@ -95,7 +96,9 @@ func BuildReceivers(
 	for recvID, recvCfg := range cfg.Receivers {
 		set := component.ReceiverCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
-				Logger:         settings.Logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
+				Logger: settings.Logger.With(
+					zap.String(components.ZapKindKey, components.ZapKindReceiver),
+					zap.String(components.ZapNameKey, recvID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
 			},
