@@ -37,20 +37,20 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	ext0 := cfg.Extensions[config.NewID(typeStr)]
+	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
+	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			SizeMiB:           123,
 			SizeInPercentage:  20,
 		},
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
 }
 
 func TestLoadInvalidConfig(t *testing.T) {

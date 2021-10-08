@@ -46,7 +46,7 @@ func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 
 func TestAllHTTPClientSettings(t *testing.T) {
 	ext := map[config.ComponentID]component.Extension{
-		config.NewID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 	}
 	tests := []struct {
 		name        string
@@ -57,7 +57,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "all_valid_settings",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: &configtls.TLSClientSetting{
 					Insecure: false,
 				},
 				ReadBufferSize:     1024,
@@ -70,7 +70,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "error_round_tripper_returned",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: &configtls.TLSClientSetting{
 					Insecure: false,
 				},
 				ReadBufferSize:     1024,
@@ -105,7 +105,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: HTTPClientSettings{
 				Endpoint: "",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: &configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
 					},
@@ -118,7 +118,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: HTTPClientSettings{
 				Endpoint: "",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: &configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
 					},
@@ -165,7 +165,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: false,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{
+				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
 					ResultRoundTripper: &customRoundTripper{},
 				},
 			},
@@ -178,7 +178,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 			},
 		},
 		{
@@ -197,7 +197,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: false,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 			},
 		},
 		{
@@ -208,7 +208,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewID("mock"): &configauth.MockClientAuthenticator{
+				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
 					ResultRoundTripper: &customRoundTripper{}, MustError: true},
 			},
 		},
@@ -407,7 +407,7 @@ func TestHttpReception(t *testing.T) {
 
 			hcs := &HTTPClientSettings{
 				Endpoint:   prefix + ln.Addr().String(),
-				TLSSetting: *tt.tlsClientCreds,
+				TLSSetting: tt.tlsClientCreds,
 			}
 			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
 			assert.NoError(t, errClient)
@@ -582,7 +582,7 @@ func TestHttpHeaders(t *testing.T) {
 			serverURL, _ := url.Parse(server.URL)
 			setting := HTTPClientSettings{
 				Endpoint:        serverURL.String(),
-				TLSSetting:      configtls.TLSClientSetting{},
+				TLSSetting:      &configtls.TLSClientSetting{},
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,

@@ -15,38 +15,30 @@
 package service
 
 import (
-	"flag"
-
 	"github.com/spf13/cobra"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // NewCommand constructs a new cobra.Command using the given Collector.
 // TODO: Make this independent of the collector internals.
-func NewCommand(col *Collector) *cobra.Command {
+func NewCommand(set CollectorSettings) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:          col.set.BuildInfo.Command,
-		Version:      col.set.BuildInfo.Version,
+		Use:          set.BuildInfo.Command,
+		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if set.ConfigMapProvider == nil {
+				set.ConfigMapProvider = parserprovider.NewDefaultMapProvider(getConfigFlag(), getSetFlag())
+			}
+			col, err := New(set)
+			if err != nil {
+				return err
+			}
 			return col.Run(cmd.Context())
 		},
 	}
 
-	// TODO: coalesce this code and expose this information to other components.
-	flagSet := new(flag.FlagSet)
-	addFlagsFns := []func(*flag.FlagSet){
-		configtelemetry.Flags,
-		parserprovider.Flags,
-		telemetrylogs.Flags,
-	}
-	for _, addFlags := range addFlagsFns {
-		addFlags(flagSet)
-	}
-
-	rootCmd.Flags().AddGoFlagSet(flagSet)
+	rootCmd.Flags().AddGoFlagSet(flags())
 	return rootCmd
 }

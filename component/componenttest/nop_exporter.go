@@ -27,7 +27,7 @@ import (
 func NewNopExporterCreateSettings() component.ExporterCreateSettings {
 	return component.ExporterCreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 
@@ -53,7 +53,7 @@ func (f *nopExporterFactory) Type() config.Type {
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func (f *nopExporterFactory) CreateDefaultConfig() config.Exporter {
 	return &nopExporterConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewID("nop")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
 	}
 }
 

@@ -40,6 +40,8 @@ const (
 	metricsPrefixCfg = "metrics-prefix"
 )
 
+const UseOpenTelemetryForInternalMetrics = false
+
 var (
 	metricsLevelPtr  = new(Level)
 	metricsAddrPtr   = new(string)

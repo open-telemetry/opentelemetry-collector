@@ -43,7 +43,7 @@ const (
 )
 
 var (
-	fakeMetricsExporterName   = config.NewIDWithName("fake_metrics_exporter", "with_name")
+	fakeMetricsExporterName   = config.NewComponentIDWithName("fake_metrics_exporter", "with_name")
 	fakeMetricsExporterConfig = config.NewExporterSettings(fakeMetricsExporterName)
 )
 
@@ -124,16 +124,16 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown(context.Background())
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewMetricsExporter(&fakeMetricsExporterConfig, set.ToExporterCreateSettings(), newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -206,9 +206,9 @@ func newPushMetricsData(retError error) consumerhelper.ConsumeMetricsFunc {
 }
 
 func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer set.Shutdown(context.Background())
 
 	md := testdata.GenerateMetricsTwoMetrics()
 	const numBatches = 7
@@ -219,9 +219,9 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
 	if wantError != nil {
-		obsreporttest.CheckExporterMetrics(t, fakeMetricsExporterName, 0, numPoints)
+		require.NoError(t, obsreporttest.CheckExporterMetrics(fakeMetricsExporterName, 0, numPoints))
 	} else {
-		obsreporttest.CheckExporterMetrics(t, fakeMetricsExporterName, numPoints, 0)
+		require.NoError(t, obsreporttest.CheckExporterMetrics(fakeMetricsExporterName, numPoints, 0))
 	}
 }
 

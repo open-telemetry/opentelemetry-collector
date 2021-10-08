@@ -15,39 +15,60 @@
 package consumererror
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 )
 
+type combined []error
+
+func (c combined) Error() string {
+	if len(c) == 0 {
+		return "[]"
+	}
+	var sb strings.Builder
+	sb.WriteString("[")
+	sb.WriteString(c[0].Error())
+	for _, err := range c[1:] {
+		sb.WriteString("; ")
+		sb.WriteString(err.Error())
+	}
+	sb.WriteString("]")
+	return sb.String()
+}
+
+func (c combined) Is(target error) bool {
+	for _, err := range c {
+		if errors.Is(err, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func (c combined) As(target interface{}) bool {
+	for _, err := range c {
+		if errors.As(err, target) {
+			return true
+		}
+	}
+	return false
+}
+
 // Combine converts a list of errors into one error.
 //
-// If any of the errors in errs are Permanent then the returned
-// error will also be Permanent.
-//
-// Any signal data associated with an error from this package
-// will be discarded.
+// Deprecated: Use alternative modules like "go.uber.org/multierr"
 func Combine(errs []error) error {
-	numErrors := len(errs)
-	if numErrors == 0 {
-		// No errors
+	switch len(errs) {
+	case 0:
 		return nil
-	}
-
-	if numErrors == 1 {
+	case 1:
 		return errs[0]
 	}
-
-	errMsgs := make([]string, 0, numErrors)
-	permanent := false
+	result := make([]error, 0, len(errs))
 	for _, err := range errs {
-		if !permanent && IsPermanent(err) {
-			permanent = true
+		if err != nil {
+			result = append(result, err)
 		}
-		errMsgs = append(errMsgs, err.Error())
 	}
-	err := fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
-	if permanent {
-		err = Permanent(err)
-	}
-	return err
+	return combined(result)
 }

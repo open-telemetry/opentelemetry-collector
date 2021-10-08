@@ -89,8 +89,6 @@ const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memoryLimiter, error) {
-	logger := set.Logger
-
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}
@@ -98,6 +96,7 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		return nil, errLimitOutOfRange
 	}
 
+	logger := set.Logger
 	usageChecker, err := getMemUsageChecker(cfg, logger)
 	if err != nil {
 		return nil, err
@@ -115,8 +114,9 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:       set.MetricsLevel,
-			ProcessorID: cfg.ID(),
+			Level:                   set.MetricsLevel,
+			ProcessorID:             cfg.ID(),
+			ProcessorCreateSettings: set,
 		}),
 	}
 

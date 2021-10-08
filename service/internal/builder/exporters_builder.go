@@ -18,12 +18,13 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/service/internal/components"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -35,28 +36,27 @@ type builtExporter struct {
 
 // Start the exporter.
 func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error {
-	var errors []error
+	var errs error
+	bexp.logger.Info("Exporter is starting...")
 	for _, exporter := range bexp.expByDataType {
-		err := exporter.Start(ctx, host)
-		if err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, exporter.Start(ctx, components.NewHostWrapper(host, bexp.logger)))
 	}
 
-	return consumererror.Combine(errors)
+	if errs != nil {
+		return errs
+	}
+	bexp.logger.Info("Exporter started.")
+	return nil
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
 func (bexp *builtExporter) Shutdown(ctx context.Context) error {
-	var errors []error
+	var errs error
 	for _, exporter := range bexp.expByDataType {
-		err := exporter.Shutdown(ctx)
-		if err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, exporter.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (bexp *builtExporter) getTracesExporter() component.TracesExporter {
@@ -89,27 +89,21 @@ type Exporters map[config.ComponentID]*builtExporter
 // StartAll starts all exporters.
 func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
 	for _, exp := range exps {
-		exp.logger.Info("Exporter is starting...")
-
-		if err := exp.Start(ctx, newHostWrapper(host, exp.logger)); err != nil {
+		if err := exp.Start(ctx, host); err != nil {
 			return err
 		}
-		exp.logger.Info("Exporter started.")
 	}
 	return nil
 }
 
 // ShutdownAll stops all exporters.
 func (exps Exporters) ShutdownAll(ctx context.Context) error {
-	var errs []error
+	var errs error
 	for _, exp := range exps {
-		err := exp.Shutdown(ctx)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, exp.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func (exps Exporters) ToMapByDataType() map[config.DataType]map[config.ComponentID]component.Exporter {
@@ -147,7 +141,7 @@ func BuildExporters(
 	cfg *config.Config,
 	factories map[config.Type]component.ExporterFactory,
 ) (Exporters, error) {
-	logger := settings.Logger.With(zap.String(zapKindKey, zapKindLogExporter))
+	logger := settings.Logger.With(zap.String(components.ZapKindKey, components.ZapKindLogExporter))
 
 	// We need to calculate required input data types for each exporter so that we know
 	// which data type must be started for each exporter.
@@ -159,7 +153,7 @@ func BuildExporters(
 	for expID, expCfg := range cfg.Exporters {
 		set := component.ExporterCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
-				Logger:         logger.With(zap.String(zapNameKey, expID.String())),
+				Logger:         logger.With(zap.String(components.ZapNameKey, expID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
 				MetricsLevel:   cfg.Telemetry.Metrics.Level,

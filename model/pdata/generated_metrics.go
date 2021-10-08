@@ -653,12 +653,12 @@ func NewSum() Sum {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
-func (ms Sum) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality((*ms.orig).AggregationTemporality)
+func (ms Sum) AggregationTemporality() MetricAggregationTemporality {
+	return MetricAggregationTemporality((*ms.orig).AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
-func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
+func (ms Sum) SetAggregationTemporality(v MetricAggregationTemporality) {
 	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -708,12 +708,12 @@ func NewHistogram() Histogram {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
-func (ms Histogram) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality((*ms.orig).AggregationTemporality)
+func (ms Histogram) AggregationTemporality() MetricAggregationTemporality {
+	return MetricAggregationTemporality((*ms.orig).AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
-func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
+func (ms Histogram) SetAggregationTemporality(v MetricAggregationTemporality) {
 	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -975,6 +975,16 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
+// Flags returns the flags associated with this NumberDataPoint.
+func (ms NumberDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags((*ms.orig).Flags)
+}
+
+// SetFlags replaces the flags associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
+	(*ms.orig).Flags = uint32(v)
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -988,6 +998,7 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
+	dest.SetFlags(ms.Flags())
 }
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
@@ -1220,6 +1231,16 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
+// Flags returns the flags associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags((*ms.orig).Flags)
+}
+
+// SetFlags replaces the flags associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+	(*ms.orig).Flags = uint32(v)
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1230,6 +1251,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.SetBucketCounts(ms.BucketCounts())
 	dest.SetExplicitBounds(ms.ExplicitBounds())
 	ms.Exemplars().CopyTo(dest.Exemplars())
+	dest.SetFlags(ms.Flags())
 }
 
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
@@ -1442,6 +1464,16 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 	return newValueAtQuantileSlice(&(*ms.orig).QuantileValues)
 }
 
+// Flags returns the flags associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags((*ms.orig).Flags)
+}
+
+// SetFlags replaces the flags associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
+	(*ms.orig).Flags = uint32(v)
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1450,6 +1482,7 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
+	dest.SetFlags(ms.Flags())
 }
 
 // ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.

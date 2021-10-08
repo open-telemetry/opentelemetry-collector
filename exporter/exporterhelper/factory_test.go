@@ -30,7 +30,7 @@ import (
 const typeStr = "test"
 
 var (
-	defaultCfg           = config.NewExporterSettings(config.NewID(typeStr))
+	defaultCfg           = config.NewExporterSettings(config.NewComponentID(typeStr))
 	nopTracesExporter, _ = NewTracesExporter(&defaultCfg, componenttest.NewNopExporterCreateSettings(), func(ctx context.Context, td pdata.Traces) error {
 		return nil
 	})

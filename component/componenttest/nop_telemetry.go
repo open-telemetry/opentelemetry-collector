@@ -28,7 +28,7 @@ func NewNopTelemetrySettings() component.TelemetrySettings {
 	return component.TelemetrySettings{
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
-		MeterProvider:  metric.NoopMeterProvider{},
+		MeterProvider:  metric.NewNoopMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
 	}
 }
