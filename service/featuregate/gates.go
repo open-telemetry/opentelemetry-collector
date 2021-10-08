@@ -48,6 +48,7 @@ func Register(g Gate) {
 }
 
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
+// Sets only those values provided in the map, other gate values are not changed.
 func Apply(cfg map[string]bool) {
 	reg.apply(cfg)
 }
