@@ -194,7 +194,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := col.set.ConfigMapProvider.(config.Watchable); ok {
+	if watchable, ok := col.set.ConfigMapProvider.(config.WatchableMapProvider); ok {
 		go col.watchForConfigUpdates(watchable)
 	}
 
@@ -285,7 +285,7 @@ func (col *Collector) reloadService(ctx context.Context) error {
 	return nil
 }
 
-func (col *Collector) watchForConfigUpdates(watchable config.Watchable) {
+func (col *Collector) watchForConfigUpdates(watchable config.WatchableMapProvider) {
 	err := watchable.WatchForUpdate()
 	if errors.Is(err, configsource.ErrSessionClosed) {
 		// This is the case of shutdown of the whole collector server, nothing to do.

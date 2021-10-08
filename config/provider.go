@@ -30,9 +30,9 @@ type MapProvider interface {
 	Close(ctx context.Context) error
 }
 
-// Watchable is an extension for MapProvider that is implemented if the given provider
+// WatchableMapProvider is an extension for MapProvider that is implemented if the given provider
 // supports monitoring of configuration updates.
-type Watchable interface {
+type WatchableMapProvider interface {
 	// WatchForUpdate waits for updates on any of the values retrieved from config sources.
 	// It blocks until configuration updates are received and can
 	// return an error if anything fails. WatchForUpdate is used once during the
