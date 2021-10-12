@@ -40,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/internal/extensions"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
@@ -296,7 +297,7 @@ func TestCollector_reloadService(t *testing.T) {
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
-				builtExtensions: builder.Extensions{},
+				builtExtensions: extensions.Extensions{},
 			},
 		},
 		{
@@ -307,7 +308,7 @@ func TestCollector_reloadService(t *testing.T) {
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
-				builtExtensions: builder.Extensions{},
+				builtExtensions: extensions.Extensions{},
 			},
 		},
 	}

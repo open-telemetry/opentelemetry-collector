@@ -180,7 +180,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.traceReceiver = trace.New(r.cfg.ID(), tc)
+	r.traceReceiver = trace.New(r.cfg.ID(), tc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, r.traceReceiver, pbEncoder)
@@ -204,7 +204,7 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.metricsReceiver = metrics.New(r.cfg.ID(), mc)
+	r.metricsReceiver = metrics.New(r.cfg.ID(), mc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, r.metricsReceiver, pbEncoder)
@@ -220,7 +220,7 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 	if lc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.logReceiver = logs.New(r.cfg.ID(), lc)
+	r.logReceiver = logs.New(r.cfg.ID(), lc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
 			handleLogs(w, req, r.logReceiver, pbEncoder)

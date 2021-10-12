@@ -21,10 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -39,7 +37,7 @@ const (
 )
 
 var (
-	receiver  = config.NewComponentID("fakeReicever")
+	receiver  = config.NewComponentID("fakeReceiver")
 	scraper   = config.NewComponentID("fakeScraper")
 	processor = config.NewComponentID("fakeProcessor")
 	exporter  = config.NewComponentID("fakeExporter")
@@ -58,9 +56,6 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
-	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -69,7 +64,11 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		{items: 42, err: nil},
 	}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			ReceiverCreateSettings: set.ToReceiverCreateSettings(),
+		})
 		ctx := rec.StartTracesOp(parentCtx)
 		assert.NotNil(t, ctx)
 		rec.EndTracesOp(ctx, format, params[i].items, param.err)
@@ -105,9 +104,6 @@ func TestReceiveLogsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
-	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -116,7 +112,11 @@ func TestReceiveLogsOp(t *testing.T) {
 		{items: 42, err: nil},
 	}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			ReceiverCreateSettings: set.ToReceiverCreateSettings(),
+		})
 		ctx := rec.StartLogsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		rec.EndLogsOp(ctx, format, params[i].items, param.err)
@@ -152,9 +152,6 @@ func TestReceiveMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
-	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -163,7 +160,11 @@ func TestReceiveMetricsOp(t *testing.T) {
 		{items: 29, err: nil},
 	}
 	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			ReceiverCreateSettings: set.ToReceiverCreateSettings(),
+		})
 		ctx := rec.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		rec.EndMetricsOp(ctx, format, params[i].items, param.err)
@@ -200,9 +201,6 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
-	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
 	parentCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -212,7 +210,11 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp := NewScraper(ScraperSettings{ReceiverID: receiver, Scraper: scraper})
+		scrp := NewScraper(ScraperSettings{
+			ReceiverID:             receiver,
+			Scraper:                scraper,
+			ReceiverCreateSettings: set.ToReceiverCreateSettings(),
+		})
 		ctx := scrp.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
@@ -409,9 +411,6 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
-	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
 	longLivedCtx, parentSpan := set.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -422,7 +421,12 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := NewReceiver(ReceiverSettings{ReceiverID: receiver, Transport: transport, LongLivedCtx: true})
+		rec := NewReceiver(ReceiverSettings{
+			ReceiverID:             receiver,
+			Transport:              transport,
+			LongLivedCtx:           true,
+			ReceiverCreateSettings: set.ToReceiverCreateSettings(),
+		})
 		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
 		rec.EndTracesOp(ctx, format, params[i].items, params[i].err)
