@@ -12,11 +12,8 @@
 
 ## 💡 Enhancements 💡
 
-- Supports more compression methods for configgrpc (#4088)
+- Supports more compression methods(`lz4`, `snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
 - Add Gen dependabot into CI (#4083)
-
-## 💡 Enhancements 💡
-
 - Update OTLP to v0.10.0 (#4045).
 - Add Flags field to NumberDataPoint, HistogramDataPoint, SummaryDataPoint (#4081).
 
