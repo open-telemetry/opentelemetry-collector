@@ -19,4 +19,4 @@
 //
 // To make the custom exporter part of the Collector build the factory must be added
 // to defaultcomponents.Components() function.
-package exporter
+package exporter // import "go.opentelemetry.io/collector/exporter"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreporttest
+package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsreporttest"
 
 import (
 	"context"

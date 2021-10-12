@@ -37,7 +37,7 @@
 //go:build linux
 // +build linux
 
-package cgroups
+package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
 
 const (
 	// _cgroupFSType is the Linux CGroup file system type used in

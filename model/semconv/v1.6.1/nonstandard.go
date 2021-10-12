@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package semconv
+package semconv // import "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 const (
 	OtelLibraryName       = "otel.library.name"

@@ -14,7 +14,7 @@
 
 // Package service handles the command-line, configuration, and runs the
 // OpenTelemetry Collector.
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"

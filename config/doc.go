@@ -27,4 +27,4 @@
 // Specific Receivers/Exporters/Processors are expected to at the minimum implement the
 // corresponding interface and if they have additional settings they must also extend
 // the corresponding common settings struct (the easiest approach is to embed the common struct).
-package config
+package config // import "go.opentelemetry.io/collector/config"

@@ -15,4 +15,4 @@
 // Package configsource is an internal package that implements methods
 // for injecting, watching, and updating data from ConfigSource into
 // configuration.
-package configsource
+package configsource // import "go.opentelemetry.io/collector/config/internal/configsource"

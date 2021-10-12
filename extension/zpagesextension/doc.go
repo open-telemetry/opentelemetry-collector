@@ -14,4 +14,4 @@
 
 // Package zpagesextension implements an extension that exposes zPages of
 // properly instrumented components.
-package zpagesextension
+package zpagesextension // import "go.opentelemetry.io/collector/extension/zpagesextension"
