@@ -15,7 +15,7 @@
 //go:build !linux
 // +build !linux
 
-package iruntime
+package iruntime // import "go.opentelemetry.io/collector/internal/iruntime"
 
 // TotalMemory returns total available memory for non-linux platforms.
 func TotalMemory() (uint64, error) {

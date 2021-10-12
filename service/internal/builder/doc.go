@@ -14,4 +14,4 @@
 
 // Package builder handles the options to build the OpenTelemetry collector
 // pipeline.
-package builder
+package builder // import "go.opentelemetry.io/collector/service/internal/builder"

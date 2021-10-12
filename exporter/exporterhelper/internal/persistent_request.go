@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 // PersistentRequest defines capabilities required for persistent storage of a request
 type PersistentRequest interface {

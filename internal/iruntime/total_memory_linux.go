@@ -15,7 +15,7 @@
 //go:build linux
 // +build linux
 
-package iruntime
+package iruntime // import "go.opentelemetry.io/collector/internal/iruntime"
 
 import "go.opentelemetry.io/collector/internal/cgroups"
 
