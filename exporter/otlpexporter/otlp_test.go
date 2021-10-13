@@ -195,7 +195,7 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 		Headers: map[string]string{
@@ -258,19 +258,17 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 		gRPCClientSettings configgrpc.GRPCClientSettings
 	}{
 		{
-			name:   "Use https scheme",
-			useTLS: true,
-			scheme: "https://",
-			gRPCClientSettings: configgrpc.GRPCClientSettings{
-				TLSSetting: &configtls.TLSClientSetting{},
-			},
+			name:               "Use https scheme",
+			useTLS:             true,
+			scheme:             "https://",
+			gRPCClientSettings: configgrpc.GRPCClientSettings{},
 		},
 		{
 			name:   "Use http scheme",
 			useTLS: false,
 			scheme: "http://",
 			gRPCClientSettings: configgrpc.GRPCClientSettings{
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					Insecure: true,
 				},
 			},
@@ -338,7 +336,7 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 		Headers: map[string]string{
@@ -406,7 +404,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg.QueueSettings.Enabled = false
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 		// Need to wait for every request blocking until either request timeouts or succeed.
@@ -466,7 +464,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
@@ -542,7 +540,7 @@ func TestSendLogData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
