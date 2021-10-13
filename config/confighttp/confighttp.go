@@ -16,7 +16,6 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -87,24 +86,13 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
 
-	if hcs.MaxIdleConns < 0 {
-		return nil, errors.New(`cannot have a negative "max_idle_conns"`)
-	} else if hcs.MaxIdleConns > 0 {
+	if hcs.MaxIdleConns != 0 {
 		transport.MaxIdleConns = hcs.MaxIdleConns
 	}
 
-	if hcs.MaxIdleConnsPerHost < 0 {
-		return nil, errors.New(`cannot have a negative "max_idle_conns_per_host"`)
-	} else if hcs.MaxIdleConnsPerHost > 0 {
-		if hcs.MaxIdleConnsPerHost > hcs.MaxIdleConns {
-			return nil, errors.New(`"max_idle_conns_per_host" cannot be greater than "max_idle_conns"`)
-		}
-		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
-	}
+	transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
 
-	if hcs.IdleConnTimeout < 0 {
-		return nil, errors.New(`cannot have a negative "idle_conn_timeout"`)
-	} else if hcs.IdleConnTimeout > 0 {
+	if hcs.IdleConnTimeout != 0 {
 		transport.IdleConnTimeout = hcs.IdleConnTimeout
 	}
 
