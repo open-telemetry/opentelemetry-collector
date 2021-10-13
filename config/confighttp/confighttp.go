@@ -62,17 +62,20 @@ type HTTPClientSettings struct {
 
 // ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
+
 	var err error
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
-	if hcs.TLSSetting != nil {
-		tlsCfg, terr := hcs.TLSSetting.LoadTLSConfig()
-		if terr != nil {
-			return nil, terr
-		}
-		if tlsCfg != nil {
-			transport.TLSClientConfig = tlsCfg
-		}
+	if hcs.TLSSetting == nil {
+		hcs.TLSSetting = &configtls.TLSClientSetting{}
+	}
+
+	tlsCfg, terr := hcs.TLSSetting.LoadTLSConfig()
+	if terr != nil {
+		return nil, terr
+	}
+	if tlsCfg != nil {
+		transport.TLSClientConfig = tlsCfg
 	}
 
 	if hcs.ReadBufferSize > 0 {

@@ -191,11 +191,13 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 		}
 	}
 	tlsDialOption := grpc.WithInsecure()
-	if gcs.TLSSetting != nil {
-		tlsCfg, err = gcs.TLSSetting.LoadTLSConfig()
-		if err != nil {
-			return nil, err
-		}
+	if gcs.TLSSetting == nil {
+		gcs.TLSSetting = &configtls.TLSClientSetting{}
+	}
+
+	tlsCfg, err = gcs.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, err
 	}
 	if tlsCfg != nil {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
