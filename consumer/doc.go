@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package consumer contains interfaces that receive and process consumerdata.
-package consumer
+package consumer // import "go.opentelemetry.io/collector/consumer"

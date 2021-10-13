@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package testutil // import "go.opentelemetry.io/collector/internal/testutil"
 
 import (
 	"net"

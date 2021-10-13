@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "go.opentelemetry.io/collector/config/experimental/config"
 
 import (
 	"go.opentelemetry.io/collector/config"
@@ -32,7 +32,7 @@ func (s *SourceSettings) ID() config.ComponentID {
 
 // SetIDName updates the name part of the ID for the component that this configuration belongs to.
 func (s *SourceSettings) SetIDName(idName string) {
-	s.ComponentID = config.NewIDWithName(s.ComponentID.Type(), idName)
+	s.ComponentID = config.NewComponentIDWithName(s.ComponentID.Type(), idName)
 }
 
 // NewSourceSettings return a new config.SourceSettings struct with the given ComponentID.

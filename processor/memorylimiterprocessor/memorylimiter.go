@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memorylimiterprocessor
+package memorylimiterprocessor // import "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 import (
 	"context"
@@ -89,7 +89,7 @@ type memoryLimiter struct {
 const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
-func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
+func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memoryLimiter, error) {
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}
@@ -97,6 +97,7 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		return nil, errLimitOutOfRange
 	}
 
+	logger := set.Logger
 	usageChecker, err := getMemUsageChecker(cfg, logger)
 	if err != nil {
 		return nil, err
@@ -114,8 +115,9 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:       configtelemetry.GetMetricsLevelFlagValue(),
-			ProcessorID: cfg.ID(),
+			Level:                   configtelemetry.GetMetricsLevelFlagValue(),
+			ProcessorID:             cfg.ID(),
+			ProcessorCreateSettings: set,
 		}),
 	}
 

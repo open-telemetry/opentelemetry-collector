@@ -105,7 +105,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-extension-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Service.Extensions = append(cfg.Service.Extensions, NewIDWithName("nop", "2"))
+				cfg.Service.Extensions = append(cfg.Service.Extensions, NewComponentIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`service references extension "nop/2" which does not exist`),
@@ -115,7 +115,7 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				pipe := cfg.Service.Pipelines["traces"]
-				pipe.Receivers = append(pipe.Receivers, NewIDWithName("nop", "2"))
+				pipe.Receivers = append(pipe.Receivers, NewComponentIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references receiver "nop/2" which does not exist`),
@@ -125,7 +125,7 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				pipe := cfg.Service.Pipelines["traces"]
-				pipe.Processors = append(pipe.Processors, NewIDWithName("nop", "2"))
+				pipe.Processors = append(pipe.Processors, NewComponentIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references processor "nop/2" which does not exist`),
@@ -135,7 +135,7 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				pipe := cfg.Service.Pipelines["traces"]
-				pipe.Exporters = append(pipe.Exporters, NewIDWithName("nop", "2"))
+				pipe.Exporters = append(pipe.Exporters, NewComponentIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references exporter "nop/2" which does not exist`),

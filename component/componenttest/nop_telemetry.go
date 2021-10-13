@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest
+package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
 	"go.opentelemetry.io/otel/metric"
@@ -27,6 +27,6 @@ func NewNopTelemetrySettings() component.TelemetrySettings {
 	return component.TelemetrySettings{
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
-		MeterProvider:  metric.NoopMeterProvider{},
+		MeterProvider:  metric.NewNoopMeterProvider(),
 	}
 }

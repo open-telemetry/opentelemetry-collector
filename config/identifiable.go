@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "go.opentelemetry.io/collector/config"
 
 import (
 	"errors"
@@ -44,8 +44,8 @@ func NewComponentID(typeVal Type) ComponentID {
 	return ComponentID{typeVal: typeVal}
 }
 
-// NewIDWithName returns a new ComponentID with the given Type and name.
-func NewIDWithName(typeVal Type, nameVal string) ComponentID {
+// NewComponentIDWithName returns a new ComponentID with the given Type and name.
+func NewComponentIDWithName(typeVal Type, nameVal string) ComponentID {
 	return ComponentID{typeVal: typeVal, nameVal: nameVal}
 }
 

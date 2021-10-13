@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package exporterhelper
+package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
 	"context"

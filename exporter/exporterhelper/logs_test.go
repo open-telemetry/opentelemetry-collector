@@ -42,7 +42,7 @@ const (
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
-var fakeLogsExporterName = config.NewIDWithName("fake_logs_exporter", "with_name")
+var fakeLogsExporterName = config.NewComponentIDWithName("fake_logs_exporter", "with_name")
 
 var (
 	fakeLogsExporterConfig = config.NewExporterSettings(fakeLogsExporterName)
@@ -125,7 +125,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -205,7 +205,7 @@ func newPushLogsData(retError error) consumerhelper.ConsumeLogsFunc {
 }
 
 func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter, wantError error) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 

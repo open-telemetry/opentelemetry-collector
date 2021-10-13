@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata
+package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
 	"go.opentelemetry.io/collector/model/internal"
@@ -246,6 +246,45 @@ const (
 func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
+
+// MetricDataPointFlags defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
+type MetricDataPointFlags uint32
+
+const (
+	// MetricDataPointFlagsNone is the default MetricDataPointFlags.
+	MetricDataPointFlagsNone = MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
+)
+
+// NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
+// in as parameters.
+func NewMetricDataPointFlags(flags ...MetricDataPointFlag) MetricDataPointFlags {
+	var flag MetricDataPointFlags
+	for _, f := range flags {
+		flag |= MetricDataPointFlags(f)
+	}
+	return flag
+}
+
+// HasFlag returns true if the MetricDataPointFlags contains the specified flag
+func (d MetricDataPointFlags) HasFlag(flag MetricDataPointFlag) bool {
+	return d&MetricDataPointFlags(flag) != 0
+}
+
+// String returns the string representation of the MetricDataPointFlags.
+func (d MetricDataPointFlags) String() string {
+	return otlpmetrics.DataPointFlags(d).String()
+}
+
+// MetricDataPointFlag allow users to configure DataPointFlags. This is achieved via NewMetricDataPointFlags.
+// The separation between MetricDataPointFlags and MetricDataPointFlag exists to prevent users accidentally
+// comparing the value of individual flags with MetricDataPointFlags. Instead, users must use the HasFlag method.
+type MetricDataPointFlag uint32
+
+const (
+	// MetricDataPointFlagsNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
+	MetricDataPointFlagNoRecordedValue = MetricDataPointFlag(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+)
 
 // MetricValueType specifies the type of NumberDataPoint.
 type MetricValueType int32

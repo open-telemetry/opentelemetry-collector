@@ -40,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/internal/collector/defaultcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/internal/extensions"
 	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
@@ -62,6 +63,44 @@ service:
       processors: [batch]
       exporters: [otlp]
 `
+
+// TestCollector_StartAsGoRoutine must be the first unit test on the file,
+// to test for initialization without setting CLI flags.
+func TestCollector_StartAsGoRoutine(t *testing.T) {
+	// use a mock AppTelemetry struct to return an error on shutdown
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &colTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
+
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	colDone := make(chan struct{})
+	go func() {
+		defer close(colDone)
+		colErr := col.Run(context.Background())
+		if colErr != nil {
+			err = colErr
+		}
+	}()
+
+	assert.Equal(t, Starting, <-col.GetStateChannel())
+	assert.Equal(t, Running, <-col.GetStateChannel())
+
+	col.Shutdown()
+	col.Shutdown()
+	<-colDone
+	assert.Equal(t, Closing, <-col.GetStateChannel())
+	assert.Equal(t, Closed, <-col.GetStateChannel())
+}
 
 func TestCollector_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
@@ -156,37 +195,6 @@ func TestCollector_ReportError(t *testing.T) {
 	assert.Equal(t, Starting, <-col.GetStateChannel())
 	assert.Equal(t, Running, <-col.GetStateChannel())
 	col.service.ReportFatalError(errors.New("err2"))
-	<-colDone
-	assert.Equal(t, Closing, <-col.GetStateChannel())
-	assert.Equal(t, Closed, <-col.GetStateChannel())
-}
-
-func TestCollector_StartAsGoRoutine(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-
-	set := CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
-	}
-	col, err := New(set)
-	require.NoError(t, err)
-
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		colErr := col.Run(context.Background())
-		if colErr != nil {
-			err = colErr
-		}
-	}()
-
-	assert.Equal(t, Starting, <-col.GetStateChannel())
-	assert.Equal(t, Running, <-col.GetStateChannel())
-
-	col.Shutdown()
-	col.Shutdown()
 	<-colDone
 	assert.Equal(t, Closing, <-col.GetStateChannel())
 	assert.Equal(t, Closed, <-col.GetStateChannel())
@@ -289,7 +297,7 @@ func TestCollector_reloadService(t *testing.T) {
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
-				builtExtensions: builder.Extensions{},
+				builtExtensions: extensions.Extensions{},
 			},
 		},
 		{
@@ -300,7 +308,7 @@ func TestCollector_reloadService(t *testing.T) {
 				builtExporters:  builder.Exporters{},
 				builtPipelines:  builder.BuiltPipelines{},
 				builtReceivers:  builder.Receivers{},
-				builtExtensions: builder.Extensions{},
+				builtExtensions: extensions.Extensions{},
 			},
 		},
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreportconfig
+package obsreportconfig // import "go.opentelemetry.io/collector/internal/obsreportconfig"
 
 import (
 	"go.opencensus.io/stats"

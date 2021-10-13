@@ -506,7 +506,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				set, err := obsreporttest.SetupRecordedMetricsTest()
+				set, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
 				defer set.Shutdown(context.Background())
 
@@ -537,7 +537,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
 
-				require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewIDWithName(typeStr, exporter.receiverTag), "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
+				require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentIDWithName(typeStr, exporter.receiverTag), "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}

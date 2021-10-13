@@ -591,6 +591,20 @@ func TestMetricsClone(t *testing.T) {
 	assert.EqualValues(t, metrics, metrics.Clone())
 }
 
+func TestMetricsDataPointFlags(t *testing.T) {
+	gauge := generateTestGauge()
+
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags())
+	assert.True(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
+	assert.False(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
+
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags(MetricDataPointFlagNoRecordedValue))
+	assert.False(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
+	assert.True(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
+}
+
 func BenchmarkMetricsClone(b *testing.B) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())

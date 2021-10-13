@@ -14,4 +14,4 @@
 
 // Package consumerhelper defines types and functions used to create consumer
 // Logs, Metrics, and Traces.
-package consumerhelper
+package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"

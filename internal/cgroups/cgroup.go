@@ -37,7 +37,7 @@
 //go:build linux
 // +build linux
 
-package cgroups
+package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
 
 import (
 	"bufio"

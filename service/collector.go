@@ -14,7 +14,7 @@
 
 // Package service handles the command-line, configuration, and runs the
 // OpenTelemetry Collector.
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
@@ -213,7 +213,7 @@ func (col *Collector) Run(ctx context.Context) error {
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
 
-	col.meterProvider = metric.NoopMeterProvider{}
+	col.meterProvider = metric.NewNoopMeterProvider()
 
 	col.stateChannel <- Starting
 

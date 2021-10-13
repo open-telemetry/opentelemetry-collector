@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest
+package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
 	"go.opentelemetry.io/collector/component"

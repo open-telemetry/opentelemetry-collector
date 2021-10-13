@@ -43,7 +43,7 @@ const (
 )
 
 var (
-	fakeTracesExporterName   = config.NewIDWithName("fake_traces_exporter", "with_name")
+	fakeTracesExporterName   = config.NewComponentIDWithName("fake_traces_exporter", "with_name")
 	fakeTracesExporterConfig = config.NewExporterSettings(fakeTracesExporterName)
 )
 
@@ -122,7 +122,7 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 
@@ -206,7 +206,7 @@ func newTraceDataPusher(retError error) consumerhelper.ConsumeTracesFunc {
 }
 
 func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExporter, wantError error) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	set, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer set.Shutdown(context.Background())
 

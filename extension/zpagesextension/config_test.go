@@ -41,10 +41,10 @@ func TestLoadConfig(t *testing.T) {
 	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
+	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:56888",
 			},
@@ -52,5 +52,5 @@ func TestLoadConfig(t *testing.T) {
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consumerhelper
+package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"
 
 import (
 	"context"

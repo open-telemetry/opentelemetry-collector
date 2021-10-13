@@ -22,13 +22,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -186,12 +182,7 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sr := new(tracetest.SpanRecorder)
-			tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-			otel.SetTracerProvider(tp)
-			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
-
-			set, err := obsreporttest.SetupRecordedMetricsTest()
+			set, err := obsreporttest.SetupTelemetry()
 			require.NoError(t, err)
 			defer set.Shutdown(context.Background())
 
@@ -215,7 +206,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, zap.NewNop(), nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, set.ToReceiverCreateSettings(), nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -256,7 +247,7 @@ func TestScrapeController(t *testing.T) {
 					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
-				spans := sr.Ended()
+				spans := set.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
 				assertReceiverViews(t, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)
@@ -429,7 +420,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(NewMetricsScraper("", tsm.scrape)),
 		AddScraper(NewResourceMetricsScraper(config.NewComponentID("scraper"), tsrm.scrape)),

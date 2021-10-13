@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package components // import "go.opentelemetry.io/collector/service/internal/components"
 
-import (
-	"errors"
-	"testing"
-
-	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component/componenttest"
+const (
+	ZapKindKey         = "kind"
+	ZapKindReceiver    = "receiver"
+	ZapKindProcessor   = "processor"
+	ZapKindLogExporter = "exporter"
+	ZapKindExtension   = "extension"
+	ZapNameKey         = "name"
 )
-
-func Test_newHostWrapper(t *testing.T) {
-	hw := newHostWrapper(componenttest.NewNopHost(), zap.NewNop())
-	hw.ReportFatalError(errors.New("test error"))
-}

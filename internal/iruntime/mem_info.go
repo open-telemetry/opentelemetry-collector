@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iruntime
+package iruntime // import "go.opentelemetry.io/collector/internal/iruntime"
 
 import (
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 // readMemInfo returns the total memory

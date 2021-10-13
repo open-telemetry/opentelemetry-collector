@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package components // import "go.opentelemetry.io/collector/service/internal/components"
 
 import (
 	"net/http"
@@ -28,7 +28,7 @@ type hostWrapper struct {
 	*zap.Logger
 }
 
-func newHostWrapper(host component.Host, logger *zap.Logger) component.Host {
+func NewHostWrapper(host component.Host, logger *zap.Logger) component.Host {
 	return &hostWrapper{
 		host,
 		logger,
