@@ -69,6 +69,14 @@ func Generate(cfg Config) error {
 			"main.go",
 			scaffold.Main,
 		},
+		{
+			"main_others.go",
+			scaffold.MainOthers,
+		},
+		{
+			"main_windows.go",
+			scaffold.MainWindows,
+		},
 		// components.go
 		{
 			"components.go",
