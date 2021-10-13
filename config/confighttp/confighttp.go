@@ -62,7 +62,6 @@ type HTTPClientSettings struct {
 
 // ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
-
 	var err error
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
