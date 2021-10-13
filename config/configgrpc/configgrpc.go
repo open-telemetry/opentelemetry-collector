@@ -73,7 +73,7 @@ type GRPCClientSettings struct {
 	Compression string `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -181,8 +181,6 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
-	var tlsCfg *tls.Config
-	var err error
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
 			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
@@ -190,19 +188,17 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 			return nil, fmt.Errorf("unsupported compression type %q", gcs.Compression)
 		}
 	}
-	tlsDialOption := grpc.WithInsecure()
-	if gcs.TLSSetting != nil {
-		tlsCfg, err = gcs.TLSSetting.LoadTLSConfig()
-		if err != nil {
-			return nil, err
-		}
+
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, err
 	}
+	tlsDialOption := grpc.WithInsecure()
 	if tlsCfg != nil {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
 	} else if gcs.isSchemeHTTPS() {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
 	}
-
 	opts = append(opts, tlsDialOption)
 
 	if gcs.ReadBufferSize > 0 {
@@ -239,7 +235,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 
 		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
 		if perr != nil {
-			return nil, perr
+			return nil, err
 		}
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
