@@ -8,6 +8,7 @@ require (
 	github.com/google/addlicense v1.0.0
 	github.com/jcchavezs/porto v0.3.0
 	github.com/mjibson/esc v0.2.0
+	github.com/open-telemetry/opentelemetry-collector-builder v0.36.0
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.14.0

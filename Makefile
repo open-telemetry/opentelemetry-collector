@@ -133,6 +133,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-builder
 	cd $(TOOLS_MOD_DIR) && go install github.com/wadey/gocovmerge
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
@@ -272,6 +273,11 @@ build-binary-internal-unstable:
 	$(MAKE) binaries-linux_$(ARCH)
 	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
+
+# Builds a collector binary of the remove cmd/otelcol
+.PHONY: build-binary-cmd-otelcol
+build-binary-cmd-otelcol:
+	opentelemetry-collector-builder --config ./internal/buildscripts/builder-config.yaml --output-path ./bin/otelcol_$(GOOS)_$(GOARCH)
 
 .PHONY: genmdata
 genmdata:
