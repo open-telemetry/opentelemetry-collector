@@ -26,7 +26,7 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
-COMP_REL_PATH=internal/collector/defaultcomponents/defaults.go
+COMP_REL_PATH=internal/defaultcomponents/defaults.go
 MOD_NAME=go.opentelemetry.io/collector
 
 ADDLICENSE=addlicense

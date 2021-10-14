@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package defaultcomponents composes the default set of components used by the otel service
-package defaultcomponents // import "go.opentelemetry.io/collector/service/defaultcomponents"
+package defaultcomponents // import "go.opentelemetry.io/collector/internal/defaultcomponents"
 
 import (
 	"go.uber.org/multierr"

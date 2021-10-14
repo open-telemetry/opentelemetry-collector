@@ -22,7 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/internal/collector/defaultcomponents"
+	"go.opentelemetry.io/collector/internal/defaultcomponents"
 )
 
 func TestValidateConfigFromFactories_Success(t *testing.T) {
