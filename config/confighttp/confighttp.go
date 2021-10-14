@@ -38,7 +38,7 @@ type HTTPClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
@@ -62,19 +62,14 @@ type HTTPClientSettings struct {
 
 // ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
-	var err error
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-
-	if hcs.TLSSetting != nil {
-		tlsCfg, terr := hcs.TLSSetting.LoadTLSConfig()
-		if terr != nil {
-			return nil, terr
-		}
-		if tlsCfg != nil {
-			transport.TLSClientConfig = tlsCfg
-		}
+	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, err
 	}
-
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if tlsCfg != nil {
+		transport.TLSClientConfig = tlsCfg
+	}
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize
 	}

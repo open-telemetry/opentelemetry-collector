@@ -38,7 +38,7 @@ import (
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
 	gcs := &GRPCClientSettings{
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
@@ -54,7 +54,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		},
 		Endpoint:    "localhost:1234",
 		Compression: "gzip",
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: false,
 		},
 		Keepalive: &KeepaliveClientConfig{
@@ -160,7 +160,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
 					},
@@ -176,7 +176,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
 					},
@@ -194,7 +194,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: "gzip",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -250,7 +250,7 @@ func TestUseSecure(t *testing.T) {
 		Headers:     nil,
 		Endpoint:    "",
 		Compression: "",
-		TLSSetting:  &configtls.TLSClientSetting{},
+		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
 	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost())
@@ -472,7 +472,7 @@ func TestHttpReception(t *testing.T) {
 
 			gcs := &GRPCClientSettings{
 				Endpoint:   ln.Addr().String(),
-				TLSSetting: tt.tlsClientCreds,
+				TLSSetting: *tt.tlsClientCreds,
 			}
 			clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost())
 			assert.NoError(t, errClient)
@@ -517,7 +517,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 	gcs := &GRPCClientSettings{
 		Endpoint: "unix://" + ln.Addr().String(),
-		TLSSetting: &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
