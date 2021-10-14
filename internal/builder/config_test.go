@@ -65,10 +65,17 @@ func TestRelativePath(t *testing.T) {
 func TestModuleFromCore(t *testing.T) {
 	// prepare
 	cfg := Config{
-		Extensions: []Module{{
-			Core:   true,
-			Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
-		}},
+		Extensions: []Module{ // see issue-12
+			{
+				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
+				GoMod:  "go.opentelemetry.io/collector v0.36.0",
+			},
+			{
+				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
+				GoMod:  "go.opentelemetry.io/collector v0.36.0",
+				Core:   nil,
+			},
+		},
 	}
 
 	// test
@@ -77,7 +84,30 @@ func TestModuleFromCore(t *testing.T) {
 
 	// verify
 	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Name, "jaegerreceiver"))
-	assert.Empty(t, cfg.Extensions[0].GoMod)
+}
+
+func TestDeprecatedCore(t *testing.T) {
+	// prepare
+	coreTrue := true
+	coreFalse := false
+	cfg := Config{
+		Extensions: []Module{
+			{
+				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
+				Core:   &coreTrue,
+			},
+			{
+				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
+				Core:   &coreFalse,
+			},
+		},
+	}
+
+	// test
+	err := cfg.ParseModules()
+
+	// verify
+	assert.True(t, errors.Is(err, ErrDeprecatedCore))
 }
 
 func TestInvalidModule(t *testing.T) {

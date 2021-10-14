@@ -5,10 +5,10 @@ dist:
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    core: true
+    gomod: go.opentelemetry.io/collector v0.36.0
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    core: true
+    gomod: go.opentelemetry.io/collector v0.36.0
 extensions:
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    core: true
+    gomod: go.opentelemetry.io/collector v0.36.0
