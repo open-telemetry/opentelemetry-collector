@@ -2,9 +2,9 @@ dist:
   module: github.com/open-telemetry/opentelemetry-collector-releases/core
   name: cmd-otelcol
   description: OpenTelemetry Collector Replacing cmd/otelcol
-  version: 0.36.0
-  otelcol_version: 0.36.0
+  version: 0.37.0
+  otelcol_version: 0.37.0
 
 replaces:
-  - go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.36.0
-  - go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.36.0
+  - go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.37.0
+  - go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.37.0

@@ -8,7 +8,7 @@ require (
 	github.com/google/addlicense v1.0.0
 	github.com/jcchavezs/porto v0.3.0
 	github.com/mjibson/esc v0.2.0
-	github.com/open-telemetry/opentelemetry-collector-builder v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-builder v0.37.0
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.14.0
@@ -50,7 +50,7 @@ require (
 	github.com/fzipp/gocyclo v0.3.1 // indirect
 	github.com/go-critic/go-critic v0.5.6 // indirect
 	github.com/go-logr/logr v0.2.1 // indirect
-    github.com/go-logr/zapr v0.2.0 // indirect
+	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-toolsmith/astcast v1.0.0 // indirect
 	github.com/go-toolsmith/astcopy v1.0.0 // indirect
 	github.com/go-toolsmith/astequal v1.0.0 // indirect
