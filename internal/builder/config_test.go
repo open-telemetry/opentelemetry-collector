@@ -68,11 +68,11 @@ func TestModuleFromCore(t *testing.T) {
 		Extensions: []Module{ // see issue-12
 			{
 				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
-				GoMod:  "go.opentelemetry.io/collector v0.36.0",
+				GoMod:  "go.opentelemetry.io/collector v0.37.0",
 			},
 			{
 				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
-				GoMod:  "go.opentelemetry.io/collector v0.36.0",
+				GoMod:  "go.opentelemetry.io/collector v0.37.0",
 				Core:   nil,
 			},
 		},
