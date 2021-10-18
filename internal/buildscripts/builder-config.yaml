@@ -6,5 +6,5 @@ dist:
   otelcol_version: 0.37.0
 
 replaces:
-  - go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.37.0
-  - go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.37.0
+  - go.opentelemetry.io/collector => ../../
+  - go.opentelemetry.io/collector/model => ../../model
