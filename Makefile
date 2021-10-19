@@ -274,9 +274,10 @@ build-binary-internal-unstable:
 	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
 
-# Builds a collector binary of the remove cmd/otelcol
+# Builds a collector binary of the removed cmd/otelcol directory
 .PHONY: build-binary-cmd-otelcol
 build-binary-cmd-otelcol:
+	mkdir -p ./bin/otelcol_$(GOOS)_$(GOARCH)
 	opentelemetry-collector-builder --config ./internal/buildscripts/builder-config.yaml --output-path ./bin/otelcol_$(GOOS)_$(GOARCH)
 
 .PHONY: genmdata
