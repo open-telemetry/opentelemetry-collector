@@ -20,10 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBatchProcessorMetrics(t *testing.T) {
+func TestBatchProcessorViews(t *testing.T) {
 	viewNames := []string{
-		"batch_size_trigger_send",
-		"timeout_trigger_send",
 		"batch_send_size",
 		"batch_send_size_bytes",
 	}

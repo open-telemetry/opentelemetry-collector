@@ -15,6 +15,9 @@
 package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
+	"go.opencensus.io/metric"
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -24,32 +27,34 @@ import (
 )
 
 var (
-	processorTagKey          = tag.MustNewKey(obsmetrics.ProcessorKey)
-	statBatchSizeTriggerSend = stats.Int64("batch_size_trigger_send", "Number of times the batch was sent due to a size trigger", stats.UnitDimensionless)
-	statTimeoutTriggerSend   = stats.Int64("timeout_trigger_send", "Number of times the batch was sent due to a timeout trigger", stats.UnitDimensionless)
-	statBatchSendSize        = stats.Int64("batch_send_size", "Number of units in the batch", stats.UnitDimensionless)
-	statBatchSendSizeBytes   = stats.Int64("batch_send_size_bytes", "Number of bytes in batch that was sent", stats.UnitBytes)
+	r = metric.NewRegistry()
+
+	sizeTriggerSendMetric, _ = r.AddInt64Cumulative(
+		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_size_trigger_send"),
+		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
+		metric.WithLabelKeys(obsmetrics.ProcessorKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+
+	timeoutTriggerSendMetric, _ = r.AddInt64Cumulative(
+		obsreport.BuildProcessorCustomMetricName(typeStr, "timeout_trigger_send"),
+		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
+		metric.WithLabelKeys(obsmetrics.ProcessorKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+)
+
+func init() {
+	metricproducer.GlobalManager().AddProducer(r)
+}
+
+var (
+	processorTagKey        = tag.MustNewKey(obsmetrics.ProcessorKey)
+	statBatchSendSize      = stats.Int64("batch_send_size", "Number of units in the batch", stats.UnitDimensionless)
+	statBatchSendSizeBytes = stats.Int64("batch_send_size_bytes", "Number of bytes in batch that was sent", stats.UnitBytes)
 )
 
 // MetricViews returns the metrics views related to batching
 func MetricViews() []*view.View {
 	processorTagKeys := []tag.Key{processorTagKey}
-
-	countBatchSizeTriggerSendView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statBatchSizeTriggerSend.Name()),
-		Measure:     statBatchSizeTriggerSend,
-		Description: statBatchSizeTriggerSend.Description(),
-		TagKeys:     processorTagKeys,
-		Aggregation: view.Sum(),
-	}
-
-	countTimeoutTriggerSendView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statTimeoutTriggerSend.Name()),
-		Measure:     statTimeoutTriggerSend,
-		Description: statTimeoutTriggerSend.Description(),
-		TagKeys:     processorTagKeys,
-		Aggregation: view.Sum(),
-	}
 
 	distributionBatchSendSizeView := &view.View{
 		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statBatchSendSize.Name()),
@@ -70,8 +75,6 @@ func MetricViews() []*view.View {
 	}
 
 	return []*view.View{
-		countBatchSizeTriggerSendView,
-		countTimeoutTriggerSendView,
 		distributionBatchSendSizeView,
 		distributionBatchSendSizeBytesView,
 	}

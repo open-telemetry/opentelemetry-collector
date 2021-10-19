@@ -23,6 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -119,7 +121,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
 }
 
-func TestBatchProcessorSentBySize(t *testing.T) {
+func TestBatchProcessorMetrics(t *testing.T) {
 	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
@@ -164,6 +166,9 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 			require.Equal(t, spansPerRequest, rss.At(i).InstrumentationLibrarySpans().At(0).Spans().Len())
 		}
 	}
+
+	checkValueForProducer(t, []metricdata.LabelValue{metricdata.NewLabelValue(cfg.ID().String())}, 0, "processor/batch/timeout_trigger_send")
+	checkValueForProducer(t, []metricdata.LabelValue{metricdata.NewLabelValue(cfg.ID().String())}, int64(expectedBatchesNum), "processor/batch/batch_size_trigger_send")
 
 	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
 	require.NoError(t, err)
@@ -789,4 +794,36 @@ func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
 func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	componenttest.VerifyProcessorShutdown(t, factory, factory.CreateDefaultConfig())
+}
+
+// checkValueForProducer checks that the given metrics with wantTags is reported by one of the
+// metric producers
+func checkValueForProducer(t *testing.T, wantLabelValues []metricdata.LabelValue, value int64, vName string) {
+	producers := metricproducer.GlobalManager().GetAll()
+	for _, producer := range producers {
+		for _, metric := range producer.Read() {
+			if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
+				lastValue := metric.TimeSeries[len(metric.TimeSeries)-1]
+				if matchLabels(wantLabelValues, lastValue.LabelValues) {
+					require.Equal(t, value, lastValue.Points[len(lastValue.Points)-1].Value.(int64))
+					return
+				}
+			}
+		}
+	}
+
+	require.Fail(t, fmt.Sprintf("could not find metric %v with label values %v reported", vName, wantLabelValues))
+}
+
+// matchLabels returns true if the current values match the want values
+func matchLabels(want []metricdata.LabelValue, current []metricdata.LabelValue) bool {
+	if len(want) != len(current) {
+		return false
+	}
+	for i := 0; i < len(want); i++ {
+		if want[i].Present != current[i].Present || want[i].Value != current[i].Value {
+			return false
+		}
+	}
+	return true
 }
