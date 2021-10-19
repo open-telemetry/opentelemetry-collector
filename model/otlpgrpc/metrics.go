@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// TODO: Consider to add `MetricsRequest`. If we add non pdata properties we can add them to the request.
-
 // MetricsResponse represents the response for gRPC client/server.
 type MetricsResponse struct {
 	orig *otlpcollectormetrics.ExportMetricsServiceResponse
@@ -36,6 +34,24 @@ type MetricsResponse struct {
 // NewMetricsResponse returns an empty MetricsResponse.
 func NewMetricsResponse() MetricsResponse {
 	return MetricsResponse{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
+}
+
+// UnmarshalMetricsResponse unmarshalls MetricsResponse from proto bytes.
+func UnmarshalMetricsResponse(data []byte) (MetricsResponse, error) {
+	var orig otlpcollectormetrics.ExportMetricsServiceResponse
+	if err := orig.Unmarshal(data); err != nil {
+		return MetricsResponse{}, err
+	}
+	return MetricsResponse{orig: &orig}, nil
+}
+
+// UnmarshalJSONMetricsResponse unmarshalls MetricsResponse from JSON bytes.
+func UnmarshalJSONMetricsResponse(data []byte) (MetricsResponse, error) {
+	var orig otlpcollectormetrics.ExportMetricsServiceResponse
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return MetricsResponse{}, err
+	}
+	return MetricsResponse{orig: &orig}, nil
 }
 
 // Marshal marshals MetricsResponse into proto bytes.
@@ -60,6 +76,24 @@ type MetricsRequest struct {
 // NewMetricsRequest returns an empty MetricsRequest.
 func NewMetricsRequest() MetricsRequest {
 	return MetricsRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
+}
+
+// UnmarshalMetricsRequest unmarshalls MetricsRequest from proto bytes.
+func UnmarshalMetricsRequest(data []byte) (MetricsRequest, error) {
+	var orig otlpcollectormetrics.ExportMetricsServiceRequest
+	if err := orig.Unmarshal(data); err != nil {
+		return MetricsRequest{}, err
+	}
+	return MetricsRequest{orig: &orig}, nil
+}
+
+// UnmarshalJSONMetricsRequest unmarshalls MetricsRequest from JSON bytes.
+func UnmarshalJSONMetricsRequest(data []byte) (MetricsRequest, error) {
+	var orig otlpcollectormetrics.ExportMetricsServiceRequest
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return MetricsRequest{}, err
+	}
+	return MetricsRequest{orig: &orig}, nil
 }
 
 // Marshal marshals MetricsRequest into proto bytes.
