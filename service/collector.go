@@ -34,12 +34,12 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // State defines Collector's state.
@@ -194,7 +194,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := col.set.ConfigMapProvider.(parserprovider.Watchable); ok {
+	if watchable, ok := col.set.ConfigMapProvider.(config.WatchableMapProvider); ok {
 		go col.watchForConfigUpdates(watchable)
 	}
 
@@ -285,7 +285,7 @@ func (col *Collector) reloadService(ctx context.Context) error {
 	return nil
 }
 
-func (col *Collector) watchForConfigUpdates(watchable parserprovider.Watchable) {
+func (col *Collector) watchForConfigUpdates(watchable config.WatchableMapProvider) {
 	err := watchable.WatchForUpdate()
 	if errors.Is(err, configsource.ErrSessionClosed) {
 		// This is the case of shutdown of the whole collector server, nothing to do.

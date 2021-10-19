@@ -29,12 +29,12 @@ type propertiesMapProvider struct {
 	properties []string
 }
 
-// NewPropertiesMapProvider returns a MapProvider, that provides a config.Map from the given properties.
+// NewPropertiesMapProvider returns a config.MapProvider, that provides a config.Map from the given properties.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-func NewPropertiesMapProvider(properties []string) MapProvider {
+func NewPropertiesMapProvider(properties []string) config.MapProvider {
 	return &propertiesMapProvider{
 		properties: properties,
 	}
