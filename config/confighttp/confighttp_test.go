@@ -64,6 +64,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				WriteBufferSize:     512,
 				MaxIdleConns:        50,
 				MaxIdleConnsPerHost: 40,
+				MaxConnsPerHost:     45,
 				IdleConnTimeout:     30 * time.Second,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 			},
@@ -97,6 +98,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
 			assert.EqualValues(t, 50, transport.MaxIdleConns)
 			assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
+			assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
 		})
 	}
