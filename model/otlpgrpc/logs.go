@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/model/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -81,7 +82,7 @@ func (lr LogsRequest) SetLogs(ld pdata.Logs) {
 }
 
 func (lr LogsRequest) Logs() pdata.Logs {
-	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(lr.orig))
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(&otlplogs.LogsData{ResourceLogs: lr.orig.ResourceLogs}))
 }
 
 // LogsClient is the client API for OTLP-GRPC Logs service.

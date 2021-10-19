@@ -16,7 +16,6 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
 	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -47,12 +46,12 @@ type MetricsSizer interface {
 // Outside of the core repository, the metrics pipeline cannot be converted to the new model since data.MetricData is
 // part of the internal package.
 type Metrics struct {
-	orig *otlpcollectormetrics.ExportMetricsServiceRequest
+	orig *otlpmetrics.MetricsData
 }
 
 // NewMetrics creates a new Metrics.
 func NewMetrics() Metrics {
-	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
+	return Metrics{orig: &otlpmetrics.MetricsData{}}
 }
 
 // MetricsFromInternalRep creates Metrics from the internal representation.
