@@ -590,7 +590,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 	require.NoError(t, err)
 
-	td := testdata.GenerateTracesManySpansSameResource(500000)
+	td := testdata.GenerateTracesManySpansSameResource(50000)
 	require.Error(t, exportTraces(cc, td))
 	cc.Close()
 	require.NoError(t, ocr.Shutdown(context.Background()))
@@ -606,7 +606,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, err)
 	defer cc.Close()
 
-	td = testdata.GenerateTracesManySpansSameResource(500000)
+	td = testdata.GenerateTracesManySpansSameResource(50000)
 	require.NoError(t, exportTraces(cc, td))
 	require.Len(t, sink.AllTraces(), 1)
 	assert.Equal(t, td, sink.AllTraces()[0])
