@@ -27,6 +27,7 @@ import (
 )
 
 var jsonMarshaler = &jsonpb.Marshaler{}
+var jsonUnmarshaler = &jsonpb.Unmarshaler{}
 
 // LogsResponse represents the response for gRPC client/server.
 type LogsResponse struct {
@@ -36,6 +37,24 @@ type LogsResponse struct {
 // NewLogsResponse returns an empty LogsResponse.
 func NewLogsResponse() LogsResponse {
 	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
+}
+
+// UnmarshalLogsResponse unmarshalls LogsResponse from proto bytes.
+func UnmarshalLogsResponse(data []byte) (LogsResponse, error) {
+	var orig otlpcollectorlog.ExportLogsServiceResponse
+	if err := orig.Unmarshal(data); err != nil {
+		return LogsResponse{}, err
+	}
+	return LogsResponse{orig: &orig}, nil
+}
+
+// UnmarshalJSONLogsResponse unmarshalls LogsResponse from JSON bytes.
+func UnmarshalJSONLogsResponse(data []byte) (LogsResponse, error) {
+	var orig otlpcollectorlog.ExportLogsServiceResponse
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return LogsResponse{}, err
+	}
+	return LogsResponse{orig: &orig}, nil
 }
 
 // Marshal marshals LogsResponse into proto bytes.
@@ -60,6 +79,24 @@ type LogsRequest struct {
 // NewLogsRequest returns an empty LogsRequest.
 func NewLogsRequest() LogsRequest {
 	return LogsRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+}
+
+// UnmarshalLogsRequest unmarshalls LogsRequest from proto bytes.
+func UnmarshalLogsRequest(data []byte) (LogsRequest, error) {
+	var orig otlpcollectorlog.ExportLogsServiceRequest
+	if err := orig.Unmarshal(data); err != nil {
+		return LogsRequest{}, err
+	}
+	return LogsRequest{orig: &orig}, nil
+}
+
+// UnmarshalJSONLogsRequest unmarshalls LogsRequest from JSON bytes.
+func UnmarshalJSONLogsRequest(data []byte) (LogsRequest, error) {
+	var orig otlpcollectorlog.ExportLogsServiceRequest
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return LogsRequest{}, err
+	}
+	return LogsRequest{orig: &orig}, nil
 }
 
 // Marshal marshals LogsRequest into proto bytes.

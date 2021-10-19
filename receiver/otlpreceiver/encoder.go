@@ -21,7 +21,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 )
 
@@ -31,18 +30,8 @@ const (
 )
 
 var (
-	pbEncoder = &protoEncoder{}
-	jsEncoder = &jsonEncoder{}
-
-	tracesPbUnmarshaler   = otlp.NewProtobufTracesUnmarshaler()
-	tracesJSONUnmarshaler = otlp.NewJSONTracesUnmarshaler()
-
-	metricsPbUnmarshaler   = otlp.NewProtobufMetricsUnmarshaler()
-	metricsJSONUnmarshaler = otlp.NewJSONMetricsUnmarshaler()
-
-	logsPbUnmarshaler   = otlp.NewProtobufLogsUnmarshaler()
-	logsJSONUnmarshaler = otlp.NewJSONLogsUnmarshaler()
-
+	pbEncoder     = &protoEncoder{}
+	jsEncoder     = &jsonEncoder{}
 	jsonMarshaler = &jsonpb.Marshaler{}
 )
 
@@ -63,33 +52,15 @@ type encoder interface {
 type protoEncoder struct{}
 
 func (protoEncoder) unmarshalTracesRequest(buf []byte) (otlpgrpc.TracesRequest, error) {
-	td, err := tracesPbUnmarshaler.UnmarshalTraces(buf)
-	if err != nil {
-		return otlpgrpc.TracesRequest{}, err
-	}
-	req := otlpgrpc.NewTracesRequest()
-	req.SetTraces(td)
-	return req, nil
+	return otlpgrpc.UnmarshalTracesRequest(buf)
 }
 
 func (protoEncoder) unmarshalMetricsRequest(buf []byte) (otlpgrpc.MetricsRequest, error) {
-	td, err := metricsPbUnmarshaler.UnmarshalMetrics(buf)
-	if err != nil {
-		return otlpgrpc.MetricsRequest{}, err
-	}
-	req := otlpgrpc.NewMetricsRequest()
-	req.SetMetrics(td)
-	return req, nil
+	return otlpgrpc.UnmarshalMetricsRequest(buf)
 }
 
 func (protoEncoder) unmarshalLogsRequest(buf []byte) (otlpgrpc.LogsRequest, error) {
-	ld, err := logsPbUnmarshaler.UnmarshalLogs(buf)
-	if err != nil {
-		return otlpgrpc.LogsRequest{}, err
-	}
-	req := otlpgrpc.NewLogsRequest()
-	req.SetLogs(ld)
-	return req, nil
+	return otlpgrpc.UnmarshalLogsRequest(buf)
 }
 
 func (protoEncoder) marshalTracesResponse(resp otlpgrpc.TracesResponse) ([]byte, error) {
@@ -115,33 +86,15 @@ func (protoEncoder) contentType() string {
 type jsonEncoder struct{}
 
 func (jsonEncoder) unmarshalTracesRequest(buf []byte) (otlpgrpc.TracesRequest, error) {
-	td, err := tracesJSONUnmarshaler.UnmarshalTraces(buf)
-	if err != nil {
-		return otlpgrpc.TracesRequest{}, err
-	}
-	req := otlpgrpc.NewTracesRequest()
-	req.SetTraces(td)
-	return req, nil
+	return otlpgrpc.UnmarshalJSONTracesRequest(buf)
 }
 
 func (jsonEncoder) unmarshalMetricsRequest(buf []byte) (otlpgrpc.MetricsRequest, error) {
-	td, err := metricsJSONUnmarshaler.UnmarshalMetrics(buf)
-	if err != nil {
-		return otlpgrpc.MetricsRequest{}, err
-	}
-	req := otlpgrpc.NewMetricsRequest()
-	req.SetMetrics(td)
-	return req, nil
+	return otlpgrpc.UnmarshalJSONMetricsRequest(buf)
 }
 
 func (jsonEncoder) unmarshalLogsRequest(buf []byte) (otlpgrpc.LogsRequest, error) {
-	ld, err := logsJSONUnmarshaler.UnmarshalLogs(buf)
-	if err != nil {
-		return otlpgrpc.LogsRequest{}, err
-	}
-	req := otlpgrpc.NewLogsRequest()
-	req.SetLogs(ld)
-	return req, nil
+	return otlpgrpc.UnmarshalJSONLogsRequest(buf)
 }
 
 func (jsonEncoder) marshalTracesResponse(resp otlpgrpc.TracesResponse) ([]byte, error) {

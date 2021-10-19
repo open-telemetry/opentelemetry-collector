@@ -25,8 +25,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// TODO: Consider to add `TracesRequest`. If we add non pdata properties we can add them to the request.
-
 // TracesResponse represents the response for gRPC client/server.
 type TracesResponse struct {
 	orig *otlpcollectortrace.ExportTraceServiceResponse
@@ -35,6 +33,24 @@ type TracesResponse struct {
 // NewTracesResponse returns an empty TracesResponse.
 func NewTracesResponse() TracesResponse {
 	return TracesResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
+}
+
+// UnmarshalTracesResponse unmarshalls TracesResponse from proto bytes.
+func UnmarshalTracesResponse(data []byte) (TracesResponse, error) {
+	var orig otlpcollectortrace.ExportTraceServiceResponse
+	if err := orig.Unmarshal(data); err != nil {
+		return TracesResponse{}, err
+	}
+	return TracesResponse{orig: &orig}, nil
+}
+
+// UnmarshalJSONTracesResponse unmarshalls TracesResponse from JSON bytes.
+func UnmarshalJSONTracesResponse(data []byte) (TracesResponse, error) {
+	var orig otlpcollectortrace.ExportTraceServiceResponse
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return TracesResponse{}, err
+	}
+	return TracesResponse{orig: &orig}, nil
 }
 
 // Marshal marshals TracesResponse into proto bytes.
@@ -59,6 +75,24 @@ type TracesRequest struct {
 // NewTracesRequest returns an empty TracesRequest.
 func NewTracesRequest() TracesRequest {
 	return TracesRequest{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
+}
+
+// UnmarshalTracesRequest unmarshalls TracesRequest from proto bytes.
+func UnmarshalTracesRequest(data []byte) (TracesRequest, error) {
+	var orig otlpcollectortrace.ExportTraceServiceRequest
+	if err := orig.Unmarshal(data); err != nil {
+		return TracesRequest{}, err
+	}
+	return TracesRequest{orig: &orig}, nil
+}
+
+// UnmarshalJSONTracesRequest unmarshalls TracesRequest from JSON bytes.
+func UnmarshalJSONTracesRequest(data []byte) (TracesRequest, error) {
+	var orig otlpcollectortrace.ExportTraceServiceRequest
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return TracesRequest{}, err
+	}
+	return TracesRequest{orig: &orig}, nil
 }
 
 // Marshal marshals TracesRequest into proto bytes.
