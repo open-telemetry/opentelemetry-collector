@@ -183,7 +183,7 @@ func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, 
 		Level:                  configtelemetry.GetMetricsLevelFlagValue(),
 		ExporterID:             cfg.ID(),
 		ExporterCreateSettings: set,
-	})
+	}, globalInstruments)
 	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 

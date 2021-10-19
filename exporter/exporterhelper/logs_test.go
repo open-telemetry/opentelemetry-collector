@@ -145,7 +145,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
-	checkExporterEnqueueFailedLogsStats(t, fakeLogsExporterName, int64(15))
+	checkExporterEnqueueFailedLogsStats(t, globalInstruments, fakeLogsExporterName, int64(15))
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
