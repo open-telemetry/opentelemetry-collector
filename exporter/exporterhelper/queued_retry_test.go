@@ -486,7 +486,7 @@ func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, wan
 	assert.EqualValues(t, want, atomic.LoadInt64(&ocs.droppedItemsCount))
 }
 
-// checkValueForProducer checks that the given metrics with wantTags is reported by one of the
+// checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the
 // metric producers
 func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
 	producers := metricproducer.GlobalManager().GetAll()
@@ -498,8 +498,7 @@ func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, v
 	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
 }
 
-// checkValueForProducer checks that the given metrics with wantTags is reported by one of the
-// metric producers
+// checkValueForProducer checks that the given metrics with wantTags is reported by the metric producer
 func checkValueForProducer(t *testing.T, producer metricproducer.Producer, wantTags []tag.Tag, value int64, vName string) bool {
 	for _, metric := range producer.Read() {
 		if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {

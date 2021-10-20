@@ -63,13 +63,13 @@ func newInstruments(registry *metric.Registry) *instruments {
 
 	insts.failedToEnqueueMetricPoints, _ = registry.AddInt64Cumulative(
 		obsmetrics.ExporterKey+"/enqueue_failed_metric_points",
-		metric.WithDescription("Number of spans failed to be added to the sending queue."),
+		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
 	insts.failedToEnqueueLogRecords, _ = registry.AddInt64Cumulative(
 		obsmetrics.ExporterKey+"/enqueue_failed_log_records",
-		metric.WithDescription("Number of spans failed to be added to the sending queue."),
+		metric.WithDescription("Number of log records failed to be added to the sending queue."),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
