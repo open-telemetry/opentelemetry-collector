@@ -113,7 +113,7 @@ func NewMetricsExporter(
 		req := newMetricsRequest(ctx, md, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {
-			be.obsrep.recordMetricsEnqueueFailure(req.context(), req.count())
+			be.obsrep.recordMetricsEnqueueFailure(req.context(), int64(req.count()))
 		}
 		return err
 	}, bs.consumerOptions...)

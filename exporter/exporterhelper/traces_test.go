@@ -142,7 +142,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 5 batches (10 spans) rejected due to queue overflow
-	checkExporterEnqueueFailedTracesStats(t, fakeTracesExporterName, int64(10))
+	checkExporterEnqueueFailedTracesStats(t, globalInstruments, fakeTracesExporterName, int64(10))
 }
 
 func TestTracesExporter_WithSpan(t *testing.T) {
