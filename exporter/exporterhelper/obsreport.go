@@ -105,11 +105,11 @@ func (eor *obsExporter) recordTracesEnqueueFailure(_ context.Context, numSpans i
 }
 
 // recordMetricsEnqueueFailure records number of metric points that failed to be added to the sending queue.
-func (eor *obsExporter) recordMetricsEnqueueFailure(ctx context.Context, numMetricPoints int64) {
+func (eor *obsExporter) recordMetricsEnqueueFailure(_ context.Context, numMetricPoints int64) {
 	eor.failedToEnqueueMetricPointsEntry.Inc(numMetricPoints)
 }
 
 // recordLogsEnqueueFailure records number of log records that failed to be added to the sending queue.
-func (eor *obsExporter) recordLogsEnqueueFailure(ctx context.Context, numLogRecords int64) {
+func (eor *obsExporter) recordLogsEnqueueFailure(_ context.Context, numLogRecords int64) {
 	eor.failedToEnqueueLogRecordsEntry.Inc(numLogRecords)
 }
