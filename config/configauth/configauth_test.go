@@ -26,7 +26,7 @@ import (
 func TestGetAuthenticator(t *testing.T) {
 	// prepare
 	cfg := &Authentication{
-		AuthenticatorName: "mock",
+		AuthenticatorID: config.NewComponentID("mock"),
 	}
 	ext := map[config.ComponentID]component.Extension{
 		config.NewComponentID("mock"): &MockAuthenticator{},
@@ -49,7 +49,7 @@ func TestGetAuthenticatorFails(t *testing.T) {
 		{
 			desc: "ServerAuthenticator not found",
 			cfg: &Authentication{
-				AuthenticatorName: "does-not-exist",
+				AuthenticatorID: config.NewComponentID("does-not-exist"),
 			},
 			ext:      map[config.ComponentID]component.Extension{},
 			expected: errAuthenticatorNotFound,
