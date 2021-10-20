@@ -1,6 +1,6 @@
 receivers:
-  examplereceiver/ 1:
-  examplereceiver/1:
+  examplereceiver/ recv:
+  examplereceiver /recv :
 exporters:
   exampleexporter:
 processors:

@@ -1,8 +1,8 @@
 receivers:
   examplereceiver:
 exporters:
-  exampleexporter/exp:
-  exampleexporter/ exp :
+  exampleexporter /exp :
+  exampleexporter/ exp:
 processors:
   exampleprocessor:
 service:
