@@ -26,3 +26,4 @@ coverage.html
 # Wix
 *.wixobj
 *.wixpdb
+cmd/mdatagen/mdatagen

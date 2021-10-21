@@ -62,6 +62,9 @@ filesystem:
   <include_mount_points|exclude_mount_points>:
     mount_points: [ <mount point>, ... ]
     match_type: <strict|regexp>
+  <include_ops|exclude_ops>:
+    opts: [ <opts>, ... ]
+    match_type: <strict|regexp>
 ```
 
 ### Network

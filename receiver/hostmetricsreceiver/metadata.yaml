@@ -35,6 +35,10 @@ labels:
     value: mountpoint
     description: Mountpoint path.
 
+  filesystem.opts:
+    value: opts
+    description: Opts such "removable", "cdrom".
+
   filesystem.state:
     value: state
     description: Breakdown of filesystem usage by type.
