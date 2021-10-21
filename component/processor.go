@@ -57,7 +57,7 @@ type ProcessorCreateSettings struct {
 // ProcessorFactory is factory interface for processors. This is the
 // new factory type that can create new style processors.
 //
-// This interface cannot be directly implemented. Implementations need to
+// This interface cannot be directly implemented. Implementations must
 // use the processorhelper.NewFactory to implement it.
 type ProcessorFactory interface {
 	internalinterface.InternalInterface
