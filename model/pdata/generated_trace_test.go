@@ -135,6 +135,14 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestResourceSpans_MoveTo(t *testing.T) {
+	ms := generateTestResourceSpans()
+	dest := NewResourceSpans()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewResourceSpans(), ms)
+	assert.EqualValues(t, generateTestResourceSpans(), dest)
+}
+
 func TestResourceSpans_CopyTo(t *testing.T) {
 	ms := NewResourceSpans()
 	generateTestResourceSpans().CopyTo(ms)
@@ -273,6 +281,14 @@ func TestInstrumentationLibrarySpansSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestInstrumentationLibrarySpans_MoveTo(t *testing.T) {
+	ms := generateTestInstrumentationLibrarySpans()
+	dest := NewInstrumentationLibrarySpans()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewInstrumentationLibrarySpans(), ms)
+	assert.EqualValues(t, generateTestInstrumentationLibrarySpans(), dest)
+}
+
 func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	generateTestInstrumentationLibrarySpans().CopyTo(ms)
@@ -409,6 +425,14 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestSpan_MoveTo(t *testing.T) {
+	ms := generateTestSpan()
+	dest := NewSpan()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewSpan(), ms)
+	assert.EqualValues(t, generateTestSpan(), dest)
 }
 
 func TestSpan_CopyTo(t *testing.T) {
@@ -645,6 +669,14 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSpanEvent_MoveTo(t *testing.T) {
+	ms := generateTestSpanEvent()
+	dest := NewSpanEvent()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewSpanEvent(), ms)
+	assert.EqualValues(t, generateTestSpanEvent(), dest)
+}
+
 func TestSpanEvent_CopyTo(t *testing.T) {
 	ms := NewSpanEvent()
 	generateTestSpanEvent().CopyTo(ms)
@@ -793,6 +825,14 @@ func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSpanLink_MoveTo(t *testing.T) {
+	ms := generateTestSpanLink()
+	dest := NewSpanLink()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewSpanLink(), ms)
+	assert.EqualValues(t, generateTestSpanLink(), dest)
+}
+
 func TestSpanLink_CopyTo(t *testing.T) {
 	ms := NewSpanLink()
 	generateTestSpanLink().CopyTo(ms)
@@ -837,6 +877,14 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
 	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
+}
+
+func TestSpanStatus_MoveTo(t *testing.T) {
+	ms := generateTestSpanStatus()
+	dest := NewSpanStatus()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewSpanStatus(), ms)
+	assert.EqualValues(t, generateTestSpanStatus(), dest)
 }
 
 func TestSpanStatus_CopyTo(t *testing.T) {

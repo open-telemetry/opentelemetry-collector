@@ -25,6 +25,14 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 )
 
+func TestInstrumentationLibrary_MoveTo(t *testing.T) {
+	ms := generateTestInstrumentationLibrary()
+	dest := NewInstrumentationLibrary()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewInstrumentationLibrary(), ms)
+	assert.EqualValues(t, generateTestInstrumentationLibrary(), dest)
+}
+
 func TestInstrumentationLibrary_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrary()
 	generateTestInstrumentationLibrary().CopyTo(ms)

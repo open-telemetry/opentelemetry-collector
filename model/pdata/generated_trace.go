@@ -183,6 +183,13 @@ func NewResourceSpans() ResourceSpans {
 	return newResourceSpans(&otlptrace.ResourceSpans{})
 }
 
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlptrace.ResourceSpans{}
+}
+
 // Resource returns the resource associated with this ResourceSpans.
 func (ms ResourceSpans) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
@@ -368,6 +375,13 @@ func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans)
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
 	return newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
+}
+
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms InstrumentationLibrarySpans) MoveTo(dest InstrumentationLibrarySpans) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlptrace.InstrumentationLibrarySpans{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
@@ -556,6 +570,13 @@ func newSpan(orig *otlptrace.Span) Span {
 // This must be used only in testing code since no "Set" method available.
 func NewSpan() Span {
 	return newSpan(&otlptrace.Span{})
+}
+
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms Span) MoveTo(dest Span) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlptrace.Span{}
 }
 
 // TraceID returns the traceid associated with this Span.
@@ -868,6 +889,13 @@ func NewSpanEvent() SpanEvent {
 	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms SpanEvent) MoveTo(dest SpanEvent) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlptrace.Span_Event{}
+}
+
 // Timestamp returns the timestamp associated with this SpanEvent.
 func (ms SpanEvent) Timestamp() Timestamp {
 	return Timestamp((*ms.orig).TimeUnixNano)
@@ -1073,6 +1101,13 @@ func NewSpanLink() SpanLink {
 	return newSpanLink(&otlptrace.Span_Link{})
 }
 
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms SpanLink) MoveTo(dest SpanLink) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlptrace.Span_Link{}
+}
+
 // TraceID returns the traceid associated with this SpanLink.
 func (ms SpanLink) TraceID() TraceID {
 	return TraceID{orig: ((*ms.orig).TraceId)}
@@ -1149,6 +1184,13 @@ func newSpanStatus(orig *otlptrace.Status) SpanStatus {
 // This must be used only in testing code since no "Set" method available.
 func NewSpanStatus() SpanStatus {
 	return newSpanStatus(&otlptrace.Status{})
+}
+
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms SpanStatus) MoveTo(dest SpanStatus) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlptrace.Status{}
 }
 
 // Code returns the code associated with this SpanStatus.
