@@ -59,10 +59,10 @@ type HTTPClientSettings struct {
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
-	// MaxIdleConns is used to set a limit to the maximum idle HTTP connection the client can keep open.
+	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
-	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connection the host can keep open.
+	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
