@@ -54,26 +54,8 @@ func NewComponentIDWithName(typeVal Type, nameVal string) ComponentID {
 // the forward slash and "name" are optional.
 // The returned ComponentID will be invalid if err is not-nil.
 func NewComponentIDFromString(idStr string) (ComponentID, error) {
-	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
-
 	id := ComponentID{}
-	if len(items) >= 1 {
-		id.typeVal = Type(strings.TrimSpace(items[0]))
-	}
-
-	if len(items) == 0 || id.typeVal == "" {
-		return id, errors.New("idStr must have non empty type")
-	}
-
-	if len(items) > 1 {
-		// "name" part is present.
-		id.nameVal = strings.TrimSpace(items[1])
-		if id.nameVal == "" {
-			return id, errors.New("name part must be specified after " + typeAndNameSeparator + " in type/name key")
-		}
-	}
-
-	return id, nil
+	return id, id.UnmarshalText([]byte(idStr))
 }
 
 // Type returns the type of the component.
@@ -84,6 +66,28 @@ func (id ComponentID) Type() Type {
 // Name returns the custom name of the component.
 func (id ComponentID) Name() string {
 	return id.nameVal
+}
+
+func (id *ComponentID) UnmarshalText(text []byte) error {
+	idStr := string(text)
+	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
+	if len(items) >= 1 {
+		id.typeVal = Type(strings.TrimSpace(items[0]))
+	}
+
+	if len(items) == 0 || id.typeVal == "" {
+		return errors.New("idStr must have non empty type")
+	}
+
+	if len(items) > 1 {
+		// "name" part is present.
+		id.nameVal = strings.TrimSpace(items[1])
+		if id.nameVal == "" {
+			return errors.New("name part must be specified after " + typeAndNameSeparator + " in type/name key")
+		}
+	}
+
+	return nil
 }
 
 // String returns the ComponentID string representation as "type[/name]" format.

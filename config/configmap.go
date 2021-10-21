@@ -164,15 +164,22 @@ func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
 		TagName:          "mapstructure",
 		WeaklyTypedInput: true,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			expandNilStructPointers(),
-			mapstructure.StringToSliceHookFunc(","),
-			mapStringToMapComponentIDHookFunc(),
-			stringToComponentIDHookFunc(),
-			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.TextUnmarshallerHookFunc(),
+			expandNilStructPointersFunc,
+			stringToSliceHookFunc,
+			mapStringToMapComponentIDHookFunc,
+			stringToTimeDurationHookFunc,
+			textUnmarshallerHookFunc,
 		),
 	}
 }
+
+var (
+	stringToSliceHookFunc        = mapstructure.StringToSliceHookFunc(",")
+	stringToTimeDurationHookFunc = mapstructure.StringToTimeDurationHookFunc()
+	textUnmarshallerHookFunc     = mapstructure.TextUnmarshallerHookFunc()
+
+	componentIDType = reflect.TypeOf(NewComponentID("foo"))
+)
 
 // In cases where a config has a mapping of something to a struct pointers
 // we want nil values to resolve to a pointer to the zero value of the
@@ -188,78 +195,51 @@ func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
 //
 // we want an unmarshaled Config to be equivalent to
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
-func expandNilStructPointers() mapstructure.DecodeHookFunc {
-	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
-		// ensure we are dealing with map to map comparison
-		if from.Kind() == reflect.Map && to.Kind() == reflect.Map {
-			toElem := to.Type().Elem()
-			// ensure that map values are pointers to a struct
-			// (that may be nil and require manual setting w/ zero value)
-			if toElem.Kind() == reflect.Ptr && toElem.Elem().Kind() == reflect.Struct {
-				fromRange := from.MapRange()
-				for fromRange.Next() {
-					fromKey := fromRange.Key()
-					fromValue := fromRange.Value()
-					// ensure that we've run into a nil pointer instance
-					if fromValue.IsNil() {
-						newFromValue := reflect.New(toElem.Elem())
-						from.SetMapIndex(fromKey, newFromValue)
-					}
+var expandNilStructPointersFunc = func(from reflect.Value, to reflect.Value) (interface{}, error) {
+	// ensure we are dealing with map to map comparison
+	if from.Kind() == reflect.Map && to.Kind() == reflect.Map {
+		toElem := to.Type().Elem()
+		// ensure that map values are pointers to a struct
+		// (that may be nil and require manual setting w/ zero value)
+		if toElem.Kind() == reflect.Ptr && toElem.Elem().Kind() == reflect.Struct {
+			fromRange := from.MapRange()
+			for fromRange.Next() {
+				fromKey := fromRange.Key()
+				fromValue := fromRange.Value()
+				// ensure that we've run into a nil pointer instance
+				if fromValue.IsNil() {
+					newFromValue := reflect.New(toElem.Elem())
+					from.SetMapIndex(fromKey, newFromValue)
 				}
 			}
 		}
-		return from.Interface(), nil
 	}
+	return from.Interface(), nil
 }
 
-var componentIDType = reflect.TypeOf(NewComponentID("foo"))
-
-// mapStringToMapComponentIDHookFunc returns a DecodeHookFunc that converts a map[string]interface{} to map[ComponentID]{}.
-// This is needed in combination with stringToComponentIDHookFunc since the NewComponentIDFromString may produce
-// equal IDs for different strings, and an error needs to be returned in that case, otherwise the last equivalent ID
-// overwrites the previous one.
-func mapStringToMapComponentIDHookFunc() mapstructure.DecodeHookFunc {
-	return func(
-		f reflect.Type,
-		t reflect.Type,
-		data interface{}) (interface{}, error) {
-
-		if f.Kind() != reflect.Map || f.Key().Kind() != reflect.String {
-			return data, nil
-		}
-
-		if t.Kind() != reflect.Map || t.Key() != componentIDType {
-			return data, nil
-		}
-
-		m := make(map[ComponentID]interface{})
-		for k, v := range data.(map[string]interface{}) {
-			id, err := NewComponentIDFromString(k)
-			if err != nil {
-				return nil, err
-			}
-			if _, ok := m[id]; ok {
-				return nil, fmt.Errorf("duplicate name %q after trimming spaces %v", k, id)
-			}
-			m[id] = v
-		}
-		return m, nil
+// mapStringToMapComponentIDHookFunc returns a DecodeHookFunc that converts a map[string]interface{} to
+// map[ComponentID]interface{}.
+// This is needed in combination since the ComponentID.UnmarshalText may produce equal IDs for different strings,
+// and an error needs to be returned in that case, otherwise the last equivalent ID overwrites the previous one.
+var mapStringToMapComponentIDHookFunc = func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	if f.Kind() != reflect.Map || f.Key().Kind() != reflect.String {
+		return data, nil
 	}
-}
 
-// stringToComponentIDHookFunc returns a DecodeHookFunc that converts strings to ComponentID.
-// TODO: Consider to implement encoding.TextUnmarshaler interface on the ID. Does it make it non immutable?
-func stringToComponentIDHookFunc() mapstructure.DecodeHookFunc {
-	return func(
-		f reflect.Type,
-		t reflect.Type,
-		data interface{}) (interface{}, error) {
-		if f.Kind() != reflect.String {
-			return data, nil
-		}
-		if t != componentIDType {
-			return data, nil
-		}
-		return NewComponentIDFromString(data.(string))
+	if t.Kind() != reflect.Map || t.Key() != componentIDType {
+		return data, nil
 	}
+
+	m := make(map[ComponentID]interface{})
+	for k, v := range data.(map[string]interface{}) {
+		id, err := NewComponentIDFromString(k)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := m[id]; ok {
+			return nil, fmt.Errorf("duplicate name %q after trimming spaces %v", k, id)
+		}
+		m[id] = v
+	}
+	return m, nil
 }
