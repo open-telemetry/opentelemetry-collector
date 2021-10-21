@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "go.opentelemetry.io/collector/cmd/pdatagen/internal"
+package internal // import "go.opentelemetry.io/collector/model/internal/pdatagen/internal"
 
 var traceFile = &File{
 	Name: "trace",
