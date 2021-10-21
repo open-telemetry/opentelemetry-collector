@@ -40,11 +40,6 @@ type Config struct {
 	IncludeMountPoints MountPointMatchConfig `mapstructure:"include_mount_points"`
 	// ExcludeMountPoints specifies a filter on the mount points that should be excluded from the generated metrics.
 	ExcludeMountPoints MountPointMatchConfig `mapstructure:"exclude_mount_points"`
-
-	// IncludeOpts specifies a filter on the opts that should be included in the generated metrics.
-	IncludeOpts OptsMatchConfig `mapstructure:"include_opts"`
-	// ExcludeOpts specifies a filter on the opts that should be excluded from the generated metrics.
-	ExcludeOpts OptsMatchConfig `mapstructure:"exclude_opts"`
 }
 
 type DeviceMatchConfig struct {
@@ -65,12 +60,6 @@ type MountPointMatchConfig struct {
 	MountPoints []string `mapstructure:"mount_points"`
 }
 
-type OptsMatchConfig struct {
-	filterset.Config `mapstructure:",squash"`
-
-	Opts []string `mapstructure:"opts"`
-}
-
 type fsFilter struct {
 	includeDeviceFilter     filterset.FilterSet
 	excludeDeviceFilter     filterset.FilterSet
@@ -78,8 +67,6 @@ type fsFilter struct {
 	excludeFSTypeFilter     filterset.FilterSet
 	includeMountPointFilter filterset.FilterSet
 	excludeMountPointFilter filterset.FilterSet
-	includeOptsFilter       filterset.FilterSet
-	excludeOptsFilter       filterset.FilterSet
 	filtersExist            bool
 }
 
@@ -113,16 +100,6 @@ func (cfg *Config) createFilter() (*fsFilter, error) {
 	}
 
 	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Labels.FilesystemMountpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	filter.includeOptsFilter, err = newIncludeFilterHelper(cfg.IncludeOpts.Opts, &cfg.IncludeOpts.Config, metadata.Labels.FilesystemOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	filter.excludeOptsFilter, err = newExcludeFilterHelper(cfg.ExcludeOpts.Opts, &cfg.ExcludeOpts.Config, metadata.Labels.FilesystemOpts)
 	if err != nil {
 		return nil, err
 	}

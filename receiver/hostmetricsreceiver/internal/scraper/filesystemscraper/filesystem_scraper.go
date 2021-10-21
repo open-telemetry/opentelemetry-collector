@@ -142,8 +142,7 @@ func (f *fsFilter) includePartition(partition disk.PartitionStat) bool {
 	// If filters do not exist, return early.
 	if !f.filtersExist || (f.includeDevice(partition.Device) &&
 		f.includeFSType(partition.Fstype) &&
-		f.includeMountPoint(partition.Mountpoint) &&
-		f.includeOpts(partition.Opts)) {
+		f.includeMountPoint(partition.Mountpoint)) {
 		return true
 	}
 	return false
@@ -162,8 +161,4 @@ func (f *fsFilter) includeFSType(fsType string) bool {
 func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 	return (f.includeMountPointFilter == nil || f.includeMountPointFilter.Matches(mountPoint)) &&
 		(f.excludeMountPointFilter == nil || !f.excludeMountPointFilter.Matches(mountPoint))
-}
-func (f *fsFilter) includeOpts(opts string) bool {
-	return (f.includeOptsFilter == nil || f.includeOptsFilter.Matches(opts)) &&
-		(f.excludeOptsFilter == nil || !f.excludeOptsFilter.Matches(opts))
 }

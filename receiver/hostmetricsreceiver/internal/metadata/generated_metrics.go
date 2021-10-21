@@ -514,8 +514,6 @@ var Labels = struct {
 	FilesystemMode string
 	// FilesystemMountpoint (Mountpoint path.)
 	FilesystemMountpoint string
-	// FilesystemOpts (Opts such "removable", "cdrom".)
-	FilesystemOpts string
 	// FilesystemState (Breakdown of filesystem usage by type.)
 	FilesystemState string
 	// FilesystemType (Filesystem type, such as, "ext4", "tmpfs", etc.)
@@ -552,7 +550,6 @@ var Labels = struct {
 	"device",
 	"mode",
 	"mountpoint",
-	"opts",
 	"state",
 	"type",
 	"state",
