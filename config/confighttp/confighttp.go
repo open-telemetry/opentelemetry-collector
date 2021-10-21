@@ -60,7 +60,7 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connection the client can keep open.
-	MaxIdleConns int `mapstructure:"max_idle_conns"`
+	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connection the host can keep open.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
@@ -70,7 +70,7 @@ type HTTPClientSettings struct {
 	MaxConnsPerHost int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
+	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
 // ToClient creates an HTTP client.
@@ -90,15 +90,15 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
 
-	if hcs.MaxIdleConns != 0 {
-		transport.MaxIdleConns = hcs.MaxIdleConns
+	if hcs.MaxIdleConns != nil {
+		transport.MaxIdleConns = *hcs.MaxIdleConns
 	}
 
 	transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
 	transport.MaxConnsPerHost = hcs.MaxConnsPerHost
 
-	if hcs.IdleConnTimeout != 0 {
-		transport.IdleConnTimeout = hcs.IdleConnTimeout
+	if hcs.IdleConnTimeout != nil {
+		transport.IdleConnTimeout = *hcs.IdleConnTimeout
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
