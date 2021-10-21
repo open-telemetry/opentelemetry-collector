@@ -135,7 +135,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "idStr must have non empty type",
+			err: "id must not be empty",
 			settings: HTTPClientSettings{
 				Endpoint: "https://localhost:1234/v1/traces",
 				Auth:     &configauth.Authentication{AuthenticatorName: ""},

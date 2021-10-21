@@ -16,6 +16,7 @@ package config // import "go.opentelemetry.io/collector/config"
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -68,6 +69,7 @@ func (id ComponentID) Name() string {
 	return id.nameVal
 }
 
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (id *ComponentID) UnmarshalText(text []byte) error {
 	idStr := string(text)
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
@@ -75,15 +77,19 @@ func (id *ComponentID) UnmarshalText(text []byte) error {
 		id.typeVal = Type(strings.TrimSpace(items[0]))
 	}
 
-	if len(items) == 0 || id.typeVal == "" {
-		return errors.New("idStr must have non empty type")
+	if len(items) == 1 && id.typeVal == "" {
+		return errors.New("id must not be empty")
+	}
+
+	if id.typeVal == "" {
+		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
 	}
 
 	if len(items) > 1 {
 		// "name" part is present.
 		id.nameVal = strings.TrimSpace(items[1])
 		if id.nameVal == "" {
-			return errors.New("name part must be specified after " + typeAndNameSeparator + " in type/name key")
+			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
 		}
 	}
 
