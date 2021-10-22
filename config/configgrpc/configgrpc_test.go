@@ -209,7 +209,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "idStr must have non empty type",
+			err: "id must not be empty",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{},

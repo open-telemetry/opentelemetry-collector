@@ -126,17 +126,17 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		expected        configErrorCode // expected error (if nil any error is acceptable)
 		expectedMessage string          // string that the error must contain
 	}{
-		{name: "invalid-extension-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-receiver-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-exporter-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-processor-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-pipeline-type", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-extension-type", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-receiver-type", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-exporter-type", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-processor-type", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-pipeline-type", expected: errUnmarshalTopLevelStructureError},
 
-		{name: "invalid-extension-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-receiver-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-exporter-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-processor-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-pipeline-name-after-slash", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-extension-name-after-slash", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-receiver-name-after-slash", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-exporter-name-after-slash", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-processor-name-after-slash", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-pipeline-name-after-slash", expected: errUnmarshalTopLevelStructureError},
 
 		{name: "unknown-extension-type", expected: errUnknownType, expectedMessage: "extensions"},
 		{name: "unknown-receiver-type", expected: errUnknownType, expectedMessage: "receivers"},
@@ -144,11 +144,11 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "unknown-processor-type", expected: errUnknownType, expectedMessage: "processors"},
 		{name: "unknown-pipeline-type", expected: errUnknownType, expectedMessage: "pipelines"},
 
-		{name: "duplicate-extension", expected: errDuplicateName, expectedMessage: "extensions"},
-		{name: "duplicate-receiver", expected: errDuplicateName, expectedMessage: "receivers"},
-		{name: "duplicate-exporter", expected: errDuplicateName, expectedMessage: "exporters"},
-		{name: "duplicate-processor", expected: errDuplicateName, expectedMessage: "processors"},
-		{name: "duplicate-pipeline", expected: errDuplicateName, expectedMessage: "pipelines"},
+		{name: "duplicate-extension", expected: errUnmarshalTopLevelStructureError, expectedMessage: "duplicate name"},
+		{name: "duplicate-receiver", expected: errUnmarshalTopLevelStructureError, expectedMessage: "duplicate name"},
+		{name: "duplicate-exporter", expected: errUnmarshalTopLevelStructureError, expectedMessage: "duplicate name"},
+		{name: "duplicate-processor", expected: errUnmarshalTopLevelStructureError, expectedMessage: "duplicate name"},
+		{name: "duplicate-pipeline", expected: errUnmarshalTopLevelStructureError, expectedMessage: "duplicate name"},
 
 		{name: "invalid-top-level-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "top level"},
 		{name: "invalid-extension-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "extensions"},
@@ -166,7 +166,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "invalid-receiver-sub-config", expected: errUnmarshalTopLevelStructureError},
 		{name: "invalid-pipeline-sub-config", expected: errUnmarshalTopLevelStructureError},
 
-		{name: "invalid-logs-level", expected: errInvalidLogsLevel},
+		{name: "invalid-logs-level", expected: errUnmarshalTopLevelStructureError},
 	}
 
 	factories, err := testcomponents.ExampleComponents()
