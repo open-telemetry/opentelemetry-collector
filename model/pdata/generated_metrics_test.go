@@ -1061,7 +1061,7 @@ func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
 func TestExponentialHistogramDataPoint_Scale(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.EqualValues(t, int32(0), ms.Scale())
-	testValScale := int32(30)
+	testValScale := int32(4)
 	ms.SetScale(testValScale)
 	assert.EqualValues(t, testValScale, ms.Scale())
 }
@@ -1804,7 +1804,7 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
-	tv.SetScale(int32(30))
+	tv.SetScale(int32(4))
 	tv.SetZeroCount(uint64(201))
 	fillTestBuckets(tv.Positive())
 	fillTestBuckets(tv.Negative())

@@ -282,7 +282,7 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 			returnType:      "int32",
 			rawType:         "int32",
 			defaultVal:      "int32(0)",
-			testVal:         "int32(30)",
+			testVal:         "int32(4)",
 		},
 		&primitiveTypedField{
 			fieldName:       "ZeroCount",
