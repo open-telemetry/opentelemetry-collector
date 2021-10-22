@@ -131,14 +131,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
 			settings: HTTPClientSettings{
 				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
-			},
-		},
-		{
-			err: "id must not be empty",
-			settings: HTTPClientSettings{
-				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorName: ""},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 		},
 	}
@@ -174,7 +167,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
@@ -185,7 +178,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension_map",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 			shouldErr: true,
 		},
@@ -193,7 +186,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
 			},
 			shouldErr: false,
 			extensionMap: map[config.ComponentID]component.Extension{
@@ -204,7 +197,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_err_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
