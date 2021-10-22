@@ -104,3 +104,77 @@ func TestToStringMap(t *testing.T) {
 		})
 	}
 }
+
+func TestExpandNilStructPointersFunc(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"boolean": nil,
+		"struct":  nil,
+		"map_struct": map[string]interface{}{
+			"struct": nil,
+		},
+	}
+	parser := NewMapFromStringMap(stringMap)
+	cfg := &TestConfig{}
+	assert.Nil(t, cfg.Struct)
+	assert.NoError(t, parser.UnmarshalExact(cfg))
+	assert.NotNil(t, cfg.Boolean)
+	assert.False(t, *cfg.Boolean)
+	assert.NotNil(t, cfg.Struct)
+	assert.NotNil(t, cfg.MapStruct)
+	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
+}
+
+func TestExpandNilStructPointersFunc_ToStringMap(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"boolean":   nil,
+		"struct":    nil,
+		"interface": nil,
+		"map_struct": map[string]interface{}{
+			"struct": nil,
+		},
+	}
+	parser := NewMapFromStringMap(stringMap)
+	cfg := make(map[string]interface{})
+	assert.NoError(t, parser.UnmarshalExact(&cfg))
+	assert.Contains(t, cfg, "boolean")
+	assert.Nil(t, cfg["boolean"])
+	assert.Contains(t, cfg, "struct")
+	assert.Nil(t, cfg["struct"])
+	assert.Contains(t, cfg, "map_struct")
+	assert.Contains(t, cfg["map_struct"], "struct")
+	assert.Nil(t, cfg["map_struct"].(map[string]interface{})["struct"])
+}
+
+func TestExpandNilStructPointersFunc_DefaultNotNilConfigNil(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"boolean":   nil,
+		"struct":    nil,
+		"interface": nil,
+		"map_struct": map[string]interface{}{
+			"struct": nil,
+		},
+	}
+	parser := NewMapFromStringMap(stringMap)
+	varBool := true
+	cfg := &TestConfig{
+		Boolean:   &varBool,
+		Struct:    &Struct{},
+		MapStruct: map[string]*Struct{"struct": {}},
+	}
+	assert.NoError(t, parser.UnmarshalExact(cfg))
+	assert.NotNil(t, cfg.Boolean)
+	assert.True(t, *cfg.Boolean)
+	assert.NotNil(t, cfg.Interface)
+	assert.NotNil(t, cfg.Struct)
+	assert.NotNil(t, cfg.MapStruct)
+	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
+}
+
+type TestConfig struct {
+	Boolean   *bool              `mapstructure:"boolean"`
+	Interface interface{}        `mapstructure:"interface"`
+	Struct    *Struct            `mapstructure:"struct"`
+	MapStruct map[string]*Struct `mapstructure:"map_struct"`
+}
+
+type Struct struct{}
