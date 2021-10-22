@@ -3,8 +3,8 @@ receivers:
 exporters:
   exampleexporter:
 processors:
-  exampleprocessor/       abc:
-  exampleprocessor/abc:
+  exampleprocessor/ proc:
+  exampleprocessor /proc :
 service:
   pipelines:
     traces:

@@ -66,7 +66,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		WriteBufferSize: 1024,
 		WaitForReady:    true,
 		BalancerName:    "round_robin",
-		Auth:            &configauth.Authentication{AuthenticatorName: "testauth"},
+		Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
 	}
 
 	host := &mockHost{
@@ -133,7 +133,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 
 	// test
 	gss.Auth = &configauth.Authentication{
-		AuthenticatorName: "mock",
+		AuthenticatorID: config.NewComponentID("mock"),
 	}
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
@@ -209,20 +209,10 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "idStr must have non empty type",
-			settings: GRPCClientSettings{
-				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{},
-			},
-			host: &mockHost{ext: map[config.ComponentID]component.Extension{
-				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{},
-			}},
-		},
-		{
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("doesntexist")},
 			},
 			host: &mockHost{ext: map[config.ComponentID]component.Extension{}},
 		},
@@ -230,7 +220,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "no extensions configuration available",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "doesntexist"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("doesntexist")},
 			},
 			host: &mockHost{},
 		},

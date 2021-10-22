@@ -14,9 +14,11 @@
 
 package parserprovider // import "go.opentelemetry.io/collector/service/parserprovider"
 
-// NewDefaultMapProvider returns the default MapProvider, and it creates configuration from a file
+import "go.opentelemetry.io/collector/config"
+
+// NewDefaultMapProvider returns the default config.MapProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewDefaultMapProvider(configFileName string, properties []string) MapProvider {
+func NewDefaultMapProvider(configFileName string, properties []string) config.MapProvider {
 	return NewExpandMapProvider(
 		NewMergeMapProvider(
 			NewFileMapProvider(configFileName),

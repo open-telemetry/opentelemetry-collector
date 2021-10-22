@@ -16,7 +16,6 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
 	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -43,12 +42,12 @@ type TracesSizer interface {
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
 type Traces struct {
-	orig *otlpcollectortrace.ExportTraceServiceRequest
+	orig *otlptrace.TracesData
 }
 
 // NewTraces creates a new Traces.
 func NewTraces() Traces {
-	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
+	return Traces{orig: &otlptrace.TracesData{}}
 }
 
 // TracesFromInternalRep creates Traces from the internal representation.

@@ -159,7 +159,7 @@ type Service struct {
 
 // ServiceTelemetry defines the configurable settings for service telemetry.
 type ServiceTelemetry struct {
-	Logs ServiceTelemetryLogs
+	Logs ServiceTelemetryLogs `mapstructure:"logs"`
 }
 
 func (srvT *ServiceTelemetry) validate() error {
@@ -171,15 +171,15 @@ func (srvT *ServiceTelemetry) validate() error {
 // the collector uses mapstructure and not yaml tags.
 type ServiceTelemetryLogs struct {
 	// Level is the minimum enabled logging level.
-	Level zapcore.Level
+	Level zapcore.Level `mapstructure:"level"`
 
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
-	Development bool
+	Development bool `mapstructure:"development"`
 
 	// Encoding sets the logger's encoding.
 	// Valid values are "json" and "console".
-	Encoding string
+	Encoding string `mapstructure:"encoding"`
 }
 
 func (srvTL *ServiceTelemetryLogs) validate() error {
@@ -226,9 +226,9 @@ const (
 type Pipeline struct {
 	Name       string
 	InputType  DataType
-	Receivers  []ComponentID
-	Processors []ComponentID
-	Exporters  []ComponentID
+	Receivers  []ComponentID `mapstructure:"receivers"`
+	Processors []ComponentID `mapstructure:"processors"`
+	Exporters  []ComponentID `mapstructure:"exporters"`
 }
 
 // Pipelines is a map of names to Pipelines.

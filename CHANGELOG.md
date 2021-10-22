@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Rename `parserprovider.MapProvider` as `config.MapProvider` (#4178)
+- Rename `parserprovider.Watchable` as `config.WatchableMapProvider` (#4178)
+- Remove deprecated no-op flags to setup Collector's logging "--log-level", "--log-profile", "--log-format" (#4213)
+
 ## v0.37.0 Beta
 
 ## 🛑 Breaking changes 🛑

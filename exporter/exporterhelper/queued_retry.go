@@ -21,33 +21,17 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"go.opencensus.io/metric"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 var (
-	r = metric.NewRegistry()
-
-	queueSizeGauge, _ = r.AddInt64DerivedGauge(
-		obsmetrics.ExporterKey+"/queue_size",
-		metric.WithDescription("Current size of the retry queue (in batches)"),
-		metric.WithLabelKeys(obsmetrics.ExporterKey),
-		metric.WithUnit(metricdata.UnitDimensionless))
-
 	errSendingQueueIsFull = errors.New("sending_queue is full")
 )
-
-func init() {
-	metricproducer.GlobalManager().AddProducer(r)
-}
 
 // RetrySettings defines configuration for retrying batches in case of export failure.
 // The current supported strategy is exponential backoff.

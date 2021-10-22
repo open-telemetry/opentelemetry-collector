@@ -140,6 +140,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd $(TOOLS_MOD_DIR) && go install github.com/jcchavezs/porto/cmd/porto
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: otelcol
 otelcol:
@@ -425,3 +426,12 @@ endif
 .PHONY: apidiff-compare
 apidiff-compare:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
+
+.PHONY: multimod-verify
+multimod-verify: install-tools
+	@echo "Validating versions.yaml"
+	multimod verify
+
+.PHONY: multimod-prerelease
+multimod-prerelease: install-tools
+	multimod prerelease -v ./versions.yaml -m collector-base

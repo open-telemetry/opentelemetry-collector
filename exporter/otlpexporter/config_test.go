@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorName: "nop"},
+				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("nop")},
 			},
 		})
 }

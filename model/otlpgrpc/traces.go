@@ -22,10 +22,9 @@ import (
 
 	"go.opentelemetry.io/collector/model/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
-
-// TODO: Consider to add `TracesRequest`. If we add non pdata properties we can add them to the request.
 
 // TracesResponse represents the response for gRPC client/server.
 type TracesResponse struct {
@@ -35,6 +34,24 @@ type TracesResponse struct {
 // NewTracesResponse returns an empty TracesResponse.
 func NewTracesResponse() TracesResponse {
 	return TracesResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
+}
+
+// UnmarshalTracesResponse unmarshalls TracesResponse from proto bytes.
+func UnmarshalTracesResponse(data []byte) (TracesResponse, error) {
+	var orig otlpcollectortrace.ExportTraceServiceResponse
+	if err := orig.Unmarshal(data); err != nil {
+		return TracesResponse{}, err
+	}
+	return TracesResponse{orig: &orig}, nil
+}
+
+// UnmarshalJSONTracesResponse unmarshalls TracesResponse from JSON bytes.
+func UnmarshalJSONTracesResponse(data []byte) (TracesResponse, error) {
+	var orig otlpcollectortrace.ExportTraceServiceResponse
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return TracesResponse{}, err
+	}
+	return TracesResponse{orig: &orig}, nil
 }
 
 // Marshal marshals TracesResponse into proto bytes.
@@ -61,6 +78,24 @@ func NewTracesRequest() TracesRequest {
 	return TracesRequest{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
 
+// UnmarshalTracesRequest unmarshalls TracesRequest from proto bytes.
+func UnmarshalTracesRequest(data []byte) (TracesRequest, error) {
+	var orig otlpcollectortrace.ExportTraceServiceRequest
+	if err := orig.Unmarshal(data); err != nil {
+		return TracesRequest{}, err
+	}
+	return TracesRequest{orig: &orig}, nil
+}
+
+// UnmarshalJSONTracesRequest unmarshalls TracesRequest from JSON bytes.
+func UnmarshalJSONTracesRequest(data []byte) (TracesRequest, error) {
+	var orig otlpcollectortrace.ExportTraceServiceRequest
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
+		return TracesRequest{}, err
+	}
+	return TracesRequest{orig: &orig}, nil
+}
+
 // Marshal marshals TracesRequest into proto bytes.
 func (tr TracesRequest) Marshal() ([]byte, error) {
 	return tr.orig.Marshal()
@@ -80,7 +115,7 @@ func (tr TracesRequest) SetTraces(td pdata.Traces) {
 }
 
 func (tr TracesRequest) Traces() pdata.Traces {
-	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(tr.orig))
+	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(&otlptrace.TracesData{ResourceSpans: tr.orig.ResourceSpans}))
 }
 
 // TracesClient is the client API for OTLP-GRPC Traces service.

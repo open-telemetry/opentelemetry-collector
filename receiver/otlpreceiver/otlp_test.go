@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -179,13 +178,12 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.Er
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+	require.NoError(t, err, "Error posting trace to http server: %v", err)
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
+		t.Errorf("Error reading response from trace http server, %v", err)
 	}
-	respStr := string(respBytes)
 	err = resp.Body.Close()
 	if err != nil {
 		t.Errorf("Error closing response body, %v", err)
@@ -194,17 +192,14 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.Er
 	allTraces := sink.AllTraces()
 	if expectedErr == nil {
 		assert.Equal(t, 200, resp.StatusCode)
-		var respJSON map[string]interface{}
-		assert.NoError(t, json.Unmarshal([]byte(respStr), &respJSON))
-		assert.Len(t, respJSON, 0, "Got unexpected response from trace grpc-gateway")
+		_, err = otlpgrpc.UnmarshalJSONTracesResponse(respBytes)
+		assert.NoError(t, err, "Unable to unmarshal response to TracesResponse")
 
 		require.Len(t, allTraces, 1)
-
-		got := allTraces[0]
-		assert.EqualValues(t, got, traceOtlp)
+		assert.EqualValues(t, allTraces[0], traceOtlp)
 	} else {
 		errStatus := &spb.Status{}
-		assert.NoError(t, json.Unmarshal([]byte(respStr), errStatus))
+		assert.NoError(t, json.Unmarshal(respBytes, errStatus))
 		if s, ok := status.FromError(expectedErr); ok {
 			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, s.Proto()))
@@ -326,10 +321,8 @@ func testHTTPProtobufRequest(
 
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-		// TODO: Parse otlp response here instead of empty proto when pdata allows that.
-		tmp := &types.Empty{}
-		err := tmp.Unmarshal(respBytes)
-		require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
+		_, err = otlpgrpc.UnmarshalTracesResponse(respBytes)
+		require.NoError(t, err, "Unable to unmarshal response to TracesResponse")
 
 		require.Len(t, allTraces, 1)
 		assert.EqualValues(t, allTraces[0], wantData)
@@ -590,7 +583,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 	require.NoError(t, err)
 
-	td := testdata.GenerateTracesManySpansSameResource(500000)
+	td := testdata.GenerateTracesManySpansSameResource(50000)
 	require.Error(t, exportTraces(cc, td))
 	cc.Close()
 	require.NoError(t, ocr.Shutdown(context.Background()))
@@ -606,7 +599,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, err)
 	defer cc.Close()
 
-	td = testdata.GenerateTracesManySpansSameResource(500000)
+	td = testdata.GenerateTracesManySpansSameResource(50000)
 	require.NoError(t, exportTraces(cc, td))
 	require.Len(t, sink.AllTraces(), 1)
 	assert.Equal(t, td, sink.AllTraces()[0])
