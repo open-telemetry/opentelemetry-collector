@@ -3,6 +3,9 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
+- Removed `configauth.HTTPClientAuthenticator` and `configauth.GRPCClientAuthenticator` in favor of `configauth.ClientAuthenticator` (#4255)
+
+## 🛑 Breaking changes 🛑
 
 - Rename `parserprovider.MapProvider` as `config.MapProvider` (#4178)
 - Rename `parserprovider.Watchable` as `config.WatchableMapProvider` (#4178)

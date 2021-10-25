@@ -23,19 +23,19 @@ import (
 )
 
 var (
-	_ ServerAuthenticator = (*MockAuthenticator)(nil)
-	_ component.Extension = (*MockAuthenticator)(nil)
+	_ ServerAuthenticator = (*MockServerAuthenticator)(nil)
+	_ component.Extension = (*MockServerAuthenticator)(nil)
 )
 
-// MockAuthenticator provides a testing mock for code dealing with authentication.
-type MockAuthenticator struct {
+// MockServerAuthenticator provides a testing mock for code dealing with authentication.
+type MockServerAuthenticator struct {
 	// AuthenticateFunc to use during the authentication phase of this mock. Optional.
 	AuthenticateFunc AuthenticateFunc
 	// TODO: implement the other funcs
 }
 
 // Authenticate executes the mock's AuthenticateFunc, if provided, or just returns the given context unchanged.
-func (m *MockAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (m *MockServerAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	if m.AuthenticateFunc == nil {
 		return context.Background(), nil
 	}
@@ -43,21 +43,21 @@ func (m *MockAuthenticator) Authenticate(ctx context.Context, headers map[string
 }
 
 // GRPCUnaryServerInterceptor isn't currently implemented and always returns nil.
-func (m *MockAuthenticator) GRPCUnaryServerInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error) {
+func (m *MockServerAuthenticator) GRPCUnaryServerInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error) {
 	return nil, nil
 }
 
 // GRPCStreamServerInterceptor isn't currently implemented and always returns nil.
-func (m *MockAuthenticator) GRPCStreamServerInterceptor(interface{}, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error {
+func (m *MockServerAuthenticator) GRPCStreamServerInterceptor(interface{}, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error {
 	return nil
 }
 
 // Start isn't currently implemented and always returns nil.
-func (m *MockAuthenticator) Start(context.Context, component.Host) error {
+func (m *MockServerAuthenticator) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // Shutdown isn't currently implemented and always returns nil.
-func (m *MockAuthenticator) Shutdown(ctx context.Context) error {
+func (m *MockServerAuthenticator) Shutdown(ctx context.Context) error {
 	return nil
 }
