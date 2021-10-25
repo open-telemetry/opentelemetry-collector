@@ -22,6 +22,15 @@ import (
 )
 
 // Receiver allows the collector to receive metrics, traces and logs.
+//
+// The receivers that receive data via a protocol that support acknowledgements
+// MUST follow this order of operations:
+// - Receive data from some sender (typically from a network).
+// - Push received data to the pipeline by calling nextConsumer.Consume*() function.
+// - Acknowledge successful data receipt to the sender if Consume*() succeeded or
+//   return a failure to the sender if Consume*() returned an error.
+// This ensures there are strong delivery guarantees once the data is acknowledged
+// by the Collector.
 type Receiver interface {
 	Component
 }
