@@ -334,8 +334,7 @@ genproto-cleanup:
 genproto: genproto-cleanup
 	mkdir -p ${OPENTELEMETRY_PROTO_SRC_DIR}
 	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
-	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated after the submodule
-	# files are present.
+	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
 	$(MAKE) genproto_sub
 	$(MAKE) fmt
 	$(MAKE) genproto-cleanup
