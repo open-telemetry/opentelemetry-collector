@@ -16,8 +16,6 @@ data:
     exporters:
       otlp:
         endpoint: "otel-collector.default:4317"
-        tls:
-          insecure: true
         sending_queue:
           num_consumers: 4
           queue_size: 100
@@ -120,8 +118,6 @@ data:
     exporters:
       otlp:
         endpoint: "http://someotlp.target.com:4317" # Replace with a real endpoint.
-        tls:
-          insecure: true
     service:
       extensions: [zpages]
       pipelines:
