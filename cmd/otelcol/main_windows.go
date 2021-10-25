@@ -45,10 +45,10 @@ func checkUseInteractiveMode() (bool, error) {
 		return true, nil
 	}
 
-	if isInteractiveSession, err := svc.IsAnInteractiveSession(); err != nil {
-		return false, fmt.Errorf("failed to determine if we are running in an interactive session %w", err)
+	if isWindowsService, err := svc.IsWindowsService(); err != nil {
+		return false, fmt.Errorf("failed to determine if we are running as a Windows service %w", err)
 	} else {
-		return isInteractiveSession, nil
+		return isWindowsService, nil
 	}
 }
 
