@@ -33,6 +33,14 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 			return false
 		}
 
+		// If it fully fits
+		srcRsDataPointCount := resourceMetricsDataPointCount(srcRs)
+		if (totalCopiedDataPoints + srcRsDataPointCount) <= size {
+			totalCopiedDataPoints += srcRsDataPointCount
+			srcRs.MoveTo(dest.ResourceMetrics().AppendEmpty())
+			return true
+		}
+
 		destRs := dest.ResourceMetrics().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
 
@@ -42,16 +50,16 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 				return false
 			}
 
-			destIlm := destRs.InstrumentationLibraryMetrics().AppendEmpty()
-			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
-
 			// If possible to move all metrics do that.
 			srcDataPointCount := metricSliceDataPointCount(srcIlm.Metrics())
 			if size-totalCopiedDataPoints >= srcDataPointCount {
 				totalCopiedDataPoints += srcDataPointCount
-				srcIlm.Metrics().MoveAndAppendTo(destIlm.Metrics())
+				srcIlm.MoveTo(destRs.InstrumentationLibraryMetrics().AppendEmpty())
 				return true
 			}
+
+			destIlm := destRs.InstrumentationLibraryMetrics().AppendEmpty()
+			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
 
 			srcIlm.Metrics().RemoveIf(func(srcMetric pdata.Metric) bool {
 				// If we are done skip everything else.
@@ -69,6 +77,14 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 	})
 
 	return dest
+}
+
+// resourceMetricsDataPointCount calculates the total number of  data points.
+func resourceMetricsDataPointCount(rs pdata.ResourceMetrics) (dataPointCount int) {
+	for k := 0; k < rs.InstrumentationLibraryMetrics().Len(); k++ {
+		dataPointCount += metricSliceDataPointCount(rs.InstrumentationLibraryMetrics().At(k).Metrics())
+	}
+	return
 }
 
 // metricSliceDataPointCount calculates the total number of  data points.
@@ -98,12 +114,9 @@ func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
 // Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
 func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 	if metricDataPointCount(ms) <= size {
-		ms.CopyTo(dest)
-		return metricDataPointCount(ms), true
+		ms.MoveTo(dest)
+		return metricDataPointCount(dest), true
 	}
-
-	msSize, i := metricDataPointCount(ms)-size, 0
-	filterDataPoints := func() bool { i++; return i <= msSize }
 
 	dest.SetDataType(ms.DataType())
 	dest.SetName(ms.Name())
@@ -115,41 +128,53 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 		src := ms.Gauge().DataPoints()
 		dst := dest.Gauge().DataPoints()
 		dst.EnsureCapacity(size)
-		for j := 0; j < size; j++ {
-			src.At(j).CopyTo(dst.AppendEmpty())
-		}
-		src.RemoveIf(func(_ pdata.NumberDataPoint) bool {
-			return filterDataPoints()
+		i := 0
+		src.RemoveIf(func(dp pdata.NumberDataPoint) bool {
+			defer func() { i++ }()
+			if i < size {
+				dp.MoveTo(dst.AppendEmpty())
+				return true
+			}
+			return false
 		})
 	case pdata.MetricDataTypeSum:
 		src := ms.Sum().DataPoints()
 		dst := dest.Sum().DataPoints()
 		dst.EnsureCapacity(size)
-		for j := 0; j < size; j++ {
-			src.At(j).CopyTo(dst.AppendEmpty())
-		}
-		src.RemoveIf(func(_ pdata.NumberDataPoint) bool {
-			return filterDataPoints()
+		i := 0
+		src.RemoveIf(func(dp pdata.NumberDataPoint) bool {
+			defer func() { i++ }()
+			if i < size {
+				dp.MoveTo(dst.AppendEmpty())
+				return true
+			}
+			return false
 		})
 	case pdata.MetricDataTypeHistogram:
 		src := ms.Histogram().DataPoints()
 		dst := dest.Histogram().DataPoints()
 		dst.EnsureCapacity(size)
-		for j := 0; j < size; j++ {
-			src.At(j).CopyTo(dst.AppendEmpty())
-		}
-		src.RemoveIf(func(_ pdata.HistogramDataPoint) bool {
-			return filterDataPoints()
+		i := 0
+		src.RemoveIf(func(dp pdata.HistogramDataPoint) bool {
+			defer func() { i++ }()
+			if i < size {
+				dp.MoveTo(dst.AppendEmpty())
+				return true
+			}
+			return false
 		})
 	case pdata.MetricDataTypeSummary:
 		src := ms.Summary().DataPoints()
 		dst := dest.Summary().DataPoints()
 		dst.EnsureCapacity(size)
-		for j := 0; j < size; j++ {
-			src.At(j).CopyTo(dst.AppendEmpty())
-		}
-		src.RemoveIf(func(_ pdata.SummaryDataPoint) bool {
-			return filterDataPoints()
+		i := 0
+		src.RemoveIf(func(dp pdata.SummaryDataPoint) bool {
+			defer func() { i++ }()
+			if i < size {
+				dp.MoveTo(dst.AppendEmpty())
+				return true
+			}
+			return false
 		})
 	}
 	return size, false
