@@ -20,7 +20,7 @@ type Factory struct {
 }
 
 func (f *Factory) CreateDefaultConfig() internal.Config {
-	return nil
+	return &Config{}
 }
 
 // Type gets the type of the scraper config created by this Factory.
