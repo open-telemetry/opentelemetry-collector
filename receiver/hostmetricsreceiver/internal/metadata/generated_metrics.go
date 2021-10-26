@@ -55,7 +55,6 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	InfoNow                     MetricIntf
 	ProcessCPUTime              MetricIntf
 	ProcessDiskIo               MetricIntf
 	ProcessMemoryPhysicalUsage  MetricIntf
@@ -89,7 +88,6 @@ type metricStruct struct {
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"info.now",
 		"process.cpu.time",
 		"process.disk.io",
 		"process.memory.physical_usage",
@@ -122,7 +120,6 @@ func (m *metricStruct) Names() []string {
 }
 
 var metricsByName = map[string]MetricIntf{
-	"info.now":                       Metrics.InfoNow,
 	"process.cpu.time":               Metrics.ProcessCPUTime,
 	"process.disk.io":                Metrics.ProcessDiskIo,
 	"process.memory.physical_usage":  Metrics.ProcessMemoryPhysicalUsage,
@@ -159,7 +156,6 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
-		Metrics.InfoNow.Name():                     Metrics.InfoNow.New,
 		Metrics.ProcessCPUTime.Name():              Metrics.ProcessCPUTime.New,
 		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.New,
 		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.New,
@@ -194,17 +190,6 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
-	&metricImpl{
-		"info.now",
-		func(metric pdata.Metric) {
-			metric.SetName("info.now")
-			metric.SetDescription("unix timestamp.")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(false)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		},
-	},
 	&metricImpl{
 		"process.cpu.time",
 		func(metric pdata.Metric) {
@@ -535,12 +520,6 @@ var Labels = struct {
 	FilesystemState string
 	// FilesystemType (Filesystem type, such as, "ext4", "tmpfs", etc.)
 	FilesystemType string
-	// InfoCPUNum (cpu num.)
-	InfoCPUNum string
-	// InfoHostname (hostname.)
-	InfoHostname string
-	// InfoOrg (common org.)
-	InfoOrg string
 	// MemState (Breakdown of memory usage by type.)
 	MemState string
 	// NetworkDevice (Name of the network interface.)
@@ -576,9 +555,6 @@ var Labels = struct {
 	"opts",
 	"state",
 	"type",
-	"cpuNum",
-	"hostname",
-	"org",
 	"state",
 	"device",
 	"direction",

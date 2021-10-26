@@ -48,18 +48,6 @@ labels:
     value: type
     description: Filesystem type, such as, "ext4", "tmpfs", etc.
 
-  info.org:
-    value: org
-    description: common org.
-
-  info.hostname:
-    value: hostname
-    description: hostname.
-
-  info.cpuNum:
-    value: cpuNum
-    description: cpu num.
-
   network.device:
     value: device
     description: Name of the network interface.
@@ -248,14 +236,6 @@ metrics:
   system.filesystem.inodes.usage:
     description: FileSystem inodes used.
     unit: "{inodes}"
-    data:
-      type: int sum
-      aggregation: cumulative
-      monotonic: false
-
-  info.now:
-    description: unix timestamp.
-    unit: 1
     data:
       type: int sum
       aggregation: cumulative
