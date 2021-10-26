@@ -55,7 +55,7 @@ func NewLogsProcessor(
 	}
 
 	eventOptions := spanAttributes(cfg.ID())
-	bs := fromOptions(options)
+	bs := fromOptions(options, nextConsumer.Capabilities())
 	logsConsumer, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)

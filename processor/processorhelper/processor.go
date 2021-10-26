@@ -65,7 +65,7 @@ type baseSettings struct {
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
-func fromOptions(options []Option) *baseSettings {
+func fromOptions(options []Option, nextConsumerCapabilities consumer.Capabilities) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
 		consumerOptions: []consumerhelper.Option{consumerhelper.WithCapabilities(consumer.Capabilities{MutatesData: true})},
@@ -73,6 +73,10 @@ func fromOptions(options []Option) *baseSettings {
 
 	for _, op := range options {
 		op(opts)
+	}
+
+	if nextConsumerCapabilities.MutatesData {
+		opts.consumerOptions = append(opts.consumerOptions, consumerhelper.WithCapabilities(nextConsumerCapabilities))
 	}
 
 	return opts

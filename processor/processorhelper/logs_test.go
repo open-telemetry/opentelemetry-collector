@@ -43,6 +43,16 @@ func TestNewLogsProcessor(t *testing.T) {
 	assert.NoError(t, lp.Shutdown(context.Background()))
 }
 
+func TestNewLogsProcessor_NextMutates(t *testing.T) {
+	lp, err := NewLogsProcessor(&testLogsCfg, newMutatingLConsumer(), newTestLProcessor(nil), WithCapabilities(consumer.Capabilities{MutatesData: false}))
+	require.NoError(t, err)
+
+	assert.True(t, lp.Capabilities().MutatesData)
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, lp.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.NoError(t, lp.Shutdown(context.Background()))
+}
+
 func TestNewLogsProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
 	lp, err := NewLogsProcessor(&testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
@@ -81,4 +91,18 @@ func newTestLProcessor(retError error) ProcessLogsFunc {
 	return func(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 		return ld, retError
 	}
+}
+
+type mutatingLConsumer struct {
+	consumer.Logs
+}
+
+func newMutatingLConsumer() consumer.Logs {
+	return &mutatingLConsumer{
+		Logs: consumertest.NewNop(),
+	}
+}
+
+func (bc *mutatingLConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }

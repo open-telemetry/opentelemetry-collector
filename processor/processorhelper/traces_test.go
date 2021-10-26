@@ -43,6 +43,16 @@ func TestNewTracesProcessor(t *testing.T) {
 	assert.NoError(t, tp.Shutdown(context.Background()))
 }
 
+func TestNewTracesProcessor_NextMutates(t *testing.T) {
+	lp, err := NewTracesProcessor(&testTracesCfg, newMutatingTConsumer(), newTestTProcessor(nil), WithCapabilities(consumer.Capabilities{MutatesData: false}))
+	require.NoError(t, err)
+
+	assert.True(t, lp.Capabilities().MutatesData)
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, lp.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, lp.Shutdown(context.Background()))
+}
+
 func TestNewTracesProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
 	tp, err := NewTracesProcessor(&testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
@@ -81,4 +91,18 @@ func newTestTProcessor(retError error) ProcessTracesFunc {
 	return func(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 		return td, retError
 	}
+}
+
+type mutatingTConsumer struct {
+	consumer.Traces
+}
+
+func newMutatingTConsumer() consumer.Traces {
+	return &mutatingTConsumer{
+		Traces: consumertest.NewNop(),
+	}
+}
+
+func (bc *mutatingTConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }

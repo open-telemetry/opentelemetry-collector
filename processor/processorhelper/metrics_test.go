@@ -43,6 +43,16 @@ func TestNewMetricsProcessor(t *testing.T) {
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
+func TestNewMetricsProcessor_NextMutates(t *testing.T) {
+	lp, err := NewMetricsProcessor(&testMetricsCfg, newMutatingMConsumer(), newTestMProcessor(nil), WithCapabilities(consumer.Capabilities{MutatesData: false}))
+	require.NoError(t, err)
+
+	assert.True(t, lp.Capabilities().MutatesData)
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, lp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, lp.Shutdown(context.Background()))
+}
+
 func TestNewMetricsProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
 	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil),
@@ -81,4 +91,18 @@ func newTestMProcessor(retError error) ProcessMetricsFunc {
 	return func(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 		return md, retError
 	}
+}
+
+type mutatingMConsumer struct {
+	consumer.Metrics
+}
+
+func newMutatingMConsumer() consumer.Metrics {
+	return &mutatingMConsumer{
+		Metrics: consumertest.NewNop(),
+	}
+}
+
+func (bc *mutatingMConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }

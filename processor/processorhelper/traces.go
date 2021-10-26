@@ -55,7 +55,7 @@ func NewTracesProcessor(
 	}
 
 	eventOptions := spanAttributes(cfg.ID())
-	bs := fromOptions(options)
+	bs := fromOptions(options, nextConsumer.Capabilities())
 	traceConsumer, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)

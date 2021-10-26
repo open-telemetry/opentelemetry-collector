@@ -55,7 +55,7 @@ func NewMetricsProcessor(
 	}
 
 	eventOptions := spanAttributes(cfg.ID())
-	bs := fromOptions(options)
+	bs := fromOptions(options, nextConsumer.Capabilities())
 	metricsConsumer, err := consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
