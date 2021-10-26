@@ -35,7 +35,7 @@ func TestGetServerAuthenticator(t *testing.T) {
 			expected:      nil,
 		},
 		{
-			desc:          "obtain server authenticator",
+			desc:          "not a server authenticator",
 			authenticator: &MockClientAuthenticator{},
 			expected:      errNotServerAuthenticator,
 		},
