@@ -245,3 +245,32 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	assert.Equal(t, 1, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-1", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
 }
+
+func TestSplitMetricsMultipleILM(t *testing.T) {
+	md := testdata.GenerateMetricsManyMetricsSameResource(20)
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	dataPointCount := metricDataPointCount(metrics.At(0))
+	for i := 0; i < metrics.Len(); i++ {
+		metrics.At(i).SetName(getTestMetricName(0, i))
+		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+	}
+	// add second index to ilm
+	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).
+		CopyTo(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty())
+
+	// add a third index to ilm
+	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).
+		CopyTo(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty())
+	metrics = md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(2).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		metrics.At(i).SetName(getTestMetricName(2, i))
+	}
+
+	splitMetricCount := 40
+	splitSize := splitMetricCount * dataPointCount
+	split := splitMetrics(splitSize, md)
+	assert.Equal(t, splitMetricCount, split.MetricCount())
+	assert.Equal(t, 20, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
+}

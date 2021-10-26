@@ -178,3 +178,33 @@ func BenchmarkCloneLogs(b *testing.B) {
 		}
 	}
 }
+
+func TestSplitLogsMultipleILL(t *testing.T) {
+	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
+	logs := td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	for i := 0; i < logs.Len(); i++ {
+		logs.At(i).SetName(getTestLogName(0, i))
+	}
+	// add second index to ILL
+	td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).
+		CopyTo(td.ResourceLogs().At(0).InstrumentationLibraryLogs().AppendEmpty())
+	logs = td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(1).Logs()
+	for i := 0; i < logs.Len(); i++ {
+		logs.At(i).SetName(getTestLogName(1, i))
+	}
+
+	// add third index to ILL
+	td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).
+		CopyTo(td.ResourceLogs().At(0).InstrumentationLibraryLogs().AppendEmpty())
+	logs = td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(2).Logs()
+	for i := 0; i < logs.Len(); i++ {
+		logs.At(i).SetName(getTestLogName(2, i))
+	}
+
+	splitSize := 40
+	split := splitLogs(splitSize, td)
+	assert.Equal(t, splitSize, split.LogRecordCount())
+	assert.Equal(t, 20, td.LogRecordCount())
+	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "test-log-int-0-4", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+}
