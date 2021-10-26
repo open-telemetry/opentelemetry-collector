@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/infoscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
@@ -50,6 +51,7 @@ const (
 
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
+		infoscraper.TypeStr:       &infoscraper.Factory{},
 		cpuscraper.TypeStr:        &cpuscraper.Factory{},
 		diskscraper.TypeStr:       &diskscraper.Factory{},
 		loadscraper.TypeStr:       &loadscraper.Factory{},
