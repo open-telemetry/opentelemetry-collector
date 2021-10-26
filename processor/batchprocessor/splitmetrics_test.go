@@ -147,6 +147,10 @@ func BenchmarkSplitMetrics(b *testing.B) {
 		}
 	}
 
+	if b.N > 100000 {
+		b.Skipf("SKIP: b.N too high, set -benchtine=<n>x with n < 100000")
+	}
+
 	dataPointCount := metricDataPointCount(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
 	clones := make([]pdata.Metrics, b.N)
 	for n := 0; n < b.N; n++ {

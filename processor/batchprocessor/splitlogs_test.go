@@ -138,6 +138,10 @@ func BenchmarkSplitLogs(b *testing.B) {
 		}
 	}
 
+	if b.N > 100000 {
+		b.Skipf("SKIP: b.N too high, set -benchtine=<n>x with n < 100000")
+	}
+
 	clones := make([]pdata.Logs, b.N)
 	for n := 0; n < b.N; n++ {
 		clones[n] = md.Clone()
