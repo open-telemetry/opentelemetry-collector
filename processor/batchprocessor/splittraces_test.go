@@ -138,10 +138,14 @@ func BenchmarkSplitTraces(b *testing.B) {
 		}
 	}
 
+	clones := make([]pdata.Traces, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = td.Clone()
+	}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		cloneReq := td.Clone()
+		cloneReq := clones[n]
 		split := splitTraces(128, cloneReq)
 		if split.SpanCount() != 128 || cloneReq.SpanCount() != 400-128 {
 			b.Fail()

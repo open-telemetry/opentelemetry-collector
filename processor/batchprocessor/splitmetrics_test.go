@@ -147,11 +147,16 @@ func BenchmarkSplitMetrics(b *testing.B) {
 		}
 	}
 
+	dataPointCount := metricDataPointCount(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
+	clones := make([]pdata.Metrics, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = md.Clone()
+	}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		cloneReq := md.Clone()
-		split := splitMetrics(128, cloneReq)
+		cloneReq := clones[n]
+		split := splitMetrics(128*dataPointCount, cloneReq)
 		if split.MetricCount() != 128 || cloneReq.MetricCount() != 400-128 {
 			b.Fail()
 		}

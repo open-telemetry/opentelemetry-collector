@@ -138,10 +138,15 @@ func BenchmarkSplitLogs(b *testing.B) {
 		}
 	}
 
+	clones := make([]pdata.Logs, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = md.Clone()
+	}
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		cloneReq := md.Clone()
+		cloneReq := clones[n]
 		split := splitLogs(128, cloneReq)
 		if split.LogRecordCount() != 128 || cloneReq.LogRecordCount() != 400-128 {
 			b.Fail()
