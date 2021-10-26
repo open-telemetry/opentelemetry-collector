@@ -8,6 +8,7 @@
 - Rename `parserprovider.Watchable` as `config.WatchableMapProvider` (#4178)
 - Remove deprecated no-op flags to setup Collector's logging "--log-level", "--log-profile", "--log-format" (#4213)
 - Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
+- Move `cmd/pdatagen` as internal package `model/internal/cmd/pdatagen` (#4243) 
 
 ## v0.37.0 Beta
 

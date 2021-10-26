@@ -90,6 +90,8 @@ jobs:
         run: |
           make gendependabot
           git diff -s --exit-code || (echo 'ALL_MODULES have been changed, please run "make gendependabot" and commit the changes in this PR.' && exit 1)
+      - name: Multimod verify
+        run: make multimod-verify
   unittest:
     runs-on: ubuntu-latest
     needs: [setup-environment]
