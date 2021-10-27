@@ -29,9 +29,9 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	set, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	exporter := config.NewComponentID("fakeExporter")
 
@@ -39,7 +39,7 @@ func TestExportEnqueueFailure(t *testing.T) {
 	obsrep := newObsExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ToExporterCreateSettings(),
+		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	}, insts)
 
 	logRecords := int64(7)
