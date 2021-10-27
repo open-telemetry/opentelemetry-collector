@@ -138,9 +138,9 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			set, err := obsreporttest.SetupTelemetry()
+			tt, err := obsreporttest.SetupTelemetry()
 			require.NoError(t, err)
-			defer set.Shutdown(context.Background())
+			defer tt.Shutdown(context.Background())
 
 			initializeChs := make([]chan bool, test.scrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
@@ -161,7 +161,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, set.ToReceiverCreateSettings(), nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, tt.ToReceiverCreateSettings(), nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -199,7 +199,7 @@ func TestScrapeController(t *testing.T) {
 					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
-				spans := set.SpanRecorder.Ended()
+				spans := tt.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
 				assertReceiverViews(t, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)
