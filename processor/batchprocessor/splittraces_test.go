@@ -138,10 +138,18 @@ func BenchmarkSplitTraces(b *testing.B) {
 		}
 	}
 
+	if b.N > 100000 {
+		b.Skipf("SKIP: b.N too high, set -benchtine=<n>x with n < 100000")
+	}
+
+	clones := make([]pdata.Traces, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = td.Clone()
+	}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		cloneReq := td.Clone()
+		cloneReq := clones[n]
 		split := splitTraces(128, cloneReq)
 		if split.SpanCount() != 128 || cloneReq.SpanCount() != 400-128 {
 			b.Fail()
@@ -168,4 +176,34 @@ func BenchmarkCloneSpans(b *testing.B) {
 			b.Fail()
 		}
 	}
+}
+
+func TestSplitTracesMultipleILS(t *testing.T) {
+	td := testdata.GenerateTracesManySpansSameResource(20)
+	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+	for i := 0; i < spans.Len(); i++ {
+		spans.At(i).SetName(getTestSpanName(0, i))
+	}
+	// add second index to ILS
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).
+		CopyTo(td.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty())
+	spans = td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1).Spans()
+	for i := 0; i < spans.Len(); i++ {
+		spans.At(i).SetName(getTestSpanName(1, i))
+	}
+
+	// add third index to ILS
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).
+		CopyTo(td.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty())
+	spans = td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(2).Spans()
+	for i := 0; i < spans.Len(); i++ {
+		spans.At(i).SetName(getTestSpanName(2, i))
+	}
+
+	splitSize := 40
+	split := splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, split.SpanCount())
+	assert.Equal(t, 20, td.SpanCount())
+	assert.Equal(t, "test-span-0-0", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
+	assert.Equal(t, "test-span-0-4", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(4).Name())
 }
