@@ -18,9 +18,11 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Determine the version number that will be assigned to the release. Collector uses semver, with the exception that while we are still in Beta stage breaking changes are allowed without incrementing major version number. For breaking changes we increment the minor version number and set the patch number to 0.
 
-1. Prepare Core for release. Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top.
-
-    <!-- markdown-link-check-disable-line --> Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector-contrib/compare/${last_release}...main. Submit a PR with the changes and get the PR approved and merged.
+1. Prepare Core for release.
+    * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. <!-- markdown-link-check-disable-line --> Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/${last_release}...main. Submit a PR with the changes and get the PR approved and merged.
+    * Use multimod to update the version of the collector package
+      * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml)
+      * Run `make multimod-prerelease`
 
 1. Make sure the current main branch build successfully passes (Core and Contrib). For Contrib also check that the spawn-stability-tests-job triggered by the main build-publish job also passes. Check that the corresponding "-dev" images exist in Dockerhub (Core and Contrib).
 
@@ -32,7 +34,11 @@ We release both core and contrib collectors with the same versions where the con
 
 ## Releasing opentelemetry-collector-contrib
 
-1. Prepare Contrib for release. Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Refer to Core release notes (assuming the previous release of Core and Contrib was also performed simultaneously), and in addition to that list changes that happened in the Contrib repo.
+1. Prepare Contrib for release.
+   * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Refer to Core release notes (assuming the previous release of Core and Contrib was also performed simultaneously), and in addition to that list changes that happened in the Contrib repo.
+   * Use multimod to update the version of the collector package
+      * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/versions.yaml)
+      * Run `make multimod-prerelease`
 
 1. Update the Core dependency to the Core version we just released with `make update-otel` command, e.g, `make update-otel OTEL_VERSION=v0.4.0`. Create a PR with both the changes, get it approved and merged.
 
