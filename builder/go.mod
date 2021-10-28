@@ -17,7 +17,7 @@ module go.opentelemetry.io/collector/builder
 go 1.17
 
 require (
-	github.com/go-logr/logr v0.2.1
+	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.2.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
