@@ -24,9 +24,6 @@ type MapProvider interface {
 	// Retrieve goes to the configuration source and retrieves the selected data which
 	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value.
-	//
-	// The selector is a string that is required on all invocations, the params are optional. Each
-	// implementation handles the generic params according to their requirements.
 	Retrieve(ctx context.Context) (Retrieved, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
