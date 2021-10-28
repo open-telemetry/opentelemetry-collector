@@ -23,6 +23,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestResource_MoveTo(t *testing.T) {
+	ms := generateTestResource()
+	dest := NewResource()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewResource(), ms)
+	assert.EqualValues(t, generateTestResource(), dest)
+}
+
 func TestResource_CopyTo(t *testing.T) {
 	ms := NewResource()
 	generateTestResource().CopyTo(ms)

@@ -137,7 +137,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	}
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("mock"): &configauth.MockAuthenticator{},
+			config.NewComponentID("mock"): &configauth.MockServerAuthenticator{},
 		},
 	}
 	opts, err := gss.ToServerOption(host, componenttest.NewNopTelemetrySettings())

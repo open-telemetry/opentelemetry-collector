@@ -38,11 +38,15 @@ var metricsFile = &File{
 		doubleGauge,
 		doubleSum,
 		histogram,
+		exponentialHistogram,
 		summary,
 		numberDataPointSlice,
 		numberDataPoint,
 		histogramDataPointSlice,
 		histogramDataPoint,
+		exponentialHistogramDataPointSlice,
+		exponentialHistogramDataPoint,
+		bucketsValues,
 		summaryDataPointSlice,
 		summaryDataPoint,
 		quantileValuesSlice,
@@ -164,6 +168,21 @@ var histogram = &messageValueStruct{
 	},
 }
 
+var exponentialHistogram = &messageValueStruct{
+	structName: "ExponentialHistogram",
+	description: `// ExponentialHistogram represents the type of a metric that is calculated by aggregating
+	// as a ExponentialHistogram of all reported double measurements over a time interval.`,
+	originFullName: "otlpmetrics.ExponentialHistogram",
+	fields: []baseField{
+		aggregationTemporalityField,
+		&sliceField{
+			fieldName:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     exponentialHistogramDataPointSlice,
+		},
+	},
+}
+
 var summary = &messageValueStruct{
 	structName:     "Summary",
 	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
@@ -236,6 +255,72 @@ var histogramDataPoint = &messageValueStruct{
 		explicitBoundsField,
 		exemplarsField,
 		dataPointFlagsField,
+	},
+}
+
+var exponentialHistogramDataPointSlice = &sliceOfPtrs{
+	structName: "ExponentialHistogramDataPointSlice",
+	element:    exponentialHistogramDataPoint,
+}
+
+var exponentialHistogramDataPoint = &messageValueStruct{
+	structName: "ExponentialHistogramDataPoint",
+	description: `// ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
+	// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
+	// summary statistics for a population of values, it may optionally contain the
+	// distribution of those values across a set of buckets.`,
+	originFullName: "otlpmetrics.ExponentialHistogramDataPoint",
+	fields: []baseField{
+		attributes,
+		startTimeField,
+		timeField,
+		countField,
+		doubleSumField,
+		&primitiveTypedField{
+			fieldName:       "Scale",
+			originFieldName: "Scale",
+			returnType:      "int32",
+			rawType:         "int32",
+			defaultVal:      "int32(0)",
+			testVal:         "int32(4)",
+		},
+		&primitiveTypedField{
+			fieldName:       "ZeroCount",
+			originFieldName: "ZeroCount",
+			returnType:      "uint64",
+			rawType:         "uint64",
+			defaultVal:      "uint64(0)",
+			testVal:         "uint64(201)",
+		},
+		&messageValueField{
+			fieldName:       "Positive",
+			originFieldName: "Positive",
+			returnMessage:   bucketsValues,
+		},
+		&messageValueField{
+			fieldName:       "Negative",
+			originFieldName: "Negative",
+			returnMessage:   bucketsValues,
+		},
+		exemplarsField,
+		dataPointFlagsField,
+	},
+}
+
+var bucketsValues = &messageValueStruct{
+	structName:     "Buckets",
+	description:    "// Buckets are a set of bucket counts, encoded in a contiguous array of counts.",
+	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
+	fields: []baseField{
+		&primitiveTypedField{
+			fieldName:       "Offset",
+			originFieldName: "Offset",
+			returnType:      "int32",
+			rawType:         "int32",
+			defaultVal:      "int32(0)",
+			testVal:         "int32(909)",
+		},
+		bucketCountsField,
 	},
 }
 

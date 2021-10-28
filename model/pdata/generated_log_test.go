@@ -135,6 +135,14 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestResourceLogs_MoveTo(t *testing.T) {
+	ms := generateTestResourceLogs()
+	dest := NewResourceLogs()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewResourceLogs(), ms)
+	assert.EqualValues(t, generateTestResourceLogs(), dest)
+}
+
 func TestResourceLogs_CopyTo(t *testing.T) {
 	ms := NewResourceLogs()
 	generateTestResourceLogs().CopyTo(ms)
@@ -273,6 +281,14 @@ func TestInstrumentationLibraryLogsSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestInstrumentationLibraryLogs_MoveTo(t *testing.T) {
+	ms := generateTestInstrumentationLibraryLogs()
+	dest := NewInstrumentationLibraryLogs()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewInstrumentationLibraryLogs(), ms)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogs(), dest)
+}
+
 func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	generateTestInstrumentationLibraryLogs().CopyTo(ms)
@@ -409,6 +425,14 @@ func TestLogSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestLogRecord_MoveTo(t *testing.T) {
+	ms := generateTestLogRecord()
+	dest := NewLogRecord()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, NewLogRecord(), ms)
+	assert.EqualValues(t, generateTestLogRecord(), dest)
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {

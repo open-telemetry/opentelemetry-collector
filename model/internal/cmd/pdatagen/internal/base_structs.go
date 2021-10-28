@@ -40,6 +40,13 @@ func new${structName}(orig *${originName}) ${structName} {
 // This must be used only in testing code since no "Set" method available.
 func New${structName}() ${structName} {
 	return new${structName}(&${originName}{})
+}
+
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms ${structName}) MoveTo(dest ${structName}) {
+	*dest.orig = *ms.orig
+	*ms.orig = ${originName}{}
 }`
 
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
@@ -48,6 +55,14 @@ func (ms ${structName}) CopyTo(dest ${structName}) {`
 const messageValueCopyToFooterTemplate = `}`
 
 const messageValueTestTemplate = `
+func Test${structName}_MoveTo(t *testing.T) {
+	ms := generateTest${structName}()
+	dest := New${structName}()
+	ms.MoveTo(dest)
+	assert.EqualValues(t, New${structName}(), ms)
+	assert.EqualValues(t, generateTest${structName}(), dest)
+}
+
 func Test${structName}_CopyTo(t *testing.T) {
 	ms := New${structName}()
 	generateTest${structName}().CopyTo(ms)

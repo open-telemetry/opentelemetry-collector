@@ -44,6 +44,13 @@ func NewInstrumentationLibrary() InstrumentationLibrary {
 	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
 }
 
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms InstrumentationLibrary) MoveTo(dest InstrumentationLibrary) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlpcommon.InstrumentationLibrary{}
+}
+
 // Name returns the name associated with this InstrumentationLibrary.
 func (ms InstrumentationLibrary) Name() string {
 	return (*ms.orig).Name

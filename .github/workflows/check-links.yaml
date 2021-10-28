@@ -2,7 +2,11 @@ name: check-links
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'builder/**'
   pull_request:
+    paths-ignore:
+      - 'builder/**'
 
 jobs:
   check-links:
