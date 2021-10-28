@@ -1,0 +1,19 @@
+pull_request_rules:
+  - name: remove outdated reviews
+    conditions:
+      - base=main
+    actions:
+      dismiss_reviews: {}
+
+  - name: Automatic merge when all checks pass and the PR is approved
+    conditions:
+      - "#approved-reviews-by>=1"
+      - "-draft"
+      - "status-success=Unit tests"
+      - "status-success=Code standards (linting)"
+      - "status-success=Security"
+      - "status-success=Integration test"
+    actions:
+      merge:
+        method: squash
+        commit_message: title+body
