@@ -1,0 +1,33 @@
+before:
+  hooks:
+    - go mod download
+builds:
+  - flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/open-telemetry/opentelemetry-collector-builder/cmd.version={{.Version}} -X github.com/open-telemetry/opentelemetry-collector-builder/cmd.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
+archives:
+  - format: binary
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
