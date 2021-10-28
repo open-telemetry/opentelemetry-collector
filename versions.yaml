@@ -18,5 +18,6 @@ module-sets:
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/model
+      - go.opentelemetry.io/collector/builder
 excluded-modules:
       - go.opentelemetry.io/collector/internal/tools

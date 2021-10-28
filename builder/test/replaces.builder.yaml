@@ -1,5 +1,5 @@
 dist:
-  module: github.com/open-telemetry/opentelemetry-collector-builder/test/replaces
+  module: go.opentelemetry.io/collector/builder/test/replaces
   otelcol_version: 0.37.0
 
 processors:
