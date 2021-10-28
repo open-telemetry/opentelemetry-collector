@@ -2,7 +2,11 @@ name: "CodeQL Analysis"
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'builder/**'
   pull_request:
+    paths-ignore:
+      - 'builder/**'
 
 jobs:
   CodeQL-Build:
