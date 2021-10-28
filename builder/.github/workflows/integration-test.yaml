@@ -1,0 +1,24 @@
+name: Integration tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration-test:
+    name: Integration test
+    runs-on: ubuntu-20.04
+    steps:
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Test
+      run: ./test/test.sh
