@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package cmd // import "go.opentelemetry.io/collector/builder/cmd"
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/open-telemetry/opentelemetry-collector-builder/internal/builder"
+	"go.opentelemetry.io/collector/builder/internal/builder"
 )
 
 var (
@@ -76,7 +76,7 @@ func Execute() error {
 	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, "otelcol-version", cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, "output-path", cfg.Distribution.OutputPath, "Where to write the resulting files")
 	cmd.Flags().StringVar(&cfg.Distribution.Go, "go", "", "The Go binary to use during the compilation phase. Default: go from the PATH")
-	cmd.Flags().StringVar(&cfg.Distribution.Module, "module", "github.com/open-telemetry/opentelemetry-collector-builder", "The Go module for the new distribution")
+	cmd.Flags().StringVar(&cfg.Distribution.Module, "module", "go.opentelemetry.io/collector/builder", "The Go module for the new distribution")
 
 	// version of this binary
 	cmd.AddCommand(versionCmd)

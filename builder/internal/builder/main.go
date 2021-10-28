@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package builder // import "go.opentelemetry.io/collector/builder/internal/builder"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-builder/internal/scaffold"
+	"go.opentelemetry.io/collector/builder/internal/scaffold"
 )
 
 var (
@@ -53,7 +53,7 @@ func Generate(cfg Config) error {
 	}
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
-		if err := os.Mkdir(cfg.Distribution.OutputPath, 0755); err != nil {
+		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
 			return fmt.Errorf("failed to create output path: %w", err)
 		}
 	} else if err != nil {
