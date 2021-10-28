@@ -1,0 +1,10 @@
+dist:
+  module: github.com/open-telemetry/opentelemetry-collector-builder/test/replaces
+  otelcol_version: 0.37.0
+
+processors:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.37.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.37.0
+
+replaces:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.37.0
