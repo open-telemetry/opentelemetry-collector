@@ -56,5 +56,7 @@ type WatchableRetrieved interface {
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.
 	// This method must be called when the service ends, either in case of success or error.
+	// The method may be called while WatchForUpdate() class is in progress and is blocked.
+	// In that case WatchForUpdate() method must abort as soon as possible and return ErrSessionClosed.
 	Close(ctx context.Context) error
 }
