@@ -60,6 +60,7 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
+	// Here pointer is used to differentiate `no input` from `zero value input`
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
@@ -70,6 +71,7 @@ type HTTPClientSettings struct {
 	MaxConnsPerHost int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
+	// Here pointer is used to differentiate `no input` from `zero value input`
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
