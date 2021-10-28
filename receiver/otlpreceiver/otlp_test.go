@@ -497,11 +497,11 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		},
 	}
 	for _, exporter := range exporters {
-		for _, tt := range tests {
-			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				set, err := obsreporttest.SetupTelemetry()
+		for _, test := range tests {
+			t.Run(test.name+"/"+exporter.receiverTag, func(t *testing.T) {
+				tt, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer set.Shutdown(context.Background())
+				defer tt.Shutdown(context.Background())
 
 				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
@@ -514,11 +514,11 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer cc.Close()
 
-				for _, ingestionState := range tt.ingestionStates {
+				for _, ingestionState := range test.ingestionStates {
 					if ingestionState.okToIngest {
 						sink.SetConsumeError(nil)
 					} else {
-						sink.SetConsumeError(fmt.Errorf("%q: consumer error", tt.name))
+						sink.SetConsumeError(fmt.Errorf("%q: consumer error", test.name))
 					}
 
 					err = exporter.exportFn(cc, req)
@@ -528,9 +528,9 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 					assert.Equal(t, ingestionState.expectedCode, status.Code())
 				}
 
-				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+				require.Equal(t, test.expectedReceivedBatches, len(sink.AllTraces()))
 
-				require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentIDWithName(typeStr, exporter.receiverTag), "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
+				require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentIDWithName(typeStr, exporter.receiverTag), "grpc", int64(test.expectedReceivedBatches), int64(test.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}

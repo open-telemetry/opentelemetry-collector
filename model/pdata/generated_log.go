@@ -183,6 +183,13 @@ func NewResourceLogs() ResourceLogs {
 	return newResourceLogs(&otlplogs.ResourceLogs{})
 }
 
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlplogs.ResourceLogs{}
+}
+
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
@@ -368,6 +375,13 @@ func newInstrumentationLibraryLogs(orig *otlplogs.InstrumentationLibraryLogs) In
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibraryLogs() InstrumentationLibraryLogs {
 	return newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
+}
+
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms InstrumentationLibraryLogs) MoveTo(dest InstrumentationLibraryLogs) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlplogs.InstrumentationLibraryLogs{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryLogs.
@@ -556,6 +570,13 @@ func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
 // This must be used only in testing code since no "Set" method available.
 func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
+}
+
+// MoveTo moves all properties from the current struct to dest
+// reseting the current instance to its zero value
+func (ms LogRecord) MoveTo(dest LogRecord) {
+	*dest.orig = *ms.orig
+	*ms.orig = otlplogs.LogRecord{}
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.

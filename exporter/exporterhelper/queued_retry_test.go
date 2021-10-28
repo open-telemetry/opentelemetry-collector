@@ -300,13 +300,13 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
-	set, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	qCfg := DefaultQueueSettings()
 	rCfg := DefaultRetrySettings()
-	be := newBaseExporter(&defaultExporterCfg, set.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))

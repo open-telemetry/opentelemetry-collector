@@ -25,9 +25,8 @@ import (
 )
 
 var (
-	_            HTTPClientAuthenticator = (*MockClientAuthenticator)(nil)
-	_            GRPCClientAuthenticator = (*MockClientAuthenticator)(nil)
-	errMockError                         = errors.New("mock Error")
+	_            ClientAuthenticator = (*MockClientAuthenticator)(nil)
+	errMockError                     = errors.New("mock Error")
 )
 
 // MockClientAuthenticator provides a mock implementation of GRPCClientAuthenticator and HTTPClientAuthenticator interfaces
