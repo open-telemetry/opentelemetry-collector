@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
@@ -51,12 +52,12 @@ func Execute() error {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if err := cfg.Validate(); err != nil {
-				cfg.Logger.Error(err, "invalid configuration")
+				cfg.Logger.Error("invalid configuration", zap.Error(err))
 				return err
 			}
 
 			if err := cfg.ParseModules(); err != nil {
-				cfg.Logger.Error(err, "invalid module configuration")
+				cfg.Logger.Error("invalid module configuration", zap.Error(err))
 				return err
 			}
 
@@ -83,12 +84,12 @@ func Execute() error {
 
 	// tie Viper to flags
 	if err := viper.BindPFlags(cmd.Flags()); err != nil {
-		cfg.Logger.Error(err, "failed to bind flags")
+		cfg.Logger.Error("failed to bind flags", zap.Error(err))
 		return err
 	}
 
 	if err := cmd.Execute(); err != nil {
-		cfg.Logger.Error(err, "failed to run")
+		cfg.Logger.Error("failed to run", zap.Error(err))
 		return err
 	}
 
@@ -96,7 +97,7 @@ func Execute() error {
 }
 
 func initConfig() {
-	cfg.Logger.Info("OpenTelemetry Collector distribution builder", "version", version, "date", date)
+	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String("version", version), zap.String("date", date))
 
 	// a couple of Viper goodies, to make it easier to use env vars when flags are not desirable
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -112,12 +113,12 @@ func initConfig() {
 
 	// load the config file
 	if err := viper.ReadInConfig(); err == nil {
-		cfg.Logger.Info("Using config file", "path", viper.ConfigFileUsed())
+		cfg.Logger.Info("Using config file", zap.String("path", viper.ConfigFileUsed()))
 	}
 
 	// convert Viper's internal state into our configuration object
 	if err := viper.Unmarshal(&cfg); err != nil {
-		cfg.Logger.Error(err, "failed to parse the config")
+		cfg.Logger.Error("failed to parse the config", zap.Error(err))
 		cobra.CheckErr(err)
 		return
 	}

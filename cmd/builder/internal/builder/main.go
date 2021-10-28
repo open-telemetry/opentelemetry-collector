@@ -23,6 +23,8 @@ import (
 	"text/template"
 	"time"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/cmd/builder/internal/scaffold"
 )
 
@@ -49,7 +51,7 @@ func GenerateAndCompile(cfg Config) error {
 func Generate(cfg Config) error {
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", "builder-version", defaultOtelColVersion)
+		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
@@ -92,7 +94,7 @@ func Generate(cfg Config) error {
 		}
 	}
 
-	cfg.Logger.Info("Sources created", "path", cfg.Distribution.OutputPath)
+	cfg.Logger.Info("Sources created", zap.String("path", cfg.Distribution.OutputPath))
 	return nil
 }
 
@@ -110,7 +112,7 @@ func Compile(cfg Config) error {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w. Output: %q", err, out)
 	}
-	cfg.Logger.Info("Compiled", "binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.ExeName))
+	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.ExeName)))
 
 	return nil
 }
@@ -135,7 +137,7 @@ func GetModules(cfg Config) error {
 		cmd.Dir = cfg.Distribution.OutputPath
 		if out, err := cmd.CombinedOutput(); err != nil {
 			failReason = fmt.Sprintf("%s. Output: %q", err, out)
-			cfg.Logger.Info("Failed modules download", "retry", fmt.Sprintf("%d/%d", i, retries))
+			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, retries)))
 			time.Sleep(5 * time.Second)
 			continue
 		}

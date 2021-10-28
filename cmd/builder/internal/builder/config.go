@@ -22,8 +22,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +35,7 @@ var ErrDeprecatedCore = errors.New("mod.Core has deprecated, you should not be u
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger          logr.Logger
+	Logger          *zap.Logger
 	SkipCompilation bool
 
 	Distribution Distribution `mapstructure:"dist"`
@@ -73,15 +71,14 @@ type Module struct {
 
 // DefaultConfig creates a new config, with default values
 func DefaultConfig() Config {
-	zapLog, err := zap.NewDevelopment()
+	log, err := zap.NewDevelopment()
 	if err != nil {
 		panic(fmt.Sprintf("failed to obtain a logger instance: %v", err))
 	}
-	log := zapr.NewLogger(zapLog)
 
 	outputDir, err := ioutil.TempDir("", "otelcol-distribution")
 	if err != nil {
-		log.Error(err, "failed to obtain a temporary directory")
+		log.Error("failed to obtain a temporary directory", zap.Error(err))
 	}
 
 	return Config{
@@ -103,7 +100,7 @@ func (c *Config) Validate() error {
 		}
 		c.Distribution.Go = path
 	}
-	c.Logger.Info("Using go", "Go executable", c.Distribution.Go)
+	c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
 
 	return nil
 }
