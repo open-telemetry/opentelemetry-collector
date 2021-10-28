@@ -34,7 +34,7 @@ type MapProvider interface {
 
 // Retrieved holds the result of a call to the Retrieve method of a Session object.
 type Retrieved interface {
-	// Get returns the configparser.ConfigMap.
+	// Get returns the Map.
 	Get() *Map
 }
 
