@@ -127,36 +127,6 @@ func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testin
 	assert.Equal(t, "test-span-1-4", split.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans().At(4).Name())
 }
 
-func BenchmarkSplitTraces(b *testing.B) {
-	td := pdata.NewTraces()
-	rms := td.ResourceSpans()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateTracesManySpansSameResource(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
-		ms := rms.At(rms.Len() - 1).InstrumentationLibrarySpans().At(0).Spans()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestMetricName(1, i))
-		}
-	}
-
-	if b.N > 100000 {
-		b.Skipf("SKIP: b.N too high, set -benchtine=<n>x with n < 100000")
-	}
-
-	clones := make([]pdata.Traces, b.N)
-	for n := 0; n < b.N; n++ {
-		clones[n] = td.Clone()
-	}
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := clones[n]
-		split := splitTraces(128, cloneReq)
-		if split.SpanCount() != 128 || cloneReq.SpanCount() != 400-128 {
-			b.Fail()
-		}
-	}
-}
-
 func BenchmarkCloneSpans(b *testing.B) {
 	td := pdata.NewTraces()
 	rms := td.ResourceSpans()
@@ -206,4 +176,34 @@ func TestSplitTracesMultipleILS(t *testing.T) {
 	assert.Equal(t, 20, td.SpanCount())
 	assert.Equal(t, "test-span-0-0", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, "test-span-0-4", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(4).Name())
+}
+
+func BenchmarkSplitTraces(b *testing.B) {
+	td := pdata.NewTraces()
+	rms := td.ResourceSpans()
+	for i := 0; i < 20; i++ {
+		testdata.GenerateTracesManySpansSameResource(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
+		ms := rms.At(rms.Len() - 1).InstrumentationLibrarySpans().At(0).Spans()
+		for i := 0; i < ms.Len(); i++ {
+			ms.At(i).SetName(getTestMetricName(1, i))
+		}
+	}
+
+	if b.N > 100000 {
+		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
+	}
+
+	clones := make([]pdata.Traces, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = td.Clone()
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		cloneReq := clones[n]
+		split := splitTraces(128, cloneReq)
+		if split.SpanCount() != 128 || cloneReq.SpanCount() != 400-128 {
+			b.Fail()
+		}
+	}
 }

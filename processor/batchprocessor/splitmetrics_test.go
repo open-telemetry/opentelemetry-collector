@@ -136,58 +136,6 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 	assert.Equal(t, "test-metric-int-1-4", split.ResourceMetrics().At(1).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
 }
 
-func BenchmarkSplitMetrics(b *testing.B) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateMetricsManyMetricsSameResource(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-		ms := rms.At(rms.Len() - 1).InstrumentationLibraryMetrics().At(0).Metrics()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestMetricName(1, i))
-		}
-	}
-
-	if b.N > 100000 {
-		b.Skipf("SKIP: b.N too high, set -benchtine=<n>x with n < 100000")
-	}
-
-	dataPointCount := metricDataPointCount(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
-	clones := make([]pdata.Metrics, b.N)
-	for n := 0; n < b.N; n++ {
-		clones[n] = md.Clone()
-	}
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := clones[n]
-		split := splitMetrics(128*dataPointCount, cloneReq)
-		if split.MetricCount() != 128 || cloneReq.MetricCount() != 400-128 {
-			b.Fail()
-		}
-	}
-}
-
-func BenchmarkCloneMetrics(b *testing.B) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateMetricsManyMetricsSameResource(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-		ms := rms.At(rms.Len() - 1).InstrumentationLibraryMetrics().At(0).Metrics()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestMetricName(1, i))
-		}
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := md.Clone()
-		if cloneReq.MetricCount() != 400 {
-			b.Fail()
-		}
-	}
-}
-
 func TestSplitMetricsUneven(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(10)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
@@ -273,4 +221,35 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 	assert.Equal(t, 20, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
+}
+
+func BenchmarkSplitMetrics(b *testing.B) {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
+	for i := 0; i < 20; i++ {
+		testdata.GenerateMetricsManyMetricsSameResource(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		ms := rms.At(rms.Len() - 1).InstrumentationLibraryMetrics().At(0).Metrics()
+		for i := 0; i < ms.Len(); i++ {
+			ms.At(i).SetName(getTestMetricName(1, i))
+		}
+	}
+
+	if b.N > 100000 {
+		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
+	}
+
+	dataPointCount := metricDataPointCount(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
+	clones := make([]pdata.Metrics, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = md.Clone()
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		cloneReq := clones[n]
+		split := splitMetrics(128*dataPointCount, cloneReq)
+		if split.MetricCount() != 128 || cloneReq.MetricCount() != 400-128 {
+			b.Fail()
+		}
+	}
 }
