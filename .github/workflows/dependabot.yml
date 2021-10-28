@@ -3,6 +3,8 @@ name: Dependabot-Tidier
 on:
   pull_request:
     types: [ labeled ]
+    paths-ignore:
+      - 'builder/**'
 
 jobs:
   mod_tidier:
