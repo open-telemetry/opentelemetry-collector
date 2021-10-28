@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scaffold
+package scaffold // import "go.opentelemetry.io/collector/builder/internal/scaffold"
 
 const Components = `
 // Copyright 2020 OpenTelemetry Authors
