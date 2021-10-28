@@ -27,7 +27,14 @@ type ctxKey struct{}
 
 // Client represents a generic client that sends data to any receiver supported by the OT receiver
 type Client struct {
-	IP string
+	IP   string
+	Auth AuthData
+}
+
+type AuthData interface {
+	Equal(AuthData) bool
+	GetAttribute(string) interface{}
+	GetAttributeNames() []string
 }
 
 // NewContext takes an existing context and derives a new context with the client value stored on it
@@ -41,12 +48,31 @@ func FromContext(ctx context.Context) (*Client, bool) {
 	return c, ok
 }
 
+// ContextWithAuth adds authentication data to either an existing client or a new one if none is present
+// returning the resulting context.
+func ContextWithAuth(ctx context.Context, auth AuthData) context.Context {
+	c, ok := FromContext(ctx)
+	if !ok {
+		c = &Client{Auth: auth}
+		return NewContext(ctx, c)
+	}
+
+	c.Auth = auth
+	return ctx
+}
+
 // FromGRPC takes a GRPC context and tries to extract client information from it
 func FromGRPC(ctx context.Context) (*Client, bool) {
+	cl, ok := FromContext(ctx)
+	if !ok {
+		cl = &Client{}
+	}
+
 	if p, ok := peer.FromContext(ctx); ok {
 		ip := parseIP(p.Addr.String())
 		if ip != "" {
-			return &Client{ip}, true
+			cl.IP = ip
+			return cl, true
 		}
 	}
 	return nil, false
@@ -54,11 +80,18 @@ func FromGRPC(ctx context.Context) (*Client, bool) {
 
 // FromHTTP takes a net/http Request object and tries to extract client information from it
 func FromHTTP(r *http.Request) (*Client, bool) {
+	cl, ok := FromContext(r.Context())
+	if !ok {
+		cl = &Client{}
+	}
+
 	ip := parseIP(r.RemoteAddr)
 	if ip == "" {
 		return nil, false
 	}
-	return &Client{ip}, true
+
+	cl.IP = ip
+	return cl, true
 }
 
 func parseIP(source string) string {
