@@ -21,8 +21,10 @@ import (
 // MapProvider is an interface that helps providing configuration's parser.
 // Implementations may load the parser from a file, a database or any other source.
 type MapProvider interface {
-	// Get returns the Map if succeed or error otherwise.
-	Get(ctx context.Context) (*Map, error)
+	// Retrieve goes to the configuration source and retrieves the selected data which
+	// contains the value to be injected in the configuration and the corresponding watcher that
+	// will be used to monitor for updates of the retrieved value.
+	Retrieve(ctx context.Context) (Retrieved, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.
@@ -30,13 +32,28 @@ type MapProvider interface {
 	Close(ctx context.Context) error
 }
 
-// WatchableMapProvider is an extension for MapProvider that is implemented if the given provider
-// supports monitoring of configuration updates.
-type WatchableMapProvider interface {
+// Retrieved holds the result of a call to the Retrieve method of a Session object.
+type Retrieved interface {
+	// Get returns the Map.
+	Get() *Map
+}
+
+// WatchableRetrieved is an extension for Retrieved that if implemented,
+// the Retrieved value supports monitoring for updates.
+type WatchableRetrieved interface {
+	Retrieved
+
 	// WatchForUpdate waits for updates on any of the values retrieved from config sources.
 	// It blocks until configuration updates are received and can
 	// return an error if anything fails. WatchForUpdate is used once during the
 	// first evaluation of the configuration and is not used to watch configuration
 	// changes continuously.
 	WatchForUpdate() error
+
+	// Close signals that the configuration for which it was used to retrieve values is no longer in use
+	// and the object should close and release any watchers that it may have created.
+	// This method must be called when the service ends, either in case of success or error.
+	// The method may be called while WatchForUpdate() class is in progress and is blocked.
+	// In that case WatchForUpdate() method must abort as soon as possible and return ErrSessionClosed.
+	Close(ctx context.Context) error
 }

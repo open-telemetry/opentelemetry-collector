@@ -57,11 +57,11 @@ func TestExpand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Retrieve the config
 			emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", test.name)))
-			cfgMap, err := emp.Get(context.Background())
+			cp, err := emp.Retrieve(context.Background())
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
-			assert.Equal(t, expectedCfgMap.ToStringMap(), cfgMap.ToStringMap())
+			assert.Equal(t, expectedCfgMap.ToStringMap(), cp.Get().ToStringMap())
 		})
 	}
 }
@@ -75,7 +75,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 
 	// Retrieve the config
 	emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", "expand-escaped-env.yaml")))
-	cfgMap, err := emp.Get(context.Background())
+	cp, err := emp.Retrieve(context.Background())
 	require.NoError(t, err, "Unable to get config")
 
 	expectedMap := map[string]interface{}{
@@ -95,5 +95,5 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 		}}
-	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
+	assert.Equal(t, expectedMap, cp.Get().ToStringMap())
 }

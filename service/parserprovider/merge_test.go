@@ -28,7 +28,7 @@ import (
 func TestMerge_GetError(t *testing.T) {
 	pl := NewMergeMapProvider(&errProvider{err: nil}, &errProvider{errors.New("my error")})
 	require.NotNil(t, pl)
-	cp, err := pl.Get(context.Background())
+	cp, err := pl.Retrieve(context.Background())
 	assert.Error(t, err)
 	assert.Nil(t, cp)
 }
@@ -43,9 +43,9 @@ type errProvider struct {
 	err error
 }
 
-func (epl *errProvider) Get(context.Context) (*config.Map, error) {
+func (epl *errProvider) Retrieve(context.Context) (config.Retrieved, error) {
 	if epl.err == nil {
-		return config.NewMap(), nil
+		return &simpleRetrieved{confMap: config.NewMap()}, nil
 	}
 	return nil, epl.err
 }

@@ -266,7 +266,7 @@ type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get(context.Context) (*config.Map, error) {
+func (epl *errParserLoader) Retrieve(_ context.Context) (config.Retrieved, error) {
 	return nil, epl.err
 }
 

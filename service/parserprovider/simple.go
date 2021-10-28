@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,29 +15,14 @@
 package parserprovider // import "go.opentelemetry.io/collector/service/parserprovider"
 
 import (
-	"context"
-	"io"
-
 	"go.opentelemetry.io/collector/config"
 )
 
-type inMemoryMapProvider struct {
-	buf io.Reader
+// TODO: This probably will make sense to be exported, but needs better name and documentation.
+type simpleRetrieved struct {
+	confMap *config.Map
 }
 
-// NewInMemoryMapProvider returns a new config.MapProvider that reads the configuration, from the provided buffer, as YAML.
-func NewInMemoryMapProvider(buf io.Reader) config.MapProvider {
-	return &inMemoryMapProvider{buf: buf}
-}
-
-func (inp *inMemoryMapProvider) Retrieve(context.Context) (config.Retrieved, error) {
-	cfg, err := config.NewMapFromBuffer(inp.buf)
-	if err != nil {
-		return nil, err
-	}
-	return &simpleRetrieved{confMap: cfg}, nil
-}
-
-func (inp *inMemoryMapProvider) Close(context.Context) error {
-	return nil
+func (sr *simpleRetrieved) Get() *config.Map {
+	return sr.confMap
 }
