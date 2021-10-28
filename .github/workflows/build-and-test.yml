@@ -27,12 +27,8 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
-          path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
+          path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.cache-hit != 'true'
@@ -40,8 +36,6 @@ jobs:
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
@@ -65,18 +59,12 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
-          path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
+          path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
@@ -113,21 +101,20 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
-          path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
+          path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
+      - name: Cache Build
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: go-build-unittest-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
   test-coverage:
@@ -147,21 +134,20 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
-          path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
+          path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
+      - name: Cache Build
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: go-build-coverage-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
@@ -187,12 +173,8 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
-          path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
+          path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Build Collector for All Architectures
         run: make binaries-all-sys
