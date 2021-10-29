@@ -319,10 +319,9 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 	return processors, nil
 }
 
-func unmarshalPipelines(rawPipelines map[config.ComponentID]*config.Pipeline) (config.Pipelines, error) {
-	pipelines := make(map[string]*config.Pipeline)
+func unmarshalPipelines(pipelines map[config.ComponentID]*config.Pipeline) (config.Pipelines, error) {
 	// Iterate over input map and create a config for each.
-	for id, pipeline := range rawPipelines {
+	for id, pipeline := range pipelines {
 		pipeline.Name = id.String()
 		pipeline.InputType = config.DataType(id.Type())
 		switch pipeline.InputType {
@@ -332,8 +331,6 @@ func unmarshalPipelines(rawPipelines map[config.ComponentID]*config.Pipeline) (c
 		default:
 			return nil, errorUnknownType(pipelinesKeyName, id)
 		}
-
-		pipelines[pipeline.Name] = pipeline
 	}
 
 	return pipelines, nil
