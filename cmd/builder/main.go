@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"go.opentelemetry.io/collector/builder/cmd"
+	"go.opentelemetry.io/collector/cmd/builder/cmd"
 )
 
 func main() {

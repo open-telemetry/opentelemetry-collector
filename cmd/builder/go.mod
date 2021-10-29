@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module go.opentelemetry.io/collector/builder
+module go.opentelemetry.io/collector/cmd/builder
 
 go 1.17
 

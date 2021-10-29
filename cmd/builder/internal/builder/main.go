@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder // import "go.opentelemetry.io/collector/builder/internal/builder"
+package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"text/template"
 	"time"
 
-	"go.opentelemetry.io/collector/builder/internal/scaffold"
+	"go.opentelemetry.io/collector/cmd/builder/internal/scaffold"
 )
 
 var (
