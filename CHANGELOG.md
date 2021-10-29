@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
+- Rename `pdata.AnyValueArray` to `AttributeSlice` (#4325)
 
 ## v0.38.0 Beta
 

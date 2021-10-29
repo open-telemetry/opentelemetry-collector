@@ -55,10 +55,10 @@ func TestInstrumentationLibrary_Version(t *testing.T) {
 	assert.EqualValues(t, testValVersion, ms.Version())
 }
 
-func TestAnyValueArray(t *testing.T) {
-	es := NewAnyValueArray()
+func TestAttributeSlice(t *testing.T) {
+	es := NewAttributeSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newAnyValueArray(&[]otlpcommon.AnyValue{})
+	es = newAttributeSlice(&[]otlpcommon.AnyValue{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
@@ -73,23 +73,23 @@ func TestAnyValueArray(t *testing.T) {
 	}
 }
 
-func TestAnyValueArray_CopyTo(t *testing.T) {
-	dest := NewAnyValueArray()
+func TestAttributeSlice_CopyTo(t *testing.T) {
+	dest := NewAttributeSlice()
 	// Test CopyTo to empty
-	NewAnyValueArray().CopyTo(dest)
-	assert.EqualValues(t, NewAnyValueArray(), dest)
+	NewAttributeSlice().CopyTo(dest)
+	assert.EqualValues(t, NewAttributeSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestAnyValueArray().CopyTo(dest)
-	assert.EqualValues(t, generateTestAnyValueArray(), dest)
+	generateTestAttributeSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestAttributeSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestAnyValueArray().CopyTo(dest)
-	assert.EqualValues(t, generateTestAnyValueArray(), dest)
+	generateTestAttributeSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestAttributeSlice(), dest)
 }
 
-func TestAnyValueArray_EnsureCapacity(t *testing.T) {
-	es := generateTestAnyValueArray()
+func TestAttributeSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestAttributeSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	expectedEs := make(map[*otlpcommon.AnyValue]bool)
@@ -113,24 +113,24 @@ func TestAnyValueArray_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 }
 
-func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
+func TestAttributeSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestAnyValueArray()
-	dest := NewAnyValueArray()
-	src := generateTestAnyValueArray()
+	expectedSlice := generateTestAttributeSlice()
+	dest := NewAttributeSlice()
+	src := generateTestAttributeSlice()
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestAnyValueArray(), dest)
+	assert.EqualValues(t, generateTestAttributeSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestAnyValueArray(), dest)
+	assert.EqualValues(t, generateTestAttributeSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestAnyValueArray().MoveAndAppendTo(dest)
+	generateTestAttributeSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -138,16 +138,16 @@ func TestAnyValueArray_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestAnyValueArray_RemoveIf(t *testing.T) {
+func TestAttributeSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewAnyValueArray()
+	emptySlice := NewAttributeSlice()
 	emptySlice.RemoveIf(func(el AttributeValue) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestAnyValueArray()
+	filtered := generateTestAttributeSlice()
 	pos := 0
 	filtered.RemoveIf(func(el AttributeValue) bool {
 		pos++
@@ -167,13 +167,13 @@ func fillTestInstrumentationLibrary(tv InstrumentationLibrary) {
 	tv.SetVersion("test_version")
 }
 
-func generateTestAnyValueArray() AnyValueArray {
-	tv := NewAnyValueArray()
-	fillTestAnyValueArray(tv)
+func generateTestAttributeSlice() AttributeSlice {
+	tv := NewAttributeSlice()
+	fillTestAttributeSlice(tv)
 	return tv
 }
 
-func fillTestAnyValueArray(tv AnyValueArray) {
+func fillTestAttributeSlice(tv AttributeSlice) {
 	l := 7
 	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {

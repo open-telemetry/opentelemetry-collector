@@ -219,7 +219,7 @@ func attributeValueToString(av pdata.AttributeValue) string {
 	}
 }
 
-func attributeValueArrayToString(av pdata.AnyValueArray) string {
+func attributeValueArrayToString(av pdata.AttributeSlice) string {
 	var b strings.Builder
 	b.WriteByte('[')
 	for i := 0; i < av.Len(); i++ {

@@ -202,12 +202,12 @@ func (a AttributeValue) MapVal() AttributeMap {
 // such empty array has no effect on this AttributeValue.
 //
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) ArrayVal() AnyValueArray {
+func (a AttributeValue) ArrayVal() AttributeSlice {
 	arr := a.orig.GetArrayValue()
 	if arr == nil {
-		return NewAnyValueArray()
+		return NewAttributeSlice()
 	}
-	return newAnyValueArray(&arr.Values)
+	return newAttributeSlice(&arr.Values)
 }
 
 // BytesVal returns the []byte value associated with this AttributeValue.
@@ -265,7 +265,7 @@ func (a AttributeValue) SetMapVal(v AttributeMap) {
 // SetArrayVal replaces the AnyValueArray value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeArray.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetArrayVal(v AnyValueArray) {
+func (a AttributeValue) SetArrayVal(v AttributeSlice) {
 	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
 }
 
@@ -295,7 +295,7 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 			return
 		}
 		// Deep copy to dest.
-		newAnyValueArray(&v.ArrayValue.Values).CopyTo(newAnyValueArray(&av.ArrayValue.Values))
+		newAttributeSlice(&v.ArrayValue.Values).CopyTo(newAttributeSlice(&av.ArrayValue.Values))
 	default:
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = a.orig.Value
@@ -841,7 +841,7 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 }
 
 // asRaw creates a slice out of a AnyValueArray.
-func (es AnyValueArray) asRaw() []interface{} {
+func (es AttributeSlice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)

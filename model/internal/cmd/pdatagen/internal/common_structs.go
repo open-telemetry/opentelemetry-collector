@@ -110,7 +110,7 @@ var anyValue = &messageValueStruct{
 }
 
 var anyValueArray = &sliceOfValues{
-	structName: "AnyValueArray",
+	structName: "AttributeSlice",
 	element:    anyValue,
 }
 

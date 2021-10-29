@@ -77,34 +77,34 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 	dest.SetVersion(ms.Version())
 }
 
-// AnyValueArray logically represents a slice of AttributeValue.
+// AttributeSlice logically represents a slice of AttributeValue.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewAnyValueArray function to create new instances.
+// Must use NewAttributeSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type AnyValueArray struct {
+type AttributeSlice struct {
 	// orig points to the slice otlpcommon.AnyValue field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]otlpcommon.AnyValue
 }
 
-func newAnyValueArray(orig *[]otlpcommon.AnyValue) AnyValueArray {
-	return AnyValueArray{orig}
+func newAttributeSlice(orig *[]otlpcommon.AnyValue) AttributeSlice {
+	return AttributeSlice{orig}
 }
 
-// NewAnyValueArray creates a AnyValueArray with 0 elements.
+// NewAttributeSlice creates a AttributeSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewAnyValueArray() AnyValueArray {
+func NewAttributeSlice() AttributeSlice {
 	orig := []otlpcommon.AnyValue(nil)
-	return AnyValueArray{&orig}
+	return AttributeSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewAnyValueArray()".
-func (es AnyValueArray) Len() int {
+// Returns "0" for a newly instance created with "NewAttributeSlice()".
+func (es AttributeSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -115,12 +115,12 @@ func (es AnyValueArray) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
-func (es AnyValueArray) At(ix int) AttributeValue {
+func (es AttributeSlice) At(ix int) AttributeValue {
 	return newAttributeValue(&(*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es AnyValueArray) CopyTo(dest AnyValueArray) {
+func (es AttributeSlice) CopyTo(dest AttributeSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
@@ -138,14 +138,14 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new AnyValueArray can be initialized:
-//   es := NewAnyValueArray()
+// Here is how a new AttributeSlice can be initialized:
+//   es := NewAttributeSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
 //       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es AnyValueArray) EnsureCapacity(newCap int) {
+func (es AttributeSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -158,14 +158,14 @@ func (es AnyValueArray) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty AttributeValue.
 // It returns the newly added AttributeValue.
-func (es AnyValueArray) AppendEmpty() AttributeValue {
+func (es AttributeSlice) AppendEmpty() AttributeValue {
 	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
+func (es AttributeSlice) MoveAndAppendTo(dest AttributeSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -177,7 +177,7 @@ func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es AnyValueArray) RemoveIf(f func(AttributeValue) bool) {
+func (es AttributeSlice) RemoveIf(f func(AttributeValue) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
