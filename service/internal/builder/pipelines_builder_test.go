@@ -34,24 +34,24 @@ import (
 func TestBuildPipelines(t *testing.T) {
 	tests := []struct {
 		name          string
-		pipelineName  string
+		pipelineID    config.ComponentID
 		exporterNames []config.ComponentID
 	}{
 		{
 			name:          "one-exporter",
-			pipelineName:  "traces",
+			pipelineID:    config.NewComponentID("traces"),
 			exporterNames: []config.ComponentID{config.NewComponentID("exampleexporter")},
 		},
 		{
 			name:          "multi-exporter",
-			pipelineName:  "traces/2",
+			pipelineID:    config.NewComponentIDWithName("traces", "2"),
 			exporterNames: []config.ComponentID{config.NewComponentID("exampleexporter"), config.NewComponentIDWithName("exampleexporter", "2")},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			testPipeline(t, test.pipelineName, test.exporterNames)
+			testPipeline(t, test.pipelineID, test.exporterNames)
 		})
 	}
 }
@@ -72,8 +72,8 @@ func createExampleConfig(dataType string) *config.Config {
 			config.NewComponentID(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
 		},
 		Service: config.Service{
-			Pipelines: map[string]*config.Pipeline{
-				dataType: {
+			Pipelines: map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID(config.Type(dataType)): {
 					Name:       dataType,
 					InputType:  config.DataType(dataType),
 					Receivers:  []config.ComponentID{config.NewComponentID(exampleReceiverFactory.Type())},
@@ -127,8 +127,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			err = pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
-			pipelineName := dataType
-			processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
+			processor := pipelineProcessors[cfg.Service.Pipelines[config.NewComponentID(config.Type(dataType))]]
 
 			// Ensure pipeline has its fields correctly populated.
 			require.NotNil(t, processor)
@@ -175,7 +174,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 	}
 }
 
-func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.ComponentID) {
+func testPipeline(t *testing.T, pipelineID config.ComponentID, exporterIDs []config.ComponentID) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 	cfg, err := configtest.LoadConfigAndValidate("testdata/pipelines_builder.yaml", factories)
@@ -192,7 +191,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterIDs []config.Compon
 
 	assert.NoError(t, pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost()))
 
-	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
+	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineID]]
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)

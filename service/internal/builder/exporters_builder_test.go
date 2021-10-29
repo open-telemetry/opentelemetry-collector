@@ -49,9 +49,9 @@ func TestBuildExporters(t *testing.T) {
 		},
 
 		Service: config.Service{
-			Pipelines: map[string]*config.Pipeline{
-				"trace": {
-					Name:      "trace",
+			Pipelines: map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID("traces"): {
+					Name:      "traces",
 					InputType: config.TracesDataType,
 					Exporters: []config.ComponentID{config.NewComponentID("otlp")},
 				},
@@ -87,15 +87,14 @@ func TestBuildExporters(t *testing.T) {
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
-	delete(cfg.Service.Pipelines, "trace")
+	delete(cfg.Service.Pipelines, config.NewComponentID("traces"))
 	exporters, err = BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
 	e1 = exporters[config.NewComponentID("otlp")]
 
-	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
-	// Metrics Exporter are nil.
+	// Ensure exporter has its fields correctly populated, ie TracesExporter and MetricsExporter are nil.
 	require.NotNil(t, e1)
 	assert.Nil(t, e1.getTracesExporter())
 	assert.Nil(t, e1.getMetricExporter())
@@ -116,8 +115,8 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 		},
 
 		Service: config.Service{
-			Pipelines: map[string]*config.Pipeline{
-				"logs": {
+			Pipelines: map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID("logs"): {
 					Name:      "logs",
 					InputType: "logs",
 					Exporters: []config.ComponentID{config.NewComponentID("exampleexporter")},
@@ -150,7 +149,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
-	delete(cfg.Service.Pipelines, "logs")
+	delete(cfg.Service.Pipelines, config.NewComponentID("logs"))
 	exporters, err = BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
