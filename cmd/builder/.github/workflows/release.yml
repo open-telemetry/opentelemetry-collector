@@ -25,5 +25,6 @@ jobs:
         with:
           version: latest
           args: release --rm-dist
+          workdir: cmd/builder
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

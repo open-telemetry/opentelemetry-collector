@@ -2,8 +2,6 @@ name: build-and-test-windows
 on:
   push:
     branches: [ main ]
-    paths-ignore:
-      - 'builder/**'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:

@@ -8,7 +8,7 @@ name: "Inform Incompatible PRs"
 on:
   pull_request:
     paths-ignore:
-      - 'builder/**'
+      - 'cmd/builder/**'
     branches:
       - main
 
