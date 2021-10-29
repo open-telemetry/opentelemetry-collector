@@ -69,8 +69,8 @@ func TestBuildExporters(t *testing.T) {
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
 	assert.NotNil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
-	assert.Nil(t, e1.getLogExporter())
+	assert.Nil(t, e1.getMetricsExporter())
+	assert.Nil(t, e1.getLogsExporter())
 
 	// Ensure it can be started.
 	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
@@ -98,8 +98,8 @@ func TestBuildExporters(t *testing.T) {
 	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
 	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
-	assert.Nil(t, e1.getLogExporter())
+	assert.Nil(t, e1.getMetricsExporter())
+	assert.Nil(t, e1.getLogsExporter())
 
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
@@ -135,9 +135,9 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
-	assert.NotNil(t, e1.getLogExporter())
+	assert.NotNil(t, e1.getLogsExporter())
 	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
+	assert.Nil(t, e1.getMetricsExporter())
 
 	// Ensure it can be started.
 	err = exporters.StartAll(context.Background(), componenttest.NewNopHost())
@@ -161,8 +161,8 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
 	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
-	assert.Nil(t, e1.getLogExporter())
+	assert.Nil(t, e1.getMetricsExporter())
+	assert.Nil(t, e1.getLogsExporter())
 }
 
 func TestBuildExporters_StartStopAll(t *testing.T) {

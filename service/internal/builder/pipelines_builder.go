@@ -259,7 +259,7 @@ func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterIDs []co
 
 	var exporters []consumer.Metrics
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.getMetricExporter())
+		exporters = append(exporters, builtExp.getMetricsExporter())
 	}
 
 	// Create a junction point that fans out to all exporters.
@@ -271,7 +271,7 @@ func (pb *pipelinesBuilder) buildFanoutExportersLogsConsumer(exporterIDs []confi
 
 	exporters := make([]consumer.Logs, len(builtExporters))
 	for i, builtExp := range builtExporters {
-		exporters[i] = builtExp.getLogExporter()
+		exporters[i] = builtExp.getLogsExporter()
 	}
 
 	// Create a junction point that fans out to all exporters.
