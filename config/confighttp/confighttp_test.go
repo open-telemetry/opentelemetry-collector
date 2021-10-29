@@ -76,7 +76,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "error_round_tripper_returned",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
 				ReadBufferSize:     1024,
