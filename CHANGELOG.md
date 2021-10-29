@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Move `service/parserprovider` package to `config/configmapprovider` (#4206)
+
 ## v0.38.0 Beta
 
 ## 🛑 Breaking changes 🛑
