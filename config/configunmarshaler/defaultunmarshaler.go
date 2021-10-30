@@ -199,7 +199,6 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 	}
 
 	for id, pipeline := range srv.Pipelines {
-		pipeline.Name = id.String()
 		pipeline.InputType = config.DataType(id.Type())
 		switch pipeline.InputType {
 		case config.TracesDataType:

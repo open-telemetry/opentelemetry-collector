@@ -106,17 +106,17 @@ func (cfg *Config) validateService() error {
 
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
-	for _, pipeline := range cfg.Service.Pipelines {
+	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline has at least one receiver.
 		if len(pipeline.Receivers) == 0 {
-			return fmt.Errorf("pipeline %q must have at least one receiver", pipeline.Name)
+			return fmt.Errorf("pipeline %q must have at least one receiver", pipelineID)
 		}
 
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
 			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
 			if cfg.Receivers[ref] == nil {
-				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipeline.Name, ref)
+				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipelineID, ref)
 			}
 		}
 
@@ -124,20 +124,20 @@ func (cfg *Config) validateService() error {
 		for _, ref := range pipeline.Processors {
 			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
 			if cfg.Processors[ref] == nil {
-				return fmt.Errorf("pipeline %q references processor %q which does not exist", pipeline.Name, ref)
+				return fmt.Errorf("pipeline %q references processor %q which does not exist", pipelineID, ref)
 			}
 		}
 
 		// Validate pipeline has at least one exporter.
 		if len(pipeline.Exporters) == 0 {
-			return fmt.Errorf("pipeline %q must have at least one exporter", pipeline.Name)
+			return fmt.Errorf("pipeline %q must have at least one exporter", pipelineID)
 		}
 
 		// Validate pipeline exporter name references.
 		for _, ref := range pipeline.Exporters {
 			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
 			if cfg.Exporters[ref] == nil {
-				return fmt.Errorf("pipeline %q references exporter %q which does not exist", pipeline.Name, ref)
+				return fmt.Errorf("pipeline %q references exporter %q which does not exist", pipelineID, ref)
 			}
 		}
 	}

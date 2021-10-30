@@ -74,7 +74,6 @@ func createExampleConfig(dataType string) *config.Config {
 		Service: config.Service{
 			Pipelines: map[config.ComponentID]*config.Pipeline{
 				config.NewComponentID(config.Type(dataType)): {
-					Name:       dataType,
 					InputType:  config.DataType(dataType),
 					Receivers:  []config.ComponentID{config.NewComponentID(exampleReceiverFactory.Type())},
 					Processors: []config.ComponentID{config.NewComponentID(exampleProcessorFactory.Type())},
@@ -127,7 +126,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			err = pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
-			processor := pipelineProcessors[cfg.Service.Pipelines[config.NewComponentID(config.Type(dataType))]]
+			processor := pipelineProcessors[config.NewComponentID(config.Type(dataType))]
 
 			// Ensure pipeline has its fields correctly populated.
 			require.NotNil(t, processor)
@@ -191,7 +190,7 @@ func testPipeline(t *testing.T, pipelineID config.ComponentID, exporterIDs []con
 
 	assert.NoError(t, pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost()))
 
-	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineID]]
+	processor := pipelineProcessors[pipelineID]
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)

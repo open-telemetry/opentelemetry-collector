@@ -123,13 +123,8 @@ func (exps Exporters) ToMapByDataType() map[config.DataType]map[config.Component
 	return exportersMap
 }
 
-type dataTypeRequirement struct {
-	// Pipeline that requires the data type.
-	requiredBy *config.Pipeline
-}
-
-// Map of data type requirements.
-type dataTypeRequirements map[config.DataType]dataTypeRequirement
+// Map of config.DataType to the id of the Pipeline that requires the data type.
+type dataTypeRequirements map[config.DataType]config.ComponentID
 
 // Data type requirements for all exporters.
 type exportersRequiredDataTypes map[config.ComponentID]dataTypeRequirements
@@ -189,7 +184,7 @@ func calcExportersRequiredDataTypes(cfg *config.Config) exportersRequiredDataTyp
 	result := make(exportersRequiredDataTypes)
 
 	// Iterate over pipelines.
-	for _, pipeline := range cfg.Service.Pipelines {
+	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Iterate over all exporters for this pipeline.
 		for _, expID := range pipeline.Exporters {
 			// Create the data type requirement for the expCfg if it does not exist.
@@ -199,7 +194,7 @@ func calcExportersRequiredDataTypes(cfg *config.Config) exportersRequiredDataTyp
 
 			// Remember that this data type is required for the expCfg and also which
 			// pipeline the requirement is coming from.
-			result[expID][pipeline.InputType] = dataTypeRequirement{pipeline}
+			result[expID][pipeline.InputType] = pipelineID
 		}
 	}
 	return result
@@ -224,7 +219,7 @@ func buildExporter(
 
 	var err error
 	var createdExporter component.Exporter
-	for dataType, requirement := range inputDataTypes {
+	for dataType, pipelineID := range inputDataTypes {
 		switch dataType {
 		case config.TracesDataType:
 			createdExporter, err = factory.CreateTracesExporter(ctx, set, cfg)
@@ -237,13 +232,13 @@ func buildExporter(
 
 		default:
 			// Could not create because this exporter does not support this data type.
-			return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
+			return nil, exporterTypeMismatchErr(cfg, pipelineID, dataType)
 		}
 
 		if err != nil {
 			if err == componenterror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
-				return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
+				return nil, exporterTypeMismatchErr(cfg, pipelineID, dataType)
 			}
 			return nil, fmt.Errorf("error creating %v exporter: %w", cfg.ID(), err)
 		}
@@ -263,11 +258,11 @@ func buildExporter(
 
 func exporterTypeMismatchErr(
 	config config.Exporter,
-	requiredByPipeline *config.Pipeline,
+	pipelineID config.ComponentID,
 	dataType config.DataType,
 ) error {
 	return fmt.Errorf(
 		"pipeline %q of data type %q has an exporter %v, which does not support that data type",
-		requiredByPipeline.Name, dataType, config.ID(),
+		pipelineID, dataType, config.ID(),
 	)
 }

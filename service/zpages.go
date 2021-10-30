@@ -95,20 +95,20 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 	for c, p := range srv.builtPipelines {
 		// TODO: Change the template to use ID.
 		var recvs []string
-		for _, recvID := range c.Receivers {
+		for _, recvID := range p.Config.Receivers {
 			recvs = append(recvs, recvID.String())
 		}
 		var procs []string
-		for _, procID := range c.Processors {
+		for _, procID := range p.Config.Processors {
 			procs = append(procs, procID.String())
 		}
 		var exps []string
-		for _, expID := range c.Exporters {
+		for _, expID := range p.Config.Exporters {
 			exps = append(exps, expID.String())
 		}
 		row := zpages.SummaryPipelinesTableRowData{
-			FullName:    c.Name,
-			InputType:   string(c.InputType),
+			FullName:    c.String(),
+			InputType:   string(p.Config.InputType),
 			MutatesData: p.MutatesData,
 			Receivers:   recvs,
 			Processors:  procs,

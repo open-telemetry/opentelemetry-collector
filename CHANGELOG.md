@@ -6,6 +6,7 @@
 
 - Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
+- Remove `config.Pipeline.Name` (#4326)
 
 ## v0.38.0 Beta
 
