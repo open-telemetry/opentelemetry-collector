@@ -150,7 +150,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			// First check that there are no logs in the exporters yet.
 			var exporterConsumers []*testcomponents.ExampleExporterConsumer
 			for _, exporter := range exporters {
-				expConsumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
+				expConsumer := exporter.getLogsExporter().(*testcomponents.ExampleExporterConsumer)
 				exporterConsumers = append(exporterConsumers, expConsumer)
 				require.Equal(t, len(expConsumer.Logs), 0)
 			}
