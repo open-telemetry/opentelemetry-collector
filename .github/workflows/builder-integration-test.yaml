@@ -25,6 +25,4 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Test
-      with:
-        workdir: ./cmd/builder
-      run: ./test/test.sh
+      run: cd ./cmd/builder && ./test/test.sh
