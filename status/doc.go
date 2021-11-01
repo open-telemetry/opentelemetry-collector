@@ -15,6 +15,7 @@
 // Package status contains structured status codes for use in the
 // collector's own logs, to help with diagnosis. This is expected to
 // be especially useful for automated tools that need to make sense of
-// logs. The status definitions are the same as those used in gRPC, but
-// copied in order to avoid the dependency.
+// logs. The status definitions are the same as those used in Google
+// OSS projects (including gRPC and Google API clients), but copied in
+// order to avoid dependencies.
 package status // import "go.opentelemetry.io/collector/status"
