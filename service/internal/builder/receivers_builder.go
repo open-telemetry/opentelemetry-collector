@@ -137,8 +137,6 @@ func (rb *receiversBuilder) findPipelinesToAttach(receiverID config.ComponentID)
 	// attached to this receiver according to configuration.
 
 	pipelinesToAttach := make(attachedPipelines)
-	pipelinesToAttach[config.TracesDataType] = make([]*builtPipeline, 0)
-	pipelinesToAttach[config.MetricsDataType] = make([]*builtPipeline, 0)
 
 	// Iterate over all pipelines.
 	for _, pipelineCfg := range rb.config.Service.Pipelines {
