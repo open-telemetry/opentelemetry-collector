@@ -5,12 +5,12 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 
 ## TL;DR
 ```console
-$ GO111MODULE=on go get github.com/open-telemetry/opentelemetry-collector-builder
+$ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder
 $ cat > ~/.otelcol-builder.yaml <<EOF
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.37.0"
 EOF
-$ opentelemetry-collector-builder --output-path=/tmp/dist
+$ builder --output-path=/tmp/dist
 $ cat > /tmp/otelcol.yaml <<EOF
 receivers:
   otlp:
@@ -46,17 +46,17 @@ Download the binary for your respective platform under the ["Releases"](https://
 A configuration file isn't strictly required, but the final artifact won't be different than a regular OpenTelemetry Collector. You probably want to specify at least one module (extension, exporter, receiver, processor) to add to your distribution. You can specify them via a configuration file. When no `--config` flag is provided with the location for the configuration file, `${HOME}/.otelcol-builder.yaml` will be used, if available.
 
 ```console
-$ opentelemetry-collector-builder --config config.yaml
+$ builder --config config.yaml
 ```
 
-Use `opentelemetry-collector-builder --help` to learn about which flags are available.
+Use `builder --help` to learn about which flags are available.
 
 ## Configuration
 
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
 
 ```console
-$ opentelemetry-collector-builder --name="my-otelcol"
+$ builder --name="my-otelcol"
 ```
 
 The module types are specified at the top-level, and might be: `extensions`, `exporters`, `receivers` and `processors`. They all accept a list of components, and each component is required to have at least the `gomod` entry. When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.
@@ -69,7 +69,7 @@ Optionally, a list of `go mod` replace entries can be provided, in case custom o
 
 ```yaml
 dist:
-    module: github.com/open-telemetry/opentelemetry-collector-builder # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
+    module: github.com/open-telemetry/opentelemetry-collector # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
     name: otelcol-custom # the binary name. Optional.
     description: "Custom OpenTelemetry Collector distribution" # a long name for the application. Optional.
     include_core: true # whether the core components should be included in the distribution. Optional.
