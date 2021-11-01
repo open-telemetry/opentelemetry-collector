@@ -1,10 +1,14 @@
-name: Integration tests
+name: Builder - Integration tests
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'cmd/builder/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'cmd/builder/**'
 
 jobs:
   integration-test:
@@ -21,4 +25,4 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Test
-      run: ./test/test.sh
+      run: cd ./cmd/builder && ./test/test.sh
