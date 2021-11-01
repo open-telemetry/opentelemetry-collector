@@ -197,12 +197,12 @@ func (a AttributeValue) MapVal() AttributeMap {
 	return newAttributeMap(&kvlist.Values)
 }
 
-// ArrayVal returns the array value associated with this AttributeValue.
-// If the Type() is not AttributeValueTypeArray then returns an empty array. Note that modifying
-// such empty array has no effect on this AttributeValue.
+// SliceVal returns the array value associated with this AttributeValue.
+// If the Type() is not AttributeValueTypeArray then returns an empty slice. Note that modifying
+// such empty slice has no effect on this AttributeValue.
 //
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) ArrayVal() AttributeSlice {
+func (a AttributeValue) SliceVal() AttributeSlice {
 	arr := a.orig.GetArrayValue()
 	if arr == nil {
 		return NewAttributeSlice()
@@ -262,7 +262,7 @@ func (a AttributeValue) SetMapVal(v AttributeMap) {
 	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
 }
 
-// SetArrayVal replaces the AnyValueArray value associated with this AttributeValue,
+// SetArrayVal replaces the AttributeSlice value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeArray.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) SetArrayVal(v AttributeSlice) {
@@ -406,7 +406,7 @@ func (a AttributeValue) AsString() string {
 		return base64.StdEncoding.EncodeToString(a.BytesVal())
 
 	case AttributeValueTypeArray:
-		jsonStr, _ := json.Marshal(a.ArrayVal().asRaw())
+		jsonStr, _ := json.Marshal(a.SliceVal().asRaw())
 		return string(jsonStr)
 
 	default:
@@ -833,14 +833,14 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 		case AttributeValueTypeMap:
 			rawMap[k] = v.MapVal().AsRaw()
 		case AttributeValueTypeArray:
-			rawMap[k] = v.ArrayVal().asRaw()
+			rawMap[k] = v.SliceVal().asRaw()
 		}
 		return true
 	})
 	return rawMap
 }
 
-// asRaw creates a slice out of a AnyValueArray.
+// asRaw creates a slice out of a AttributeSlice.
 func (es AttributeSlice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
