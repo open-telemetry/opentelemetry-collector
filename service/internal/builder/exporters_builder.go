@@ -67,7 +67,7 @@ func (bexp *builtExporter) getTracesExporter() component.TracesExporter {
 	return exp.(component.TracesExporter)
 }
 
-func (bexp *builtExporter) getMetricExporter() component.MetricsExporter {
+func (bexp *builtExporter) getMetricsExporter() component.MetricsExporter {
 	exp := bexp.expByDataType[config.MetricsDataType]
 	if exp == nil {
 		return nil
@@ -75,7 +75,7 @@ func (bexp *builtExporter) getMetricExporter() component.MetricsExporter {
 	return exp.(component.MetricsExporter)
 }
 
-func (bexp *builtExporter) getLogExporter() component.LogsExporter {
+func (bexp *builtExporter) getLogsExporter() component.LogsExporter {
 	exp := bexp.expByDataType[config.LogsDataType]
 	if exp == nil {
 		return nil
@@ -149,7 +149,7 @@ func BuildExporters(
 
 	exporters := make(Exporters)
 
-	// Build exporters exporters based on configuration and required input data types.
+	// Build exporters based on configuration and required input data types.
 	for expID, expCfg := range cfg.Exporters {
 		set := component.ExporterCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
