@@ -5,7 +5,9 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
-- Force usage of `exporterhelper.NewFactory` to implement `component.ExporterFactory` (#TODO)
+- Force usage of `exporterhelper.NewFactory` to implement `component.ExporterFactory` (#4338)
+- Force usage of `receiverhelper.NewFactory` to implement `component.ReceiverFactory` (#4338)
+- Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
 
 ## v0.38.0 Beta
