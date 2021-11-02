@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider
+package configmapprovider
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 
 func TestDefaultMapProvider(t *testing.T) {
 	mp := NewDefaultMapProvider("testdata/default-config.yaml", nil)
-	cm, err := mp.Get(context.Background())
+	retr, err := mp.Retrieve(context.Background())
 	require.NoError(t, err)
 
 	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
@@ -37,14 +37,14 @@ exporters:
   otlp:
     endpoint: "localhost:4317"`))
 	require.NoError(t, err)
-	assert.Equal(t, expectedMap, cm)
+	assert.Equal(t, expectedMap, retr.Get())
 
 	assert.NoError(t, mp.Close(context.Background()))
 }
 
 func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
 	mp := NewDefaultMapProvider("testdata/default-config.yaml", []string{"processors.batch.timeout=2s"})
-	cm, err := mp.Get(context.Background())
+	cp, err := mp.Retrieve(context.Background())
 	require.NoError(t, err)
 
 	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
@@ -55,7 +55,7 @@ exporters:
   otlp:
     endpoint: "localhost:4317"`))
 	require.NoError(t, err)
-	assert.Equal(t, expectedMap, cm)
+	assert.Equal(t, expectedMap, cp.Get())
 
 	assert.NoError(t, mp.Close(context.Background()))
 }
@@ -64,7 +64,7 @@ func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
 	mp := NewDefaultMapProvider(
 		"testdata/default-config.yaml",
 		[]string{"processors.batch.timeout=2s", "exporters.otlp.endpoint=localhost:1234"})
-	cm, err := mp.Get(context.Background())
+	cp, err := mp.Retrieve(context.Background())
 	require.NoError(t, err)
 
 	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
@@ -75,7 +75,7 @@ exporters:
   otlp:
     endpoint: "localhost:1234"`))
 	require.NoError(t, err)
-	assert.Equal(t, expectedMap, cm)
+	assert.Equal(t, expectedMap, cp.Get())
 
 	assert.NoError(t, mp.Close(context.Background()))
 }
@@ -83,7 +83,7 @@ exporters:
 func TestDefaultMapProvider_InexistentFile(t *testing.T) {
 	mp := NewDefaultMapProvider("testdata/otelcol-config.yaml", nil)
 	require.NotNil(t, mp)
-	_, err := mp.Get(context.Background())
+	_, err := mp.Retrieve(context.Background())
 	require.Error(t, err)
 
 	assert.NoError(t, mp.Close(context.Background()))
@@ -91,7 +91,7 @@ func TestDefaultMapProvider_InexistentFile(t *testing.T) {
 
 func TestDefaultMapProvider_EmptyFileName(t *testing.T) {
 	mp := NewDefaultMapProvider("", nil)
-	_, err := mp.Get(context.Background())
+	_, err := mp.Retrieve(context.Background())
 	require.Error(t, err)
 
 	assert.NoError(t, mp.Close(context.Background()))

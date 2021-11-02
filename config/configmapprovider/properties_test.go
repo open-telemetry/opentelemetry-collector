@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider
+package configmapprovider
 
 import (
 	"context"
@@ -31,21 +31,23 @@ func TestPropertiesProvider(t *testing.T) {
 	}
 
 	pmp := NewPropertiesMapProvider(setFlagStr)
-	cp, err := pmp.Get(context.Background())
+	retr, err := pmp.Retrieve(context.Background())
 	require.NoError(t, err)
-	keys := cp.AllKeys()
+	cfgMap := retr.Get()
+	keys := cfgMap.AllKeys()
 	assert.Len(t, keys, 4)
-	assert.Equal(t, "2s", cp.Get("processors::batch::timeout"))
-	assert.Equal(t, "3s", cp.Get("processors::batch/foo::timeout"))
-	assert.Equal(t, "foo:9200,foo2:9200", cp.Get("exporters::kafka::brokers"))
-	assert.Equal(t, "localhost:1818", cp.Get("receivers::otlp::protocols::grpc::endpoint"))
+	assert.Equal(t, "2s", cfgMap.Get("processors::batch::timeout"))
+	assert.Equal(t, "3s", cfgMap.Get("processors::batch/foo::timeout"))
+	assert.Equal(t, "foo:9200,foo2:9200", cfgMap.Get("exporters::kafka::brokers"))
+	assert.Equal(t, "localhost:1818", cfgMap.Get("receivers::otlp::protocols::grpc::endpoint"))
 	require.NoError(t, pmp.Close(context.Background()))
 }
 
 func TestPropertiesProvider_empty(t *testing.T) {
 	pmp := NewPropertiesMapProvider(nil)
-	cp, err := pmp.Get(context.Background())
+	retr, err := pmp.Retrieve(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(cp.AllKeys()))
+	cfgMap := retr.Get()
+	assert.Equal(t, 0, len(cfgMap.AllKeys()))
 	require.NoError(t, pmp.Close(context.Background()))
 }

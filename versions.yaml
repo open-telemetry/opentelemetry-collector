@@ -17,6 +17,7 @@ module-sets:
     version: v0.38.0
     modules:
       - go.opentelemetry.io/collector
+      - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/model
 excluded-modules:
       - go.opentelemetry.io/collector/internal/tools

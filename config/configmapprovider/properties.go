@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider // import "go.opentelemetry.io/collector/service/parserprovider"
+package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
 	"bytes"
@@ -40,9 +40,9 @@ func NewPropertiesMapProvider(properties []string) config.MapProvider {
 	}
 }
 
-func (pmp *propertiesMapProvider) Get(context.Context) (*config.Map, error) {
+func (pmp *propertiesMapProvider) Retrieve(context.Context) (config.Retrieved, error) {
 	if len(pmp.properties) == 0 {
-		return config.NewMap(), nil
+		return &simpleRetrieved{confMap: config.NewMap()}, nil
 	}
 
 	b := &bytes.Buffer{}
@@ -67,7 +67,7 @@ func (pmp *propertiesMapProvider) Get(context.Context) (*config.Map, error) {
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	return config.NewMapFromStringMap(prop), nil
+	return &simpleRetrieved{confMap: config.NewMapFromStringMap(prop)}, nil
 }
 
 func (*propertiesMapProvider) Close(context.Context) error {

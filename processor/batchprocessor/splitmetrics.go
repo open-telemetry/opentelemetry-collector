@@ -80,42 +80,46 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 }
 
 // resourceMetricsDataPointCount calculates the total number of  data points.
-func resourceMetricsDataPointCount(rs pdata.ResourceMetrics) (dataPointCount int) {
-	for k := 0; k < rs.InstrumentationLibraryMetrics().Len(); k++ {
-		dataPointCount += metricSliceDataPointCount(rs.InstrumentationLibraryMetrics().At(k).Metrics())
+func resourceMetricsDataPointCount(rs pdata.ResourceMetrics) int {
+	dataPointCount := 0
+	ilms := rs.InstrumentationLibraryMetrics()
+	for k := 0; k < ilms.Len(); k++ {
+		dataPointCount += metricSliceDataPointCount(ilms.At(k).Metrics())
 	}
-	return
+	return dataPointCount
 }
 
 // metricSliceDataPointCount calculates the total number of  data points.
-func metricSliceDataPointCount(ms pdata.MetricSlice) (dataPointCount int) {
+func metricSliceDataPointCount(ms pdata.MetricSlice) int {
+	dataPointCount := 0
 	for k := 0; k < ms.Len(); k++ {
 		dataPointCount += metricDataPointCount(ms.At(k))
 	}
-	return
+	return dataPointCount
 }
 
 // metricDataPointCount calculates the total number of  data points.
-func metricDataPointCount(ms pdata.Metric) (dataPointCount int) {
+func metricDataPointCount(ms pdata.Metric) int {
 	switch ms.DataType() {
 	case pdata.MetricDataTypeGauge:
-		dataPointCount = ms.Gauge().DataPoints().Len()
+		return ms.Gauge().DataPoints().Len()
 	case pdata.MetricDataTypeSum:
-		dataPointCount = ms.Sum().DataPoints().Len()
+		return ms.Sum().DataPoints().Len()
 	case pdata.MetricDataTypeHistogram:
-		dataPointCount = ms.Histogram().DataPoints().Len()
+		return ms.Histogram().DataPoints().Len()
 	case pdata.MetricDataTypeSummary:
-		dataPointCount = ms.Summary().DataPoints().Len()
+		return ms.Summary().DataPoints().Len()
 	}
-	return
+	return 0
 }
 
 // splitMetric removes metric points from the input data and moves data of the specified size to destination.
 // Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
 func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
-	if metricDataPointCount(ms) <= size {
+	mdDPC := metricDataPointCount(ms)
+	if mdDPC <= size {
 		ms.MoveTo(dest)
-		return metricDataPointCount(dest), true
+		return mdDPC, true
 	}
 
 	dest.SetDataType(ms.DataType())
@@ -125,57 +129,55 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 
 	switch ms.DataType() {
 	case pdata.MetricDataTypeGauge:
-		src := ms.Gauge().DataPoints()
-		dst := dest.Gauge().DataPoints()
-		dst.EnsureCapacity(size)
-		i := 0
-		src.RemoveIf(func(dp pdata.NumberDataPoint) bool {
-			defer func() { i++ }()
-			if i < size {
-				dp.MoveTo(dst.AppendEmpty())
-				return true
-			}
-			return false
-		})
+		return splitNumberDataPoints(ms.Gauge().DataPoints(), dest.Gauge().DataPoints(), size)
 	case pdata.MetricDataTypeSum:
-		src := ms.Sum().DataPoints()
-		dst := dest.Sum().DataPoints()
-		dst.EnsureCapacity(size)
-		i := 0
-		src.RemoveIf(func(dp pdata.NumberDataPoint) bool {
-			defer func() { i++ }()
-			if i < size {
-				dp.MoveTo(dst.AppendEmpty())
-				return true
-			}
-			return false
-		})
+		return splitNumberDataPoints(ms.Sum().DataPoints(), dest.Sum().DataPoints(), size)
 	case pdata.MetricDataTypeHistogram:
-		src := ms.Histogram().DataPoints()
-		dst := dest.Histogram().DataPoints()
-		dst.EnsureCapacity(size)
-		i := 0
-		src.RemoveIf(func(dp pdata.HistogramDataPoint) bool {
-			defer func() { i++ }()
-			if i < size {
-				dp.MoveTo(dst.AppendEmpty())
-				return true
-			}
-			return false
-		})
+		return splitHistogramDataPoints(ms.Histogram().DataPoints(), dest.Histogram().DataPoints(), size)
 	case pdata.MetricDataTypeSummary:
-		src := ms.Summary().DataPoints()
-		dst := dest.Summary().DataPoints()
-		dst.EnsureCapacity(size)
-		i := 0
-		src.RemoveIf(func(dp pdata.SummaryDataPoint) bool {
-			defer func() { i++ }()
-			if i < size {
-				dp.MoveTo(dst.AppendEmpty())
-				return true
-			}
-			return false
-		})
+		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.Summary().DataPoints(), size)
 	}
+	return size, false
+}
+
+func splitNumberDataPoints(src, dst pdata.NumberDataPointSlice, size int) (int, bool) {
+	dst.EnsureCapacity(size)
+	i := 0
+	src.RemoveIf(func(dp pdata.NumberDataPoint) bool {
+		if i < size {
+			dp.MoveTo(dst.AppendEmpty())
+			i++
+			return true
+		}
+		return false
+	})
+	return size, false
+}
+
+func splitHistogramDataPoints(src, dst pdata.HistogramDataPointSlice, size int) (int, bool) {
+	dst.EnsureCapacity(size)
+	i := 0
+	src.RemoveIf(func(dp pdata.HistogramDataPoint) bool {
+		if i < size {
+			dp.MoveTo(dst.AppendEmpty())
+			i++
+			return true
+		}
+		return false
+	})
+	return size, false
+}
+
+func splitSummaryDataPoints(src, dst pdata.SummaryDataPointSlice, size int) (int, bool) {
+	dst.EnsureCapacity(size)
+	i := 0
+	src.RemoveIf(func(dp pdata.SummaryDataPoint) bool {
+		if i < size {
+			dp.MoveTo(dst.AppendEmpty())
+			i++
+			return true
+		}
+		return false
+	})
 	return size, false
 }

@@ -36,12 +36,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/internal/extensions"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 const configStr = `
@@ -78,7 +78,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -115,7 +115,7 @@ func TestCollector_Start(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
 		LoggingOptions:    []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
@@ -182,7 +182,7 @@ func TestCollector_ReportError(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
 	})
 	require.NoError(t, err)
 
@@ -266,7 +266,7 @@ type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Get(context.Context) (*config.Map, error) {
+func (epl *errParserLoader) Retrieve(_ context.Context) (config.Retrieved, error) {
 	return nil, epl.err
 }
 
@@ -302,7 +302,7 @@ func TestCollector_reloadService(t *testing.T) {
 		},
 		{
 			name:           "retire_service_ok_load_ok",
-			parserProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+			parserProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
 			service: &service{
 				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},

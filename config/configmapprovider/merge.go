@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider // import "go.opentelemetry.io/collector/service/parserprovider"
+package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
 	"context"
@@ -35,18 +35,18 @@ func NewMergeMapProvider(ps ...config.MapProvider) config.MapProvider {
 	return &mergeMapProvider{providers: ps}
 }
 
-func (mp *mergeMapProvider) Get(ctx context.Context) (*config.Map, error) {
-	ret := config.NewMap()
+func (mp *mergeMapProvider) Retrieve(ctx context.Context) (config.Retrieved, error) {
+	retCfgMap := config.NewMap()
 	for _, p := range mp.providers {
-		cfgMap, err := p.Get(ctx)
+		retr, err := p.Retrieve(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if err = ret.Merge(cfgMap); err != nil {
+		if err = retCfgMap.Merge(retr.Get()); err != nil {
 			return nil, err
 		}
 	}
-	return ret, nil
+	return &simpleRetrieved{confMap: retCfgMap}, nil
 }
 
 func (mp *mergeMapProvider) Close(ctx context.Context) error {

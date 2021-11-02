@@ -49,9 +49,9 @@ func TestBuildExporters(t *testing.T) {
 		},
 
 		Service: config.Service{
-			Pipelines: map[string]*config.Pipeline{
-				"trace": {
-					Name:      "trace",
+			Pipelines: map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID("traces"): {
+					Name:      "traces",
 					InputType: config.TracesDataType,
 					Exporters: []config.ComponentID{config.NewComponentID("otlp")},
 				},
@@ -69,8 +69,8 @@ func TestBuildExporters(t *testing.T) {
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
 	assert.NotNil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
-	assert.Nil(t, e1.getLogExporter())
+	assert.Nil(t, e1.getMetricsExporter())
+	assert.Nil(t, e1.getLogsExporter())
 
 	// Ensure it can be started.
 	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
@@ -87,19 +87,18 @@ func TestBuildExporters(t *testing.T) {
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
-	delete(cfg.Service.Pipelines, "trace")
+	delete(cfg.Service.Pipelines, config.NewComponentID("traces"))
 	exporters, err = BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
 	e1 = exporters[config.NewComponentID("otlp")]
 
-	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
-	// Metrics Exporter are nil.
+	// Ensure exporter has its fields correctly populated, ie TracesExporter and MetricsExporter are nil.
 	require.NotNil(t, e1)
 	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
-	assert.Nil(t, e1.getLogExporter())
+	assert.Nil(t, e1.getMetricsExporter())
+	assert.Nil(t, e1.getLogsExporter())
 
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
@@ -116,10 +115,10 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 		},
 
 		Service: config.Service{
-			Pipelines: map[string]*config.Pipeline{
-				"logs": {
+			Pipelines: map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID("logs"): {
 					Name:      "logs",
-					InputType: "logs",
+					InputType: config.LogsDataType,
 					Exporters: []config.ComponentID{config.NewComponentID("exampleexporter")},
 				},
 			},
@@ -135,9 +134,9 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
-	assert.NotNil(t, e1.getLogExporter())
+	assert.NotNil(t, e1.getLogsExporter())
 	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
+	assert.Nil(t, e1.getMetricsExporter())
 
 	// Ensure it can be started.
 	err = exporters.StartAll(context.Background(), componenttest.NewNopHost())
@@ -150,7 +149,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
-	delete(cfg.Service.Pipelines, "logs")
+	delete(cfg.Service.Pipelines, config.NewComponentID("logs"))
 	exporters, err = BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
@@ -161,8 +160,8 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
 	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricExporter())
-	assert.Nil(t, e1.getLogExporter())
+	assert.Nil(t, e1.getMetricsExporter())
+	assert.Nil(t, e1.getLogsExporter())
 }
 
 func TestBuildExporters_StartStopAll(t *testing.T) {

@@ -127,58 +127,6 @@ func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testi
 	assert.Equal(t, "test-log-int-1-4", split.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
 }
 
-func BenchmarkSplitLogs(b *testing.B) {
-	md := pdata.NewLogs()
-	rms := md.ResourceLogs()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateLogsManyLogRecordsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
-		ms := rms.At(rms.Len() - 1).InstrumentationLibraryLogs().At(0).Logs()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestLogName(1, i))
-		}
-	}
-
-	if b.N > 100000 {
-		b.Skipf("SKIP: b.N too high, set -benchtine=<n>x with n < 100000")
-	}
-
-	clones := make([]pdata.Logs, b.N)
-	for n := 0; n < b.N; n++ {
-		clones[n] = md.Clone()
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := clones[n]
-		split := splitLogs(128, cloneReq)
-		if split.LogRecordCount() != 128 || cloneReq.LogRecordCount() != 400-128 {
-			b.Fail()
-		}
-	}
-}
-
-func BenchmarkCloneLogs(b *testing.B) {
-	md := pdata.NewLogs()
-	rms := md.ResourceLogs()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateLogsManyLogRecordsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
-		ms := rms.At(rms.Len() - 1).InstrumentationLibraryLogs().At(0).Logs()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestLogName(1, i))
-		}
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := md.Clone()
-		if cloneReq.LogRecordCount() != 400 {
-			b.Fail()
-		}
-	}
-}
-
 func TestSplitLogsMultipleILL(t *testing.T) {
 	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
 	logs := td.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
@@ -207,4 +155,35 @@ func TestSplitLogsMultipleILL(t *testing.T) {
 	assert.Equal(t, 20, td.LogRecordCount())
 	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
 	assert.Equal(t, "test-log-int-0-4", split.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+}
+
+func BenchmarkSplitLogs(b *testing.B) {
+	md := pdata.NewLogs()
+	rms := md.ResourceLogs()
+	for i := 0; i < 20; i++ {
+		testdata.GenerateLogsManyLogRecordsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
+		ms := rms.At(rms.Len() - 1).InstrumentationLibraryLogs().At(0).Logs()
+		for i := 0; i < ms.Len(); i++ {
+			ms.At(i).SetName(getTestLogName(1, i))
+		}
+	}
+
+	if b.N > 100000 {
+		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
+	}
+
+	clones := make([]pdata.Logs, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = md.Clone()
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		cloneReq := clones[n]
+		split := splitLogs(128, cloneReq)
+		if split.LogRecordCount() != 128 || cloneReq.LogRecordCount() != 400-128 {
+			b.Fail()
+		}
+	}
 }

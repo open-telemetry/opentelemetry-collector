@@ -232,4 +232,4 @@ type Pipeline struct {
 }
 
 // Pipelines is a map of names to Pipelines.
-type Pipelines map[string]*Pipeline
+type Pipelines map[ComponentID]*Pipeline

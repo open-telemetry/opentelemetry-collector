@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parserprovider // import "go.opentelemetry.io/collector/service/parserprovider"
+package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func NewFileMapProvider(fileName string) config.MapProvider {
 	}
 }
 
-func (fmp *fileMapProvider) Get(context.Context) (*config.Map, error) {
+func (fmp *fileMapProvider) Retrieve(context.Context) (config.Retrieved, error) {
 	if fmp.fileName == "" {
 		return nil, errors.New("config file not specified")
 	}
@@ -43,7 +43,7 @@ func (fmp *fileMapProvider) Get(context.Context) (*config.Map, error) {
 		return nil, fmt.Errorf("error loading config file %q: %w", fmp.fileName, err)
 	}
 
-	return cp, nil
+	return &simpleRetrieved{confMap: cp}, nil
 }
 
 func (*fileMapProvider) Close(context.Context) error {
