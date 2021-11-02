@@ -109,7 +109,6 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&config.Pipeline{
-			Name:       "traces",
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewComponentID("examplereceiver")},
 			Processors: []config.ComponentID{config.NewComponentID("exampleprocessor")},

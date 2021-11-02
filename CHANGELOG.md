@@ -10,6 +10,7 @@
   - Rename `pdata.AnyValueArray` to `AttributeSlice`
   - Rename `ArrayVal()` to `SliceVal()`
   - Rename `SetArrayVal()` to `SetSliceVal()`
+- Remove `config.Pipeline.Name` (#4326)
 
 ## v0.38.0 Beta
 

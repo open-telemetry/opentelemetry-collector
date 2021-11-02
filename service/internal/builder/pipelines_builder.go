@@ -37,6 +37,8 @@ type builtPipeline struct {
 	firstMC consumer.Metrics
 	firstLC consumer.Logs
 
+	// Config is the configuration of this Pipeline.
+	Config *config.Pipeline
 	// MutatesData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
 	MutatesData bool
@@ -45,7 +47,7 @@ type builtPipeline struct {
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
-type BuiltPipelines map[*config.Pipeline]*builtPipeline
+type BuiltPipelines map[config.ComponentID]*builtPipeline
 
 func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Host) error {
 	for _, bp := range bps {
@@ -99,12 +101,12 @@ func BuildPipelines(
 	pb := &pipelinesBuilder{settings, buildInfo, config, exporters, factories}
 
 	pipelineProcessors := make(BuiltPipelines)
-	for _, pipeline := range pb.config.Service.Pipelines {
-		firstProcessor, err := pb.buildPipeline(context.Background(), pipeline)
+	for pipelineID, pipeline := range pb.config.Service.Pipelines {
+		bp, err := pb.buildPipeline(context.Background(), pipelineID, pipeline)
 		if err != nil {
 			return nil, err
 		}
-		pipelineProcessors[pipeline] = firstProcessor
+		pipelineProcessors[pipelineID] = bp
 	}
 
 	return pipelineProcessors, nil
@@ -113,7 +115,7 @@ func BuildPipelines(
 // Builds a pipeline of processors. Returns the first processor in the pipeline.
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
-func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *config.Pipeline) (*builtPipeline, error) {
+func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config.ComponentID, pipelineCfg *config.Pipeline) (*builtPipeline, error) {
 
 	// BuildProcessors the pipeline backwards.
 
@@ -174,7 +176,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		case config.TracesDataType:
 			var proc component.TracesProcessor
 			if proc, err = factory.CreateTracesProcessor(ctx, set, procCfg, tc); err != nil {
-				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineCfg.Name, err)
+				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineID, err)
 			}
 			// Check if the factory really created the processor.
 			if proc == nil {
@@ -186,7 +188,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		case config.MetricsDataType:
 			var proc component.MetricsProcessor
 			if proc, err = factory.CreateMetricsProcessor(ctx, set, procCfg, mc); err != nil {
-				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineCfg.Name, err)
+				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineID, err)
 			}
 			// Check if the factory really created the processor.
 			if proc == nil {
@@ -199,7 +201,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		case config.LogsDataType:
 			var proc component.LogsProcessor
 			if proc, err = factory.CreateLogsProcessor(ctx, set, procCfg, lc); err != nil {
-				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineCfg.Name, err)
+				return nil, fmt.Errorf("error creating processor %q in pipeline %q: %w", procID, pipelineID, err)
 			}
 			// Check if the factory really created the processor.
 			if proc == nil {
@@ -211,21 +213,22 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		default:
 			return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %s is not supported",
-				procID, pipelineCfg.Name, pipelineCfg.InputType)
+				procID, pipelineID, pipelineCfg.InputType)
 		}
 	}
 
-	pipelineLogger := pb.settings.Logger.With(zap.String("pipeline_name", pipelineCfg.Name),
+	pipelineLogger := pb.settings.Logger.With(zap.Stringer("pipeline_id", pipelineID),
 		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
 	pipelineLogger.Info("Pipeline was built.")
 
 	bp := &builtPipeline{
-		pipelineLogger,
-		tc,
-		mc,
-		lc,
-		mutatesConsumedData,
-		processors,
+		logger:      pipelineLogger,
+		firstTC:     tc,
+		firstMC:     mc,
+		firstLC:     lc,
+		Config:      pipelineCfg,
+		MutatesData: mutatesConsumedData,
+		processors:  processors,
 	}
 
 	return bp, nil
