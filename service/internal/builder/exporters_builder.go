@@ -194,7 +194,7 @@ func calcExportersRequiredDataTypes(cfg *config.Config) exportersRequiredDataTyp
 
 			// Remember that this data type is required for the expCfg and also which
 			// pipeline the requirement is coming from.
-			result[expID][pipeline.InputType] = pipelineID
+			result[expID][pipelineID.Type()] = pipelineID
 		}
 	}
 	return result

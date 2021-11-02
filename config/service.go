@@ -64,9 +64,9 @@ func (srvTL *ServiceTelemetryLogs) validate() error {
 	return nil
 }
 
-// DataType is the data type that is supported for collection. We currently support
+// DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
-type DataType string
+type DataType = Type
 
 // Currently supported data types. Add new data types here when new types are supported in the future.
 const (
@@ -82,7 +82,6 @@ const (
 
 // Pipeline defines a single pipeline.
 type Pipeline struct {
-	InputType  DataType
 	Receivers  []ComponentID `mapstructure:"receivers"`
 	Processors []ComponentID `mapstructure:"processors"`
 	Exporters  []ComponentID `mapstructure:"exporters"`
