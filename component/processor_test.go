@@ -22,11 +22,14 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
+var _ ProcessorFactory = (*TestProcessorFactory)(nil)
+
 type TestProcessorFactory struct {
-	BaseProcessorFactory
+	internalinterface.BaseInternal
 	name string
 }
 
@@ -38,6 +41,21 @@ func (f *TestProcessorFactory) Type() config.Type {
 // CreateDefaultConfig creates the default configuration for the Processor.
 func (f *TestProcessorFactory) CreateDefaultConfig() config.Processor {
 	return nil
+}
+
+// CreateTracesProcessor default implemented as not supported data type.
+func (f *TestProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+// CreateMetricsProcessor default implemented as not supported data type.
+func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
+}
+
+// CreateLogsProcessor default implemented as not supported data type.
+func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func TestMakeProcessorFactoryMap(t *testing.T) {
@@ -74,22 +92,4 @@ func TestMakeProcessorFactoryMap(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, c.out, out)
 	}
-}
-
-func TestBaseProcessorFactory(t *testing.T) {
-	bpf := BaseProcessorFactory{}
-	assert.Panics(t, func() {
-		bpf.Type()
-	})
-	assert.Panics(t, func() {
-		bpf.CreateDefaultConfig()
-	})
-	assert.NotPanics(t, bpf.unexportedProcessor)
-	defaultCfg := config.NewProcessorSettings(config.NewComponentID("nop"))
-	_, err := bpf.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, consumertest.NewNop())
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
-	_, err = bpf.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, consumertest.NewNop())
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
-	_, err = bpf.CreateLogsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, consumertest.NewNop())
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
