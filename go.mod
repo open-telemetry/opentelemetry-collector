@@ -3,7 +3,6 @@ module go.opentelemetry.io/collector
 go 1.14
 
 require (
-	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/Shopify/sarama v1.28.0
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.13.0
@@ -19,7 +18,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.3
 	github.com/google/go-cmp v0.5.4
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
@@ -38,7 +37,7 @@ require (
 	github.com/prometheus/common v0.18.0
 	github.com/prometheus/prometheus v1.8.2-0.20210217141258-a6be548dbc17
 	github.com/rs/cors v1.7.0
-	github.com/shirou/gopsutil v3.21.2+incompatible
+	github.com/shirou/gopsutil v3.21.10+incompatible
 	github.com/shirou/gopsutil/v3 v3.21.8
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.3.1
